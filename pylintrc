@@ -18,14 +18,15 @@ ignore-patterns=
 #init-hook=
 
 # Use multiple processes to speed up Pylint.
-jobs=1
+jobs=4
 
 # List of plugins (as comma separated values of python modules names) to load,
 # usually to register additional checkers.
 load-plugins=
+    pylint_django
 
 # Pickle collected data for later comparisons.
-persistent=yes
+persistent=no
 
 # Specify a configuration file.
 #rcfile=
@@ -175,7 +176,9 @@ max-nested-blocks=5
 [MISCELLANEOUS]
 
 # List of note tags to take in consideration, separated by a comma.
-notes=FIXME,XXX,TODO
+# We don't want warnings for FIXME and TODO because these are usually not
+# meant to be fixed right away. TMP on the other hand should never be found in code
+notes=TMP,XXX
 
 
 [TYPECHECK]
@@ -345,7 +348,7 @@ indent-after-paren=4
 indent-string='    '
 
 # Maximum number of characters on a single line.
-max-line-length=100
+max-line-length=120
 
 # Maximum number of lines in a module
 max-module-lines=1000

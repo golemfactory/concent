@@ -1,4 +1,5 @@
-from .base import *
+# pylint: disable=unused-wildcard-import
+from .base import *  # NOQA  # pylint: disable=wildcard-import
 
 SECRET_KEY = 'testkey'
 

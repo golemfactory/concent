@@ -117,6 +117,22 @@ disable=
     bad-python3-import,
     deprecated-string-function,
     deprecated-str-translate-call,
+    apply-builtin,
+    missing-docstring,
+    invalid-name,
+    bad-whitespace,
+    multiple-statements,
+    protected-access,
+    bad-continuation,
+    line-too-long,
+    redefined-variable-type,
+    locally-disabled,
+    locally-enabled,
+    similarities,
+    design,
+    elif,
+    logging,
+    no-else-return
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

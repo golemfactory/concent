@@ -1,0 +1,13 @@
+# These packages are useful in development but should not be installed in production.
+# Be careful not to include them or their dependencies in requirements.lock!
+
+ipdb
+ipython
+pipdeptree
+flake8
+pylint-django
+
+# Force the latest version of pylint pyflakes and pep8. There are numerous issues with older versions.
+pylint >= 1.7.4
+pyflakes >= 1.6.0
+pep8     >= 1.7.1

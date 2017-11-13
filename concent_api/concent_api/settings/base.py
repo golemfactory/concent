@@ -100,3 +100,84 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+
+LOGGING = {
+    'version':                  1,
+    'disable_existing_loggers': False,
+    'formatters':               {
+        'console': {
+            'format':  '%(asctime)s %(levelname)-8s | %(message)s',
+            'datefmt': '%H:%M:%S',
+        },
+    },
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        }
+    },
+    'handlers': {
+        'mail_admins': {
+            'level':   'ERROR',
+            'filters': ['require_debug_false'],
+            'class':   'django.utils.log.AdminEmailHandler',
+        },
+        'console': {
+            'level':     'INFO',
+            'class':     'logging.StreamHandler',
+            'formatter': 'console',
+        },
+    },
+    'loggers': {
+        # NOTE: There are a few important caveats you need to consider when tweaking logging:
+        # - If a message is logged to logger 'a.b' and propagates to logger 'a', only the level of logger
+        #   'a.b' counts. Level of logger 'a' is ignored. Not kidding. See the diagram:
+        #   https://docs.python.org/3/howto/logging.html#logging-flow
+        # - level of logger 'a.b' determines not only what it handles but also what it propagates to parent.
+        # - If a logger has no level, it inherits level from parent. Root logger (the one called '') has level WARNING by default.
+
+        # RULES: Try to stick to the following conventions:
+        # - Don't set level of a logger unless you explicitly want to prevent some messages from being handled or propagated.
+        # - In most cases it's better to leave level at DEBUG here and set level in handler instead.
+        # - Set level explicitly if you don't propagate. Such a logger should not be dependent on parent's level.
+        # - Don't propagate to the root logger if the output is very verbose. Use a separate handler/file instead.
+        # - Log at INFO level should be concise and contain only important stuff. Enough to understand what
+        #   is happening but not necessarily why. DEBUG level can be more spammy.
+
+        '': {
+            # Logging to the console. The application is primarily going to run in foreground inside Docker container
+            # and we want Docker to capture all that output. You can add an extra file handler in your local_settings.py
+            # if you think you really need it. Do keep in mind though that log files need to be rotated or they'll eat
+            # a lot of disk space.
+            'handlers':  ['console'],
+            # NOTE: Changing level of this logger will change levels of loggers from plugins
+            # because they often don't have a level set explicitly and inherit this one instead.
+            'level':     'DEBUG',
+            'propagate': False,
+        },
+        'py.warnings': {
+            # Prevent Python from printing its warnings to the console. Our top-level logger already handles and prints them.
+            # I'm not entirely sure why this works but I think that the default py.warnings has a custom console handler
+            # attached and by defining it here we're overwriting it and disabling the handler.
+            'level':     'DEBUG',
+            'propagate': True,
+        },
+        'django': {
+            # Redefine django logger without handlers. Otherwise errors propagated from django.request
+            # get logged to the console twice.
+            'handlers':  [],
+            'level':     'DEBUG',
+            'propagate': True,
+        },
+        'django.db': {
+            # Filter out DEBUG messages. There are too many of them. Django logs all DB queries at this level.
+            'level':     'INFO',
+            'propagate': True,
+        },
+        'django.request': {
+            # Level is DEBUG because we're leaving filtering up to the handler.
+            'handlers':  ['mail_admins'],
+            'level':     'DEBUG',
+            'propagate': True,
+        },
+    },
+}

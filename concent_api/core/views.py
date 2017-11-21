@@ -53,8 +53,23 @@ def send(request, message):
 
 @api_view
 @require_POST
-def receive(_request):
-    return "message sent"
+def receive(_request, _message):
+    undelivered_message_statuses    = MessageStatus.objects.filter(delivered = False)
+    last_undelivered_message_status = undelivered_message_statuses.order_by('id').last()
+
+    if last_undelivered_message_status is None:
+        return None
+
+    # Mark message as delivered
+    last_undelivered_message_status.delivered = True
+    last_undelivered_message_status.save()
+
+    raw_message_data     = last_undelivered_message_status.message.data.tobytes()
+    decoded_message_data = json.loads(raw_message_data.decode('utf-8'))
+    current_time         = int(datetime.datetime.now().timestamp())
+
+    if current_time <= decoded_message_data['message_task_to_compute']['deadline'] + settings.CONCENT_MESSAGING_TIME:
+        return decoded_message_data
 
 
 @api_view

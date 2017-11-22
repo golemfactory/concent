@@ -11,4 +11,5 @@ Contents:
 .. toctree::
     :maxdepth: 2
 
+    api
     communication-examples

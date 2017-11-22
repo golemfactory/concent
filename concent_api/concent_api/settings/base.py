@@ -192,3 +192,7 @@ LOGGING = {
 # Stored in a 'bytes' array, e.g. b'\xf3\x97\x19\xcdX\xda...'
 #CONCENT_PRIVATE_KEY =
 #CONCENT_PUBLIC_KEY  =
+
+# A global constant defining the length of the time window within which a requestor or a provider is supposed to
+# contact concent and send or receive a message as defined in the protocol.
+CONCENT_MESSAGING_TIME = 3600  # seconds

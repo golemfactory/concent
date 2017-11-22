@@ -57,8 +57,19 @@ Concent rejects computed task immediately when deadline is exceeded
 
 .. code-block:: bash
 
-    curl -X POST http://concent.golem.network/receive/ \
-        --header "Accept: application/json"
+    curl -X POST http://concent.golem.network/send/                      \
+        --header "Content-Type: application/json"                        \
+        --header "Accept:       application/json"                        \
+        --data '{                                                        \
+            "type":                    "MessageForceReportComputedTask", \
+            "timestamp":               "2017-11-11T15:05:00Z",           \
+            "message_task_to_compute": {                                 \
+                "type":      "MessageTaskToCompute",                     \
+                "timestamp": "2017-11-11T12:00:00Z",                     \
+                "task_id":   133,                                        \
+                "deadline":  "2017-11-11T15:00:00Z"                      \
+            }                                                            \
+        }'
 
 **Response example**:
 

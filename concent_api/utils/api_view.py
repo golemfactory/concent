@@ -16,11 +16,12 @@ def api_view(view):
     @wraps(view)
     @csrf_exempt
     def wrapper(request, *args, **kwargs):
-
         client_public_key = b64decode(request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'].encode('ascii'))
+
         if request.content_type not in ['application/octet-stream', '', 'application/json']:
             return JsonResponse({'error': 'Concent supports only application/octet-stream and application/json.'}, status = 415)
-        if len(request.body) == 0:  # pylint: disable=len-as-condition
+
+        if len(request.body) == 0:
             message = None
         else:
             if request.content_type == '':

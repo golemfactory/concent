@@ -50,6 +50,28 @@ def send(request, message):
             store_message(data['type'], data['message_task_to_compute'], request.body)
             return HttpResponse("", status = 202)
 
+    elif data['type'] == "MessageRejectReportComputedTask":
+        validate_message_reject(data['message_cannot_commpute_task'])
+
+        current_time    = int(datetime.datetime.now().timestamp())
+        task_to_compute = Message.objects.filter(task_id = data['message_cannot_commpute_task']['task_id'], type = "MessageForceReportComputedTask")
+
+        if not task_to_compute.exists():
+            raise Http400("'ForceReportComputedTask' for this task has not been initiated yet. Can't accept your 'RejectReportComputedTask'.")
+
+        rejected_message_task_to_compute = task_to_compute.last()
+        raw_message_data                 = rejected_message_task_to_compute.data.tobytes()
+        decoded_message_data             = json.loads(raw_message_data.decode('utf-8'))
+
+        if current_time <= decoded_message_data['message_task_to_compute']['deadline'] + settings.CONCENT_MESSAGING_TIME:
+            other_ack_message       = Message.objects.filter(task_id = data['message_cannot_commpute_task']['task_id'], type = "MessageAckReportComputedTask")
+            reject_message          = Message.objects.filter(task_id = data['message_cannot_commpute_task']['task_id'], type = "MessageRejectReportComputedTask")
+
+            if other_ack_message.exists() or reject_message.exists():
+                raise Http400("Received RejectReportComputedTask but AckReportComputedTask or another RejectReportComputedTask for this task has already been submitted.")
+            store_message(data['type'], data['message_cannot_commpute_task'], request.body)
+            return HttpResponse("", status = 202)
+
 
 @api_view
 @require_POST
@@ -113,6 +135,17 @@ def validate_message_task_to_compute(data):
 
     if not isinstance(data['task_id'], int):
         raise Http400("Wrong type of inside message task id. Not an integer.")
+
+
+def validate_message_reject(data):
+    if data['type'] not in ["MessageCannotComputeTask", "MessageTaskFailure"]:
+        raise Http400("Expected MessageCannotComputeTask or MessageTaskFailure")
+
+    if 'reason' not in data:
+        raise Http400("'reason' field is missing.")
+
+    if not isinstance(data['reason'], str):
+        raise Http400("Wrong type of 'reason' field. Not an string.")
 
 
 def store_message(msg_type, data, raw_message):

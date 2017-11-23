@@ -90,8 +90,32 @@ def receive(_request, _message):
     decoded_message_data = json.loads(raw_message_data.decode('utf-8'))
     current_time         = int(datetime.datetime.now().timestamp())
 
+    if decoded_message_data['type'] == "MessageAckReportComputedTask":
+        if current_time <= decoded_message_data['message_task_to_compute']['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
+            return decoded_message_data
+        return HttpResponse("", status = 204)
+
+    if decoded_message_data['type'] == "MessageRejectReportComputedTask":
+        message_to_compute          = Message.objects.get(type = 'MessageForceReportComputedTask', task_id = decoded_message_data['message_cannot_commpute_task']['task_id'])
+        raw_message_to_compute      = message_to_compute.data.tobytes()
+        decoded_message_to_compute  = json.loads(raw_message_to_compute.decode('utf-8'))
+        if current_time <= decoded_message_to_compute['message_task_to_compute']['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
+            if decoded_message_data['message_cannot_commpute_task']['reason'] == "deadline-exceeded":
+                decoded_message_to_compute['type']      = "MessageAckReportComputedTask"
+                decoded_message_to_compute['timestamp'] = current_time
+                return decoded_message_to_compute
+            return decoded_message_data
+        return HttpResponse("", status = 204)
+
+    if decoded_message_data['message_task_to_compute']['deadline'] + settings.CONCENT_MESSAGING_TIME <= current_time <= decoded_message_data['message_task_to_compute']['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
+        decoded_message_data['type']      = "MessageAckReportComputedTask"
+        decoded_message_data['timestamp'] = current_time
+        return decoded_message_data
+
     if current_time <= decoded_message_data['message_task_to_compute']['deadline'] + settings.CONCENT_MESSAGING_TIME:
         return decoded_message_data
+
+    return HttpResponse("", status = 204)
 
 
 @api_view

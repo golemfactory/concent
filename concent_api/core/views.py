@@ -6,6 +6,10 @@ from django.views.decorators.http   import require_POST
 from django.utils                   import timezone
 from django.conf                    import settings
 
+from golem_messages.message         import MessageCannotComputeTask
+from golem_messages.message         import MessageTaskFailure
+from golem_messages.message         import MessageTaskToCompute
+
 from utils.api_view                 import api_view, Http400
 from .models                        import Message, MessageStatus
 
@@ -170,6 +174,19 @@ def validate_message(data):
         raise Http400("Wrong type of message timestamp. Not an integer.")
 
 
+def validate_golem_message_task_to_compute(data):
+    if not isinstance(data, MessageTaskToCompute):
+        raise Http400("Expected MessageTaskToCompute")
+
+    if not isinstance(data.timestamp, float):
+        raise Http400("Wrong type of inside message task time limit. Not a float.")
+
+    if data.task_id <= 0:
+        raise Http400("Wrong number of task_id. It has to be bigger than 0")
+    if not isinstance(data.deadline, int):
+        raise Http400("Wrong type of deadline field!")
+
+
 def validate_message_task_to_compute(data):
     if data['type'] != "MessageTaskToCompute":
         raise Http400("Expected MessageTaskToCompute")
@@ -202,6 +219,11 @@ def validate_message_reject(data):
 
     if not isinstance(data['reason'], str):
         raise Http400("Wrong type of 'reason' field. Not an string.")
+
+
+def validate_golem_message_reject(data):
+    if not isinstance(data, MessageCannotComputeTask) and not isinstance(data, MessageTaskFailure):
+        raise Http400("Expected MessageCannotComputeTask or MessageTaskFailure")
 
 
 def store_message(msg_type, data, raw_message):

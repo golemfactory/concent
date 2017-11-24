@@ -181,3 +181,9 @@ LOGGING = {
         },
     },
 }
+
+
+# Private and public keys to be used by Concent to sign and encrypt its own messages.
+# Stored in a 'bytes' array, e.g. b'\xf3\x97\x19\xcdX\xda...'
+#CONCENT_PRIVATE_KEY =
+#CONCENT_PUBLIC_KEY  =

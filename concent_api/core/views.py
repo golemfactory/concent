@@ -6,6 +6,10 @@ from django.views.decorators.http   import require_POST
 from django.utils                   import timezone
 from django.conf                    import settings
 
+from golem_messages.message         import MessageCannotComputeTask
+from golem_messages.message         import MessageTaskFailure
+from golem_messages.message         import MessageTaskToCompute
+
 from utils.api_view                 import api_view, Http400
 from .models                        import Message, MessageStatus
 
@@ -156,52 +160,22 @@ def receive_out_of_band(_request, _message):
     return HttpResponse("", status = 204)
 
 
-def validate_message(data):
-    if 'type' not in data:
-        raise Http400("Unspecified message data type.")
+def validate_golem_message_task_to_compute(data):
+    if not isinstance(data, MessageTaskToCompute):
+        raise Http400("Expected MessageTaskToCompute.")
 
-    if not isinstance(data['type'], str):
-        raise Http400("Invalid message type. Not a string.")
+    if not isinstance(data.timestamp, float):
+        raise Http400("Wrong type of message timestamp field. Not a float.")
 
-    if 'timestamp' not in data:
-        raise Http400("Message timestamp field is missing.")
-
-    if not isinstance(data['timestamp'], int):
-        raise Http400("Wrong type of message timestamp. Not an integer.")
-
-
-def validate_message_task_to_compute(data):
-    if data['type'] != "MessageTaskToCompute":
-        raise Http400("Expected MessageTaskToCompute")
-
-    if 'deadline' not in data:
-        raise Http400("'deadline' field is missing.")
-
-    if not isinstance(data['deadline'], int):
-        raise Http400("Wrong type of 'deadline' field. Not an integer.")
-
-    if 'timestamp' not in data:
-        raise Http400("Message timestamp field is missing.")
-
-    if not isinstance(data['timestamp'], int):
-        raise Http400("Wrong type of message timestamp. Not an integer.")
-
-    if 'task_id' not in data:
-        raise Http400("'task_if' field is missing.")
-
-    if not isinstance(data['task_id'], int):
-        raise Http400("Wrong type of inside message task id. Not an integer.")
+    if data.task_id <= 0:
+        raise Http400("task_id cannot be negative.")
+    if not isinstance(data.deadline, int):
+        raise Http400("Wrong type of deadline field.")
 
 
-def validate_message_reject(data):
-    if data['type'] not in ["MessageCannotComputeTask", "MessageTaskFailure"]:
-        raise Http400("Expected MessageCannotComputeTask or MessageTaskFailure")
-
-    if 'reason' not in data:
-        raise Http400("'reason' field is missing.")
-
-    if not isinstance(data['reason'], str):
-        raise Http400("Wrong type of 'reason' field. Not an string.")
+def validate_golem_message_reject(data):
+    if not isinstance(data, MessageCannotComputeTask) and not isinstance(data, MessageTaskFailure):
+        raise Http400("Expected MessageCannotComputeTask or MessageTaskFailure.")
 
 
 def store_message(msg_type, data, raw_message):

@@ -1,4 +1,3 @@
-import json
 import datetime
 from base64                         import b64encode
 
@@ -15,9 +14,11 @@ from django.utils                   import timezone
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 from golem_messages.message         import MessageAckReportComputedTask
+from golem_messages.message         import MessageCannotComputeTask
 from golem_messages.message         import MessageForceReportComputedTask
 from golem_messages.message         import MessageTaskToCompute
 from golem_messages.message         import MessageWantToComputeTask
+from golem_messages.message         import MessageRejectReportComputedTask
 
 from core.models                    import Message
 from core.models                    import ReceiveStatus
@@ -252,124 +253,146 @@ class CoreViewSendTest(TestCase):
 
 
 
+
+@override_settings(                             # pylint: disable=unused-variable
+    CONCENT_PRIVATE_KEY = CONCENT_PRIVATE_KEY,  # pylint: disable=unused-variable
     CONCENT_PUBLIC_KEY  = CONCENT_PUBLIC_KEY,
 )
 class CoreViewReceiveTest(TestCase):
 
     def setUp(self):
         self.client = Client()
-        self.public_key = '85cZzVjahnRpUBwm0zlNnqTdYom1LF1P1WNShLg17cmhN2UssnPrCjHKTi5susO3wrr/q07eswumbL82b4HgOw=='
-        self.force_data = {
-            "type":      "MessageForceReportComputedTask",
-            "timestamp": 1510911047,
-            "message_task_to_compute": {
-                "type":               "MessageTaskToCompute",
-                "timestamp":          1510909200,
-                "task_id":            1,
-                "deadline":           1510915047
-            }
-        }
-        self.ack_data = {
-            "type":      "MessageAckReportComputedTask",
-            "timestamp": 1510911047,
-            "message_task_to_compute": {
-                "type":               "MessageTaskToCompute",
-                "timestamp":          1510909200,
-                "task_id":            1,
-                "deadline":           1510915047
-            }
-        }
-        self.reject_data = {
-            "type":         "MessageRejectReportComputedTask",
-            "timestamp":    1510911047,
-            "reason":       "cannot-compute-task",
-            "message_cannot_commpute_task": {
-                "type":         "MessageCannotComputeTask",
-                "timestamp":    1510909200,
-                "reason":       "provider-quit",
-                "task_id":      1
-            }
-        }
+        self.message_task_to_compute = MessageTaskToCompute(
+            timestamp   = 1510909200,
+            task_id     = 1,
+            deadline    = 1510915047,
+        )
+        self.message_force_report_computed_task = MessageForceReportComputedTask(
+            timestamp = 1510911047,
+            message_task_to_compute = dump(
+                self.message_task_to_compute,
+                PROVIDER_PRIVATE_KEY,
+                REQUESTOR_PUBLIC_KEY,
+            )
+        )
 
     @freeze_time("2017-11-17 10:00:00")
     def test_receive_should_accept_valid_message(self):
         message_timestamp   = datetime.datetime.now(timezone.utc)
         new_message         = Message(
-            type        = self.force_data['type'],
+            type        = "MessageForceReportComputedTask",
             timestamp   = message_timestamp,
-            data        = json.dumps(self.force_data).encode('utf-8'),
-            task_id     = self.force_data['message_task_to_compute']['task_id']
+            data        = dump(
+                self.message_force_report_computed_task,
+                settings.CONCENT_PRIVATE_KEY,
+                REQUESTOR_PUBLIC_KEY,
+            ),
+            task_id     = self.message_task_to_compute.task_id
         )
         new_message.save()
-        new_message_status = MessageStatus(
+        new_message_status = ReceiveStatus(
             message   = new_message,
             timestamp   = message_timestamp,
             delivered = False
         )
         new_message_status.save()
 
-        assert len(MessageStatus.objects.filter(delivered=False)) == 1
+        # assert len(ReceiveStatus.objects.filter(delivered=False)) == 1
 
         response = self.client.post(
             reverse('core:receive'),
-            content_type = 'application/json',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key
+            content_type                   = 'application/octet-stream',
+            data                           = '',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
         )
-
+        decoded_response = load(
+            response.content,
+            REQUESTOR_PRIVATE_KEY,
+            settings.CONCENT_PUBLIC_KEY,
+        )
+        decoded_inside_message = load(
+            decoded_response.message_task_to_compute,
+            REQUESTOR_PRIVATE_KEY,
+            PROVIDER_PUBLIC_KEY,
+        )
         self.assertEqual(response.status_code, 200)  # pylint: disable=no-member
-        self.assertEqual(new_message.task_id, response.json()['message_task_to_compute']['task_id'])
-        assert len(MessageStatus.objects.filter(delivered=False)) == 0
+        self.assertEqual(new_message.task_id, decoded_inside_message.task_id)
 
     @freeze_time("2017-11-17 10:00:00")
     def test_receive_return_http_204_if_no_messages_in_database(self):
 
-        response = self.client.post(reverse('core:receive'), content_type = 'application/json', HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key)
+        response = self.client.post(
+            reverse('core:receive'),
+            data                           = '',
+            content_type                   = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
+        )
 
         self.assertEqual(response.status_code, 204)  # pylint: disable=no-member
         self.assertEqual(response.content.decode(), '')
-        assert len(MessageStatus.objects.filter(delivered=False)) == 0
+        # assert len(ReceiveStatus.objects.filter(delivered=False)) == 0
 
 
+@override_settings(
+    CONCENT_PRIVATE_KEY = CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY  = CONCENT_PUBLIC_KEY,
+)
 class CoreViewReceiveOutOfBandTest(TestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def setUp(self):
         self.client = Client()
-        self.public_key = '85cZzVjahnRpUBwm0zlNnqTdYom1LF1P1WNShLg17cmhN2UssnPrCjHKTi5susO3wrr/q07eswumbL82b4HgOw=='
-        self.force_data = {
-            "type":      "MessageForceReportComputedTask",
-            "timestamp": 1510911047,  # 2017-11-17 9:30
-            "message_task_to_compute": {
-                "type":               "MessageTaskToCompute",
-                "timestamp":          1510909200,  # 2017-11-17 9:00
-                "task_id":            1,
-                "deadline":           1510915047  # 2017-11-17 10:37
-            }
-        }
+        self.message_task_to_compute = MessageTaskToCompute(
+            timestamp   = 1510909200,
+            task_id     = 1,
+            deadline    = 1510915047,
+        )
+        self.force_golem_data = MessageForceReportComputedTask(
+            timestamp = 1510911047,
+            message_task_to_compute = dump(
+                self.message_task_to_compute,
+                settings.CONCENT_PRIVATE_KEY,
+                settings.CONCENT_PUBLIC_KEY,
+            )
+        )
         message_timestamp   = datetime.datetime.now(timezone.utc)
         new_message         = Message(
-            type        = self.force_data['type'],
+            type        = "MessageForceReportComputedTask",
             timestamp   = message_timestamp,
-            data        = json.dumps(self.force_data).encode('utf-8'),
-            task_id     = self.force_data['message_task_to_compute']['task_id']
+            data        = dump(
+                self.force_golem_data,
+                settings.CONCENT_PRIVATE_KEY,
+                settings.CONCENT_PUBLIC_KEY
+            ),
+            task_id     = self.message_task_to_compute.task_id,
         )
         new_message.save()
         new_message_status = MessageStatus(
-            message = new_message,
-            timestamp   = message_timestamp,
+            message   = new_message,
+            timestamp = message_timestamp,
             delivered = False
         )
         new_message_status.save()
 
     @freeze_time("2017-11-17 11:40:00")
     def test_view_receive_out_of_band_should_accept_valid_message(self):
-        response = self.client.post(reverse('core:receive_out_of_band'), content_type = 'application/json', HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key)
+        response = self.client.post(
+            reverse('core:receive_out_of_band'),
+            data                           = '',
+            content_type                   = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii'),
+        )
 
         self.assertEqual(response.status_code, 200)  # pylint: disable=no-member
 
     @freeze_time("2017-11-17 11:20:00")
     def test_view_receive_out_of_band_return_http_204_if_no_messages_in_database(self):
-        response = self.client.post(reverse('core:receive_out_of_band'), content_type = 'application/json', HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key)
+        response = self.client.post(
+            reverse('core:receive_out_of_band'),
+            data                           = '',
+            content_type                   = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii'),
+        )
 
         self.assertEqual(response.status_code, 204)  # pylint: disable=no-member
         self.assertEqual(response.content.decode(), '')

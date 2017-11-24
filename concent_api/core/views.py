@@ -14,6 +14,8 @@ from golem_messages.message         import MessageRejectReportComputedTask
 from golem_messages.message         import MessageCannotComputeTask
 from golem_messages.message         import MessageTaskFailure
 from golem_messages.message         import MessageTaskToCompute
+from golem_messages.message         import MessageVerdictReportComputedTask
+from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 
 from utils.api_view                 import api_view
@@ -160,47 +162,165 @@ def send(request, message):
 
 @api_view
 @require_POST
-def receive(_request, _message):
-    undelivered_message_statuses    = MessageStatus.objects.filter(delivered = False)
-    last_undelivered_message_status = undelivered_message_statuses.order_by('id').last()
-
+def receive(request, _message):
+    client_public_key               = decode_client_public_key(request)
+    last_undelivered_message_status = ReceiveStatus.objects.filter(delivered = False).order_by('timestamp').last()
     if last_undelivered_message_status is None:
+        last_delivered_message_status = ReceiveStatus.objects.all().order_by('timestamp').last()
+        if last_delivered_message_status is None:
+            return None
+
+        if last_delivered_message_status.message.type == 'MessageForceReportComputedTask':
+            message_force_report_task_from_database = last_delivered_message_status.message.data.tobytes()
+            try:
+                message_force_report_task = load(
+                    message_force_report_task_from_database,
+                    settings.CONCENT_PRIVATE_KEY,
+                    client_public_key
+                )
+            except AttributeError:
+                # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
+                return JsonResponse(
+                    {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
+                    status = 400
+                )
+
+            try:
+                message_task_to_compute = load(
+                    message_force_report_task.message_task_to_compute,
+                    settings.CONCENT_PRIVATE_KEY,
+                    client_public_key
+                )
+            except AttributeError:
+                # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
+                return JsonResponse(
+                    {'error': "Failed to decode AckReportComputedTask. Message and/or key are malformed or don't match."},
+                    status = 400
+                )
+
+            message_ack_report_computed_task = MessageAckReportComputedTask(
+                message_task_to_compute = message_force_report_task.message_task_to_compute
+            )
+            dumped_message_ack_report_computed_task = dump(
+                message_ack_report_computed_task,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key,
+            )
+            store_message(
+                type(message_ack_report_computed_task).__name__,
+                message_task_to_compute.task_id,
+                dumped_message_ack_report_computed_task
+            )
+
+            return dumped_message_ack_report_computed_task
+
         return None
 
-    # Mark message as delivered
-    last_undelivered_message_status.delivered = True
-    last_undelivered_message_status.save()
+    current_time = int(datetime.datetime.now().timestamp())
 
     raw_message_data     = last_undelivered_message_status.message.data.tobytes()
-    decoded_message_data = json.loads(raw_message_data.decode('utf-8'))
-    current_time         = int(datetime.datetime.now().timestamp())
+    decoded_message_data = load(
+        raw_message_data,
+        settings.CONCENT_PRIVATE_KEY,
+        client_public_key,
+    )
+    assert last_undelivered_message_status.message.type == type(decoded_message_data).__name__
 
-    if decoded_message_data['type'] == "MessageAckReportComputedTask":
-        if current_time <= decoded_message_data['message_task_to_compute']['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
+    # Mark message as delivered
+    if last_undelivered_message_status.message.type == "MessageForceReportComputedTask":
+        message_task_to_compute_from_force = load(
+            decoded_message_data.message_task_to_compute,
+            settings.CONCENT_PRIVATE_KEY,
+            client_public_key
+        )
+
+        if message_task_to_compute_from_force.deadline + settings.CONCENT_MESSAGING_TIME < current_time:
+            last_undelivered_message_status.delivered = True
+            last_undelivered_message_status.full_clean()
+            last_undelivered_message_status.save()
+
+            return dump(
+                MessageAckReportComputedTask(message_task_to_compute = decoded_message_data.message_task_to_compute),
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key,
+            )
+    else:
+        last_undelivered_message_status.delivered = True
+        last_undelivered_message_status.full_clean()
+        last_undelivered_message_status.save()
+
+    if isinstance(decoded_message_data, MessageForceReportComputedTask):
+        last_undelivered_message_status.delivered = True
+        last_undelivered_message_status.full_clean()
+        last_undelivered_message_status.save()
+        return raw_message_data
+
+    elif isinstance(decoded_message_data, MessageAckReportComputedTask):
+        message_task_to_compute = load(
+            decoded_message_data.message_task_to_compute,
+            settings.CONCENT_PRIVATE_KEY,
+            client_public_key
+        )
+        if current_time <= message_task_to_compute.deadline + 2 * settings.CONCENT_MESSAGING_TIME:
+            return raw_message_data
+
+        return None
+
+    elif isinstance(decoded_message_data, MessageRejectReportComputedTask):
+        message_cannot_compute_task = load(
+            decoded_message_data.message_cannot_compute_task,
+            settings.CONCENT_PRIVATE_KEY,
+            client_public_key
+        )
+        message_to_compute = Message.objects.get(
+            type    = 'MessageForceReportComputedTask',
+            task_id = message_cannot_compute_task.task_id
+        )
+        raw_message_to_compute        = message_to_compute.data.tobytes()
+        decoded_message_from_database = load(
+            raw_message_to_compute,
+            settings.CONCENT_PRIVATE_KEY,
+            client_public_key,
+        )
+        message_task_to_compute = load(
+            decoded_message_from_database.message_task_to_compute,
+            settings.CONCENT_PRIVATE_KEY,
+            client_public_key,
+        )
+        if current_time <= message_task_to_compute.deadline + 2 * settings.CONCENT_MESSAGING_TIME:
+            if decoded_message_data.reason == "deadline-exceeded" or decoded_message_from_database.reason == "deadline-exceeded":
+                message_ack_report_computed_task = MessageAckReportComputedTask(
+                    timestamp               = current_time,
+                    message_task_to_compute = decoded_message_from_database.message_task_to_compute,
+                )
+                return message_ack_report_computed_task
+            return raw_message_data
+
+        return None
+    else:
+        try:
+            message_task_to_compute = load(
+                decoded_message_data.message_task_to_compute,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key
+            )
+        except AttributeError:
+            # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
+            return JsonResponse(
+                {'error': "Failed to decode TaskToCompute. Message and/or key are malformed or don't match."},
+                status = 400
+            )
+
+        if message_task_to_compute.deadline + settings.CONCENT_MESSAGING_TIME <= current_time <= message_task_to_compute.deadline + 2 * settings.CONCENT_MESSAGING_TIME:
+            return MessageAckReportComputedTask(
+                task_id                 = decoded_message_data.task_id,
+                message_task_to_compute = decoded_message_data.message_task_to_compute,
+                timestamp               = current_time,
+            )
+        if current_time <= message_task_to_compute.deadline + settings.CONCENT_MESSAGING_TIME:
             return decoded_message_data
-        return HttpResponse("", status = 204)
 
-    if decoded_message_data['type'] == "MessageRejectReportComputedTask":
-        message_to_compute          = Message.objects.get(type = 'MessageForceReportComputedTask', task_id = decoded_message_data['message_cannot_commpute_task']['task_id'])
-        raw_message_to_compute      = message_to_compute.data.tobytes()
-        decoded_message_to_compute  = json.loads(raw_message_to_compute.decode('utf-8'))
-        if current_time <= decoded_message_to_compute['message_task_to_compute']['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
-            if decoded_message_data['message_cannot_commpute_task']['reason'] == "deadline-exceeded":
-                decoded_message_to_compute['type']      = "MessageAckReportComputedTask"
-                decoded_message_to_compute['timestamp'] = current_time
-                return decoded_message_to_compute
-            return decoded_message_data
-        return HttpResponse("", status = 204)
-
-    if decoded_message_data['message_task_to_compute']['deadline'] + settings.CONCENT_MESSAGING_TIME <= current_time <= decoded_message_data['message_task_to_compute']['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
-        decoded_message_data['type']      = "MessageAckReportComputedTask"
-        decoded_message_data['timestamp'] = current_time
-        return decoded_message_data
-
-    if current_time <= decoded_message_data['message_task_to_compute']['deadline'] + settings.CONCENT_MESSAGING_TIME:
-        return decoded_message_data
-
-    return HttpResponse("", status = 204)
+        return None
 
 
 @api_view
@@ -270,6 +390,15 @@ def store_message(golem_message_type, task_id, raw_golem_message):
     golem_message.full_clean()
     golem_message.save()
     return (golem_message, message_timestamp)
+
+
+def store_receive_message_status(golem_message, message_timestamp):
+    receive_message_status  = ReceiveStatus(
+        message     = golem_message,
+        timestamp   = message_timestamp
+    )
+    receive_message_status.full_clean()
+    receive_message_status.save()
 
 
 def decode_client_public_key(request):

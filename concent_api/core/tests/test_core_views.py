@@ -1,39 +1,67 @@
 import json
 import datetime
+from base64                         import b64encode
 
-from freezegun      import freeze_time
-from django.test    import TestCase, Client
-from django.urls    import reverse
-from django.http    import JsonResponse, HttpResponse
-from django.utils   import timezone
+from freezegun                      import freeze_time
+from django.test                    import Client
+from django.test                    import override_settings
+from django.test                    import TestCase
+from django.urls                    import reverse
+from django.http                    import HttpResponse
+from django.http                    import JsonResponse
+from django.conf                    import settings
+from django.utils                   import timezone
 
-from core.models    import Message, MessageStatus
+from golem_messages.shortcuts       import dump
+from golem_messages.shortcuts       import load
+from golem_messages.message         import MessageForceReportComputedTask
+from golem_messages.message         import MessageTaskToCompute
+
+from core.models                    import Message
+from core.models                    import MessageStatus
+from utils.testing_helpers          import generate_ecc_key_pair
 
 
+(CONCENT_PRIVATE_KEY,   CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
+(PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)  = generate_ecc_key_pair()
+(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
+
+
+@override_settings(
+    CONCENT_PRIVATE_KEY = CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY  = CONCENT_PUBLIC_KEY,
+)
 class CoreViewSendTest(TestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def setUp(self):
         self.client = Client()
         self.message_timestamp = int(datetime.datetime.now().timestamp())  # 1510912800
-        self.correct_data = {
-            "type":      "MessageForceReportComputedTask",
-            "timestamp": self.message_timestamp,
-            "message_task_to_compute": {
-                "type":               "MessageTaskToCompute",
-                "timestamp":          self.message_timestamp,
-                "task_id":            8,
-                "deadline":           self.message_timestamp + 3600
-            }
-        }
-        self.public_key = '85cZzVjahnRpUBwm0zlNnqTdYom1LF1P1WNShLg17cmhN2UssnPrCjHKTi5susO3wrr/q07eswumbL82b4HgOw=='
+        self.message_task_to_compute = MessageTaskToCompute(
+            timestamp = self.message_timestamp,
+            task_id = 8,
+            deadline = self.message_timestamp,
+        )
+        self.message_force_report_computed_task = MessageForceReportComputedTask(
+            timestamp = self.message_timestamp,
+            message_task_to_compute = dump(
+                self.message_task_to_compute,
+                PROVIDER_PRIVATE_KEY,
+                REQUESTOR_PUBLIC_KEY
+            )
+        )
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_accept_valid_message(self):
         assert Message.objects.count()       == 0
         assert MessageStatus.objects.count() == 0
 
-        response = self.client.post(reverse('core:send'), data = json.dumps(self.correct_data), content_type = 'application/json', HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key)
+        response = self.client.post(
+            reverse('core:send'),
+            data                           = dump(self.message_force_report_computed_task, PROVIDER_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY),
+            content_type                   = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
+        )
 
         self.assertEqual(response.status_code, 202)  # pylint: disable=no-member
         self.assertEqual(len(Message.objects.all()),       1)
@@ -46,47 +74,99 @@ class CoreViewSendTest(TestCase):
         self.assertEqual(len(Message.objects.all()), 0)
         self.assertEqual(len(MessageStatus.objects.all()), 0)
 
-        self.correct_data['message_task_to_compute']['deadline'] = self.message_timestamp - 1
-        response = self.client.post(reverse('core:send'), data = json.dumps(self.correct_data), content_type = 'application/json', HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key)
+        message_task_to_compute            = self.message_task_to_compute
+        message_task_to_compute.deadline   = self.message_timestamp - 1
+        message_force_report_computed_task = MessageForceReportComputedTask(
+            timestamp = self.message_timestamp,
+            message_task_to_compute = dump(
+                message_task_to_compute,
+                PROVIDER_PRIVATE_KEY,
+                REQUESTOR_PUBLIC_KEY,
+            )
+        )
+
+        response = self.client.post(
+            reverse('core:send'),
+            data                           = dump(message_force_report_computed_task, PROVIDER_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY),
+            content_type                   = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
+        )
 
         self.assertEqual(response.status_code, 200)  # pylint: disable=no-member
-        self.assertEqual(response.json()['type'], 'MessageRejectReportComputedTask')  # pylint: disable=no-member
+        response_message_type = load(
+            response.content,
+            PROVIDER_PRIVATE_KEY,
+            settings.CONCENT_PUBLIC_KEY,
+        )
+        self.assertEqual(response_message_type.TYPE, 4003)  # pylint: disable=no-member
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_data_is_incorrect(self):
-        data = {
-            "type":      "MessageForceReportComputedTask",
-            "timestamp": 1510911047,
-            "message_task_to_compute":      {
-                "type": "MessageTaskToCompute"
-            }
-        }
+        message_force_report_computed_task_1 = MessageForceReportComputedTask(
+            timestamp = 1510911047,
+            message_task_to_compute = dump(
+                MessageTaskToCompute(),
+                PROVIDER_PRIVATE_KEY,
+                REQUESTOR_PUBLIC_KEY
+            )
+        )
 
-        response = self.client.post(reverse('core:send'), data = json.dumps(data), content_type = 'application/json', HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key)
-
+        response = self.client.post(
+            reverse('core:send'),
+            data                           = dump(message_force_report_computed_task_1, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY),
+            content_type                   = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
+        )
         self.assertEqual(response.status_code, 400)  # pylint: disable=no-member
         self.assertIn('error', response.json().keys())
 
-        self.correct_data['message_task_to_compute']['deadline'] = "1510909200"
-        response = self.client.post(reverse('core:send'), data = json.dumps(self.correct_data), content_type = 'application/json', HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key)
+        message_force_report_computed_task_2 = MessageForceReportComputedTask(
+            timestamp = self.message_timestamp,
+            message_task_to_compute = dump(
+                MessageTaskToCompute(deadline = 1510909200),
+                PROVIDER_PRIVATE_KEY,
+                settings.CONCENT_PUBLIC_KEY
+            )
+        )
+
+        response = self.client.post(
+            reverse('core:send'),
+            data                           = dump(message_force_report_computed_task_2, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY),
+            content_type                   = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+        )
 
         self.assertEqual(response.status_code, 400)  # pylint: disable=no-member
         self.assertIn('error', response.json().keys())
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_task_id_already_use(self):
-        response_202 = self.client.post(reverse('core:send'), data = json.dumps(self.correct_data), content_type = 'application/json', HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key)
+        response_202 = self.client.post(
+            reverse('core:send'),
+            data                           = dump(self.message_force_report_computed_task, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY),
+            content_type                   = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+        )
 
         self.assertIsInstance(response_202, HttpResponse)
         self.assertEqual(response_202.status_code, 202)
 
-        response_400 = self.client.post(reverse('core:send'), data = json.dumps(self.correct_data), content_type = 'application/json', HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key)
+        response_400 = self.client.post(
+            reverse('core:send'),
+            data                           = dump(self.message_force_report_computed_task, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY),
+            content_type                   = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+        )
 
         self.assertIsInstance(response_400, JsonResponse)
         self.assertEqual(response_400.status_code, 400)  # pylint: disable=no-member
         self.assertIn('error', response_400.json().keys())
 
 
+@override_settings(
+    CONCENT_PRIVATE_KEY = CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY  = CONCENT_PUBLIC_KEY,
+)
 class CoreViewReceiveTest(TestCase):
 
     def setUp(self):

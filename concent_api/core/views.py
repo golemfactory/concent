@@ -1,80 +1,162 @@
 import json
 import datetime
+from base64                         import b64decode
 
 from django.http                    import HttpResponse
+from django.http                    import JsonResponse
 from django.views.decorators.http   import require_POST
 from django.utils                   import timezone
 from django.conf                    import settings
 
+from golem_messages.message         import MessageAckReportComputedTask
+from golem_messages.message         import MessageForceReportComputedTask
+from golem_messages.message         import MessageRejectReportComputedTask
 from golem_messages.message         import MessageCannotComputeTask
 from golem_messages.message         import MessageTaskFailure
 from golem_messages.message         import MessageTaskToCompute
+from golem_messages.shortcuts       import load
 
-from utils.api_view                 import api_view, Http400
-from .models                        import Message, MessageStatus
+from utils.api_view                 import api_view
+from utils.api_view                 import Http400
+from .models                        import Message
+from .models                        import ReceiveStatus
 
 
 @api_view
 @require_POST
 def send(request, message):
-    data = message
-    validate_message(data)
+    client_public_key = decode_client_public_key(request)
+    current_time      = int(datetime.datetime.now().timestamp())
+    if isinstance(message, MessageForceReportComputedTask):
+        try:
+            loaded_message = load(
+                message.message_task_to_compute,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key
+            )
+        except AttributeError:
+            return JsonResponse(
+                {'error': 'Wrong type of message or public key'},
+                status=400
+            )  #TODO better exception catching after repair bug by golem
+        validate_golem_message_task_to_compute(loaded_message)
 
-    if data['type'] == "MessageForceReportComputedTask":
-        validate_message_task_to_compute(data['message_task_to_compute'])
-
-        if Message.objects.filter(task_id = data['message_task_to_compute']['task_id']).exists():
-            raise Http400("'ForceReportComputedTask' is already being processed for this task.")
+        if Message.objects.filter(task_id = loaded_message.task_id).exists():
+            raise Http400("{} is already being processed for this task.".format(message.__class__.__name__))
 
         current_time = int(datetime.datetime.now().timestamp())
 
-        if data['message_task_to_compute']['deadline'] < current_time:
-            data['type']   = "MessageRejectReportComputedTask"
-            data['reason'] = "deadline-exceeded"
-            return data
+        if loaded_message.deadline < current_time:
+            return MessageRejectReportComputedTask(
+                reason                  = "deadline-exceeded",
+                message_task_to_compute = message.message_task_to_compute,
+            )
 
-        store_message(data['type'], data['message_task_to_compute'], request.body)
+        golem_message, message_timestamp = store_message(
+            type(message).__name__,
+            loaded_message.task_id,
+            request.body
+        )
+        store_receive_message_status(
+            golem_message,
+            message_timestamp,
+        )
         return HttpResponse("", status = 202)
 
-    elif data['type'] == "MessageAckReportComputedTask":
-        validate_message_task_to_compute(data['message_task_to_compute'])
+    elif isinstance(message, MessageAckReportComputedTask):
+        loaded_message = load(
+            message.message_task_to_compute,
+            settings.CONCENT_PRIVATE_KEY,
+            client_public_key
+        )
+        validate_golem_message_task_to_compute(loaded_message)
 
         current_time = int(datetime.datetime.now().timestamp())
+        if current_time <= loaded_message.deadline + settings.CONCENT_MESSAGING_TIME:
+            force_task_to_compute   = Message.objects.filter(task_id = loaded_message.task_id, type = "MessageForceReportComputedTask")
+            previous_ack_message    = Message.objects.filter(task_id = loaded_message.task_id, type = "MessageAckReportComputedTask")
+            reject_message          = Message.objects.filter(task_id = loaded_message.task_id, type = "MessageRejectReportComputedTask")
 
-        if current_time <= data['message_task_to_compute']['deadline'] + settings.CONCENT_MESSAGING_TIME:
-            task_to_compute     = Message.objects.filter(task_id = data['message_task_to_compute']['task_id'], type = "MessageForceReportComputedTask")
-            other_ack_message   = Message.objects.filter(task_id = data['message_task_to_compute']['task_id'], type = "MessageAckReportComputedTask")
-            reject_message      = Message.objects.filter(task_id = data['message_task_to_compute']['task_id'], type = "MessageRejectReportComputedTask")
-
-            if not task_to_compute.exists():
+            if not force_task_to_compute.exists():
                 raise Http400("'ForceReportComputedTask' for this task has not been initiated yet. Can't accept your 'AckReportComputedTask'.")
-            if other_ack_message.exists() or reject_message.exists():
-                raise Http400("Received AckReportComputedTask but RejectReportComputedTask or another AckReportComputedTask for this task has already been submitted.")
+            if previous_ack_message.exists() or reject_message.exists():
+                raise Http400(
+                    "Received AckReportComputedTask but RejectReportComputedTask. "
+                    "or another AckReportComputedTask for this task has already been submitted."
+                )
 
-            store_message(data['type'], data['message_task_to_compute'], request.body)
+            golem_message, message_timestamp = store_message(
+                type(message).__name__,
+                loaded_message.task_id,
+                request.body
+            )
+            store_receive_message_status(
+                golem_message,
+                message_timestamp,
+            )
             return HttpResponse("", status = 202)
+        else:
+            raise Http400("Message deadline exceeded current time.")
 
-    elif data['type'] == "MessageRejectReportComputedTask":
-        validate_message_reject(data['message_cannot_commpute_task'])
+    elif isinstance(message, MessageRejectReportComputedTask):
+        message_cannot_compute_task = load(
+            message.message_cannot_compute_task,
+            settings.CONCENT_PRIVATE_KEY,
+            client_public_key
+        )
+        validate_golem_message_reject(message_cannot_compute_task)
 
-        current_time    = int(datetime.datetime.now().timestamp())
-        task_to_compute = Message.objects.filter(task_id = data['message_cannot_commpute_task']['task_id'], type = "MessageForceReportComputedTask")
+        force_report_computed_task_message = Message.objects.filter(task_id = message_cannot_compute_task.task_id, type = "MessageForceReportComputedTask")
 
-        if not task_to_compute.exists():
+        if not force_report_computed_task_message.exists():
             raise Http400("'ForceReportComputedTask' for this task has not been initiated yet. Can't accept your 'RejectReportComputedTask'.")
 
-        rejected_message_task_to_compute = task_to_compute.last()
-        raw_message_data                 = rejected_message_task_to_compute.data.tobytes()
-        decoded_message_data             = json.loads(raw_message_data.decode('utf-8'))
+        force_report_computed_task = load(
+            force_report_computed_task_message.last().data.tobytes(),
+            settings.CONCENT_PRIVATE_KEY,
+            client_public_key,
+        )
+        assert hasattr(force_report_computed_task, 'message_task_to_compute')
 
-        if current_time <= decoded_message_data['message_task_to_compute']['deadline'] + settings.CONCENT_MESSAGING_TIME:
-            other_ack_message       = Message.objects.filter(task_id = data['message_cannot_commpute_task']['task_id'], type = "MessageAckReportComputedTask")
-            reject_message          = Message.objects.filter(task_id = data['message_cannot_commpute_task']['task_id'], type = "MessageRejectReportComputedTask")
+        message_task_to_compute = load(
+            force_report_computed_task.message_task_to_compute,
+            settings.CONCENT_PRIVATE_KEY,
+            client_public_key,
+        )
+        assert message_task_to_compute.task_id == message_cannot_compute_task.task_id
+        if message_cannot_compute_task.reason == "deadline-exceeded":
 
-            if other_ack_message.exists() or reject_message.exists():
+            store_message(
+                type(message).__name__,
+                message_task_to_compute.task_id,
+                request.body
+            )
+            return HttpResponse("", status=202)
+
+        if current_time <= message_task_to_compute.deadline + settings.CONCENT_MESSAGING_TIME:
+            ack_message             = Message.objects.filter(task_id = message_cannot_compute_task.task_id, type = "MessageAckReportComputedTask")
+            previous_reject_message = Message.objects.filter(task_id = message_cannot_compute_task.task_id, type = "MessageRejectReportComputedTask")
+
+            if ack_message.exists() or previous_reject_message.exists():
                 raise Http400("Received RejectReportComputedTask but AckReportComputedTask or another RejectReportComputedTask for this task has already been submitted.")
-            store_message(data['type'], data['message_cannot_commpute_task'], request.body)
+
+            golem_message, message_timestamp = store_message(
+                type(message).__name__,
+                message_task_to_compute.task_id,
+                request.body
+            )
+            store_receive_message_status(
+            golem_message,
+            message_timestamp,
+            )
             return HttpResponse("", status = 202)
+        else:
+            raise Http400("Message deadline exceeded current time.")
+    else:
+        if hasattr(message, 'TYPE'):
+            raise Http400("This message type ({}) is either not supported or cannot be submitted to Concent.".format(message.TYPE))
+        else:
+            raise Http400("Unknown message type or not a Golem message.")
 
 
 @api_view
@@ -160,20 +242,6 @@ def receive_out_of_band(_request, _message):
     return HttpResponse("", status = 204)
 
 
-def validate_message(data):
-    if 'type' not in data:
-        raise Http400("Unspecified message data type.")
-
-    if not isinstance(data['type'], str):
-        raise Http400("Invalid message type. Not a string.")
-
-    if 'timestamp' not in data:
-        raise Http400("Message timestamp field is missing.")
-
-    if not isinstance(data['timestamp'], int):
-        raise Http400("Wrong type of message timestamp. Not an integer.")
-
-
 def validate_golem_message_task_to_compute(data):
     if not isinstance(data, MessageTaskToCompute):
         raise Http400("Expected MessageTaskToCompute")
@@ -187,59 +255,42 @@ def validate_golem_message_task_to_compute(data):
         raise Http400("Wrong type of deadline field!")
 
 
-def validate_message_task_to_compute(data):
-    if data['type'] != "MessageTaskToCompute":
-        raise Http400("Expected MessageTaskToCompute")
-
-    if 'deadline' not in data:
-        raise Http400("'deadline' field is missing.")
-
-    if not isinstance(data['deadline'], int):
-        raise Http400("Wrong type of 'deadline' field. Not an integer.")
-
-    if 'timestamp' not in data:
-        raise Http400("Message timestamp field is missing.")
-
-    if not isinstance(data['timestamp'], int):
-        raise Http400("Wrong type of message timestamp. Not an integer.")
-
-    if 'task_id' not in data:
-        raise Http400("'task_if' field is missing.")
-
-    if not isinstance(data['task_id'], int):
-        raise Http400("Wrong type of inside message task id. Not an integer.")
-
-
-def validate_message_reject(data):
-    if data['type'] not in ["MessageCannotComputeTask", "MessageTaskFailure"]:
-        raise Http400("Expected MessageCannotComputeTask or MessageTaskFailure")
-
-    if 'reason' not in data:
-        raise Http400("'reason' field is missing.")
-
-    if not isinstance(data['reason'], str):
-        raise Http400("Wrong type of 'reason' field. Not an string.")
-
-
 def validate_golem_message_reject(data):
     if not isinstance(data, MessageCannotComputeTask) and not isinstance(data, MessageTaskFailure):
         raise Http400("Expected MessageCannotComputeTask or MessageTaskFailure")
 
 
-def store_message(msg_type, data, raw_message):
+
+def store_message(golem_message_type, task_id, raw_golem_message):
     message_timestamp   = datetime.datetime.now(timezone.utc)
-    new_message         = Message(
-        type        = msg_type,
+    golem_message = Message(
+        type        = golem_message_type,
         timestamp   = message_timestamp,
-        data        = raw_message,
-        task_id     = data['task_id']
+        data        = raw_golem_message,
+        task_id     = task_id
     )
-    new_message.full_clean()
-    new_message.save()
-    new_message_status = MessageStatus(
-        message   = new_message,
-        timestamp = message_timestamp,
-        delivered = False
+    golem_message.full_clean()
+    golem_message.save()
+    return golem_message, message_timestamp
+
+
+def store_receive_message_status(golem_message, message_timestamp):
+    receive_message_status  = ReceiveStatus(
+        message     = golem_message,
+        timestamp   = message_timestamp
     )
-    new_message_status.full_clean()
-    new_message_status.save()
+    receive_message_status.full_clean()
+    receive_message_status.save()
+
+
+def store_receive_out_of_bend(golem_message, message_timestamp):
+    receive_out_of_band_status = ReceiveOutOfBandStatus(
+        message     = golem_message,
+        timestamp   = message_timestamp
+    )
+    receive_out_of_band_status.full_clean()
+    receive_out_of_band_status.save()
+
+
+def decode_client_public_key(request):
+    return b64decode(request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'].encode('ascii'))

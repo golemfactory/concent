@@ -6,6 +6,7 @@ ipython
 pipdeptree
 flake8
 pylint-django
+requests
 
 # Force the latest version of pylint pyflakes and pep8. There are numerous issues with older versions.
 pylint >= 1.7.4

@@ -162,7 +162,47 @@ class CoreViewReceiveTest(TestCase):
         self.assertEqual(response.content.decode(), '')
         assert len(MessageStatus.objects.filter(delivered=False)) == 0
 
-    def test_view_receive_out_of_band(self):
-        response = self.client.post(reverse('core:receive_out_of_band'), content_type = 'application/json')
+
+class CoreViewReceiveOutOfBandTest(TestCase):
+
+    @freeze_time("2017-11-17 10:00:00")
+    def setUp(self):
+        self.client = Client()
+        self.public_key = '85cZzVjahnRpUBwm0zlNnqTdYom1LF1P1WNShLg17cmhN2UssnPrCjHKTi5susO3wrr/q07eswumbL82b4HgOw=='
+        self.force_data = {
+            "type":      "MessageForceReportComputedTask",
+            "timestamp": 1510911047,  # 2017-11-17 9:30
+            "message_task_to_compute": {
+                "type":               "MessageTaskToCompute",
+                "timestamp":          1510909200,  # 2017-11-17 9:00
+                "task_id":            1,
+                "deadline":           1510915047  # 2017-11-17 10:37
+            }
+        }
+        message_timestamp   = datetime.datetime.now(timezone.utc)
+        new_message         = Message(
+            type        = self.force_data['type'],
+            timestamp   = message_timestamp,
+            data        = json.dumps(self.force_data).encode('utf-8'),
+            task_id     = self.force_data['message_task_to_compute']['task_id']
+        )
+        new_message.save()
+        new_message_status = MessageStatus(
+            message = new_message,
+            timestamp   = message_timestamp,
+            delivered = False
+        )
+        new_message_status.save()
+
+    @freeze_time("2017-11-17 11:40:00")
+    def test_view_receive_out_of_band_should_accept_valid_message(self):
+        response = self.client.post(reverse('core:receive_out_of_band'), content_type = 'application/json', HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key)
 
         self.assertEqual(response.status_code, 200)  # pylint: disable=no-member
+
+    @freeze_time("2017-11-17 11:20:00")
+    def test_view_receive_out_of_band_return_http_204_if_no_messages_in_database(self):
+        response = self.client.post(reverse('core:receive_out_of_band'), content_type = 'application/json', HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key)
+
+        self.assertEqual(response.status_code, 204)  # pylint: disable=no-member
+        self.assertEqual(response.content.decode(), '')

@@ -1,11 +1,14 @@
 from functools                      import wraps
 from base64                         import b64decode
+
 import json
-from django.http                    import JsonResponse, HttpResponse
+from django.http                    import JsonResponse
+from django.http                    import HttpResponse
 from django.conf                    import settings
 from django.views.decorators.csrf   import csrf_exempt
 from golem_messages.message         import Message
-from golem_messages                 import dump, load
+from golem_messages                 import dump
+from golem_messages                 import load
 
 
 class Http400(Exception):
@@ -62,6 +65,8 @@ def api_view(view):
             return response_from_view
         elif response_from_view is None:
             return HttpResponse("", status = 204)
+        elif isinstance(response_from_view, bytes):
+            return HttpResponse(response_from_view)
 
         assert False, "Invalid response type"
 

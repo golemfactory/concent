@@ -70,8 +70,19 @@ def api_request(host, endpoint, data = None, headers = None):
     print()
 
 
+def parse_command_line(command_line):
+    if len(command_line) <= 1:
+        sys.exit('Not enough arguments')
+
+    if len(command_line) >= 3:
+        sys.exit('Too many arguments')
+
+    cluster_url = command_line[1]
+    return cluster_url
+
+
 def main():
-    cluster_url = sys.argv[1]
+    cluster_url = parse_command_line(sys.argv)
     task_id     = random.randrange(1, 1000)
 
     api_request(cluster_url, 'send',    create_data('MessageForceReportComputedTask', task_id))

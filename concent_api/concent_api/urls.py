@@ -17,8 +17,10 @@ from django.conf.urls import url, include
 from django.contrib   import admin
 
 import core.urls
+import gatekeeper.urls
 
 urlpatterns = [
+    url(r'^',        include(gatekeeper.urls, namespace = 'gatekeeper')),
     url(r'^api/v1/', include(core.urls, namespace = 'core')),
     url(r'^admin/',  admin.site.urls),
 ]

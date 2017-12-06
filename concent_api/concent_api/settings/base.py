@@ -15,6 +15,7 @@ INSTALLED_APPS = [
 
     # Our apps:
     'core',
+    'gatekeeper',
 ]
 
 MIDDLEWARE = [
@@ -196,3 +197,7 @@ LOGGING = {
 # A global constant defining the length of the time window within which a requestor or a provider is supposed to
 # contact concent and send or receive a message as defined in the protocol.
 CONCENT_MESSAGING_TIME = 3600  # seconds
+
+# Constant defining which apps should be avalible in the project. It have to be a list of strings. Current apps:
+# "concent-api", "gatekeeper", "admin-panel".
+# CONCENT_FEATURES = []

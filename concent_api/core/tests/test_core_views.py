@@ -292,7 +292,7 @@ class CoreViewReceiveTest(TestCase):
         new_message.save()
         new_message_status = ReceiveStatus(
             message   = new_message,
-            timestamp   = message_timestamp,
+            timestamp = message_timestamp,
             delivered = False
         )
         new_message_status.save()
@@ -333,8 +333,8 @@ class CoreViewReceiveTest(TestCase):
         # assert len(ReceiveStatus.objects.filter(delivered=False)) == 0
 
 
-@override_settings(
-    CONCENT_PRIVATE_KEY = CONCENT_PRIVATE_KEY,
+@override_settings(                             # pylint: disable=unused-variable
+    CONCENT_PRIVATE_KEY = CONCENT_PRIVATE_KEY,  # pylint: disable=unused-variable
     CONCENT_PUBLIC_KEY  = CONCENT_PUBLIC_KEY,
 )
 class CoreViewReceiveOutOfBandTest(TestCase):
@@ -347,12 +347,12 @@ class CoreViewReceiveOutOfBandTest(TestCase):
             task_id     = 1,
             deadline    = 1510915047,
         )
-        self.force_golem_data = MessageForceReportComputedTask(
+        self.message_force_report_computed_task = MessageForceReportComputedTask(
             timestamp = 1510911047,
             message_task_to_compute = dump(
                 self.message_task_to_compute,
-                settings.CONCENT_PRIVATE_KEY,
-                settings.CONCENT_PUBLIC_KEY,
+                PROVIDER_PRIVATE_KEY,
+                REQUESTOR_PUBLIC_KEY,
             )
         )
         message_timestamp   = datetime.datetime.now(timezone.utc)
@@ -360,14 +360,14 @@ class CoreViewReceiveOutOfBandTest(TestCase):
             type        = "MessageForceReportComputedTask",
             timestamp   = message_timestamp,
             data        = dump(
-                self.force_golem_data,
+                self.message_force_report_computed_task,
                 settings.CONCENT_PRIVATE_KEY,
-                settings.CONCENT_PUBLIC_KEY
+                REQUESTOR_PUBLIC_KEY
             ),
             task_id     = self.message_task_to_compute.task_id,
         )
         new_message.save()
-        new_message_status = MessageStatus(
+        new_message_status = ReceiveStatus(
             message   = new_message,
             timestamp = message_timestamp,
             delivered = False
@@ -380,18 +380,18 @@ class CoreViewReceiveOutOfBandTest(TestCase):
             reverse('core:receive_out_of_band'),
             data                           = '',
             content_type                   = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code, 200)  # pylint: disable=no-member
 
-    @freeze_time("2017-11-17 11:20:00")
+    @freeze_time("2017-11-17 9:20:00")
     def test_view_receive_out_of_band_return_http_204_if_no_messages_in_database(self):
         response = self.client.post(
             reverse('core:receive_out_of_band'),
             data                           = '',
             content_type                   = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code, 204)  # pylint: disable=no-member

@@ -6,7 +6,7 @@ from django.conf            import settings
 from golem_messages.message import MessageWantToComputeTask
 from golem_messages         import dump, load
 
-from utils.api_view import api_view
+from utils.api_view         import api_view
 
 
 @override_settings(

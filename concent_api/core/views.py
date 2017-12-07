@@ -1,4 +1,3 @@
-import json
 import datetime
 from base64                         import b64decode
 
@@ -22,6 +21,7 @@ from utils.api_view                 import api_view
 from utils.api_view                 import Http400
 from .models                        import Message
 from .models                        import ReceiveStatus
+from .models                        import ReceiveOutOfBandStatus
 
 
 @api_view
@@ -303,38 +303,181 @@ def receive(request, _message):
 
 @api_view
 @require_POST
-def receive_out_of_band(_request, _message):
-    last_task_message = Message.objects.order_by('id').last()
-    if last_task_message is None:
+def receive_out_of_band(request, _message):
+    undelivered_receive_out_of_band_statuses    = ReceiveOutOfBandStatus.objects.filter(delivered = False)
+    last_undelivered_receive_out_of_band_status = undelivered_receive_out_of_band_statuses.order_by('timestamp').last()
+    last_undelivered_receive_status             = Message.objects.all().order_by('timestamp').last()
+    client_public_key = decode_client_public_key(request)
+
+    current_time    = int(datetime.datetime.now().timestamp())
+    message_verdict = MessageVerdictReportComputedTask()
+
+    if last_undelivered_receive_out_of_band_status is None:
+        if last_undelivered_receive_status is None:
+            return None
+        if last_undelivered_receive_status.timestamp.timestamp() > current_time:
+            return None
+        if last_undelivered_receive_status.type == 'MessageAckReportComputedTask':
+            serialized_ack_message = last_undelivered_receive_status.data.tobytes()
+            decoded_ack_message = load(
+                serialized_ack_message,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key
+            )
+
+            decoded_task_to_compute_message = load(
+                decoded_ack_message.message_task_to_compute,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key
+            )
+
+            force_report_computed_task = MessageForceReportComputedTask(
+                message_task_to_compute = decoded_ack_message.message_task_to_compute,
+            )
+            message_verdict.message_force_report_computed_task = dump(
+                force_report_computed_task,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key
+            )
+            message_verdict.message_ack_report_computed_task = serialized_ack_message
+
+            dumped_message_verdict = dump(
+                message_verdict,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key
+            )
+            store_message(
+                type(message_verdict).__name__,
+                decoded_task_to_compute_message.task_id,
+                dumped_message_verdict
+            )
+
+            return message_verdict
+
+        if last_undelivered_receive_status.type == 'MessageForceReportComputedTask':
+            serialized_force_message = last_undelivered_receive_status.data.tobytes()
+            decoded_force_message = load(
+                serialized_force_message,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key
+            )
+
+            decoded_task_to_compute_message = load(
+                decoded_force_message.message_task_to_compute,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key
+            )
+
+            ack_report_computed_task = MessageAckReportComputedTask(
+                message_task_to_compute = decoded_force_message.message_task_to_compute
+            )
+            message_verdict.message_ack_report_computed_task = dump(
+                ack_report_computed_task,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key
+            )
+            message_verdict.message_ack_report_computed_task = serialized_force_message
+            dumped_message_verdict = dump(
+                message_verdict,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key
+            )
+            store_message(
+                type(message_verdict).__name__,
+                decoded_task_to_compute_message.task_id,
+                dumped_message_verdict
+            )
+
+            return message_verdict
+            
         return None
 
-    raw_last_task_message     = last_task_message.data.tobytes()
-    decoded_last_task_message = json.loads(raw_last_task_message.decode('utf-8'))
-    current_time              = int(datetime.datetime.now().timestamp())
-    message_verdict           = {
-        "type":                               "MessageVerdictReportComputedTask",
-        "timestamp":                          current_time,
-        "message_force_report_computed_task": {},
-        "message_ack_report_computed_task":   {
-            "type":      "MessageAckReportComputedTask",
-            "timestamp": current_time
-        }
-    }
+    raw_last_task_message       = last_undelivered_receive_out_of_band_status.message.data.tobytes()
+    decoded_last_task_message   = load(
+        raw_last_task_message,
+        settings.CONCENT_PRIVATE_KEY,
+        client_public_key
+    )
+    message_ack_report_computed_task = MessageAckReportComputedTask()
 
-    if decoded_last_task_message['type'] == "MessageForceReportComputedTask":
-        task_deadline = decoded_last_task_message['message_task_to_compute']['deadline']
-        if task_deadline + settings.CONCENT_MESSAGING_TIME <= current_time:
-            message_verdict['message_force_report_computed_task'] = decoded_last_task_message
-            return message_verdict
+    if isinstance(decoded_last_task_message, MessageForceReportComputedTask):
+        message_task_to_compute = load(
+            decoded_last_task_message.message_task_to_compute,
+            settings.CONCENT_PRIVATE_KEY,
+            client_public_key
+        )
+        if message_task_to_compute.deadline + settings.CONCENT_MESSAGING_TIME <= current_time:
+            message_verdict.message_force_report_computed_task = dump(
+                decoded_last_task_message,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key,
+            )
+            message_ack_report_computed_task = MessageAckReportComputedTask(
+                message_task_to_compute = decoded_last_task_message.message_task_to_compute
+            )
+            message_verdict.message_ack_report_computed_task = dump(
+                message_ack_report_computed_task,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key,
+            )
+            dumped_message_verdict = dump(
+                message_verdict,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key
+            )
 
-    if decoded_last_task_message['type'] == "MessageRejectReportComputedTask":
-        if decoded_last_task_message['message_cannot_commpute_task']['reason'] == "deadline-exceeded":
-            rejected_task_id                                      = decoded_last_task_message['message_cannot_commpute_task']['task_id']
-            message_to_compute                                    = Message.objects.get(type = 'MessageForceReportComputedTask', task_id = rejected_task_id)
-            raw_message_to_compute                                = message_to_compute.data.tobytes()
-            decoded_message_to_compute                            = json.loads(raw_message_to_compute.decode('utf-8'))
-            message_verdict['message_force_report_computed_task'] = decoded_message_to_compute
-            return message_verdict
+            last_undelivered_receive_out_of_band_status.delivered = True
+            last_undelivered_receive_out_of_band_status.save()
+
+            store_message(
+                type(message_verdict).__name__,
+                message_task_to_compute.task_id,
+                dumped_message_verdict
+            )
+
+            return dumped_message_verdict
+
+    if isinstance(decoded_last_task_message, MessageRejectReportComputedTask):
+        message_cannot_compute_task = load(
+            decoded_last_task_message.message_cannot_compute_task,
+            settings.CONCENT_PRIVATE_KEY,
+            client_public_key
+        )
+        if decoded_last_task_message.reason == "deadline-exceeded":
+            rejected_task_id           = message_cannot_compute_task.task_id
+            message_to_compute         = Message.objects.get(type = 'MessageForceReportComputedTask', task_id = rejected_task_id)
+            raw_message_to_compute     = message_to_compute.data.tobytes()
+            force_report_computed_task = load(
+                raw_message_to_compute,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key
+            )
+
+            message_ack_report_computed_task.message_task_to_compute = force_report_computed_task.message_task_to_compute
+
+            dumped_message_ack_report_computed_task = dump(
+                message_ack_report_computed_task,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key
+            )
+            message_verdict.message_ack_report_computed_task = dumped_message_ack_report_computed_task
+
+            dumped_message_verdict = dump(
+                message_verdict,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key
+            )
+
+            last_undelivered_receive_out_of_band_status.delivered = True
+            last_undelivered_receive_out_of_band_status.save()
+
+            store_message(
+                type(message_verdict).__name__,
+                message_cannot_compute_task.task_id,
+                dumped_message_verdict
+            )
+
+            return dumped_message_verdict
 
     return None
 

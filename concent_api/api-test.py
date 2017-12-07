@@ -86,6 +86,25 @@ def create_reject_data(task_id):
     )
 
 
+def print_golem_message(message):
+    assert isinstance(message, Message)
+
+    HEADER_FIELDS  = ['timestamp', 'encrypted', 'sig']
+    PRIVATE_FIELDS = {'_payload', '_raw'}
+
+    assert 'type' not in message.__slots__
+    fields = ['type'] + HEADER_FIELDS + sorted(set(message.__slots__) - set(HEADER_FIELDS) - PRIVATE_FIELDS)
+    values = [
+        type(message).__name__ if field == 'type'                            else
+        '<BINARY DATA>'        if isinstance(getattr(message, field), bytes) else
+        getattr(message, field)
+        for field in fields
+    ]
+
+    for field, value in zip(fields, values):
+        print('    {:30} = {}'.format(field, value))
+
+
 def api_request(host, endpoint, data = None, headers = None):
     assert all(value not in ['', None] for value in [endpoint, host, headers])
 

@@ -1,7 +1,9 @@
 from django.conf.urls import url
 
-from .views import file_transfer_auth
+from .views import download
+from .views import upload
 
 urlpatterns = [
-    url(r'^file-transfer-auth/$', file_transfer_auth, name = 'file-transfer-auth'),
+    url(r'^download-auth/', download,   name = 'download'),
+    url(r'^upload-auth/',   upload,     name = 'upload'),
 ]

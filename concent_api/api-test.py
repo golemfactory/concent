@@ -86,7 +86,7 @@ def create_reject_data(task_id):
     )
 
 
-def print_golem_message(message):
+def print_golem_message(message, indent = 4):
     assert isinstance(message, Message)
 
     HEADER_FIELDS  = ['timestamp', 'encrypted', 'sig']
@@ -95,14 +95,27 @@ def print_golem_message(message):
     assert 'type' not in message.__slots__
     fields = ['type'] + HEADER_FIELDS + sorted(set(message.__slots__) - set(HEADER_FIELDS) - PRIVATE_FIELDS)
     values = [
-        type(message).__name__ if field == 'type'                            else
-        '<BINARY DATA>'        if isinstance(getattr(message, field), bytes) else
+        type(message).__name__ if field == 'type' else
         getattr(message, field)
         for field in fields
     ]
 
     for field, value in zip(fields, values):
-        print('    {:30} = {}'.format(field, value))
+        if isinstance(value, bytes):
+            try:
+                nested_message = load(
+                    value,
+                    CONCENT_PRIVATE_KEY,
+                    CONCENT_PUBLIC_KEY,
+                )
+            except AttributeError:
+                # FIXME: golem-messages provides no reliable way to discern invalid messages from other AttributeErrors.
+                print('{}{:30} = <BINARY DATA>'.format(' ' * indent, field))
+            else:
+                print('{}{:30} ='.format(' ' * indent, field))
+                print_golem_message(nested_message, indent = indent + 4)
+        else:
+            print('{}{:30} = {}'.format(' ' * indent, field, value))
 
 
 def api_request(host, endpoint, data = None, headers = None):

@@ -254,7 +254,7 @@ class CoreViewReceiveTest(TestCase):
         new_message.save()
         new_message_status = MessageStatus(
             message   = new_message,
-            timestamp   = message_timestamp,
+            timestamp = message_timestamp,
             delivered = False
         )
         new_message_status.save()
@@ -309,12 +309,12 @@ class CoreViewReceiveOutOfBandTest(TestCase):
             task_id     = 1,
             deadline    = 1510915047,
         )
-        self.force_golem_data = MessageForceReportComputedTask(
+        self.message_force_report_computed_task = MessageForceReportComputedTask(
             timestamp = 1510911047,
             message_task_to_compute = dump(
                 self.message_task_to_compute,
-                settings.CONCENT_PRIVATE_KEY,
-                settings.CONCENT_PUBLIC_KEY,
+                PROVIDER_PRIVATE_KEY,
+                REQUESTOR_PUBLIC_KEY,
             )
         )
         message_timestamp   = datetime.datetime.now(timezone.utc)
@@ -322,9 +322,9 @@ class CoreViewReceiveOutOfBandTest(TestCase):
             type        = "MessageForceReportComputedTask",
             timestamp   = message_timestamp,
             data        = dump(
-                self.force_golem_data,
+                self.message_force_report_computed_task,
                 settings.CONCENT_PRIVATE_KEY,
-                settings.CONCENT_PUBLIC_KEY
+                REQUESTOR_PUBLIC_KEY
             ),
             task_id     = self.message_task_to_compute.task_id,
         )
@@ -342,7 +342,7 @@ class CoreViewReceiveOutOfBandTest(TestCase):
             reverse('core:receive_out_of_band'),
             data                           = '',
             content_type                   = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code, 200)  # pylint: disable=no-member
@@ -353,7 +353,7 @@ class CoreViewReceiveOutOfBandTest(TestCase):
             reverse('core:receive_out_of_band'),
             data                           = '',
             content_type                   = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code, 204)  # pylint: disable=no-member

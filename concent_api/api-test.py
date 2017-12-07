@@ -121,6 +121,8 @@ def print_golem_message(message, indent = 4):
 def api_request(host, endpoint, data = None, headers = None):
     assert all(value not in ['', None] for value in [endpoint, host, headers])
 
+    url = "{}/api/v1/{}/".format(host, endpoint)
+
     if data is None:
         print('Receive message:')
     else:
@@ -130,12 +132,11 @@ def api_request(host, endpoint, data = None, headers = None):
             CONCENT_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY,
         )
-    print("{}/api/v1/{}/".format(host, endpoint))
 
     if data is None:
-        response = requests.post("{}/api/v1/{}/".format(host, endpoint), headers = headers)
+        response = requests.post("{}".format(url), headers = headers)
     else:
-        response = requests.post("{}/api/v1/{}/".format(host, endpoint), headers = headers, data = data)
+        response = requests.post("{}".format(url), headers = headers, data = data)
 
     if len(response.content) != 0:
         decoded_response = load(

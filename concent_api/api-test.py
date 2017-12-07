@@ -124,9 +124,12 @@ def api_request(host, endpoint, data = None, headers = None):
     url = "{}/api/v1/{}/".format(host, endpoint)
 
     if data is None:
-        print('Receive message:')
+        print('RECEIVE ({})'.format(url))
     else:
-        print('Send message {}:'.format(data.TYPE))
+        print('SEND ({})'.format(url))
+        print('MESSAGE:')
+        print_golem_message(data)
+
         data = dump(
             data,
             CONCENT_PRIVATE_KEY,
@@ -144,11 +147,13 @@ def api_request(host, endpoint, data = None, headers = None):
             CONCENT_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY,
         )
-        print(response, decoded_response.TYPE)
-        print(decoded_response.__slots__)
+        print('STATUS: {} {}'.format(response.status_code, http.client.responses[response.status_code]))
+        print('MESSAGE:')
+        print_golem_message(decoded_response)
     else:
-        decoded_response = response.text
-        print(response, decoded_response)
+        print('STATUS: {} {}'.format(response.status_code, http.client.responses[response.status_code]))
+        if response.text not in ['', None]:
+            print('RAW RESPONSE: {}'.format(response.text))
     print()
 
 

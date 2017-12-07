@@ -97,4 +97,8 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except requests.exceptions.ConnectionError as exception:
+        print("\nERROR: Failed connect to the server.\n", file = sys.stderr)
+        sys.exit(str(exception))

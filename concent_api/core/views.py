@@ -149,13 +149,14 @@ def receive(request, _message):
         if last_delivered_message_status is None:
             return None
 
-        if last_delivered_message_status.message.type == 'MessageForceReportComputedTask':
-            message_force_report_task_from_database = last_delivered_message_status.message.data.tobytes()
+        if last_delivered_message_status.message.type == 'ForceReportComputedTask':
+            force_report_task_from_database = last_delivered_message_status.message.data.tobytes()
             try:
-                message_force_report_task = load(
-                    message_force_report_task_from_database,
+                force_report_task = load(
+                    force_report_task_from_database,
                     settings.CONCENT_PRIVATE_KEY,
-                    client_public_key
+                    client_public_key,
+                    check_time = False
                 )
             except AttributeError:
                 # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
@@ -164,142 +165,126 @@ def receive(request, _message):
                     status = 400
                 )
 
-            try:
-                message_task_to_compute = load(
-                    message_force_report_task.message_task_to_compute,
-                    settings.CONCENT_PRIVATE_KEY,
-                    client_public_key
-                )
-            except AttributeError:
-                # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
-                return JsonResponse(
-                    {'error': "Failed to decode AckReportComputedTask. Message and/or key are malformed or don't match."},
-                    status = 400
-                )
-
-            message_ack_report_computed_task = MessageAckReportComputedTask(
-                message_task_to_compute = message_force_report_task.message_task_to_compute
-            )
-            dumped_message_ack_report_computed_task = dump(
-                message_ack_report_computed_task,
+            ack_report_computed_task = AckReportComputedTask()
+            ack_report_computed_task.task_to_compute = force_report_task.task_to_compute
+            dumped_ack_report_computed_task = dump(
+                ack_report_computed_task,
                 settings.CONCENT_PRIVATE_KEY,
                 client_public_key,
             )
             store_message(
-                type(message_ack_report_computed_task).__name__,
-                message_task_to_compute.task_id,
-                dumped_message_ack_report_computed_task
+                type(ack_report_computed_task).__name__,
+                force_report_task.task_to_compute.compute_task_def['task_id'],
+                dump(
+                    ack_report_computed_task,
+                    settings.CONCENT_PRIVATE_KEY,
+                    settings.CONCENT_PUBLIC_KEY,
+                )
             )
 
-            return dumped_message_ack_report_computed_task
+            return dumped_ack_report_computed_task
 
         return None
 
     current_time = int(datetime.datetime.now().timestamp())
 
     raw_message_data     = last_undelivered_message_status.message.data.tobytes()
-    decoded_message_data = load(
-        raw_message_data,
-        settings.CONCENT_PRIVATE_KEY,
-        client_public_key,
-    )
-    assert last_undelivered_message_status.message.type == type(decoded_message_data).__name__
-
-    # Mark message as delivered
-    if last_undelivered_message_status.message.type == "MessageForceReportComputedTask":
-        message_task_to_compute_from_force = load(
-            decoded_message_data.message_task_to_compute,
-            settings.CONCENT_PRIVATE_KEY,
-            client_public_key
-        )
-
-        if message_task_to_compute_from_force.deadline + settings.CONCENT_MESSAGING_TIME < current_time:
-            last_undelivered_message_status.delivered = True
-            last_undelivered_message_status.full_clean()
-            last_undelivered_message_status.save()
-
-            return dump(
-                MessageAckReportComputedTask(message_task_to_compute = decoded_message_data.message_task_to_compute),
-                settings.CONCENT_PRIVATE_KEY,
-                client_public_key,
-            )
-    else:
-        last_undelivered_message_status.delivered = True
-        last_undelivered_message_status.full_clean()
-        last_undelivered_message_status.save()
-
-    if isinstance(decoded_message_data, MessageForceReportComputedTask):
-        last_undelivered_message_status.delivered = True
-        last_undelivered_message_status.full_clean()
-        last_undelivered_message_status.save()
-        return raw_message_data
-
-    elif isinstance(decoded_message_data, MessageAckReportComputedTask):
-        message_task_to_compute = load(
-            decoded_message_data.message_task_to_compute,
-            settings.CONCENT_PRIVATE_KEY,
-            client_public_key
-        )
-        if current_time <= message_task_to_compute.deadline + 2 * settings.CONCENT_MESSAGING_TIME:
-            return raw_message_data
-
-        return None
-
-    elif isinstance(decoded_message_data, MessageRejectReportComputedTask):
-        message_cannot_compute_task = load(
-            decoded_message_data.message_cannot_compute_task,
-            settings.CONCENT_PRIVATE_KEY,
-            client_public_key
-        )
-        message_to_compute = Message.objects.get(
-            type    = 'MessageForceReportComputedTask',
-            task_id = message_cannot_compute_task.task_id
-        )
-        raw_message_to_compute        = message_to_compute.data.tobytes()
-        decoded_message_from_database = load(
-            raw_message_to_compute,
-            settings.CONCENT_PRIVATE_KEY,
-            client_public_key,
-        )
-        message_task_to_compute = load(
-            decoded_message_from_database.message_task_to_compute,
-            settings.CONCENT_PRIVATE_KEY,
-            client_public_key,
-        )
-        if current_time <= message_task_to_compute.deadline + 2 * settings.CONCENT_MESSAGING_TIME:
-            if decoded_message_data.reason == "deadline-exceeded" or decoded_message_from_database.reason == "deadline-exceeded":
-                message_ack_report_computed_task = MessageAckReportComputedTask(
-                    timestamp               = current_time,
-                    message_task_to_compute = decoded_message_from_database.message_task_to_compute,
-                )
-                return message_ack_report_computed_task
-            return raw_message_data
-
-        return None
-    else:
+    additional_client_public_key = check_additional_client_key(request)
+    if last_undelivered_message_status.message.type == 'RejectReportComputedTask':
         try:
-            message_task_to_compute = load(
-                decoded_message_data.message_task_to_compute,
+            decoded_message_data = load(
+                raw_message_data,
                 settings.CONCENT_PRIVATE_KEY,
-                client_public_key
+                additional_client_public_key,
+                check_time = False,
             )
         except AttributeError:
             # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
             return JsonResponse(
-                {'error': "Failed to decode TaskToCompute. Message and/or key are malformed or don't match."},
+                {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
                 status = 400
             )
-
-        if message_task_to_compute.deadline + settings.CONCENT_MESSAGING_TIME <= current_time <= message_task_to_compute.deadline + 2 * settings.CONCENT_MESSAGING_TIME:
-            return MessageAckReportComputedTask(
-                task_id                 = decoded_message_data.task_id,
-                message_task_to_compute = decoded_message_data.message_task_to_compute,
-                timestamp               = current_time,
+    else:
+        try:
+            decoded_message_data = load(
+                raw_message_data,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key,
+                check_time = False,
             )
-        if current_time <= message_task_to_compute.deadline + settings.CONCENT_MESSAGING_TIME:
-            return decoded_message_data
+        except AttributeError:
+            # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
+            return JsonResponse(
+                {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
+                status = 400
+            )
+    assert last_undelivered_message_status.message.type == type(decoded_message_data).__name__
 
-        return None
+    if last_undelivered_message_status.message.type == "ForceReportComputedTask":
+
+        if decoded_message_data.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME < current_time:
+            last_undelivered_message_status.delivered = True
+            last_undelivered_message_status.full_clean()
+            last_undelivered_message_status.save()
+            ack_report_computed_task = AckReportComputedTask()
+            ack_report_computed_task.task_to_compute = decoded_message_data.task_to_compute
+            return dump(
+                ack_report_computed_task,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key
+            )
+    else:
+        last_undelivered_message_status.delivered = True
+        last_undelivered_message_status.full_clean()
+        last_undelivered_message_status.save()
+
+    if isinstance(decoded_message_data, ForceReportComputedTask):
+        last_undelivered_message_status.delivered = True
+        last_undelivered_message_status.full_clean()
+        last_undelivered_message_status.save()
+        return raw_message_data
+    if isinstance(decoded_message_data, AckReportComputedTask):
+        if current_time <= decoded_message_data.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
+            return raw_message_data
+        return HttpResponse("", status = 204)
+    if isinstance(decoded_message_data, RejectReportComputedTask):
+        message_to_compute = Message.objects.get(
+            type = 'ForceReportComputedTask',
+            task_id = decoded_message_data.cannot_compute_task.task_to_compute.compute_task_def['task_id']
+        )
+        raw_message_to_compute        = message_to_compute.data.tobytes()
+        try:
+            decoded_message_from_database = load(
+                raw_message_to_compute,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key,
+                check_time = False,
+            )
+        except AttributeError:
+            # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
+            return JsonResponse(
+                {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
+                status = 400
+            )
+        if current_time <= decoded_message_from_database.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
+            if decoded_message_data.reason is not None and decoded_message_data.reason.value == "TASK_TIME_LIMIT_EXCEEDED":
+                ack_report_computed_task = AckReportComputedTask(
+                    timestamp = current_time,
+                )
+                ack_report_computed_task.task_to_compute = decoded_message_from_database.task_to_compute
+                return ack_report_computed_task
+            return raw_message_data
+        return HttpResponse("", status = 204)
+    if decoded_message_data.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME <= current_time <= decoded_message_data.task_to_compute.deadline + 2 * settings.CONCENT_MESSAGING_TIME:
+        ack_report_computed_task = AckReportComputedTask(
+            task_id                 = decoded_message_data.task_id,
+            timestamp               = current_time,
+        )
+        ack_report_computed_task.task_to_compute = decoded_message_data.task_to_compute
+        return ack_report_computed_task
+    if current_time <= decoded_message_data.message_task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
+        return decoded_message_data
+    return HttpResponse("", status = 204)
 
 
 @api_view

@@ -281,32 +281,30 @@ class CoreViewSendTest(TestCase):
 class CoreViewReceiveTest(TestCase):
 
     def setUp(self):
-        self.message_task_to_compute = MessageTaskToCompute(
-            timestamp   = 1510909200,
-            task_id     = 1,
-            deadline    = 1510915047,
+        self.compute_task_def = ComputeTaskDef()
+        self.compute_task_def['task_id'] = 1
+        self.compute_task_def['deadline'] = 1510915047
+        self.task_to_compute = TaskToCompute(
+            timestamp = 1510912800,
+            compute_task_def = self.compute_task_def,
         )
-        self.message_force_report_computed_task = MessageForceReportComputedTask(
-            timestamp = 1510911047,
-            message_task_to_compute = dump(
-                self.message_task_to_compute,
-                PROVIDER_PRIVATE_KEY,
-                REQUESTOR_PUBLIC_KEY,
-            )
+        self.force_golem_data = ForceReportComputedTask(
+            timestamp = 1510912800,
         )
+        self.force_golem_data.task_to_compute = self.task_to_compute
 
     @freeze_time("2017-11-17 10:00:00")
     def test_receive_should_accept_valid_message(self):
         message_timestamp   = datetime.datetime.now(timezone.utc)
         new_message         = Message(
-            type        = "MessageForceReportComputedTask",
+            type        = self.force_golem_data.__class__.__name__,
             timestamp   = message_timestamp,
             data        = dump(
-                self.message_force_report_computed_task,
-                settings.CONCENT_PRIVATE_KEY,
-                REQUESTOR_PUBLIC_KEY,
+                self.force_golem_data,
+                REQUESTOR_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY,
             ),
-            task_id     = self.message_task_to_compute.task_id
+            task_id     = self.task_to_compute.compute_task_def['task_id']
         )
         new_message.full_clean()
         new_message.save()
@@ -328,20 +326,14 @@ class CoreViewReceiveTest(TestCase):
         )
         decoded_response = load(
             response.content,
-            REQUESTOR_PRIVATE_KEY,
-            settings.CONCENT_PUBLIC_KEY,
+            CONCENT_PRIVATE_KEY,
+            REQUESTOR_PUBLIC_KEY,
         )
-        decoded_inside_message = load(
-            decoded_response.message_task_to_compute,
-            REQUESTOR_PRIVATE_KEY,
-            PROVIDER_PUBLIC_KEY,
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(new_message.task_id, decoded_inside_message.task_id)
+        self.assertEqual(response.status_code, 200)  # pylint: disable=no-member
+        self.assertEqual(new_message.task_id, decoded_response.task_to_compute.compute_task_def['task_id'])
 
     @freeze_time("2017-11-17 10:00:00")
     def test_receive_return_http_204_if_no_messages_in_database(self):
-
         response = self.client.post(
             reverse('core:receive'),
             data                           = '',

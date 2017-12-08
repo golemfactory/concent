@@ -22,7 +22,6 @@ def api_view(view):
     def wrapper(request, *args, **kwargs):
         if 'HTTP_CONCENT_CLIENT_PUBLIC_KEY' not in request.META or request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'] == '':
             return JsonResponse({'error': 'Concent-Client-Public-Key HTTP header is missing on the request.'}, status = 400)
-
         try:
             client_public_key = b64decode(request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'].encode('ascii'), validate=True)
         except binascii.Error:
@@ -49,7 +48,8 @@ def api_view(view):
                     message = load(
                         request.body,
                         settings.CONCENT_PRIVATE_KEY,
-                        client_public_key
+                        client_public_key,
+                        check_time = False,
                     )
                 except AttributeError:
                     # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions

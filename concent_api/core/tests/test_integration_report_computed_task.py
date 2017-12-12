@@ -55,7 +55,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         self.assertEqual(response_1.status_code,  200)
 
-        message_from_concent = load(response_1.content, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        message_from_concent = load(response_1.content, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
         self.assertIsInstance(message_from_concent, message.RejectReportComputedTask)
         self.assertEqual(message_from_concent.timestamp, int(dateutil.parser.parse("2017-12-01 11:01:00").timestamp()))
@@ -328,7 +328,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         serialized_message_from_concent_to_provider = response_4.content
 
-        message_from_concent_to_provider            = load(serialized_message_from_concent_to_provider, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        message_from_concent_to_provider            = load(serialized_message_from_concent_to_provider, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time=False)
 
         self.assertIsInstance(message_from_concent_to_provider, message.AckReportComputedTask)
         self.assertGreaterEqual(message_from_concent_to_provider.timestamp, int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))
@@ -347,7 +347,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         self.assertEqual(response_5.status_code, 200)
 
-        message_from_concent_to_requestor = load(response_5.content, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        message_from_concent_to_requestor = load(response_5.content, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time=False)
 
         self.assertIsInstance(message_from_concent_to_requestor, message.VerdictReportComputedTask)
         self.assertGreaterEqual(message_from_concent_to_requestor.timestamp, int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))
@@ -415,7 +415,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         self.assertEqual(response_3.status_code,  200)
 
-        message_from_concent_to_provider = load(response_3.content, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        message_from_concent_to_provider = load(response_3.content, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time=False)
 
         self.assertIsInstance(message_from_concent_to_provider, message.AckReportComputedTask)
         self.assertGreaterEqual(message_from_concent_to_provider.timestamp, int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))
@@ -434,11 +434,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         self.assertEqual(response_4.status_code, 200)
 
-        message_from_concent_to_requestor       = load(
-            response_4.content,
-            REQUESTOR_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY
-        )
+        message_from_concent_to_requestor = load(response_4.content, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time=False)
 
         self.assertIsInstance(message_from_concent_to_requestor, message.VerdictReportComputedTask)
         self.assertGreaterEqual(message_from_concent_to_requestor.timestamp, int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))

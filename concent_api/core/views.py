@@ -293,53 +293,39 @@ def receive_out_of_band(request, _message):
     undelivered_receive_out_of_band_statuses    = ReceiveOutOfBandStatus.objects.filter(delivered = False)
     last_undelivered_receive_out_of_band_status = undelivered_receive_out_of_band_statuses.order_by('timestamp').last()
     last_undelivered_receive_status             = Message.objects.all().order_by('timestamp').last()
-    client_public_key = decode_client_public_key(request)
+    client_public_key               = decode_client_public_key(request)
+    additional_client_public_key    = check_additional_client_key(request)
 
     current_time    = int(datetime.datetime.now().timestamp())
-    message_verdict = MessageVerdictReportComputedTask()
+    message_verdict = VerdictReportComputedTask()
 
     if last_undelivered_receive_out_of_band_status is None:
         if last_undelivered_receive_status is None:
             return None
         if last_undelivered_receive_status.timestamp.timestamp() > current_time:
             return None
-        if last_undelivered_receive_status.type == 'MessageAckReportComputedTask':
-            serialized_ack_message = last_undelivered_receive_status.data.tobytes()
+        if last_undelivered_receive_status.type == 'AckReportComputedTask':
+            serialized_ack_report_computed_task = last_undelivered_receive_status.data.tobytes()
             try:
-                decoded_ack_message = load(
-                    serialized_ack_message,
+                decoded_ack_report_computed_task = load(
+                    serialized_ack_report_computed_task,
                     settings.CONCENT_PRIVATE_KEY,
-                    client_public_key
+                    settings.CONCENT_PUBLIC_KEY,
+                    check_time = False
                 )
             except AttributeError:
                 # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
                 return JsonResponse(
-                    {'error': "Failed to decode AckReportComputedTask. Message and/or key are malformed or don't match."},
+                    {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
                     status = 400
                 )
 
-            try:
-                decoded_task_to_compute_message = load(
-                    decoded_ack_message.message_task_to_compute,
-                    settings.CONCENT_PRIVATE_KEY,
-                    client_public_key
-                )
-            except AttributeError:
-                # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
-                return JsonResponse(
-                    {'error': "Failed to decode TaskToCompute. Message and/or key are malformed or don't match."},
-                    status = 400
-                )
+            force_report_computed_task = ForceReportComputedTask()
+            force_report_computed_task.task_to_compute = decoded_ack_report_computed_task.task_to_compute
 
-            force_report_computed_task = MessageForceReportComputedTask(
-                message_task_to_compute = decoded_ack_message.message_task_to_compute,
-            )
-            message_verdict.message_force_report_computed_task = dump(
-                force_report_computed_task,
-                settings.CONCENT_PRIVATE_KEY,
-                client_public_key
-            )
-            message_verdict.message_ack_report_computed_task = serialized_ack_message
+            message_verdict.force_report_computed_task = force_report_computed_task
+
+            message_verdict.ack_report_computed_task = decoded_ack_report_computed_task
 
             dumped_message_verdict = dump(
                 message_verdict,
@@ -348,17 +334,103 @@ def receive_out_of_band(request, _message):
             )
             store_message(
                 type(message_verdict).__name__,
-                decoded_task_to_compute_message.task_id,
+                decoded_ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
                 dumped_message_verdict
             )
 
             return message_verdict
 
-        if last_undelivered_receive_status.type == 'MessageForceReportComputedTask':
-            serialized_force_message = last_undelivered_receive_status.data.tobytes()
+        if last_undelivered_receive_status.type == 'ForceReportComputedTask':
+            serialized_force_report_computed_task = last_undelivered_receive_status.data.tobytes()
             try:
-                decoded_force_message = load(
-                    serialized_force_message,
+                additional_client_public_key = check_additional_client_key(request)
+                decoded_force_report_computed_task = load(
+                    serialized_force_report_computed_task,
+                    settings.CONCENT_PRIVATE_KEY,
+                    additional_client_public_key,
+                    check_time = False
+                )
+            except AttributeError:
+                # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
+                return JsonResponse(
+                    {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
+                    status = 400
+                )
+
+            ack_report_computed_task = AckReportComputedTask()
+            ack_report_computed_task.task_to_compute    = TaskToCompute()
+            ack_report_computed_task.task_to_compute    = decoded_force_report_computed_task.task_to_compute
+            message_verdict.ack_report_computed_task    = ack_report_computed_task
+            message_verdict.force_report_computed_task  = decoded_force_report_computed_task
+            dumped_message_verdict = dump(
+                message_verdict,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key
+            )
+            store_message(
+                type(message_verdict).__name__,
+                decoded_force_report_computed_task.task_to_compute.compute_task_def['task_id'],
+                dumped_message_verdict
+            )
+
+            return message_verdict
+
+    raw_last_task_message       = last_undelivered_receive_out_of_band_status.message.data.tobytes()
+    try:
+        decoded_last_task_message   = load(
+            raw_last_task_message,
+            settings.CONCENT_PRIVATE_KEY,
+            client_public_key,
+            check_time = False,
+        )
+    except AttributeError:
+        # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
+        return JsonResponse(
+            {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
+            status = 400
+        )
+
+    message_ack_report_computed_task = AckReportComputedTask()
+    if isinstance(decoded_last_task_message, ForceReportComputedTask):
+
+        if decoded_last_task_message.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME <= current_time:
+            message_verdict.force_report_computed_task = dump(
+                decoded_last_task_message,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key,
+            )
+            message_ack_report_computed_task = AckReportComputedTask()
+            message_ack_report_computed_task.task_to_compute = decoded_last_task_message.task_to_compute
+
+            message_verdict.ack_report_computed_task = message_ack_report_computed_task
+            dumped_message_verdict = dump(
+                message_verdict,
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key
+            )
+
+            last_undelivered_receive_out_of_band_status.delivered = True
+            last_undelivered_receive_out_of_band_status.full_clean()
+            last_undelivered_receive_out_of_band_status.save()
+
+            golem_message, message_timestamp = store_message(
+                type(message_verdict).__name__,
+                decoded_last_task_message.task_to_compute.compute_task_def['task_id'],
+                dumped_message_verdict
+            )
+            store_receive_out_of_band(golem_message, message_timestamp)
+
+            return dumped_message_verdict
+
+    if isinstance(decoded_last_task_message, RejectReportComputedTask):
+
+        if decoded_last_task_message.reason == "deadline-exceeded":
+            rejected_task_id           = decoded_last_task_message.message_cannot_compute_task.task_to_compute.compute_task_def['task_id']
+            message_to_compute         = Message.objects.get(type = 'MessageForceReportComputedTask', task_id = rejected_task_id)
+            raw_message_to_compute     = message_to_compute.data.tobytes()
+            try:
+                force_report_computed_task = load(
+                    raw_message_to_compute,
                     settings.CONCENT_PRIVATE_KEY,
                     client_public_key
                 )
@@ -369,129 +441,9 @@ def receive_out_of_band(request, _message):
                     status = 400
                 )
 
-            try:
-                decoded_task_to_compute_message = load(
-                    decoded_force_message.message_task_to_compute,
-                    settings.CONCENT_PRIVATE_KEY,
-                    client_public_key
-                )
-            except AttributeError:
-                # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
-                return JsonResponse(
-                    {'error': "Failed to decode TaskToCompute. Message and/or key are malformed or don't match."},
-                    status = 400
-                )
+            message_ack_report_computed_task.task_to_compute = force_report_computed_task.task_to_compute
 
-            ack_report_computed_task = MessageAckReportComputedTask(
-                message_task_to_compute = decoded_force_message.message_task_to_compute
-            )
-            message_verdict.message_ack_report_computed_task = dump(
-                ack_report_computed_task,
-                settings.CONCENT_PRIVATE_KEY,
-                client_public_key
-            )
-            message_verdict.message_ack_report_computed_task = serialized_force_message
-            dumped_message_verdict = dump(
-                message_verdict,
-                settings.CONCENT_PRIVATE_KEY,
-                client_public_key
-            )
-            store_message(
-                type(message_verdict).__name__,
-                decoded_task_to_compute_message.task_id,
-                dumped_message_verdict
-            )
-
-            return message_verdict
-        return None
-
-    raw_last_task_message       = last_undelivered_receive_out_of_band_status.message.data.tobytes()
-    decoded_last_task_message   = load(
-        raw_last_task_message,
-        settings.CONCENT_PRIVATE_KEY,
-        client_public_key
-    )
-    message_ack_report_computed_task = MessageAckReportComputedTask()
-
-    if isinstance(decoded_last_task_message, MessageForceReportComputedTask):
-        try:
-            message_task_to_compute = load(
-                decoded_last_task_message.message_task_to_compute,
-                settings.CONCENT_PRIVATE_KEY,
-                client_public_key
-            )
-        except AttributeError:
-            # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
-            return JsonResponse(
-                {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
-                status = 400
-            )
-
-        if message_task_to_compute.deadline + settings.CONCENT_MESSAGING_TIME <= current_time:
-            message_verdict.message_force_report_computed_task = dump(
-                decoded_last_task_message,
-                settings.CONCENT_PRIVATE_KEY,
-                client_public_key,
-            )
-            message_ack_report_computed_task = MessageAckReportComputedTask(
-                message_task_to_compute = decoded_last_task_message.message_task_to_compute
-            )
-            message_verdict.message_ack_report_computed_task = dump(
-                message_ack_report_computed_task,
-                settings.CONCENT_PRIVATE_KEY,
-                client_public_key,
-            )
-            dumped_message_verdict = dump(
-                message_verdict,
-                settings.CONCENT_PRIVATE_KEY,
-                client_public_key
-            )
-
-            last_undelivered_receive_out_of_band_status.delivered = True
-            last_undelivered_receive_out_of_band_status.full_clean()
-            last_undelivered_receive_out_of_band_status.save()
-
-            golem_message, message_timestamp = store_message(
-                type(message_verdict).__name__,
-                message_task_to_compute.task_id,
-                dumped_message_verdict
-            )
-            store_receive_out_of_band(golem_message, message_timestamp)
-
-            return dumped_message_verdict
-
-    if isinstance(decoded_last_task_message, MessageRejectReportComputedTask):
-        try:
-            message_cannot_compute_task = load(
-                decoded_last_task_message.message_cannot_compute_task,
-                settings.CONCENT_PRIVATE_KEY,
-                client_public_key
-            )
-        except AttributeError:
-            # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
-            return JsonResponse(
-                {'error': "Failed to decode RejectReportComputedTask. Message and/or key are malformed or don't match."},
-                status = 400
-            )
-
-        if decoded_last_task_message.reason == "deadline-exceeded":
-            rejected_task_id           = message_cannot_compute_task.task_id
-            message_to_compute         = Message.objects.get(type = 'MessageForceReportComputedTask', task_id = rejected_task_id)
-            raw_message_to_compute     = message_to_compute.data.tobytes()
-            force_report_computed_task = load(
-                raw_message_to_compute,
-                settings.CONCENT_PRIVATE_KEY,
-                client_public_key
-            )
-
-            message_ack_report_computed_task.message_task_to_compute = force_report_computed_task.message_task_to_compute
-
-            dumped_message_ack_report_computed_task = dump(
-                message_ack_report_computed_task,
-                settings.CONCENT_PRIVATE_KEY,
-                client_public_key
-            )
-            message_verdict.message_ack_report_computed_task = dumped_message_ack_report_computed_task
+            message_verdict.ack_report_computed_task = message_ack_report_computed_task
 
             dumped_message_verdict = dump(
                 message_verdict,
@@ -505,7 +457,7 @@ def receive_out_of_band(request, _message):
 
             golem_message, message_timestamp = store_message(
                 type(message_verdict).__name__,
-                message_cannot_compute_task.task_id,
+                decoded_last_task_message.message_cannot_compute_task.task_to_compute.compute_task_def['task_id'],
                 dumped_message_verdict
             )
             store_receive_out_of_band(golem_message, message_timestamp)

@@ -354,29 +354,28 @@ class CoreViewReceiveOutOfBandTest(TestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def setUp(self):
-        self.message_task_to_compute = MessageTaskToCompute(
-            timestamp   = 1510909200,
-            task_id     = 1,
-            deadline    = 1510915047,
+        self.compute_task_def = ComputeTaskDef()
+        self.compute_task_def['task_id'] = 1
+        self.compute_task_def['deadline'] = 1510912799
+        self.task_to_compute = TaskToCompute(
+            timestamp = 1510912800,
+            compute_task_def = self.compute_task_def,
         )
-        self.message_force_report_computed_task = MessageForceReportComputedTask(
-            timestamp = 1510911047,
-            message_task_to_compute = dump(
-                self.message_task_to_compute,
-                PROVIDER_PRIVATE_KEY,
-                REQUESTOR_PUBLIC_KEY,
-            )
+
+        self.force_golem_data = ForceReportComputedTask(
+            timestamp = 1510912800,
         )
+        self.force_golem_data.task_to_compute = self.task_to_compute
         message_timestamp   = datetime.datetime.now(timezone.utc)
         new_message         = Message(
-            type        = "MessageForceReportComputedTask",
+            type        = self.force_golem_data.__class__.__name__,
             timestamp   = message_timestamp,
             data        = dump(
-                self.message_force_report_computed_task,
-                settings.CONCENT_PRIVATE_KEY,
-                REQUESTOR_PUBLIC_KEY
+                self.force_golem_data,
+                REQUESTOR_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY
             ),
-            task_id     = self.message_task_to_compute.task_id,
+            task_id     = self.force_golem_data.task_to_compute.compute_task_def['task_id'],
         )
         new_message.full_clean()
         new_message.save()
@@ -389,13 +388,15 @@ class CoreViewReceiveOutOfBandTest(TestCase):
         new_message_status.full_clean()
         new_message_status.save()
 
-    @freeze_time("2017-11-17 11:40:00")
+    @freeze_time("2017-11-17 11:00:00")
     def test_view_receive_out_of_band_should_accept_valid_message(self):
+
         response = self.client.post(
             reverse('core:receive_out_of_band'),
             data                           = '',
             content_type                   = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            HTTP_ADDITIONAL_CLIENT_PUBLIC_KEY   = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code, 200)
@@ -406,7 +407,8 @@ class CoreViewReceiveOutOfBandTest(TestCase):
             reverse('core:receive_out_of_band'),
             data                           = '',
             content_type                   = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            HTTP_ADDITIONAL_CLIENT_PUBLIC_KEY   = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code, 204)

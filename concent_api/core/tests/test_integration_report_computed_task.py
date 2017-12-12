@@ -437,7 +437,6 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         Expected message exchange:
         Provider -> Concent:    ForceReportComputedTask
-        Provider -> Concent:    ForceReportComputedTask
         Concent   -> Provider:  HTTP 400 error.
         """
 

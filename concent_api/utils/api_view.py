@@ -16,7 +16,16 @@ def api_view(view):
     @wraps(view)
     @csrf_exempt
     def wrapper(request, *args, **kwargs):
-        client_public_key = b64decode(request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'].encode('ascii'))
+        if 'HTTP_CONCENT_CLIENT_PUBLIC_KEY' not in request.META:
+            return JsonResponse({'error': 'Concent-Client-Public-Key HTTP header is missing on the request.'}, status = 400)
+
+        try:
+            client_public_key = b64decode(request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'].encode('ascii'))
+        except TypeError:
+            # From b64decode() docs:
+            # A TypeError is raised if s is incorrectly padded.
+            # Characters that are neither in the normal base-64 alphabet nor the alternative alphabet are discarded prior to the padding check.
+            return JsonResponse({'error': 'The value in the Concent-Client-Public-Key HTTP is not a valid base64-encoded value.'}, status = 400)
 
         if request.content_type not in ['application/octet-stream', '', 'application/json']:
             return JsonResponse({'error': 'Concent supports only application/octet-stream and application/json.'}, status = 415)

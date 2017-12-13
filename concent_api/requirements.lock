@@ -3,7 +3,7 @@ bitcoin==1.1.42
 cbor2==3.0.4
 cffi==1.11.2
 coincurve==6.0.0
-Django==1.11.7
+Django==1.11.8
 ethereum==1.6.1
 -e git://github.com/golemfactory/golem-messages.git@c14ab391d978e495d3c698b32f999e3b9f1c84df#egg=Golem_Messages
 freezegun==0.3.9

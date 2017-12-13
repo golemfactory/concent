@@ -9,6 +9,6 @@ pylint-django
 requests
 
 # Force the latest version of pylint pyflakes and pep8. There are numerous issues with older versions.
-pylint >= 1.7.4
+pylint   >= 1.7.5
 pyflakes >= 1.6.0
 pep8     >= 1.7.1

@@ -117,7 +117,10 @@ def print_golem_message(message, indent = 4):
                 print('{}{:30} ='.format(' ' * indent, field))
                 print_golem_message(nested_message, indent = indent + 4)
         else:
-            print('{}{:30} = {}'.format(' ' * indent, field, value))
+            if isinstance(value, Message):
+                print_golem_message(value, indent = indent + 4)
+            else:
+                print('{}{:30} = {}'.format(' ' * indent, field, value))
 
 
 def api_request(host, endpoint, data = None, headers = None):

@@ -107,6 +107,7 @@ def print_golem_message(message, indent = 4):
                     value,
                     CONCENT_PRIVATE_KEY,
                     CONCENT_PUBLIC_KEY,
+                    check_time=False,
                 )
             except AttributeError:
                 # FIXME: golem-messages provides no reliable way to discern invalid messages from other AttributeErrors.

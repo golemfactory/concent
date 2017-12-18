@@ -86,12 +86,11 @@ def create_reject_data(task_id):
     )
 
 
-def print_golem_message(message, indent = 4):
-    assert isinstance(message, Message)
 
+def print_golem_message(message, private_key, public_key, indent = 4):
+    assert isinstance(message, Message)
     HEADER_FIELDS  = ['timestamp', 'encrypted', 'sig']
     PRIVATE_FIELDS = {'_payload', '_raw'}
-
     assert 'type' not in message.__slots__
     fields = ['type'] + HEADER_FIELDS + sorted(set(message.__slots__) - set(HEADER_FIELDS) - PRIVATE_FIELDS)
     values = [
@@ -105,8 +104,8 @@ def print_golem_message(message, indent = 4):
             try:
                 nested_message = load(
                     value,
-                    CONCENT_PRIVATE_KEY,
-                    CONCENT_PUBLIC_KEY,
+                    private_key,
+                    public_key,
                     check_time=False,
                 )
             except InvalidSignature as exception:
@@ -115,17 +114,16 @@ def print_golem_message(message, indent = 4):
                 print('{}{:30} = <BINARY DATA>'.format(' ' * indent, field))
             else:
                 print('{}{:30} ='.format(' ' * indent, field))
-                print_golem_message(nested_message, indent = indent + 4)
+                print_golem_message(nested_message, private_key, public_key, indent = indent + 4)
         else:
             if isinstance(value, Message):
-                print_golem_message(value, indent = indent + 4)
+                print_golem_message(value, private_key, public_key, indent = indent + 4)
             else:
                 print('{}{:30} = {}'.format(' ' * indent, field, value))
 
 
-def api_request(host, endpoint, data = None, headers = None):
+def api_request(host, endpoint, private_key, public_key, data = None, headers = None):
     assert all(value not in ['', None] for value in [endpoint, host, headers])
-
     url = "{}/api/v1/{}/".format(host, endpoint)
 
     if data is None:
@@ -133,7 +131,7 @@ def api_request(host, endpoint, data = None, headers = None):
     else:
         print('SEND ({})'.format(url))
         print('MESSAGE:')
-        print_golem_message(data)
+        print_golem_message(data, private_key, public_key)
 
         data = dump(
             data,
@@ -154,7 +152,7 @@ def api_request(host, endpoint, data = None, headers = None):
         )
         print('STATUS: {} {}'.format(response.status_code, http.client.responses[response.status_code]))
         print('MESSAGE:')
-        print_golem_message(decoded_response)
+        print_golem_message(decoded_response, private_key, public_key)
     else:
         print('STATUS: {} {}'.format(response.status_code, http.client.responses[response.status_code]))
         if response.text not in ['', None]:

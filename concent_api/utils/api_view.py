@@ -26,6 +26,11 @@ def api_view(view):
             client_public_key = b64decode(request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'].encode('ascii'), validate=True)
         except binascii.Error:
             return JsonResponse({'error': 'The value in the Concent-Client-Public-Key HTTP is not a valid base64-encoded value.'}, status = 400)
+        if 'HTTP_ADDITIONAL_CLIENT_PUBLIC_KEY' in request.META:
+            try:
+                b64decode(request.META['HTTP_ADDITIONAL_CLIENT_PUBLIC_KEY'].encode('ascii'))
+            except TypeError:
+                return JsonResponse({'error': 'The value in the Additional-Client-Public-Key HTTP is not a valid base64-encoded value.'}, status = 400)
 
         if len(client_public_key) != 64:
             return JsonResponse(

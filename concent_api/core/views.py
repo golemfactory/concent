@@ -26,13 +26,13 @@ from .models                        import ReceiveOutOfBandStatus
 
 @api_view
 @require_POST
-def send(request, message):
+def send(request, client_message):
     client_public_key = decode_client_public_key(request)
     current_time      = int(datetime.datetime.now().timestamp())
-    if isinstance(message, MessageForceReportComputedTask):
+    if isinstance(client_message, MessageForceReportComputedTask):
         try:
             loaded_message = load(
-                message.message_task_to_compute,
+                client_message.message_task_to_compute,
                 settings.CONCENT_PRIVATE_KEY,
                 client_public_key
             )
@@ -46,16 +46,16 @@ def send(request, message):
         validate_golem_message_task_to_compute(loaded_message)
 
         if Message.objects.filter(task_id = loaded_message.task_id).exists():
-            raise Http400("{} is already being processed for this task.".format(message.__class__.__name__))
+            raise Http400("{} is already being processed for this task.".format(client_message.__class__.__name__))
 
         if loaded_message.deadline < current_time:
             return MessageRejectReportComputedTask(
                 reason                  = "deadline-exceeded",
-                message_task_to_compute = message.message_task_to_compute,
+                message_task_to_compute = client_message.message_task_to_compute,
             )
 
         golem_message, message_timestamp = store_message(
-            type(message).__name__,
+            type(client_message).__name__,
             loaded_message.task_id,
             request.body
         )
@@ -65,9 +65,9 @@ def send(request, message):
         )
         return HttpResponse("", status = 202)
 
-    elif isinstance(message, MessageAckReportComputedTask):
+    elif isinstance(client_message, MessageAckReportComputedTask):
         loaded_message = load(
-            message.message_task_to_compute,
+            client_message.message_task_to_compute,
             settings.CONCENT_PRIVATE_KEY,
             client_public_key
         )
@@ -87,7 +87,7 @@ def send(request, message):
                 )
 
             golem_message, message_timestamp = store_message(
-                type(message).__name__,
+                type(client_message).__name__,
                 loaded_message.task_id,
                 request.body
             )
@@ -99,9 +99,9 @@ def send(request, message):
         else:
             raise Http400("Time to acknowledge this task is already over.")
 
-    elif isinstance(message, MessageRejectReportComputedTask):
+    elif isinstance(client_message, MessageRejectReportComputedTask):
         message_cannot_compute_task = load(
-            message.message_cannot_compute_task,
+            client_message.message_cannot_compute_task,
             settings.CONCENT_PRIVATE_KEY,
             client_public_key
         )
@@ -128,7 +128,7 @@ def send(request, message):
         if message_cannot_compute_task.reason == "deadline-exceeded":
 
             store_message(
-                type(message).__name__,
+                type(client_message).__name__,
                 message_task_to_compute.task_id,
                 request.body
             )
@@ -142,7 +142,7 @@ def send(request, message):
                 raise Http400("Received RejectReportComputedTask but AckReportComputedTask or another RejectReportComputedTask for this task has already been submitted.")
 
             golem_message, message_timestamp = store_message(
-                type(message).__name__,
+                type(client_message).__name__,
                 message_task_to_compute.task_id,
                 request.body
             )
@@ -154,8 +154,8 @@ def send(request, message):
         else:
             raise Http400("Time to acknowledge this task is already over.")
     else:
-        if hasattr(message, 'TYPE'):
-            raise Http400("This message type ({}) is either not supported or cannot be submitted to Concent.".format(message.TYPE))
+        if hasattr(client_message, 'TYPE'):
+            raise Http400("This message type ({}) is either not supported or cannot be submitted to Concent.".format(client_message.TYPE))
         else:
             raise Http400("Unknown message type or not a Golem message.")
 

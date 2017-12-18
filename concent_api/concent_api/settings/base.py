@@ -198,6 +198,12 @@ LOGGING = {
 # contact concent and send or receive a message as defined in the protocol.
 CONCENT_MESSAGING_TIME = 3600  # seconds
 
-# Constant defining which apps should be avalible in the project. It have to be a list of strings. Current apps:
-# "concent-api", "gatekeeper", "admin-panel".
+# Which components of this Django application should be enabled in this particular server instance.
+# The application is basically a bunch of services with totally different responsibilites that share a lot of code.
+# In a typical setup each instance has only one or two features enabled. Some of them provide public APIs, others are
+# meant never to be exposed to the wide Internet.
+# Available features are:
+# - "concent-api": The public API server that allows requrestors and providers to interact with Concent.
+# - "Gatekeeper":  An internal helper that validates file transfer tokens.
+# - "admin-panel": Django admin panel that provides access to database content and service statistics.
 # CONCENT_FEATURES = []

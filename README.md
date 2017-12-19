@@ -1,7 +1,7 @@
 # concent
 Repository for Concent Service sources
 
-## Configuration
+## Production setup
 
 ### `local_settings.py`
 
@@ -28,3 +28,133 @@ print("CONCENT_PRIVATE_KEY = {}".format(ecc.raw_privkey))
 ```
 
 You can put the output of the script above directly in your `local_settings.py`
+
+## Development setup
+
+### Preparing your environment for development
+
+1. Install [Python](https://www.python.org/) >= 3.5 using your package manager.
+
+2. Install [PostgreSQL](https://www.postgresql.org) >= 10 using your package manager.
+
+    If you're using this machine only for development, configure PosgreSQL to be reachable only from `localhost`.
+
+    Make sure that PostgreSQL service is running (in many distros the service is started automatically right after installation).
+
+3. Clone this repository
+
+    ``` bash
+    git clone git@github.com:golemfactory/concent.git
+    ```
+
+4. Install dependencies in a virtualenv
+
+    ``` bash
+    virtualenv ~/.virtualenvs/concent --python python3
+    source ~/.virtualenvs/concent/bin/activate
+    pip install pip --upgrade
+
+    # Dependencies for running concent
+    pip install --requirement concent_api/requirements.lock
+
+    # Extra stuff for development that's not normally installed in production. Linter, debugger, etc.
+    pip install --requirement requirements-development.txt
+    ```
+
+    **libsecp256k1**
+
+    If `pip` tries to build a Python package called [secp256k1](https://github.com/ludbb/secp256k1-py) and fails, you'll need to install a Linux package called [libsecp256k1](https://github.com/bitcoin-core/secp256k1) using your package manager and rerun the installation.
+    This should not be the case most of the time because there are binary .wheels available on PyPI and they have this library bundled with them.
+    They don't cover all possible configurations though.
+    If you're running a very recent version of Python, `pip` might not be able to find pre-built binaries matching your version of the interpreter and try to build the C extension on its own.
+    This will only succeed if you have `libsecp256k1` installed.
+    The package is available in the repositories of some Linux distributions.
+    If you can't find it in your distro, you can also build it manually from source by following the instructions listed on the page linked above.
+
+    **OpenSSL 1.1**
+
+    [golem-messages](https://github.com/golemfactory/golem-messages) depends on [pyelliptic](https://github.com/yann2192/pyelliptic) which is not compatible with OpenSSL 1.1.
+    For it to work you'll have to install OpenSSL 1.0.
+    Fortunately most distributions still provide both versions.
+    For example on Debian you can install `libssl1.0.2` and `libssl1.0-dev`.
+    On Arch Linux there's `openssl-1.0`.
+
+    You'll run into a problem if you have both OpenSSL 1.0 and OpenSSL 1.1 installed at the same time though.
+    `pyelliptic` calls `ctypes.util.find_library('crypto')` to load the library and if you have both versions it loads version 1.1.
+    To prevent this you can patch its source and hard-code the path to OpenSSL 1.0:
+
+    ``` bash
+    sed \
+        "s%ctypes.util.find_library('crypto')%'/usr/lib/openssl-1.0/libcrypto.so'%" \
+        -i ~/.virtualenvs/concent/lib/python3.*/site-packages/pyelliptic/openssl.py
+    ```
+
+    Note that the path to `libcrypto.so` can vary between distributions.
+    On Debian it's `/usr/lib/x86_64-linux-gnu/libcrypto.so.1.0`.
+    On Arch Linux you'll find it in `/usr/lib/openssl-1.0/libcrypto.so`.
+    You'll have to adjust the command above to match your system.
+
+5. Create your local configutation in `concent_api/concent_api/settings/local_settings.py`:
+
+    ``` python
+    from .development import *
+    ```
+
+    If your database configuration differs from the defaults, you may need to tweak the values below and add them to your `local_settings.py` too:
+
+    ``` python
+    DATABASES['NAME']     = 'concent_api'
+    DATABASES['USER']     = 'postgres'
+    DATABASES['PASSWORD'] = ''
+    DATABASES['HOST']     = '5432'
+    DATABASES['PORT']     = 'locslhost'
+    ```
+
+6. Create an empty database with the name you set in `DATABASES['NAME']` (`concent_api` if you did not set it explicitly):
+
+    ``` bash
+    createdb --username postgres concent_api
+    ```
+
+7. Run Django migrations to initialize the database and create the tables:
+
+    ```
+    concent_api/manage.py migrate
+    ```
+
+8. Create a superuser account:
+
+    ```
+    concent_api/manage.py createsuperuser
+    ```
+
+### Running concent in development
+
+To start a Concent server simply run
+
+``` bash
+concent_api/manage.py runserver
+```
+
+The server is now reachable at http://localhost:8000/.
+
+Note that Concent does not have a UI so you will only get HTTP 404 if you try to go to that address in the browser.
+You can access the admin panel at http://localhost:8000/admin/ but this is only for maintenance and accessing statistics.
+
+The primary way to interact with the service is via a Golem client.
+You can simulate this interaction with a tool like [curl](https://curl.haxx.se/) or custom scripts that send HTTP requests.
+One of such scripts, meant to test a working Concent server in a very rudimentary way is `api-test.py`:
+
+``` bash
+concent_api/api-test.py http://localhost:8000
+```
+
+### Running tests
+
+You can run automated tests, code analysis and Django configuration checks with:
+
+``` bash
+./full_check.sh
+```
+
+Always run this command before submitting code in a pull request and make sure that there are no warnings or failed tests.

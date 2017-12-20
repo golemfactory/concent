@@ -8,6 +8,10 @@ printf "=============================== LINT ===============================\n"
 ./lint.sh
 printf "\n"
 
+printf "========================= MYPY STATIC TYPE CHECKER =================\n"
+mypy --config-file=mypy.ini concent_api/
+printf "\n"
+
 printf "============================ UNIT TESTS ============================\n"
 # NOTE: 'manage.py test' does not find all tests unless we run it from within the app directory.
 cd concent_api/

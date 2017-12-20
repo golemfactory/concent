@@ -10,6 +10,9 @@ requests
 mypy==0.560
 
 # Force the latest version of pylint pyflakes and pep8. There are numerous issues with older versions.
-pylint   >= 1.7.5
+# FIXME: pylint-django does not work with the latest pylint (1.8.0 or 1.8.1).
+# See https://github.com/landscapeio/pylint-django/issues/108
+# Remove the upper limit when the problem gets resolved.
+pylint   >= 1.7.5, < 1.8.0
 pyflakes >= 1.6.0
 pep8     >= 1.7.1

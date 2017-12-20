@@ -1,1 +1,1 @@
-from . import system_check  # noqa, flake8 F401 issue
+default_app_config = 'concent_api.apps.ConcentApiConfig'

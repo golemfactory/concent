@@ -153,7 +153,7 @@ def receive(request, _message):
 
     if isinstance(decoded_message_data, MessageForceReportComputedTask):
         return raw_message_data
-    if isinstance(decoded_message_data, MessageAckReportComputedTask):
+    elif isinstance(decoded_message_data, MessageAckReportComputedTask):
         message_task_to_compute = load(
             decoded_message_data.message_task_to_compute,
             settings.CONCENT_PRIVATE_KEY,
@@ -162,7 +162,7 @@ def receive(request, _message):
         if current_time <= message_task_to_compute.deadline + 2 * settings.CONCENT_MESSAGING_TIME:
             return raw_message_data
         return HttpResponse("", status = 204)
-    if isinstance(decoded_message_data, MessageRejectReportComputedTask):
+    elif isinstance(decoded_message_data, MessageRejectReportComputedTask):
         message_cannot_compute_task = load(
             decoded_message_data.message_cannot_compute_task,
             settings.CONCENT_PRIVATE_KEY,
@@ -192,22 +192,22 @@ def receive(request, _message):
                 return message_ack_report_computed_task
             return raw_message_data
         return HttpResponse("", status = 204)
-
-    message_task_to_compute = load(
-        decoded_message_data.message_task_to_compute,
-        settings.CONCENT_PRIVATE_KEY,
-        client_public_key
-    )
-    if message_task_to_compute.deadline + settings.CONCENT_MESSAGING_TIME <= current_time <= message_task_to_compute.deadline + 2 * settings.CONCENT_MESSAGING_TIME:
-        return MessageAckReportComputedTask(
-            task_id                 = decoded_message_data.task_id,
-            message_task_to_compute = decoded_message_data.message_task_to_compute,
-            timestamp               = current_time,
+    else:
+        message_task_to_compute = load(
+            decoded_message_data.message_task_to_compute,
+            settings.CONCENT_PRIVATE_KEY,
+            client_public_key
         )
-    if current_time <= message_task_to_compute.deadline + settings.CONCENT_MESSAGING_TIME:
-        return decoded_message_data
+        if message_task_to_compute.deadline + settings.CONCENT_MESSAGING_TIME <= current_time <= message_task_to_compute.deadline + 2 * settings.CONCENT_MESSAGING_TIME:
+            return MessageAckReportComputedTask(
+                task_id                 = decoded_message_data.task_id,
+                message_task_to_compute = decoded_message_data.message_task_to_compute,
+                timestamp               = current_time,
+            )
+        if current_time <= message_task_to_compute.deadline + settings.CONCENT_MESSAGING_TIME:
+            return decoded_message_data
 
-    return HttpResponse("", status = 204)
+        return HttpResponse("", status = 204)
 
 
 @api_view

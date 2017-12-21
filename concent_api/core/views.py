@@ -279,20 +279,20 @@ def receive_out_of_band(request, _message):
 
 def validate_golem_message_task_to_compute(data):
     if not isinstance(data, MessageTaskToCompute):
-        raise Http400("Expected MessageTaskToCompute")
+        raise Http400("Expected MessageTaskToCompute.")
 
     if not isinstance(data.timestamp, float):
-        raise Http400("Wrong type of inside message task time limit. Not a float.")
+        raise Http400("Wrong type of message timestamp field. Not a float.")
 
     if data.task_id <= 0:
-        raise Http400("Wrong number of task_id. It has to be bigger than 0")
+        raise Http400("task_id cannot be negative.")
     if not isinstance(data.deadline, int):
-        raise Http400("Wrong type of deadline field!")
+        raise Http400("Wrong type of deadline field.")
 
 
 def validate_golem_message_reject(data):
     if not isinstance(data, MessageCannotComputeTask) and not isinstance(data, MessageTaskFailure):
-        raise Http400("Expected MessageCannotComputeTask or MessageTaskFailure")
+        raise Http400("Expected MessageCannotComputeTask or MessageTaskFailure.")
 
 
 def store_message(msg_type, data, raw_message):

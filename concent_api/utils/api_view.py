@@ -21,10 +21,9 @@ def api_view(view):
     def wrapper(request, *args, **kwargs):
         if 'HTTP_CONCENT_CLIENT_PUBLIC_KEY' not in request.META:
             return JsonResponse({'error': 'Concent-Client-Public-Key HTTP header is missing on the request.'}, status = 400)
-
         try:
             client_public_key = b64decode(request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'].encode('ascii'))
-        except TypeError:
+        except AttributeError:
             # From b64decode() docs:
             # A TypeError is raised if s is incorrectly padded.
             # Characters that are neither in the normal base-64 alphabet nor the alternative alphabet are discarded prior to the padding check.
@@ -41,17 +40,19 @@ def api_view(view):
             if request.content_type == 'application/json':
                 message = json.loads(request.body.decode('ascii'))
             if request.content_type == 'application/octet-stream':
-                message = load(
-                    request.body,
-                    settings.CONCENT_PRIVATE_KEY,
-                    client_public_key
-                )
+                try:
+                    message = load(
+                        request.body,
+                        settings.CONCENT_PRIVATE_KEY,
+                        client_public_key
+                    )
+                except AttributeError:
+                    raise Http400('Wrong type of message or public key')  #TODO better exception catching after repair bug by golem
 
         try:
             response_from_view = view(request, message, *args, **kwargs)
         except Http400 as exception:
             return JsonResponse({'error': str(exception)}, status = 400)
-
         if isinstance(response_from_view, Message):
             serialized_message = dump(
                 response_from_view,

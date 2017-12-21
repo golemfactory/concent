@@ -14,12 +14,14 @@ from django.utils                   import timezone
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 from golem_messages.message         import MessageAckReportComputedTask
+from golem_messages.message         import MessageCannotComputeTask
 from golem_messages.message         import MessageForceReportComputedTask
 from golem_messages.message         import MessageTaskToCompute
 from golem_messages.message         import MessageWantToComputeTask
+from golem_messages.message         import MessageRejectReportComputedTask
 
 from core.models                    import Message
-from core.models                    import MessageStatus
+from core.models                    import ReceiveStatus
 from utils.testing_helpers          import generate_ecc_key_pair
 
 
@@ -28,8 +30,8 @@ from utils.testing_helpers          import generate_ecc_key_pair
 (REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
-@override_settings(
-    CONCENT_PRIVATE_KEY = CONCENT_PRIVATE_KEY,
+@override_settings(                             # pylint: disable=unused-variable
+    CONCENT_PRIVATE_KEY = CONCENT_PRIVATE_KEY,  # pylint: disable=unused-variable
     CONCENT_PUBLIC_KEY  = CONCENT_PUBLIC_KEY,
 )
 class CoreViewSendTest(TestCase):
@@ -62,10 +64,26 @@ class CoreViewSendTest(TestCase):
             num_cores           = 7,
         )
 
+        self.cannot_compute_task = MessageCannotComputeTask(
+            task_id = 8,
+            reason = 'deadline-exceeded',
+            deadline = self.message_timestamp + 600,
+            timestamp = self.message_timestamp
+        )
+
+        self.message_reject_report_computed_task = MessageRejectReportComputedTask(
+            timestamp = self.message_timestamp,
+            message_cannot_compute_task = dump(
+                self.cannot_compute_task,
+                settings.CONCENT_PRIVATE_KEY,
+                settings.CONCENT_PUBLIC_KEY
+            ),
+        )
+
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_accept_valid_message(self):
         assert Message.objects.count()       == 0
-        assert MessageStatus.objects.count() == 0
+        assert ReceiveStatus.objects.count() == 0
 
         response = self.client.post(
             reverse('core:send'),
@@ -77,13 +95,13 @@ class CoreViewSendTest(TestCase):
         self.assertEqual(response.status_code, 202)  # pylint: disable=no-member
         self.assertEqual(len(Message.objects.all()),       1)
         self.assertEqual(Message.objects.last().type,      "MessageForceReportComputedTask")
-        self.assertEqual(len(MessageStatus.objects.all()), 1)
-        self.assertEqual(Message.objects.last().id,        MessageStatus.objects.last().message_id)
+        self.assertEqual(len(ReceiveStatus.objects.all()), 1)
+        self.assertEqual(Message.objects.last().id,        ReceiveStatus.objects.last().message_id)
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_200_if_message_timeout(self):
         self.assertEqual(len(Message.objects.all()), 0)
-        self.assertEqual(len(MessageStatus.objects.all()), 0)
+        self.assertEqual(len(ReceiveStatus.objects.all()), 0)
 
         message_task_to_compute            = self.message_task_to_compute
         message_task_to_compute.deadline   = self.message_timestamp - 1
@@ -213,9 +231,31 @@ class CoreViewSendTest(TestCase):
         self.assertEqual(response_400.status_code, 400)
         self.assertIn('error', response_400.json().keys())
 
+    @freeze_time("2017-11-17 10:00:00")
+    def test_send_reject_message_save_as_receive_out_of_band_status(self):
+        # assert Message.objects.count()       == 0
+        # assert ReceiveStatus.objects.count() == 0
 
-@override_settings(
-    CONCENT_PRIVATE_KEY = CONCENT_PRIVATE_KEY,
+        force_response = self.client.post(
+            reverse('core:send'),
+            data                           = dump(self.message_force_report_computed_task, PROVIDER_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY),
+            content_type                   = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
+        )
+
+        reject_response = self.client.post(
+            reverse('core:send'),
+            data                           = dump(self.message_reject_report_computed_task, PROVIDER_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY),
+            content_type                   = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
+        )
+        #TODO FINISH TEST
+
+
+
+
+@override_settings(                             # pylint: disable=unused-variable
+    CONCENT_PRIVATE_KEY = CONCENT_PRIVATE_KEY,  # pylint: disable=unused-variable
     CONCENT_PUBLIC_KEY  = CONCENT_PUBLIC_KEY,
 )
 class CoreViewReceiveTest(TestCase):
@@ -250,14 +290,14 @@ class CoreViewReceiveTest(TestCase):
             task_id     = self.message_task_to_compute.task_id
         )
         new_message.save()
-        new_message_status = MessageStatus(
+        new_message_status = ReceiveStatus(
             message   = new_message,
             timestamp = message_timestamp,
-            delivered = False
+            # delivered = False
         )
         new_message_status.save()
 
-        assert len(MessageStatus.objects.filter(delivered=False)) == 1
+        # assert len(ReceiveStatus.objects.filter(delivered=False)) == 1
 
         response = self.client.post(
             reverse('core:receive'),
@@ -290,11 +330,11 @@ class CoreViewReceiveTest(TestCase):
 
         self.assertEqual(response.status_code, 204)  # pylint: disable=no-member
         self.assertEqual(response.content.decode(), '')
-        assert len(MessageStatus.objects.filter(delivered=False)) == 0
+        # assert len(ReceiveStatus.objects.filter(delivered=False)) == 0
 
 
-@override_settings(
-    CONCENT_PRIVATE_KEY = CONCENT_PRIVATE_KEY,
+@override_settings(                             # pylint: disable=unused-variable
+    CONCENT_PRIVATE_KEY = CONCENT_PRIVATE_KEY,  # pylint: disable=unused-variable
     CONCENT_PUBLIC_KEY  = CONCENT_PUBLIC_KEY,
 )
 class CoreViewReceiveOutOfBandTest(TestCase):
@@ -327,7 +367,7 @@ class CoreViewReceiveOutOfBandTest(TestCase):
             task_id     = self.message_task_to_compute.task_id,
         )
         new_message.save()
-        new_message_status = MessageStatus(
+        new_message_status = ReceiveStatus(
             message   = new_message,
             timestamp = message_timestamp,
             delivered = False
@@ -345,7 +385,7 @@ class CoreViewReceiveOutOfBandTest(TestCase):
 
         self.assertEqual(response.status_code, 200)  # pylint: disable=no-member
 
-    @freeze_time("2017-11-17 11:20:00")
+    @freeze_time("2017-11-17 9:20:00")
     def test_view_receive_out_of_band_return_http_204_if_no_messages_in_database(self):
         response = self.client.post(
             reverse('core:receive_out_of_band'),

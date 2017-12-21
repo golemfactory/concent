@@ -17,9 +17,9 @@ from utils.testing_helpers  import generate_ecc_key_pair
 (REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
-@override_settings(
-    CONCENT_PRIVATE_KEY    = CONCENT_PRIVATE_KEY,
-    CONCENT_PUBLIC_KEY     = CONCENT_PUBLIC_KEY,
+@override_settings(                             # pylint: disable=unused-variable
+    CONCENT_PRIVATE_KEY = CONCENT_PRIVATE_KEY,  # pylint: disable=unused-variable
+    CONCENT_PUBLIC_KEY  = CONCENT_PUBLIC_KEY,
     CONCENT_MESSAGING_TIME = 10,  # seconds
 )
 class ReportComputedTaskIntegrationTest(TestCase):
@@ -275,7 +275,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         cannot_compute_task = message.MessageCannotComputeTask(
             timestamp = int(dateutil.parser.parse("2017-12-01 10:30:00").timestamp()),
-            reason    = "cannot-compute-task",
+            reason    = "deadline-exceeded",
             task_id   = 1,
         )
         serialized_cannot_compute_task = dump(cannot_compute_task, PROVIDER_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY)

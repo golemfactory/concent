@@ -185,7 +185,6 @@ class CoreViewSendTest(TestCase):
 
         self.assertEqual(response_400.status_code, 400)
         self.assertIn('error', response_400.json().keys())
-        self.assertIn(response_400.json()['error'], 'Invalid golem message type')
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_task_to_compute_deadline_exceeded(self):
@@ -213,7 +212,6 @@ class CoreViewSendTest(TestCase):
 
         self.assertEqual(response_400.status_code, 400)
         self.assertIn('error', response_400.json().keys())
-        self.assertIn(response_400.json()['error'], 'Message deadline exceeded current time.')
 
 
 @override_settings(

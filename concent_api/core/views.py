@@ -98,7 +98,7 @@ def send(request, message):
             )
             return HttpResponse("", status = 202)
         else:
-            raise Http400("Message deadline exceeded current time.")
+            raise Http400("Time to acknowledge this task is already over.")
 
     elif isinstance(message, MessageRejectReportComputedTask):
         message_cannot_compute_task = load(
@@ -153,7 +153,7 @@ def send(request, message):
             )
             return HttpResponse("", status = 202)
         else:
-            raise Http400("Message deadline exceeded current time.")
+            raise Http400("Time to acknowledge this task is already over.")
     else:
         if hasattr(message, 'TYPE'):
             raise Http400("This message type ({}) is either not supported or cannot be submitted to Concent.".format(message.TYPE))
@@ -484,20 +484,20 @@ def receive_out_of_band(request, _message):
 
 def validate_golem_message_task_to_compute(data):
     if not isinstance(data, MessageTaskToCompute):
-        raise Http400("Expected MessageTaskToCompute")
+        raise Http400("Expected MessageTaskToCompute.")
 
     if not isinstance(data.timestamp, float):
-        raise Http400("Wrong type of inside message task time limit. Not a float.")
+        raise Http400("Wrong type of message timestamp field. Not a float.")
 
     if data.task_id <= 0:
-        raise Http400("Wrong number of task_id. It has to be bigger than 0")
+        raise Http400("task_id cannot be negative.")
     if not isinstance(data.deadline, int):
-        raise Http400("Wrong type of deadline field!")
+        raise Http400("Wrong type of deadline field.")
 
 
 def validate_golem_message_reject(data):
     if not isinstance(data, MessageCannotComputeTask) and not isinstance(data, MessageTaskFailure):
-        raise Http400("Expected MessageCannotComputeTask or MessageTaskFailure")
+        raise Http400("Expected MessageCannotComputeTask or MessageTaskFailure.")
 
 
 

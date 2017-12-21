@@ -46,8 +46,6 @@ def send(request, message):
         if Message.objects.filter(task_id = loaded_message.task_id).exists():
             raise Http400("{} is already being processed for this task.".format(message.__class__.__name__))
 
-        current_time = int(datetime.datetime.now().timestamp())
-
         if loaded_message.deadline < current_time:
             return MessageRejectReportComputedTask(
                 reason                  = "deadline-exceeded",
@@ -73,7 +71,6 @@ def send(request, message):
         )
         validate_golem_message_task_to_compute(loaded_message)
 
-        current_time = int(datetime.datetime.now().timestamp())
         if current_time <= loaded_message.deadline + settings.CONCENT_MESSAGING_TIME:
             force_task_to_compute   = Message.objects.filter(task_id = loaded_message.task_id, type = "MessageForceReportComputedTask")
             previous_ack_message    = Message.objects.filter(task_id = loaded_message.task_id, type = "MessageAckReportComputedTask")

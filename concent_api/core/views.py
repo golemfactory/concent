@@ -274,7 +274,9 @@ def receive_out_of_band(request, _message):
                 settings.CONCENT_PRIVATE_KEY,
                 client_public_key
             )
-            message_ack_report_computed_task.message_task_to_compute    = force_report_computed_task.message_task_to_compute
+
+            message_ack_report_computed_task.message_task_to_compute = force_report_computed_task.message_task_to_compute
+
             dumped_message_ack_report_computed_task = dump(
                 message_ack_report_computed_task,
                 settings.CONCENT_PRIVATE_KEY,

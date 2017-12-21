@@ -78,33 +78,31 @@ def send(request, message):
             client_public_key
         )
         validate_golem_message_reject(message_cannot_compute_task)
-        task_to_compute     = Message.objects.filter(task_id = message_cannot_compute_task.task_id, type = "MessageForceReportComputedTask")
 
-        if not task_to_compute.exists():
+        force_report_computed_task_message = Message.objects.filter(task_id = message_cannot_compute_task.task_id, type = "MessageForceReportComputedTask")
+
+        if not force_report_computed_task_message.exists():
             raise Http400("'ForceReportComputedTask' for this task has not been initiated yet. Can't accept your 'RejectReportComputedTask'.")
 
-        rejected_message_task_to_compute    = task_to_compute.last()
-        raw_message_data                    = rejected_message_task_to_compute.data.tobytes()
-
-        decoded_message_from_database = load(
-            raw_message_data,
+        force_report_computed_task = load(
+            force_report_computed_task_message.last().data.tobytes(),
             settings.CONCENT_PRIVATE_KEY,
             client_public_key,
         )
         assert hasattr(force_report_computed_task, 'message_task_to_compute')
 
         message_task_to_compute = load(
-            decoded_message_from_database.message_task_to_compute,
+            force_report_computed_task.message_task_to_compute,
             settings.CONCENT_PRIVATE_KEY,
             client_public_key,
         )
         assert message_task_to_compute.task_id == message_cannot_compute_task.task_id
 
         if current_time <= message_task_to_compute.deadline + settings.CONCENT_MESSAGING_TIME:
-            other_ack_message = Message.objects.filter(task_id = message_cannot_compute_task.task_id, type = "MessageAckReportComputedTask")
-            reject_message    = Message.objects.filter(task_id = message_cannot_compute_task.task_id, type = "MessageRejectReportComputedTask")
+            ack_message             = Message.objects.filter(task_id = message_cannot_compute_task.task_id, type = "MessageAckReportComputedTask")
+            previous_reject_message = Message.objects.filter(task_id = message_cannot_compute_task.task_id, type = "MessageRejectReportComputedTask")
 
-            if other_ack_message.exists() or reject_message.exists():
+            if ack_message.exists() or previous_reject_message.exists():
                 raise Http400("Received RejectReportComputedTask but AckReportComputedTask or another RejectReportComputedTask for this task has already been submitted.")
             store_message(message.__class__.__name__, message_task_to_compute, request.body)
             return HttpResponse("", status = 202)

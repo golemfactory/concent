@@ -116,7 +116,7 @@ def send(request, message):
 @require_POST
 def receive(request, _message):
     undelivered_message_statuses    = MessageStatus.objects.filter(delivered = False)
-    last_undelivered_message_status = undelivered_message_statuses.order_by('id').last()
+    last_undelivered_message_status = undelivered_message_statuses.order_by('timestamp').last()
     if last_undelivered_message_status is None:
         return None
 
@@ -213,7 +213,7 @@ def receive(request, _message):
 @require_POST
 def receive_out_of_band(request, _message):
     client_public_key = decode_client_public_key(request)
-    last_task_message = Message.objects.order_by('id').last()
+    last_task_message = Message.objects.order_by('timestamp').last()
     if last_task_message is None:
         return None
 

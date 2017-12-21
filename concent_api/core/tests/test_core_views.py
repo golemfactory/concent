@@ -14,8 +14,10 @@ from django.utils                   import timezone
 
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
+from golem_messages.message         import MessageAckReportComputedTask
 from golem_messages.message         import MessageForceReportComputedTask
 from golem_messages.message         import MessageTaskToCompute
+from golem_messages.message         import MessageWantToComputeTask
 
 from core.models                    import Message
 from core.models                    import MessageStatus
@@ -49,6 +51,16 @@ class CoreViewSendTest(TestCase):
                 PROVIDER_PRIVATE_KEY,
                 REQUESTOR_PUBLIC_KEY
             )
+        )
+
+        self.message_want_to_compute = MessageWantToComputeTask(
+            node_name           = 1,
+            task_id             = 2,
+            perf_index          = 3,
+            price               = 4,
+            max_resource_size   = 5,
+            max_memory_size     = 6,
+            num_cores           = 7,
         )
 
     @freeze_time("2017-11-17 10:00:00")
@@ -161,6 +173,48 @@ class CoreViewSendTest(TestCase):
         self.assertIsInstance(response_400, JsonResponse)
         self.assertEqual(response_400.status_code, 400)  # pylint: disable=no-member
         self.assertIn('error', response_400.json().keys())
+
+    @freeze_time("2017-11-17 10:00:00")
+    def test_send_should_return_http_400_if_get_invalid_type_of_message(self):
+
+        response_400 = self.client.post(
+            reverse('core:send'),
+            data = dump(self.message_want_to_compute, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY),
+            content_type                   = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(CONCENT_PUBLIC_KEY).decode('ascii'),
+        )
+
+        self.assertEqual(response_400.status_code, 400)
+        self.assertIn('error', response_400.json().keys())
+        self.assertIn(response_400.json()['error'], 'Invalid golem message type')
+
+    @freeze_time("2017-11-17 10:00:00")
+    def test_send_should_return_http_400_if_task_to_compute_deadline_exceeded(self):
+        message_task_to_compute = MessageTaskToCompute(
+            timestamp = self.message_timestamp-10000,
+            task_id = 8,
+            deadline = self.message_timestamp-9000,
+        )
+
+        ack_report_computed_task = MessageAckReportComputedTask(
+            timestamp = self.message_timestamp,
+            message_task_to_compute = dump(
+                message_task_to_compute,
+                REQUESTOR_PRIVATE_KEY,
+                PROVIDER_PUBLIC_KEY
+            )
+        )
+
+        response_400 = self.client.post(
+            reverse('core:send'),
+            data = dump(ack_report_computed_task, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY),
+            content_type                   = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(CONCENT_PUBLIC_KEY).decode('ascii'),
+        )
+
+        self.assertEqual(response_400.status_code, 400)
+        self.assertIn('error', response_400.json().keys())
+        self.assertIn(response_400.json()['error'], 'Message deadline exceeded current time.')
 
 
 @override_settings(

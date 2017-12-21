@@ -64,7 +64,7 @@ def send(request, message):
 
             if not force_task_to_compute.exists():
                 raise Http400("'ForceReportComputedTask' for this task has not been initiated yet. Can't accept your 'AckReportComputedTask'.")
-            if other_ack_message.exists() or reject_message.exists():
+            if previous_ack_message.exists() or reject_message.exists():
                 raise Http400("Received AckReportComputedTask but RejectReportComputedTask or another AckReportComputedTask for this task has already been submitted.")
 
             store_message(message.__class__.__name__, loaded_message, request.body)
@@ -295,10 +295,10 @@ def validate_golem_message_reject(data):
         raise Http400("Expected MessageCannotComputeTask or MessageTaskFailure.")
 
 
-def store_message(msg_type, data, raw_message):
+def store_message(message_type, data, raw_message):
     message_timestamp   = datetime.datetime.now(timezone.utc)
     new_message         = Message(
-        type        = msg_type,
+        type        = message_type,
         timestamp   = message_timestamp,
         data        = raw_message,
         task_id     = data.task_id

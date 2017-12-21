@@ -500,7 +500,6 @@ def validate_golem_message_reject(data):
         raise Http400("Expected MessageCannotComputeTask or MessageTaskFailure.")
 
 
-
 def store_message(golem_message_type, task_id, raw_golem_message):
     message_timestamp   = datetime.datetime.now(timezone.utc)
     golem_message = Message(

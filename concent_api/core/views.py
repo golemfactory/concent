@@ -107,7 +107,10 @@ def send(request, message):
         else:
             raise Http400("Time to acknowledge this task is already over.")
     else:
-        raise Http400("Invalid golem message type")
+        if hasattr(message, 'TYPE'):
+            raise Http400("This message type ({}) is either not supported or cannot be submitted to Concent.".format(message.TYPE))
+        else:
+            raise Http400("Unknown message type or not a Golem message.")
 
 
 @api_view

@@ -132,6 +132,7 @@ def receive(request, _message):
         settings.CONCENT_PRIVATE_KEY,
         client_public_key,
     )
+    assert last_undelivered_message_status.message.type == type(decoded_message_data).__name__
 
     # Mark message as delivered
     if last_undelivered_message_status.message.type == "MessageForceReportComputedTask":

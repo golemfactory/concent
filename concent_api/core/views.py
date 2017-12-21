@@ -125,7 +125,7 @@ def receive(request, _message):
 
     current_time = int(datetime.datetime.now().timestamp())
 
-    client_public_key = decode_client_public_key(request)
+    client_public_key    = decode_client_public_key(request)
     raw_message_data     = last_undelivered_message_status.message.data.tobytes()
     decoded_message_data = load(
         raw_message_data,
@@ -138,7 +138,9 @@ def receive(request, _message):
         message_task_to_compute_from_force = load(
             decoded_message_data.message_task_to_compute,
             settings.CONCENT_PRIVATE_KEY,
-            client_public_key)
+            client_public_key
+        )
+
         if message_task_to_compute_from_force.deadline + settings.CONCENT_MESSAGING_TIME < current_time:
             last_undelivered_message_status.delivered = True
             last_undelivered_message_status.save()
@@ -165,6 +167,7 @@ def receive(request, _message):
             return raw_message_data
 
         return None
+
     elif isinstance(decoded_message_data, MessageRejectReportComputedTask):
         message_cannot_compute_task = load(
             decoded_message_data.message_cannot_compute_task,

@@ -91,11 +91,15 @@ def send(request, message):
             settings.CONCENT_PRIVATE_KEY,
             client_public_key,
         )
+        assert hasattr(force_report_computed_task, 'message_task_to_compute')
+
         message_task_to_compute = load(
             decoded_message_from_database.message_task_to_compute,
             settings.CONCENT_PRIVATE_KEY,
             client_public_key,
         )
+        assert message_task_to_compute.task_id == message_cannot_compute_task.task_id
+
         if current_time <= message_task_to_compute.deadline + settings.CONCENT_MESSAGING_TIME:
             other_ack_message = Message.objects.filter(task_id = message_cannot_compute_task.task_id, type = "MessageAckReportComputedTask")
             reject_message    = Message.objects.filter(task_id = message_cannot_compute_task.task_id, type = "MessageRejectReportComputedTask")

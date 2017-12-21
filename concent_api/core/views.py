@@ -163,7 +163,8 @@ def receive(request, _message):
         )
         if current_time <= message_task_to_compute.deadline + 2 * settings.CONCENT_MESSAGING_TIME:
             return raw_message_data
-        return HttpResponse("", status = 204)
+
+        return None
     elif isinstance(decoded_message_data, MessageRejectReportComputedTask):
         message_cannot_compute_task = load(
             decoded_message_data.message_cannot_compute_task,
@@ -193,7 +194,8 @@ def receive(request, _message):
                 )
                 return message_ack_report_computed_task
             return raw_message_data
-        return HttpResponse("", status = 204)
+
+        return None
     else:
         message_task_to_compute = load(
             decoded_message_data.message_task_to_compute,
@@ -209,7 +211,7 @@ def receive(request, _message):
         if current_time <= message_task_to_compute.deadline + settings.CONCENT_MESSAGING_TIME:
             return decoded_message_data
 
-        return HttpResponse("", status = 204)
+        return None
 
 
 @api_view
@@ -277,7 +279,7 @@ def receive_out_of_band(request, _message):
             message_verdict.message_ack_report_computed_task = dumped_message_ack_report_computed_task
             return message_verdict
 
-    return HttpResponse("", status = 204)
+    return None
 
 
 def validate_golem_message_task_to_compute(data):

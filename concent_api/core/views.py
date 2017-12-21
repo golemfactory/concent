@@ -69,7 +69,7 @@ def send(request, message):
             store_message(message.__class__.__name__, loaded_message, request.body)
             return HttpResponse("", status = 202)
         else:
-            raise Http400("Message deadline exceeded current time.")
+            raise Http400("Time to acknowledge this task is already over.")
 
     elif isinstance(message, MessageRejectReportComputedTask):
         message_cannot_compute_task = load(
@@ -105,7 +105,7 @@ def send(request, message):
             store_message(message.__class__.__name__, message_task_to_compute, request.body)
             return HttpResponse("", status = 202)
         else:
-            raise Http400("Message deadline exceeded current time.")
+            raise Http400("Time to acknowledge this task is already over.")
     else:
         raise Http400("Invalid golem message type")
 

@@ -57,17 +57,19 @@ def send(request, message):
 
         current_time = int(datetime.datetime.now().timestamp())
         if current_time <= loaded_message.deadline + settings.CONCENT_MESSAGING_TIME:
-            task_to_compute   = Message.objects.filter(task_id = loaded_message.task_id, type = "MessageForceReportComputedTask")
-            other_ack_message = Message.objects.filter(task_id = loaded_message.task_id, type = "MessageAckReportComputedTask")
-            reject_message    = Message.objects.filter(task_id = loaded_message.task_id, type = "MessageRejectReportComputedTask")
+            force_task_to_compute   = Message.objects.filter(task_id = loaded_message.task_id, type = "MessageForceReportComputedTask")
+            previous_ack_message    = Message.objects.filter(task_id = loaded_message.task_id, type = "MessageAckReportComputedTask")
+            reject_message          = Message.objects.filter(task_id = loaded_message.task_id, type = "MessageRejectReportComputedTask")
 
-            if not task_to_compute.exists():
+            if not force_task_to_compute.exists():
                 raise Http400("'ForceReportComputedTask' for this task has not been initiated yet. Can't accept your 'AckReportComputedTask'.")
             if other_ack_message.exists() or reject_message.exists():
                 raise Http400("Received AckReportComputedTask but RejectReportComputedTask or another AckReportComputedTask for this task has already been submitted.")
 
             store_message(message.__class__.__name__, loaded_message, request.body)
             return HttpResponse("", status = 202)
+        else:
+            raise Http400("Message deadline exceeded current time.")
 
     elif isinstance(message, MessageRejectReportComputedTask):
         message_cannot_compute_task = load(
@@ -103,6 +105,10 @@ def send(request, message):
                 raise Http400("Received RejectReportComputedTask but AckReportComputedTask or another RejectReportComputedTask for this task has already been submitted.")
             store_message(message.__class__.__name__, message_task_to_compute, request.body)
             return HttpResponse("", status = 202)
+        else:
+            raise Http400("Message deadline exceeded current time.")
+    else:
+        raise Http400("Invalid golem message type")
 
 
 @api_view

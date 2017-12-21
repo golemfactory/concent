@@ -223,8 +223,8 @@ def receive_out_of_band(request, _message):
         settings.CONCENT_PRIVATE_KEY,
         client_public_key
     )
-    current_time                            = int(datetime.datetime.now().timestamp())
-    message_ack_report_computed_task        = MessageAckReportComputedTask()
+    current_time                     = int(datetime.datetime.now().timestamp())
+    message_ack_report_computed_task = MessageAckReportComputedTask()
 
     message_verdict = MessageVerdictReportComputedTask()
 
@@ -257,9 +257,9 @@ def receive_out_of_band(request, _message):
             client_public_key
         )
         if decoded_last_task_message.reason == "deadline-exceeded":
-            rejected_task_id                                            = message_cannot_compute_task.task_id
-            message_to_compute                                          = Message.objects.get(type = 'MessageForceReportComputedTask', task_id = rejected_task_id)
-            raw_message_to_compute                                      = message_to_compute.data.tobytes()
+            rejected_task_id           = message_cannot_compute_task.task_id
+            message_to_compute         = Message.objects.get(type = 'MessageForceReportComputedTask', task_id = rejected_task_id)
+            raw_message_to_compute     = message_to_compute.data.tobytes()
             force_report_computed_task = load(
                 raw_message_to_compute,
                 settings.CONCENT_PRIVATE_KEY,

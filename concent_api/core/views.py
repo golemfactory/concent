@@ -145,10 +145,9 @@ def receive(request, _message):
         if message_task_to_compute_from_force.deadline + settings.CONCENT_MESSAGING_TIME < current_time:
             last_undelivered_message_status.delivered = True
             last_undelivered_message_status.save()
+
             return dump(
-                MessageAckReportComputedTask(
-                    message_task_to_compute = decoded_message_data.message_task_to_compute
-                ),
+                MessageAckReportComputedTask(message_task_to_compute = decoded_message_data.message_task_to_compute),
                 settings.CONCENT_PRIVATE_KEY,
                 client_public_key,
             )
@@ -158,6 +157,7 @@ def receive(request, _message):
 
     if isinstance(decoded_message_data, MessageForceReportComputedTask):
         return raw_message_data
+
     elif isinstance(decoded_message_data, MessageAckReportComputedTask):
         message_task_to_compute = load(
             decoded_message_data.message_task_to_compute,
@@ -176,10 +176,10 @@ def receive(request, _message):
             client_public_key
         )
         message_to_compute = Message.objects.get(
-            type = 'MessageForceReportComputedTask',
+            type    = 'MessageForceReportComputedTask',
             task_id = message_cannot_compute_task.task_id
         )
-        raw_message_to_compute = message_to_compute.data.tobytes()
+        raw_message_to_compute        = message_to_compute.data.tobytes()
         decoded_message_from_database = load(
             raw_message_to_compute,
             settings.CONCENT_PRIVATE_KEY,
@@ -193,7 +193,7 @@ def receive(request, _message):
         if current_time <= message_task_to_compute.deadline + 2 * settings.CONCENT_MESSAGING_TIME:
             if decoded_message_data.reason == "deadline-exceeded":
                 message_ack_report_computed_task = MessageAckReportComputedTask(
-                    timestamp = current_time,
+                    timestamp               = current_time,
                     message_task_to_compute = decoded_message_from_database.message_task_to_compute,
                 )
                 return message_ack_report_computed_task

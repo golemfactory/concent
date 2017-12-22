@@ -2,6 +2,7 @@ import binascii
 import datetime
 from base64                         import b64decode
 from base64                         import b64encode
+import logging
 
 from django.conf                    import settings
 from django.http                    import JsonResponse
@@ -18,6 +19,9 @@ from golem_messages.message         import Message
 from golem_messages.shortcuts       import load
 
 
+logger = logging.getLogger(__name__)
+
+
 @csrf_exempt
 @require_POST
 def upload(request):
@@ -26,7 +30,9 @@ def upload(request):
 
     response = parse_headers(request)
     if response is not None:
+        logger.warning(response.content.decode())
         return response
+    logger.info('Request passed all upload validations.')
 
     return JsonResponse({"message": "Request passed all upload validations."}, status = 200)
 
@@ -43,7 +49,9 @@ def download(request):
 
     response = parse_headers(request)
     if response is not None:
+        logger.warning(response.content.decode())
         return response
+    logger.info('Request passed all download validations.')
 
     return JsonResponse({"message": "Request passed all download validations."}, status = 200)
 

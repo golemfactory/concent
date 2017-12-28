@@ -1,5 +1,12 @@
 import os
 
+from git import (
+    InvalidGitRepositoryError,
+    Repo,
+)
+import golem_messages
+
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -25,6 +32,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'concent_api.middleware.GolemMessagesVersionMiddleware',
 ]
 
 ROOT_URLCONF = 'concent_api.urls'
@@ -196,3 +204,10 @@ LOGGING = {
 # A global constant defining the length of the time window within which a requestor or a provider is supposed to
 # contact concent and send or receive a message as defined in the protocol.
 CONCENT_MESSAGING_TIME = 3600  # seconds
+
+# Loads git tag or commit id of the golem_messages package currently used.
+try:
+    repo = Repo(os.path.dirname(golem_messages.__file__), search_parent_directories=True)
+    GOLEM_MESSAGES_VERSION = repo.commit().name_rev
+except InvalidGitRepositoryError:
+    GOLEM_MESSAGES_VERSION = None

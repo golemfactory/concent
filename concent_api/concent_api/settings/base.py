@@ -27,6 +27,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'concent_api.middleware.GolemMessagesVersionMiddleware',
 ]
 
 ROOT_URLCONF = 'concent_api.urls'

@@ -1,5 +1,6 @@
 from functools                      import wraps
 from base64                         import b64decode
+from binascii                       import Error as BinAsciiError
 
 import json
 from django.http                    import JsonResponse
@@ -19,16 +20,22 @@ def api_view(view):
     @wraps(view)
     @csrf_exempt
     def wrapper(request, *args, **kwargs):
-        if 'HTTP_CONCENT_CLIENT_PUBLIC_KEY' not in request.META:
+        if 'HTTP_CONCENT_CLIENT_PUBLIC_KEY' not in request.META or request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'] == '':
             return JsonResponse({'error': 'Concent-Client-Public-Key HTTP header is missing on the request.'}, status = 400)
 
         try:
             client_public_key = b64decode(request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'].encode('ascii'))
-        except TypeError:
+        except (AttributeError, BinAsciiError):
             # From b64decode() docs:
             # A TypeError is raised if s is incorrectly padded.
             # Characters that are neither in the normal base-64 alphabet nor the alternative alphabet are discarded prior to the padding check.
             return JsonResponse({'error': 'The value in the Concent-Client-Public-Key HTTP is not a valid base64-encoded value.'}, status = 400)
+
+        if len(client_public_key) != 64:
+            return JsonResponse(
+                {'error': 'The length in the Concent-Client-Public-Key HTTP is wrong.'},
+                status=400
+            )
 
         if request.content_type not in ['application/octet-stream', '', 'application/json']:
             return JsonResponse({'error': 'Concent supports only application/octet-stream and application/json.'}, status = 415)
@@ -41,12 +48,17 @@ def api_view(view):
             if request.content_type == 'application/json':
                 message = json.loads(request.body.decode('ascii'))
             if request.content_type == 'application/octet-stream':
-                message = load(
-                    request.body,
-                    settings.CONCENT_PRIVATE_KEY,
-                    client_public_key
-                )
-
+                try:
+                    message = load(
+                        request.body,
+                        settings.CONCENT_PRIVATE_KEY,
+                        client_public_key
+                    )
+                except AttributeError:
+                    return JsonResponse(
+                        {'error': 'Wrong type of message or public key'},
+                        status=400
+                    )  #TODO better exception catching after repair bug by golem
         try:
             response_from_view = view(request, message, *args, **kwargs)
         except Http400 as exception:

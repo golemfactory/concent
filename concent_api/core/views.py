@@ -46,10 +46,14 @@ def send(request, message):
                 message_task_to_compute = message.message_task_to_compute,
             )
 
-        store_message(
+        golem_message, message_timestamp = store_message(
             type(message).__name__,
             loaded_message.task_id,
             request.body
+        )
+        store_receive_message_status(
+            golem_message,
+            message_timestamp,
         )
         return HttpResponse("", status = 202)
 
@@ -173,7 +177,7 @@ def receive(request, _message):
                 client_public_key,
             )
             store_message(
-                message_ack_report_computed_task,
+                type(message_ack_report_computed_task).__name__,
                 message_task_to_compute.task_id,
                 dumped_message_ack_report_computed_task
             )
@@ -326,7 +330,7 @@ def receive_out_of_band(request, _message):
                 client_public_key
             )
             store_message(
-                message_verdict,
+                type(message_verdict).__name__,
                 decoded_task_to_compute_message.task_id,
                 dumped_message_verdict
             )
@@ -362,7 +366,7 @@ def receive_out_of_band(request, _message):
                 client_public_key
             )
             store_message(
-                message_verdict,
+                type(message_verdict).__name__,
                 decoded_task_to_compute_message.task_id,
                 dumped_message_verdict
             )
@@ -409,7 +413,7 @@ def receive_out_of_band(request, _message):
             last_undelivered_receive_out_of_band_status.save()
 
             store_message(
-                message_verdict,
+                type(message_verdict).__name__,
                 message_task_to_compute.task_id,
                 dumped_message_verdict
             )
@@ -451,7 +455,7 @@ def receive_out_of_band(request, _message):
             last_undelivered_receive_out_of_band_status.save()
 
             store_message(
-                message_verdict,
+                type(message_verdict).__name__,
                 message_cannot_compute_task.task_id,
                 dumped_message_verdict
             )
@@ -499,7 +503,7 @@ def store_receive_message_status(golem_message, message_timestamp):
     )
     receive_message_status.full_clean()
     receive_message_status.save()
-    
+
 
 def store_receive_out_of_bend(golem_message, message_timestamp):
     receive_out_of_band_status = ReceiveOutOfBandStatus(

@@ -78,10 +78,14 @@ def send(request, message):
                     "or another AckReportComputedTask for this task has already been submitted."
                 )
 
-            store_message(
+            golem_message, message_timestamp = store_message(
                 type(message).__name__,
                 loaded_message.task_id,
                 request.body
+            )
+            store_receive_message_status(
+                golem_message,
+                message_timestamp,
             )
             return HttpResponse("", status = 202)
         else:

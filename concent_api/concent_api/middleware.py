@@ -1,10 +1,9 @@
-from django.conf import settings
+from golem_messages import __version__
 
 
 class GolemMessagesVersionMiddleware(object):
     """
-    Used to attach git tag or commit id of the golem_messages package
-    currently used to HTTP response header.
+    Used to attach version of the golem_messages package currently used to HTTP response header.
 
     """
 
@@ -13,5 +12,5 @@ class GolemMessagesVersionMiddleware(object):
 
     def __call__(self, request):
         response = self.get_response(request)
-        response['Concent-Golem-Messages-Version'] = settings.GOLEM_MESSAGES_VERSION
+        response['Concent-Golem-Messages-Version'] = __version__
         return response

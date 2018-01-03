@@ -1,13 +1,11 @@
 from base64                 import b64encode
-import os
 
 from django.test            import override_settings
 from django.test            import TestCase
 from django.urls            import reverse
 from golem_messages         import dump
 from golem_messages         import message
-
-from git import Repo
+from golem_messages         import __version__
 
 from utils.testing_helpers  import generate_ecc_key_pair
 
@@ -22,12 +20,12 @@ from utils.testing_helpers  import generate_ecc_key_pair
 )
 class GolemMessagesVersionMiddlewareTest(TestCase):
 
-    def test_golem_messages_version_middleware_attach_http_header_to_response(self):
+    def test_golem_messages_version_middleware_should_attach_http_header_to_response(self):
         """
         Tests that response from Concent:
 
         * Contains HTTP header 'Concent-Golem-Messages-Version'.
-        * Header contains latest git commit id of golem_messages package.
+        * Header contains latest version of golem_messages package.
         """
         ping_message = message.MessagePing()
         serialized_ping_message = dump(ping_message, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -39,7 +37,7 @@ class GolemMessagesVersionMiddlewareTest(TestCase):
             HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         )
 
-        self.assertFalse(str(response.status_code).startswith('5'))
+        self.assertFalse(500 <= response.status_code < 600)
         self.assertIn('concent-golem-messages-version', response._headers)
         self.assertEqual(
             response._headers['concent-golem-messages-version'][0],
@@ -47,5 +45,5 @@ class GolemMessagesVersionMiddlewareTest(TestCase):
         )
         self.assertEqual(
             response._headers['concent-golem-messages-version'][1],
-            Repo(os.path.dirname(message.__file__), search_parent_directories=True).commit().name_rev
+            __version__
         )

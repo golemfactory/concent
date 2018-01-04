@@ -294,7 +294,7 @@ class CoreViewReceiveTest(TestCase):
         new_message.save()
         new_message_status = ReceiveStatus(
             message   = new_message,
-            timestamp   = message_timestamp,
+            timestamp = message_timestamp,
             delivered = False
         )
         new_message_status.full_clean()
@@ -344,42 +344,60 @@ class CoreViewReceiveOutOfBandTest(TestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def setUp(self):
-        self.client = Client()
-        self.public_key = '85cZzVjahnRpUBwm0zlNnqTdYom1LF1P1WNShLg17cmhN2UssnPrCjHKTi5susO3wrr/q07eswumbL82b4HgOw=='
-        self.force_data = {
-            "type":      "MessageForceReportComputedTask",
-            "timestamp": 1510911047,  # 2017-11-17 9:30
-            "message_task_to_compute": {
-                "type":               "MessageTaskToCompute",
-                "timestamp":          1510909200,  # 2017-11-17 9:00
-                "task_id":            1,
-                "deadline":           1510915047  # 2017-11-17 10:37
-            }
-        }
+        self.message_task_to_compute = MessageTaskToCompute(
+            timestamp   = 1510909200,
+            task_id     = 1,
+            deadline    = 1510915047,
+        )
+        self.message_force_report_computed_task = MessageForceReportComputedTask(
+            timestamp = 1510911047,
+            message_task_to_compute = dump(
+                self.message_task_to_compute,
+                PROVIDER_PRIVATE_KEY,
+                REQUESTOR_PUBLIC_KEY,
+            )
+        )
         message_timestamp   = datetime.datetime.now(timezone.utc)
         new_message         = Message(
-            type        = self.force_data['type'],
+            type        = "MessageForceReportComputedTask",
             timestamp   = message_timestamp,
-            data        = json.dumps(self.force_data).encode('utf-8'),
-            task_id     = self.force_data['message_task_to_compute']['task_id']
+            data        = dump(
+                self.message_force_report_computed_task,
+                settings.CONCENT_PRIVATE_KEY,
+                REQUESTOR_PUBLIC_KEY
+            ),
+            task_id     = self.message_task_to_compute.task_id,
         )
+        new_message.full_clean()
         new_message.save()
-        new_message_status = MessageStatus(
-            message = new_message,
-            timestamp   = message_timestamp,
+        new_message_status = ReceiveStatus(
+
+            message   = new_message,
+            timestamp = message_timestamp,
             delivered = False
         )
+        new_message_status.full_clean()
         new_message_status.save()
 
     @freeze_time("2017-11-17 11:40:00")
     def test_view_receive_out_of_band_should_accept_valid_message(self):
-        response = self.client.post(reverse('core:receive_out_of_band'), content_type = 'application/json', HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key)
+        response = self.client.post(
+            reverse('core:receive_out_of_band'),
+            data                           = '',
+            content_type                   = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+        )
 
-        self.assertEqual(response.status_code, 200)  # pylint: disable=no-member
+        self.assertEqual(response.status_code, 200)
 
-    @freeze_time("2017-11-17 11:20:00")
+    @freeze_time("2017-11-17 9:20:00")
     def test_view_receive_out_of_band_return_http_204_if_no_messages_in_database(self):
-        response = self.client.post(reverse('core:receive_out_of_band'), content_type = 'application/json', HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key)
+        response = self.client.post(
+            reverse('core:receive_out_of_band'),
+            data                           = '',
+            content_type                   = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+        )
 
-        self.assertEqual(response.status_code, 204)  # pylint: disable=no-member
+        self.assertEqual(response.status_code, 204)
         self.assertEqual(response.content.decode(), '')

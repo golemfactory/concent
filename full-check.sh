@@ -17,6 +17,5 @@ printf "========================= UNIT TESTS WITH COVERAGE =================\n"
 rm -rf contrib/coverage/coverage_html
 cd concent_api/
 coverage run --rcfile=../coverage-config --source='.' manage.py test
-coverage html --rcfile=../coverage-config
 coverage report --show-missing
 cd ..

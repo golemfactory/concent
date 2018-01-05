@@ -1,6 +1,18 @@
 # .coveragerc to control coverage.py
 [run]
-omit=*/migrations/*,*/mocks/*,*/tests*,*/management/*,*/wsgi.py,*/admin.py,manage.py,*/settings/*,*/apps.py,*/__init__.py
+omit=
+    api-integration-test.py
+    api-test.py
+    manage.py
+    */__init__.py
+    */admin.py
+    */apps.py
+    */wsgi.py
+    */management/*
+    */migrations/*
+    */mocks/*
+    */tests*
+    */settings/*
 
 [html]
 directory = ../htmlcov

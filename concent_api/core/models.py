@@ -11,14 +11,27 @@ class Message(Model):
         return 'Message #{}, type:{}, {}'.format(self.id, self.type, self.timestamp)
 
 
-class MessageStatus(Model):
+class ReceiveStatus(Model):
     message     = ForeignKey('Message')
     timestamp   = DateTimeField()
     delivered   = BooleanField(default=False)
 
     def __str__(self):
-        return 'MessageStatus #{}, message:{}, delivered:{}'.format(self.id, self.message, self.delivered)
+        return 'ReceiveStatus #{}, message:{}'.format(self.id, self.message)
 
     class Meta:
-        verbose_name = ('Message status')
-        verbose_name_plural = ('Message statuses')
+        verbose_name = ('Receive status')
+        verbose_name_plural = ('Receive statuses')
+
+
+class ReceiveOutOfBandStatus(Model):
+    message     = ForeignKey('Message')
+    timestamp   = DateTimeField()
+    delivered   = BooleanField(default=False)
+
+    def __str__(self):
+        return 'ReceiveOutOfBandStatus #{}, message:{}'.format(self.id, self.message)
+
+    class Meta:
+        verbose_name = ('ReceiveOutOfBand status')
+        verbose_name_plural = ('ReceiveOutOfBand statuses')

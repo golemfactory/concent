@@ -7,6 +7,7 @@ from django.views.decorators.http   import require_POST
 from django.utils                   import timezone
 from django.conf                    import settings
 
+import golem_messages
 from golem_messages.message         import AckReportComputedTask
 from golem_messages.message         import CannotComputeTask
 from golem_messages.message         import ForceReportComputedTask
@@ -102,6 +103,8 @@ def send(request, message):
                 {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
                 status = 400
             )
+        except golem_messages.exceptions.InvalidSignature:
+            return JsonResponse({'error': "Wrong message signature"}, status = 400)
         assert hasattr(force_report_computed_task, 'task_to_compute')
         assert force_report_computed_task.task_to_compute.compute_task_def['task_id'] == message.cannot_compute_task.task_to_compute.compute_task_def['task_id']
         if message.cannot_compute_task.reason == CannotComputeTask.REASON.WrongCTD:
@@ -164,6 +167,8 @@ def receive(request, _message):
                     {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
                     status = 400
                 )
+            except golem_messages.exceptions.InvalidSignature:
+                return JsonResponse({'error': "Wrong message signature"}, status = 400)
 
             ack_report_computed_task = AckReportComputedTask()
             ack_report_computed_task.task_to_compute = force_report_task.task_to_compute
@@ -204,6 +209,9 @@ def receive(request, _message):
                 {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
                 status = 400
             )
+        except golem_messages.exceptions.InvalidSignature:
+            return JsonResponse({'error': "Wrong message signature"}, status = 400)
+
     else:
         try:
             decoded_message_data = load(
@@ -218,6 +226,9 @@ def receive(request, _message):
                 {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
                 status = 400
             )
+        except golem_messages.exceptions.InvalidSignature:
+            return JsonResponse({'error': "Wrong message signature"}, status = 400)
+
     assert last_undelivered_message_status.message.type == type(decoded_message_data).__name__
 
     if last_undelivered_message_status.message.type == "ForceReportComputedTask":
@@ -266,6 +277,8 @@ def receive(request, _message):
                 {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
                 status = 400
             )
+        except golem_messages.exceptions.InvalidSignature:
+            return JsonResponse({'error': "Wrong message signature"}, status = 400)
         if current_time <= decoded_message_from_database.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
             if decoded_message_data.reason is not None and decoded_message_data.reason.value == "TASK_TIME_LIMIT_EXCEEDED":
                 ack_report_computed_task = AckReportComputedTask(
@@ -319,6 +332,8 @@ def receive_out_of_band(request, _message):
                     {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
                     status = 400
                 )
+            except golem_messages.exceptions.InvalidSignature:
+                return JsonResponse({'error': "Wrong message signature"}, status = 400)
 
             force_report_computed_task = ForceReportComputedTask()
             force_report_computed_task.task_to_compute = decoded_ack_report_computed_task.task_to_compute
@@ -356,6 +371,8 @@ def receive_out_of_band(request, _message):
                     {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
                     status = 400
                 )
+            except golem_messages.exceptions.InvalidSignature:
+                return JsonResponse({'error': "Wrong message signature"}, status = 400)
 
             ack_report_computed_task = AckReportComputedTask()
             ack_report_computed_task.task_to_compute    = TaskToCompute()
@@ -389,6 +406,8 @@ def receive_out_of_band(request, _message):
             {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
             status = 400
         )
+    except golem_messages.exceptions.InvalidSignature:
+        return JsonResponse({'error': "Wrong message signature"}, status = 400)
 
     message_ack_report_computed_task = AckReportComputedTask()
     if isinstance(decoded_last_task_message, ForceReportComputedTask):
@@ -440,6 +459,8 @@ def receive_out_of_band(request, _message):
                     {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
                     status = 400
                 )
+            except golem_messages.exceptions.InvalidSignature:
+                return JsonResponse({'error': "Wrong message signature"}, status = 400)
 
             message_ack_report_computed_task.task_to_compute = force_report_computed_task.task_to_compute
 

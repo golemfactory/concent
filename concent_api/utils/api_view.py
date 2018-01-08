@@ -7,6 +7,7 @@ from django.http                    import JsonResponse
 from django.http                    import HttpResponse
 from django.conf                    import settings
 from django.views.decorators.csrf   import csrf_exempt
+import golem_messages
 from golem_messages.message         import Message
 from golem_messages                 import dump
 from golem_messages                 import load
@@ -68,17 +69,19 @@ def api_view(view):
                         {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
                         status = 400
                     )
+                except golem_messages.exceptions.InvalidSignature:
+                    return JsonResponse({'error': "Wrong message signature"}, status = 400)
         try:
             response_from_view = view(request, message, *args, **kwargs)
         except Http400 as exception:
             return JsonResponse({'error': str(exception)}, status = 400)
-
         if isinstance(response_from_view, Message):
             serialized_message = dump(
                 response_from_view,
                 settings.CONCENT_PRIVATE_KEY,
                 client_public_key
             )
+
             return HttpResponse(serialized_message, content_type = 'application/octet-stream')
         elif isinstance(response_from_view, dict):
             return JsonResponse(response_from_view, safe = False)

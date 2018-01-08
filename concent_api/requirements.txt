@@ -1,5 +1,5 @@
 Django >= 1.11, < 1.12
 psycopg2
--e git://github.com/Code-Poets/golem-messages.git@old-concent-messages-for-get-report-computed-task-use-case#egg=concent-messages
+-e git://github.com/golemfactory/golem-messages.git#egg=master
 freezegun
 pyyaml

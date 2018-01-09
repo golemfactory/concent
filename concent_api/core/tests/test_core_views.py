@@ -94,7 +94,7 @@ class CoreViewSendTest(TestCase):
 
         self.assertEqual(response.status_code, 202)
         self.assertEqual(len(Message.objects.all()),       1)
-        self.assertEqual(Message.objects.last().type,      "ForceReportComputedTask")
+        self.assertEqual(Message.objects.last().type,      message.ForceReportComputedTask.TYPE)
         self.assertEqual(len(ReceiveStatus.objects.all()), 1)
         self.assertEqual(Message.objects.last().id,        ReceiveStatus.objects.last().message_id)
 
@@ -270,7 +270,7 @@ class CoreViewSendTest(TestCase):
         )
 
         self.assertEqual(force_response.status_code, 202)
-        self.assertEqual(Message.objects.last().type, 'ForceReportComputedTask')
+        self.assertEqual(Message.objects.last().type, message.ForceReportComputedTask.TYPE)
 
         reject_response = self.client.post(
             reverse('core:send'),
@@ -284,7 +284,7 @@ class CoreViewSendTest(TestCase):
         )
 
         self.assertEqual(reject_response.status_code, 202)
-        self.assertEqual(Message.objects.last().type, 'RejectReportComputedTask')
+        self.assertEqual(Message.objects.last().type, message.RejectReportComputedTask.TYPE)
 
 
 @override_settings(
@@ -311,7 +311,7 @@ class CoreViewReceiveTest(TestCase):
     def test_receive_should_accept_valid_message(self):
         message_timestamp   = datetime.datetime.now(timezone.utc)
         new_message         = Message(
-            type        = self.force_golem_data.__class__.__name__,
+            type        = self.force_golem_data.TYPE,
             timestamp   = message_timestamp,
             data        = self.force_golem_data.serialize(),
             task_id     = self.task_to_compute.compute_task_def['task_id']  # pylint: disable=no-member
@@ -381,7 +381,7 @@ class CoreViewReceiveOutOfBandTest(TestCase):
 
         message_timestamp   = datetime.datetime.now(timezone.utc)
         new_message         = Message(
-            type        = self.force_golem_data.__class__.__name__,
+            type        = self.force_golem_data.TYPE,
             timestamp   = message_timestamp,
             data        = dump(
                 self.force_golem_data,

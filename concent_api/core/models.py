@@ -1,8 +1,8 @@
-from django.db.models import Model, CharField, IntegerField, DateTimeField, BooleanField, BinaryField, ForeignKey
+from django.db.models import Model, PositiveSmallIntegerField, IntegerField, DateTimeField, BooleanField, BinaryField, ForeignKey
 
 
 class Message(Model):
-    type        = CharField(max_length=32)
+    type        = PositiveSmallIntegerField()
     timestamp   = DateTimeField()
     data        = BinaryField()
     task_id     = IntegerField(null=True)

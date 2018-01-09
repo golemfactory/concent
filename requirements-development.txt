@@ -8,6 +8,7 @@ flake8
 pylint-django
 requests
 mypy==0.560
+coverage
 
 # Force the latest version of pylint pyflakes and pep8. There are numerous issues with older versions.
 # FIXME: pylint-django does not work with the latest pylint (1.8.0 or 1.8.1).

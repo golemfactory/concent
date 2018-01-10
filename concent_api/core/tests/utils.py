@@ -14,10 +14,10 @@ class ConcentIntegrationTestCase(TestCase):
 
     def setUp(self):
         super().setUp()
-        self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY = generate_ecc_key_pair()
-        self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY = generate_ecc_key_pair()
+        (self.PROVIDER_PRIVATE_KEY,  self.PROVIDER_PUBLIC_KEY)    = generate_ecc_key_pair()
+        (self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY)   = generate_ecc_key_pair()
 
-    def _get_encoded_key(self, key):
+    def _get_encoded_key(self, key):  # pylint: disable=no-self-use
         """ Returns given key encoded. """
         return b64encode(key).decode('ascii')
 
@@ -29,31 +29,37 @@ class ConcentIntegrationTestCase(TestCase):
         """ Returns provider public key encoded. """
         return self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY)
 
-    def _get_serialized_force_get_task_result(self, task_to_compute, timestamp, requestor_private_key=None):
+    def _get_serialized_force_get_task_result(self, report_computed_task, timestamp, requestor_private_key=None):
         """ Returns MessageForceGetTaskResult serialized. """
-        force_report_computed_task = message.ForceGetTaskResult(
+        force_get_task_result = message.concents.ForceGetTaskResult(
             timestamp               = self._parse_iso_date_to_timestamp(timestamp),
-            message_task_to_compute = task_to_compute,
+            report_computed_task    = report_computed_task,
         )
         return dump(
-            force_report_computed_task,
+            force_get_task_result,
             requestor_private_key or self.REQUESTOR_PRIVATE_KEY,
             settings.CONCENT_PUBLIC_KEY
         )
 
-    def _get_serialized_task_to_compute(self, timestamp, deadline, task_id=1, provider_private_key=None,
-                                        requestor_public_key=None):
-        """ Returns MessageTaskToCompute serialized. """
-        task_to_compute = message.MessageTaskToCompute(
-            timestamp               = self._parse_iso_date_to_timestamp(timestamp),
-            task_id                 = task_id,
-            deadline                = self._parse_iso_date_to_timestamp(deadline),
+    def _get_deserialized_report_computed_task(self, task_to_compute, size=None, checksum=None):  # pylint: disable=no-self-use
+        """ Returns ReportComputedTask deserialized. """
+        report_computed_task = message.ReportComputedTask(
+            task_to_compute = task_to_compute,
+            size            = size,
+            checksum        = checksum
         )
-        return dump(
-            task_to_compute,
-            provider_private_key or self.PROVIDER_PRIVATE_KEY,
-            requestor_public_key or self.REQUESTOR_PUBLIC_KEY
-        )
+        return report_computed_task
 
-    def _parse_iso_date_to_timestamp(self, date_string):
+    def _get_deserialized_task_to_compute(self, timestamp, deadline, task_id=1):
+        """ Returns TaskToCompute deserialized. """
+        compute_task_def                = message.ComputeTaskDef()
+        compute_task_def['task_id']     = task_id
+        compute_task_def['deadline']    = self._parse_iso_date_to_timestamp(deadline)
+        task_to_compute = message.TaskToCompute(
+            timestamp = self._parse_iso_date_to_timestamp(timestamp),
+            compute_task_def = compute_task_def,
+        )
+        return task_to_compute
+
+    def _parse_iso_date_to_timestamp(self, date_string):  # pylint: disable=no-self-use
         return int(dateutil.parser.parse(date_string).timestamp())

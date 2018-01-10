@@ -16,6 +16,6 @@ printf "========================= UNIT TESTS WITH COVERAGE =================\n"
 # NOTE: 'manage.py test' does not find all tests unless we run it from within the app directory.
 rm -rf contrib/coverage/coverage_html
 cd concent_api/
-coverage run --rcfile=../coverage-config --source='.' manage.py test
+coverage run --rcfile=../coverage-config --source='.' manage.py test --settings=concent_api.settings.testing
 coverage report --show-missing
 cd ..

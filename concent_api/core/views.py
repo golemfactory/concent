@@ -22,7 +22,6 @@ from .models                        import ReceiveOutOfBandStatus
 @api_view
 @require_POST
 def send(request, client_message):
-    client_public_key = decode_client_public_key(request)
     current_time = int(datetime.datetime.now().timestamp())
     if isinstance(client_message, message.ForceReportComputedTask):
         validate_golem_message_task_to_compute(client_message.task_to_compute)

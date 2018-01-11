@@ -239,7 +239,7 @@ def receive(request, _message):
         except AttributeError:
             # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
             return JsonResponse(
-                {'error': "Failed to decode TaskToCompute. Message and/or key are malformed or don't match."},
+                {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
                 status = 400
             )
 
@@ -295,7 +295,7 @@ def receive_out_of_band(request, _message):
             except AttributeError:
                 # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
                 return JsonResponse(
-                    {'error': "Failed to decode TaskToCompute. Message and/or key are malformed or don't match."},
+                    {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
                     status = 400
                 )
 

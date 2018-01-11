@@ -113,8 +113,15 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
+        force_report_computed_task_from_view = load(
+            response_2.content,
+            REQUESTOR_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time = False,
+        )
+
         self.assertEqual(response_2.status_code,  200)
-        self.assertEqual(response_2.content, serialized_force_report_computed_task)
+        self.assertEqual(force_report_computed_task_from_view.timestamp, force_report_computed_task.timestamp)
 
         # STEP 3: Requestor accepts computed task via Concent
 
@@ -146,8 +153,15 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             )
 
+        ack_report_computed_task_from_view = load(
+            response_4.content,
+            PROVIDER_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time = False,
+        )
+
         self.assertEqual(response_4.status_code,  200)
-        self.assertEqual(response_4.content, serialized_ack_report_computed_task)
+        self.assertEqual(ack_report_computed_task_from_view.timestamp, ack_report_computed_task.timestamp)
 
     def test_provider_forces_computed_task_report_and_requestor_sends_rejection_due_to_failed_computation(self):
         # Expected message exchange:
@@ -197,8 +211,16 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY   = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
+        force_report_computed_task_from_view = load(
+            response_2.content,
+            REQUESTOR_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time = False,
+        )
+
         self.assertEqual(response_2.status_code,  200)
-        self.assertEqual(response_2.content, serialized_force_report_computed_task)
+        self.assertEqual(force_report_computed_task_from_view.timestamp, force_report_computed_task.timestamp)
+        self.assertEqual(force_report_computed_task_from_view.task_to_compute.timestamp, force_report_computed_task.task_to_compute.timestamp)
 
         # STEP 3: Requestor rejects computed task due to CannotComputeTask or TaskFailure
 
@@ -240,9 +262,18 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 content_type = '',
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             )
-        self.assertEqual(response_4.status_code,  200)
 
-        self.assertEqual(response_4.content, serialized_reject_report_computed_task)
+        reject_report_computed_task_from_view = load(
+            response_4.content,
+            PROVIDER_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time = False,
+        )
+
+        self.assertEqual(response_4.status_code,  200)
+        self.assertEqual(reject_report_computed_task_from_view.timestamp, reject_report_computed_task.timestamp)
+        self.assertEqual(reject_report_computed_task_from_view.cannot_compute_task.timestamp, reject_report_computed_task.cannot_compute_task.timestamp)
+        self.assertEqual(reject_report_computed_task_from_view.cannot_compute_task.task_to_compute.timestamp, reject_report_computed_task.cannot_compute_task.task_to_compute.timestamp)
 
     def test_provider_forces_computed_task_report_and_requestor_sends_rejection_due_to_exceeded_deadline(self):
         # Expected message exchange:
@@ -294,8 +325,15 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
+        force_report_computed_task_from_view = load(
+            response_2.content,
+            REQUESTOR_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time = False,
+        )
+
         self.assertEqual(response_2.status_code,  200)
-        self.assertEqual(response_2.content, serialized_force_report_computed_task)
+        self.assertEqual(force_report_computed_task_from_view.timestamp, force_report_computed_task.timestamp)
 
         # STEP 3: Requestor rejects computed task claiming that the deadline has been exceeded
 
@@ -343,8 +381,12 @@ class ReportComputedTaskIntegrationTest(TestCase):
         self.assertEqual(response_4.status_code,  200)
 
         serialized_message_from_concent_to_provider = response_4.content
-
-        message_from_concent_to_provider            = load(serialized_message_from_concent_to_provider, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time=False)
+        message_from_concent_to_provider            = load(
+            serialized_message_from_concent_to_provider,
+            PROVIDER_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time=False
+        )
 
         self.assertIsInstance(message_from_concent_to_provider, message.AckReportComputedTask)
         self.assertGreaterEqual(message_from_concent_to_provider.timestamp, int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))
@@ -363,7 +405,12 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         self.assertEqual(response_5.status_code, 200)
 
-        message_from_concent_to_requestor = load(response_5.content, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time=False)
+        message_from_concent_to_requestor = load(
+            response_5.content,
+            REQUESTOR_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time=False
+        )
 
         self.assertIsInstance(message_from_concent_to_requestor, message.VerdictReportComputedTask)
         self.assertGreaterEqual(message_from_concent_to_requestor.timestamp, int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))
@@ -418,9 +465,16 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 content_type = '',
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
+        force_report_computed_task_from_view = load(
+            response_2.content,
+            REQUESTOR_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time = False,
+        )
 
         self.assertEqual(response_2.status_code,  200)
-        self.assertEqual(response_2.content, serialized_force_report_computed_task)
+        self.assertEqual(force_report_computed_task_from_view.timestamp, force_report_computed_task.timestamp)
+        self.assertEqual(force_report_computed_task_from_view.task_to_compute.timestamp, force_report_computed_task.task_to_compute.timestamp)
 
         # STEP 3: Concent accepts computed task due to lack of response from the requestor
 
@@ -645,8 +699,16 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
+        force_report_computed_task_from_view = load(
+            response_2.content,
+            REQUESTOR_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time = False
+        )
+
         self.assertEqual(response_2.status_code,  200)
-        self.assertEqual(response_2.content, serialized_force_report_computed_task)
+        self.assertEqual(force_report_computed_task_from_view.task_to_compute.compute_task_def['task_id'], force_report_computed_task.task_to_compute.compute_task_def['task_id'])
+        self.assertEqual(force_report_computed_task_from_view.timestamp, force_report_computed_task.timestamp)
 
         # STEP 3: Requestor accepts computed task via Concent
 
@@ -761,9 +823,15 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 content_type = '',
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
+        force_report_computed_task_from_view = load(
+            response_2.content,
+            REQUESTOR_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time = False
+        )
 
         self.assertEqual(response_2.status_code,  200)
-        self.assertEqual(response_2.content, serialized_force_report_computed_task)
+        self.assertEqual(force_report_computed_task_from_view.task_to_compute, force_report_computed_task.task_to_compute)
 
         # STEP 3: Requestor rejects computed task via Concent
 
@@ -878,8 +946,15 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
+        force_report_computed_task_from_view = load(
+            response_2.content,
+            REQUESTOR_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time = False
+        )
         self.assertEqual(response_2.status_code,  200)
-        self.assertEqual(response_2.content, serialized_force_report_computed_task)
+        self.assertEqual(force_report_computed_task_from_view.timestamp, force_report_computed_task.timestamp)
+        self.assertEqual(force_report_computed_task_from_view.task_to_compute.timestamp, force_report_computed_task.task_to_compute.timestamp)
 
         # STEP 3: Requestor accepts computed task via Concent after deadline
 
@@ -964,8 +1039,14 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
+        force_report_computed_task_from_view = load(
+            response_2.content,
+            REQUESTOR_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time = False
+        )
         self.assertEqual(response_2.status_code,  200)
-        self.assertEqual(response_2.content, serialized_force_report_computed_task)
+        self.assertEqual(force_report_computed_task_from_view.timestamp, force_report_computed_task.timestamp)
 
         # STEP 3: Requestor rejects computed task via Concent after deadline
 
@@ -1372,8 +1453,16 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
+        force_report_computed_task_from_view = load(
+            response_2.content,
+            REQUESTOR_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time = False,
+        )
+
         self.assertEqual(response_2.status_code,  200)
-        self.assertEqual(response_2.content, serialized_force_report_computed_task)
+        self.assertEqual(force_report_computed_task_from_view.timestamp, force_report_computed_task.timestamp)
+        self.assertEqual(force_report_computed_task_from_view.task_to_compute.timestamp, force_report_computed_task.task_to_compute.timestamp)
 
         # STEP 3: Requestor accepts computed task via Concent
 
@@ -1460,9 +1549,17 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 content_type = '',
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
+        force_report_computed_task_from_view = load(
+            response_2.content,
+            REQUESTOR_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time = False
+        )
 
         self.assertEqual(response_2.status_code,  200)
-        self.assertEqual(response_2.content, serialized_force_report_computed_task)
+        self.assertIsInstance(force_report_computed_task_from_view, message.ForceReportComputedTask)
+        self.assertEqual(force_report_computed_task_from_view.timestamp, force_report_computed_task.timestamp)
+        self.assertEqual(force_report_computed_task_from_view.task_to_compute.timestamp, force_report_computed_task.task_to_compute.timestamp)
 
         # STEP 3: Requestor accepts computed task via Concent
 
@@ -1492,9 +1589,16 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 content_type = '',
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             )
+        ack_report_computed_task_from_view = load(
+            response_4.content,
+            PROVIDER_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time = False
+        )
 
         self.assertEqual(response_4.status_code,  200)
-        self.assertEqual(response_4.content, serialized_ack_report_computed_task)
+        self.assertEqual(ack_report_computed_task_from_view.timestamp, ack_report_computed_task.timestamp)
+        self.assertEqual(ack_report_computed_task_from_view.task_to_compute.timestamp, ack_report_computed_task.task_to_compute.timestamp)
 
         # STEP 5: Concent passes computed task acceptance to the provider again
 

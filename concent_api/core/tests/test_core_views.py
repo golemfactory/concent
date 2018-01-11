@@ -313,12 +313,8 @@ class CoreViewReceiveTest(TestCase):
         new_message         = Message(
             type        = self.force_golem_data.__class__.__name__,
             timestamp   = message_timestamp,
-            data        = dump(
-                self.force_golem_data,
-                REQUESTOR_PRIVATE_KEY,
-                CONCENT_PUBLIC_KEY,
-            ),
-            task_id     = self.task_to_compute.compute_task_def['task_id']
+            data        = self.force_golem_data.serialize(),
+            task_id     = self.task_to_compute.compute_task_def['task_id']  # pylint: disable=no-member
         )
         new_message.full_clean()
         new_message.save()

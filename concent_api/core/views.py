@@ -21,7 +21,7 @@ from .models                        import ReceiveOutOfBandStatus
 
 @api_view
 @require_POST
-def send(request, client_message):
+def send(_request, client_message):
     current_time = int(datetime.datetime.now().timestamp())
     if isinstance(client_message, message.ForceReportComputedTask):
         validate_golem_message_task_to_compute(client_message.task_to_compute)
@@ -38,7 +38,7 @@ def send(request, client_message):
         golem_message, message_timestamp = store_message(
             type(client_message).__name__,
             client_message.task_to_compute.compute_task_def['task_id'],
-            request.body
+            client_message.serialize()
         )
         store_receive_message_status(
             golem_message,
@@ -61,11 +61,11 @@ def send(request, client_message):
                     "Received AckReportComputedTask but RejectReportComputedTask "
                     "or another AckReportComputedTask for this task has already been submitted."
                 )
-
+            client_message.sig = None
             golem_message, message_timestamp = store_message(
                 type(client_message).__name__,
                 client_message.task_to_compute.compute_task_def['task_id'],
-                request.body
+                client_message.serialize()
             )
             store_receive_message_status(
                 golem_message,
@@ -84,14 +84,10 @@ def send(request, client_message):
         if not force_report_computed_task_from_database.exists():
             raise Http400("'ForceReportComputedTask' for this task has not been initiated yet. Can't accept your 'RejectReportComputedTask'.")
 
-        try:
-            force_report_computed_task = load(
-                force_report_computed_task_from_database.last().data.tobytes(),
-                settings.CONCENT_PRIVATE_KEY,
-                client_public_key,
-            )
-        except InvalidSignature as exception:
-            return JsonResponse({'error': "Failed to decode ForceReportComputedTask. {}".format(exception)}, status = 400)
+        force_report_computed_task = message.Message.deserialize(
+            force_report_computed_task_from_database.last().data.tobytes(),
+            None,
+        )
 
         assert hasattr(force_report_computed_task, 'task_to_compute')
 
@@ -100,7 +96,7 @@ def send(request, client_message):
             store_message(
                 type(client_message).__name__,
                 force_report_computed_task.task_to_compute.compute_task_def['task_id'],
-                request.body
+                client_message.serialize()
             )
             return HttpResponse("", status = 202)
 
@@ -114,7 +110,7 @@ def send(request, client_message):
             golem_message, message_timestamp = store_message(
                 type(client_message).__name__,
                 force_report_computed_task.task_to_compute.compute_task_def['task_id'],
-                request.body
+                client_message.serialize()
             )
             store_receive_message_status(
                 golem_message,
@@ -142,46 +138,26 @@ def receive(request, _message):
 
         if last_delivered_message_status.message.type == 'ForceReportComputedTask':
             force_report_task_from_database = last_delivered_message_status.message.data.tobytes()
-            try:
-                force_report_task = load(
-                    force_report_task_from_database,
-                    settings.CONCENT_PRIVATE_KEY,
-                    client_public_key,
-                    check_time = False
-                )
-            except InvalidSignature as exception:
-                return JsonResponse({'error': "Failed to decode ForceReportComputedTask. {}".format(exception)}, status = 400)
+
+            force_report_task = message.Message.deserialize(force_report_task_from_database, None)
 
             ack_report_computed_task                 = message.AckReportComputedTask()
             ack_report_computed_task.task_to_compute = force_report_task.task_to_compute
-
-            dumped_ack_report_computed_task = dump(
-                ack_report_computed_task,
-                settings.CONCENT_PRIVATE_KEY,
-                client_public_key,
-            )
+            ack_report_computed_task.sig = None
             store_message(
                 type(ack_report_computed_task).__name__,
                 force_report_task.task_to_compute.compute_task_def['task_id'],
-                dumped_ack_report_computed_task
+                ack_report_computed_task.serialize(),
             )
-
-            return dumped_ack_report_computed_task
+            ack_report_computed_task.sig = None
+            return ack_report_computed_task
 
         return None
 
     current_time         = int(datetime.datetime.now().timestamp())
     raw_message_data     = last_undelivered_message_status.message.data.tobytes()
 
-    try:
-        decoded_message_data = load(
-            raw_message_data,
-            settings.CONCENT_PRIVATE_KEY,
-            client_public_key,
-            check_time = False,
-        )
-    except InvalidSignature as exception:
-        return JsonResponse({'error': "Failed to decode a Golem Message. {}".format(exception)}, status = 400)
+    decoded_message_data = message.Message.deserialize(raw_message_data, None)
 
     assert last_undelivered_message_status.message.type == type(decoded_message_data).__name__
 
@@ -207,11 +183,13 @@ def receive(request, _message):
         last_undelivered_message_status.delivered = True
         last_undelivered_message_status.full_clean()
         last_undelivered_message_status.save()
-        return raw_message_data
+        decoded_message_data.sig = None
+        return decoded_message_data
 
     if isinstance(decoded_message_data, message.AckReportComputedTask):
         if current_time <= decoded_message_data.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
-            return raw_message_data
+            decoded_message_data.sig = None
+            return decoded_message_data
         return None
 
     if isinstance(decoded_message_data, message.RejectReportComputedTask):
@@ -235,7 +213,8 @@ def receive(request, _message):
                 ack_report_computed_task = message.AckReportComputedTask(timestamp = current_time)
                 ack_report_computed_task.task_to_compute = decoded_message_from_database.task_to_compute
                 return ack_report_computed_task
-            return raw_message_data
+            decoded_message_data.sig = None
+            return decoded_message_data
         return None
     else:
         if decoded_message_data.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME <= current_time <= decoded_message_data.task_to_compute.deadline + 2 * settings.CONCENT_MESSAGING_TIME:
@@ -274,11 +253,9 @@ def receive_out_of_band(request, _message):
             serialized_ack_report_computed_task = last_undelivered_receive_status.data.tobytes()
 
             try:
-                decoded_ack_report_computed_task = load(
+                decoded_ack_report_computed_task = message.Message.deserialize(
                     serialized_ack_report_computed_task,
-                    settings.CONCENT_PRIVATE_KEY,
-                    client_public_key,
-                    check_time = False
+                    None
                 )
             except InvalidSignature as exception:
                 return JsonResponse({'error': "Failed to decode AckReportComputedTask. {}".format(exception)}, status = 400)
@@ -288,19 +265,14 @@ def receive_out_of_band(request, _message):
 
             message_verdict.force_report_computed_task = force_report_computed_task
             message_verdict.ack_report_computed_task   = decoded_ack_report_computed_task
-
-            dumped_message_verdict = dump(
-                message_verdict,
-                settings.CONCENT_PRIVATE_KEY,
-                client_public_key
-            )
+            message_verdict.sig = None
             store_message(
                 type(message_verdict).__name__,
                 decoded_ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
-                dumped_message_verdict
+                message_verdict.serialize()
             )
-
-            return dumped_message_verdict
+            message_verdict.sig = None
+            return message_verdict
 
         if last_undelivered_receive_status.type == 'ForceReportComputedTask':
             serialized_force_report_computed_task = last_undelivered_receive_status.data.tobytes()
@@ -318,19 +290,15 @@ def receive_out_of_band(request, _message):
             ack_report_computed_task.task_to_compute    = decoded_force_report_computed_task.task_to_compute
             message_verdict.ack_report_computed_task    = ack_report_computed_task
             message_verdict.force_report_computed_task  = decoded_force_report_computed_task
-            dumped_message_verdict = dump(
-                message_verdict,
-                settings.CONCENT_PRIVATE_KEY,
-                client_public_key
-            )
 
+            message_verdict.sig = None
             store_message(
                 type(message_verdict).__name__,
                 decoded_force_report_computed_task.task_to_compute.compute_task_def['task_id'],
-                dumped_message_verdict
+                message_verdict.serialize()
             )
-
-            return dumped_message_verdict
+            message_verdict.sig = None
+            return message_verdict
         return None
 
     raw_last_task_message = last_undelivered_receive_out_of_band_status.message.data.tobytes()
@@ -352,24 +320,20 @@ def receive_out_of_band(request, _message):
             message_ack_report_computed_task.task_to_compute = decoded_last_task_message.task_to_compute
 
             message_verdict.ack_report_computed_task = message_ack_report_computed_task
-            dumped_message_verdict = dump(
-                message_verdict,
-                settings.CONCENT_PRIVATE_KEY,
-                client_public_key
-            )
 
             last_undelivered_receive_out_of_band_status.delivered = True
             last_undelivered_receive_out_of_band_status.full_clean()
             last_undelivered_receive_out_of_band_status.save()
+            message_verdict.sig = None
 
             golem_message, message_timestamp = store_message(
                 type(message_verdict).__name__,
                 decoded_last_task_message.task_to_compute.compute_task_def['task_id'],
-                dumped_message_verdict
+                message_verdict.serialize()
             )
             store_receive_out_of_band(golem_message, message_timestamp)
-
-            return dumped_message_verdict
+            message_verdict.sig = None
+            return message_verdict
 
     if isinstance(decoded_last_task_message, message.RejectReportComputedTask):
         if decoded_last_task_message.reason == message.RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED:
@@ -388,24 +352,19 @@ def receive_out_of_band(request, _message):
             message_ack_report_computed_task.task_to_compute = force_report_computed_task.task_to_compute
             message_verdict.ack_report_computed_task         = message_ack_report_computed_task
 
-            dumped_message_verdict = dump(
-                message_verdict,
-                settings.CONCENT_PRIVATE_KEY,
-                client_public_key
-            )
-
             last_undelivered_receive_out_of_band_status.delivered = True
             last_undelivered_receive_out_of_band_status.full_clean()
             last_undelivered_receive_out_of_band_status.save()
 
+            message_verdict.sig = None
             golem_message, message_timestamp = store_message(
                 type(message_verdict).__name__,
                 decoded_last_task_message.message_cannot_compute_task.task_to_compute.compute_task_def['task_id'],
-                dumped_message_verdict
+                message_verdict.serialize()
             )
             store_receive_out_of_band(golem_message, message_timestamp)
-
-            return dumped_message_verdict
+            message_verdict.sig = None
+            return message_verdict
 
     return None
 

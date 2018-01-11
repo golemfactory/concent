@@ -8,7 +8,6 @@ from django.test                    import TestCase
 from django.urls                    import reverse
 from django.http                    import HttpResponse
 from django.http                    import JsonResponse
-from django.conf                    import settings
 from django.utils                   import timezone
 
 from golem_messages.shortcuts       import dump
@@ -27,8 +26,8 @@ from utils.testing_helpers          import generate_ecc_key_pair
 
 
 @override_settings(
-    CONCENT_PRIVATE_KEY = CONCENT_PRIVATE_KEY,
-    CONCENT_PUBLIC_KEY  = CONCENT_PUBLIC_KEY,
+    CONCENT_PRIVATE_KEY    = CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY     = CONCENT_PUBLIC_KEY,
     CONCENT_MESSAGING_TIME = 3600,
 )
 class CoreViewSendTest(TestCase):
@@ -85,8 +84,11 @@ class CoreViewSendTest(TestCase):
 
         response = self.client.post(
             reverse('core:send'),
-            data                           = dump(self.message_force_report_computed_task, PROVIDER_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY),
-            content_type                   = 'application/octet-stream',
+            data = dump(
+                self.correct_golem_data,
+                PROVIDER_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY),
+            content_type = 'application/octet-stream',
             HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
         )
 
@@ -110,8 +112,12 @@ class CoreViewSendTest(TestCase):
 
         response = self.client.post(
             reverse('core:send'),
-            data                           = dump(message_force_report_computed_task, PROVIDER_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY),
-            content_type                   = 'application/octet-stream',
+            data = dump(
+                correct_golem_data,
+                PROVIDER_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY
+            ),
+            content_type = 'application/octet-stream',
             HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
         )
 
@@ -119,7 +125,7 @@ class CoreViewSendTest(TestCase):
         response_message = load(
             response.content,
             PROVIDER_PRIVATE_KEY,
-            settings.CONCENT_PUBLIC_KEY,
+            CONCENT_PUBLIC_KEY,
         )
         self.assertIsInstance(response_message, GolemMessage)
 
@@ -133,8 +139,12 @@ class CoreViewSendTest(TestCase):
         force_report_computed_task.task_to_compute = task_to_compute
         response = self.client.post(
             reverse('core:send'),
-            data                           = dump(message_force_report_computed_task_1, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY),
-            content_type                   = 'application/octet-stream',
+            data = dump(
+                force_report_computed_task,
+                CONCENT_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY,
+            ),
+            content_type = 'application/octet-stream',
             HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
         )
         self.assertEqual(response.status_code, 400)
@@ -148,20 +158,28 @@ class CoreViewSendTest(TestCase):
 
         response = self.client.post(
             reverse('core:send'),
-            data                           = dump(message_force_report_computed_task_2, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY),
-            content_type                   = 'application/octet-stream',
+            data = dump(
+                data,
+                CONCENT_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY,
+            ),
+            content_type = 'application/octet-stream',
             HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         )
-
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json().keys())
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_task_id_already_use(self):
+
         response_202 = self.client.post(
             reverse('core:send'),
-            data                           = dump(self.message_force_report_computed_task, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY),
-            content_type                   = 'application/octet-stream',
+            data = dump(
+                self.correct_golem_data,
+                CONCENT_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY,
+            ),
+            content_type = 'application/octet-stream',
             HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         )
 
@@ -172,8 +190,12 @@ class CoreViewSendTest(TestCase):
         self.correct_golem_data.task_to_compute.sig = None
         response_400 = self.client.post(
             reverse('core:send'),
-            data                           = dump(self.message_force_report_computed_task, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY),
-            content_type                   = 'application/octet-stream',
+            data = dump(
+                self.correct_golem_data,
+                CONCENT_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY,
+            ),
+            content_type = 'application/octet-stream',
             HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         )
 
@@ -188,7 +210,11 @@ class CoreViewSendTest(TestCase):
 
         response_400 = self.client.post(
             reverse('core:send'),
-            data = dump(self.message_want_to_compute, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY),
+            data = dump(
+                self.want_to_compute,
+                CONCENT_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY
+            ),
             content_type                   = 'application/octet-stream',
             HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(CONCENT_PUBLIC_KEY).decode('ascii'),
         )
@@ -216,7 +242,11 @@ class CoreViewSendTest(TestCase):
 
         response_400 = self.client.post(
             reverse('core:send'),
-            data                            = dump(ack_report_computed_task, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY),
+            data = dump(
+                ack_report_computed_task,
+                CONCENT_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY
+            ),
             content_type                    = 'application/octet-stream',
             HTTP_CONCENT_CLIENT_PUBLIC_KEY  = b64encode(CONCENT_PUBLIC_KEY).decode('ascii'),
         )
@@ -231,7 +261,10 @@ class CoreViewSendTest(TestCase):
 
         force_response = self.client.post(
             reverse('core:send'),
-            data                           = dump(self.message_force_report_computed_task, PROVIDER_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY),
+            data = dump(
+                self.correct_golem_data,
+                PROVIDER_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY),
             content_type                   = 'application/octet-stream',
             HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
         )
@@ -241,7 +274,11 @@ class CoreViewSendTest(TestCase):
 
         reject_response = self.client.post(
             reverse('core:send'),
-            data                           = dump(self.message_reject_report_computed_task, PROVIDER_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY),
+            data = dump(
+                self.reject_report_computed_task,
+                PROVIDER_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY
+            ),
             content_type                   = 'application/octet-stream',
             HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
         )
@@ -251,8 +288,8 @@ class CoreViewSendTest(TestCase):
 
 
 @override_settings(
-    CONCENT_PRIVATE_KEY = CONCENT_PRIVATE_KEY,
-    CONCENT_PUBLIC_KEY  = CONCENT_PUBLIC_KEY,
+    CONCENT_PRIVATE_KEY    = CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY     = CONCENT_PUBLIC_KEY,
     CONCENT_MESSAGING_TIME = 3600,
 )
 class CoreViewReceiveTest(TestCase):
@@ -278,7 +315,7 @@ class CoreViewReceiveTest(TestCase):
             timestamp   = message_timestamp,
             data        = dump(
                 self.force_golem_data,
-                settings.CONCENT_PRIVATE_KEY,
+                CONCENT_PRIVATE_KEY,
                 REQUESTOR_PUBLIC_KEY,
             ),
             task_id     = self.task_to_compute.compute_task_def['task_id']
@@ -304,7 +341,7 @@ class CoreViewReceiveTest(TestCase):
         decoded_response = load(
             response.content,
             REQUESTOR_PRIVATE_KEY,
-            settings.CONCENT_PUBLIC_KEY,
+            CONCENT_PUBLIC_KEY,
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(new_message.task_id, decoded_response.task_to_compute.compute_task_def['task_id'])
@@ -324,8 +361,8 @@ class CoreViewReceiveTest(TestCase):
 
 
 @override_settings(
-    CONCENT_PRIVATE_KEY = CONCENT_PRIVATE_KEY,
-    CONCENT_PUBLIC_KEY  = CONCENT_PUBLIC_KEY,
+    CONCENT_PRIVATE_KEY    = CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY     = CONCENT_PUBLIC_KEY,
     CONCENT_MESSAGING_TIME = 3600,
 )
 class CoreViewReceiveOutOfBandTest(TestCase):
@@ -351,9 +388,9 @@ class CoreViewReceiveOutOfBandTest(TestCase):
             type        = self.force_golem_data.__class__.__name__,
             timestamp   = message_timestamp,
             data        = dump(
-                self.message_force_report_computed_task,
-                settings.CONCENT_PRIVATE_KEY,
-                REQUESTOR_PUBLIC_KEY
+                self.force_golem_data,
+                CONCENT_PRIVATE_KEY,
+                REQUESTOR_PUBLIC_KEY,
             ),
             task_id     = self.force_golem_data.task_to_compute.compute_task_def['task_id'],
         )
@@ -370,11 +407,12 @@ class CoreViewReceiveOutOfBandTest(TestCase):
 
     @freeze_time("2017-11-17 11:40:00")
     def test_view_receive_out_of_band_should_accept_valid_message(self):
+
         response = self.client.post(
             reverse('core:receive_out_of_band'),
-            data                           = '',
-            content_type                   = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            data                                = '',
+            content_type                        = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code, 200)
@@ -383,9 +421,9 @@ class CoreViewReceiveOutOfBandTest(TestCase):
     def test_view_receive_out_of_band_return_http_204_if_no_messages_in_database(self):
         response = self.client.post(
             reverse('core:receive_out_of_band'),
-            data                           = '',
-            content_type                   = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            data                                = '',
+            content_type                        = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code, 204)

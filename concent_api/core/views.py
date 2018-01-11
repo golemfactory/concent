@@ -8,6 +8,7 @@ from django.utils                   import timezone
 from django.conf                    import settings
 
 from golem_messages                 import message
+from golem_messages.exceptions      import InvalidSignature
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 
@@ -90,12 +91,8 @@ def send(request, client_message):
                 settings.CONCENT_PRIVATE_KEY,
                 client_public_key,
             )
-        except AttributeError:
-            # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
-            return JsonResponse(
-                {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
-                status = 400
-            )
+        except InvalidSignature as exception:
+            return JsonResponse({'error': "Failed to decode ForceReportComputedTask. {}".format(exception)}, status = 400)
 
         assert hasattr(force_report_computed_task, 'task_to_compute')
 
@@ -152,12 +149,8 @@ def receive(request, _message):
                     settings.CONCENT_PRIVATE_KEY,
                     client_public_key
                 )
-            except AttributeError:
-                # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
-                return JsonResponse(
-                    {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
-                    status = 400
-                )
+            except InvalidSignature as exception:
+                return JsonResponse({'error': "Failed to decode ForceReportComputedTask. {}".format(exception)}, status = 400)
 
             ack_report_computed_task                 = message.AckReportComputedTask()
             ack_report_computed_task.task_to_compute = force_report_task.task_to_compute
@@ -186,12 +179,8 @@ def receive(request, _message):
             settings.CONCENT_PRIVATE_KEY,
             client_public_key,
         )
-    except AttributeError:
-        # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
-        return JsonResponse(
-            {'error': "Failed to decode a Golem Message. Message and/or key are malformed or don't match."},
-            status = 400
-        )
+    except InvalidSignature as exception:
+        return JsonResponse({'error': "Failed to decode a Golem Message. {}".format(exception)}, status = 400)
 
     assert last_undelivered_message_status.message.type == type(decoded_message_data).__name__
 
@@ -236,12 +225,8 @@ def receive(request, _message):
                 settings.CONCENT_PRIVATE_KEY,
                 client_public_key,
             )
-        except AttributeError:
-            # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
-            return JsonResponse(
-                {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
-                status = 400
-            )
+        except InvalidSignature as exception:
+            return JsonResponse({'error': "Failed to decode ForceReportComputedTask. {}".format(exception)}, status = 400)
 
         if current_time <= decoded_message_from_database.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
             if decoded_message_data.reason is not None and decoded_message_data.reason == message.RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED:
@@ -292,12 +277,8 @@ def receive_out_of_band(request, _message):
                     settings.CONCENT_PRIVATE_KEY,
                     client_public_key
                 )
-            except AttributeError:
-                # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
-                return JsonResponse(
-                    {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
-                    status = 400
-                )
+            except InvalidSignature as exception:
+                return JsonResponse({'error': "Failed to decode AckReportComputedTask. {}".format(exception)}, status = 400)
 
             force_report_computed_task = message.ForceReportComputedTask()
             force_report_computed_task.task_to_compute = decoded_ack_report_computed_task.task_to_compute
@@ -326,12 +307,8 @@ def receive_out_of_band(request, _message):
                     settings.CONCENT_PRIVATE_KEY,
                     client_public_key
                 )
-            except AttributeError:
-                # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
-                return JsonResponse(
-                    {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
-                    status = 400
-                )
+            except InvalidSignature as exception:
+                return JsonResponse({'error': "Failed to decode ForceReportComputedTask. {}".format(exception)}, status = 400)
 
             ack_report_computed_task                    = message.AckReportComputedTask()
             ack_report_computed_task.task_to_compute    = decoded_force_report_computed_task.task_to_compute
@@ -359,15 +336,10 @@ def receive_out_of_band(request, _message):
             settings.CONCENT_PRIVATE_KEY,
             client_public_key
         )
-    except AttributeError:
-        # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
-        return JsonResponse(
-            {'error': "Failed to decode a Golem Message. Message and/or key are malformed or don't match."},
-            status = 400
-        )
+    except InvalidSignature as exception:
+        return JsonResponse({'error': "Failed to decode a Golem Message. {}".format(exception)}, status = 400)
 
     message_ack_report_computed_task = message.AckReportComputedTask()
-
     if isinstance(decoded_last_task_message, message.ForceReportComputedTask):
         if decoded_last_task_message.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME <= current_time:
             message_verdict.force_report_computed_task = decoded_last_task_message
@@ -405,12 +377,8 @@ def receive_out_of_band(request, _message):
                     settings.CONCENT_PRIVATE_KEY,
                     client_public_key
                 )
-            except AttributeError:
-                # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
-                return JsonResponse(
-                    {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
-                    status = 400
-                )
+            except InvalidSignature as exception:
+                return JsonResponse({'error': "Failed to decode ForceReportComputedTask. {}".format(exception)}, status = 400)
 
             message_ack_report_computed_task.task_to_compute = force_report_computed_task.task_to_compute
             message_verdict.ack_report_computed_task         = message_ack_report_computed_task

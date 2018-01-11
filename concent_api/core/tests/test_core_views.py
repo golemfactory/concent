@@ -141,11 +141,11 @@ class CoreViewSendTest(TestCase):
             reverse('core:send'),
             data = dump(
                 force_report_computed_task,
-                CONCENT_PRIVATE_KEY,
+                REQUESTOR_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
             content_type = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json().keys())
@@ -160,11 +160,11 @@ class CoreViewSendTest(TestCase):
             reverse('core:send'),
             data = dump(
                 data,
-                CONCENT_PRIVATE_KEY,
+                REQUESTOR_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
             content_type = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json().keys())
@@ -176,11 +176,11 @@ class CoreViewSendTest(TestCase):
             reverse('core:send'),
             data = dump(
                 self.correct_golem_data,
-                CONCENT_PRIVATE_KEY,
+                REQUESTOR_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
             content_type = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
         )
 
         self.assertIsInstance(response_202, HttpResponse)
@@ -192,11 +192,11 @@ class CoreViewSendTest(TestCase):
             reverse('core:send'),
             data = dump(
                 self.correct_golem_data,
-                CONCENT_PRIVATE_KEY,
+                REQUESTOR_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
             content_type = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertIsInstance(response_400, JsonResponse)
@@ -244,11 +244,11 @@ class CoreViewSendTest(TestCase):
             reverse('core:send'),
             data = dump(
                 ack_report_computed_task,
-                CONCENT_PRIVATE_KEY,
+                PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY
             ),
             content_type                    = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY  = b64encode(CONCENT_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY  = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response_400.status_code, 400)
@@ -315,8 +315,8 @@ class CoreViewReceiveTest(TestCase):
             timestamp   = message_timestamp,
             data        = dump(
                 self.force_golem_data,
-                CONCENT_PRIVATE_KEY,
-                REQUESTOR_PUBLIC_KEY,
+                REQUESTOR_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY,
             ),
             task_id     = self.task_to_compute.compute_task_def['task_id']
         )
@@ -389,8 +389,8 @@ class CoreViewReceiveOutOfBandTest(TestCase):
             timestamp   = message_timestamp,
             data        = dump(
                 self.force_golem_data,
-                CONCENT_PRIVATE_KEY,
-                REQUESTOR_PUBLIC_KEY,
+                REQUESTOR_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY,
             ),
             task_id     = self.force_golem_data.task_to_compute.compute_task_def['task_id'],
         )

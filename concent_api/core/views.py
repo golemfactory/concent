@@ -147,7 +147,8 @@ def receive(request, _message):
                 force_report_task = load(
                     force_report_task_from_database,
                     settings.CONCENT_PRIVATE_KEY,
-                    client_public_key
+                    client_public_key,
+                    check_time = False
                 )
             except InvalidSignature as exception:
                 return JsonResponse({'error': "Failed to decode ForceReportComputedTask. {}".format(exception)}, status = 400)
@@ -178,6 +179,7 @@ def receive(request, _message):
             raw_message_data,
             settings.CONCENT_PRIVATE_KEY,
             client_public_key,
+            check_time = False,
         )
     except InvalidSignature as exception:
         return JsonResponse({'error': "Failed to decode a Golem Message. {}".format(exception)}, status = 400)
@@ -224,6 +226,7 @@ def receive(request, _message):
                 raw_force_report_computed_task,
                 settings.CONCENT_PRIVATE_KEY,
                 client_public_key,
+                check_time = False,
             )
         except InvalidSignature as exception:
             return JsonResponse({'error': "Failed to decode ForceReportComputedTask. {}".format(exception)}, status = 400)
@@ -275,7 +278,8 @@ def receive_out_of_band(request, _message):
                 decoded_ack_report_computed_task = load(
                     serialized_ack_report_computed_task,
                     settings.CONCENT_PRIVATE_KEY,
-                    client_public_key
+                    client_public_key,
+                    check_time = False
                 )
             except InvalidSignature as exception:
                 return JsonResponse({'error': "Failed to decode AckReportComputedTask. {}".format(exception)}, status = 400)
@@ -305,7 +309,8 @@ def receive_out_of_band(request, _message):
                 decoded_force_report_computed_task = load(
                     serialized_force_report_computed_task,
                     settings.CONCENT_PRIVATE_KEY,
-                    client_public_key
+                    client_public_key,
+                    check_time = False
                 )
             except InvalidSignature as exception:
                 return JsonResponse({'error': "Failed to decode ForceReportComputedTask. {}".format(exception)}, status = 400)
@@ -334,7 +339,8 @@ def receive_out_of_band(request, _message):
         decoded_last_task_message = load(
             raw_last_task_message,
             settings.CONCENT_PRIVATE_KEY,
-            client_public_key
+            client_public_key,
+            check_time = False,
         )
     except InvalidSignature as exception:
         return JsonResponse({'error': "Failed to decode a Golem Message. {}".format(exception)}, status = 400)

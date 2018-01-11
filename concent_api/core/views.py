@@ -604,4 +604,4 @@ def store_receive_out_of_band(golem_message, message_timestamp):
 
 
 def decode_client_public_key(request):
-    return b64decode(request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'].encode('ascii'))
+    return b64decode(request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'].encode('ascii'), validate = True)

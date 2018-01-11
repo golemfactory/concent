@@ -549,18 +549,27 @@ def validate_golem_message_task_to_compute(data):
     if not isinstance(data, message.TaskToCompute):
         raise Http400("Expected TaskToCompute.")
 
-    if not isinstance(data.timestamp, float):
-        raise Http400("Wrong type of message timestamp field. Not a float.")
+    if data.compute_task_def['task_id'] == '':
+        raise Http400("task_id cannot be blank.")
 
-    if data.task_id <= 0:
-        raise Http400("task_id cannot be negative.")
-    if not isinstance(data.deadline, int):
+    if not isinstance(data.compute_task_def['deadline'], int):
         raise Http400("Wrong type of deadline field.")
 
 
 def validate_golem_message_reject(data):
-    if not isinstance(data, message.CannotComputeTask) and not isinstance(data, message.TaskFailure):
-        raise Http400("Expected CannotComputeTask or TaskFailure.")
+    if not isinstance(data, message.CannotComputeTask) and not isinstance(data, message.TaskFailure) and not isinstance(data, message.TaskToCompute):
+        raise Http400("Expected CannotComputeTask, TaskFailure or TaskToCompute.")
+
+    if isinstance(data, message.CannotComputeTask):
+        if data.task_to_compute.compute_task_def['task_id'] == '':
+            raise Http400("task_id cannot be blank.")
+
+    if isinstance(data, (message.TaskToCompute, message.TaskFailure)):
+        if data.compute_task_def['task_id'] == '':
+            raise Http400("task_id cannot be blank.")
+
+        if not isinstance(data.compute_task_def['deadline'], int):
+            raise Http400("Wrong type of deadline field.")
 
 
 def store_message(golem_message_type, task_id, raw_golem_message):

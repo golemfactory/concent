@@ -7,13 +7,7 @@ from django.views.decorators.http   import require_POST
 from django.utils                   import timezone
 from django.conf                    import settings
 
-from golem_messages.message         import MessageAckReportComputedTask
-from golem_messages.message         import MessageForceReportComputedTask
-from golem_messages.message         import MessageRejectReportComputedTask
-from golem_messages.message         import MessageCannotComputeTask
-from golem_messages.message         import MessageTaskFailure
-from golem_messages.message         import MessageTaskToCompute
-from golem_messages.message         import MessageVerdictReportComputedTask
+from golem_messages                 import message
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 
@@ -29,7 +23,7 @@ from .models                        import ReceiveOutOfBandStatus
 def send(request, client_message):
     client_public_key = decode_client_public_key(request)
     current_time      = int(datetime.datetime.now().timestamp())
-    if isinstance(client_message, MessageForceReportComputedTask):
+    if isinstance(client_message, message.ForceReportComputedTask):
         try:
             loaded_message = load(
                 client_message.message_task_to_compute,
@@ -49,7 +43,7 @@ def send(request, client_message):
             raise Http400("{} is already being processed for this task.".format(client_message.__class__.__name__))
 
         if loaded_message.deadline < current_time:
-            return MessageRejectReportComputedTask(
+            return message.RejectReportComputedTask(
                 reason                  = "deadline-exceeded",
                 message_task_to_compute = client_message.message_task_to_compute,
             )
@@ -65,7 +59,7 @@ def send(request, client_message):
         )
         return HttpResponse("", status = 202)
 
-    elif isinstance(client_message, MessageAckReportComputedTask):
+    elif isinstance(client_message, message.AckReportComputedTask):
         loaded_message = load(
             client_message.message_task_to_compute,
             settings.CONCENT_PRIVATE_KEY,
@@ -74,9 +68,9 @@ def send(request, client_message):
         validate_golem_message_task_to_compute(loaded_message)
 
         if current_time <= loaded_message.deadline + settings.CONCENT_MESSAGING_TIME:
-            force_task_to_compute   = Message.objects.filter(task_id = loaded_message.task_id, type = "MessageForceReportComputedTask")
-            previous_ack_message    = Message.objects.filter(task_id = loaded_message.task_id, type = "MessageAckReportComputedTask")
-            reject_message          = Message.objects.filter(task_id = loaded_message.task_id, type = "MessageRejectReportComputedTask")
+            force_task_to_compute   = Message.objects.filter(task_id = loaded_message.task_id, type = "ForceReportComputedTask")
+            previous_ack_message    = Message.objects.filter(task_id = loaded_message.task_id, type = "AckReportComputedTask")
+            reject_message          = Message.objects.filter(task_id = loaded_message.task_id, type = "RejectReportComputedTask")
 
             if not force_task_to_compute.exists():
                 raise Http400("'ForceReportComputedTask' for this task has not been initiated yet. Can't accept your 'AckReportComputedTask'.")
@@ -99,7 +93,7 @@ def send(request, client_message):
         else:
             raise Http400("Time to acknowledge this task is already over.")
 
-    elif isinstance(client_message, MessageRejectReportComputedTask):
+    elif isinstance(client_message, message.RejectReportComputedTask):
         message_cannot_compute_task = load(
             client_message.message_cannot_compute_task,
             settings.CONCENT_PRIVATE_KEY,
@@ -107,7 +101,7 @@ def send(request, client_message):
         )
         validate_golem_message_reject(message_cannot_compute_task)
 
-        force_report_computed_task_message = Message.objects.filter(task_id = message_cannot_compute_task.task_id, type = "MessageForceReportComputedTask")
+        force_report_computed_task_message = Message.objects.filter(task_id = message_cannot_compute_task.task_id, type = "ForceReportComputedTask")
 
         if not force_report_computed_task_message.exists():
             raise Http400("'ForceReportComputedTask' for this task has not been initiated yet. Can't accept your 'RejectReportComputedTask'.")
@@ -135,8 +129,8 @@ def send(request, client_message):
             return HttpResponse("", status = 202)
 
         if current_time <= message_task_to_compute.deadline + settings.CONCENT_MESSAGING_TIME:
-            ack_message             = Message.objects.filter(task_id = message_cannot_compute_task.task_id, type = "MessageAckReportComputedTask")
-            previous_reject_message = Message.objects.filter(task_id = message_cannot_compute_task.task_id, type = "MessageRejectReportComputedTask")
+            ack_message             = Message.objects.filter(task_id = message_cannot_compute_task.task_id, type = "AckReportComputedTask")
+            previous_reject_message = Message.objects.filter(task_id = message_cannot_compute_task.task_id, type = "RejectReportComputedTask")
 
             if ack_message.exists() or previous_reject_message.exists():
                 raise Http400("Received RejectReportComputedTask but AckReportComputedTask or another RejectReportComputedTask for this task has already been submitted.")
@@ -170,7 +164,7 @@ def receive(request, _message):
         if last_delivered_message_status is None:
             return None
 
-        if last_delivered_message_status.message.type == 'MessageForceReportComputedTask':
+        if last_delivered_message_status.message.type == 'ForceReportComputedTask':
             message_force_report_task_from_database = last_delivered_message_status.message.data.tobytes()
             try:
                 message_force_report_task = load(
@@ -198,7 +192,7 @@ def receive(request, _message):
                     status = 400
                 )
 
-            message_ack_report_computed_task = MessageAckReportComputedTask(
+            message_ack_report_computed_task = message.AckReportComputedTask(
                 message_task_to_compute = message_force_report_task.message_task_to_compute
             )
             dumped_message_ack_report_computed_task = dump(
@@ -227,7 +221,7 @@ def receive(request, _message):
     assert last_undelivered_message_status.message.type == type(decoded_message_data).__name__
 
     # Mark message as delivered
-    if last_undelivered_message_status.message.type == "MessageForceReportComputedTask":
+    if last_undelivered_message_status.message.type == "ForceReportComputedTask":
         message_task_to_compute_from_force = load(
             decoded_message_data.message_task_to_compute,
             settings.CONCENT_PRIVATE_KEY,
@@ -240,7 +234,7 @@ def receive(request, _message):
             last_undelivered_message_status.save()
 
             return dump(
-                MessageAckReportComputedTask(message_task_to_compute = decoded_message_data.message_task_to_compute),
+                message.AckReportComputedTask(message_task_to_compute = decoded_message_data.message_task_to_compute),
                 settings.CONCENT_PRIVATE_KEY,
                 client_public_key,
             )
@@ -249,13 +243,13 @@ def receive(request, _message):
         last_undelivered_message_status.full_clean()
         last_undelivered_message_status.save()
 
-    if isinstance(decoded_message_data, MessageForceReportComputedTask):
+    if isinstance(decoded_message_data, message.ForceReportComputedTask):
         last_undelivered_message_status.delivered = True
         last_undelivered_message_status.full_clean()
         last_undelivered_message_status.save()
         return raw_message_data
 
-    elif isinstance(decoded_message_data, MessageAckReportComputedTask):
+    if isinstance(decoded_message_data, message.AckReportComputedTask):
         message_task_to_compute = load(
             decoded_message_data.message_task_to_compute,
             settings.CONCENT_PRIVATE_KEY,
@@ -266,14 +260,14 @@ def receive(request, _message):
 
         return None
 
-    elif isinstance(decoded_message_data, MessageRejectReportComputedTask):
+    if isinstance(decoded_message_data, message.RejectReportComputedTask):
         message_cannot_compute_task = load(
             decoded_message_data.message_cannot_compute_task,
             settings.CONCENT_PRIVATE_KEY,
             client_public_key
         )
         message_to_compute = Message.objects.get(
-            type    = 'MessageForceReportComputedTask',
+            type    = 'ForceReportComputedTask',
             task_id = message_cannot_compute_task.task_id
         )
         raw_message_to_compute        = message_to_compute.data.tobytes()
@@ -289,7 +283,7 @@ def receive(request, _message):
         )
         if current_time <= message_task_to_compute.deadline + 2 * settings.CONCENT_MESSAGING_TIME:
             if decoded_message_data.reason == "deadline-exceeded" or decoded_message_from_database.reason == "deadline-exceeded":
-                message_ack_report_computed_task = MessageAckReportComputedTask(
+                message_ack_report_computed_task = message.AckReportComputedTask(
                     timestamp               = current_time,
                     message_task_to_compute = decoded_message_from_database.message_task_to_compute,
                 )
@@ -312,7 +306,7 @@ def receive(request, _message):
             )
 
         if message_task_to_compute.deadline + settings.CONCENT_MESSAGING_TIME <= current_time <= message_task_to_compute.deadline + 2 * settings.CONCENT_MESSAGING_TIME:
-            return MessageAckReportComputedTask(
+            return message.AckReportComputedTask(
                 task_id                 = decoded_message_data.task_id,
                 message_task_to_compute = decoded_message_data.message_task_to_compute,
                 timestamp               = current_time,
@@ -332,14 +326,14 @@ def receive_out_of_band(request, _message):
     client_public_key = decode_client_public_key(request)
 
     current_time    = int(datetime.datetime.now().timestamp())
-    message_verdict = MessageVerdictReportComputedTask()
+    message_verdict = message.VerdictReportComputedTask()
 
     if last_undelivered_receive_out_of_band_status is None:
         if last_undelivered_receive_status is None:
             return None
         if last_undelivered_receive_status.timestamp.timestamp() > current_time:
             return None
-        if last_undelivered_receive_status.type == 'MessageAckReportComputedTask':
+        if last_undelivered_receive_status.type == 'AckReportComputedTask':
             serialized_ack_message = last_undelivered_receive_status.data.tobytes()
             try:
                 decoded_ack_message = load(
@@ -367,7 +361,7 @@ def receive_out_of_band(request, _message):
                     status = 400
                 )
 
-            force_report_computed_task = MessageForceReportComputedTask(
+            force_report_computed_task = message.ForceReportComputedTask(
                 message_task_to_compute = decoded_ack_message.message_task_to_compute,
             )
             message_verdict.message_force_report_computed_task = dump(
@@ -390,7 +384,7 @@ def receive_out_of_band(request, _message):
 
             return message_verdict
 
-        if last_undelivered_receive_status.type == 'MessageForceReportComputedTask':
+        if last_undelivered_receive_status.type == 'ForceReportComputedTask':
             serialized_force_message = last_undelivered_receive_status.data.tobytes()
             try:
                 decoded_force_message = load(
@@ -418,7 +412,7 @@ def receive_out_of_band(request, _message):
                     status = 400
                 )
 
-            ack_report_computed_task = MessageAckReportComputedTask(
+            ack_report_computed_task = message.AckReportComputedTask(
                 message_task_to_compute = decoded_force_message.message_task_to_compute
             )
             message_verdict.message_ack_report_computed_task = dump(
@@ -447,9 +441,9 @@ def receive_out_of_band(request, _message):
         settings.CONCENT_PRIVATE_KEY,
         client_public_key
     )
-    message_ack_report_computed_task = MessageAckReportComputedTask()
+    message_ack_report_computed_task = message.AckReportComputedTask()
 
-    if isinstance(decoded_last_task_message, MessageForceReportComputedTask):
+    if isinstance(decoded_last_task_message, message.ForceReportComputedTask):
         try:
             message_task_to_compute = load(
                 decoded_last_task_message.message_task_to_compute,
@@ -469,7 +463,7 @@ def receive_out_of_band(request, _message):
                 settings.CONCENT_PRIVATE_KEY,
                 client_public_key,
             )
-            message_ack_report_computed_task = MessageAckReportComputedTask(
+            message_ack_report_computed_task = message.AckReportComputedTask(
                 message_task_to_compute = decoded_last_task_message.message_task_to_compute
             )
             message_verdict.message_ack_report_computed_task = dump(
@@ -496,7 +490,7 @@ def receive_out_of_band(request, _message):
 
             return dumped_message_verdict
 
-    if isinstance(decoded_last_task_message, MessageRejectReportComputedTask):
+    if isinstance(decoded_last_task_message, message.RejectReportComputedTask):
         try:
             message_cannot_compute_task = load(
                 decoded_last_task_message.message_cannot_compute_task,
@@ -512,7 +506,7 @@ def receive_out_of_band(request, _message):
 
         if decoded_last_task_message.reason == "deadline-exceeded":
             rejected_task_id           = message_cannot_compute_task.task_id
-            message_to_compute         = Message.objects.get(type = 'MessageForceReportComputedTask', task_id = rejected_task_id)
+            message_to_compute         = Message.objects.get(type = 'ForceReportComputedTask', task_id = rejected_task_id)
             raw_message_to_compute     = message_to_compute.data.tobytes()
             force_report_computed_task = load(
                 raw_message_to_compute,
@@ -552,8 +546,8 @@ def receive_out_of_band(request, _message):
 
 
 def validate_golem_message_task_to_compute(data):
-    if not isinstance(data, MessageTaskToCompute):
-        raise Http400("Expected MessageTaskToCompute.")
+    if not isinstance(data, message.TaskToCompute):
+        raise Http400("Expected TaskToCompute.")
 
     if not isinstance(data.timestamp, float):
         raise Http400("Wrong type of message timestamp field. Not a float.")
@@ -565,8 +559,8 @@ def validate_golem_message_task_to_compute(data):
 
 
 def validate_golem_message_reject(data):
-    if not isinstance(data, MessageCannotComputeTask) and not isinstance(data, MessageTaskFailure):
-        raise Http400("Expected MessageCannotComputeTask or MessageTaskFailure.")
+    if not isinstance(data, message.CannotComputeTask) and not isinstance(data, message.TaskFailure):
+        raise Http400("Expected CannotComputeTask or TaskFailure.")
 
 
 def store_message(golem_message_type, task_id, raw_golem_message):

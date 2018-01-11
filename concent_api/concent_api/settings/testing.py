@@ -34,3 +34,5 @@ CONCENT_FEATURES = [
     "gatekeeper",
     "admin-panel",
 ]
+
+STORAGE_CLUSTER_ADDRESS = 'http://localhost/'

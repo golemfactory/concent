@@ -103,13 +103,13 @@ class ApiViewTestCase(TestCase):
         def dummy_view(request, message):                                       # pylint: disable=unused-argument
             return self.message_to_view
 
-        request = self.request_factory.post("/dummy-url/", content_type='application/json', data=json.dumps(self.message_to_view))
+        request = self.request_factory.post("/dummy-url/", content_type = 'application/json', data = json.dumps(self.message_to_view))
         request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'] = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii')
 
         response = dummy_view(request)                                          # pylint: disable=no-value-for-parameter
 
         response_dict = json.loads(response.content.decode('ascii'))            # pylint: disable=no-member
-        self.assertEqual(response['content-type'], "application/json")          # pylint: disable=unsubscriptable-object
+        self.assertEqual(response['content-type'], "application/json")
         self.assertEqual(response.status_code, 200)                             # pylint: disable=no-member
         self.assertEqual(response_dict, self.message_to_view)
 

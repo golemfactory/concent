@@ -1,13 +1,14 @@
-from base64                 import b64encode
+from base64 import b64encode
 
-from django.test            import override_settings
-from django.test            import TestCase
-from django.urls            import reverse
-from freezegun              import freeze_time
-from golem_messages         import dump
-from golem_messages         import load
-from golem_messages         import message
+from django.test                    import override_settings
+from django.test                    import TestCase
+from django.urls                    import reverse
+from freezegun                      import freeze_time
 import dateutil.parser
+
+from golem_messages.shortcuts       import dump
+from golem_messages.shortcuts       import load
+from golem_messages                 import message
 
 from utils.testing_helpers  import generate_ecc_key_pair
 
@@ -18,8 +19,8 @@ from utils.testing_helpers  import generate_ecc_key_pair
 
 
 @override_settings(
-    CONCENT_PRIVATE_KEY = CONCENT_PRIVATE_KEY,
-    CONCENT_PUBLIC_KEY  = CONCENT_PUBLIC_KEY,
+    CONCENT_PRIVATE_KEY    = CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY     = CONCENT_PUBLIC_KEY,
     CONCENT_MESSAGING_TIME = 10,  # seconds
 )
 class ReportComputedTaskIntegrationTest(TestCase):
@@ -45,6 +46,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
             timestamp       = int(dateutil.parser.parse("2017-12-01 11:01:00").timestamp()),
         )
         force_report_computed_task.task_to_compute = deserialized_task_to_compute
+
         serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:01:00"):
@@ -87,6 +89,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
             timestamp = int(dateutil.parser.parse("2017-12-1 10:59:00").timestamp())
         )
         force_report_computed_task.task_to_compute = deserialized_task_to_compute
+
         serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 10:59:00"):
@@ -191,14 +194,13 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 reverse('core:receive'),
                 data         = '',
                 content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY   = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response_2.status_code,  200)
         self.assertEqual(response_2.content, serialized_force_report_computed_task)
 
         # STEP 3: Requestor rejects computed task due to CannotComputeTask or TaskFailure
-
 
         cannot_compute_task = message.CannotComputeTask(
             timestamp   = int(dateutil.parser.parse("2017-12-01 10:30:00").timestamp()),
@@ -221,9 +223,9 @@ class ReportComputedTaskIntegrationTest(TestCase):
         with freeze_time("2017-12-01 11:00:05"):
             response_3 = self.client.post(
                 reverse('core:send'),
-                data                           = serialized_reject_report_computed_task,
-                content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                data                            = serialized_reject_report_computed_task,
+                content_type                    = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response_3.status_code,  202)
@@ -236,7 +238,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 reverse('core:receive'),
                 data         = '',
                 content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             )
         self.assertEqual(response_4.status_code,  200)
 
@@ -268,6 +270,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
         )
 
         force_report_computed_task.task_to_compute = deserialized_task_to_compute
+
         serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 10:59:00"):
@@ -295,7 +298,6 @@ class ReportComputedTaskIntegrationTest(TestCase):
         self.assertEqual(response_2.content, serialized_force_report_computed_task)
 
         # STEP 3: Requestor rejects computed task claiming that the deadline has been exceeded
-
 
         cannot_compute_task = message.CannotComputeTask(
             timestamp   = int(dateutil.parser.parse("2017-12-01 10:30:00").timestamp()),
@@ -335,7 +337,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 reverse('core:receive'),
                 data         = '',
                 content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response_4.status_code,  200)
@@ -658,10 +660,12 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         serialized_task_to_compute      = dump(task_to_compute,             REQUESTOR_PRIVATE_KEY, PROVIDER_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  PROVIDER_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, check_time = False)
+
         ack_report_computed_task = message.AckReportComputedTask(
             timestamp               = int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()),
         )
         ack_report_computed_task.task_to_compute = deserialized_task_to_compute
+
         serialized_ack_report_computed_task = dump(ack_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:05"):
@@ -727,6 +731,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
         task_to_compute.compute_task_def = message.ComputeTaskDef()
         task_to_compute.compute_task_def['task_id']     = 1
         task_to_compute.compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
+
         serialized_task_to_compute = dump(task_to_compute, PROVIDER_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY)
         deserialized_task_to_compute = load(serialized_task_to_compute, REQUESTOR_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, check_time = False)
 
@@ -802,7 +807,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
         task_to_compute.compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
 
         serialized_task_to_compute      = dump(task_to_compute,             REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY, check_time = False) 
+        deserialized_task_to_compute    = load(serialized_task_to_compute,  PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY, check_time = False)
 
         ack_report_computed_task = message.AckReportComputedTask(
             timestamp               = int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()),
@@ -927,7 +932,6 @@ class ReportComputedTaskIntegrationTest(TestCase):
         task_to_compute.compute_task_def = message.ComputeTaskDef()
         task_to_compute.compute_task_def['task_id']     = 1
         task_to_compute.compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
-
 
         serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
@@ -1397,7 +1401,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 reverse('core:receive'),
                 data         = '',
                 content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response_4.status_code,  204)

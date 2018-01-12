@@ -26,13 +26,13 @@ class ApiViewTestCase(TestCase):
             num_cores           = 7,
         )
         self.message_to_view = {
-            "node_name":            self.want_to_compute.node_name,
-            "task_id":              self.want_to_compute.task_id,
-            "perf_index":           self.want_to_compute.perf_index,
-            "price":                self.want_to_compute.price,
-            "max_resource_size":    self.want_to_compute.max_resource_size,
-            "max_memory_size":      self.want_to_compute.max_memory_size,
-            "num_cores":            self.want_to_compute.num_cores,
+            "node_name":            self.want_to_compute.node_name,             # pylint: disable=no-member
+            "task_id":              self.want_to_compute.task_id,               # pylint: disable=no-member
+            "perf_index":           self.want_to_compute.perf_index,            # pylint: disable=no-member
+            "price":                self.want_to_compute.price,                 # pylint: disable=no-member
+            "max_resource_size":    self.want_to_compute.max_resource_size,     # pylint: disable=no-member
+            "max_memory_size":      self.want_to_compute.max_memory_size,       # pylint: disable=no-member
+            "num_cores":            self.want_to_compute.num_cores,             # pylint: disable=no-member
         }
 
     def test_api_view_should_return_golem_message_as_octet_stream(self):

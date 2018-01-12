@@ -104,7 +104,7 @@ class CoreViewSendTest(TestCase):
         assert ReceiveStatus.objects.count() == 0
 
         task_to_compute = self.task_to_compute
-        task_to_compute.compute_task_def['deadline'] = self.message_timestamp - 1
+        task_to_compute.compute_task_def['deadline'] = self.message_timestamp - 1   # pylint: disable=no-member
         correct_golem_data = message.ForceReportComputedTask(
             timestamp = self.message_timestamp,
         )

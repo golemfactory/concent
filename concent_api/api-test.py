@@ -111,6 +111,7 @@ def print_golem_message(message, indent = 4):
                 )
             except InvalidSignature as exception:
                 print("Failed to decode a Golem Message.")
+            if nested_message is None:
                 print('{}{:30} = <BINARY DATA>'.format(' ' * indent, field))
             else:
                 print('{}{:30} ='.format(' ' * indent, field))

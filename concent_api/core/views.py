@@ -170,9 +170,9 @@ def receive(request, _message):
 
         return None
 
-    current_time = int(datetime.datetime.now().timestamp())
+    current_time         = int(datetime.datetime.now().timestamp())
+    raw_message_data     = last_undelivered_message_status.message.data.tobytes()
 
-    raw_message_data = last_undelivered_message_status.message.data.tobytes()
     try:
         decoded_message_data = load(
             raw_message_data,
@@ -258,7 +258,7 @@ def receive_out_of_band(request, _message):
     undelivered_receive_out_of_band_statuses    = ReceiveOutOfBandStatus.objects.filter(delivered = False)
     last_undelivered_receive_out_of_band_status = undelivered_receive_out_of_band_statuses.order_by('timestamp').last()
     last_undelivered_receive_status             = Message.objects.all().order_by('timestamp').last()
-    client_public_key = decode_client_public_key(request)
+    client_public_key                           = decode_client_public_key(request)
 
     current_time    = int(datetime.datetime.now().timestamp())
     message_verdict = message.VerdictReportComputedTask()

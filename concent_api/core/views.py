@@ -87,6 +87,7 @@ def send(_request, client_message):
         force_report_computed_task = message.Message.deserialize(
             force_report_computed_task_from_database.last().data.tobytes(),
             None,
+            check_time = False
         )
 
         assert hasattr(force_report_computed_task, 'task_to_compute')
@@ -139,7 +140,11 @@ def receive(request, _message):
         if last_delivered_message_status.message.type == 'ForceReportComputedTask':
             force_report_task_from_database = last_delivered_message_status.message.data.tobytes()
 
-            force_report_task = message.Message.deserialize(force_report_task_from_database, None)
+            force_report_task = message.Message.deserialize(
+                force_report_task_from_database,
+                None,
+                check_time = False
+            )
 
             ack_report_computed_task                 = message.AckReportComputedTask()
             ack_report_computed_task.task_to_compute = force_report_task.task_to_compute
@@ -157,7 +162,11 @@ def receive(request, _message):
     current_time         = int(datetime.datetime.now().timestamp())
     raw_message_data     = last_undelivered_message_status.message.data.tobytes()
 
-    decoded_message_data = message.Message.deserialize(raw_message_data, None)
+    decoded_message_data = message.Message.deserialize(
+        raw_message_data,
+        None,
+        check_time = False
+    )
 
     assert last_undelivered_message_status.message.type == type(decoded_message_data).__name__
 
@@ -255,8 +264,10 @@ def receive_out_of_band(request, _message):
             try:
                 decoded_ack_report_computed_task = message.Message.deserialize(
                     serialized_ack_report_computed_task,
-                    None
+                    None,
+                    check_time = False
                 )
+
             except InvalidSignature as exception:
                 return JsonResponse({'error': "Failed to decode AckReportComputedTask. {}".format(exception)}, status = 400)
 

@@ -243,7 +243,7 @@ def receive(request, _message):
             )
 
         if current_time <= decoded_message_from_database.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
-            if decoded_message_data.reason is not None and decoded_message_data.reason.value == "TASK_TIME_LIMIT_EXCEEDED":
+            if decoded_message_data.reason is not None and decoded_message_data.reason == message.RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED:
                 ack_report_computed_task = message.AckReportComputedTask(timestamp = current_time)
                 ack_report_computed_task.task_to_compute = decoded_message_from_database.task_to_compute
                 return ack_report_computed_task
@@ -391,7 +391,7 @@ def receive_out_of_band(request, _message):
             return dumped_message_verdict
 
     if isinstance(decoded_last_task_message, message.RejectReportComputedTask):
-        if decoded_last_task_message.reason == "deadline-exceeded":
+        if decoded_last_task_message.reason == message.RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED:
             rejected_task_id           = decoded_last_task_message.message_cannot_compute_task.task_to_compute.compute_task_def['task_id']
             message_to_compute         = Message.objects.get(type = 'ForceReportComputedTask', task_id = rejected_task_id)
             raw_message_to_compute     = message_to_compute.data.tobytes()

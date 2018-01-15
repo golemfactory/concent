@@ -109,8 +109,8 @@ def print_golem_message(message, indent = 4):
                     CONCENT_PUBLIC_KEY,
                     check_time=False,
                 )
-            except AttributeError:
-                # FIXME: golem-messages provides no reliable way to discern invalid messages from other AttributeErrors.
+            except InvalidSignature as exception:
+                print("Failed to decode a Golem Message.")
                 print('{}{:30} = <BINARY DATA>'.format(' ' * indent, field))
             else:
                 print('{}{:30} ='.format(' ' * indent, field))

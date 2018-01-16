@@ -355,6 +355,56 @@ class CoreViewReceiveTest(TestCase):
         self.assertEqual(response.content.decode(), '')
         assert len(ReceiveStatus.objects.filter(delivered=False)) == 0
 
+    @freeze_time("2017-11-17 12:00:00")
+    def test_receive_should_get_ack_after_task_to_compute_is_not_after_deadline(self):
+        self.compute_task_def = message.ComputeTaskDef()
+        self.compute_task_def['task_id'] = 2
+        self.compute_task_def['deadline'] = int(dateutil.parser.parse("2017-11-17 10:00:00").timestamp())
+        self.task_to_compute = message.TaskToCompute(
+            timestamp = int(dateutil.parser.parse("2017-11-17 10:00:00").timestamp()),
+            compute_task_def = self.compute_task_def,
+        )
+        self.force_golem_data = message.ForceReportComputedTask(
+            timestamp = int(dateutil.parser.parse("2017-11-17 10:00:00").timestamp()),
+        )
+        self.force_golem_data.task_to_compute = self.task_to_compute
+        message_timestamp   = datetime.datetime.now(timezone.utc)
+        message_timestamp   = datetime.datetime.now(timezone.utc)
+        new_message         = Message(
+            type        = self.force_golem_data.__class__.__name__,
+            timestamp   = message_timestamp,
+            data        = self.force_golem_data.serialize(),
+            task_id     = self.task_to_compute.compute_task_def['task_id']  # pylint: disable=no-member
+        )
+        new_message.full_clean()
+        new_message.save()
+        new_message_status = ReceiveStatus(
+            message   = new_message,
+            timestamp = message_timestamp,
+            delivered = False
+        )
+        new_message_status.full_clean()
+        new_message_status.save()
+
+        response = self.client.post(
+            reverse('core:receive'),
+            content_type                   = 'application/octet-stream',
+            data                           = '',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
+        )
+
+        decoded_ack_response = load(
+            response.content,
+            REQUESTOR_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time = False,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsInstance(decoded_ack_response, message.AckReportComputedTask)
+        self.assertEqual(decoded_ack_response.task_to_compute.compute_task_def['task_id'],  self.task_to_compute.compute_task_def['task_id'])   # pylint: disable=no-member
+        self.assertEqual(decoded_ack_response.task_to_compute.compute_task_def['deadline'], self.task_to_compute.compute_task_def['deadline'])  # pylint: disable=no-member
+
 
 @override_settings(
     CONCENT_PRIVATE_KEY    = CONCENT_PRIVATE_KEY,

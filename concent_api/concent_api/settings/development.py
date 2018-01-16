@@ -16,3 +16,5 @@ CONCENT_FEATURES = [
     "gatekeeper",
     "admin-panel",
 ]
+
+STORAGE_CLUSTER_ADDRESS = 'http://devel.concent.golem.network/'

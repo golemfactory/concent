@@ -28,3 +28,9 @@ LOGGING = {
         '': {'handlers': ['null_handler']}
     }
 }
+
+CONCENT_FEATURES = [
+    "concent-api",
+    "gatekeeper",
+    "admin-panel",
+]

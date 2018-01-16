@@ -63,33 +63,33 @@ def download(request):
 def parse_headers(request, path_to_file):
     # Decode and check if request header contains a golem message:
     if 'HTTP_AUTHORIZATION' not in request.META:
-        return gatekeeper_access_denied_response("Missing 'Authorization' header.")
+        return gatekeeper_access_denied_response("Missing 'Authorization' header.", path_to_file)
 
     authorization_scheme_and_token = request.META['HTTP_AUTHORIZATION'].split(" ", 1)
     assert len(authorization_scheme_and_token) in [1, 2]
 
     if len(authorization_scheme_and_token) == 1:
-        return gatekeeper_access_denied_response("Missing token in the 'Authorization' header.")
+        return gatekeeper_access_denied_response("Missing token in the 'Authorization' header.", path_to_file)
 
     (scheme, token) = authorization_scheme_and_token
 
     if scheme != 'Golem':
-        return gatekeeper_access_denied_response("Unrecognized scheme in the 'Authorization' header.")
+        return gatekeeper_access_denied_response("Unrecognized scheme in the 'Authorization' header.", path_to_file)
 
     try:
         decoded_auth_header_content = b64decode(token, validate = True)
     except binascii.Error:
-        return gatekeeper_access_denied_response("Unable to decode token in the 'Authorization' header.")
+        return gatekeeper_access_denied_response("Unable to decode token in the 'Authorization' header.", path_to_file)
 
     try:
         loaded_golem_message = load(decoded_auth_header_content, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY, check_time = False)
     # FIXME: We want to catch only exceptions caused by malformed messages but golem-messages does not have specialized
     # exception classes for that. It simply raises AttributeError.
     except AttributeError:
-        return gatekeeper_access_denied_response("Token in the 'Authorization' header is not a valid Golem message.")
+        return gatekeeper_access_denied_response("Token in the 'Authorization' header is not a valid Golem message.", path_to_file)
 
     if loaded_golem_message is None:
-        return gatekeeper_access_denied_response('Undefined golem message.')
+        return gatekeeper_access_denied_response('Undefined golem message.', path_to_file)
     assert isinstance(loaded_golem_message, Message)
 
     # Check if request header contains Concent-Client-Public-Key:
@@ -109,43 +109,43 @@ def parse_headers(request, path_to_file):
     # Check ConcentFileTransferToken each field:
     # -DEADLINE
     if not isinstance(loaded_golem_message.token_expiration_deadline, int):
-        return gatekeeper_access_denied_response('Wrong type of token_expiration_deadline variable.')
+        return gatekeeper_access_denied_response('Wrong type of token_expiration_deadline variable.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
     current_time = int(datetime.datetime.now().timestamp())
 
     if current_time > loaded_golem_message.token_expiration_deadline:
-        return gatekeeper_access_denied_response('token_expiration_deadline has passed.')
+        return gatekeeper_access_denied_response('token_expiration_deadline has passed.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
 
     # -STORAGE_CLUSTER_ADDRESS
     if not isinstance(loaded_golem_message.storage_cluster_address, str):
-        return gatekeeper_access_denied_response('Wrong type of storage_cluster_address variable.')
+        return gatekeeper_access_denied_response('Wrong type of storage_cluster_address variable.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
     url_validator = URLValidator()
     try:
         url_validator(loaded_golem_message.storage_cluster_address)
     except ValidationError:
-        return gatekeeper_access_denied_response('storage_cluster_address is not a valid URL.')
+        return gatekeeper_access_denied_response('storage_cluster_address is not a valid URL.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
     if loaded_golem_message.storage_cluster_address != settings.STORAGE_CLUSTER_ADDRESS:
-        return gatekeeper_access_denied_response('Given storage_cluster_address is not defined in settings.')
+        return gatekeeper_access_denied_response('Given storage_cluster_address is not defined in settings.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
 
     # -CLIENT_PUBLIC_KEY
     if not isinstance(loaded_golem_message.authorized_client_public_key, bytes):
-        return gatekeeper_access_denied_response('Wrong type of authorized_client_public_key variable.')
+        return gatekeeper_access_denied_response('Wrong type of authorized_client_public_key variable.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
     client_public_key_base64 = (b64encode(loaded_golem_message.authorized_client_public_key)).decode('ascii')
-    if request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'] != client_public_key_base64:
-        return gatekeeper_access_denied_response('authorized_client_public_key is different then Concent-Client-Public-Key header.')
+    if client_public_key != client_public_key_base64:
+        return gatekeeper_access_denied_response('authorized_client_public_key is different then Concent-Client-Public-Key header.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
 
     # -OPERATION
     if request.method == 'POST' and loaded_golem_message.operation != 'upload':
-        return gatekeeper_access_denied_response('Wrong operation variable for this request method.')
+        return gatekeeper_access_denied_response('Wrong operation variable for this request method.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
     if request.method == 'GET' and loaded_golem_message.operation != 'download':
-        return gatekeeper_access_denied_response('Wrong operation variable for this request method.')
+        return gatekeeper_access_denied_response('Wrong operation variable for this request method.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
 
     # -FILES
     if not all(isinstance(file, dict) for file in loaded_golem_message.files):
-        return gatekeeper_access_denied_response('Wrong type of files variable.')
+        return gatekeeper_access_denied_response('Wrong type of files variable.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
     transfer_token_paths_to_files = []
     for file in loaded_golem_message.files:
         transfer_token_paths_to_files.append(file['path'])
     if path_to_file not in transfer_token_paths_to_files:
-        return gatekeeper_access_denied_response('Path to specified file is not listed in files variable.')
+        return gatekeeper_access_denied_response('Path to specified file is not listed in files variable.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
 
     return None

@@ -94,11 +94,16 @@ def send(_request, client_message):
 
         assert force_report_computed_task.task_to_compute.compute_task_def['task_id'] == client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id']
         if client_message.cannot_compute_task.reason == message.CannotComputeTask.REASON.WrongCTD:
-            store_message(
+            golem_message, message_timestamp = store_message(
                 type(client_message).__name__,
                 force_report_computed_task.task_to_compute.compute_task_def['task_id'],
                 client_message.serialize()
             )
+            store_receive_message_status(
+                golem_message,
+                message_timestamp,
+            )
+
             return HttpResponse("", status = 202)
 
         if current_time <= force_report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
@@ -295,6 +300,30 @@ def receive_out_of_band(request, _message):
             store_message(
                 type(message_verdict).__name__,
                 decoded_force_report_computed_task.task_to_compute.compute_task_def['task_id'],
+                message_verdict.serialize()
+            )
+            message_verdict.sig = None
+            return message_verdict
+        if last_undelivered_receive_status.type == 'RejectReportComputedTask':
+            serialized_reject_report_computed_task = last_undelivered_receive_status.data.tobytes()
+            try:
+                decoded_reject_report_computed_task = load(
+                    serialized_reject_report_computed_task,
+                    settings.CONCENT_PRIVATE_KEY,
+                    client_public_key,
+                    check_time = False
+                )
+            except InvalidSignature as exception:
+                return JsonResponse({'error': "Failed to decode ForceReportComputedTask. {}".format(exception)}, status = 400)
+
+            ack_report_computed_task                    = message.AckReportComputedTask()
+            ack_report_computed_task.task_to_compute    = decoded_reject_report_computed_task.task_to_compute
+            message_verdict.ack_report_computed_task    = ack_report_computed_task
+
+            message_verdict.sig = None
+            store_message(
+                type(message_verdict).__name__,
+                decoded_reject_report_computed_task.cannot_compute_task.task_to_compute.compute_task_def['task_id'],
                 message_verdict.serialize()
             )
             message_verdict.sig = None

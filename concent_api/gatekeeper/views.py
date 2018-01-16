@@ -25,10 +25,12 @@ logger = logging.getLogger(__name__)
 @csrf_exempt
 @require_POST
 def upload(request):
+    logger.debug("Upload request received.")
     if request.content_type != 'application/x-www-form-urlencoded':
         return gatekeeper_access_denied_response('Unsupported content type.')
 
-    response = parse_headers(request)
+    path_to_file = request.get_full_path().partition(reverse('gatekeeper:upload'))[2]
+    response = parse_headers(request, path_to_file)
     if response is not None:
         logger.warning(response.content.decode())
         return response
@@ -40,6 +42,7 @@ def upload(request):
 @csrf_exempt
 @require_safe
 def download(request):
+    logger.debug("Download request received.")
     # The client should not sent Content-Type header with GET requests.
     # FIXME: When running on `manage.py runserver` in development, empty or missing Concent-Type gets replaced
     # with text/plain. gunicorn does not do this. Looks like a bug to me. We'll let it pass for now sice we ignore
@@ -47,7 +50,8 @@ def download(request):
     if request.content_type != 'text/plain' and request.content_type != '':
         return gatekeeper_access_denied_response('Download request cannot have data in the body.')
 
-    response = parse_headers(request)
+    path_to_file = request.get_full_path().partition(reverse('gatekeeper:download'))[2]
+    response = parse_headers(request, path_to_file)
     if response is not None:
         logger.warning(response.content.decode())
         return response
@@ -56,7 +60,7 @@ def download(request):
     return JsonResponse({"message": "Request passed all download validations."}, status = 200)
 
 
-def parse_headers(request):
+def parse_headers(request, path_to_file):
     # Decode and check if request header contains a golem message:
     if 'HTTP_AUTHORIZATION' not in request.META:
         return gatekeeper_access_denied_response("Missing 'Authorization' header.")
@@ -90,7 +94,17 @@ def parse_headers(request):
 
     # Check if request header contains Concent-Client-Public-Key:
     if 'HTTP_CONCENT_CLIENT_PUBLIC_KEY' not in request.META:
-        return gatekeeper_access_denied_response('Missing Concent-Client-Public-Key header.')
+        return gatekeeper_access_denied_response('Missing Concent-Client-Public-Key header.', path_to_file, loaded_golem_message.subtask_id)
+    client_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
+
+    logger.debug(
+        "Client wants to {} file '{}', with subtask_id '{}'. Client public key: '{}'.".format(
+            loaded_golem_message.operation,
+            path_to_file,
+            loaded_golem_message.subtask_id,
+            client_public_key
+        )
+    )
 
     # Check ConcentFileTransferToken each field:
     # -DEADLINE
@@ -128,10 +142,6 @@ def parse_headers(request):
     # -FILES
     if not all(isinstance(file, dict) for file in loaded_golem_message.files):
         return gatekeeper_access_denied_response('Wrong type of files variable.')
-    if request.method == 'POST':
-        path_to_file = request.get_full_path().partition(reverse('gatekeeper:upload'))[2]
-    if request.method == 'GET':
-        path_to_file = request.get_full_path().partition(reverse('gatekeeper:download'))[2]
     transfer_token_paths_to_files = []
     for file in loaded_golem_message.files:
         transfer_token_paths_to_files.append(file['path'])

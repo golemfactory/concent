@@ -271,10 +271,14 @@ def receive_out_of_band(request, _message):
             message_verdict.force_report_computed_task = force_report_computed_task
             message_verdict.ack_report_computed_task   = decoded_ack_report_computed_task
             message_verdict.sig = None
-            store_message(
+            golem_message, message_timestamp = store_message(
                 type(message_verdict).__name__,
                 decoded_ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
                 message_verdict.serialize()
+            )
+            store_receive_out_of_band(
+                golem_message,
+                message_timestamp
             )
             message_verdict.sig = None
             return message_verdict
@@ -297,10 +301,14 @@ def receive_out_of_band(request, _message):
             message_verdict.force_report_computed_task  = decoded_force_report_computed_task
 
             message_verdict.sig = None
-            store_message(
+            golem_message, message_timestamp = store_message(
                 type(message_verdict).__name__,
                 decoded_force_report_computed_task.task_to_compute.compute_task_def['task_id'],
                 message_verdict.serialize()
+            )
+            store_receive_out_of_band(
+                golem_message,
+                message_timestamp
             )
             message_verdict.sig = None
             return message_verdict
@@ -321,10 +329,14 @@ def receive_out_of_band(request, _message):
             message_verdict.ack_report_computed_task    = ack_report_computed_task
 
             message_verdict.sig = None
-            store_message(
+            golem_message, message_timestamp = store_message(
                 type(message_verdict).__name__,
                 decoded_reject_report_computed_task.cannot_compute_task.task_to_compute.compute_task_def['task_id'],
                 message_verdict.serialize()
+            )
+            store_receive_out_of_band(
+                golem_message,
+                message_timestamp
             )
             message_verdict.sig = None
             return message_verdict

@@ -226,17 +226,6 @@ def receive(request, _message):
             return decoded_message_data
         return None
     else:
-        if decoded_message_data.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME <= current_time <= decoded_message_data.task_to_compute.deadline + 2 * settings.CONCENT_MESSAGING_TIME:
-            ack_report_computed_task = message.AckReportComputedTask(
-                task_id                 = decoded_message_data.task_id,
-                timestamp               = current_time,
-            )
-            ack_report_computed_task.task_to_compute = decoded_message_data.task_to_compute
-            return ack_report_computed_task
-
-        if current_time <= decoded_message_data.message_task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
-            return decoded_message_data
-
         return None
 
 

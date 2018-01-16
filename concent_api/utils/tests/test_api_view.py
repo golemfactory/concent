@@ -3,20 +3,24 @@ from base64                 import b64encode
 
 from django.test            import TestCase, RequestFactory, override_settings
 from django.conf            import settings
-from golem_messages.message import MessageWantToComputeTask
+from golem_messages.message import WantToComputeTask
 from golem_messages         import dump, load
 
-from utils.api_view import api_view
+from utils.api_view         import api_view
+from utils.testing_helpers  import generate_ecc_key_pair
+
+
+(CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
 @override_settings(
-    CONCENT_PRIVATE_KEY = b'l\xcdh\x19\xeb$>\xbcG\xa1\xc7v\xe8\xd7o\x0c\xbf\x0e\x0fM\x89lw\x1e\xd7K\xd6Hnv$\xa2',
-    CONCENT_PUBLIC_KEY  = b'\xf3\x97\x19\xcdX\xda\x86tiP\x1c&\xd39M\x9e\xa4\xddb\x89\xb5,]O\xd5cR\x84\xb85\xed\xc9\xa17e,\xb2s\xeb\n1\xcaN.l\xba\xc3\xb7\xc2\xba\xff\xabN\xde\xb3\x0b\xa6l\xbf6o\x81\xe0;'
+    CONCENT_PRIVATE_KEY = CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY  = CONCENT_PUBLIC_KEY,
 )
 class ApiViewTestCase(TestCase):
     def setUp(self):
         self.request_factory = RequestFactory()
-        self.message_want_to_compute = MessageWantToComputeTask(
+        self.want_to_compute = WantToComputeTask(
             node_name           = 1,
             task_id             = 2,
             perf_index          = 3,
@@ -26,18 +30,18 @@ class ApiViewTestCase(TestCase):
             num_cores           = 7,
         )
         self.message_to_view = {
-            "node_name":            self.message_want_to_compute.node_name,
-            "task_id":              self.message_want_to_compute.task_id,
-            "perf_index":           self.message_want_to_compute.perf_index,
-            "price":                self.message_want_to_compute.price,
-            "max_resource_size":    self.message_want_to_compute.max_resource_size,
-            "max_memory_size":      self.message_want_to_compute.max_memory_size,
-            "num_cores":            self.message_want_to_compute.num_cores,
+            "node_name":            self.want_to_compute.node_name,             # pylint: disable=no-member
+            "task_id":              self.want_to_compute.task_id,               # pylint: disable=no-member
+            "perf_index":           self.want_to_compute.perf_index,            # pylint: disable=no-member
+            "price":                self.want_to_compute.price,                 # pylint: disable=no-member
+            "max_resource_size":    self.want_to_compute.max_resource_size,     # pylint: disable=no-member
+            "max_memory_size":      self.want_to_compute.max_memory_size,       # pylint: disable=no-member
+            "num_cores":            self.want_to_compute.num_cores,             # pylint: disable=no-member
         }
 
     def test_api_view_should_return_golem_message_as_octet_stream(self):
         raw_message = dump(
-            self.message_want_to_compute,
+            self.want_to_compute,
             settings.CONCENT_PRIVATE_KEY,
             settings.CONCENT_PUBLIC_KEY,
         )
@@ -56,14 +60,14 @@ class ApiViewTestCase(TestCase):
         dummy_view(request)                                                     # pylint: disable=no-value-for-parameter
 
         message_to_test = message_to_dict(decoded_message)
-        self.assertIsInstance(decoded_message, MessageWantToComputeTask)
+        self.assertIsInstance(decoded_message, WantToComputeTask)
         self.assertEqual(message_to_test, self.message_to_view)
 
     def test_api_view_should_encode_golem_message_returned_from_view(self):
 
         @api_view
         def dummy_view(request, message):                                       # pylint: disable=unused-argument
-            return self.message_want_to_compute
+            return self.want_to_compute
 
         request = self.request_factory.post("/dummy-url/", content_type = '', data = '')
         request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'] = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii')
@@ -85,9 +89,9 @@ class ApiViewTestCase(TestCase):
 
         @api_view
         def dummy_view(request, message):                                       # pylint: disable=unused-argument
-            return self.message_want_to_compute
+            return self.want_to_compute
 
-        request = self.request_factory.post("/dummy-url/", content_type = 'application/x-www-form-urlencoded', data = self.message_want_to_compute)
+        request = self.request_factory.post("/dummy-url/", content_type = 'application/x-www-form-urlencoded', data = self.want_to_compute)
         request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'] = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii')
 
         response = dummy_view(request)                                          # pylint: disable=no-value-for-parameter
@@ -103,13 +107,13 @@ class ApiViewTestCase(TestCase):
         def dummy_view(request, message):                                       # pylint: disable=unused-argument
             return self.message_to_view
 
-        request = self.request_factory.post("/dummy-url/", content_type='application/json', data=json.dumps(self.message_to_view))
+        request = self.request_factory.post("/dummy-url/", content_type = 'application/json', data = json.dumps(self.message_to_view))
         request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'] = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii')
 
         response = dummy_view(request)                                          # pylint: disable=no-value-for-parameter
 
         response_dict = json.loads(response.content.decode('ascii'))            # pylint: disable=no-member
-        self.assertEqual(response['content-type'], "application/json")          # pylint: disable=unsubscriptable-object
+        self.assertEqual(response['content-type'], "application/json")
         self.assertEqual(response.status_code, 200)                             # pylint: disable=no-member
         self.assertEqual(response_dict, self.message_to_view)
 

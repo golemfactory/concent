@@ -1,31 +1,31 @@
 #!/usr/bin/env python3
 
+import os
 import sys
 import datetime
 import random
 
-import http.client
 from base64                         import b64encode
 
-from golem_messages.message         import Message
-from golem_messages.message         import MessageAckReportComputedTask
-from golem_messages.message         import MessageCannotComputeTask
-from golem_messages.message         import MessageForceReportComputedTask
-from golem_messages.message         import MessageRejectReportComputedTask
-from golem_messages.message         import MessageTaskToCompute
+from golem_messages.message         import AckReportComputedTask
+from golem_messages.message         import CannotComputeTask
+from golem_messages.message         import ComputeTaskDef
+from golem_messages.message         import ForceReportComputedTask
+from golem_messages.message         import TaskToCompute
+from golem_messages.message         import RejectReportComputedTask
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 
 from utils.testing_helpers          import generate_ecc_key_pair
 
+from api_testing_helpers            import api_request
+
 import requests
 
-(CONCENT_PRIVATE_KEY,   CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
-DEFAULT_HEADERS = {
-    'Content-Type':              'application/octet-stream',
-    'concent-client-public-key': b64encode(CONCENT_PUBLIC_KEY).decode('ascii'),
-}
+(PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)  = generate_ecc_key_pair()
+(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
 def create_data(message_type, task_id):
@@ -33,29 +33,34 @@ def create_data(message_type, task_id):
     assert isinstance(task_id, int)
 
     current_time = int(datetime.datetime.now().timestamp())
-    message_task_to_compute = MessageTaskToCompute(
+
+    compute_task_def = ComputeTaskDef()
+    compute_task_def['task_id']     = task_id
+    compute_task_def['deadline']    = current_time + 6000
+    task_to_compute = TaskToCompute(
         timestamp = current_time,
-        task_id = task_id,
-        deadline = current_time + 6000,
+        compute_task_def = compute_task_def
     )
 
-    message_task_to_compute_dumped = dump(
-        message_task_to_compute,
-        CONCENT_PRIVATE_KEY,
-        CONCENT_PUBLIC_KEY,
-    )
+    serialized_task_to_compute      = dump(task_to_compute,             REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)
+    deserialized_task_to_compute    = load(serialized_task_to_compute,  PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY, check_time = False)
 
-    if message_type == 'MessageForceReportComputedTask':
-        return MessageForceReportComputedTask(
+    if message_type == 'ForceReportComputedTask':
+        force_report_computed_task = ForceReportComputedTask(
             timestamp = current_time,
-            message_task_to_compute = message_task_to_compute_dumped
+            task_to_compute = deserialized_task_to_compute
         )
 
-    elif message_type == 'MessageAckReportComputedTask':
-        return MessageAckReportComputedTask(
+        return force_report_computed_task
+
+    elif message_type == 'AckReportComputedTask':
+        ack_report_computed_task = AckReportComputedTask(
             timestamp = current_time,
-            message_task_to_compute = message_task_to_compute_dumped,
+            task_to_compute = deserialized_task_to_compute
         )
+
+        return ack_report_computed_task
+
     else:
         assert False, 'Invalid message type'
 
@@ -66,95 +71,22 @@ def create_reject_data(task_id):
     assert task_id >= 0
     assert isinstance(task_id, int)
 
-    current_time = int(datetime.datetime.now().timestamp())
-    message_cannot_compute_task = MessageCannotComputeTask(
-        timestamp = current_time,
-        reason = 'provider-quit',
-        task_id = task_id,
-    )
+    cannot_compute_task = CannotComputeTask()
+    cannot_compute_task.task_to_compute = TaskToCompute()
+    cannot_compute_task.task_to_compute.compute_task_def = ComputeTaskDef()
+    cannot_compute_task.task_to_compute.compute_task_def['task_id'] = task_id
+    cannot_compute_task.reason = CannotComputeTask.REASON.WrongKey
 
-    message_cannot_compute_task_dumped = dump(
-        message_cannot_compute_task,
-        CONCENT_PRIVATE_KEY,
-        CONCENT_PUBLIC_KEY,
-    )
+    serialized_cannot_compute_task      = dump(cannot_compute_task,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
+    deserialized_cannot_compute_task    = load(serialized_cannot_compute_task,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time=False)
 
-    return MessageRejectReportComputedTask(
-        timestamp = current_time,
-        reason = 'cannot-compute-task',
-        message_cannot_compute_task = message_cannot_compute_task_dumped,
-    )
+    reject_report_computed_task = RejectReportComputedTask()
+    reject_report_computed_task.cannot_compute_task = deserialized_cannot_compute_task
+    reject_report_computed_task.reason              = RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED
+    reject_report_computed_task.task_to_compute     = None
+    reject_report_computed_task.task_failure        = None
 
-
-def print_golem_message(message, indent = 4):
-    assert isinstance(message, Message)
-
-    HEADER_FIELDS  = ['timestamp', 'encrypted', 'sig']
-    PRIVATE_FIELDS = {'_payload', '_raw'}
-
-    assert 'type' not in message.__slots__
-    fields = ['type'] + HEADER_FIELDS + sorted(set(message.__slots__) - set(HEADER_FIELDS) - PRIVATE_FIELDS)
-    values = [
-        type(message).__name__ if field == 'type' else
-        getattr(message, field)
-        for field in fields
-    ]
-
-    for field, value in zip(fields, values):
-        if isinstance(value, bytes):
-            try:
-                nested_message = load(
-                    value,
-                    CONCENT_PRIVATE_KEY,
-                    CONCENT_PUBLIC_KEY,
-                )
-            except AttributeError:
-                # FIXME: golem-messages provides no reliable way to discern invalid messages from other AttributeErrors.
-                print('{}{:30} = <BINARY DATA>'.format(' ' * indent, field))
-            else:
-                print('{}{:30} ='.format(' ' * indent, field))
-                print_golem_message(nested_message, indent = indent + 4)
-        else:
-            print('{}{:30} = {}'.format(' ' * indent, field, value))
-
-
-def api_request(host, endpoint, data = None, headers = None):
-    assert all(value not in ['', None] for value in [endpoint, host, headers])
-
-    url = "{}/api/v1/{}/".format(host, endpoint)
-
-    if data is None:
-        print('RECEIVE ({})'.format(url))
-    else:
-        print('SEND ({})'.format(url))
-        print('MESSAGE:')
-        print_golem_message(data)
-
-        data = dump(
-            data,
-            CONCENT_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY,
-        )
-
-    if data is None:
-        response = requests.post("{}".format(url), headers = headers)
-    else:
-        response = requests.post("{}".format(url), headers = headers, data = data)
-
-    if len(response.content) != 0:
-        decoded_response = load(
-            response.content,
-            CONCENT_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY,
-        )
-        print('STATUS: {} {}'.format(response.status_code, http.client.responses[response.status_code]))
-        print('MESSAGE:')
-        print_golem_message(decoded_response)
-    else:
-        print('STATUS: {} {}'.format(response.status_code, http.client.responses[response.status_code]))
-        if response.text not in ['', None]:
-            print('RAW RESPONSE: {}'.format(response.text))
-    print()
+    return reject_report_computed_task
 
 
 def parse_command_line(command_line):
@@ -171,20 +103,103 @@ def parse_command_line(command_line):
 def main():
     cluster_url = parse_command_line(sys.argv)
     task_id     = random.randrange(1, 100000)
+    api_request(
+        cluster_url,
+        'send',
+        PROVIDER_PRIVATE_KEY,
+        CONCENT_PUBLIC_KEY,
+        create_data('ForceReportComputedTask', task_id), {
+            'Content-Type': 'application/octet-stream',
+            'concent-client-public-key':    b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            'concent-requestor-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
+        },
+    )
 
-    api_request(cluster_url, 'send',    create_data('MessageForceReportComputedTask', task_id), DEFAULT_HEADERS)
-    api_request(cluster_url, 'receive', headers = DEFAULT_HEADERS)
-    api_request(cluster_url, 'send',    create_data('MessageAckReportComputedTask', task_id), DEFAULT_HEADERS)
-    api_request(cluster_url, 'receive', headers = DEFAULT_HEADERS)
+    api_request(
+        cluster_url,
+        'receive',
+        REQUESTOR_PRIVATE_KEY,
+        CONCENT_PUBLIC_KEY,
+        headers = {
+            'Content-Type': 'application/octet-stream',
+            'concent-client-public-key':    b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+        }
+    )
 
-    api_request(cluster_url, 'send',    create_data('MessageForceReportComputedTask', task_id + 1), DEFAULT_HEADERS)
-    api_request(cluster_url, 'receive', headers = DEFAULT_HEADERS)
-    api_request(cluster_url, 'send',    create_reject_data(task_id + 1), DEFAULT_HEADERS)
-    api_request(cluster_url, 'receive', headers = DEFAULT_HEADERS)
+    api_request(
+        cluster_url,
+        'send',
+        PROVIDER_PRIVATE_KEY,
+        CONCENT_PUBLIC_KEY,
+        create_data('AckReportComputedTask', task_id), {
+            'Content-Type': 'application/octet-stream',
+            'concent-client-public-key':    b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            'concent-requestor-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
+        }
+    )
+
+    api_request(
+        cluster_url,
+        'receive',
+        REQUESTOR_PRIVATE_KEY,
+        CONCENT_PUBLIC_KEY,
+        headers = {
+            'Content-Type': 'application/octet-stream',
+            'concent-client-public-key':    b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+        }
+    )
+
+    api_request(
+        cluster_url,
+        'send',
+        PROVIDER_PRIVATE_KEY,
+        CONCENT_PUBLIC_KEY,
+        create_data('ForceReportComputedTask', task_id + 1), {
+            'Content-Type': 'application/octet-stream',
+            'concent-client-public-key':    b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            'concent-requestor-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
+        }
+    )
+
+    api_request(
+        cluster_url,
+        'receive',
+        REQUESTOR_PRIVATE_KEY,
+        CONCENT_PUBLIC_KEY,
+        headers = {
+            'Content-Type': 'application/octet-stream',
+            'concent-client-public-key':    b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+        }
+    )
+
+    api_request(
+        cluster_url,
+        'send',
+        REQUESTOR_PRIVATE_KEY,
+        CONCENT_PUBLIC_KEY,
+        create_reject_data(task_id + 1), {
+            'Content-Type': 'application/octet-stream',
+            'concent-client-public-key':    b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            'concent-requestor-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
+        }
+    )
+
+    api_request(
+        cluster_url,
+        'receive',
+        PROVIDER_PRIVATE_KEY,
+        CONCENT_PUBLIC_KEY,
+        headers = {
+            'Content-Type': 'application/octet-stream',
+            'concent-client-public-key':    b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            'concent-requestor-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+        }
+    )
 
 
 if __name__ == '__main__':
     try:
+        from concent_api.settings import CONCENT_PUBLIC_KEY
         main()
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file = sys.stderr)

@@ -7,6 +7,8 @@ from django.http                    import JsonResponse
 from django.http                    import HttpResponse
 from django.conf                    import settings
 from django.views.decorators.csrf   import csrf_exempt
+
+from golem_messages.exceptions      import InvalidSignature
 from golem_messages.message         import Message
 from golem_messages                 import dump
 from golem_messages                 import load
@@ -22,7 +24,6 @@ def api_view(view):
     def wrapper(request, *args, **kwargs):
         if 'HTTP_CONCENT_CLIENT_PUBLIC_KEY' not in request.META or request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'] == '':
             return JsonResponse({'error': 'Concent-Client-Public-Key HTTP header is missing on the request.'}, status = 400)
-
         try:
             client_public_key = b64decode(request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'].encode('ascii'), validate=True)
         except binascii.Error:
@@ -49,25 +50,22 @@ def api_view(view):
                     message = load(
                         request.body,
                         settings.CONCENT_PRIVATE_KEY,
-                        client_public_key
+                        client_public_key,
+                        check_time = False,
                     )
-                except AttributeError:
-                    # TODO: Make error handling more granular when golem-messages adds starts raising more specific exceptions
-                    return JsonResponse(
-                        {'error': "Failed to decode ForceReportComputedTask. Message and/or key are malformed or don't match."},
-                        status = 400
-                    )
+                except InvalidSignature as exception:
+                    return JsonResponse({'error': "Failed to decode a Golem Message. {}".format(exception)}, status = 400)
         try:
             response_from_view = view(request, message, *args, **kwargs)
         except Http400 as exception:
             return JsonResponse({'error': str(exception)}, status = 400)
-
         if isinstance(response_from_view, Message):
             serialized_message = dump(
                 response_from_view,
                 settings.CONCENT_PRIVATE_KEY,
                 client_public_key
             )
+
             return HttpResponse(serialized_message, content_type = 'application/octet-stream')
         elif isinstance(response_from_view, dict):
             return JsonResponse(response_from_view, safe = False)

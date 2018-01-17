@@ -80,5 +80,6 @@ def api_request(host, endpoint, private_key, public_key, data = None, headers = 
             print('RAW RESPONSE: {}'.format(response.text))
     print()
 
+
 if __name__ == '__main__':
     pass

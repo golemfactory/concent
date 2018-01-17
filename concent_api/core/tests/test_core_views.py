@@ -141,11 +141,11 @@ class CoreViewSendTest(TestCase):
             reverse('core:send'),
             data = dump(
                 force_report_computed_task,
-                REQUESTOR_PRIVATE_KEY,
+                PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
             content_type = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json().keys())
@@ -160,11 +160,11 @@ class CoreViewSendTest(TestCase):
             reverse('core:send'),
             data = dump(
                 data,
-                REQUESTOR_PRIVATE_KEY,
+                PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
             content_type = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json().keys())
@@ -176,11 +176,11 @@ class CoreViewSendTest(TestCase):
             reverse('core:send'),
             data = dump(
                 self.correct_golem_data,
-                REQUESTOR_PRIVATE_KEY,
+                PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
             content_type = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertIsInstance(response_202, HttpResponse)
@@ -192,11 +192,11 @@ class CoreViewSendTest(TestCase):
             reverse('core:send'),
             data = dump(
                 self.correct_golem_data,
-                REQUESTOR_PRIVATE_KEY,
+                PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
             content_type = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertIsInstance(response_400, JsonResponse)
@@ -212,11 +212,11 @@ class CoreViewSendTest(TestCase):
             reverse('core:send'),
             data = dump(
                 self.want_to_compute,
-                CONCENT_PRIVATE_KEY,
+                PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY
             ),
             content_type                   = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(CONCENT_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response_400.status_code, 400)
@@ -355,6 +355,56 @@ class CoreViewReceiveTest(TestCase):
         self.assertEqual(response.content.decode(), '')
         assert len(ReceiveStatus.objects.filter(delivered=False)) == 0
 
+    @freeze_time("2017-11-17 12:00:00")
+    def test_receive_should_get_ack_after_task_to_compute_is_not_after_deadline(self):
+        self.compute_task_def = message.ComputeTaskDef()
+        self.compute_task_def['task_id'] = 2
+        self.compute_task_def['deadline'] = int(dateutil.parser.parse("2017-11-17 10:00:00").timestamp())
+        self.task_to_compute = message.TaskToCompute(
+            timestamp = int(dateutil.parser.parse("2017-11-17 10:00:00").timestamp()),
+            compute_task_def = self.compute_task_def,
+        )
+        self.force_golem_data = message.ForceReportComputedTask(
+            timestamp = int(dateutil.parser.parse("2017-11-17 10:00:00").timestamp()),
+        )
+        self.force_golem_data.task_to_compute = self.task_to_compute
+        message_timestamp   = datetime.datetime.now(timezone.utc)
+        message_timestamp   = datetime.datetime.now(timezone.utc)
+        new_message         = Message(
+            type        = self.force_golem_data.__class__.__name__,
+            timestamp   = message_timestamp,
+            data        = self.force_golem_data.serialize(),
+            task_id     = self.task_to_compute.compute_task_def['task_id']  # pylint: disable=no-member
+        )
+        new_message.full_clean()
+        new_message.save()
+        new_message_status = ReceiveStatus(
+            message   = new_message,
+            timestamp = message_timestamp,
+            delivered = False
+        )
+        new_message_status.full_clean()
+        new_message_status.save()
+
+        response = self.client.post(
+            reverse('core:receive'),
+            content_type                   = 'application/octet-stream',
+            data                           = '',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
+        )
+
+        decoded_ack_response = load(
+            response.content,
+            REQUESTOR_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time = False,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsInstance(decoded_ack_response, message.AckReportComputedTask)
+        self.assertEqual(decoded_ack_response.task_to_compute.compute_task_def['task_id'],  self.task_to_compute.compute_task_def['task_id'])   # pylint: disable=no-member
+        self.assertEqual(decoded_ack_response.task_to_compute.compute_task_def['deadline'], self.task_to_compute.compute_task_def['deadline'])  # pylint: disable=no-member
+
 
 @override_settings(
     CONCENT_PRIVATE_KEY    = CONCENT_PRIVATE_KEY,
@@ -383,11 +433,7 @@ class CoreViewReceiveOutOfBandTest(TestCase):
         new_message         = Message(
             type        = self.force_golem_data.__class__.__name__,
             timestamp   = message_timestamp,
-            data        = dump(
-                self.force_golem_data,
-                REQUESTOR_PRIVATE_KEY,
-                CONCENT_PUBLIC_KEY,
-            ),
+            data        = self.force_golem_data.serialize(),
             task_id     = self.force_golem_data.task_to_compute.compute_task_def['task_id'],
         )
         new_message.full_clean()
@@ -424,3 +470,67 @@ class CoreViewReceiveOutOfBandTest(TestCase):
 
         self.assertEqual(response.status_code, 204)
         self.assertEqual(response.content.decode(), '')
+
+    def test_two_receive_out_of_band_in_row(self):
+
+        compute_task_def = message.ComputeTaskDef()
+        compute_task_def['task_id']     = 2
+        compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
+        task_to_compute = message.TaskToCompute(
+            timestamp   = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
+            compute_task_def = compute_task_def
+        )
+
+        serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
+        deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
+
+        force_report_computed_task = message.ForceReportComputedTask(
+            timestamp               = int(dateutil.parser.parse("2017-12-01 10:59:00").timestamp()),
+        )
+        force_report_computed_task.task_to_compute = deserialized_task_to_compute
+
+        serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+
+        with freeze_time("2017-12-01 10:59:00"):
+            response_1 = self.client.post(
+                reverse('core:send'),
+                data                           = serialized_force_report_computed_task,
+                content_type                   = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            )
+
+        self.assertEqual(response_1.status_code,  202)
+        self.assertEqual(len(response_1.content), 0)
+
+        with freeze_time("2017-12-01 11:00:15"):
+            response_2 = self.client.post(
+                reverse('core:receive_out_of_band'),
+                data         = '',
+                content_type = '',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            )
+
+        self.assertEqual(response_2.status_code, 200)
+
+        message_from_concent = load(response_2.content, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time=False)
+
+        self.assertIsInstance(message_from_concent, message.VerdictReportComputedTask)
+        self.assertGreaterEqual(message_from_concent.timestamp, int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))
+        self.assertLessEqual(   message_from_concent.timestamp, int(dateutil.parser.parse("2017-12-01 11:00:15").timestamp()))
+
+        with freeze_time("2017-12-01 11:00:25"):
+            response_3 = self.client.post(
+                reverse('core:receive_out_of_band'),
+                data         = '',
+                content_type = '',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            )
+
+        self.assertEqual(response_3.status_code, 200)
+
+        message_from_concent = load(response_3.content, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time=False)
+
+        self.assertIsInstance(message_from_concent, message.VerdictReportComputedTask)
+        self.assertEqual(message_from_concent.ack_report_computed_task.task_to_compute.compute_task_def['task_id'], compute_task_def['task_id'])
+        self.assertGreaterEqual(message_from_concent.timestamp, int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))
+        self.assertLessEqual(   message_from_concent.timestamp, int(dateutil.parser.parse("2017-12-01 11:00:15").timestamp()))

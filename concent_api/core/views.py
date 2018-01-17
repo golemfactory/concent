@@ -355,6 +355,7 @@ def receive_out_of_band(request, _message):
 
         message_verdict.sig = None
         return message_verdict
+    return None
 
 
 def validate_golem_message_task_to_compute(data):

@@ -56,9 +56,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:11"):
             response = self.client.post(
                 reverse('core:send'),
-                data                           = serialized_force_get_task_result,
-                content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key()
+                data                                = serialized_force_get_task_result,
+                content_type                        = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_requestor_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_provider_public_key(),
             )
 
         self.assertEqual(response.status_code, 200)
@@ -96,9 +97,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:08"):
             response = self.client.post(
                 reverse('core:send'),
-                data                           = serialized_force_get_task_result,
-                content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key()
+                data                                = serialized_force_get_task_result,
+                content_type                        = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_requestor_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_provider_public_key(),
             )
 
         assert response.status_code == 200
@@ -108,9 +110,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:09"):
             response = self.client.post(
                 reverse('core:send'),
-                data                           = serialized_force_get_task_result,
-                content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key()
+                data                                = serialized_force_get_task_result,
+                content_type                        = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_requestor_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_provider_public_key(),
             )
 
         self.assertEqual(response.status_code,  200)
@@ -148,9 +151,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:09"):
             response = self.client.post(
                 reverse('core:send'),
-                data                           = serialized_force_get_task_result,
-                content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key()
+                data                                = serialized_force_get_task_result,
+                content_type                        = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_requestor_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_provider_public_key(),
             )
 
         self.assertEqual(response.status_code,  200)
@@ -197,9 +201,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:01"):
             response_1 = self.client.post(
                 reverse('core:send'),
-                data                           = serialized_force_get_task_result,
-                content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key()
+                data                                = serialized_force_get_task_result,
+                content_type                        = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_requestor_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_provider_public_key(),
             )
 
         self.assertEqual(response_1.status_code, 200)
@@ -307,9 +312,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:01"):
             response_1 = self.client.post(
                 reverse('core:send'),
-                data                           = serialized_force_get_task_result,
-                content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key()
+                data                                = serialized_force_get_task_result,
+                content_type                        = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_requestor_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_provider_public_key(),
             )
 
         self.assertEqual(response_1.status_code, 200)
@@ -417,9 +423,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:01"):
             response_1 = self.client.post(
                 reverse('core:send'),
-                data                           = serialized_force_get_task_result,
-                content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key()
+                data                                = serialized_force_get_task_result,
+                content_type                        = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_requestor_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_provider_public_key(),
             )
 
         self.assertEqual(response_1.status_code, 200)
@@ -527,9 +534,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:01"):
             response_1 = self.client.post(
                 reverse('core:send'),
-                data                           = serialized_force_get_task_result,
-                content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key()
+                data                                = serialized_force_get_task_result,
+                content_type                        = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_requestor_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_provider_public_key(),
             )
 
         self.assertEqual(response_1.status_code, 200)

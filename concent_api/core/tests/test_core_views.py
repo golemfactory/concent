@@ -17,6 +17,7 @@ from golem_messages                 import message
 from golem_messages.message         import Message as GolemMessage
 
 from core.models                    import Message
+from core.models                    import MessageAuth
 from core.models                    import ReceiveStatus
 from utils.testing_helpers          import generate_ecc_key_pair
 
@@ -24,6 +25,7 @@ from utils.testing_helpers          import generate_ecc_key_pair
 (CONCENT_PRIVATE_KEY,   CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
 (PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)  = generate_ecc_key_pair()
 (REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
+(DIFFERENT_PRIVATE_KEY, DIFFERENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
 @override_settings(
@@ -80,8 +82,9 @@ class CoreViewSendTest(TestCase):
                 self.correct_golem_data,
                 PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY),
-            content_type = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
+            content_type                        = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code, 202)
@@ -107,8 +110,9 @@ class CoreViewSendTest(TestCase):
                 PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY
             ),
-            content_type = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
+            content_type                        = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code, 200)
@@ -142,7 +146,8 @@ class CoreViewSendTest(TestCase):
                 PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY),
             content_type = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code, 202)
@@ -166,8 +171,9 @@ class CoreViewSendTest(TestCase):
                 PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
-            content_type = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
+            content_type                        = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json().keys())
@@ -183,8 +189,9 @@ class CoreViewSendTest(TestCase):
                 PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
-            content_type = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            content_type                        = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json().keys())
@@ -199,8 +206,9 @@ class CoreViewSendTest(TestCase):
                 PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
-            content_type = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            content_type                        = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertIsInstance(response_202, HttpResponse)
@@ -215,8 +223,9 @@ class CoreViewSendTest(TestCase):
                 PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
-            content_type = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            content_type                        = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertIsInstance(response_400, JsonResponse)
@@ -284,8 +293,9 @@ class CoreViewSendTest(TestCase):
                 self.correct_golem_data,
                 PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY),
-            content_type                   = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
+            content_type                        = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(force_response.status_code, 202)
@@ -295,11 +305,11 @@ class CoreViewSendTest(TestCase):
             reverse('core:send'),
             data = dump(
                 self.reject_report_computed_task,
-                PROVIDER_PRIVATE_KEY,
+                REQUESTOR_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY
             ),
             content_type                   = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(reject_response.status_code, 202)
@@ -391,7 +401,6 @@ class CoreViewSendTest(TestCase):
 
     def test_send_should_return_http_202_if_task_to_compute_deadline_is_correct(self):
         compute_task_def = message.ComputeTaskDef()
-        compute_task_def['task_id'] = '8'
 
         invalid_values = [
             11,
@@ -401,8 +410,9 @@ class CoreViewSendTest(TestCase):
             False,
         ]
 
-        for deadline in invalid_values:
+        for i, deadline in enumerate(invalid_values):
             Message.objects.all().delete()
+            compute_task_def['task_id'] = str(i)
             compute_task_def['deadline'] = deadline
             task_to_compute = message.TaskToCompute(
                 compute_task_def = compute_task_def,
@@ -422,8 +432,9 @@ class CoreViewSendTest(TestCase):
                         PROVIDER_PRIVATE_KEY,
                         CONCENT_PUBLIC_KEY
                     ),
-                    content_type                   = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                    content_type                        = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
                 )
 
             self.assertIn(response_202.status_code, [200, 202])
@@ -465,6 +476,13 @@ class CoreViewReceiveTest(TestCase):
         )
         new_message_status.full_clean()
         new_message_status.save()
+        new_message_auth = MessageAuth(
+            message                    = new_message,
+            provider_public_key_bytes  = PROVIDER_PUBLIC_KEY,
+            requestor_public_key_bytes = REQUESTOR_PUBLIC_KEY,
+        )
+        new_message_auth.full_clean()
+        new_message_auth.save()
 
         assert len(ReceiveStatus.objects.filter(delivered=False)) == 1
 
@@ -524,6 +542,12 @@ class CoreViewReceiveTest(TestCase):
         new_message_status.full_clean()
         new_message_status.save()
 
+        MessageAuth.objects.create(
+            message                    = new_message,
+            provider_public_key_bytes  = PROVIDER_PUBLIC_KEY,
+            requestor_public_key_bytes = REQUESTOR_PUBLIC_KEY,
+        )
+
         with freeze_time("2017-11-17 12:00:00"):
             response = self.client.post(
                 reverse('core:receive'),
@@ -580,14 +604,11 @@ class CoreViewReceiveOutOfBandTest(TestCase):
         )
         new_message.full_clean()
         new_message.save()
-        new_message_status = ReceiveStatus(
-
-            message   = new_message,
-            timestamp = message_timestamp,
-            delivered = False
+        MessageAuth.objects.create(
+            message                    = new_message,
+            provider_public_key_bytes  = PROVIDER_PUBLIC_KEY,
+            requestor_public_key_bytes = REQUESTOR_PUBLIC_KEY,
         )
-        new_message_status.full_clean()
-        new_message_status.save()
 
     @freeze_time("2017-11-17 11:40:00")
     def test_view_receive_out_of_band_should_accept_valid_message(self):
@@ -607,7 +628,7 @@ class CoreViewReceiveOutOfBandTest(TestCase):
             reverse('core:receive_out_of_band'),
             data                                = '',
             content_type                        = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(DIFFERENT_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code, 204)

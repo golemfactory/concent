@@ -9,7 +9,6 @@ from django.conf                    import settings
 
 from golem_messages                 import message
 from golem_messages.exceptions      import InvalidSignature
-from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 
 from utils.api_view                 import api_view
@@ -183,11 +182,7 @@ def receive(request, _message):
 
             ack_report_computed_task                 = message.AckReportComputedTask()
             ack_report_computed_task.task_to_compute = decoded_message_data.task_to_compute
-            return dump(
-                ack_report_computed_task,
-                settings.CONCENT_PRIVATE_KEY,
-                client_public_key,
-            )
+            return ack_report_computed_task
     else:
         last_undelivered_message_status.delivered = True
         last_undelivered_message_status.full_clean()

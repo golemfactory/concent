@@ -5,6 +5,9 @@ from django.db.models import DateTimeField
 from django.db.models import ForeignKey
 from django.db.models import PositiveSmallIntegerField
 from django.db.models import Model
+from django.db.models import OneToOneField
+
+from utils.fields     import Base64Field
 
 from .constants       import MESSAGE_TASK_ID_MAX_LENGTH
 
@@ -43,3 +46,13 @@ class ReceiveOutOfBandStatus(Model):
     class Meta:
         verbose_name        = ('ReceiveOutOfBand status')
         verbose_name_plural = ('ReceiveOutOfBand statuses')
+
+
+class MessageAuth(Model):
+    """
+    This class is used to store provider and requestor keys for message exchange related to given initial message.
+    """
+
+    message              = OneToOneField(Message, related_name = 'auth')
+    provider_public_key  = Base64Field(max_length=64)
+    requestor_public_key = Base64Field(max_length=64)

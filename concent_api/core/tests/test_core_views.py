@@ -141,7 +141,7 @@ class CoreViewSendTest(TestCase):
             reverse('core:send'),
             data = dump(
                 force_report_computed_task,
-                CONCENT_PRIVATE_KEY,
+                PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
             content_type = 'application/octet-stream',
@@ -160,7 +160,7 @@ class CoreViewSendTest(TestCase):
             reverse('core:send'),
             data = dump(
                 data,
-                CONCENT_PRIVATE_KEY,
+                PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
             content_type = 'application/octet-stream',
@@ -176,7 +176,7 @@ class CoreViewSendTest(TestCase):
             reverse('core:send'),
             data = dump(
                 self.correct_golem_data,
-                CONCENT_PRIVATE_KEY,
+                PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
             content_type = 'application/octet-stream',
@@ -192,7 +192,7 @@ class CoreViewSendTest(TestCase):
             reverse('core:send'),
             data = dump(
                 self.correct_golem_data,
-                CONCENT_PRIVATE_KEY,
+                PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
             content_type = 'application/octet-stream',
@@ -212,11 +212,11 @@ class CoreViewSendTest(TestCase):
             reverse('core:send'),
             data = dump(
                 self.want_to_compute,
-                CONCENT_PRIVATE_KEY,
+                PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY
             ),
             content_type                   = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(CONCENT_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response_400.status_code, 400)
@@ -244,11 +244,11 @@ class CoreViewSendTest(TestCase):
             reverse('core:send'),
             data = dump(
                 ack_report_computed_task,
-                CONCENT_PRIVATE_KEY,
+                PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY
             ),
             content_type                    = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY  = b64encode(CONCENT_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY  = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response_400.status_code, 400)

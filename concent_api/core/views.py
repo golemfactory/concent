@@ -1,15 +1,11 @@
 import datetime
-from base64                         import b64decode
 
 from django.http                    import HttpResponse
-from django.http                    import JsonResponse
 from django.views.decorators.http   import require_POST
 from django.utils                   import timezone
 from django.conf                    import settings
 
 from golem_messages                 import message
-from golem_messages.exceptions      import InvalidSignature
-from golem_messages.shortcuts       import load
 
 from utils.api_view                 import api_view
 from utils.api_view                 import Http400
@@ -33,7 +29,7 @@ def send(_request, client_message):
             reject_force_report_computed_task.reason          = message.RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED
             reject_force_report_computed_task.task_to_compute = client_message.task_to_compute
             return reject_force_report_computed_task
-
+        client_message.sig = None
         golem_message, message_timestamp = store_message(
             type(client_message).__name__,
             client_message.task_to_compute.compute_task_def['task_id'],
@@ -93,6 +89,7 @@ def send(_request, client_message):
 
         assert force_report_computed_task.task_to_compute.compute_task_def['task_id'] == client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id']
         if client_message.cannot_compute_task.reason == message.CannotComputeTask.REASON.WrongCTD:
+            client_message.sig = None
             golem_message, message_timestamp = store_message(
                 type(client_message).__name__,
                 force_report_computed_task.task_to_compute.compute_task_def['task_id'],
@@ -112,6 +109,7 @@ def send(_request, client_message):
             if ack_message.exists() or previous_reject_message.exists():
                 raise Http400("Received RejectReportComputedTask but AckReportComputedTask or another RejectReportComputedTask for this task has already been submitted.")
 
+            client_message.sig = None
             golem_message, message_timestamp = store_message(
                 type(client_message).__name__,
                 force_report_computed_task.task_to_compute.compute_task_def['task_id'],
@@ -133,8 +131,7 @@ def send(_request, client_message):
 
 @api_view
 @require_POST
-def receive(request, _message):
-    client_public_key               = decode_client_public_key(request)
+def receive(_request, _message):
     last_undelivered_message_status = ReceiveStatus.objects.filter(delivered = False).order_by('timestamp').last()
     if last_undelivered_message_status is None:
         last_delivered_message_status = ReceiveStatus.objects.all().order_by('timestamp').last()
@@ -207,15 +204,12 @@ def receive(request, _message):
             task_id = decoded_message_data.cannot_compute_task.task_to_compute.compute_task_def['task_id']
         )
         raw_force_report_computed_task = force_report_computed_task.data.tobytes()
-        try:
-            decoded_message_from_database = load(
-                raw_force_report_computed_task,
-                settings.CONCENT_PRIVATE_KEY,
-                client_public_key,
-                check_time = False,
-            )
-        except InvalidSignature as exception:
-            return JsonResponse({'error': "Failed to decode ForceReportComputedTask. {}".format(exception)}, status = 400)
+
+        decoded_message_from_database = message.Message.deserialize(
+            raw_force_report_computed_task,
+            None,
+            check_time = False
+        )
 
         if current_time <= decoded_message_from_database.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
             if decoded_message_data.reason is not None and decoded_message_data.reason == message.RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED:
@@ -231,11 +225,10 @@ def receive(request, _message):
 
 @api_view
 @require_POST
-def receive_out_of_band(request, _message):
+def receive_out_of_band(_request, _message):
     undelivered_receive_out_of_band_statuses    = ReceiveOutOfBandStatus.objects.filter(delivered = False)
     last_undelivered_receive_out_of_band_status = undelivered_receive_out_of_band_statuses.order_by('timestamp').last()
     last_undelivered_receive_status             = Message.objects.all().order_by('timestamp').last()
-    client_public_key                           = decode_client_public_key(request)
 
     current_time    = int(datetime.datetime.now().timestamp())
     message_verdict = message.VerdictReportComputedTask()
@@ -250,15 +243,11 @@ def receive_out_of_band(request, _message):
         if last_undelivered_receive_status.type == 'AckReportComputedTask':
             serialized_ack_report_computed_task = last_undelivered_receive_status.data.tobytes()
 
-            try:
-                decoded_ack_report_computed_task = message.Message.deserialize(
-                    serialized_ack_report_computed_task,
-                    None,
-                    check_time = False
-                )
-
-            except InvalidSignature as exception:
-                return JsonResponse({'error': "Failed to decode AckReportComputedTask. {}".format(exception)}, status = 400)
+            decoded_ack_report_computed_task = message.Message.deserialize(
+                serialized_ack_report_computed_task,
+                None,
+                check_time = False
+            )
 
             force_report_computed_task = message.ForceReportComputedTask()
             force_report_computed_task.task_to_compute = decoded_ack_report_computed_task.task_to_compute
@@ -280,15 +269,12 @@ def receive_out_of_band(request, _message):
 
         if last_undelivered_receive_status.type == 'ForceReportComputedTask':
             serialized_force_report_computed_task = last_undelivered_receive_status.data.tobytes()
-            try:
-                decoded_force_report_computed_task = load(
-                    serialized_force_report_computed_task,
-                    settings.CONCENT_PRIVATE_KEY,
-                    client_public_key,
-                    check_time = False
-                )
-            except InvalidSignature as exception:
-                return JsonResponse({'error': "Failed to decode ForceReportComputedTask. {}".format(exception)}, status = 400)
+
+            decoded_force_report_computed_task = message.Message.deserialize(
+                serialized_force_report_computed_task,
+                None,
+                check_time = False
+            )
 
             ack_report_computed_task                    = message.AckReportComputedTask()
             ack_report_computed_task.task_to_compute    = decoded_force_report_computed_task.task_to_compute
@@ -309,15 +295,12 @@ def receive_out_of_band(request, _message):
             return message_verdict
         if last_undelivered_receive_status.type == 'RejectReportComputedTask':
             serialized_reject_report_computed_task = last_undelivered_receive_status.data.tobytes()
-            try:
-                decoded_reject_report_computed_task = load(
-                    serialized_reject_report_computed_task,
-                    settings.CONCENT_PRIVATE_KEY,
-                    client_public_key,
-                    check_time = False
-                )
-            except InvalidSignature as exception:
-                return JsonResponse({'error': "Failed to decode ForceReportComputedTask. {}".format(exception)}, status = 400)
+
+            decoded_reject_report_computed_task = message.Message.deserialize(
+                serialized_reject_report_computed_task,
+                None,
+                check_time = False
+            )
 
             ack_report_computed_task                    = message.AckReportComputedTask()
             ack_report_computed_task.task_to_compute    = decoded_reject_report_computed_task.task_to_compute
@@ -409,7 +392,3 @@ def store_receive_out_of_band(golem_message, message_timestamp):
     )
     receive_out_of_band_status.full_clean()
     receive_out_of_band_status.save()
-
-
-def decode_client_public_key(request):
-    return b64decode(request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'].encode('ascii'), validate = True)

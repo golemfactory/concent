@@ -483,7 +483,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 reverse('core:receive'),
                 data         = '',
                 content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response_3.status_code,  200)

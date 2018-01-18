@@ -95,6 +95,12 @@ def send(_request, client_message):
                 force_report_computed_task.task_to_compute.compute_task_def['task_id'],
                 client_message.serialize()
             )
+
+            store_receive_message_status(
+                golem_message,
+                message_timestamp,
+            )
+
             return HttpResponse("", status = 202)
 
         if current_time <= force_report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
@@ -278,6 +284,26 @@ def receive_out_of_band(_request, _message):
             store_message(
                 message_verdict.TYPE,
                 decoded_force_report_computed_task.task_to_compute.compute_task_def['task_id'],
+                message_verdict.serialize()
+            )
+            message_verdict.sig = None
+            return message_verdict
+
+        if last_undelivered_receive_status.type == message.RejectReportComputedTask.TYPE:
+            serialized_reject_report_computed_task = last_undelivered_receive_status.data.tobytes()
+
+            decoded_reject_report_computed_task = message.Message.deserialize(
+                serialized_reject_report_computed_task,
+                None,
+                check_time = False
+            )
+            message_verdict.ack_report_computed_task                 = message.AckReportComputedTask()
+            message_verdict.ack_report_computed_task.task_to_compute = decoded_reject_report_computed_task.cannot_compute_task.task_to_compute
+
+            message_verdict.sig = None
+            store_message(
+                message_verdict.TYPE,
+                decoded_reject_report_computed_task.cannot_compute_task.task_to_compute.compute_task_def['task_id'],
                 message_verdict.serialize()
             )
             message_verdict.sig = None

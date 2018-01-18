@@ -2,6 +2,7 @@ import binascii
 import datetime
 from base64                         import b64decode
 from base64                         import b64encode
+import json
 import logging
 
 from django.conf                    import settings
@@ -32,7 +33,7 @@ def upload(request):
     path_to_file = request.get_full_path().partition(reverse('gatekeeper:upload'))[2]
     response = parse_headers(request, path_to_file)
     if response is not None:
-        logger.warning(response.content.decode())
+        logger.info(json.loads(response.content.decode())['message'])
         return response
     logger.info('Request passed all upload validations.')
 
@@ -53,7 +54,7 @@ def download(request):
     path_to_file = request.get_full_path().partition(reverse('gatekeeper:download'))[2]
     response = parse_headers(request, path_to_file)
     if response is not None:
-        logger.warning(response.content.decode())
+        logger.info(json.loads(response.content.decode())['message'])
         return response
     logger.info('Request passed all download validations.')
 

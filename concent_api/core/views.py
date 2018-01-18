@@ -424,7 +424,8 @@ def store_receive_message_status(golem_message, message_timestamp):
 def store_receive_out_of_band(golem_message, message_timestamp):
     receive_out_of_band_status = ReceiveOutOfBandStatus(
         message     = golem_message,
-        timestamp   = message_timestamp
+        timestamp   = message_timestamp,
+        delivered   = True
     )
     receive_out_of_band_status.full_clean()
     receive_out_of_band_status.save()

@@ -90,7 +90,7 @@ def receive(request, _message):
 
     assert last_undelivered_message_status.message.type == decoded_message_data.TYPE
 
-    if last_undelivered_message_status.message.type == message.ForceReportComputedTask.TYPE:
+    if isinstance(decoded_message_data, message.ForceReportComputedTask):
         if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
             return None
         if decoded_message_data.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME < current_time:
@@ -100,13 +100,6 @@ def receive(request, _message):
         if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
             set_message_as_delivered(last_undelivered_message_status)
 
-    if isinstance(decoded_message_data, message.ForceReportComputedTask):
-        if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
-            return None
-        set_message_as_delivered(last_undelivered_message_status)
-        decoded_message_data.sig = None
-        return decoded_message_data
-
     if isinstance(decoded_message_data, message.AckReportComputedTask):
         if (
             current_time <= decoded_message_data.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME and
@@ -115,6 +108,13 @@ def receive(request, _message):
             decoded_message_data.sig = None
             return decoded_message_data
         return None
+
+    if isinstance(decoded_message_data, message.AckReportComputedTask):
+        if client_public_key != last_undelivered_message_status.message.auth.provider_public_key_bytes:
+            return None
+        set_message_as_delivered(last_undelivered_message_status)
+        decoded_message_data.sig = None
+        return decoded_message_data
 
     if isinstance(decoded_message_data, message.concents.ForceGetTaskResult):
         if client_public_key != last_undelivered_message_status.message.auth.provider_public_key_bytes:
@@ -140,13 +140,12 @@ def receive(request, _message):
 
     decoded_message_from_database = deserialize_message(force_report_computed_task.data.tobytes())
 
-    if current_time <= decoded_message_from_database.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
-        if decoded_message_data.reason is not None and decoded_message_data.reason == message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded:
-            return handle_receive_ack_from_force_report_computed_task(decoded_message_from_database)
-        decoded_message_data.sig = None
-        return decoded_message_data
-
-    return None
+    if decoded_message_data.reason is not None and decoded_message_data.reason == message.RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED:
+        ack_report_computed_task = message.AckReportComputedTask(timestamp = current_time)
+        ack_report_computed_task.task_to_compute = decoded_message_from_database.task_to_compute
+        return ack_report_computed_task
+    decoded_message_data.sig = None
+    return decoded_message_data
 
 
 @api_view
@@ -164,9 +163,6 @@ def receive_out_of_band(request, _message):
         if last_undelivered_receive_status is None:
             return None
 
-        if last_undelivered_receive_status.timestamp.timestamp() > current_time:
-            return None
-
         if last_undelivered_receive_status.type == message.AckReportComputedTask.TYPE:
             return handle_receive_out_of_band_ack_report_computed_task(request, last_undelivered_receive_status)
 
@@ -176,8 +172,6 @@ def receive_out_of_band(request, _message):
         if last_undelivered_receive_status.type == message.RejectReportComputedTask.TYPE:
             return handle_receive_out_of_band_reject_report_computed_task(request, last_undelivered_receive_status)
         return None
-
-    return None
 
 
 def handle_send_force_report_computed_task(request, client_message):

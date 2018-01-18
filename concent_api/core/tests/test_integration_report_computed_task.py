@@ -1460,8 +1460,16 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             )
 
-        self.assertEqual(response_4.status_code,  204)
-        self.assertEqual(len(response_4.content), 0)
+        ack_report_computed_task_from_view = load(
+            response_4.content,
+            PROVIDER_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time = False
+        )
+
+        self.assertEqual(response_4.status_code,  200)
+        self.assertEqual(ack_report_computed_task_from_view.timestamp, ack_report_computed_task.timestamp)
+        self.assertEqual(ack_report_computed_task_from_view.task_to_compute.timestamp, ack_report_computed_task.task_to_compute.timestamp)
 
     def test_provider_forces_computed_task_report_and_tries_to_receive_twice(self):
         """

@@ -595,6 +595,8 @@ class CoreViewReceiveOutOfBandTest(TestCase):
         self.force_golem_data.task_to_compute = self.task_to_compute
         assert self.force_golem_data.timestamp == 1510912800
 
+    @freeze_time("2017-11-17 11:40:00")
+    def test_view_receive_out_of_band_should_accept_valid_message(self):
         message_timestamp   = datetime.datetime.now(timezone.utc)
         new_message         = Message(
             type        = self.force_golem_data.TYPE,
@@ -609,9 +611,6 @@ class CoreViewReceiveOutOfBandTest(TestCase):
             provider_public_key_bytes  = PROVIDER_PUBLIC_KEY,
             requestor_public_key_bytes = REQUESTOR_PUBLIC_KEY,
         )
-
-    @freeze_time("2017-11-17 11:40:00")
-    def test_view_receive_out_of_band_should_accept_valid_message(self):
 
         response = self.client.post(
             reverse('core:receive_out_of_band'),

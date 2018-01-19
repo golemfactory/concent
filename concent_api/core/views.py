@@ -73,22 +73,16 @@ def receive(_request, _message):
 
     if last_undelivered_message_status.message.type == message.ForceReportComputedTask.TYPE:
         if decoded_message_data.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME < current_time:
-            last_undelivered_message_status.delivered = True
-            last_undelivered_message_status.full_clean()
-            last_undelivered_message_status.save()
+            set_message_as_delivered(last_undelivered_message_status)
 
             ack_report_computed_task                 = message.AckReportComputedTask()
             ack_report_computed_task.task_to_compute = decoded_message_data.task_to_compute
             return ack_report_computed_task
     else:
-        last_undelivered_message_status.delivered = True
-        last_undelivered_message_status.full_clean()
-        last_undelivered_message_status.save()
+        set_message_as_delivered(last_undelivered_message_status)
 
     if isinstance(decoded_message_data, message.ForceReportComputedTask):
-        last_undelivered_message_status.delivered = True
-        last_undelivered_message_status.full_clean()
-        last_undelivered_message_status.save()
+        set_message_as_delivered(last_undelivered_message_status)
         decoded_message_data.sig = None
         return decoded_message_data
 
@@ -226,9 +220,8 @@ def receive_out_of_band(_request, _message):
 
             message_verdict.ack_report_computed_task = message_ack_report_computed_task
 
-            last_undelivered_receive_out_of_band_status.delivered = True
-            last_undelivered_receive_out_of_band_status.full_clean()
-            last_undelivered_receive_out_of_band_status.save()
+            set_message_as_delivered(last_undelivered_receive_out_of_band_status)
+            message_verdict.sig = None
 
             (golem_message, message_timestamp) = store_message(
                 message_verdict.TYPE,
@@ -254,9 +247,7 @@ def receive_out_of_band(_request, _message):
             message_ack_report_computed_task.task_to_compute = force_report_computed_task.task_to_compute
             message_verdict.ack_report_computed_task         = message_ack_report_computed_task
 
-            last_undelivered_receive_out_of_band_status.delivered = True
-            last_undelivered_receive_out_of_band_status.full_clean()
-            last_undelivered_receive_out_of_band_status.save()
+            set_message_as_delivered(last_undelivered_receive_out_of_band_status)
 
             (golem_message, message_timestamp) = store_message(
                 message_verdict.TYPE,
@@ -387,6 +378,12 @@ def handle_unsupported_golem_messages_type(client_message):
         raise Http400("This message type ({}) is either not supported or cannot be submitted to Concent.".format(client_message.TYPE))
     else:
         raise Http400("Unknown message type or not a Golem message.")
+
+
+def set_message_as_delivered(client_message):
+    client_message.delivered = True
+    client_message.full_clean()
+    client_message.save()
 
 
 def validate_golem_message_task_to_compute(data):

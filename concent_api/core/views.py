@@ -294,15 +294,13 @@ def receive_out_of_band(_request, _message):
         return None
 
     raw_last_task_message = last_undelivered_receive_out_of_band_status.message.data.tobytes()
-    try:
-        decoded_last_task_message = load(
-            raw_last_task_message,
-            settings.CONCENT_PRIVATE_KEY,
-            client_public_key,
-            check_time = False,
-        )
-    except InvalidSignature as exception:
-        return JsonResponse({'error': "Failed to decode a Golem Message. {}".format(exception)}, status = 400)
+
+    decoded_last_task_message = message.Message.deserialize(
+        raw_last_task_message,
+        None,
+        check_time = False,
+    )
+
 
     message_ack_report_computed_task = message.AckReportComputedTask()
     if isinstance(decoded_last_task_message, message.ForceReportComputedTask):

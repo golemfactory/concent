@@ -17,117 +17,16 @@ from .models                        import ReceiveOutOfBandStatus
 @api_view
 @require_POST
 def send(_request, client_message):
-    current_time = int(datetime.datetime.now().timestamp())
     if isinstance(client_message, message.ForceReportComputedTask):
-        validate_golem_message_task_to_compute(client_message.task_to_compute)
-
-        if Message.objects.filter(task_id = client_message.task_to_compute.compute_task_def['task_id']).exists():
-            raise Http400("{} is already being processed for this task.".format(client_message.__class__.__name__))
-
-        if client_message.task_to_compute.compute_task_def['deadline'] < current_time:
-            reject_force_report_computed_task                 = message.RejectReportComputedTask(timestamp = client_message.timestamp)
-            reject_force_report_computed_task.reason          = message.RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED
-            reject_force_report_computed_task.task_to_compute = client_message.task_to_compute
-            return reject_force_report_computed_task
-        client_message.sig = None
-        (golem_message, message_timestamp) = store_message(
-            client_message.TYPE,
-            client_message.task_to_compute.compute_task_def['task_id'],
-            client_message.serialize()
-        )
-        store_receive_message_status(
-            golem_message,
-            message_timestamp,
-        )
-        return HttpResponse("", status = 202)
+        return handle_send_force_report_computed_task(client_message)
 
     elif isinstance(client_message, message.AckReportComputedTask):
-        validate_golem_message_task_to_compute(client_message.task_to_compute)
-
-        if current_time <= client_message.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
-            force_task_to_compute   = Message.objects.filter(task_id = client_message.task_to_compute.compute_task_def['task_id'], type = message.ForceReportComputedTask.TYPE)
-            previous_ack_message    = Message.objects.filter(task_id = client_message.task_to_compute.compute_task_def['task_id'], type = message.AckReportComputedTask.TYPE)
-            reject_message          = Message.objects.filter(task_id = client_message.task_to_compute.compute_task_def['task_id'], type = message.RejectReportComputedTask.TYPE)
-
-            if not force_task_to_compute.exists():
-                raise Http400("'ForceReportComputedTask' for this task has not been initiated yet. Can't accept your 'AckReportComputedTask'.")
-            if previous_ack_message.exists() or reject_message.exists():
-                raise Http400(
-                    "Received AckReportComputedTask but RejectReportComputedTask "
-                    "or another AckReportComputedTask for this task has already been submitted."
-                )
-            client_message.sig = None
-            (golem_message, message_timestamp) = store_message(
-                client_message.TYPE,
-                client_message.task_to_compute.compute_task_def['task_id'],
-                client_message.serialize()
-            )
-            store_receive_message_status(
-                golem_message,
-                message_timestamp,
-            )
-
-            return HttpResponse("", status = 202)
-        else:
-            raise Http400("Time to acknowledge this task is already over.")
+        return handle_send_ack_report_computed_task(client_message)
 
     elif isinstance(client_message, message.RejectReportComputedTask):
-        validate_golem_message_reject(client_message.cannot_compute_task)
-
-        force_report_computed_task_from_database = Message.objects.filter(task_id = client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id'], type = message.ForceReportComputedTask.TYPE)
-
-        if not force_report_computed_task_from_database.exists():
-            raise Http400("'ForceReportComputedTask' for this task has not been initiated yet. Can't accept your 'RejectReportComputedTask'.")
-
-        force_report_computed_task = message.Message.deserialize(
-            force_report_computed_task_from_database.last().data.tobytes(),
-            None,
-            check_time = False
-        )
-
-        assert hasattr(force_report_computed_task, 'task_to_compute')
-
-        assert force_report_computed_task.task_to_compute.compute_task_def['task_id'] == client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id']
-        if client_message.cannot_compute_task.reason == message.CannotComputeTask.REASON.WrongCTD:
-            client_message.sig = None
-            (golem_message, message_timestamp) = store_message(
-                client_message.TYPE,
-                force_report_computed_task.task_to_compute.compute_task_def['task_id'],
-                client_message.serialize()
-            )
-
-            store_receive_message_status(
-                golem_message,
-                message_timestamp,
-            )
-
-            return HttpResponse("", status = 202)
-
-        if current_time <= force_report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
-            ack_message             = Message.objects.filter(task_id = client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id'], type = message.AckReportComputedTask.TYPE)
-            previous_reject_message = Message.objects.filter(task_id = client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id'], type = message.RejectReportComputedTask.TYPE)
-
-            if ack_message.exists() or previous_reject_message.exists():
-                raise Http400("Received RejectReportComputedTask but AckReportComputedTask or another RejectReportComputedTask for this task has already been submitted.")
-
-            client_message.sig = None
-            (golem_message, message_timestamp) = store_message(
-                client_message.TYPE,
-                force_report_computed_task.task_to_compute.compute_task_def['task_id'],
-                client_message.serialize()
-            )
-            store_receive_message_status(
-                golem_message,
-                message_timestamp,
-            )
-            return HttpResponse("", status = 202)
-        else:
-            raise Http400("Time to acknowledge this task is already over.")
+        return handle_send_reject_report_computed_task(client_message)
     else:
-        if hasattr(client_message, 'TYPE'):
-            raise Http400("This message type ({}) is either not supported or cannot be submitted to Concent.".format(client_message.TYPE))
-        else:
-            raise Http400("Unknown message type or not a Golem message.")
+        return handle_unsupported_golem_messages_type(client_message)
 
 
 @api_view
@@ -369,6 +268,125 @@ def receive_out_of_band(_request, _message):
             return message_verdict
 
     return None
+
+
+def handle_send_force_report_computed_task(client_message):
+    current_time = int(datetime.datetime.now().timestamp())
+    validate_golem_message_task_to_compute(client_message.task_to_compute)
+
+    if Message.objects.filter(task_id = client_message.task_to_compute.compute_task_def['task_id']).exists():
+        raise Http400("{} is already being processed for this task.".format(client_message.__class__.__name__))
+
+    if client_message.task_to_compute.compute_task_def['deadline'] < current_time:
+        reject_force_report_computed_task                 = message.RejectReportComputedTask(timestamp = client_message.timestamp)
+        reject_force_report_computed_task.reason          = message.RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED
+        reject_force_report_computed_task.task_to_compute = client_message.task_to_compute
+        return reject_force_report_computed_task
+    client_message.sig = None
+    (golem_message, message_timestamp) = store_message(
+        client_message.TYPE,
+        client_message.task_to_compute.compute_task_def['task_id'],
+        client_message.serialize()
+    )
+    store_receive_message_status(
+        golem_message,
+        message_timestamp,
+    )
+    return HttpResponse("", status = 202)
+
+
+def handle_send_ack_report_computed_task(client_message):
+    current_time = int(datetime.datetime.now().timestamp())
+    validate_golem_message_task_to_compute(client_message.task_to_compute)
+
+    if current_time <= client_message.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
+        force_task_to_compute   = Message.objects.filter(task_id = client_message.task_to_compute.compute_task_def['task_id'], type = message.ForceReportComputedTask.TYPE)
+        previous_ack_message    = Message.objects.filter(task_id = client_message.task_to_compute.compute_task_def['task_id'], type = message.AckReportComputedTask.TYPE)
+        reject_message          = Message.objects.filter(task_id = client_message.task_to_compute.compute_task_def['task_id'], type = message.RejectReportComputedTask.TYPE)
+
+        if not force_task_to_compute.exists():
+            raise Http400("'ForceReportComputedTask' for this task has not been initiated yet. Can't accept your 'AckReportComputedTask'.")
+        if previous_ack_message.exists() or reject_message.exists():
+            raise Http400(
+                "Received AckReportComputedTask but RejectReportComputedTask "
+                "or another AckReportComputedTask for this task has already been submitted."
+            )
+        client_message.sig = None
+        (golem_message, message_timestamp) = store_message(
+            client_message.TYPE,
+            client_message.task_to_compute.compute_task_def['task_id'],
+            client_message.serialize()
+        )
+        store_receive_message_status(
+            golem_message,
+            message_timestamp,
+        )
+
+        return HttpResponse("", status = 202)
+    else:
+        raise Http400("Time to acknowledge this task is already over.")
+
+
+def handle_send_reject_report_computed_task(client_message):
+    current_time = int(datetime.datetime.now().timestamp())
+    validate_golem_message_reject(client_message.cannot_compute_task)
+
+    force_report_computed_task_from_database = Message.objects.filter(task_id = client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id'], type = message.ForceReportComputedTask.TYPE)
+
+    if not force_report_computed_task_from_database.exists():
+        raise Http400("'ForceReportComputedTask' for this task has not been initiated yet. Can't accept your 'RejectReportComputedTask'.")
+
+    force_report_computed_task = message.Message.deserialize(
+        force_report_computed_task_from_database.last().data.tobytes(),
+        None,
+        check_time = False
+    )
+
+    assert hasattr(force_report_computed_task, 'task_to_compute')
+
+    assert force_report_computed_task.task_to_compute.compute_task_def['task_id'] == client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id']
+    if client_message.cannot_compute_task.reason == message.CannotComputeTask.REASON.WrongCTD:
+        client_message.sig = None
+        (golem_message, message_timestamp) = store_message(
+            client_message.TYPE,
+            force_report_computed_task.task_to_compute.compute_task_def['task_id'],
+            client_message.serialize()
+        )
+
+        store_receive_message_status(
+            golem_message,
+            message_timestamp,
+        )
+
+        return HttpResponse("", status = 202)
+
+    if current_time <= force_report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
+        ack_message             = Message.objects.filter(task_id = client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id'], type = message.AckReportComputedTask.TYPE)
+        previous_reject_message = Message.objects.filter(task_id = client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id'], type = message.RejectReportComputedTask.TYPE)
+
+        if ack_message.exists() or previous_reject_message.exists():
+            raise Http400("Received RejectReportComputedTask but AckReportComputedTask or another RejectReportComputedTask for this task has already been submitted.")
+
+        client_message.sig = None
+        (golem_message, message_timestamp) = store_message(
+            client_message.TYPE,
+            force_report_computed_task.task_to_compute.compute_task_def['task_id'],
+            client_message.serialize()
+        )
+        store_receive_message_status(
+            golem_message,
+            message_timestamp,
+        )
+        return HttpResponse("", status = 202)
+    else:
+        raise Http400("Time to acknowledge this task is already over.")
+
+
+def handle_unsupported_golem_messages_type(client_message):
+    if hasattr(client_message, 'TYPE'):
+        raise Http400("This message type ({}) is either not supported or cannot be submitted to Concent.".format(client_message.TYPE))
+    else:
+        raise Http400("Unknown message type or not a Golem message.")
 
 
 def validate_golem_message_task_to_compute(data):

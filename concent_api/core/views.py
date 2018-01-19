@@ -44,11 +44,7 @@ def receive(_request, _message):
 
     current_time         = int(datetime.datetime.now().timestamp())
 
-    decoded_message_data = message.Message.deserialize(
-        last_undelivered_message_status.message.data.tobytes(),
-        None,
-        check_time = False
-    )
+    decoded_message_data = deserialize_message(last_undelivered_message_status.message.data.tobytes())
 
     assert last_undelivered_message_status.message.type == decoded_message_data.TYPE
 
@@ -79,11 +75,7 @@ def receive(_request, _message):
         task_id = decoded_message_data.cannot_compute_task.task_to_compute.compute_task_def['task_id']
     )
 
-    decoded_message_from_database = message.Message.deserialize(
-        force_report_computed_task.data.tobytes(),
-        None,
-        check_time = False
-    )
+    decoded_message_from_database = deserialize_message(force_report_computed_task.data.tobytes())
 
     if current_time <= decoded_message_from_database.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
         if decoded_message_data.reason is not None and decoded_message_data.reason == message.RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED:
@@ -120,11 +112,7 @@ def receive_out_of_band(_request, _message):
             return handle_receive_out_of_band_reject_report_computed_task(last_undelivered_receive_status)
         return None
 
-    decoded_last_task_message = message.Message.deserialize(
-        last_undelivered_receive_out_of_band_status.message.data.tobytes(),
-        None,
-        check_time = False,
-    )
+    decoded_last_task_message = deserialize_message(last_undelivered_receive_out_of_band_status.message.data.tobytes())
 
     if isinstance(decoded_last_task_message, message.ForceReportComputedTask):
         if decoded_last_task_message.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME <= current_time:
@@ -204,11 +192,7 @@ def handle_send_reject_report_computed_task(client_message):
     if not force_report_computed_task_from_database.exists():
         raise Http400("'ForceReportComputedTask' for this task has not been initiated yet. Can't accept your 'RejectReportComputedTask'.")
 
-    force_report_computed_task = message.Message.deserialize(
-        force_report_computed_task_from_database.last().data.tobytes(),
-        None,
-        check_time = False
-    )
+    force_report_computed_task = deserialize_message(force_report_computed_task_from_database.last().data.tobytes())
 
     assert hasattr(force_report_computed_task, 'task_to_compute')
 
@@ -258,11 +242,7 @@ def handle_unsupported_golem_messages_type(client_message):
 
 
 def handle_receive_delivered_force_report_computed_task(delivered_message):
-    force_report_task = message.Message.deserialize(
-        delivered_message.message.data.tobytes(),
-        None,
-        check_time = False
-    )
+    force_report_task = deserialize_message(delivered_message.message.data.tobytes())
 
     ack_report_computed_task                 = message.AckReportComputedTask()
     ack_report_computed_task.task_to_compute = force_report_task.task_to_compute
@@ -288,11 +268,7 @@ def set_message_as_delivered(client_message):
 
 
 def handle_receive_out_of_band_ack_report_computed_task(undelivered_message):
-    decoded_ack_report_computed_task    = message.Message.deserialize(
-        undelivered_message.data.tobytes(),
-        None,
-        check_time = False
-    )
+    decoded_ack_report_computed_task = deserialize_message(undelivered_message.data.tobytes())
 
     force_report_computed_task                  = message.ForceReportComputedTask()
     force_report_computed_task.task_to_compute  = decoded_ack_report_computed_task.task_to_compute
@@ -312,11 +288,8 @@ def handle_receive_out_of_band_ack_report_computed_task(undelivered_message):
 
 
 def handle_receive_out_of_band_force_report_computed_task(undelivered_message):
-    decoded_force_report_computed_task      = message.Message.deserialize(
-        undelivered_message.data.tobytes(),
-        None,
-        check_time = False
-    )
+    decoded_force_report_computed_task = deserialize_message(undelivered_message.data.tobytes())
+
     ack_report_computed_task                    = message.AckReportComputedTask()
     ack_report_computed_task.task_to_compute    = decoded_force_report_computed_task.task_to_compute
 
@@ -335,11 +308,7 @@ def handle_receive_out_of_band_force_report_computed_task(undelivered_message):
 
 
 def handle_receive_out_of_band_reject_report_computed_task(undelivered_message):
-    decoded_reject_report_computed_task     = message.Message.deserialize(
-        undelivered_message.data.tobytes(),
-        None,
-        check_time = False
-    )
+    decoded_reject_report_computed_task = deserialize_message(undelivered_message.data.tobytes())
 
     message_verdict                                          = message.VerdictReportComputedTask()
     message_verdict.ack_report_computed_task                 = message.AckReportComputedTask()
@@ -373,11 +342,7 @@ def handle_undelivered_receive_out_of_band_status_force_report_computed_task(dec
 def handle_undelivered_receive_out_of_band_status_reject_report_computed_task(decoded_message):
     rejected_task_id               = decoded_message.message_cannot_compute_task.task_to_compute.compute_task_def['task_id']
     force_report_computed_task     = Message.objects.get(type = message.ForceReportComputedTask.TYPE, task_id = rejected_task_id)
-    force_report_computed_task      = message.Message.deserialize(
-        force_report_computed_task.data.tobytes(),
-        None,
-        check_time = False
-    )
+    force_report_computed_task     = deserialize_message(force_report_computed_task.data.tobytes())
 
     message_verdict                                          = message.VerdictReportComputedTask()
     message_verdict.ack_report_computed_task                 = message.AckReportComputedTask()
@@ -391,6 +356,14 @@ def handle_undelivered_receive_out_of_band_status_reject_report_computed_task(de
     store_receive_out_of_band(golem_message, message_timestamp)
     message_verdict.sig = None
     return message_verdict
+
+
+def deserialize_message(raw_message_data):
+    return message.Message.deserialize(
+        raw_message_data,
+        None,
+        check_time = False
+    )
 
 
 def validate_golem_message_task_to_compute(data):

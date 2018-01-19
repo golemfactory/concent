@@ -257,7 +257,7 @@ def receive_out_of_band(_request, _message):
 
             message_verdict.force_report_computed_task = force_report_computed_task
             message_verdict.ack_report_computed_task   = decoded_ack_report_computed_task
-            message_verdict.sig = None
+
             (golem_message, message_timestamp) = store_message(
                 message_verdict.TYPE,
                 decoded_ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
@@ -281,7 +281,6 @@ def receive_out_of_band(_request, _message):
             message_verdict.ack_report_computed_task    = ack_report_computed_task
             message_verdict.force_report_computed_task  = decoded_force_report_computed_task
 
-            message_verdict.sig = None
             (golem_message, message_timestamp) = store_message(
                 message_verdict.TYPE,
                 decoded_force_report_computed_task.task_to_compute.compute_task_def['task_id'],
@@ -302,7 +301,6 @@ def receive_out_of_band(_request, _message):
             message_verdict.ack_report_computed_task                 = message.AckReportComputedTask()
             message_verdict.ack_report_computed_task.task_to_compute = decoded_reject_report_computed_task.cannot_compute_task.task_to_compute
 
-            message_verdict.sig = None
             store_message(
                 message_verdict.TYPE,
                 decoded_reject_report_computed_task.cannot_compute_task.task_to_compute.compute_task_def['task_id'],
@@ -332,7 +330,6 @@ def receive_out_of_band(_request, _message):
             last_undelivered_receive_out_of_band_status.delivered = True
             last_undelivered_receive_out_of_band_status.full_clean()
             last_undelivered_receive_out_of_band_status.save()
-            message_verdict.sig = None
 
             (golem_message, message_timestamp) = store_message(
                 message_verdict.TYPE,
@@ -362,7 +359,6 @@ def receive_out_of_band(_request, _message):
             last_undelivered_receive_out_of_band_status.full_clean()
             last_undelivered_receive_out_of_band_status.save()
 
-            message_verdict.sig = None
             (golem_message, message_timestamp) = store_message(
                 message_verdict.TYPE,
                 decoded_last_task_message.message_cannot_compute_task.task_to_compute.compute_task_def['task_id'],

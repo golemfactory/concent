@@ -3,6 +3,7 @@ from golem_messages.message         import Message
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 
+import json
 import requests
 import http.client
 
@@ -64,16 +65,28 @@ def api_request(host, endpoint, private_key, public_key, data = None, headers = 
     else:
         response = requests.post("{}".format(url), headers = headers, data = data)
 
-    if len(response.content) != 0:
-        decoded_response = load(
-            response.content,
-            private_key,
-            public_key,
-            check_time = False
-        )
+    if len(response.content) not in [0, None]:
         print('STATUS: {} {}'.format(response.status_code, http.client.responses[response.status_code]))
         print('MESSAGE:')
-        print_golem_message(decoded_response, private_key, public_key)
+        if response.headers['Content-Type'] == 'application/octet-stream':
+            try:
+                decoded_response = load(
+                    response.content,
+                    private_key,
+                    public_key,
+                    check_time = False
+                )
+            except InvalidSignature as exception:
+                    print("Failed to decode a Golem Message.")
+
+            print_golem_message(decoded_response, private_key, public_key)
+        elif response.headers['Content-Type'] == 'application/json':
+            try:
+                print(response.json())
+            except json.decoder.JSONDecodeError:
+                print('RAW RESPONSE: {}'.format(response.text), "\nFail to decode response content")
+        else:
+            print('RAW RESPONSE: {}'.format(response.text), "\nUnexpected content-type of response message")
     else:
         print('STATUS: {} {}'.format(response.status_code, http.client.responses[response.status_code]))
         if response.text not in ['', None]:

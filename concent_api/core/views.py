@@ -101,8 +101,7 @@ def receive_out_of_band(_request, _message):
     last_undelivered_receive_out_of_band_status = undelivered_receive_out_of_band_statuses.order_by('timestamp').last()
     last_undelivered_receive_status             = Message.objects.all().order_by('timestamp').last()
 
-    current_time    = int(datetime.datetime.now().timestamp())
-    message_verdict = message.VerdictReportComputedTask()
+    current_time = int(datetime.datetime.now().timestamp())
 
     if last_undelivered_receive_out_of_band_status is None:
         if last_undelivered_receive_status is None:
@@ -112,127 +111,30 @@ def receive_out_of_band(_request, _message):
             return None
 
         if last_undelivered_receive_status.type == message.AckReportComputedTask.TYPE:
-            serialized_ack_report_computed_task = last_undelivered_receive_status.data.tobytes()
-
-            decoded_ack_report_computed_task = message.Message.deserialize(
-                serialized_ack_report_computed_task,
-                None,
-                check_time = False
-            )
-
-            force_report_computed_task = message.ForceReportComputedTask()
-            force_report_computed_task.task_to_compute = decoded_ack_report_computed_task.task_to_compute
-
-            message_verdict.force_report_computed_task = force_report_computed_task
-            message_verdict.ack_report_computed_task   = decoded_ack_report_computed_task
-
-            (golem_message, message_timestamp) = store_message(
-                message_verdict.TYPE,
-                decoded_ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
-                message_verdict.serialize()
-            )
-            store_receive_out_of_band(golem_message, message_timestamp)
-            message_verdict.sig = None
-            return message_verdict
+            return handle_receive_out_of_band_ack_report_computed_task(last_undelivered_receive_status)
 
         if last_undelivered_receive_status.type == message.ForceReportComputedTask.TYPE:
-            serialized_force_report_computed_task = last_undelivered_receive_status.data.tobytes()
-
-            decoded_force_report_computed_task = message.Message.deserialize(
-                serialized_force_report_computed_task,
-                None,
-                check_time = False
-            )
-
-            ack_report_computed_task                    = message.AckReportComputedTask()
-            ack_report_computed_task.task_to_compute    = decoded_force_report_computed_task.task_to_compute
-            message_verdict.ack_report_computed_task    = ack_report_computed_task
-            message_verdict.force_report_computed_task  = decoded_force_report_computed_task
-
-            (golem_message, message_timestamp) = store_message(
-                message_verdict.TYPE,
-                decoded_force_report_computed_task.task_to_compute.compute_task_def['task_id'],
-                message_verdict.serialize()
-            )
-            store_receive_out_of_band(golem_message, message_timestamp)
-            message_verdict.sig = None
-            return message_verdict
+            return handle_receive_out_of_band_force_report_computed_task(last_undelivered_receive_status)
 
         if last_undelivered_receive_status.type == message.RejectReportComputedTask.TYPE:
-            serialized_reject_report_computed_task = last_undelivered_receive_status.data.tobytes()
-
-            decoded_reject_report_computed_task = message.Message.deserialize(
-                serialized_reject_report_computed_task,
-                None,
-                check_time = False
-            )
-            message_verdict.ack_report_computed_task                 = message.AckReportComputedTask()
-            message_verdict.ack_report_computed_task.task_to_compute = decoded_reject_report_computed_task.cannot_compute_task.task_to_compute
-
-            store_message(
-                message_verdict.TYPE,
-                decoded_reject_report_computed_task.cannot_compute_task.task_to_compute.compute_task_def['task_id'],
-                message_verdict.serialize()
-            )
-            message_verdict.sig = None
-            return message_verdict
+            return handle_receive_out_of_band_reject_report_computed_task(last_undelivered_receive_status)
         return None
 
-    raw_last_task_message = last_undelivered_receive_out_of_band_status.message.data.tobytes()
-
     decoded_last_task_message = message.Message.deserialize(
-        raw_last_task_message,
+        last_undelivered_receive_out_of_band_status.message.data.tobytes(),
         None,
         check_time = False,
     )
 
-    message_ack_report_computed_task = message.AckReportComputedTask()
     if isinstance(decoded_last_task_message, message.ForceReportComputedTask):
         if decoded_last_task_message.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME <= current_time:
-            message_verdict.force_report_computed_task = decoded_last_task_message
-            message_ack_report_computed_task = message.AckReportComputedTask()
-            message_ack_report_computed_task.task_to_compute = decoded_last_task_message.task_to_compute
-
-            message_verdict.ack_report_computed_task = message_ack_report_computed_task
-
             set_message_as_delivered(last_undelivered_receive_out_of_band_status)
-            message_verdict.sig = None
-
-            (golem_message, message_timestamp) = store_message(
-                message_verdict.TYPE,
-                decoded_last_task_message.task_to_compute.compute_task_def['task_id'],
-                message_verdict.serialize()
-            )
-            store_receive_out_of_band(golem_message, message_timestamp)
-            message_verdict.sig = None
-            return message_verdict
+            return handle_undelivered_receive_out_of_band_status_force_report_computed_task(decoded_last_task_message)
 
     if isinstance(decoded_last_task_message, message.RejectReportComputedTask):
         if decoded_last_task_message.reason == message.RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED:
-            rejected_task_id               = decoded_last_task_message.message_cannot_compute_task.task_to_compute.compute_task_def['task_id']
-            force_report_computed_task     = Message.objects.get(type = message.ForceReportComputedTask.TYPE, task_id = rejected_task_id)
-            raw_force_report_computed_task = force_report_computed_task.data.tobytes()
-
-            force_report_computed_task = message.Message.deserialize(
-                raw_force_report_computed_task,
-                None,
-                check_time = False
-            )
-
-            message_ack_report_computed_task.task_to_compute = force_report_computed_task.task_to_compute
-            message_verdict.ack_report_computed_task         = message_ack_report_computed_task
-
             set_message_as_delivered(last_undelivered_receive_out_of_band_status)
-
-            (golem_message, message_timestamp) = store_message(
-                message_verdict.TYPE,
-                decoded_last_task_message.message_cannot_compute_task.task_to_compute.compute_task_def['task_id'],
-                message_verdict.serialize()
-            )
-            store_receive_out_of_band(golem_message, message_timestamp)
-            message_verdict.sig = None
-            return message_verdict
-
+            return handle_undelivered_receive_out_of_band_status_reject_report_computed_task(decoded_last_task_message)
     return None
 
 
@@ -383,6 +285,112 @@ def set_message_as_delivered(client_message):
     client_message.delivered = True
     client_message.full_clean()
     client_message.save()
+
+
+def handle_receive_out_of_band_ack_report_computed_task(undelivered_message):
+    decoded_ack_report_computed_task    = message.Message.deserialize(
+        undelivered_message.data.tobytes(),
+        None,
+        check_time = False
+    )
+
+    force_report_computed_task                  = message.ForceReportComputedTask()
+    force_report_computed_task.task_to_compute  = decoded_ack_report_computed_task.task_to_compute
+
+    message_verdict                             = message.VerdictReportComputedTask()
+    message_verdict.force_report_computed_task  = force_report_computed_task
+    message_verdict.ack_report_computed_task    = decoded_ack_report_computed_task
+
+    (golem_message, message_timestamp) = store_message(
+        message_verdict.TYPE,
+        decoded_ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
+        message_verdict.serialize()
+    )
+    store_receive_out_of_band(golem_message, message_timestamp)
+    message_verdict.sig = None
+    return message_verdict
+
+
+def handle_receive_out_of_band_force_report_computed_task(undelivered_message):
+    decoded_force_report_computed_task      = message.Message.deserialize(
+        undelivered_message.data.tobytes(),
+        None,
+        check_time = False
+    )
+    ack_report_computed_task                    = message.AckReportComputedTask()
+    ack_report_computed_task.task_to_compute    = decoded_force_report_computed_task.task_to_compute
+
+    message_verdict                             = message.VerdictReportComputedTask()
+    message_verdict.ack_report_computed_task    = ack_report_computed_task
+    message_verdict.force_report_computed_task  = decoded_force_report_computed_task
+
+    (golem_message, message_timestamp) = store_message(
+        message_verdict.TYPE,
+        decoded_force_report_computed_task.task_to_compute.compute_task_def['task_id'],
+        message_verdict.serialize()
+    )
+    store_receive_out_of_band(golem_message, message_timestamp)
+    message_verdict.sig = None
+    return message_verdict
+
+
+def handle_receive_out_of_band_reject_report_computed_task(undelivered_message):
+    decoded_reject_report_computed_task     = message.Message.deserialize(
+        undelivered_message.data.tobytes(),
+        None,
+        check_time = False
+    )
+
+    message_verdict                                          = message.VerdictReportComputedTask()
+    message_verdict.ack_report_computed_task                 = message.AckReportComputedTask()
+    message_verdict.ack_report_computed_task.task_to_compute = decoded_reject_report_computed_task.cannot_compute_task.task_to_compute
+
+    store_message(
+        message_verdict.TYPE,
+        decoded_reject_report_computed_task.cannot_compute_task.task_to_compute.compute_task_def['task_id'],
+        message_verdict.serialize()
+    )
+    message_verdict.sig = None
+    return message_verdict
+
+
+def handle_undelivered_receive_out_of_band_status_force_report_computed_task(decoded_message):
+    message_verdict                                          = message.VerdictReportComputedTask()
+    message_verdict.ack_report_computed_task                 = message.AckReportComputedTask()
+    message_verdict.ack_report_computed_task.task_to_compute = decoded_message.task_to_compute
+    message_verdict.force_report_computed_task               = decoded_message
+
+    golem_message, message_timestamp = store_message(
+        message_verdict.TYPE,
+        decoded_message.task_to_compute.compute_task_def['task_id'],
+        message_verdict.serialize()
+    )
+    store_receive_out_of_band(golem_message, message_timestamp)
+    message_verdict.sig = None
+    return message_verdict
+
+
+def handle_undelivered_receive_out_of_band_status_reject_report_computed_task(decoded_message):
+    rejected_task_id               = decoded_message.message_cannot_compute_task.task_to_compute.compute_task_def['task_id']
+    force_report_computed_task     = Message.objects.get(type = message.ForceReportComputedTask.TYPE, task_id = rejected_task_id)
+    force_report_computed_task      = message.Message.deserialize(
+        force_report_computed_task.data.tobytes(),
+        None,
+        check_time = False
+    )
+
+    message_verdict                                          = message.VerdictReportComputedTask()
+    message_verdict.ack_report_computed_task                 = message.AckReportComputedTask()
+    message_verdict.ack_report_computed_task.task_to_compute = force_report_computed_task.task_to_compute
+
+    golem_message, message_timestamp = store_message(
+        message_verdict.TYPE,
+        decoded_message.message_cannot_compute_task.task_to_compute.compute_task_def['task_id'],
+        message_verdict.serialize()
+    )
+    store_receive_out_of_band(golem_message, message_timestamp)
+    message_verdict.sig = None
+    return message_verdict
 
 
 def validate_golem_message_task_to_compute(data):

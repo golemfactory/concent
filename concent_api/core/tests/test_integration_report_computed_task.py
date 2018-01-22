@@ -1807,3 +1807,39 @@ class ReportComputedTaskIntegrationTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(ack_report_computed_task_from_view, message.AckReportComputedTask)
         self.assertEqual(ack_report_computed_task_from_view, ack_report_computed_task)
+
+    def test_if_there_is_no_undelivered_message_with_status_receive_out_of_band_but_message_with_not_handled_type_concent_should_return_204(self):
+        """
+        Tests if on request to receive_out_of_band endpoint if there is no undelivered message
+        with status receive out of band and message in database Concent will return 204 if it is not handled.
+
+        """
+
+        ping = message.Ping()
+
+        new_message_ping = Message(
+            type        = message.Ping.TYPE,
+            timestamp   = datetime.datetime.now(timezone.utc),
+            data        = ping.serialize(),
+            task_id     = '1',
+        )
+        new_message_ping.full_clean()
+        new_message_ping.save()
+        new_message_reject_status = ReceiveStatus(
+            message   = new_message_ping,
+            timestamp = new_message_ping.timestamp,
+            delivered = False
+        )
+        new_message_reject_status.full_clean()
+        new_message_reject_status.save()
+
+        with freeze_time("2017-12-01 10:00:05"):
+            response = self.client.post(
+                reverse('core:receive_out_of_band'),
+                data         = '',
+                content_type = '',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            )
+
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(len(response.content), 0)

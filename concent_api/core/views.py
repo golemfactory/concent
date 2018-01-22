@@ -96,9 +96,9 @@ def receive(request, _message):
         if decoded_message_data.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME < current_time:
             set_message_as_delivered(last_undelivered_message_status)
             return handle_receive_ack_from_force_report_computed_task(decoded_message_data)
-    else:
-        if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
-            set_message_as_delivered(last_undelivered_message_status)
+        else:
+            if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
+                set_message_as_delivered(last_undelivered_message_status)
 
     if isinstance(decoded_message_data, message.AckReportComputedTask):
         if (
@@ -140,7 +140,7 @@ def receive(request, _message):
 
     decoded_message_from_database = deserialize_message(force_report_computed_task.data.tobytes())
 
-    if decoded_message_data.reason is not None and decoded_message_data.reason == message.RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED:
+    if decoded_message_data.reason is not None and decoded_message_data.reason == message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded:
         ack_report_computed_task = message.AckReportComputedTask(timestamp = current_time)
         ack_report_computed_task.task_to_compute = decoded_message_from_database.task_to_compute
         return ack_report_computed_task
@@ -153,25 +153,28 @@ def receive(request, _message):
 def receive_out_of_band(request, _message):
     undelivered_receive_out_of_band_statuses    = ReceiveOutOfBandStatus.objects.filter(delivered = False)
     last_undelivered_receive_out_of_band_status = undelivered_receive_out_of_band_statuses.order_by('timestamp').last()
-    last_undelivered_receive_status             = Message.objects.filter(
+    last_undelivered_receive_message            = Message.objects.filter(
         auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
     ).order_by('timestamp').last()
 
     current_time      = int(datetime.datetime.now().timestamp())
 
     if last_undelivered_receive_out_of_band_status is None:
-        if last_undelivered_receive_status is None:
+        if last_undelivered_receive_message is None:
             return None
 
-        if last_undelivered_receive_status.type == message.AckReportComputedTask.TYPE:
-            return handle_receive_out_of_band_ack_report_computed_task(request, last_undelivered_receive_status)
+        if last_undelivered_receive_message.type == message.AckReportComputedTask.TYPE:
+            return handle_receive_out_of_band_ack_report_computed_task(request, last_undelivered_receive_message)
 
-        if last_undelivered_receive_status.type == message.ForceReportComputedTask.TYPE:
-            return handle_receive_out_of_band_force_report_computed_task(request, last_undelivered_receive_status)
+        if last_undelivered_receive_message.type == message.ForceReportComputedTask.TYPE:
+            return handle_receive_out_of_band_force_report_computed_task(request, last_undelivered_receive_message)
 
-        if last_undelivered_receive_status.type == message.RejectReportComputedTask.TYPE:
-            return handle_receive_out_of_band_reject_report_computed_task(request, last_undelivered_receive_status)
+        if last_undelivered_receive_message.type == message.RejectReportComputedTask.TYPE:
+            return handle_receive_out_of_band_reject_report_computed_task(request, last_undelivered_receive_message)
+
         return None
+
+    return handle_receive_out_of_band_undelivered_status(last_undelivered_receive_out_of_band_status)
 
 
 def handle_send_force_report_computed_task(request, client_message):
@@ -575,6 +578,20 @@ def handle_receive_out_of_band_reject_report_computed_task(request, undelivered_
     )
     message_verdict.sig = None
     return message_verdict
+
+
+def handle_receive_out_of_band_undelivered_status(undelivered_status):
+    raw_last_task_message = undelivered_status.message.data.tobytes()
+    decoded_last_task_message = message.Message.deserialize(
+        raw_last_task_message,
+        None,
+        check_time = False,
+    )
+    undelivered_status.delivered = True
+    undelivered_status.full_clean()
+    undelivered_status.save()
+    decoded_last_task_message.sig = None
+    return decoded_last_task_message
 
 
 def deserialize_message(raw_message_data):

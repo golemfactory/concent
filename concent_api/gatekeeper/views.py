@@ -137,7 +137,7 @@ def parse_headers(request, path_to_file):
     # -OPERATION
     if request.method == 'POST' and loaded_golem_message.operation != 'upload':
         return gatekeeper_access_denied_response('Wrong operation variable for this request method.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
-    if request.method == 'GET' and loaded_golem_message.operation != 'download':
+    if request.method in ['GET', 'HEAD'] and loaded_golem_message.operation != 'download':
         return gatekeeper_access_denied_response('Wrong operation variable for this request method.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
 
     # -FILES

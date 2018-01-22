@@ -327,6 +327,93 @@ class CoreViewSendTest(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json().keys())
 
+    @freeze_time("2017-11-17 10:00:00")
+    def test_send_should_return_http_400_if_task_to_compute_deadline_is_not_an_integer(self):
+        compute_task_def = message.ComputeTaskDef()
+        compute_task_def['task_id'] = '8'
+
+        invalid_values = [
+            -11,
+            'a11b',
+            {},
+            [],
+            (1, 2, 3),
+            None,
+        ]
+
+        for deadline in invalid_values:
+            Message.objects.all().delete()
+            compute_task_def['deadline'] = deadline
+            task_to_compute = message.TaskToCompute(
+                timestamp        = int(datetime.datetime.now().timestamp()),
+                compute_task_def = compute_task_def,
+            )
+
+            serialized_task_to_compute   = dump(task_to_compute,             REQUESTOR_PRIVATE_KEY,   PROVIDER_PUBLIC_KEY)
+            deserialized_task_to_compute = load(serialized_task_to_compute,  PROVIDER_PRIVATE_KEY,  REQUESTOR_PUBLIC_KEY, check_time = False)
+
+            with freeze_time("2017-11-17 10:00:00"):
+                force_report_computed_task = message.ForceReportComputedTask(
+                    timestamp = int(datetime.datetime.now().timestamp()),
+                )
+                force_report_computed_task.task_to_compute = deserialized_task_to_compute
+
+                response_400 = self.client.post(
+                    reverse('core:send'),
+                    data = dump(
+                        force_report_computed_task,
+                        PROVIDER_PRIVATE_KEY,
+                        CONCENT_PUBLIC_KEY
+                    ),
+                    content_type                   = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                )
+
+            self.assertEqual(response_400.status_code, 400)
+            self.assertIn('error', response_400.json().keys())
+
+    def test_send_should_return_http_202_if_task_to_compute_deadline_is_correct(self):
+        compute_task_def = message.ComputeTaskDef()
+        compute_task_def['task_id'] = '8'
+
+        invalid_values = [
+            11,
+            '1112',
+            True,
+            0,
+            False,
+        ]
+
+        for deadline in invalid_values:
+            Message.objects.all().delete()
+            compute_task_def['deadline'] = deadline
+            task_to_compute = message.TaskToCompute(
+                timestamp        = int(datetime.datetime.now().timestamp()),
+                compute_task_def = compute_task_def,
+            )
+
+            serialized_task_to_compute   = dump(task_to_compute,             REQUESTOR_PRIVATE_KEY,   PROVIDER_PUBLIC_KEY)
+            deserialized_task_to_compute = load(serialized_task_to_compute,  PROVIDER_PRIVATE_KEY,  REQUESTOR_PUBLIC_KEY, check_time = False)
+
+            with freeze_time("2017-11-17 10:00:00"):
+                force_report_computed_task = message.ForceReportComputedTask(
+                    timestamp = int(datetime.datetime.now().timestamp()),
+                )
+                force_report_computed_task.task_to_compute = deserialized_task_to_compute
+
+                response_202 = self.client.post(
+                    reverse('core:send'),
+                    data = dump(
+                        force_report_computed_task,
+                        PROVIDER_PRIVATE_KEY,
+                        CONCENT_PUBLIC_KEY
+                    ),
+                    content_type                   = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                )
+
+            self.assertIn(response_202.status_code, [200, 202])
+
 
 @override_settings(
     CONCENT_PRIVATE_KEY    = CONCENT_PRIVATE_KEY,

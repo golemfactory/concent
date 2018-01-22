@@ -455,8 +455,7 @@ def validate_golem_message_task_to_compute(data):
     if data.compute_task_def['task_id'] == '':
         raise Http400("task_id cannot be blank.")
 
-    if not isinstance(data.compute_task_def['deadline'], int):
-        raise Http400("Wrong type of deadline field.")
+    data.compute_task_def['deadline'] = validate_int_value(data.compute_task_def['deadline'])
 
 
 def validate_golem_message_reject(data):
@@ -471,8 +470,23 @@ def validate_golem_message_reject(data):
         if data.compute_task_def['task_id'] == '':
             raise Http400("task_id cannot be blank.")
 
-        if not isinstance(data.compute_task_def['deadline'], int):
-            raise Http400("Wrong type of deadline field.")
+        data.compute_task_def['deadline'] = validate_int_value(data.compute_task_def['deadline'])
+
+
+def validate_int_value(value):
+    """
+    Checks if value is an integer. If not, tries to cast it to an integer.
+    Then checks if value is non-negative.
+
+    """
+    if not isinstance(value, int):
+        try:
+            value = int(value)
+        except (ValueError, TypeError):
+            raise Http400("Wrong type, expected a value that can be converted to an integer.")
+    if value < 0:
+        raise Http400("Wrong type, expected non-negative integer but negative integer provided.")
+    return value
 
 
 def validate_golem_message_timestamp(timestamp):

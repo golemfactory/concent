@@ -50,7 +50,7 @@ class ConcentIntegrationTestCase(TestCase):
         )
         return report_computed_task
 
-    def _get_deserialized_task_to_compute(self, timestamp, deadline, task_id=1):
+    def _get_deserialized_task_to_compute(self, timestamp, deadline, task_id='1'):
         """ Returns TaskToCompute deserialized. """
         compute_task_def                = message.ComputeTaskDef()
         compute_task_def['task_id']     = task_id

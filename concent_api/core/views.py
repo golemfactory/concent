@@ -39,32 +39,13 @@ def receive(_request, _message):
             return None
 
         if last_delivered_message_status.message.type == message.ForceReportComputedTask.TYPE:
-            force_report_task_from_database = last_delivered_message_status.message.data.tobytes()
-
-            force_report_task = message.Message.deserialize(
-                force_report_task_from_database,
-                None,
-                check_time = False
-            )
-
-            ack_report_computed_task                 = message.AckReportComputedTask()
-            ack_report_computed_task.task_to_compute = force_report_task.task_to_compute
-            ack_report_computed_task.sig = None
-            store_message(
-                ack_report_computed_task.TYPE,
-                force_report_task.task_to_compute.compute_task_def['task_id'],
-                ack_report_computed_task.serialize(),
-            )
-            ack_report_computed_task.sig = None
-            return ack_report_computed_task
-
+            return handle_receive_delivered_force_report_computed_task(last_delivered_message_status)
         return None
 
     current_time         = int(datetime.datetime.now().timestamp())
-    raw_message_data     = last_undelivered_message_status.message.data.tobytes()
 
     decoded_message_data = message.Message.deserialize(
-        raw_message_data,
+        last_undelivered_message_status.message.data.tobytes(),
         None,
         check_time = False
     )
@@ -74,10 +55,7 @@ def receive(_request, _message):
     if last_undelivered_message_status.message.type == message.ForceReportComputedTask.TYPE:
         if decoded_message_data.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME < current_time:
             set_message_as_delivered(last_undelivered_message_status)
-
-            ack_report_computed_task                 = message.AckReportComputedTask()
-            ack_report_computed_task.task_to_compute = decoded_message_data.task_to_compute
-            return ack_report_computed_task
+            return handle_receive_ack_from_force_report_computed_task(decoded_message_data)
     else:
         set_message_as_delivered(last_undelivered_message_status)
 
@@ -100,19 +78,16 @@ def receive(_request, _message):
         type    = message.ForceReportComputedTask.TYPE,
         task_id = decoded_message_data.cannot_compute_task.task_to_compute.compute_task_def['task_id']
     )
-    raw_force_report_computed_task = force_report_computed_task.data.tobytes()
 
     decoded_message_from_database = message.Message.deserialize(
-        raw_force_report_computed_task,
+        force_report_computed_task.data.tobytes(),
         None,
         check_time = False
     )
 
     if current_time <= decoded_message_from_database.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
         if decoded_message_data.reason is not None and decoded_message_data.reason == message.RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED:
-            ack_report_computed_task = message.AckReportComputedTask(timestamp = current_time)
-            ack_report_computed_task.task_to_compute = decoded_message_from_database.task_to_compute
-            return ack_report_computed_task
+            return handle_receive_ack_from_force_report_computed_task(decoded_message_from_database)
         decoded_message_data.sig = None
         return decoded_message_data
 
@@ -378,6 +353,30 @@ def handle_unsupported_golem_messages_type(client_message):
         raise Http400("This message type ({}) is either not supported or cannot be submitted to Concent.".format(client_message.TYPE))
     else:
         raise Http400("Unknown message type or not a Golem message.")
+
+
+def handle_receive_delivered_force_report_computed_task(delivered_message):
+    force_report_task = message.Message.deserialize(
+        delivered_message.message.data.tobytes(),
+        None,
+        check_time = False
+    )
+
+    ack_report_computed_task                 = message.AckReportComputedTask()
+    ack_report_computed_task.task_to_compute = force_report_task.task_to_compute
+    store_message(
+        ack_report_computed_task.TYPE,
+        force_report_task.task_to_compute.compute_task_def['task_id'],
+        ack_report_computed_task.serialize(),
+    )
+    ack_report_computed_task.sig = None
+    return ack_report_computed_task
+
+
+def handle_receive_ack_from_force_report_computed_task(decoded_message):
+    ack_report_computed_task                 = message.AckReportComputedTask()
+    ack_report_computed_task.task_to_compute = decoded_message.task_to_compute
+    return ack_report_computed_task
 
 
 def set_message_as_delivered(client_message):

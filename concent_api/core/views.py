@@ -296,9 +296,8 @@ def receive_out_of_band(_request, _message):
                 check_time = False
             )
 
-            ack_report_computed_task                    = message.AckReportComputedTask()
-            ack_report_computed_task.task_to_compute    = decoded_reject_report_computed_task.task_to_compute
-            message_verdict.ack_report_computed_task    = ack_report_computed_task
+            message_verdict.ack_report_computed_task                 = message.AckReportComputedTask()
+            message_verdict.ack_report_computed_task.task_to_compute = decoded_reject_report_computed_task.task_to_compute
 
             message_verdict.sig = None
             store_message(

@@ -139,14 +139,11 @@ def handle_send_force_report_computed_task(client_message):
         reject_force_report_computed_task.task_to_compute = client_message.task_to_compute
         return reject_force_report_computed_task
     client_message.sig = None
-    (golem_message, message_timestamp) = store_message(
+    store_message_and_message_status(
         client_message.TYPE,
         client_message.task_to_compute.compute_task_def['task_id'],
-        client_message.serialize()
-    )
-    store_receive_message_status(
-        golem_message,
-        message_timestamp,
+        client_message.serialize(),
+        status = ReceiveStatus
     )
     return HttpResponse("", status = 202)
 
@@ -168,14 +165,11 @@ def handle_send_ack_report_computed_task(client_message):
                 "or another AckReportComputedTask for this task has already been submitted."
             )
         client_message.sig = None
-        (golem_message, message_timestamp) = store_message(
+        store_message_and_message_status(
             client_message.TYPE,
             client_message.task_to_compute.compute_task_def['task_id'],
-            client_message.serialize()
-        )
-        store_receive_message_status(
-            golem_message,
-            message_timestamp,
+            client_message.serialize(),
+            status = ReceiveStatus
         )
 
         return HttpResponse("", status = 202)
@@ -199,15 +193,11 @@ def handle_send_reject_report_computed_task(client_message):
     assert force_report_computed_task.task_to_compute.compute_task_def['task_id'] == client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id']
     if client_message.cannot_compute_task.reason == message.CannotComputeTask.REASON.WrongCTD:
         client_message.sig = None
-        (golem_message, message_timestamp) = store_message(
+        store_message_and_message_status(
             client_message.TYPE,
             force_report_computed_task.task_to_compute.compute_task_def['task_id'],
-            client_message.serialize()
-        )
-
-        store_receive_message_status(
-            golem_message,
-            message_timestamp,
+            client_message.serialize(),
+            status = ReceiveStatus
         )
 
         return HttpResponse("", status = 202)
@@ -220,14 +210,11 @@ def handle_send_reject_report_computed_task(client_message):
             raise Http400("Received RejectReportComputedTask but AckReportComputedTask or another RejectReportComputedTask for this task has already been submitted.")
 
         client_message.sig = None
-        (golem_message, message_timestamp) = store_message(
+        store_message_and_message_status(
             client_message.TYPE,
             force_report_computed_task.task_to_compute.compute_task_def['task_id'],
-            client_message.serialize()
-        )
-        store_receive_message_status(
-            golem_message,
-            message_timestamp,
+            client_message.serialize(),
+            status = ReceiveStatus
         )
         return HttpResponse("", status = 202)
     else:
@@ -246,7 +233,7 @@ def handle_receive_delivered_force_report_computed_task(delivered_message):
 
     ack_report_computed_task                 = message.AckReportComputedTask()
     ack_report_computed_task.task_to_compute = force_report_task.task_to_compute
-    store_message(
+    store_message_and_message_status(
         ack_report_computed_task.TYPE,
         force_report_task.task_to_compute.compute_task_def['task_id'],
         ack_report_computed_task.serialize(),
@@ -277,12 +264,12 @@ def handle_receive_out_of_band_ack_report_computed_task(undelivered_message):
     message_verdict.force_report_computed_task  = force_report_computed_task
     message_verdict.ack_report_computed_task    = decoded_ack_report_computed_task
 
-    (golem_message, message_timestamp) = store_message(
+    store_message_and_message_status(
         message_verdict.TYPE,
         decoded_ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
-        message_verdict.serialize()
+        message_verdict.serialize(),
+        status = ReceiveOutOfBandStatus,
     )
-    store_receive_out_of_band(golem_message, message_timestamp)
     message_verdict.sig = None
     return message_verdict
 
@@ -297,12 +284,12 @@ def handle_receive_out_of_band_force_report_computed_task(undelivered_message):
     message_verdict.ack_report_computed_task    = ack_report_computed_task
     message_verdict.force_report_computed_task  = decoded_force_report_computed_task
 
-    (golem_message, message_timestamp) = store_message(
+    store_message_and_message_status(
         message_verdict.TYPE,
         decoded_force_report_computed_task.task_to_compute.compute_task_def['task_id'],
-        message_verdict.serialize()
+        message_verdict.serialize(),
+        status = ReceiveOutOfBandStatus,
     )
-    store_receive_out_of_band(golem_message, message_timestamp)
     message_verdict.sig = None
     return message_verdict
 
@@ -314,10 +301,11 @@ def handle_receive_out_of_band_reject_report_computed_task(undelivered_message):
     message_verdict.ack_report_computed_task                 = message.AckReportComputedTask()
     message_verdict.ack_report_computed_task.task_to_compute = decoded_reject_report_computed_task.cannot_compute_task.task_to_compute
 
-    store_message(
+    store_message_and_message_status(
         message_verdict.TYPE,
         decoded_reject_report_computed_task.cannot_compute_task.task_to_compute.compute_task_def['task_id'],
-        message_verdict.serialize()
+        message_verdict.serialize(),
+        status = ReceiveOutOfBandStatus
     )
     message_verdict.sig = None
     return message_verdict
@@ -329,12 +317,12 @@ def handle_undelivered_receive_out_of_band_status_force_report_computed_task(dec
     message_verdict.ack_report_computed_task.task_to_compute = decoded_message.task_to_compute
     message_verdict.force_report_computed_task               = decoded_message
 
-    golem_message, message_timestamp = store_message(
+    store_message_and_message_status(
         message_verdict.TYPE,
         decoded_message.task_to_compute.compute_task_def['task_id'],
-        message_verdict.serialize()
+        message_verdict.serialize(),
+        status = ReceiveOutOfBandStatus,
     )
-    store_receive_out_of_band(golem_message, message_timestamp)
     message_verdict.sig = None
     return message_verdict
 
@@ -348,12 +336,12 @@ def handle_undelivered_receive_out_of_band_status_reject_report_computed_task(de
     message_verdict.ack_report_computed_task                 = message.AckReportComputedTask()
     message_verdict.ack_report_computed_task.task_to_compute = force_report_computed_task.task_to_compute
 
-    golem_message, message_timestamp = store_message(
+    store_message_and_message_status(
         message_verdict.TYPE,
         decoded_message.message_cannot_compute_task.task_to_compute.compute_task_def['task_id'],
-        message_verdict.serialize()
+        message_verdict.serialize(),
+        status = ReceiveOutOfBandStatus,
     )
-    store_receive_out_of_band(golem_message, message_timestamp)
     message_verdict.sig = None
     return message_verdict
 
@@ -393,7 +381,7 @@ def validate_golem_message_reject(data):
             raise Http400("Wrong type of deadline field.")
 
 
-def store_message(golem_message_type, task_id, raw_golem_message):
+def store_message_and_message_status(golem_message_type, task_id, raw_golem_message, status = None):
     message_timestamp = datetime.datetime.now(timezone.utc)
     golem_message = Message(
         type        = golem_message_type,
@@ -403,23 +391,22 @@ def store_message(golem_message_type, task_id, raw_golem_message):
     )
     golem_message.full_clean()
     golem_message.save()
-    return (golem_message, message_timestamp)
 
+    if status == ReceiveStatus:
+        receive_message_status  = ReceiveStatus(
+            message     = golem_message,
+            timestamp   = message_timestamp
+        )
+        receive_message_status.full_clean()
+        receive_message_status.save()
 
-def store_receive_message_status(golem_message, message_timestamp):
-    receive_message_status  = ReceiveStatus(
-        message     = golem_message,
-        timestamp   = message_timestamp
-    )
-    receive_message_status.full_clean()
-    receive_message_status.save()
-
-
-def store_receive_out_of_band(golem_message, message_timestamp):
-    receive_out_of_band_status = ReceiveOutOfBandStatus(
-        message     = golem_message,
-        timestamp   = message_timestamp,
-        delivered   = True
-    )
-    receive_out_of_band_status.full_clean()
-    receive_out_of_band_status.save()
+    elif status == ReceiveOutOfBandStatus:
+        receive_out_of_band_status = ReceiveOutOfBandStatus(
+            message     = golem_message,
+            timestamp   = message_timestamp,
+            delivered   = True
+        )
+        receive_out_of_band_status.full_clean()
+        receive_out_of_band_status.save()
+    else:
+        return None

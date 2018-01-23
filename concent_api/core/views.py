@@ -6,6 +6,10 @@ from django.utils                   import timezone
 from django.conf                    import settings
 
 from golem_messages                 import message
+from golem_messages.message.base    import verify_time
+from golem_messages.exceptions      import MessageFromFutureError
+from golem_messages.exceptions      import MessageTooOldError
+from golem_messages.exceptions      import TimestampError
 
 from utils.api_view                 import api_view
 from utils.api_view                 import Http400
@@ -17,6 +21,9 @@ from .models                        import ReceiveOutOfBandStatus
 @api_view
 @require_POST
 def send(_request, client_message):
+    if client_message is not None:
+        validate_golem_message_timestamp(client_message.timestamp)
+
     if isinstance(client_message, message.ForceReportComputedTask):
         return handle_send_force_report_computed_task(client_message)
 
@@ -333,6 +340,17 @@ def validate_golem_message_reject(data):
 
         if not isinstance(data.compute_task_def['deadline'], int):
             raise Http400("Wrong type of deadline field.")
+
+
+def validate_golem_message_timestamp(timestamp):
+    try:
+        verify_time(timestamp)
+    except MessageFromFutureError:
+        raise Http400('Message timestamp too far in the future.')
+    except MessageTooOldError:
+        raise Http400('Message is too old.')
+    except TimestampError as exception:
+        raise Http400(exception)
 
 
 def store_message_and_message_status(golem_message_type, task_id, raw_golem_message, status = None):

@@ -38,6 +38,10 @@ def send(_request, client_message):
 
     elif isinstance(client_message, message.RejectReportComputedTask):
         return handle_send_reject_report_computed_task(client_message)
+
+    elif isinstance(client_message, message.concents.ForceGetTaskResult) and client_message.report_computed_task is not None:
+        return handle_send_force_get_task_result(client_message)
+
     else:
         return handle_unsupported_golem_messages_type(client_message)
 
@@ -221,6 +225,40 @@ def handle_send_reject_report_computed_task(client_message):
         return HttpResponse("", status = 202)
     else:
         raise Http400("Time to acknowledge this task is already over.")
+
+
+def handle_send_force_get_task_result(client_message: message.concents.ForceGetTaskResult) -> message.concents:
+    assert client_message.TYPE in message.registered_message_types
+
+    current_time = int(datetime.datetime.now().timestamp())
+    validate_golem_message_task_to_compute(client_message.report_computed_task.task_to_compute)
+
+    if Message.objects.filter(
+        type    = client_message.TYPE,
+        task_id = client_message.report_computed_task.task_to_compute.compute_task_def['task_id']
+    ).exists():
+        return message.concents.ForceGetTaskResultRejected(
+            timestamp   = client_message.timestamp,
+            reason      = message.concents.ForceGetTaskResultRejected.REASON.OperationAlreadyInitiated,
+        )
+
+    elif client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.FORCE_ACCEPTANCE_TIME < current_time:
+        return message.concents.ForceGetTaskResultRejected(
+            timestamp = client_message.timestamp,
+            reason    = message.concents.ForceGetTaskResultRejected.REASON.AcceptanceTimeLimitExceeded,
+        )
+
+    else:
+        client_message.sig = None
+        store_message_and_message_status(
+            client_message.TYPE,
+            client_message.report_computed_task.task_to_compute.compute_task_def['task_id'],
+            client_message.serialize(),
+            status = ReceiveStatus,
+        )
+        return message.concents.ForceGetTaskResultAck(
+            timestamp = client_message.timestamp,
+        )
 
 
 def handle_unsupported_golem_messages_type(client_message):

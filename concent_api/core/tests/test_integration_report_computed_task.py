@@ -9,7 +9,7 @@ import dateutil.parser
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 from golem_messages                 import message
-
+from core.models                    import ReceiveStatus
 from utils.testing_helpers  import generate_ecc_key_pair
 
 
@@ -365,8 +365,9 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
-        self.assertEqual(response_3.status_code,  202)
-        self.assertEqual(len(response_3.content), 0)
+        self.assertEqual(response_3.status_code,                    202)
+        self.assertEqual(len(response_3.content),                   0)
+        self.assertEqual(ReceiveStatus.objects.last().message.type, message.RejectReportComputedTask.TYPE)
 
         # STEP 4: Concent overrides computed task rejection and sends acceptance message to the provider
 
@@ -411,7 +412,6 @@ class ReportComputedTaskIntegrationTest(TestCase):
             CONCENT_PUBLIC_KEY,
             check_time=False
         )
-
         self.assertIsInstance(message_from_concent_to_requestor, message.VerdictReportComputedTask)
         self.assertGreaterEqual(message_from_concent_to_requestor.timestamp, int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))
         self.assertLessEqual(   message_from_concent_to_requestor.timestamp, int(dateutil.parser.parse("2017-12-01 11:00:15").timestamp()))

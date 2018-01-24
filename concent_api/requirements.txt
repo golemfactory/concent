@@ -4,3 +4,4 @@ psycopg2
 freezegun
 pyyaml
 requests
+mock

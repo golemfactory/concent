@@ -1,3 +1,5 @@
+import mock
+
 from django.test            import override_settings
 from django.urls            import reverse
 from freezegun              import freeze_time
@@ -9,6 +11,14 @@ from utils.testing_helpers  import generate_ecc_key_pair
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
+
+
+def get_file_status_true_mock(_):
+    return True
+
+
+def get_file_status_false_mock(_):
+    return False
 
 
 @override_settings(
@@ -236,13 +246,14 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_file_transfer_token.operation, 'upload')
 
         # STEP 3: Requestor receives force get task result failed due to lack of provider submit.
-        with freeze_time("2017-12-01 11:00:21"):
-            response_3 = self.client.post(
-                reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
-            )
+        with mock.patch('core.views.get_file_status', get_file_status_false_mock):
+            with freeze_time("2017-12-01 11:00:21"):
+                response_3 = self.client.post(
+                    reverse('core:receive'),
+                    data                           = '',
+                    content_type                   = '',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
+                )
 
         self.assertEqual(response_3.status_code,  200)
 
@@ -344,13 +355,14 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_file_transfer_token.operation, 'upload')
 
         # STEP 3: Requestor receives force get task result failed due to lack of provider submit.
-        with freeze_time("2017-12-01 11:00:21"):
-            response_3 = self.client.post(
-                reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
-            )
+        with mock.patch('core.views.get_file_status', get_file_status_false_mock):
+            with freeze_time("2017-12-01 11:00:21"):
+                response_3 = self.client.post(
+                    reverse('core:receive'),
+                    data                           = '',
+                    content_type                   = '',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
+                )
 
         self.assertEqual(response_3.status_code,  200)
 
@@ -452,13 +464,14 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_file_transfer_token.operation, 'upload')
 
         # STEP 3: Requestor receives force get task result failed due to lack of provider submit.
-        with freeze_time("2017-12-01 11:00:21"):
-            response_3 = self.client.post(
-                reverse('core:receive'),
-                data         = '',
-                content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
-            )
+        with mock.patch('core.views.get_file_status', get_file_status_false_mock):
+            with freeze_time("2017-12-01 11:00:21"):
+                response_3 = self.client.post(
+                    reverse('core:receive'),
+                    data         = '',
+                    content_type = '',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
+                )
 
         self.assertEqual(response_3.status_code,  200)
 
@@ -553,13 +566,14 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_file_transfer_token.operation, 'upload')
 
         # STEP 3: Requestor receives force get task result failed due to lack of provider submit.
-        with freeze_time("2017-12-01 11:00:21"):
-            response_3 = self.client.post(
-                reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
-            )
+        with mock.patch('core.views.get_file_status', get_file_status_true_mock):
+            with freeze_time("2017-12-01 11:00:21"):
+                response_3 = self.client.post(
+                    reverse('core:receive'),
+                    data                           = '',
+                    content_type                   = '',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
+                )
 
         self.assertEqual(response_3.status_code,  200)
 

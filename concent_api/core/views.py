@@ -1,16 +1,22 @@
 import datetime
 
+from base64                         import b64encode
+
+import requests
 from django.http                    import HttpResponse
-from django.views.decorators.http   import require_POST
+from django.urls                    import reverse
 from django.utils                   import timezone
+from django.views.decorators.http   import require_POST
 from django.conf                    import settings
 
 from golem_messages                 import message
+from golem_messages                 import shortcuts
 from golem_messages.message.base    import verify_time
 from golem_messages.exceptions      import MessageFromFutureError
 from golem_messages.exceptions      import MessageTooOldError
 from golem_messages.exceptions      import TimestampError
 
+from core                           import exceptions
 from utils.api_view                 import api_view
 from utils.api_view                 import Http400
 from .models                        import Message
@@ -382,3 +388,42 @@ def store_message_and_message_status(golem_message_type, task_id, raw_golem_mess
         receive_out_of_band_status.save()
     else:
         return None
+
+
+def get_file_status(file_transfer_token_from_database: message.concents.FileTransferToken) -> bool:
+    slash = '/'
+    assert len(file_transfer_token_from_database.files) == 1
+    assert not file_transfer_token_from_database.files[0]['path'].startswith(slash)
+    assert settings.STORAGE_CLUSTER_ADDRESS.endswith(slash)
+
+    current_time = int(datetime.datetime.now().timestamp())
+    file_transfer_token = message.concents.FileTransferToken(
+        timestamp                       = current_time,
+        token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_DEADLINE,
+        storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
+        authorized_client_public_key    = settings.CONCENT_PUBLIC_KEY,
+        operation                       = 'download',
+    )
+
+    file_transfer_token.files                 = [message.concents.FileTransferToken.FileInfo()]
+    file_transfer_token.files[0]['path']      = file_transfer_token_from_database.files[0]['path']
+    file_transfer_token.files[0]['checksum']  = file_transfer_token_from_database.files[0]['checksum']
+    file_transfer_token.files[0]['size']      = file_transfer_token_from_database.files[0]['size']
+
+    dumped_file_transfer_token = shortcuts.dump(file_transfer_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+    headers = {
+        'Authorization':                'Golem ' + b64encode(dumped_file_transfer_token).decode(),
+        'Concent-Client-Public-Key':    b64encode(settings.CONCENT_PUBLIC_KEY).decode(),
+    }
+    request_http_address = settings.STORAGE_CLUSTER_ADDRESS + reverse('gatekeeper:download') + file_transfer_token.files[0]['path']
+
+    cluster_storage_response = requests.head(
+        request_http_address,
+        headers = headers
+    )
+    if cluster_storage_response.status_code == 200:
+        return True
+    elif cluster_storage_response.status_code == 404:
+        return False
+    else:
+        raise exceptions.UnexpectedResponse()

@@ -112,17 +112,6 @@ def receive_out_of_band(_request, _message):
             return handle_receive_out_of_band_reject_report_computed_task(last_undelivered_receive_status)
         return None
 
-    decoded_last_task_message = deserialize_message(last_undelivered_receive_out_of_band_status.message.data.tobytes())
-
-    if isinstance(decoded_last_task_message, message.ForceReportComputedTask):
-        if decoded_last_task_message.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME <= current_time:
-            set_message_as_delivered(last_undelivered_receive_out_of_band_status)
-            return handle_undelivered_receive_out_of_band_status_force_report_computed_task(decoded_last_task_message)
-
-    if isinstance(decoded_last_task_message, message.RejectReportComputedTask):
-        if decoded_last_task_message.reason == message.RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED:
-            set_message_as_delivered(last_undelivered_receive_out_of_band_status)
-            return handle_undelivered_receive_out_of_band_status_reject_report_computed_task(decoded_last_task_message)
     return None
 
 
@@ -306,41 +295,6 @@ def handle_receive_out_of_band_reject_report_computed_task(undelivered_message):
         decoded_reject_report_computed_task.cannot_compute_task.task_to_compute.compute_task_def['task_id'],
         message_verdict.serialize(),
         status = ReceiveOutOfBandStatus
-    )
-    message_verdict.sig = None
-    return message_verdict
-
-
-def handle_undelivered_receive_out_of_band_status_force_report_computed_task(decoded_message):
-    message_verdict                                          = message.VerdictReportComputedTask()
-    message_verdict.ack_report_computed_task                 = message.AckReportComputedTask()
-    message_verdict.ack_report_computed_task.task_to_compute = decoded_message.task_to_compute
-    message_verdict.force_report_computed_task               = decoded_message
-
-    store_message_and_message_status(
-        message_verdict.TYPE,
-        decoded_message.task_to_compute.compute_task_def['task_id'],
-        message_verdict.serialize(),
-        status = ReceiveOutOfBandStatus,
-    )
-    message_verdict.sig = None
-    return message_verdict
-
-
-def handle_undelivered_receive_out_of_band_status_reject_report_computed_task(decoded_message):
-    rejected_task_id               = decoded_message.message_cannot_compute_task.task_to_compute.compute_task_def['task_id']
-    force_report_computed_task     = Message.objects.get(type = message.ForceReportComputedTask.TYPE, task_id = rejected_task_id)
-    force_report_computed_task     = deserialize_message(force_report_computed_task.data.tobytes())
-
-    message_verdict                                          = message.VerdictReportComputedTask()
-    message_verdict.ack_report_computed_task                 = message.AckReportComputedTask()
-    message_verdict.ack_report_computed_task.task_to_compute = force_report_computed_task.task_to_compute
-
-    store_message_and_message_status(
-        message_verdict.TYPE,
-        decoded_message.message_cannot_compute_task.task_to_compute.compute_task_def['task_id'],
-        message_verdict.serialize(),
-        status = ReceiveOutOfBandStatus,
     )
     message_verdict.sig = None
     return message_verdict

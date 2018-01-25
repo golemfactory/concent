@@ -2,7 +2,6 @@ import binascii
 from functools                      import wraps
 from base64                         import b64decode
 
-import json
 from django.http                    import JsonResponse
 from django.http                    import HttpResponse
 from django.conf                    import settings
@@ -35,17 +34,15 @@ def api_view(view):
                 status = 400
             )
 
-        if request.content_type not in ['application/octet-stream', '', 'application/json']:
-            return JsonResponse({'error': 'Concent supports only application/octet-stream and application/json.'}, status = 415)
+        if request.content_type not in ['application/octet-stream', '']:
+            return JsonResponse({'error': 'Concent supports only application/octet-stream.'}, status = 415)
 
         if len(request.body) == 0:
             message = None
         else:
             if request.content_type == '':
                 raise Http400('Content-Type is missing.')
-            if request.content_type == 'application/json':
-                message = json.loads(request.body.decode('ascii'))
-            if request.content_type == 'application/octet-stream':
+            elif request.content_type == 'application/octet-stream':
                 try:
                     message = load(
                         request.body,
@@ -55,6 +52,8 @@ def api_view(view):
                     )
                 except InvalidSignature as exception:
                     return JsonResponse({'error': "Failed to decode a Golem Message. {}".format(exception)}, status = 400)
+            else:
+                return JsonResponse({'error': "Concent supports only application/octet-stream."}, status = 400)
         try:
             response_from_view = view(request, message, *args, **kwargs)
         except Http400 as exception:

@@ -57,6 +57,13 @@ def receive(request, _message):
 
         if last_delivered_message_status.message.type == message.ForceReportComputedTask.TYPE:
             return handle_receive_delivered_force_report_computed_task(last_delivered_message_status)
+        if last_delivered_message_status.message.type == message.concents.ForceGetTaskResultUpload.TYPE:
+            decoded_message_data = deserialize_message(last_delivered_message_status.message.data.tobytes())
+            file_uploaded        = get_file_status(decoded_message_data.file_transfer_token)
+            if file_uploaded:
+                return handle_receive_force_get_task_result_upload_for_requestor(decoded_message_data)
+            else:
+                return handle_receive_force_get_task_result_failed(decoded_message_data)
         return None
 
     current_time         = int(datetime.datetime.now().timestamp())
@@ -328,6 +335,45 @@ def handle_receive_force_get_task_result_upload_for_provider(request, decoded_me
     )
     force_get_task_result_upload.sig = None
     return force_get_task_result_upload
+
+
+def handle_receive_force_get_task_result_failed(decoded_message: message.concents.ForceGetTaskResultUpload) -> message.concents.ForceGetTaskResultUpload:
+    assert decoded_message.TYPE in message.registered_message_types
+
+    current_time = int(datetime.datetime.now().timestamp())
+    force_get_task_result_failed = message.concents.ForceGetTaskResultFailed(
+        timestamp       = current_time
+    )
+    force_get_task_result_failed.task_to_compute = decoded_message.force_get_task_result.report_computed_task.task_to_compute
+    store_message_and_message_status(
+        force_get_task_result_failed.TYPE,
+        force_get_task_result_failed.task_to_compute.compute_task_def['task_id'],
+        force_get_task_result_failed.serialize(),
+        status    = ReceiveStatus,
+        delivered = True,
+    )
+    force_get_task_result_failed.sig = None
+    return force_get_task_result_failed
+
+
+def handle_receive_force_get_task_result_upload_for_requestor(decoded_message: message.concents.ForceGetTaskResultUpload) -> message.concents.ForceGetTaskResultUpload:
+    assert decoded_message.TYPE in message.registered_message_types
+
+    current_time = int(datetime.datetime.now().timestamp())
+    decoded_message.timestamp                                      = current_time
+    decoded_message.file_transfer_token.timestamp                  = current_time
+    decoded_message.file_transfer_token.token_expiration_deadline  = current_time + settings.TOKEN_EXPIRATION_DEADLINE
+    decoded_message.file_transfer_token.operation                  = 'download'
+
+    store_message_and_message_status(
+        decoded_message.TYPE,
+        decoded_message.force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'],
+        decoded_message.serialize(),
+        status    = ReceiveStatus,
+        delivered = True,
+    )
+    decoded_message.sig = None
+    return decoded_message
 
 
 def set_message_as_delivered(client_message):

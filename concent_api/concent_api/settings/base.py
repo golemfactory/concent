@@ -200,6 +200,13 @@ LOGGING = {
 # contact concent and send or receive a message as defined in the protocol.
 CONCENT_MESSAGING_TIME = 3600  # seconds
 
+# A global constant defining the length of the time window within which a requestor can
+# contact concent for forced getting task results.
+FORCE_ACCEPTANCE_TIME = 4 * 3600  # 4 hours
+
+# A global constant defining the length of the time window within which FileTransferToken message is valid.
+TOKEN_EXPIRATION_DEADLINE = 1800  # 30 minutes
+
 # Which components of this Django application should be enabled in this particular server instance.
 # The application is basically a bunch of services with totally different responsibilites that share a lot of code.
 # In a typical setup each instance has only one or two features enabled. Some of them provide public APIs, others are

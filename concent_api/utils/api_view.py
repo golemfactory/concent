@@ -41,7 +41,7 @@ def api_view(view):
             message = None
         else:
             if request.content_type == '':
-                raise Http400('Content-Type is missing.')
+                return JsonResponse({'error': 'Content-Type is missing.'}, status = 400)
             elif request.content_type == 'application/octet-stream':
                 try:
                     message = load(

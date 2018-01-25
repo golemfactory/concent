@@ -90,3 +90,19 @@ class ApiViewsIntegrationTest(TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json().keys())
+
+    def test_any_message_to_concent_report_empty_content_type_returns_400_error(self):
+        """
+        Tests if any golem message to Concent will return HTTP 400 error
+        if content_type is missing in header.
+        """
+
+        response = self.client.post(
+            reverse('core:send'),
+            data                           = self.serialized_dummy_message_to_concent,
+            content_type                   = '',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+        )
+
+        self.assertEqual(response.status_code,  400)
+        self.assertIn('error', response.json().keys())

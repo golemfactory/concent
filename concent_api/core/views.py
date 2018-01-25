@@ -78,7 +78,7 @@ def receive(_request, _message):
     decoded_message_from_database = deserialize_message(force_report_computed_task.data.tobytes())
 
     if current_time <= decoded_message_from_database.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
-        if decoded_message_data.reason is not None and decoded_message_data.reason == message.RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED:
+        if decoded_message_data.reason is not None and decoded_message_data.reason == message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded:
             return handle_receive_ack_from_force_report_computed_task(decoded_message_from_database)
         decoded_message_data.sig = None
         return decoded_message_data
@@ -124,7 +124,7 @@ def handle_send_force_report_computed_task(client_message):
 
     if client_message.task_to_compute.compute_task_def['deadline'] < current_time:
         reject_force_report_computed_task                 = message.RejectReportComputedTask(timestamp = client_message.timestamp)
-        reject_force_report_computed_task.reason          = message.RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED
+        reject_force_report_computed_task.reason          = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
         reject_force_report_computed_task.task_to_compute = client_message.task_to_compute
         return reject_force_report_computed_task
     client_message.sig = None

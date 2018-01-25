@@ -74,7 +74,7 @@ class CoreViewSendTest(TestCase):
             timestamp = self.message_timestamp,
         )
 
-        self.reject_report_computed_task.reason                 = message.RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED
+        self.reject_report_computed_task.reason                 = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
         self.reject_report_computed_task.cannot_compute_task    = self.cannot_compute_task
 
     @freeze_time("2017-11-17 10:00:00")

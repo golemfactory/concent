@@ -63,7 +63,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         self.assertIsInstance(message_from_concent, message.RejectReportComputedTask)
         self.assertEqual(message_from_concent.timestamp, int(dateutil.parser.parse("2017-12-01 11:01:00").timestamp()))
-        self.assertEqual(message_from_concent.reason.value, "TASK_TIME_LIMIT_EXCEEDED")
+        self.assertEqual(message_from_concent.reason, message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded)
         self.assertEqual(message_from_concent.task_to_compute, deserialized_task_to_compute)
 
     def test_provider_forces_computed_task_report_and_requestor_sends_acknowledgement(self):
@@ -352,7 +352,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
         reject_report_computed_task = message.RejectReportComputedTask(
             timestamp                   = int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()),
         )
-        reject_report_computed_task.reason              = message.RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED
+        reject_report_computed_task.reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
         reject_report_computed_task.cannot_compute_task = deserialized_cannot_compute_task
 
         serialized_reject_report_computed_task = dump(reject_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -632,7 +632,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
         reject_report_computed_task = message.RejectReportComputedTask(
             timestamp                   = int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()),
         )
-        reject_report_computed_task.reason = message.RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED
+        reject_report_computed_task.reason = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
         reject_report_computed_task.cannot_compute_task = deserialized_cannot_compute_task
         serialized_reject_report_computed_task = dump(reject_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
@@ -757,7 +757,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
         reject_report_computed_task = message.RejectReportComputedTask(
             timestamp                   = int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()),
         )
-        reject_report_computed_task.reason = reject_report_computed_task.Reason.TASK_TIME_LIMIT_EXCEEDED
+        reject_report_computed_task.reason = reject_report_computed_task.REASON.TaskTimeLimitExceeded
         reject_report_computed_task.cannot_compute_task = deserialized_cannot_compute_task
 
         serialized_reject_report_computed_task = dump(reject_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -850,7 +850,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
             timestamp                   = int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()),
         )
         reject_report_computed_task.cannot_compute_task = deserialized_cannot_compute_task
-        reject_report_computed_task.reason = reject_report_computed_task.Reason.TASK_TIME_LIMIT_EXCEEDED
+        reject_report_computed_task.reason = reject_report_computed_task.REASON.TaskTimeLimitExceeded
 
         serialized_reject_report_computed_task = dump(reject_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
@@ -1065,7 +1065,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
             timestamp                   = int(dateutil.parser.parse("2017-12-01 11:00:15").timestamp()),
         )
         reject_report_computed_task.cannot_compute_task = deserialized_cannot_compute_task
-        reject_report_computed_task.reason              = message.RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED
+        reject_report_computed_task.reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
         serialized_reject_report_computed_task = dump(reject_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:15"):
@@ -1305,7 +1305,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
         reject_report_computed_task = message.RejectReportComputedTask(
             timestamp                   = int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()),
         )
-        reject_report_computed_task.reason = message.RejectReportComputedTask.Reason.TASK_TIME_LIMIT_EXCEEDED
+        reject_report_computed_task.reason = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
         reject_report_computed_task.task_to_compute = deserialized_task_to_compute
         serialized_reject_report_computed_task = dump(reject_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 

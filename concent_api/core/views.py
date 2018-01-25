@@ -397,6 +397,7 @@ def handle_receive_out_of_band_ack_report_computed_task(undelivered_message):
         decoded_ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
         message_verdict.serialize(),
         status = ReceiveOutOfBandStatus,
+        delivered = True
     )
     message_verdict.sig = None
     return message_verdict
@@ -417,6 +418,7 @@ def handle_receive_out_of_band_force_report_computed_task(undelivered_message):
         decoded_force_report_computed_task.task_to_compute.compute_task_def['task_id'],
         message_verdict.serialize(),
         status = ReceiveOutOfBandStatus,
+        delivered = True
     )
     message_verdict.sig = None
     return message_verdict
@@ -433,7 +435,8 @@ def handle_receive_out_of_band_reject_report_computed_task(undelivered_message):
         message_verdict.TYPE,
         decoded_reject_report_computed_task.cannot_compute_task.task_to_compute.compute_task_def['task_id'],
         message_verdict.serialize(),
-        status = ReceiveOutOfBandStatus
+        status = ReceiveOutOfBandStatus,
+        delivered = True
     )
     message_verdict.sig = None
     return message_verdict
@@ -485,7 +488,10 @@ def validate_golem_message_timestamp(timestamp):
         raise Http400(exception)
 
 
-def store_message_and_message_status(golem_message_type, task_id, raw_golem_message, status = None):
+def store_message_and_message_status(golem_message_type: int, task_id, raw_golem_message: bytes, status = None, delivered: bool = False):
+    assert golem_message_type   in message.registered_message_types
+    assert status               in [ReceiveStatus, ReceiveOutOfBandStatus, None]
+
     message_timestamp = datetime.datetime.now(timezone.utc)
     golem_message = Message(
         type        = golem_message_type,
@@ -496,24 +502,14 @@ def store_message_and_message_status(golem_message_type, task_id, raw_golem_mess
     golem_message.full_clean()
     golem_message.save()
 
-    if status == ReceiveStatus:
-        receive_message_status  = ReceiveStatus(
+    if status is not None:
+        receive_message_status  = status(
             message     = golem_message,
-            timestamp   = message_timestamp
+            timestamp   = message_timestamp,
+            delivered   = delivered
         )
         receive_message_status.full_clean()
         receive_message_status.save()
-
-    elif status == ReceiveOutOfBandStatus:
-        receive_out_of_band_status = ReceiveOutOfBandStatus(
-            message     = golem_message,
-            timestamp   = message_timestamp,
-            delivered   = True
-        )
-        receive_out_of_band_status.full_clean()
-        receive_out_of_band_status.save()
-    else:
-        return None
 
 
 def get_file_status(file_transfer_token_from_database: message.concents.FileTransferToken) -> bool:

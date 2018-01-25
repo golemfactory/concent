@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 from django.db import migrations, models
 
 
-def migrate_golem_messages_types_from_strings_to_ints(apps, schema_editor):
+def migrate_golem_messages_types_from_strings_to_ints(apps, _schema_editor):
 
     Message = apps.get_model('core', 'Message')
     for message in Message.objects.all():

@@ -3,11 +3,11 @@ import datetime
 from base64                         import b64encode
 
 import requests
+from django.conf                    import settings
 from django.http                    import HttpResponse
 from django.urls                    import reverse
 from django.utils                   import timezone
 from django.views.decorators.http   import require_POST
-from django.conf                    import settings
 
 from golem_messages                 import message
 from golem_messages                 import shortcuts
@@ -20,8 +20,8 @@ from core                           import exceptions
 from utils.api_view                 import api_view
 from utils.api_view                 import Http400
 from .models                        import Message
-from .models                        import ReceiveStatus
 from .models                        import ReceiveOutOfBandStatus
+from .models                        import ReceiveStatus
 
 
 @api_view
@@ -49,12 +49,12 @@ def send(_request, client_message):
 @api_view
 @require_POST
 def receive(request, _message):
+    current_time = int(datetime.datetime.now().timestamp())
     last_undelivered_message_status = ReceiveStatus.objects.filter(delivered = False).order_by('timestamp').last()
     if last_undelivered_message_status is None:
         last_delivered_message_status = ReceiveStatus.objects.all().order_by('timestamp').last()
         if last_delivered_message_status is None:
             return None
-
         if last_delivered_message_status.message.type == message.ForceReportComputedTask.TYPE:
             return handle_receive_delivered_force_report_computed_task(last_delivered_message_status)
         if last_delivered_message_status.message.type == message.concents.ForceGetTaskResultUpload.TYPE:
@@ -65,8 +65,6 @@ def receive(request, _message):
             else:
                 return handle_receive_force_get_task_result_failed(decoded_message_data)
         return None
-
-    current_time         = int(datetime.datetime.now().timestamp())
 
     decoded_message_data = deserialize_message(last_undelivered_message_status.message.data.tobytes())
 

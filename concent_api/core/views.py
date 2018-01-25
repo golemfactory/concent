@@ -48,7 +48,7 @@ def send(_request, client_message):
 
 @api_view
 @require_POST
-def receive(_request, _message):
+def receive(request, _message):
     last_undelivered_message_status = ReceiveStatus.objects.filter(delivered = False).order_by('timestamp').last()
     if last_undelivered_message_status is None:
         last_delivered_message_status = ReceiveStatus.objects.all().order_by('timestamp').last()
@@ -82,6 +82,10 @@ def receive(_request, _message):
             decoded_message_data.sig = None
             return decoded_message_data
         return None
+
+    if isinstance(decoded_message_data, message.concents.ForceGetTaskResult):
+        set_message_as_delivered(last_undelivered_message_status)
+        return handle_receive_force_get_task_result_upload_for_provider(request, decoded_message_data)
 
     assert isinstance(decoded_message_data, message.RejectReportComputedTask), (
         "At this point ReceiveStatus must contain ForceReportComputedTask because AckReportComputedTask and RejectReportComputedTask have already been handled"
@@ -286,6 +290,44 @@ def handle_receive_ack_from_force_report_computed_task(decoded_message):
     ack_report_computed_task                 = message.AckReportComputedTask()
     ack_report_computed_task.task_to_compute = decoded_message.task_to_compute
     return ack_report_computed_task
+
+
+def handle_receive_force_get_task_result_upload_for_provider(request, decoded_message: message.concents.ForceGetTaskResult) -> message.concents.ForceGetTaskResult:
+    assert decoded_message.TYPE in message.registered_message_types
+
+    current_time            = int(datetime.datetime.now().timestamp())
+    file_transfer_token     = message.concents.FileTransferToken(
+        timestamp                       = current_time,
+        token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_DEADLINE,
+        storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
+        authorized_client_public_key    = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+        operation                       = 'upload',
+    )
+
+    task_id     = decoded_message.report_computed_task.task_to_compute.compute_task_def['task_id']
+    part_id     = '0'
+    file_path   = '{}/{}/result'.format(task_id, part_id)
+
+    file_transfer_token.files                 = [message.concents.FileTransferToken.FileInfo()]
+    file_transfer_token.files[0]['path']      = file_path
+    file_transfer_token.files[0]['checksum']  = decoded_message.report_computed_task.checksum
+    file_transfer_token.files[0]['size']      = decoded_message.report_computed_task.size
+
+    force_get_task_result_upload = message.concents.ForceGetTaskResultUpload(
+        timestamp               = current_time,
+        force_get_task_result   = decoded_message,
+        file_transfer_token     = file_transfer_token,
+    )
+
+    store_message_and_message_status(
+        force_get_task_result_upload.TYPE,
+        decoded_message.report_computed_task.task_to_compute.compute_task_def['task_id'],
+        force_get_task_result_upload.serialize(),
+        status    = ReceiveStatus,
+        delivered = True,
+    )
+    force_get_task_result_upload.sig = None
+    return force_get_task_result_upload
 
 
 def set_message_as_delivered(client_message):

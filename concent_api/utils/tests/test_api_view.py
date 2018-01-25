@@ -101,7 +101,7 @@ class ApiViewTestCase(TestCase):
         self.assertEqual(response.status_code, 415)                             # pylint: disable=no-member
         self.assertIn('error', json_response)
 
-    def test_api_view_should_return_json_when_view_returns_a_dict(self):
+    def test_api_view_should_return_http_415_when_request_content_type_is_appplication_json(self):
 
         @api_view
         def dummy_view(request, message):                                       # pylint: disable=unused-argument
@@ -112,10 +112,8 @@ class ApiViewTestCase(TestCase):
 
         response = dummy_view(request)                                          # pylint: disable=no-value-for-parameter
 
-        response_dict = json.loads(response.content.decode('ascii'))            # pylint: disable=no-member
         self.assertEqual(response['content-type'], "application/json")
-        self.assertEqual(response.status_code, 200)                             # pylint: disable=no-member
-        self.assertEqual(response_dict, self.message_to_view)
+        self.assertEqual(response.status_code, 415)                             # pylint: disable=no-member
 
     def test_api_view_should_deserialize_json_when_content_type_is_application_json(self):
         message_inside_view = None

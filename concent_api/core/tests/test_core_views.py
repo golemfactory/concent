@@ -10,6 +10,7 @@ from django.http                    import HttpResponse
 from django.http                    import JsonResponse
 from django.utils                   import timezone
 
+from golem_messages                 import settings
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 from golem_messages                 import message
@@ -285,6 +286,46 @@ class CoreViewSendTest(TestCase):
 
         self.assertEqual(reject_response.status_code, 202)
         self.assertEqual(Message.objects.last().type, message.RejectReportComputedTask.TYPE)
+
+    def test_send_should_reject_message_when_timestamp_too_old(self):
+        with freeze_time("2017-11-17 10:00:00"):
+            timestamp = dateutil.parser.parse("2017-11-17 09:40:00")
+            assert datetime.datetime.now() - timestamp > settings.MSG_TTL
+            response = self.client.post(
+                reverse('core:send'),
+                data = dump(
+                    message.Ping(
+                        timestamp=int(timestamp.timestamp())
+                    ),
+                    PROVIDER_PRIVATE_KEY,
+                    CONCENT_PUBLIC_KEY
+                ),
+                content_type                   = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('error', response.json().keys())
+
+    def test_send_should_reject_message_when_timestamp_too_far_in_future(self):
+        with freeze_time("2017-11-17 10:00:00"):
+            timestamp = dateutil.parser.parse("2017-11-17 10:10:00")
+            assert timestamp - datetime.datetime.now() > settings.FUTURE_TIME_TOLERANCE
+            response = self.client.post(
+                reverse('core:send'),
+                data = dump(
+                    message.Ping(
+                        timestamp=int(dateutil.parser.parse("2017-11-17 10:10:00").timestamp())
+                    ),
+                    PROVIDER_PRIVATE_KEY,
+                    CONCENT_PUBLIC_KEY
+                ),
+                content_type                   = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('error', response.json().keys())
 
 
 @override_settings(

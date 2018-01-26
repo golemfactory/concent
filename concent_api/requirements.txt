@@ -3,3 +3,5 @@ psycopg2
 -e git://github.com/golemfactory/golem-messages.git@v1.6.0#egg=golem_messages
 freezegun
 pyyaml
+requests
+mock

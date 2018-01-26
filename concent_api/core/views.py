@@ -1,21 +1,27 @@
 import datetime
 
-from django.http                    import HttpResponse
-from django.views.decorators.http   import require_POST
-from django.utils                   import timezone
+from base64                         import b64encode
+
+import requests
 from django.conf                    import settings
+from django.http                    import HttpResponse
+from django.urls                    import reverse
+from django.utils                   import timezone
+from django.views.decorators.http   import require_POST
 
 from golem_messages                 import message
+from golem_messages                 import shortcuts
 from golem_messages.message.base    import verify_time
 from golem_messages.exceptions      import MessageFromFutureError
 from golem_messages.exceptions      import MessageTooOldError
 from golem_messages.exceptions      import TimestampError
 
+from core                           import exceptions
 from utils.api_view                 import api_view
 from utils.api_view                 import Http400
 from .models                        import Message
-from .models                        import ReceiveStatus
 from .models                        import ReceiveOutOfBandStatus
+from .models                        import ReceiveStatus
 
 
 @api_view
@@ -32,24 +38,33 @@ def send(_request, client_message):
 
     elif isinstance(client_message, message.RejectReportComputedTask):
         return handle_send_reject_report_computed_task(client_message)
+
+    elif isinstance(client_message, message.concents.ForceGetTaskResult) and client_message.report_computed_task is not None:
+        return handle_send_force_get_task_result(client_message)
+
     else:
         return handle_unsupported_golem_messages_type(client_message)
 
 
 @api_view
 @require_POST
-def receive(_request, _message):
+def receive(request, _message):
+    current_time = int(datetime.datetime.now().timestamp())
     last_undelivered_message_status = ReceiveStatus.objects.filter(delivered = False).order_by('timestamp').last()
     if last_undelivered_message_status is None:
         last_delivered_message_status = ReceiveStatus.objects.all().order_by('timestamp').last()
         if last_delivered_message_status is None:
             return None
-
         if last_delivered_message_status.message.type == message.ForceReportComputedTask.TYPE:
             return handle_receive_delivered_force_report_computed_task(last_delivered_message_status)
+        if last_delivered_message_status.message.type == message.concents.ForceGetTaskResultUpload.TYPE:
+            decoded_message_data = deserialize_message(last_delivered_message_status.message.data.tobytes())
+            file_uploaded        = get_file_status(decoded_message_data.file_transfer_token)
+            if file_uploaded:
+                return handle_receive_force_get_task_result_upload_for_requestor(decoded_message_data)
+            else:
+                return handle_receive_force_get_task_result_failed(decoded_message_data)
         return None
-
-    current_time         = int(datetime.datetime.now().timestamp())
 
     decoded_message_data = deserialize_message(last_undelivered_message_status.message.data.tobytes())
 
@@ -72,6 +87,10 @@ def receive(_request, _message):
             decoded_message_data.sig = None
             return decoded_message_data
         return None
+
+    if isinstance(decoded_message_data, message.concents.ForceGetTaskResult):
+        set_message_as_delivered(last_undelivered_message_status)
+        return handle_receive_force_get_task_result_upload_for_provider(request, decoded_message_data)
 
     assert isinstance(decoded_message_data, message.RejectReportComputedTask), (
         "At this point ReceiveStatus must contain ForceReportComputedTask because AckReportComputedTask and RejectReportComputedTask have already been handled"
@@ -217,6 +236,40 @@ def handle_send_reject_report_computed_task(client_message):
         raise Http400("Time to acknowledge this task is already over.")
 
 
+def handle_send_force_get_task_result(client_message: message.concents.ForceGetTaskResult) -> message.concents:
+    assert client_message.TYPE in message.registered_message_types
+
+    current_time = int(datetime.datetime.now().timestamp())
+    validate_golem_message_task_to_compute(client_message.report_computed_task.task_to_compute)
+
+    if Message.objects.filter(
+        type    = client_message.TYPE,
+        task_id = client_message.report_computed_task.task_to_compute.compute_task_def['task_id']
+    ).exists():
+        return message.concents.ForceGetTaskResultRejected(
+            timestamp   = client_message.timestamp,
+            reason      = message.concents.ForceGetTaskResultRejected.REASON.OperationAlreadyInitiated,
+        )
+
+    elif client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.FORCE_ACCEPTANCE_TIME < current_time:
+        return message.concents.ForceGetTaskResultRejected(
+            timestamp = client_message.timestamp,
+            reason    = message.concents.ForceGetTaskResultRejected.REASON.AcceptanceTimeLimitExceeded,
+        )
+
+    else:
+        client_message.sig = None
+        store_message_and_message_status(
+            client_message.TYPE,
+            client_message.report_computed_task.task_to_compute.compute_task_def['task_id'],
+            client_message.serialize(),
+            status = ReceiveStatus,
+        )
+        return message.concents.ForceGetTaskResultAck(
+            timestamp = client_message.timestamp,
+        )
+
+
 def handle_unsupported_golem_messages_type(client_message):
     if hasattr(client_message, 'TYPE'):
         raise Http400("This message type ({}) is either not supported or cannot be submitted to Concent.".format(client_message.TYPE))
@@ -244,6 +297,83 @@ def handle_receive_ack_from_force_report_computed_task(decoded_message):
     return ack_report_computed_task
 
 
+def handle_receive_force_get_task_result_upload_for_provider(request, decoded_message: message.concents.ForceGetTaskResult) -> message.concents.ForceGetTaskResult:
+    assert decoded_message.TYPE in message.registered_message_types
+
+    current_time            = int(datetime.datetime.now().timestamp())
+    file_transfer_token     = message.concents.FileTransferToken(
+        timestamp                       = current_time,
+        token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_DEADLINE,
+        storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
+        authorized_client_public_key    = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+        operation                       = 'upload',
+    )
+
+    task_id     = decoded_message.report_computed_task.task_to_compute.compute_task_def['task_id']
+    part_id     = '0'
+    file_path   = '{}/{}/result'.format(task_id, part_id)
+
+    file_transfer_token.files                 = [message.concents.FileTransferToken.FileInfo()]
+    file_transfer_token.files[0]['path']      = file_path
+    file_transfer_token.files[0]['checksum']  = decoded_message.report_computed_task.checksum
+    file_transfer_token.files[0]['size']      = decoded_message.report_computed_task.size
+
+    force_get_task_result_upload = message.concents.ForceGetTaskResultUpload(
+        timestamp               = current_time,
+        force_get_task_result   = decoded_message,
+        file_transfer_token     = file_transfer_token,
+    )
+
+    store_message_and_message_status(
+        force_get_task_result_upload.TYPE,
+        decoded_message.report_computed_task.task_to_compute.compute_task_def['task_id'],
+        force_get_task_result_upload.serialize(),
+        status    = ReceiveStatus,
+        delivered = True,
+    )
+    force_get_task_result_upload.sig = None
+    return force_get_task_result_upload
+
+
+def handle_receive_force_get_task_result_failed(decoded_message: message.concents.ForceGetTaskResultUpload) -> message.concents.ForceGetTaskResultUpload:
+    assert decoded_message.TYPE in message.registered_message_types
+
+    current_time = int(datetime.datetime.now().timestamp())
+    force_get_task_result_failed = message.concents.ForceGetTaskResultFailed(
+        timestamp       = current_time
+    )
+    force_get_task_result_failed.task_to_compute = decoded_message.force_get_task_result.report_computed_task.task_to_compute
+    store_message_and_message_status(
+        force_get_task_result_failed.TYPE,
+        force_get_task_result_failed.task_to_compute.compute_task_def['task_id'],
+        force_get_task_result_failed.serialize(),
+        status    = ReceiveStatus,
+        delivered = True,
+    )
+    force_get_task_result_failed.sig = None
+    return force_get_task_result_failed
+
+
+def handle_receive_force_get_task_result_upload_for_requestor(decoded_message: message.concents.ForceGetTaskResultUpload) -> message.concents.ForceGetTaskResultUpload:
+    assert decoded_message.TYPE in message.registered_message_types
+
+    current_time = int(datetime.datetime.now().timestamp())
+    decoded_message.timestamp                                      = current_time
+    decoded_message.file_transfer_token.timestamp                  = current_time
+    decoded_message.file_transfer_token.token_expiration_deadline  = current_time + settings.TOKEN_EXPIRATION_DEADLINE
+    decoded_message.file_transfer_token.operation                  = 'download'
+
+    store_message_and_message_status(
+        decoded_message.TYPE,
+        decoded_message.force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'],
+        decoded_message.serialize(),
+        status    = ReceiveStatus,
+        delivered = True,
+    )
+    decoded_message.sig = None
+    return decoded_message
+
+
 def set_message_as_delivered(client_message):
     client_message.delivered = True
     client_message.full_clean()
@@ -265,6 +395,7 @@ def handle_receive_out_of_band_ack_report_computed_task(undelivered_message):
         decoded_ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
         message_verdict.serialize(),
         status = ReceiveOutOfBandStatus,
+        delivered = True
     )
     message_verdict.sig = None
     return message_verdict
@@ -285,6 +416,7 @@ def handle_receive_out_of_band_force_report_computed_task(undelivered_message):
         decoded_force_report_computed_task.task_to_compute.compute_task_def['task_id'],
         message_verdict.serialize(),
         status = ReceiveOutOfBandStatus,
+        delivered = True
     )
     message_verdict.sig = None
     return message_verdict
@@ -301,7 +433,8 @@ def handle_receive_out_of_band_reject_report_computed_task(undelivered_message):
         message_verdict.TYPE,
         decoded_reject_report_computed_task.cannot_compute_task.task_to_compute.compute_task_def['task_id'],
         message_verdict.serialize(),
-        status = ReceiveOutOfBandStatus
+        status = ReceiveOutOfBandStatus,
+        delivered = True
     )
     message_verdict.sig = None
     return message_verdict
@@ -353,7 +486,10 @@ def validate_golem_message_timestamp(timestamp):
         raise Http400(exception)
 
 
-def store_message_and_message_status(golem_message_type, task_id, raw_golem_message, status = None):
+def store_message_and_message_status(golem_message_type: int, task_id, raw_golem_message: bytes, status = None, delivered: bool = False):
+    assert golem_message_type   in message.registered_message_types
+    assert status               in [ReceiveStatus, ReceiveOutOfBandStatus, None]
+
     message_timestamp = datetime.datetime.now(timezone.utc)
     golem_message = Message(
         type        = golem_message_type,
@@ -364,21 +500,50 @@ def store_message_and_message_status(golem_message_type, task_id, raw_golem_mess
     golem_message.full_clean()
     golem_message.save()
 
-    if status == ReceiveStatus:
-        receive_message_status  = ReceiveStatus(
+    if status is not None:
+        receive_message_status  = status(
             message     = golem_message,
-            timestamp   = message_timestamp
+            timestamp   = message_timestamp,
+            delivered   = delivered
         )
         receive_message_status.full_clean()
         receive_message_status.save()
 
-    elif status == ReceiveOutOfBandStatus:
-        receive_out_of_band_status = ReceiveOutOfBandStatus(
-            message     = golem_message,
-            timestamp   = message_timestamp,
-            delivered   = True
-        )
-        receive_out_of_band_status.full_clean()
-        receive_out_of_band_status.save()
+
+def get_file_status(file_transfer_token_from_database: message.concents.FileTransferToken) -> bool:
+    slash = '/'
+    assert len(file_transfer_token_from_database.files) == 1
+    assert not file_transfer_token_from_database.files[0]['path'].startswith(slash)
+    assert settings.STORAGE_CLUSTER_ADDRESS.endswith(slash)
+
+    current_time = int(datetime.datetime.now().timestamp())
+    file_transfer_token = message.concents.FileTransferToken(
+        timestamp                       = current_time,
+        token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_DEADLINE,
+        storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
+        authorized_client_public_key    = settings.CONCENT_PUBLIC_KEY,
+        operation                       = 'download',
+    )
+
+    file_transfer_token.files                 = [message.concents.FileTransferToken.FileInfo()]
+    file_transfer_token.files[0]['path']      = file_transfer_token_from_database.files[0]['path']
+    file_transfer_token.files[0]['checksum']  = file_transfer_token_from_database.files[0]['checksum']
+    file_transfer_token.files[0]['size']      = file_transfer_token_from_database.files[0]['size']
+
+    dumped_file_transfer_token = shortcuts.dump(file_transfer_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+    headers = {
+        'Authorization':                'Golem ' + b64encode(dumped_file_transfer_token).decode(),
+        'Concent-Client-Public-Key':    b64encode(settings.CONCENT_PUBLIC_KEY).decode(),
+    }
+    request_http_address = settings.STORAGE_CLUSTER_ADDRESS + reverse('gatekeeper:download') + file_transfer_token.files[0]['path']
+
+    cluster_storage_response = requests.head(
+        request_http_address,
+        headers = headers
+    )
+    if cluster_storage_response.status_code == 200:
+        return True
+    elif cluster_storage_response.status_code == 404:
+        return False
     else:
-        return None
+        raise exceptions.UnexpectedResponse()

@@ -5,6 +5,7 @@ from django.test                    import override_settings
 from django.test                    import TestCase
 from django.urls                    import reverse
 
+from golem_messages.cryptography    import ecdsa_verify
 from golem_messages.shortcuts       import dump
 from golem_messages                 import message
 
@@ -105,4 +106,20 @@ class ApiViewsIntegrationTest(TestCase):
         )
 
         self.assertEqual(response.status_code,  400)
+        self.assertIn('error', response.json().keys())
+
+    def test_any_message_to_concent_report_wrong_signature_returns_400_error(self):
+        """
+        Tests if a golem message to Concent signed with a wrong key returns HTTP 400 error.
+        """
+
+        assert ecdsa_verify(PROVIDER_PUBLIC_KEY, self.dummy_message_to_concent.sig, self.dummy_message_to_concent.get_short_hash())
+        response = self.client.post(
+            reverse('core:send'),
+            data                           = self.serialized_dummy_message_to_concent,
+            content_type                   = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+        )
+
+        self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json().keys())

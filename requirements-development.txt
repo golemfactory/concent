@@ -7,7 +7,7 @@ pipdeptree
 flake8
 pylint-django
 requests
-mypy==0.560
+mypy
 coverage
 
 # Force the latest version of pylint pyflakes and pep8. There are numerous issues with older versions.

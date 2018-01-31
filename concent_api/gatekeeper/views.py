@@ -4,9 +4,11 @@ from base64                         import b64decode
 from base64                         import b64encode
 import json
 import logging
+from typing                         import Union
 
 from django.conf                    import settings
 from django.http                    import JsonResponse
+from django.core.handlers.wsgi      import WSGIRequest
 from django.core.validators         import URLValidator
 from django.core.exceptions         import ValidationError
 from django.urls                    import reverse
@@ -15,6 +17,7 @@ from django.views.decorators.http   import require_POST
 from django.views.decorators.http   import require_safe
 
 from golem_messages.exceptions      import MessageError
+from golem_messages.message         import FileTransferToken
 from golem_messages.message         import Message
 from golem_messages.shortcuts       import load
 
@@ -32,14 +35,17 @@ def upload(request):
         return gatekeeper_access_denied_response('Unsupported content type.')
 
     path_to_file = request.get_full_path().partition(reverse('gatekeeper:upload'))[2]
-    response = parse_headers(request, path_to_file)
-    if response is not None:
-        logger.info(json.loads(response.content.decode())['message'])
-        return response
+    response_or_file_info = parse_headers(request, path_to_file)
+    if not isinstance(response_or_file_info, FileTransferToken.FileInfo):
+        assert isinstance(response_or_file_info, JsonResponse)
+        logger.info(json.loads(response_or_file_info.content.decode())['message'])
+        return response_or_file_info
     logger.info('Request passed all upload validations.')
+    response                           = JsonResponse({"message": "Request passed all upload validations."}, status = 200)
+    response["Concent-File-Size"]      = response_or_file_info["size"]
+    response["Concent-File-Checksum"]  = response_or_file_info["checksum"]
 
-    return JsonResponse({"message": "Request passed all upload validations."}, status = 200)
-
+    return response
 
 @csrf_exempt
 @require_safe
@@ -53,16 +59,17 @@ def download(request):
         return gatekeeper_access_denied_response('Download request cannot have data in the body.')
 
     path_to_file = request.get_full_path().partition(reverse('gatekeeper:download'))[2]
-    response = parse_headers(request, path_to_file)
-    if response is not None:
-        logger.info(json.loads(response.content.decode())['message'])
-        return response
+    response_or_file_info = parse_headers(request, path_to_file)
+    if not isinstance(response_or_file_info, FileTransferToken.FileInfo):
+        assert isinstance(response_or_file_info, JsonResponse)
+        logger.info(json.loads(response_or_file_info.content.decode())['message'])
+        return response_or_file_info
     logger.info('Request passed all download validations.')
 
     return JsonResponse({"message": "Request passed all download validations."}, status = 200)
 
 
-def parse_headers(request, path_to_file):
+def parse_headers(request: WSGIRequest, path_to_file: str) -> Union[FileTransferToken.FileInfo, JsonResponse]:
     # Decode and check if request header contains a golem message:
     if 'HTTP_AUTHORIZATION' not in request.META:
         return gatekeeper_access_denied_response("Missing 'Authorization' header.", path_to_file)
@@ -142,10 +149,11 @@ def parse_headers(request, path_to_file):
     # -FILES
     if not all(isinstance(file, dict) for file in loaded_golem_message.files):
         return gatekeeper_access_denied_response('Wrong type of files variable.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
-    transfer_token_paths_to_files = []
-    for file in loaded_golem_message.files:
-        transfer_token_paths_to_files.append(file['path'])
-    if path_to_file not in transfer_token_paths_to_files:
-        return gatekeeper_access_denied_response('Path to specified file is not listed in files variable.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
 
-    return None
+    matching_files = [file for file in loaded_golem_message.files if path_to_file == file['path']]
+
+    if len(matching_files) == 1:
+        return matching_files[0]
+    else:
+        assert len(matching_files) == 0
+        return gatekeeper_access_denied_response('Path to specified file is not listed in files variable.', path_to_file, loaded_golem_message.subtask_id, client_public_key)

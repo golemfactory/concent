@@ -30,7 +30,7 @@ class GatekeeperViewUploadTest(TestCase):
 
         self.upload_token.files                 = [FileTransferToken.FileInfo()]
         self.upload_token.files[0]['path']      = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
-        self.upload_token.files[0]['checksum']  = '098f6bcd4621d373cade4e832627b4f6'
+        self.upload_token.files[0]['checksum']  = 'sha1:098f6bcd4621d373cade4e832627b4f6'
         self.upload_token.files[0]['size']      = 1024
         self.upload_token.operation             = 'upload'
 
@@ -50,6 +50,9 @@ class GatekeeperViewUploadTest(TestCase):
 
         self.assertIsInstance(response, JsonResponse)
         self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.has_header("Concent-File-Size"))
+        self.assertTrue(response.has_header("Concent-File-Checksum"))
+        self.assertEqual("application/json", response["Content-Type"])
 
     @freeze_time("2018-12-30 11:00:00")
     def test_upload_should_return_401_if_wrong_request_content_type(self):
@@ -125,6 +128,9 @@ class GatekeeperViewDownloadTest(TestCase):
 
         self.assertIsInstance(response, JsonResponse)
         self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.has_header("Concent-File-Size"))
+        self.assertFalse(response.has_header("Concent-File-Checksum"))
+        self.assertEqual("application/json", response["Content-Type"])
 
     @freeze_time("2018-12-30 11:00:00")
     def test_download_should_return_401_if_wrong_authorization_header(self):

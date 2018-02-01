@@ -40,6 +40,9 @@ def send(request, client_message):
     elif isinstance(client_message, message.concents.ForceGetTaskResult) and client_message.report_computed_task is not None:
         return handle_send_force_get_task_result(request, client_message)
 
+    elif isinstance(client_message, message.concents.ForceSubtaskResults) and client_message.ack_report_computed_task is not None:
+        return handle_send_force_subtask_results(client_message, request)
+
     else:
         return handle_unsupported_golem_messages_type(client_message)
 
@@ -371,6 +374,46 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
                 encrypted = False,
             )
         )
+
+
+def handle_send_force_subtask_results(client_message: message.concents.ForceSubtaskResults, request):
+    assert client_message.TYPE in message.registered_message_types
+
+    current_time = int(datetime.datetime.now().timestamp())
+
+    if Message.objects.filter(
+        type    = client_message.TYPE,
+        task_id = client_message.ack_report_computed_task.task_to_compute.compute_task_def['task_id']
+    ).exists():
+        return message.concents.ServiceRefused(
+            reason      = message.concents.ServiceRefused.REASON.DuplicateRequest,
+        )
+
+    if not is_provider_account_status_positive(client_message):
+        if not tmp_is_provider_account_status_positive(request):
+            return message.concents.ServiceRefused(
+                reason      = message.concents.ServiceRefused.REASON.TooSmallProviderDeposit,
+            )
+
+    client_message_send_to_soon = client_message.ack_report_computed_task.timestamp + settings.CONCENT_MESSAGING_TIME
+    client_message_send_to_late = client_message.ack_report_computed_task.timestamp + settings.CONCENT_MESSAGING_TIME + settings.FORCE_ACCEPTANCE_TIME
+    if client_message_send_to_late < current_time:
+        return message.concents.ForceSubtaskResultsRejected(
+            reason = message.concents.ForceSubtaskResultsRejected.REASON.RequestTooLate,
+        )
+    elif current_time < client_message_send_to_soon:
+        return message.concents.ForceSubtaskResultsRejected(
+            reason = message.concents.ForceSubtaskResultsRejected.REASON.RequestPremature,
+        )
+    else:
+        client_message.sig = None
+        store_message_and_message_status(
+            client_message.TYPE,
+            client_message.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
+            client_message.serialize(),
+            status = ReceiveStatus,
+        )
+        return HttpResponse("", status = 202)
 
 
 def handle_unsupported_golem_messages_type(client_message):
@@ -740,3 +783,13 @@ def decode_other_party_public_key(request):
         return decode_key(request.META['HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY'])
     except binascii.Error:
         raise Http400('The value in the Concent-Other-Party-Public-Key HTTP is not a valid base64-encoded value.')
+
+
+def is_provider_account_status_positive(_message):
+    pass
+
+def tmp_is_provider_account_status_positive(request):
+    try:
+        return bool(request.META['HTTP_TEMPORARY_ACCOUNT_FUNDS'])
+    except KeyError:
+        return False

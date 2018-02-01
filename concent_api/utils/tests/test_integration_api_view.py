@@ -1,5 +1,4 @@
 from base64 import b64encode
-from datetime import datetime
 
 from django.test                    import override_settings
 from django.test                    import TestCase
@@ -24,9 +23,7 @@ from utils.testing_helpers  import generate_ecc_key_pair
 )
 class ApiViewsIntegrationTest(TestCase):
     def setUp(self):
-        self.dummy_message_to_concent = message.Ping(
-            timestamp = int(datetime.now().timestamp()),
-        )
+        self.dummy_message_to_concent = message.Ping()
         self.serialized_dummy_message_to_concent = dump(self.dummy_message_to_concent, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
     def test_any_message_to_concent_report_missing_key_returns_400_error(self):

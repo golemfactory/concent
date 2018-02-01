@@ -3,6 +3,8 @@ from base64                 import b64encode
 from django.conf            import settings
 from django.test            import TestCase
 
+from freezegun              import freeze_time
+
 from golem_messages         import dump
 from golem_messages         import message
 import dateutil.parser
@@ -31,10 +33,10 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_serialized_force_get_task_result(self, report_computed_task, timestamp, requestor_private_key=None):
         """ Returns MessageForceGetTaskResult serialized. """
-        force_get_task_result = message.concents.ForceGetTaskResult(
-            timestamp               = self._parse_iso_date_to_timestamp(timestamp),
-            report_computed_task    = report_computed_task,
-        )
+        with freeze_time(timestamp):
+            force_get_task_result = message.concents.ForceGetTaskResult(
+                report_computed_task    = report_computed_task,
+            )
         return dump(
             force_get_task_result,
             requestor_private_key or self.REQUESTOR_PRIVATE_KEY,
@@ -55,10 +57,10 @@ class ConcentIntegrationTestCase(TestCase):
         compute_task_def                = message.ComputeTaskDef()
         compute_task_def['task_id']     = task_id
         compute_task_def['deadline']    = self._parse_iso_date_to_timestamp(deadline)
-        task_to_compute = message.TaskToCompute(
-            timestamp = self._parse_iso_date_to_timestamp(timestamp),
-            compute_task_def = compute_task_def,
-        )
+        with freeze_time(timestamp):
+            task_to_compute = message.TaskToCompute(
+                compute_task_def = compute_task_def,
+            )
         return task_to_compute
 
     def _parse_iso_date_to_timestamp(self, date_string):  # pylint: disable=no-self-use

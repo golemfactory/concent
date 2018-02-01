@@ -11,10 +11,6 @@ from django.views.decorators.http   import require_POST
 
 from golem_messages                 import message
 from golem_messages                 import shortcuts
-from golem_messages.message.base    import verify_time
-from golem_messages.exceptions      import MessageFromFutureError
-from golem_messages.exceptions      import MessageTooOldError
-from golem_messages.exceptions      import TimestampError
 from golem_messages.datastructures  import MessageHeader
 
 from core                           import exceptions
@@ -29,9 +25,6 @@ from .models                        import ReceiveStatus
 @api_view
 @require_POST
 def send(_request, client_message):
-    if client_message is not None:
-        validate_golem_message_timestamp(client_message.timestamp)
-
     if isinstance(client_message, message.ForceReportComputedTask):
         return handle_send_force_report_computed_task(client_message)
 
@@ -523,17 +516,6 @@ def validate_task_id(task_id):
 
     if len(task_id) > MESSAGE_TASK_ID_MAX_LENGTH:
         raise Http400("task_id cannot be longer than {} chars.".format(MESSAGE_TASK_ID_MAX_LENGTH))
-
-
-def validate_golem_message_timestamp(timestamp):
-    try:
-        verify_time(timestamp)
-    except MessageFromFutureError:
-        raise Http400('Message timestamp too far in the future.')
-    except MessageTooOldError:
-        raise Http400('Message is too old.')
-    except TimestampError as exception:
-        raise Http400(exception)
 
 
 def store_message_and_message_status(golem_message_type: int, task_id: str, raw_golem_message: bytes, status = None, delivered: bool = False):

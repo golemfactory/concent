@@ -90,6 +90,40 @@ class GatekeeperViewUploadTest(TestCase):
         self.assertEqual(response.status_code, 401)
         self.assertIn('message', response.json().keys())
 
+    @freeze_time("2018-12-30 11:00:00")
+    def test_upload_should_return_401_if_file_paths_are_not_unique(self):
+        file1 = FileTransferToken.FileInfo(
+            path     = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+            checksum = 'sha1:098f6bcd4621d373cade4e832627b4f6',
+            size     = 1024,
+        )
+
+        file2 = FileTransferToken.FileInfo(
+            path     = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+            checksum = 'sha1:098f6bcd4621d373cade4e832627b4f6',
+            size     = 1024,
+        )
+
+        self.upload_token.files = [file1, file2]
+        assert file1 == file2
+
+        golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+        encoded_token = b64encode(golem_upload_token).decode()
+        response = self.client.post(
+            '{}{}'.format(
+                reverse('gatekeeper:upload'),
+                'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
+            ),
+            HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
+            content_type                   = 'application/x-www-form-urlencoded',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key
+        )
+
+        self.assertIsInstance(response, JsonResponse)
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('message', response.json().keys())
+        self.assertEqual("application/json", response["Content-Type"])
+
 
 @override_settings(
     CONCENT_PRIVATE_KEY = b'l\xcdh\x19\xeb$>\xbcG\xa1\xc7v\xe8\xd7o\x0c\xbf\x0e\x0fM\x89lw\x1e\xd7K\xd6Hnv$\xa2',
@@ -174,3 +208,36 @@ class GatekeeperViewDownloadTest(TestCase):
         self.assertIsInstance(response, JsonResponse)
         self.assertEqual(response.status_code, 401)
         self.assertIn('message', response.json().keys())
+
+    @freeze_time("2018-12-30 11:00:00")
+    def test_download_should_return_401_if_file_paths_are_not_unique(self):
+        file1 = FileTransferToken.FileInfo(
+            path     = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+            checksum = 'sha1:098f6bcd4621d373cade4e832627b4f6',
+            size     = 1024,
+        )
+
+        file2 = FileTransferToken.FileInfo(
+            path     = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+            checksum = 'sha1:098f6bcd4621d373cade4e832627b4f6',
+            size     = 1024,
+        )
+
+        self.upload_token.files = [file1, file2]
+        assert file1 == file2
+
+        golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+        encoded_token = b64encode(golem_upload_token).decode()
+        response = self.client.get(
+            '{}{}'.format(
+                reverse('gatekeeper:download'),
+                'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
+            ),
+            HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key
+        )
+
+        self.assertIsInstance(response, JsonResponse)
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('message', response.json().keys())
+        self.assertEqual("application/json", response["Content-Type"])

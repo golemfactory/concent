@@ -47,6 +47,7 @@ def upload(request):
 
     return response
 
+
 @csrf_exempt
 @require_safe
 def download(request):
@@ -149,6 +150,9 @@ def parse_headers(request: WSGIRequest, path_to_file: str) -> Union[FileTransfer
     # -FILES
     if not all(isinstance(file, dict) for file in loaded_golem_message.files):
         return gatekeeper_access_denied_response('Wrong type of files variable.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
+    transfer_token_paths_to_files = [file["path"] for file in loaded_golem_message.files]
+    if len(transfer_token_paths_to_files) != len(set(transfer_token_paths_to_files)):
+        return gatekeeper_access_denied_response('File paths in the token must be unique', path_to_file, loaded_golem_message.subtask_id, client_public_key)
 
     matching_files = [file for file in loaded_golem_message.files if path_to_file == file['path']]
 

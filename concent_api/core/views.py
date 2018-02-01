@@ -15,6 +15,7 @@ from golem_messages.message.base    import verify_time
 from golem_messages.exceptions      import MessageFromFutureError
 from golem_messages.exceptions      import MessageTooOldError
 from golem_messages.exceptions      import TimestampError
+from golem_messages.datastructures  import MessageHeader
 
 from core                           import exceptions
 from utils.api_view                 import api_view
@@ -150,7 +151,13 @@ def handle_send_force_report_computed_task(client_message):
         raise Http400("{} is already being processed for this task.".format(client_message.__class__.__name__))
 
     if client_message.task_to_compute.compute_task_def['deadline'] < current_time:
-        reject_force_report_computed_task                 = message.RejectReportComputedTask(timestamp = client_message.timestamp)
+        reject_force_report_computed_task                 = message.RejectReportComputedTask(
+            header = MessageHeader(
+                type_     = message.RejectReportComputedTask.TYPE,
+                timestamp = client_message.timestamp,
+                encrypted = False,
+            )
+        )
         reject_force_report_computed_task.reason          = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
         reject_force_report_computed_task.task_to_compute = client_message.task_to_compute
         return reject_force_report_computed_task
@@ -248,13 +255,21 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
         task_id = client_message.report_computed_task.task_to_compute.compute_task_def['task_id']
     ).exists():
         return message.concents.ForceGetTaskResultRejected(
-            timestamp   = client_message.timestamp,
+            header = MessageHeader(
+                type_     = message.concents.ForceGetTaskResultRejected.TYPE,
+                timestamp = client_message.timestamp,
+                encrypted = False,
+            ),
             reason      = message.concents.ForceGetTaskResultRejected.REASON.OperationAlreadyInitiated,
         )
 
     elif client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.FORCE_ACCEPTANCE_TIME < current_time:
         return message.concents.ForceGetTaskResultRejected(
-            timestamp = client_message.timestamp,
+            header = MessageHeader(
+                type_     = message.concents.ForceGetTaskResultRejected.TYPE,
+                timestamp = client_message.timestamp,
+                encrypted = False,
+            ),
             reason    = message.concents.ForceGetTaskResultRejected.REASON.AcceptanceTimeLimitExceeded,
         )
 
@@ -267,7 +282,11 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
             status = ReceiveStatus,
         )
         return message.concents.ForceGetTaskResultAck(
-            timestamp = client_message.timestamp,
+            header = MessageHeader(
+                type_     = message.concents.ForceGetTaskResultAck.TYPE,
+                timestamp = client_message.timestamp,
+                encrypted = False,
+            )
         )
 
 
@@ -303,12 +322,13 @@ def handle_receive_force_get_task_result_upload_for_provider(request, decoded_me
 
     current_time            = int(datetime.datetime.now().timestamp())
     file_transfer_token     = message.concents.FileTransferToken(
-        timestamp                       = current_time,
         token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_DEADLINE,
         storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
         authorized_client_public_key    = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
         operation                       = 'upload',
     )
+
+    assert file_transfer_token.timestamp <= file_transfer_token.token_expiration_deadline  # pylint: disable=no-member
 
     task_id     = decoded_message.report_computed_task.task_to_compute.compute_task_def['task_id']
     part_id     = '0'
@@ -320,7 +340,6 @@ def handle_receive_force_get_task_result_upload_for_provider(request, decoded_me
     file_transfer_token.files[0]['size']      = decoded_message.report_computed_task.size
 
     force_get_task_result_upload = message.concents.ForceGetTaskResultUpload(
-        timestamp               = current_time,
         force_get_task_result   = decoded_message,
         file_transfer_token     = file_transfer_token,
     )
@@ -339,10 +358,7 @@ def handle_receive_force_get_task_result_upload_for_provider(request, decoded_me
 def handle_receive_force_get_task_result_failed(decoded_message: message.concents.ForceGetTaskResultUpload) -> message.concents.ForceGetTaskResultUpload:
     assert decoded_message.TYPE in message.registered_message_types
 
-    current_time = int(datetime.datetime.now().timestamp())
-    force_get_task_result_failed = message.concents.ForceGetTaskResultFailed(
-        timestamp       = current_time
-    )
+    force_get_task_result_failed = message.concents.ForceGetTaskResultFailed()
     force_get_task_result_failed.task_to_compute = decoded_message.force_get_task_result.report_computed_task.task_to_compute
     store_message_and_message_status(
         force_get_task_result_failed.TYPE,
@@ -359,20 +375,30 @@ def handle_receive_force_get_task_result_upload_for_requestor(decoded_message: m
     assert decoded_message.TYPE in message.registered_message_types
 
     current_time = int(datetime.datetime.now().timestamp())
-    decoded_message.timestamp                                      = current_time
-    decoded_message.file_transfer_token.timestamp                  = current_time
-    decoded_message.file_transfer_token.token_expiration_deadline  = current_time + settings.TOKEN_EXPIRATION_DEADLINE
-    decoded_message.file_transfer_token.operation                  = 'download'
+    file_transfer_token = message.concents.FileTransferToken(
+        token_expiration_deadline    = current_time + settings.TOKEN_EXPIRATION_DEADLINE,
+        storage_cluster_address      = decoded_message.file_transfer_token.storage_cluster_address,
+        authorized_client_public_key = decoded_message.file_transfer_token.authorized_client_public_key,
+        operation                    = 'download',
+        files                        = decoded_message.file_transfer_token.files,
+    )
+
+    assert file_transfer_token.timestamp <= file_transfer_token.token_expiration_deadline  # pylint: disable=no-member
+
+    force_get_task_result_upload = message.concents.ForceGetTaskResultUpload(
+        file_transfer_token   = file_transfer_token,
+    )
+    force_get_task_result_upload.force_get_task_result = decoded_message.force_get_task_result
 
     store_message_and_message_status(
-        decoded_message.TYPE,
-        decoded_message.force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'],
-        decoded_message.serialize(),
+        force_get_task_result_upload.TYPE,
+        force_get_task_result_upload.force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'],
+        force_get_task_result_upload.serialize(),
         status    = ReceiveStatus,
         delivered = True,
     )
-    decoded_message.sig = None
-    return decoded_message
+    force_get_task_result_upload.sig = None
+    return force_get_task_result_upload
 
 
 def set_message_as_delivered(client_message):
@@ -542,12 +568,13 @@ def get_file_status(file_transfer_token_from_database: message.concents.FileTran
 
     current_time = int(datetime.datetime.now().timestamp())
     file_transfer_token = message.concents.FileTransferToken(
-        timestamp                       = current_time,
         token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_DEADLINE,
         storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
         authorized_client_public_key    = settings.CONCENT_PUBLIC_KEY,
         operation                       = 'download',
     )
+
+    assert file_transfer_token.timestamp <= file_transfer_token.token_expiration_deadline  # pylint: disable=no-member
 
     file_transfer_token.files                 = [message.concents.FileTransferToken.FileInfo()]
     file_transfer_token.files[0]['path']      = file_transfer_token_from_database.files[0]['path']

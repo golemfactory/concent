@@ -12,6 +12,7 @@ from django.views.decorators.http   import require_POST
 from golem_messages                 import message
 from golem_messages                 import shortcuts
 from golem_messages.datastructures  import MessageHeader
+from golem_messages.exceptions      import MessageError
 
 from core                           import exceptions
 from utils.api_view                 import api_view
@@ -461,11 +462,14 @@ def handle_receive_out_of_band_reject_report_computed_task(undelivered_message):
 
 
 def deserialize_message(raw_message_data):
-    return message.Message.deserialize(
-        raw_message_data,
-        None,
-        check_time = False
-    )
+    try:
+        return message.Message.deserialize(
+            raw_message_data,
+            None,
+            check_time = False
+        )
+    except MessageError as exception:
+        raise Http400("Unable to deserialize Golem Message: {}.".format(exception))
 
 
 def validate_golem_message_task_to_compute(data):

@@ -14,6 +14,7 @@ from django.views.decorators.csrf   import csrf_exempt
 from django.views.decorators.http   import require_POST
 from django.views.decorators.http   import require_safe
 
+from golem_messages.exceptions      import MessageError
 from golem_messages.message         import Message
 from golem_messages.shortcuts       import load
 
@@ -84,9 +85,7 @@ def parse_headers(request, path_to_file):
 
     try:
         loaded_golem_message = load(decoded_auth_header_content, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY, check_time = False)
-    # FIXME: We want to catch only exceptions caused by malformed messages but golem-messages does not have specialized
-    # exception classes for that. It simply raises AttributeError.
-    except AttributeError:
+    except MessageError:
         return gatekeeper_access_denied_response("Token in the 'Authorization' header is not a valid Golem message.", path_to_file)
 
     if loaded_golem_message is None:

@@ -47,15 +47,28 @@ def send(request, client_message):
 @api_view
 @require_POST
 def receive(request, _message):
-    current_time = int(datetime.datetime.now().timestamp())
-    last_undelivered_message_status = ReceiveStatus.objects.filter(delivered = False).order_by('timestamp').last()
+    current_time      = int(datetime.datetime.now().timestamp())
+    client_public_key = decode_client_public_key(request)
+    last_undelivered_message_status = ReceiveStatus.objects.filter_public_key(
+        request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
+    ).filter(delivered = False).order_by('timestamp').last()
     if last_undelivered_message_status is None:
-        last_delivered_message_status = ReceiveStatus.objects.all().order_by('timestamp').last()
+        last_delivered_message_status = ReceiveStatus.objects.filter_public_key(
+            request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
+        ).order_by('timestamp').last()
         if last_delivered_message_status is None:
             return None
-        if last_delivered_message_status.message.type == message.ForceReportComputedTask.TYPE:
+
+        if (
+            last_delivered_message_status.message.type                           == message.ForceReportComputedTask.TYPE and
+            last_delivered_message_status.message.auth.provider_public_key_bytes == client_public_key
+        ):
             return handle_receive_delivered_force_report_computed_task(request, last_delivered_message_status)
-        if last_delivered_message_status.message.type == message.concents.ForceGetTaskResultUpload.TYPE:
+
+        if (
+            last_delivered_message_status.message.type                            == message.concents.ForceGetTaskResultUpload.TYPE and
+            last_delivered_message_status.message.auth.requestor_public_key_bytes == client_public_key
+        ):
             decoded_message_data = deserialize_message(last_delivered_message_status.message.data.tobytes())
             file_uploaded        = get_file_status(decoded_message_data.file_transfer_token)
             if file_uploaded:
@@ -78,24 +91,34 @@ def receive(request, _message):
     assert last_undelivered_message_status.message.type == decoded_message_data.TYPE
 
     if last_undelivered_message_status.message.type == message.ForceReportComputedTask.TYPE:
+        if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
+            return None
         if decoded_message_data.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME < current_time:
             set_message_as_delivered(last_undelivered_message_status)
             return handle_receive_ack_from_force_report_computed_task(decoded_message_data)
     else:
-        set_message_as_delivered(last_undelivered_message_status)
+        if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
+            set_message_as_delivered(last_undelivered_message_status)
 
     if isinstance(decoded_message_data, message.ForceReportComputedTask):
+        if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
+            return None
         set_message_as_delivered(last_undelivered_message_status)
         decoded_message_data.sig = None
         return decoded_message_data
 
     if isinstance(decoded_message_data, message.AckReportComputedTask):
-        if current_time <= decoded_message_data.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
+        if (
+            current_time <= decoded_message_data.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME and
+            client_public_key == last_undelivered_message_status.message.auth.provider_public_key_bytes
+        ):
             decoded_message_data.sig = None
             return decoded_message_data
         return None
 
     if isinstance(decoded_message_data, message.concents.ForceGetTaskResult):
+        if client_public_key != last_undelivered_message_status.message.auth.provider_public_key_bytes:
+            return None
         set_message_as_delivered(last_undelivered_message_status)
         return handle_receive_force_get_task_result_upload_for_provider(
             request,
@@ -106,6 +129,9 @@ def receive(request, _message):
     assert isinstance(decoded_message_data, message.RejectReportComputedTask), (
         "At this point ReceiveStatus must contain ForceReportComputedTask because AckReportComputedTask and RejectReportComputedTask have already been handled"
     )
+
+    if client_public_key != last_undelivered_message_status.message.auth.provider_public_key_bytes:
+        return None
 
     force_report_computed_task = Message.objects.get(
         type    = message.ForceReportComputedTask.TYPE,
@@ -125,12 +151,14 @@ def receive(request, _message):
 
 @api_view
 @require_POST
-def receive_out_of_band(_request, _message):
+def receive_out_of_band(request, _message):
     undelivered_receive_out_of_band_statuses    = ReceiveOutOfBandStatus.objects.filter(delivered = False)
     last_undelivered_receive_out_of_band_status = undelivered_receive_out_of_band_statuses.order_by('timestamp').last()
-    last_undelivered_receive_status             = Message.objects.all().order_by('timestamp').last()
+    last_undelivered_receive_status             = Message.objects.filter(
+        auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+    ).order_by('timestamp').last()
 
-    current_time = int(datetime.datetime.now().timestamp())
+    current_time      = int(datetime.datetime.now().timestamp())
 
     if last_undelivered_receive_out_of_band_status is None:
         if last_undelivered_receive_status is None:
@@ -140,13 +168,13 @@ def receive_out_of_band(_request, _message):
             return None
 
         if last_undelivered_receive_status.type == message.AckReportComputedTask.TYPE:
-            return handle_receive_out_of_band_ack_report_computed_task(last_undelivered_receive_status)
+            return handle_receive_out_of_band_ack_report_computed_task(request, last_undelivered_receive_status)
 
         if last_undelivered_receive_status.type == message.ForceReportComputedTask.TYPE:
-            return handle_receive_out_of_band_force_report_computed_task(last_undelivered_receive_status)
+            return handle_receive_out_of_band_force_report_computed_task(request, last_undelivered_receive_status)
 
         if last_undelivered_receive_status.type == message.RejectReportComputedTask.TYPE:
-            return handle_receive_out_of_band_reject_report_computed_task(last_undelivered_receive_status)
+            return handle_receive_out_of_band_reject_report_computed_task(request, last_undelivered_receive_status)
         return None
 
     return None

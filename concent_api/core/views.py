@@ -1,6 +1,6 @@
-import datetime
-
 from base64                         import b64encode
+import binascii
+import datetime
 
 import requests
 from django.conf                    import settings
@@ -17,6 +17,7 @@ from core                           import exceptions
 from gatekeeper.constants           import GATEKEEPER_DOWNLOAD_PATH
 from utils.api_view                 import api_view
 from utils.api_view                 import Http400
+from utils.helpers                  import decode_key
 from .constants                     import MESSAGE_TASK_ID_MAX_LENGTH
 from .models                        import Message
 from .models                        import ReceiveOutOfBandStatus
@@ -586,3 +587,17 @@ def get_file_status(file_transfer_token_from_database: message.concents.FileTran
         return False
     else:
         raise exceptions.UnexpectedResponse()
+
+
+def decode_client_public_key(request):
+    assert 'HTTP_CONCENT_CLIENT_PUBLIC_KEY' in request.META
+    return decode_key(request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'])
+
+
+def decode_other_party_public_key(request):
+    if 'HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY' not in request.META:
+        raise Http400('Missing Concent-Other-Party-Public-Key HTTP when expected.')
+    try:
+        return decode_key(request.META['HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY'])
+    except binascii.Error:
+        raise Http400('The value in the Concent-Other-Party-Public-Key HTTP is not a valid base64-encoded value.')

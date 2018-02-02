@@ -129,6 +129,13 @@ def receive(request, _message):
             last_undelivered_message_status,
         )
 
+    if isinstance(decoded_message_data, message.concents.ForceSubtaskResults):
+        set_message_as_delivered(last_undelivered_message_status)
+        if current_time < decoded_message_data.timestamp + settings.CONCENT_MESSAGING_TIME:
+            return handle_receive_force_subtasks_results(decoded_message_data)
+        decoded_message_data.sig = None
+        return decoded_message_data
+
     assert isinstance(decoded_message_data, message.RejectReportComputedTask), (
         "At this point ReceiveStatus must contain ForceReportComputedTask because AckReportComputedTask and RejectReportComputedTask have already been handled"
     )
@@ -549,6 +556,24 @@ def handle_receive_force_get_task_result_upload_for_requestor(
     )
     force_get_task_result_upload.sig = None
     return force_get_task_result_upload
+
+def handle_receive_force_subtasks_results(decoded_message: message.concents.ForceSubtaskResults):
+    assert decoded_message.TYPE in message.registered_message_types
+
+    current_time                                                = int(datetime.datetime.now().timestamp())
+    requestor_force_subtask_results                             = message.concents.ForceSubtaskResults()
+    requestor_force_subtask_results.timestamp                   = current_time
+    requestor_force_subtask_results.ack_report_computed_task    = decoded_message.ack_report_computed_task
+
+    store_message_and_message_status(
+        requestor_force_subtask_results.TYPE,
+        decoded_message.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
+        requestor_force_subtask_results.serialize(),
+        status    = ReceiveStatus,
+        delivered = True,
+    )
+    requestor_force_subtask_results.sig = None
+    return requestor_force_subtask_results
 
 
 def set_message_as_delivered(client_message):

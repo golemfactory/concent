@@ -43,6 +43,9 @@ def send(request, client_message):
     elif isinstance(client_message, message.concents.ForceSubtaskResults) and client_message.ack_report_computed_task is not None:
         return handle_send_force_subtask_results(client_message, request)
 
+    elif isinstance(client_message, message.concents.ForceSubtaskResultsResponse):
+        return handle_send_force_subtask_results_results_response(request, client_message)
+
     else:
         return handle_unsupported_golem_messages_type(client_message)
 
@@ -421,6 +424,37 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
             status = ReceiveStatus,
         )
         return HttpResponse("", status = 202)
+
+
+def handle_send_force_subtask_results_results_response(request, client_message):
+    assert client_message.TYPE in message.registered_message_types
+
+    current_time      = int(datetime.datetime.now().timestamp())
+    client_public_key = decode_client_public_key(request)
+
+    if isinstance(client_message.subtask_results_accepted, message.tasks.SubtaskResultsAccepted):
+        client_message_task_id = client_message.subtask_results_accepted.subtask_id
+    else:
+        client_message_task_id = client_message.subtask_results_rejected.report_computed_task.subtask_id
+    if current_time < client_message.timestamp + settings.CONCENT_MESSAGING_TIME:
+        force_subtask_results                   = Message.objects.filter(task_id = client_message_task_id, type = message.concents.ForceSubtaskResults.TYPE)
+        previous_force_subtask_results_response = Message.objects.filter(task_id = client_message_task_id, type = message.concents.ForceSubtaskResultsResponse.TYPE)
+
+        if not force_subtask_results.exists():
+            raise Http400("'ForceSubtaskResults' for this subtask has not been initiated yet. Can't accept your '{}'.".format(client_message.TYPE))
+        if previous_force_subtask_results_response.exists():
+            raise Http400("This subtask has been resolved already.")
+
+        client_message.sig = None
+        store_message_and_message_status(
+            client_message.TYPE,
+            client_message_task_id,
+            client_message.serialize(),
+            status = ReceiveStatus
+        )
+        return HttpResponse("", status = 202)
+    else:
+        raise Http400("Time to acknowledge this task is already over.")
 
 
 def handle_unsupported_golem_messages_type(client_message):

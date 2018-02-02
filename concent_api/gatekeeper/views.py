@@ -4,6 +4,7 @@ from base64                         import b64decode
 from base64                         import b64encode
 import json
 import logging
+import re
 from typing                         import Union
 
 from django.conf                    import settings
@@ -21,11 +22,13 @@ from golem_messages.message         import FileTransferToken
 from golem_messages.message         import Message
 from golem_messages.shortcuts       import load
 
+from gatekeeper.enums               import HashingAlgorithm
 from gatekeeper.utils               import gatekeeper_access_denied_response
 
 
 logger = logging.getLogger(__name__)
 
+VALID_SHA1_HASH_REGEX = re.compile(r"^[a-fA-F\d]{40}$")
 
 @csrf_exempt
 @require_POST
@@ -153,6 +156,20 @@ def parse_headers(request: WSGIRequest, path_to_file: str) -> Union[FileTransfer
     transfer_token_paths_to_files = [file["path"] for file in loaded_golem_message.files]
     if len(transfer_token_paths_to_files) != len(set(transfer_token_paths_to_files)):
         return gatekeeper_access_denied_response('File paths in the token must be unique', path_to_file, loaded_golem_message.subtask_id, client_public_key)
+
+    if not all(isinstance(file["checksum"], str) for file in loaded_golem_message.files):
+        return gatekeeper_access_denied_response("'checksum' must be a string.", path_to_file, loaded_golem_message.subtask_id, client_public_key)
+    if any((len(file["checksum"]) == 0 or file["checksum"].isspace()) for file in loaded_golem_message.files):
+        return gatekeeper_access_denied_response("'checksum' cannot be blank or contain only whitespace.", path_to_file, loaded_golem_message.subtask_id, client_public_key)
+    if not all(":" in file["checksum"] for file in loaded_golem_message.files):
+        return gatekeeper_access_denied_response("'checksum' must consist of two parts separated with a semicolon.", path_to_file, loaded_golem_message.subtask_id, client_public_key)
+    file_checksums = [tuple(file["checksum"].split(":")) for file in loaded_golem_message.files]
+    if not set(checksum_type for checksum_type, checksum in file_checksums).issubset(set(HashingAlgorithm._value2member_map_)):  # type: ignore
+        return gatekeeper_access_denied_response("Unrecognized checksum type.", path_to_file, loaded_golem_message.subtask_id, client_public_key)
+
+    assert set(HashingAlgorithm) == {HashingAlgorithm.SHA1}, "If you add a new hashing algorithms, you need to add validations below."
+    if any(VALID_SHA1_HASH_REGEX.match(file_checksum[1]) is None for file_checksum in file_checksums):
+        return gatekeeper_access_denied_response("Invalid SHA1 hash.", path_to_file, loaded_golem_message.subtask_id, client_public_key)
 
     matching_files = [file for file in loaded_golem_message.files if path_to_file == file['path']]
 

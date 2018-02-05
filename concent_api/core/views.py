@@ -19,6 +19,7 @@ from golem_messages.exceptions      import TimestampError
 from core                           import exceptions
 from utils.api_view                 import api_view
 from utils.api_view                 import Http400
+from .constants                     import MESSAGE_TASK_ID_MAX_LENGTH
 from .models                        import Message
 from .models                        import ReceiveOutOfBandStatus
 from .models                        import ReceiveStatus
@@ -452,10 +453,9 @@ def validate_golem_message_task_to_compute(data):
     if not isinstance(data, message.TaskToCompute):
         raise Http400("Expected TaskToCompute.")
 
-    if data.compute_task_def['task_id'] == '':
-        raise Http400("task_id cannot be blank.")
-
     data.compute_task_def['deadline'] = validate_int_value(data.compute_task_def['deadline'])
+
+    validate_task_id(data.compute_task_def['task_id'])
 
 
 def validate_golem_message_reject(data):
@@ -463,8 +463,7 @@ def validate_golem_message_reject(data):
         raise Http400("Expected CannotComputeTask, TaskFailure or TaskToCompute.")
 
     if isinstance(data, message.CannotComputeTask):
-        if data.task_to_compute.compute_task_def['task_id'] == '':
-            raise Http400("task_id cannot be blank.")
+        validate_task_id(data.task_to_compute.compute_task_def['task_id'])
 
     if isinstance(data, (message.TaskToCompute, message.TaskFailure)):
         if data.compute_task_def['task_id'] == '':
@@ -489,6 +488,17 @@ def validate_int_value(value):
     return value
 
 
+def validate_task_id(task_id):
+    if not isinstance(task_id, str):
+        raise Http400("task_id must be string.")
+
+    if task_id == '':
+        raise Http400("task_id cannot be blank.")
+
+    if len(task_id) > MESSAGE_TASK_ID_MAX_LENGTH:
+        raise Http400("task_id cannot be longer than {} chars.".format(MESSAGE_TASK_ID_MAX_LENGTH))
+
+
 def validate_golem_message_timestamp(timestamp):
     try:
         verify_time(timestamp)
@@ -500,7 +510,7 @@ def validate_golem_message_timestamp(timestamp):
         raise Http400(exception)
 
 
-def store_message_and_message_status(golem_message_type: int, task_id, raw_golem_message: bytes, status = None, delivered: bool = False):
+def store_message_and_message_status(golem_message_type: int, task_id: str, raw_golem_message: bytes, status = None, delivered: bool = False):
     assert golem_message_type   in message.registered_message_types
     assert status               in [ReceiveStatus, ReceiveOutOfBandStatus, None]
 

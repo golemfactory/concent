@@ -16,6 +16,7 @@ from golem_messages.shortcuts       import load
 from golem_messages                 import message
 from golem_messages.message         import Message as GolemMessage
 
+from core.constants                 import MESSAGE_TASK_ID_MAX_LENGTH
 from core.models                    import Message
 from core.models                    import ReceiveStatus
 from utils.testing_helpers          import generate_ecc_key_pair
@@ -37,7 +38,7 @@ class CoreViewSendTest(TestCase):
     def setUp(self):
         self.message_timestamp = int(datetime.datetime.now().timestamp())  # 1510912800
         self.compute_task_def = message.ComputeTaskDef()
-        self.compute_task_def['task_id'] = 8
+        self.compute_task_def['task_id'] = '8'
         self.compute_task_def['deadline'] = self.message_timestamp
         self.task_to_compute = message.TaskToCompute(
             timestamp = self.message_timestamp,
@@ -69,7 +70,7 @@ class CoreViewSendTest(TestCase):
 
         self.cannot_compute_task.task_to_compute.compute_task_def               = message.ComputeTaskDef()
         self.cannot_compute_task.task_to_compute.compute_task_def['deadline']   = self.message_timestamp + 600
-        self.cannot_compute_task.task_to_compute.compute_task_def['task_id']    = 8
+        self.cannot_compute_task.task_to_compute.compute_task_def['task_id']    = '8'
 
         self.reject_report_computed_task = message.RejectReportComputedTask(
             timestamp = self.message_timestamp,
@@ -129,6 +130,41 @@ class CoreViewSendTest(TestCase):
             CONCENT_PUBLIC_KEY,
         )
         self.assertIsInstance(response_message, GolemMessage)
+
+    @freeze_time("2017-11-17 10:00:00")
+    def test_send_should_accept_valid_message_with_non_numeric_task_id(self):
+        assert Message.objects.count()       == 0
+        assert ReceiveStatus.objects.count() == 0
+
+        compute_task_def = message.ComputeTaskDef()
+        compute_task_def['task_id'] = 'ABC00XYZ'
+        compute_task_def['deadline'] = self.message_timestamp
+        task_to_compute = message.TaskToCompute(
+            timestamp        = self.message_timestamp,
+            compute_task_def = compute_task_def,
+        )
+
+        correct_golem_data = message.ForceReportComputedTask(
+            timestamp       = self.message_timestamp,
+            task_to_compute = task_to_compute,
+        )
+
+        response = self.client.post(
+            reverse('core:send'),
+            data = dump(
+                correct_golem_data,
+                PROVIDER_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY),
+            content_type = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
+        )
+
+        self.assertEqual(response.status_code, 202)
+        self.assertEqual(len(Message.objects.all()),       1)
+        self.assertEqual(Message.objects.last().type,      message.ForceReportComputedTask.TYPE)
+        self.assertEqual(len(ReceiveStatus.objects.all()), 1)
+        self.assertEqual(Message.objects.last().id,        ReceiveStatus.objects.last().message_id)
+        self.assertEqual(Message.objects.last().task_id,   compute_task_def['task_id'])
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_data_is_incorrect(self):
@@ -226,7 +262,7 @@ class CoreViewSendTest(TestCase):
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_task_to_compute_deadline_exceeded(self):
         compute_task_def = message.ComputeTaskDef()
-        compute_task_def['task_id'] = 8
+        compute_task_def['task_id'] = '8'
         compute_task_def['deadline'] = self.message_timestamp - 9000
         task_to_compute = message.TaskToCompute(
             timestamp = self.message_timestamp - 10000,
@@ -354,6 +390,47 @@ class CoreViewSendTest(TestCase):
 
             with freeze_time("2017-11-17 10:00:00"):
                 force_report_computed_task = message.ForceReportComputedTask(
+                    timestamp=int(datetime.datetime.now().timestamp()),
+                )
+                force_report_computed_task.task_to_compute = deserialized_task_to_compute
+
+                response_400 = self.client.post(
+                    reverse('core:send'),
+                    data=dump(
+                        force_report_computed_task,
+                        PROVIDER_PRIVATE_KEY,
+                        CONCENT_PUBLIC_KEY
+                    ),
+                    content_type = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                )
+
+            self.assertEqual(response_400.status_code, 400)
+            self.assertIn('error', response_400.json().keys())
+
+    def test_receive_should_return_http_400_if_task_id_is_not_valid_string(self):
+        compute_task_def = message.ComputeTaskDef()
+        compute_task_def['deadline'] = int(dateutil.parser.parse("2017-11-17 10:37:00").timestamp())
+
+        invalid_values = [
+            11,
+            'a' * (MESSAGE_TASK_ID_MAX_LENGTH + 1),
+        ]
+
+        for task_id in invalid_values:
+            Message.objects.all().delete()
+            task_to_compute = message.TaskToCompute(
+                timestamp = int(datetime.datetime.now().timestamp()),
+                compute_task_def = self.compute_task_def,
+            )
+
+            serialized_task_to_compute      = dump(task_to_compute,             REQUESTOR_PRIVATE_KEY,   PROVIDER_PUBLIC_KEY)
+            deserialized_task_to_compute    = load(serialized_task_to_compute,  PROVIDER_PRIVATE_KEY,  REQUESTOR_PUBLIC_KEY, check_time = False)
+
+            deserialized_task_to_compute.compute_task_def['task_id'] = task_id
+
+            with freeze_time("2017-11-17 10:00:00"):
+                force_report_computed_task = message.ForceReportComputedTask(
                     timestamp = int(datetime.datetime.now().timestamp()),
                 )
                 force_report_computed_task.task_to_compute = deserialized_task_to_compute
@@ -424,7 +501,7 @@ class CoreViewReceiveTest(TestCase):
 
     def setUp(self):
         self.compute_task_def = message.ComputeTaskDef()
-        self.compute_task_def['task_id'] = 1
+        self.compute_task_def['task_id'] = '1'
         self.compute_task_def['deadline'] = int(dateutil.parser.parse("2017-11-17 10:37:00").timestamp())
         self.task_to_compute = message.TaskToCompute(
             timestamp = int(dateutil.parser.parse("2017-11-17 10:00:00").timestamp()),

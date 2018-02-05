@@ -256,6 +256,105 @@ class GatekeeperViewUploadTest(TestCase):
         self.assertIn('message', response.json().keys())
         self.assertEqual("application/json", response["Content-Type"])
 
+    @freeze_time("2018-12-30 11:00:00")
+    def test_upload_should_return_401_if_size_of_file_is_none(self):
+        file1 = FileTransferToken.FileInfo(
+            path     = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+            checksum = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
+            size     = 1024,
+        )
+
+        file2 = FileTransferToken.FileInfo(
+            path     = 'blenderrr/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+            checksum = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
+            size     = None,
+        )
+
+        self.upload_token.files = [file1, file2]
+
+        golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+        encrypted_token = b64encode(golem_upload_token).decode()
+        response = self.client.post(
+            '{}{}'.format(
+                reverse('gatekeeper:upload'),
+                'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
+            ),
+            HTTP_AUTHORIZATION             = 'Golem ' + encrypted_token,
+            content_type                   = 'application/x-www-form-urlencoded',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key
+        )
+
+        self.assertIsInstance(response, JsonResponse)
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('message', response.json().keys())
+        self.assertEqual("application/json", response["Content-Type"])
+
+    @freeze_time("2018-12-30 11:00:00")
+    def test_upload_should_return_401_if_size_of_file_is_not_decimal_value(self):
+        file1 = FileTransferToken.FileInfo(
+            path     = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+            checksum = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
+            size     = 1024,
+        )
+
+        file2 = FileTransferToken.FileInfo(
+            path     = 'blenderrr/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+            checksum = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
+            size     = 'number',
+        )
+
+        self.upload_token.files = [file1, file2]
+
+        golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+        encrypted_token = b64encode(golem_upload_token).decode()
+        response = self.client.post(
+            '{}{}'.format(
+                reverse('gatekeeper:upload'),
+                'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
+            ),
+            HTTP_AUTHORIZATION             = 'Golem ' + encrypted_token,
+            content_type                   = 'application/x-www-form-urlencoded',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key
+        )
+
+        self.assertIsInstance(response, JsonResponse)
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('message', response.json().keys())
+        self.assertEqual("application/json", response["Content-Type"])
+
+    @freeze_time("2018-12-30 11:00:00")
+    def test_upload_should_return_401_if_size_of_file_has_non_negative_value(self):
+        file1 = FileTransferToken.FileInfo(
+            path     = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+            checksum = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
+            size     = 1024,
+        )
+
+        file2 = FileTransferToken.FileInfo(
+            path     = 'blenderrr/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+            checksum = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
+            size     = '-2',
+        )
+
+        self.upload_token.files = [file1, file2]
+
+        golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+        encrypted_token = b64encode(golem_upload_token).decode()
+        response = self.client.post(
+            '{}{}'.format(
+                reverse('gatekeeper:upload'),
+                'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
+            ),
+            HTTP_AUTHORIZATION             = 'Golem ' + encrypted_token,
+            content_type                   = 'application/x-www-form-urlencoded',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key
+        )
+
+        self.assertIsInstance(response, JsonResponse)
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('message', response.json().keys())
+        self.assertEqual("application/json", response["Content-Type"])
+
 
 @override_settings(
     CONCENT_PRIVATE_KEY = b'l\xcdh\x19\xeb$>\xbcG\xa1\xc7v\xe8\xd7o\x0c\xbf\x0e\x0fM\x89lw\x1e\xd7K\xd6Hnv$\xa2',
@@ -494,6 +593,102 @@ class GatekeeperViewDownloadTest(TestCase):
                 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
             ),
             HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key
+        )
+
+        self.assertIsInstance(response, JsonResponse)
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('message', response.json().keys())
+        self.assertEqual("application/json", response["Content-Type"])
+
+    @freeze_time("2018-12-30 11:00:00")
+    def test_download_should_return_401_if_size_of_file_is_none(self):
+        file1 = FileTransferToken.FileInfo(
+            path     = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+            checksum = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
+            size     = 1024,
+        )
+
+        file2 = FileTransferToken.FileInfo(
+            path     = 'blenderrr/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+            checksum = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
+            size     = None,
+        )
+
+        self.upload_token.files = [file1, file2]
+
+        golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+        encrypted_token = b64encode(golem_upload_token).decode()
+        response = self.client.get(
+            '{}{}'.format(
+                reverse('gatekeeper:download'),
+                'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
+            ),
+            HTTP_AUTHORIZATION             = 'Golem ' + encrypted_token,
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key
+        )
+
+        self.assertIsInstance(response, JsonResponse)
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('message', response.json().keys())
+        self.assertEqual("application/json", response["Content-Type"])
+
+    @freeze_time("2018-12-30 11:00:00")
+    def test_download_should_return_401_if_size_of_file_is_not_decimal_value(self):
+        file1 = FileTransferToken.FileInfo(
+            path     = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+            checksum = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
+            size     = 1024,
+        )
+
+        file2 = FileTransferToken.FileInfo(
+            path     = 'blenderrr/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+            checksum = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
+            size     = 'number',
+        )
+
+        self.upload_token.files = [file1, file2]
+
+        golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+        encrypted_token = b64encode(golem_upload_token).decode()
+        response = self.client.get(
+            '{}{}'.format(
+                reverse('gatekeeper:download'),
+                'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
+            ),
+            HTTP_AUTHORIZATION             = 'Golem ' + encrypted_token,
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key
+        )
+
+        self.assertIsInstance(response, JsonResponse)
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('message', response.json().keys())
+        self.assertEqual("application/json", response["Content-Type"])
+
+    @freeze_time("2018-12-30 11:00:00")
+    def test_download_should_return_401_if_size_of_file_has_negative_value(self):
+        file1 = FileTransferToken.FileInfo(
+            path     = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+            checksum = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
+            size     = 1024,
+        )
+
+        file2 = FileTransferToken.FileInfo(
+            path     = 'blenderrr/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+            checksum = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
+            size     = '-2',
+        )
+
+        self.upload_token.files = [file1, file2]
+
+        golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+        encrypted_token = b64encode(golem_upload_token).decode()
+        response = self.client.get(
+            '{}{}'.format(
+                reverse('gatekeeper:download'),
+                'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
+            ),
+            HTTP_AUTHORIZATION             = 'Golem ' + encrypted_token,
             HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key
         )
 

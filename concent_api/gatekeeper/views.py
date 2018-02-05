@@ -30,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 VALID_SHA1_HASH_REGEX = re.compile(r"^[a-fA-F\d]{40}$")
 
+
 @csrf_exempt
 @require_POST
 def upload(request):
@@ -170,6 +171,18 @@ def parse_headers(request: WSGIRequest, path_to_file: str) -> Union[FileTransfer
     assert set(HashingAlgorithm) == {HashingAlgorithm.SHA1}, "If you add a new hashing algorithms, you need to add validations below."
     if any(VALID_SHA1_HASH_REGEX.match(file_checksum[1]) is None for file_checksum in file_checksums):
         return gatekeeper_access_denied_response("Invalid SHA1 hash.", path_to_file, loaded_golem_message.subtask_id, client_public_key)
+
+    file_sizes = [file["size"] for file in loaded_golem_message.files]
+    if any((file_size is None) for file_size in file_sizes):
+        return gatekeeper_access_denied_response("'size' must be an integer.", path_to_file, loaded_golem_message.subtask_id, client_public_key)
+    for file_size in file_sizes:
+        try:
+            int(file_size)
+        except (ValueError, TypeError):
+            return gatekeeper_access_denied_response("'size' must be an integer.", path_to_file, loaded_golem_message.subtask_id, client_public_key)
+
+    if any(int(file["size"]) < 0  for file in loaded_golem_message.files):
+        return gatekeeper_access_denied_response("'size' must not be negative.", path_to_file, loaded_golem_message.subtask_id, client_public_key)
 
     matching_files = [file for file in loaded_golem_message.files if path_to_file == file['path']]
 

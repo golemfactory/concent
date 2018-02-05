@@ -54,6 +54,7 @@ def api_view(view):
                         settings.CONCENT_PRIVATE_KEY,
                         client_public_key,
                     )
+                    assert message is not None
                 except InvalidSignature as exception:
                     return JsonResponse({'error': "Failed to decode a Golem Message. {}".format(exception)}, status = 400)
                 except FieldError:

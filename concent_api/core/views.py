@@ -463,11 +463,13 @@ def handle_receive_out_of_band_reject_report_computed_task(undelivered_message):
 
 def deserialize_message(raw_message_data):
     try:
-        return message.Message.deserialize(
+        golem_message = message.Message.deserialize(
             raw_message_data,
             None,
             check_time = False
         )
+        assert golem_message is not None
+        return golem_message
     except MessageError as exception:
         raise Http400("Unable to deserialize Golem Message: {}.".format(exception))
 

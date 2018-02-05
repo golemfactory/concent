@@ -14,10 +14,10 @@ from django.views.decorators.csrf   import csrf_exempt
 from django.views.decorators.http   import require_POST
 from django.views.decorators.http   import require_safe
 
-from gatekeeper.utils               import gatekeeper_access_denied_response
-
 from golem_messages.message         import Message
 from golem_messages.shortcuts       import load
+
+from gatekeeper.utils               import gatekeeper_access_denied_response
 
 
 logger = logging.getLogger(__name__)

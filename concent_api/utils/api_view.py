@@ -75,5 +75,6 @@ def api_view(view):
             return HttpResponse(response_from_view)
 
         assert False, "Invalid response type"
+        raise Exception("Invalid response type")
 
     return wrapper

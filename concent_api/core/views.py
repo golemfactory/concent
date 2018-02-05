@@ -5,7 +5,6 @@ from base64                         import b64encode
 import requests
 from django.conf                    import settings
 from django.http                    import HttpResponse
-from django.urls                    import reverse
 from django.utils                   import timezone
 from django.views.decorators.http   import require_POST
 
@@ -15,6 +14,7 @@ from golem_messages.datastructures  import MessageHeader
 from golem_messages.exceptions      import MessageError
 
 from core                           import exceptions
+from gatekeeper.constants           import GATEKEEPER_DOWNLOAD_PATH
 from utils.api_view                 import api_view
 from utils.api_view                 import Http400
 from .constants                     import MESSAGE_TASK_ID_MAX_LENGTH
@@ -574,7 +574,7 @@ def get_file_status(file_transfer_token_from_database: message.concents.FileTran
         'Authorization':                'Golem ' + b64encode(dumped_file_transfer_token).decode(),
         'Concent-Client-Public-Key':    b64encode(settings.CONCENT_PUBLIC_KEY).decode(),
     }
-    request_http_address = settings.STORAGE_CLUSTER_ADDRESS + reverse('gatekeeper:download') + file_transfer_token.files[0]['path']
+    request_http_address = settings.STORAGE_CLUSTER_ADDRESS + GATEKEEPER_DOWNLOAD_PATH + file_transfer_token.files[0]['path']
 
     cluster_storage_response = requests.head(
         request_http_address,

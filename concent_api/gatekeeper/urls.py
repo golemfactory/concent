@@ -1,9 +1,10 @@
 from django.conf.urls import url
 
-from .views import download
-from .views import upload
+from .constants import GATEKEEPER_DOWNLOAD_PATH
+from .views     import download
+from .views     import upload
 
 urlpatterns = [
-    url(r'^download-auth/', download,   name = 'download'),
-    url(r'^upload-auth/',   upload,     name = 'upload'),
+    url(r'^{}'.format(GATEKEEPER_DOWNLOAD_PATH), download,   name = 'download'),
+    url(r'^upload-auth/',                        upload,     name = 'upload'),
 ]

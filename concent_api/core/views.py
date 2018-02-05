@@ -139,6 +139,11 @@ def receive(request, _message):
         decoded_message_data.sig = None
         return decoded_message_data
 
+    if isinstance(decoded_message_data, message.concents.ForceSubtaskResultsResponse):
+        set_message_as_delivered(last_undelivered_message_status)
+        decoded_message_data.sig = None
+        return decoded_message_data
+
     assert isinstance(decoded_message_data, message.RejectReportComputedTask), (
         "At this point ReceiveStatus must contain ForceReportComputedTask because AckReportComputedTask and RejectReportComputedTask have already been handled"
     )
@@ -591,6 +596,7 @@ def handle_receive_force_get_task_result_upload_for_requestor(
     force_get_task_result_upload.sig = None
     return force_get_task_result_upload
 
+
 def handle_receive_force_subtasks_results(decoded_message: message.concents.ForceSubtaskResults):
     assert decoded_message.TYPE in message.registered_message_types
 
@@ -846,6 +852,7 @@ def decode_other_party_public_key(request):
 
 def is_provider_account_status_positive(_message):
     pass
+
 
 def tmp_is_provider_account_status_positive(request):
     try:

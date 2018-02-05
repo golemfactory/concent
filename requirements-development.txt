@@ -5,21 +5,12 @@ ipdb
 ipython
 pipdeptree
 flake8
-pylint-django
 requests
 mypy
 coverage
 
 # Force the latest version of pylint pyflakes and pep8. There are numerous issues with older versions.
-# FIXME: pylint-django does not work with the latest pylint (1.8.0 or 1.8.1).
-# See https://github.com/landscapeio/pylint-django/issues/108
-# Remove the upper limit when the problem gets resolved.
-pylint   >= 1.7.5, < 1.8.0
-pyflakes >= 1.6.0
-pep8     >= 1.7.1
-
-# FIXME: There's a bug in astroid that makes pylint print spurious warnings about unused __class__ variable.
-# https://github.com/PyCQA/pylint/issues/1609
-# It's fixed in pylint 1.8.1 but we can't upgrade yet because pylint-django does not work with pylint 1.8.1 yet.
-# When it's fixed, remove the line below and start requiring pylint version >= 1.8.1.
-astroid < 1.6.0
+pylint        >= 1.8.2
+pylint-django >= 0.9.0
+pyflakes      >= 1.6.0
+pep8          >= 1.7.1

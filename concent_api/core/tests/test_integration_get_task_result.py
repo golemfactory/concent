@@ -208,6 +208,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:12"):
             response_2 = self.client.post(
                 reverse('core:receive'),
+                data                           = '',
                 content_type                   = 'application/octet-stream',
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_provider_public_key()
             )
@@ -317,6 +318,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:12"):
             response_2 = self.client.post(
                 reverse('core:receive'),
+                data                           = '',
                 content_type                   = 'application/octet-stream',
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_provider_public_key()
             )
@@ -426,6 +428,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:12"):
             response_2 = self.client.post(
                 reverse('core:receive'),
+                data                           = '',
                 content_type                   = 'application/octet-stream',
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_provider_public_key()
             )
@@ -535,6 +538,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:12"):
             response_2 = self.client.post(
                 reverse('core:receive'),
+                data                           = '',
                 content_type                   = 'application/octet-stream',
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_provider_public_key()
             )

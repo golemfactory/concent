@@ -43,15 +43,12 @@ def force_report_computed_task(task_id, provider_private_key, provider_public_ke
     compute_task_def['task_id']     = task_id
     compute_task_def['deadline']    = current_time + 60
     task_to_compute = TaskToCompute(
-        timestamp = current_time - 3540,
         compute_task_def = compute_task_def)
 
     serialized_task_to_compute      = dump(task_to_compute,             requestor_private_key,  provider_public_key)
     deserialized_task_to_compute    = load(serialized_task_to_compute,  provider_private_key,   requestor_public_key, check_time = False)
 
-    force_report_computed_task = ForceReportComputedTask(
-        timestamp = current_time - 3540
-    )
+    force_report_computed_task = ForceReportComputedTask()
     force_report_computed_task.task_to_compute = deserialized_task_to_compute
 
     return force_report_computed_task
@@ -59,9 +56,7 @@ def force_report_computed_task(task_id, provider_private_key, provider_public_ke
 
 def ack_report_computed_task(task_id, provider_private_key, provider_public_key, requestor_private_key, requestor_public_key, current_time):
 
-    task_to_compute = TaskToCompute(
-        timestamp   = current_time - 3540
-    )
+    task_to_compute = TaskToCompute()
     task_to_compute.compute_task_def                = ComputeTaskDef()
     task_to_compute.compute_task_def['task_id']     = task_id
     task_to_compute.compute_task_def['deadline']    = current_time + 60
@@ -69,9 +64,7 @@ def ack_report_computed_task(task_id, provider_private_key, provider_public_key,
     serialized_task_to_compute      = dump(task_to_compute,             requestor_private_key,  provider_public_key)
     deserialized_task_to_compute    = load(serialized_task_to_compute,  provider_private_key,   requestor_public_key, check_time = False)
 
-    ack_report_computed_task = AckReportComputedTask(
-        timestamp  = current_time + 65,
-    )
+    ack_report_computed_task = AckReportComputedTask()
     ack_report_computed_task.task_to_compute = deserialized_task_to_compute
     return ack_report_computed_task
 

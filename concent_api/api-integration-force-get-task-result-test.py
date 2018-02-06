@@ -12,6 +12,7 @@ from utils.testing_helpers  import generate_ecc_key_pair
 
 from api_testing_helpers    import api_request
 
+from freezegun              import freeze_time
 import requests
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
@@ -37,7 +38,6 @@ def get_force_get_task_result(task_id, current_time, size, checksum):
     compute_task_def['task_id'] = task_id
     compute_task_def['deadline'] = current_time + 60
     task_to_compute = message.TaskToCompute(
-        timestamp        = current_time,
         compute_task_def = compute_task_def
     )
     report_computed_task = message.ReportComputedTask(
@@ -46,10 +46,10 @@ def get_force_get_task_result(task_id, current_time, size, checksum):
         checksum        = checksum,
     )
 
-    force_get_task_result = message.concents.ForceGetTaskResult(
-        timestamp            = current_time - 3540,
-        report_computed_task = report_computed_task,
-    )
+    with freeze_time(datetime.datetime.fromtimestamp(current_time - 3540)):
+        force_get_task_result = message.concents.ForceGetTaskResult(
+            report_computed_task = report_computed_task,
+        )
 
     return force_get_task_result
 

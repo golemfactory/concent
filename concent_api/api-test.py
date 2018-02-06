@@ -38,7 +38,6 @@ def create_data(message_type, task_id):
     compute_task_def['task_id']     = task_id
     compute_task_def['deadline']    = current_time + 6000
     task_to_compute = TaskToCompute(
-        timestamp = current_time,
         compute_task_def = compute_task_def
     )
 
@@ -47,7 +46,6 @@ def create_data(message_type, task_id):
 
     if message_type == 'ForceReportComputedTask':
         force_report_computed_task = ForceReportComputedTask(
-            timestamp = current_time,
             task_to_compute = deserialized_task_to_compute
         )
 
@@ -55,7 +53,6 @@ def create_data(message_type, task_id):
 
     elif message_type == 'AckReportComputedTask':
         ack_report_computed_task = AckReportComputedTask(
-            timestamp = current_time,
             task_to_compute = deserialized_task_to_compute
         )
 

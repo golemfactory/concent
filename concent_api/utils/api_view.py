@@ -7,7 +7,12 @@ from django.http                    import HttpResponse
 from django.conf                    import settings
 from django.views.decorators.csrf   import csrf_exempt
 
+from golem_messages.exceptions      import FieldError
 from golem_messages.exceptions      import InvalidSignature
+from golem_messages.exceptions      import MessageError
+from golem_messages.exceptions      import MessageFromFutureError
+from golem_messages.exceptions      import MessageTooOldError
+from golem_messages.exceptions      import TimestampError
 from golem_messages.message         import Message
 from golem_messages                 import dump
 from golem_messages                 import load
@@ -49,8 +54,19 @@ def api_view(view):
                         settings.CONCENT_PRIVATE_KEY,
                         client_public_key,
                     )
+                    assert message is not None
                 except InvalidSignature as exception:
                     return JsonResponse({'error': "Failed to decode a Golem Message. {}".format(exception)}, status = 400)
+                except FieldError:
+                    return JsonResponse({'error': "Golem Message contains wrong fields."}, status = 400)
+                except MessageFromFutureError:
+                    return JsonResponse({'error': 'Message timestamp too far in the future.'}, status = 400)
+                except MessageTooOldError:
+                    return JsonResponse({'error': 'Message is too old.'}, status = 400)
+                except TimestampError as exception:
+                    return JsonResponse({'error': '{}'.format(exception)}, status = 400)
+                except MessageError as exception:
+                    return JsonResponse({'error': "Error in Golem Message. {}".format(exception)}, status = 400)
             else:
                 return JsonResponse({'error': "Concent supports only application/octet-stream."}, status = 400)
         try:

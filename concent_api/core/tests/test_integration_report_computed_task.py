@@ -34,17 +34,16 @@ class ReportComputedTaskIntegrationTest(TestCase):
         compute_task_def = message.ComputeTaskDef()
         compute_task_def['task_id']     = '1'
         compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
-        task_to_compute = message.TaskToCompute(
-            timestamp = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-            compute_task_def = compute_task_def
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute(
+                compute_task_def = compute_task_def
+            )
 
         serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        force_report_computed_task = message.ForceReportComputedTask(
-            timestamp       = int(dateutil.parser.parse("2017-12-01 11:01:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 11:01:00"):
+            force_report_computed_task = message.ForceReportComputedTask()
         force_report_computed_task.task_to_compute = deserialized_task_to_compute
 
         serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -78,16 +77,16 @@ class ReportComputedTaskIntegrationTest(TestCase):
         compute_task_def = message.ComputeTaskDef()
         compute_task_def['task_id'] = '1'
         compute_task_def['deadline'] = int(dateutil.parser.parse("2017-12-1 11:00:00").timestamp())
-        task_to_compute = message.TaskToCompute(
-            timestamp = int(dateutil.parser.parse("2017-12-1 10:00:00").timestamp()),
-            compute_task_def = compute_task_def)
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute(
+                compute_task_def = compute_task_def
+            )
 
         serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        force_report_computed_task = message.ForceReportComputedTask(
-            timestamp = int(dateutil.parser.parse("2017-12-1 10:59:00").timestamp())
-        )
+        with freeze_time("2017-12-01 10:59:00"):
+            force_report_computed_task = message.ForceReportComputedTask()
         force_report_computed_task.task_to_compute = deserialized_task_to_compute
 
         serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -125,9 +124,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 3: Requestor accepts computed task via Concent
 
-        ack_report_computed_task = message.AckReportComputedTask(
-            timestamp = int(dateutil.parser.parse("2017-12-1 11:00:05").timestamp())
-        )
+        with freeze_time("2017-12-01 11:00:05"):
+            ack_report_computed_task = message.AckReportComputedTask()
         ack_report_computed_task.task_to_compute = deserialized_task_to_compute
 
         serialized_ack_report_computed_task = dump(ack_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -175,17 +173,16 @@ class ReportComputedTaskIntegrationTest(TestCase):
         compute_task_def = message.ComputeTaskDef()
         compute_task_def['task_id']     = '1'
         compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
-        task_to_compute = message.TaskToCompute(
-            timestamp = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-            compute_task_def = compute_task_def
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute(
+                compute_task_def = compute_task_def
+            )
 
         serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        force_report_computed_task = message.ForceReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 10:59:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:59:00"):
+            force_report_computed_task = message.ForceReportComputedTask()
 
         force_report_computed_task.task_to_compute = deserialized_task_to_compute
         serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -224,9 +221,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 3: Requestor rejects computed task due to CannotComputeTask or TaskFailure
 
-        cannot_compute_task = message.CannotComputeTask(
-            timestamp   = int(dateutil.parser.parse("2017-12-01 10:30:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:30:00"):
+            cannot_compute_task = message.CannotComputeTask()
         cannot_compute_task.task_to_compute = message.TaskToCompute()
         cannot_compute_task.task_to_compute.compute_task_def = message.ComputeTaskDef()
         cannot_compute_task.task_to_compute.compute_task_def['task_id'] = '1'
@@ -235,9 +231,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_cannot_compute_task      = dump(cannot_compute_task,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_cannot_compute_task    = load(serialized_cannot_compute_task,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time=False)
 
-        reject_report_computed_task = message.RejectReportComputedTask(
-            timestamp                   = int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()),
-        )
+        with freeze_time("2017-12-01 11:00:05"):
+            reject_report_computed_task = message.RejectReportComputedTask()
         reject_report_computed_task.cannot_compute_task = deserialized_cannot_compute_task
 
         serialized_reject_report_computed_task = dump(reject_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -288,17 +283,16 @@ class ReportComputedTaskIntegrationTest(TestCase):
         compute_task_def = message.ComputeTaskDef()
         compute_task_def['task_id']     = '1'
         compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
-        task_to_compute = message.TaskToCompute(
-            timestamp = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-            compute_task_def = compute_task_def
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute(
+                compute_task_def = compute_task_def
+            )
 
         serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        force_report_computed_task = message.ForceReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 10:59:00").timestamp())
-        )
+        with freeze_time("2017-12-01 10:59:00"):
+            force_report_computed_task = message.ForceReportComputedTask()
 
         force_report_computed_task.task_to_compute = deserialized_task_to_compute
 
@@ -337,9 +331,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 3: Requestor rejects computed task claiming that the deadline has been exceeded
 
-        cannot_compute_task = message.CannotComputeTask(
-            timestamp   = int(dateutil.parser.parse("2017-12-01 10:30:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:30:00"):
+            cannot_compute_task = message.CannotComputeTask()
         cannot_compute_task.task_to_compute = message.TaskToCompute()
         cannot_compute_task.task_to_compute.compute_task_def = message.ComputeTaskDef()
         cannot_compute_task.task_to_compute.compute_task_def['task_id'] = '1'
@@ -349,9 +342,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_cannot_compute_task      = dump(cannot_compute_task,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_cannot_compute_task    = load(serialized_cannot_compute_task,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time=False)
 
-        reject_report_computed_task = message.RejectReportComputedTask(
-            timestamp                   = int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()),
-        )
+        with freeze_time("2017-12-01 11:00:05"):
+            reject_report_computed_task = message.RejectReportComputedTask()
         reject_report_computed_task.reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
         reject_report_computed_task.cannot_compute_task = deserialized_cannot_compute_task
 
@@ -430,17 +422,16 @@ class ReportComputedTaskIntegrationTest(TestCase):
         compute_task_def = message.ComputeTaskDef()
         compute_task_def['task_id']     = '1'
         compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
-        task_to_compute = message.TaskToCompute(
-            timestamp   = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-            compute_task_def = compute_task_def
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute(
+                compute_task_def = compute_task_def
+            )
 
         serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        force_report_computed_task = message.ForceReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 10:59:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:59:00"):
+            force_report_computed_task = message.ForceReportComputedTask()
         force_report_computed_task.task_to_compute = deserialized_task_to_compute
 
         serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -526,9 +517,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        task_to_compute = message.TaskToCompute(
-            timestamp   = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute()
 
         task_to_compute.compute_task_def = message.ComputeTaskDef()
         task_to_compute.compute_task_def['task_id']     = '1'
@@ -537,9 +527,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        force_report_computed_task = message.ForceReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 10:59:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:59:00"):
+            force_report_computed_task = message.ForceReportComputedTask()
         force_report_computed_task.task_to_compute = deserialized_task_to_compute
 
         serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -578,9 +567,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         """
         # STEP 1: Requestor accepts computed task via Concent
 
-        task_to_compute = message.TaskToCompute(
-            timestamp   = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute()
 
         task_to_compute.compute_task_def = message.ComputeTaskDef()
         task_to_compute.compute_task_def['task_id']     = '1'
@@ -589,9 +577,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_task_to_compute      = dump(task_to_compute,             REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY, check_time = False)
 
-        ack_report_computed_task = message.AckReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()),
-        )
+        with freeze_time("2017-12-01 11:00:05"):
+            ack_report_computed_task = message.AckReportComputedTask()
         ack_report_computed_task.task_to_compute = deserialized_task_to_compute
 
         serialized_ack_report_computed_task = dump(ack_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -618,9 +605,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         """
         # STEP 1: Requestor accepts computed task via Concent
 
-        cannot_compute_task = message.CannotComputeTask(
-            timestamp = int(dateutil.parser.parse("2017-12-01 10:30:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:30:00"):
+            cannot_compute_task = message.CannotComputeTask()
 
         cannot_compute_task.reason = message.CannotComputeTask.REASON.WrongCTD
         cannot_compute_task.task_to_compute = message.TaskToCompute()
@@ -629,9 +615,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_cannot_compute_task      = dump(cannot_compute_task,                 PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_cannot_compute_task    = load(serialized_cannot_compute_task,      REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        reject_report_computed_task = message.RejectReportComputedTask(
-            timestamp                   = int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()),
-        )
+        with freeze_time("2017-12-01 11:00:05"):
+            reject_report_computed_task = message.RejectReportComputedTask()
         reject_report_computed_task.reason = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
         reject_report_computed_task.cannot_compute_task = deserialized_cannot_compute_task
         serialized_reject_report_computed_task = dump(reject_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -661,9 +646,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        task_to_compute = message.TaskToCompute(
-            timestamp   = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute()
 
         task_to_compute.compute_task_def = message.ComputeTaskDef()
         task_to_compute.compute_task_def['task_id']     = '1'
@@ -672,9 +656,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        force_report_computed_task = message.ForceReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 10:59:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:59:00"):
+            force_report_computed_task = message.ForceReportComputedTask()
         force_report_computed_task.task_to_compute = deserialized_task_to_compute
         serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
@@ -712,9 +695,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 3: Requestor accepts computed task via Concent
 
-        task_to_compute = message.TaskToCompute(
-            timestamp   = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute()
 
         task_to_compute.compute_task_def = message.ComputeTaskDef()
         task_to_compute.compute_task_def['task_id']     = '1'
@@ -723,9 +705,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_task_to_compute      = dump(task_to_compute,             REQUESTOR_PRIVATE_KEY, PROVIDER_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  PROVIDER_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, check_time = False)
 
-        ack_report_computed_task = message.AckReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()),
-        )
+        with freeze_time("2017-12-01 11:00:05"):
+            ack_report_computed_task = message.AckReportComputedTask()
         ack_report_computed_task.task_to_compute = deserialized_task_to_compute
 
         serialized_ack_report_computed_task = dump(ack_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -742,9 +723,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 4: Requestor rejects computed task via Concent
 
-        cannot_compute_task = message.CannotComputeTask(
-            timestamp = int(dateutil.parser.parse("2017-12-01 10:30:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:30:00"):
+            cannot_compute_task = message.CannotComputeTask()
 
         cannot_compute_task.task_to_compute = message.TaskToCompute()
         cannot_compute_task.task_to_compute.compute_task_def = message.ComputeTaskDef()
@@ -754,9 +734,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_cannot_compute_task      = dump(cannot_compute_task,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_cannot_compute_task    = load(serialized_cannot_compute_task,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        reject_report_computed_task = message.RejectReportComputedTask(
-            timestamp                   = int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()),
-        )
+        with freeze_time("2017-12-01 11:00:05"):
+            reject_report_computed_task = message.RejectReportComputedTask()
         reject_report_computed_task.reason = reject_report_computed_task.REASON.TaskTimeLimitExceeded
         reject_report_computed_task.cannot_compute_task = deserialized_cannot_compute_task
 
@@ -787,9 +766,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        task_to_compute = message.TaskToCompute(
-            timestamp   = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute()
         task_to_compute.compute_task_def = message.ComputeTaskDef()
         task_to_compute.compute_task_def['task_id']     = '1'
         task_to_compute.compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
@@ -797,9 +775,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_task_to_compute = dump(task_to_compute, PROVIDER_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY)
         deserialized_task_to_compute = load(serialized_task_to_compute, REQUESTOR_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, check_time = False)
 
-        force_report_computed_task = message.ForceReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 10:59:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:59:00"):
+            force_report_computed_task = message.ForceReportComputedTask()
         force_report_computed_task.task_to_compute = deserialized_task_to_compute
         serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
@@ -835,9 +812,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 3: Requestor rejects computed task via Concent
 
-        cannot_compute_task = message.CannotComputeTask(
-            timestamp = int(dateutil.parser.parse("2017-12-01 10:30:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:30:00"):
+            cannot_compute_task = message.CannotComputeTask()
         cannot_compute_task.task_to_compute = message.TaskToCompute()
         cannot_compute_task.task_to_compute.compute_task_def = message.ComputeTaskDef()
         cannot_compute_task.task_to_compute.compute_task_def['task_id'] = '1'
@@ -846,9 +822,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_cannot_compute_task      = dump(cannot_compute_task,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_cannot_compute_task    = load(serialized_cannot_compute_task,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        reject_report_computed_task = message.RejectReportComputedTask(
-            timestamp                   = int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()),
-        )
+        with freeze_time("2017-12-01 11:00:05"):
+            reject_report_computed_task = message.RejectReportComputedTask()
         reject_report_computed_task.cannot_compute_task = deserialized_cannot_compute_task
         reject_report_computed_task.reason = reject_report_computed_task.REASON.TaskTimeLimitExceeded
 
@@ -866,9 +841,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 4: Requestor accepts computed task via Concent
 
-        task_to_compute = message.TaskToCompute(
-            timestamp   = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute()
 
         task_to_compute.compute_task_def = message.ComputeTaskDef()
         task_to_compute.compute_task_def['task_id']     = '1'
@@ -877,9 +851,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_task_to_compute      = dump(task_to_compute,             REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY, check_time = False)
 
-        ack_report_computed_task = message.AckReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()),
-        )
+        with freeze_time("2017-12-01 11:00:05"):
+            ack_report_computed_task = message.AckReportComputedTask()
         ack_report_computed_task.task_to_compute = deserialized_task_to_compute
 
         serialized_ack_report_computed_task = dump(ack_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -908,9 +881,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        task_to_compute = message.TaskToCompute(
-            timestamp   = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute()
 
         task_to_compute.compute_task_def = message.ComputeTaskDef()
         task_to_compute.compute_task_def['task_id']     = '1'
@@ -919,9 +891,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        force_report_computed_task = message.ForceReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 10:59:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:59:00"):
+            force_report_computed_task = message.ForceReportComputedTask()
         force_report_computed_task.task_to_compute = deserialized_task_to_compute
         serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
@@ -958,9 +929,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 3: Requestor accepts computed task via Concent after deadline
 
-        task_to_compute = message.TaskToCompute(
-            timestamp   = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute()
 
         task_to_compute.compute_task_def = message.ComputeTaskDef()
         task_to_compute.compute_task_def['task_id']     = '1'
@@ -969,9 +939,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_task_to_compute      = dump(task_to_compute,             REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY, check_time = False)
 
-        ack_report_computed_task = message.AckReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 11:00:15").timestamp())
-        )
+        with freeze_time("2017-12-01 11:00:15"):
+            ack_report_computed_task = message.AckReportComputedTask()
         ack_report_computed_task.task_to_compute = deserialized_task_to_compute
 
         serialized_ack_report_computed_task = dump(ack_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -1000,9 +969,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        task_to_compute = message.TaskToCompute(
-            timestamp   = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute()
 
         task_to_compute.compute_task_def = message.ComputeTaskDef()
         task_to_compute.compute_task_def['task_id']     = '1'
@@ -1011,9 +979,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        force_report_computed_task = message.ForceReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 10:59:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:59:00"):
+            force_report_computed_task = message.ForceReportComputedTask()
         force_report_computed_task.task_to_compute = deserialized_task_to_compute
 
         serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -1050,9 +1017,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 3: Requestor rejects computed task via Concent after deadline
 
-        cannot_compute_task = message.CannotComputeTask(
-            timestamp = int(dateutil.parser.parse("2017-12-01 10:30:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:30:00"):
+            cannot_compute_task = message.CannotComputeTask()
         cannot_compute_task.task_to_compute                             = message.TaskToCompute()
         cannot_compute_task.task_to_compute.compute_task_def            = message.ComputeTaskDef()
         cannot_compute_task.task_to_compute.compute_task_def['task_id'] = '1'
@@ -1061,9 +1027,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_cannot_compute_task      = dump(cannot_compute_task,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_cannot_compute_task    = load(serialized_cannot_compute_task,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        reject_report_computed_task = message.RejectReportComputedTask(
-            timestamp                   = int(dateutil.parser.parse("2017-12-01 11:00:15").timestamp()),
-        )
+        with freeze_time("2017-12-01 11:00:15"):
+            reject_report_computed_task = message.RejectReportComputedTask()
         reject_report_computed_task.cannot_compute_task = deserialized_cannot_compute_task
         reject_report_computed_task.reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
         serialized_reject_report_computed_task = dump(reject_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -1091,9 +1056,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        task_to_compute = message.TaskToCompute(
-            timestamp   = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute()
 
         task_to_compute.compute_task_def = message.ComputeTaskDef()
         task_to_compute.compute_task_def['task_id']     = '1'
@@ -1102,9 +1066,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        force_report_computed_task = message.ForceReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 10:59:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:59:00"):
+            force_report_computed_task = message.ForceReportComputedTask()
         force_report_computed_task.task_to_compute = deserialized_task_to_compute
 
         serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -1131,9 +1094,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        task_to_compute = message.TaskToCompute(
-            timestamp   = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute()
 
         task_to_compute.compute_task_def = message.ComputeTaskDef()
         task_to_compute.compute_task_def['task_id'] = '1'
@@ -1142,9 +1104,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        force_report_computed_task = message.ForceReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 10:59:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:59:00"):
+            force_report_computed_task = message.ForceReportComputedTask()
         force_report_computed_task.task_to_compute = deserialized_task_to_compute
         serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
@@ -1171,9 +1132,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        task_to_compute = message.TaskToCompute(
-            timestamp = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute()
 
         task_to_compute.compute_task_def = message.ComputeTaskDef()
         task_to_compute.compute_task_def['task_id']     = '1'
@@ -1182,9 +1142,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        force_report_computed_task = message.ForceReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 10:59:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:59:00"):
+            force_report_computed_task = message.ForceReportComputedTask()
 
         force_report_computed_task.task_to_compute = deserialized_task_to_compute
 
@@ -1213,9 +1172,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        task_to_compute = message.TaskToCompute(
-            timestamp = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute()
 
         task_to_compute.compute_task_def = message.ComputeTaskDef()
         task_to_compute.compute_task_def['task_id']     = '1'
@@ -1224,9 +1182,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        force_report_computed_task = message.ForceReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 10:59:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:59:00"):
+            force_report_computed_task = message.ForceReportComputedTask()
         force_report_computed_task.task_to_compute = deserialized_task_to_compute
 
         serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -1253,9 +1210,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         """
         # STEP 1: Requestor accepts computed task via Concent
 
-        cannot_compute_task = message.CannotComputeTask(
-            timestamp   = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            cannot_compute_task = message.CannotComputeTask()
         cannot_compute_task.task_to_compute = message.TaskToCompute()
         cannot_compute_task.task_to_compute.compute_task_def = message.ComputeTaskDef()
         cannot_compute_task.task_to_compute.compute_task_def['task_id']     = '1'
@@ -1264,9 +1220,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_cannot_compute_task      = dump(cannot_compute_task,             REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)
         deserialized_cannot_compute_task    = load(serialized_cannot_compute_task,  PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY, check_time = False)
 
-        ack_report_computed_task = message.AckReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()),
-        )
+        with freeze_time("2017-12-01 11:00:05"):
+            ack_report_computed_task = message.AckReportComputedTask()
         ack_report_computed_task.task_to_compute = deserialized_cannot_compute_task
 
         serialized_ack_report_computed_task = dump(ack_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -1293,18 +1248,16 @@ class ReportComputedTaskIntegrationTest(TestCase):
         """
         # STEP 1: Requestor accepts computed task via Concent
 
-        task_to_compute = message.TaskToCompute(
-            timestamp = int(dateutil.parser.parse("2017-12-01 10:30:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:30:00"):
+            task_to_compute = message.TaskToCompute()
 
         task_to_compute.compute_task_def = message.ComputeTaskDef()
         task_to_compute.compute_task_def['task_id'] = '1'
         serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        reject_report_computed_task = message.RejectReportComputedTask(
-            timestamp                   = int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()),
-        )
+        with freeze_time("2017-12-01 11:00:05"):
+            reject_report_computed_task = message.RejectReportComputedTask()
         reject_report_computed_task.reason = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
         reject_report_computed_task.task_to_compute = deserialized_task_to_compute
         serialized_reject_report_computed_task = dump(reject_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -1332,9 +1285,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        task_to_compute = message.TaskToCompute(
-            timestamp   = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute()
 
         task_to_compute.compute_task_def = message.ComputeTaskDef()
         task_to_compute.compute_task_def['task_id']     = '1'
@@ -1343,9 +1295,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        force_report_computed_task = message.ForceReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 10:59:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:59:00"):
+            force_report_computed_task = message.ForceReportComputedTask()
         force_report_computed_task.task_to_compute = deserialized_task_to_compute
 
         serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -1373,9 +1324,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        task_to_compute = message.TaskToCompute(
-            timestamp   = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute()
 
         task_to_compute.compute_task_def = message.ComputeTaskDef()
         task_to_compute.compute_task_def['task_id'] = '1'
@@ -1384,9 +1334,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        force_report_computed_task = message.ForceReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 10:59:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:59:00"):
+            force_report_computed_task = message.ForceReportComputedTask()
         force_report_computed_task.task_to_compute = deserialized_task_to_compute
         serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
         serialized_force_report_computed_task = serialized_force_report_computed_task[:120] + b'\x00' + serialized_force_report_computed_task[120:]
@@ -1416,9 +1365,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        task_to_compute = message.TaskToCompute(
-            timestamp   = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute()
 
         task_to_compute.compute_task_def = message.ComputeTaskDef()
         task_to_compute.compute_task_def['task_id'] = '1'
@@ -1426,9 +1374,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        force_report_computed_task = message.ForceReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 10:59:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:59:00"):
+            force_report_computed_task = message.ForceReportComputedTask()
         force_report_computed_task.task_to_compute = deserialized_task_to_compute
         serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
@@ -1466,9 +1413,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 3: Requestor accepts computed task via Concent
 
-        ack_report_computed_task = message.AckReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()),
-        )
+        with freeze_time("2017-12-01 11:00:05"):
+            ack_report_computed_task = message.AckReportComputedTask()
         ack_report_computed_task.task_to_compute = deserialized_task_to_compute
         serialized_ack_report_computed_task = dump(ack_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
@@ -1511,9 +1457,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        task_to_compute = message.TaskToCompute(
-            timestamp   = int(dateutil.parser.parse("2017-12-01 10:00:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:00:00"):
+            task_to_compute = message.TaskToCompute()
 
         task_to_compute.compute_task_def = message.ComputeTaskDef()
         task_to_compute.compute_task_def['task_id'] = '1'
@@ -1522,9 +1467,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
         serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
 
-        force_report_computed_task = message.ForceReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 10:59:00").timestamp()),
-        )
+        with freeze_time("2017-12-01 10:59:00"):
+            force_report_computed_task = message.ForceReportComputedTask()
 
         force_report_computed_task.task_to_compute = deserialized_task_to_compute
         serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -1563,9 +1507,8 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 3: Requestor accepts computed task via Concent
 
-        ack_report_computed_task = message.AckReportComputedTask(
-            timestamp               = int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()),
-        )
+        with freeze_time("2017-12-01 11:00:05"):
+            ack_report_computed_task = message.AckReportComputedTask()
         ack_report_computed_task.task_to_compute = deserialized_task_to_compute
         serialized_ack_report_computed_task = dump(ack_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 

@@ -216,3 +216,135 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             }
         )
 
+    def test_requestor_should_receive_subtask_results_from_concent(self):
+        """
+        Test if Provider submitted ForceSubtaskResults, Concent will return message to Requestor with new timestamp
+        if Requestor ask Concent before deadline
+
+        Expected message exchange:
+        Provider    -> Concent:     ForceSubtaskResults
+        Concent     -> Provider:    HTTP 202
+        Concent     -> Requestor:   ForceSubtaskResults (new timestamp)
+        """
+
+        serialized_force_subtask_results = self._get_serialized_force_subtask_results(
+            timestamp                   = "2018-02-05 10:00:20",
+            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
+                timestamp       = "2018-02-05 10:00:20",
+                subtask_id      = "xxyyzz",
+                task_to_compute = self._get_deserialized_task_to_compute(
+                    timestamp   = "2018-02-05 10:00:00",
+                    deadline    = "2018-02-05 10:00:10",
+                    task_id     = '2',
+                )
+            )
+        )
+
+        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+            with freeze_time("2018-02-05 10:00:31"):
+                response_1 = self.client.post(
+                    reverse('core:send'),
+                    data                                = serialized_force_subtask_results,
+                    content_type                        = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                )
+
+        assert len(response_1.content) == 0
+        assert response_1.status_code  == 202
+
+        self._test_database_objects(
+            last_object_type         = message.concents.ForceSubtaskResults,
+            task_id                  = '2',
+            receive_delivered_status = False,
+        )
+
+        with freeze_time("2018-02-05 10:00:29"):
+            response_2 = self.client.post(
+                reverse('core:receive'),
+                data                            = '',
+                content_type                    = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
+            )
+
+        deserialized_compute_task_def = self._get_deserialized_compute_task_def(
+            deadline    = "2018-02-05 10:00:10",
+            task_id     = '2',
+        )
+        self._test_response(
+            response_2,
+            status       = 200,
+            key          = self.REQUESTOR_PRIVATE_KEY,
+            message_type = message.concents.ForceSubtaskResults,
+            fields       = {
+                'timestamp':                                                    self._parse_iso_date_to_timestamp("2018-02-05 10:00:29"),
+                'ack_report_computed_task.subtask_id':                          'xxyyzz',
+                "ack_report_computed_task.task_to_compute.compute_task_def":    deserialized_compute_task_def,
+            }
+        )
+        self.assertEqual(ReceiveStatus.objects.last().delivered, True)
+
+    def test_requestor_should_not_receive_correct_subtask_results_from_concent_if_asked_concent_after_deadline(self):
+        """
+        Test if Provider submitted ForceSubtaskResults, Requestor won't receive from Concent
+        message with correct timestamp if Requestor ask Concent after deadline
+
+        Exptected message exchange:
+        Provider    -> Concent:     ForceSubtaskResults
+        Concent     -> Provider:    HTTP 202
+        Concent     -> Requestor:   ForceSubtaskResults (old timestamp)
+        """
+
+        serialized_force_subtask_results = self._get_serialized_force_subtask_results(
+            timestamp                   = "2018-02-05 10:00:20",
+            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
+                timestamp       = "2018-02-05 10:00:20",
+                subtask_id      = "xxyyzz",
+                task_to_compute = self._get_deserialized_task_to_compute(
+                    timestamp   = "2018-02-05 10:00:00",
+                    deadline    = "2018-02-05 10:00:10",
+                    task_id     = '2',
+                )
+            )
+        )
+
+        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+            with freeze_time("2018-02-05 10:00:31"):
+                response_1 = self.client.post(
+                    reverse('core:send'),
+                    data                                = serialized_force_subtask_results,
+                    content_type                        = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                )
+
+        assert len(response_1.content) == 0
+        assert response_1.status_code  == 202
+
+        self._test_database_objects(
+            last_object_type         = message.concents.ForceSubtaskResults,
+            task_id                  = '2',
+            receive_delivered_status = False,
+        )
+
+        with freeze_time("2018-02-05 11:00:00"):
+            response_2 = self.client.post(
+                reverse('core:receive'),
+                data                            = '',
+                content_type                    = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
+            )
+        deserialized_compute_task_def = self._get_deserialized_compute_task_def(
+            deadline    = "2018-02-05 10:00:10",
+            task_id     = '2',
+        )
+        self._test_response(
+            response_2,
+            status       = 200,
+            key          = self.REQUESTOR_PRIVATE_KEY,
+            message_type = message.concents.ForceSubtaskResults,
+            fields       = {
+                'timestamp':                                            self._parse_iso_date_to_timestamp("2018-02-05 10:00:20"),
+                'ack_report_computed_task.subtask_id':                  'xxyyzz',
+                'ack_report_computed_task.task_to_compute.compute_task_def': deserialized_compute_task_def,
+            }
+        )
+        self.assertEqual(ReceiveStatus.objects.last().delivered, True)

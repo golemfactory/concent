@@ -22,7 +22,7 @@ class GatekeeperAccessDeniedResponseTest(TestCase):
             None,
             self.client_key
         )
-        response_body = json.loads(response.content)
+        response_body = json.loads(response.content.decode())
 
         self.assertIsInstance(response, JsonResponse)
         self.assertEqual(response.status_code, 401)

@@ -71,7 +71,7 @@ def ack_report_computed_task(task_id, provider_private_key, provider_public_key,
 
 def main():
     cluster_url     = parse_command_line(sys.argv)
-    task_id         = random.randrange(1, 100000)
+    task_id         = str(random.randrange(1, 100000))
     current_time    = int(datetime.datetime.now().timestamp())
 
     api_request(

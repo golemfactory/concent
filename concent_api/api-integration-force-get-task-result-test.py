@@ -65,7 +65,7 @@ def main():
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         get_force_get_task_result(
-            1,
+            '1',
             current_time,
             size    = 1024,
             checksum = '098f6bcd4621d373cade4e832627b4f6'
@@ -107,7 +107,7 @@ def main():
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         get_force_get_task_result(
-            99999,
+            '99999',
             current_time,
             size    = 1024,
             checksum = '098f6bcd4621d373cade4e832627b4f6'

@@ -141,7 +141,7 @@ def receive(request, _message):
     decoded_message_from_database = deserialize_message(force_report_computed_task.data.tobytes())
 
     if decoded_message_data.reason is not None and decoded_message_data.reason == message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded:
-        ack_report_computed_task = message.AckReportComputedTask(timestamp = current_time)
+        ack_report_computed_task = message.AckReportComputedTask()
         ack_report_computed_task.task_to_compute = decoded_message_from_database.task_to_compute
         return ack_report_computed_task
     decoded_message_data.sig = None

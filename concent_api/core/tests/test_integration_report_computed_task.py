@@ -1594,12 +1594,12 @@ class ReportComputedTaskIntegrationTest(TestCase):
         """
 
         compute_task_def = message.ComputeTaskDef()
-        compute_task_def['task_id'] = 1
+        compute_task_def['task_id'] = '1'
         compute_task_def['deadline'] = int(dateutil.parser.parse("2017-11-17 9:59:00").timestamp())
-        task_to_compute = message.TaskToCompute(
-            timestamp = int(dateutil.parser.parse("2017-11-17 10:00:00").timestamp()),
-            compute_task_def = compute_task_def,
-        )
+        with freeze_time("2017-11-17 10:00:00"):
+            task_to_compute = message.TaskToCompute(
+                compute_task_def = compute_task_def,
+            )
         cannot_compute_task = message.CannotComputeTask(
             task_to_compute = task_to_compute
         )
@@ -1615,7 +1615,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
             type        = message.ForceReportComputedTask.TYPE,
             timestamp   = datetime.datetime.now(timezone.utc),
             data        = force_report_computed_task.serialize(),
-            task_id     = 1,
+            task_id     = '1',
         )
         new_message_force.full_clean()
         new_message_force.save()
@@ -1631,7 +1631,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
             type        = message.RejectReportComputedTask.TYPE,
             timestamp   = datetime.datetime.now(timezone.utc),
             data        = reject_report_computed_task.serialize(),
-            task_id     = 1,
+            task_id     = '1',
         )
         new_message_reject.full_clean()
         new_message_reject.save()
@@ -1669,12 +1669,12 @@ class ReportComputedTaskIntegrationTest(TestCase):
         """
 
         compute_task_def = message.ComputeTaskDef()
-        compute_task_def['task_id'] = 1
+        compute_task_def['task_id'] = '1'
         compute_task_def['deadline'] = int(dateutil.parser.parse("2017-11-17 9:59:00").timestamp())
-        task_to_compute = message.TaskToCompute(
-            timestamp = int(dateutil.parser.parse("2017-11-17 10:00:00").timestamp()),
-            compute_task_def = compute_task_def,
-        )
+        with freeze_time("2017-11-17 10:00:00"):
+            task_to_compute = message.TaskToCompute(
+                compute_task_def = compute_task_def,
+            )
 
         ack_report_computed_task = message.AckReportComputedTask(
             task_to_compute = task_to_compute
@@ -1687,7 +1687,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
             type        = message.ForceReportComputedTask.TYPE,
             timestamp   = datetime.datetime.now(timezone.utc),
             data        = force_report_computed_task.serialize(),
-            task_id     = 1,
+            task_id     = '1',
         )
         new_message_force.full_clean()
         new_message_force.save()
@@ -1703,7 +1703,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
             type        = message.AckReportComputedTask.TYPE,
             timestamp   = datetime.datetime.now(timezone.utc),
             data        = ack_report_computed_task.serialize(),
-            task_id     = 1,
+            task_id     = '1',
         )
         new_message_ack.full_clean()
         new_message_ack.save()
@@ -1743,12 +1743,12 @@ class ReportComputedTaskIntegrationTest(TestCase):
         """
 
         compute_task_def = message.ComputeTaskDef()
-        compute_task_def['task_id'] = 1
+        compute_task_def['task_id'] = '1'
         compute_task_def['deadline'] = int(dateutil.parser.parse("2017-11-17 9:59:00").timestamp())
-        task_to_compute = message.TaskToCompute(
-            timestamp = int(dateutil.parser.parse("2017-11-17 10:00:00").timestamp()),
-            compute_task_def = compute_task_def,
-        )
+        with freeze_time("2017-11-17 10:00:00"):
+            task_to_compute = message.TaskToCompute(
+                compute_task_def = compute_task_def,
+            )
 
         ack_report_computed_task = message.AckReportComputedTask(
             task_to_compute = task_to_compute
@@ -1761,7 +1761,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
             type        = message.ForceReportComputedTask.TYPE,
             timestamp   = datetime.datetime.now(timezone.utc),
             data        = force_report_computed_task.serialize(),
-            task_id     = 1,
+            task_id     = '1',
         )
         new_message_force.full_clean()
         new_message_force.save()
@@ -1777,7 +1777,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
             type        = message.AckReportComputedTask.TYPE,
             timestamp   = datetime.datetime.now(timezone.utc),
             data        = ack_report_computed_task.serialize(),
-            task_id     = 1,
+            task_id     = '1',
         )
         new_message_ack.full_clean()
         new_message_ack.save()

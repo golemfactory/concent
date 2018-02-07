@@ -1,5 +1,4 @@
 import binascii
-import datetime
 from base64                         import b64decode
 from base64                         import b64encode
 import json
@@ -24,6 +23,7 @@ from golem_messages.shortcuts       import load
 
 from gatekeeper.enums               import HashingAlgorithm
 from gatekeeper.utils               import gatekeeper_access_denied_response
+from utils.helpers                  import get_current_utc_timestamp
 
 
 logger = logging.getLogger(__name__)
@@ -122,7 +122,7 @@ def parse_headers(request: WSGIRequest, path_to_file: str) -> Union[FileTransfer
     # -DEADLINE
     if not isinstance(loaded_golem_message.token_expiration_deadline, int):
         return gatekeeper_access_denied_response('Wrong type of token_expiration_deadline variable.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
-    current_time = int(datetime.datetime.now().timestamp())
+    current_time = get_current_utc_timestamp()
 
     if current_time > loaded_golem_message.token_expiration_deadline:
         return gatekeeper_access_denied_response('token_expiration_deadline has passed.', path_to_file, loaded_golem_message.subtask_id, client_public_key)

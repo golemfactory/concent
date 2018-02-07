@@ -1,4 +1,3 @@
-import datetime
 from base64         import b64encode
 
 from freezegun      import freeze_time
@@ -11,6 +10,8 @@ from django.urls    import reverse
 from golem_messages.shortcuts       import dump
 from golem_messages.message         import FileTransferToken
 
+from utils.helpers                  import get_current_utc_timestamp
+
 
 @override_settings(
     CONCENT_PRIVATE_KEY = b'l\xcdh\x19\xeb$>\xbcG\xa1\xc7v\xe8\xd7o\x0c\xbf\x0e\x0fM\x89lw\x1e\xd7K\xd6Hnv$\xa2',
@@ -21,7 +22,7 @@ class GatekeeperViewUploadTest(TestCase):
 
     @freeze_time("2018-12-30 11:00:00")
     def setUp(self):
-        self.message_timestamp  = int(datetime.datetime.now().timestamp())
+        self.message_timestamp  = get_current_utc_timestamp()
         self.public_key         = '85cZzVjahnRpUBwm0zlNnqTdYom1LF1P1WNShLg17cmhN2UssnPrCjHKTi5susO3wrr/q07eswumbL82b4HgOw=='
         self.upload_token                                 = FileTransferToken()
         self.upload_token.token_expiration_deadline       = self.message_timestamp + 3600
@@ -218,7 +219,7 @@ class GatekeeperViewDownloadTest(TestCase):
 
     @freeze_time("2018-12-30 11:00:00")
     def setUp(self):
-        self.message_timestamp  = int(datetime.datetime.now().timestamp())
+        self.message_timestamp  = get_current_utc_timestamp()
         self.public_key         = '85cZzVjahnRpUBwm0zlNnqTdYom1LF1P1WNShLg17cmhN2UssnPrCjHKTi5susO3wrr/q07eswumbL82b4HgOw=='
         self.upload_token                                 = FileTransferToken()
         self.upload_token.token_expiration_deadline       = self.message_timestamp + 3600

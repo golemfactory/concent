@@ -2,7 +2,6 @@
 
 import os
 import sys
-import datetime
 import random
 import time
 from base64                 import b64encode
@@ -14,6 +13,7 @@ from golem_messages.message import ComputeTaskDef
 from golem_messages.message import ForceReportComputedTask
 from golem_messages.message import TaskToCompute
 
+from utils.helpers          import get_current_utc_timestamp
 from utils.testing_helpers  import generate_ecc_key_pair
 
 from api_testing_helpers            import api_request
@@ -72,7 +72,7 @@ def ack_report_computed_task(task_id, provider_private_key, provider_public_key,
 def main():
     cluster_url     = parse_command_line(sys.argv)
     task_id         = str(random.randrange(1, 100000))
-    current_time    = int(datetime.datetime.now().timestamp())
+    current_time    = get_current_utc_timestamp()
 
     api_request(
         cluster_url,

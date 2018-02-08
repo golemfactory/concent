@@ -1,6 +1,6 @@
-import datetime
-
 from base64                         import b64encode
+import binascii
+import datetime
 
 import requests
 from django.conf                    import settings
@@ -17,26 +17,28 @@ from core                           import exceptions
 from gatekeeper.constants           import GATEKEEPER_DOWNLOAD_PATH
 from utils.api_view                 import api_view
 from utils.api_view                 import Http400
+from utils.helpers                  import decode_key
 from .constants                     import MESSAGE_TASK_ID_MAX_LENGTH
 from .models                        import Message
+from .models                        import MessageAuth
 from .models                        import ReceiveOutOfBandStatus
 from .models                        import ReceiveStatus
 
 
 @api_view
 @require_POST
-def send(_request, client_message):
+def send(request, client_message):
     if isinstance(client_message, message.ForceReportComputedTask):
-        return handle_send_force_report_computed_task(client_message)
+        return handle_send_force_report_computed_task(request, client_message)
 
     elif isinstance(client_message, message.AckReportComputedTask):
-        return handle_send_ack_report_computed_task(client_message)
+        return handle_send_ack_report_computed_task(request, client_message)
 
     elif isinstance(client_message, message.RejectReportComputedTask):
-        return handle_send_reject_report_computed_task(client_message)
+        return handle_send_reject_report_computed_task(request, client_message)
 
     elif isinstance(client_message, message.concents.ForceGetTaskResult) and client_message.report_computed_task is not None:
-        return handle_send_force_get_task_result(client_message)
+        return handle_send_force_get_task_result(request, client_message)
 
     else:
         return handle_unsupported_golem_messages_type(client_message)
@@ -45,21 +47,43 @@ def send(_request, client_message):
 @api_view
 @require_POST
 def receive(request, _message):
-    current_time = int(datetime.datetime.now().timestamp())
-    last_undelivered_message_status = ReceiveStatus.objects.filter(delivered = False).order_by('timestamp').last()
+    current_time      = int(datetime.datetime.now().timestamp())
+    client_public_key = decode_client_public_key(request)
+    last_undelivered_message_status = ReceiveStatus.objects.filter_public_key(
+        request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
+    ).filter(delivered = False).order_by('timestamp').last()
     if last_undelivered_message_status is None:
-        last_delivered_message_status = ReceiveStatus.objects.all().order_by('timestamp').last()
+        last_delivered_message_status = ReceiveStatus.objects.filter_public_key(
+            request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
+        ).order_by('timestamp').last()
         if last_delivered_message_status is None:
             return None
-        if last_delivered_message_status.message.type == message.ForceReportComputedTask.TYPE:
-            return handle_receive_delivered_force_report_computed_task(last_delivered_message_status)
-        if last_delivered_message_status.message.type == message.concents.ForceGetTaskResultUpload.TYPE:
+
+        if (
+            last_delivered_message_status.message.type                           == message.ForceReportComputedTask.TYPE and
+            last_delivered_message_status.message.auth.provider_public_key_bytes == client_public_key
+        ):
+            return handle_receive_delivered_force_report_computed_task(request, last_delivered_message_status)
+
+        if (
+            last_delivered_message_status.message.type                            == message.concents.ForceGetTaskResultUpload.TYPE and
+            last_delivered_message_status.message.auth.requestor_public_key_bytes == client_public_key
+        ):
             decoded_message_data = deserialize_message(last_delivered_message_status.message.data.tobytes())
             file_uploaded        = get_file_status(decoded_message_data.file_transfer_token)
             if file_uploaded:
-                return handle_receive_force_get_task_result_upload_for_requestor(decoded_message_data)
+                return handle_receive_force_get_task_result_upload_for_requestor(
+                    request,
+                    decoded_message_data,
+                    last_delivered_message_status,
+                )
             else:
-                return handle_receive_force_get_task_result_failed(decoded_message_data)
+                return handle_receive_force_get_task_result_failed(
+                    request,
+                    decoded_message_data,
+                    last_delivered_message_status,
+                )
+
         return None
 
     decoded_message_data = deserialize_message(last_undelivered_message_status.message.data.tobytes())
@@ -67,30 +91,47 @@ def receive(request, _message):
     assert last_undelivered_message_status.message.type == decoded_message_data.TYPE
 
     if last_undelivered_message_status.message.type == message.ForceReportComputedTask.TYPE:
+        if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
+            return None
         if decoded_message_data.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME < current_time:
             set_message_as_delivered(last_undelivered_message_status)
             return handle_receive_ack_from_force_report_computed_task(decoded_message_data)
     else:
-        set_message_as_delivered(last_undelivered_message_status)
+        if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
+            set_message_as_delivered(last_undelivered_message_status)
 
     if isinstance(decoded_message_data, message.ForceReportComputedTask):
+        if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
+            return None
         set_message_as_delivered(last_undelivered_message_status)
         decoded_message_data.sig = None
         return decoded_message_data
 
     if isinstance(decoded_message_data, message.AckReportComputedTask):
-        if current_time <= decoded_message_data.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
+        if (
+            current_time <= decoded_message_data.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME and
+            client_public_key == last_undelivered_message_status.message.auth.provider_public_key_bytes
+        ):
             decoded_message_data.sig = None
             return decoded_message_data
         return None
 
     if isinstance(decoded_message_data, message.concents.ForceGetTaskResult):
+        if client_public_key != last_undelivered_message_status.message.auth.provider_public_key_bytes:
+            return None
         set_message_as_delivered(last_undelivered_message_status)
-        return handle_receive_force_get_task_result_upload_for_provider(request, decoded_message_data)
+        return handle_receive_force_get_task_result_upload_for_provider(
+            request,
+            decoded_message_data,
+            last_undelivered_message_status,
+        )
 
     assert isinstance(decoded_message_data, message.RejectReportComputedTask), (
         "At this point ReceiveStatus must contain ForceReportComputedTask because AckReportComputedTask and RejectReportComputedTask have already been handled"
     )
+
+    if client_public_key != last_undelivered_message_status.message.auth.provider_public_key_bytes:
+        return None
 
     force_report_computed_task = Message.objects.get(
         type    = message.ForceReportComputedTask.TYPE,
@@ -110,12 +151,14 @@ def receive(request, _message):
 
 @api_view
 @require_POST
-def receive_out_of_band(_request, _message):
+def receive_out_of_band(request, _message):
     undelivered_receive_out_of_band_statuses    = ReceiveOutOfBandStatus.objects.filter(delivered = False)
     last_undelivered_receive_out_of_band_status = undelivered_receive_out_of_band_statuses.order_by('timestamp').last()
-    last_undelivered_receive_status             = Message.objects.all().order_by('timestamp').last()
+    last_undelivered_receive_status             = Message.objects.filter(
+        auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+    ).order_by('timestamp').last()
 
-    current_time = int(datetime.datetime.now().timestamp())
+    current_time      = int(datetime.datetime.now().timestamp())
 
     if last_undelivered_receive_out_of_band_status is None:
         if last_undelivered_receive_status is None:
@@ -125,20 +168,22 @@ def receive_out_of_band(_request, _message):
             return None
 
         if last_undelivered_receive_status.type == message.AckReportComputedTask.TYPE:
-            return handle_receive_out_of_band_ack_report_computed_task(last_undelivered_receive_status)
+            return handle_receive_out_of_band_ack_report_computed_task(request, last_undelivered_receive_status)
 
         if last_undelivered_receive_status.type == message.ForceReportComputedTask.TYPE:
-            return handle_receive_out_of_band_force_report_computed_task(last_undelivered_receive_status)
+            return handle_receive_out_of_band_force_report_computed_task(request, last_undelivered_receive_status)
 
         if last_undelivered_receive_status.type == message.RejectReportComputedTask.TYPE:
-            return handle_receive_out_of_band_reject_report_computed_task(last_undelivered_receive_status)
+            return handle_receive_out_of_band_reject_report_computed_task(request, last_undelivered_receive_status)
         return None
 
     return None
 
 
-def handle_send_force_report_computed_task(client_message):
-    current_time = int(datetime.datetime.now().timestamp())
+def handle_send_force_report_computed_task(request, client_message):
+    current_time           = int(datetime.datetime.now().timestamp())
+    client_public_key      = decode_client_public_key(request)
+    other_party_public_key = decode_other_party_public_key(request)
     validate_golem_message_task_to_compute(client_message.task_to_compute)
 
     if Message.objects.filter(task_id = client_message.task_to_compute.compute_task_def['task_id']).exists():
@@ -160,33 +205,53 @@ def handle_send_force_report_computed_task(client_message):
         client_message.TYPE,
         client_message.task_to_compute.compute_task_def['task_id'],
         client_message.serialize(),
-        status = ReceiveStatus
+        provider_public_key  = client_public_key,
+        requestor_public_key = other_party_public_key,
+        status               = ReceiveStatus
     )
     return HttpResponse("", status = 202)
 
 
-def handle_send_ack_report_computed_task(client_message):
-    current_time = int(datetime.datetime.now().timestamp())
+def handle_send_ack_report_computed_task(request, client_message):
+    current_time      = int(datetime.datetime.now().timestamp())
+    client_public_key = decode_client_public_key(request)
     validate_golem_message_task_to_compute(client_message.task_to_compute)
 
     if current_time <= client_message.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
-        force_task_to_compute   = Message.objects.filter(task_id = client_message.task_to_compute.compute_task_def['task_id'], type = message.ForceReportComputedTask.TYPE)
-        previous_ack_message    = Message.objects.filter(task_id = client_message.task_to_compute.compute_task_def['task_id'], type = message.AckReportComputedTask.TYPE)
-        reject_message          = Message.objects.filter(task_id = client_message.task_to_compute.compute_task_def['task_id'], type = message.RejectReportComputedTask.TYPE)
+        force_task_to_compute   = Message.objects.filter(
+            task_id                    = client_message.task_to_compute.compute_task_def['task_id'],
+            type                       = message.ForceReportComputedTask.TYPE,
+            auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
+        )
+        previous_ack_message    = Message.objects.filter(
+            task_id                    = client_message.task_to_compute.compute_task_def['task_id'],
+            type                       = message.AckReportComputedTask.TYPE,
+            auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
+        )
+        reject_message          = Message.objects.filter(
+            task_id                    = client_message.task_to_compute.compute_task_def['task_id'],
+            type                       = message.RejectReportComputedTask.TYPE,
+            auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
+        )
 
         if not force_task_to_compute.exists():
-            raise Http400("'ForceReportComputedTask' for this task has not been initiated yet. Can't accept your 'AckReportComputedTask'.")
+            raise Http400("'ForceReportComputedTask' for this task and client has not been initiated yet. Can't accept your 'AckReportComputedTask'.")
         if previous_ack_message.exists() or reject_message.exists():
             raise Http400(
                 "Received AckReportComputedTask but RejectReportComputedTask "
                 "or another AckReportComputedTask for this task has already been submitted."
             )
+
+        assert force_task_to_compute.count() == 1, "More that one 'ForceReportComputedTask' found for this task_id."
+
         client_message.sig = None
         store_message_and_message_status(
             client_message.TYPE,
             client_message.task_to_compute.compute_task_def['task_id'],
             client_message.serialize(),
-            status = ReceiveStatus
+            provider_public_key  = force_task_to_compute.last().auth.provider_public_key_bytes,
+            requestor_public_key = client_public_key,
+            status               = ReceiveStatus,
         )
 
         return HttpResponse("", status = 202)
@@ -194,14 +259,21 @@ def handle_send_ack_report_computed_task(client_message):
         raise Http400("Time to acknowledge this task is already over.")
 
 
-def handle_send_reject_report_computed_task(client_message):
-    current_time = int(datetime.datetime.now().timestamp())
+def handle_send_reject_report_computed_task(request, client_message):
+    current_time      = int(datetime.datetime.now().timestamp())
+    client_public_key = decode_client_public_key(request)
     validate_golem_message_reject(client_message.cannot_compute_task)
 
-    force_report_computed_task_from_database = Message.objects.filter(task_id = client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id'], type = message.ForceReportComputedTask.TYPE)
+    force_report_computed_task_from_database = Message.objects.filter(
+        task_id                    = client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id'],
+        type                       = message.ForceReportComputedTask.TYPE,
+        auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
+    )
 
     if not force_report_computed_task_from_database.exists():
-        raise Http400("'ForceReportComputedTask' for this task has not been initiated yet. Can't accept your 'RejectReportComputedTask'.")
+        raise Http400("'ForceReportComputedTask' for this task and client has not been initiated yet. Can't accept your 'RejectReportComputedTask'.")
+
+    assert force_report_computed_task_from_database.count() == 1, "More that one 'ForceReportComputedTask' found for this task_id."
 
     force_report_computed_task = deserialize_message(force_report_computed_task_from_database.last().data.tobytes())
 
@@ -214,14 +286,24 @@ def handle_send_reject_report_computed_task(client_message):
             client_message.TYPE,
             force_report_computed_task.task_to_compute.compute_task_def['task_id'],
             client_message.serialize(),
-            status = ReceiveStatus
+            provider_public_key  = force_report_computed_task_from_database.last().auth.provider_public_key_bytes,
+            requestor_public_key = client_public_key,
+            status               = ReceiveStatus
         )
 
         return HttpResponse("", status = 202)
 
     if current_time <= force_report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
-        ack_message             = Message.objects.filter(task_id = client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id'], type = message.AckReportComputedTask.TYPE)
-        previous_reject_message = Message.objects.filter(task_id = client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id'], type = message.RejectReportComputedTask.TYPE)
+        ack_message             = Message.objects.filter(
+            task_id                    = client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id'],
+            type                       = message.AckReportComputedTask.TYPE,
+            auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
+        )
+        previous_reject_message = Message.objects.filter(
+            task_id                    = client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id'],
+            type                       = message.RejectReportComputedTask.TYPE,
+            auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
+        )
 
         if ack_message.exists() or previous_reject_message.exists():
             raise Http400("Received RejectReportComputedTask but AckReportComputedTask or another RejectReportComputedTask for this task has already been submitted.")
@@ -231,22 +313,27 @@ def handle_send_reject_report_computed_task(client_message):
             client_message.TYPE,
             force_report_computed_task.task_to_compute.compute_task_def['task_id'],
             client_message.serialize(),
-            status = ReceiveStatus
+            provider_public_key  = force_report_computed_task_from_database.last().auth.provider_public_key_bytes,
+            requestor_public_key = client_public_key,
+            status               = ReceiveStatus
         )
         return HttpResponse("", status = 202)
     else:
         raise Http400("Time to acknowledge this task is already over.")
 
 
-def handle_send_force_get_task_result(client_message: message.concents.ForceGetTaskResult) -> message.concents:
+def handle_send_force_get_task_result(request, client_message: message.concents.ForceGetTaskResult) -> message.concents:
     assert client_message.TYPE in message.registered_message_types
 
-    current_time = int(datetime.datetime.now().timestamp())
+    current_time           = int(datetime.datetime.now().timestamp())
+    client_public_key      = decode_client_public_key(request)
+    other_party_public_key = decode_other_party_public_key(request)
     validate_golem_message_task_to_compute(client_message.report_computed_task.task_to_compute)
 
     if Message.objects.filter(
-        type    = client_message.TYPE,
-        task_id = client_message.report_computed_task.task_to_compute.compute_task_def['task_id']
+        type                       = client_message.TYPE,
+        task_id                    = client_message.report_computed_task.task_to_compute.compute_task_def['task_id'],
+        auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
     ).exists():
         return message.concents.ForceGetTaskResultRejected(
             header = MessageHeader(
@@ -273,7 +360,9 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
             client_message.TYPE,
             client_message.report_computed_task.task_to_compute.compute_task_def['task_id'],
             client_message.serialize(),
-            status = ReceiveStatus,
+            provider_public_key  = other_party_public_key,
+            requestor_public_key = client_public_key,
+            status               = ReceiveStatus,
         )
         return message.concents.ForceGetTaskResultAck(
             header = MessageHeader(
@@ -291,8 +380,9 @@ def handle_unsupported_golem_messages_type(client_message):
         raise Http400("Unknown message type or not a Golem message.")
 
 
-def handle_receive_delivered_force_report_computed_task(delivered_message):
+def handle_receive_delivered_force_report_computed_task(request, delivered_message):
     force_report_task = deserialize_message(delivered_message.message.data.tobytes())
+    client_public_key = decode_client_public_key(request)
 
     ack_report_computed_task                 = message.AckReportComputedTask()
     ack_report_computed_task.task_to_compute = force_report_task.task_to_compute
@@ -300,6 +390,8 @@ def handle_receive_delivered_force_report_computed_task(delivered_message):
         ack_report_computed_task.TYPE,
         force_report_task.task_to_compute.compute_task_def['task_id'],
         ack_report_computed_task.serialize(),
+        provider_public_key  = client_public_key,
+        requestor_public_key = delivered_message.message.auth.requestor_public_key_bytes,
     )
     ack_report_computed_task.sig = None
     return ack_report_computed_task
@@ -311,10 +403,15 @@ def handle_receive_ack_from_force_report_computed_task(decoded_message):
     return ack_report_computed_task
 
 
-def handle_receive_force_get_task_result_upload_for_provider(request, decoded_message: message.concents.ForceGetTaskResult) -> message.concents.ForceGetTaskResult:
+def handle_receive_force_get_task_result_upload_for_provider(
+    request,
+    decoded_message:                       message.concents.ForceGetTaskResult,
+    previous_message_status_from_database: ReceiveStatus
+) -> message.concents.ForceGetTaskResult:
     assert decoded_message.TYPE in message.registered_message_types
 
     current_time            = int(datetime.datetime.now().timestamp())
+    client_public_key       = decode_client_public_key(request)
     file_transfer_token     = message.concents.FileTransferToken(
         token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_DEADLINE,
         storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
@@ -342,33 +439,47 @@ def handle_receive_force_get_task_result_upload_for_provider(request, decoded_me
         force_get_task_result_upload.TYPE,
         decoded_message.report_computed_task.task_to_compute.compute_task_def['task_id'],
         force_get_task_result_upload.serialize(),
-        status    = ReceiveStatus,
-        delivered = True,
+        provider_public_key  = client_public_key,
+        requestor_public_key = previous_message_status_from_database.message.auth.requestor_public_key_bytes,
+        status               = ReceiveStatus,
+        delivered            = True,
     )
     force_get_task_result_upload.sig = None
     return force_get_task_result_upload
 
 
-def handle_receive_force_get_task_result_failed(decoded_message: message.concents.ForceGetTaskResultUpload) -> message.concents.ForceGetTaskResultUpload:
+def handle_receive_force_get_task_result_failed(
+    request,
+    decoded_message:                       message.concents.ForceGetTaskResultUpload,
+    previous_message_status_from_database: ReceiveStatus
+) -> message.concents.ForceGetTaskResultUpload:
     assert decoded_message.TYPE in message.registered_message_types
 
+    client_public_key = decode_client_public_key(request)
     force_get_task_result_failed = message.concents.ForceGetTaskResultFailed()
     force_get_task_result_failed.task_to_compute = decoded_message.force_get_task_result.report_computed_task.task_to_compute
     store_message_and_message_status(
         force_get_task_result_failed.TYPE,
         force_get_task_result_failed.task_to_compute.compute_task_def['task_id'],
         force_get_task_result_failed.serialize(),
-        status    = ReceiveStatus,
-        delivered = True,
+        provider_public_key  = previous_message_status_from_database.message.auth.provider_public_key_bytes,
+        requestor_public_key = client_public_key,
+        status               = ReceiveStatus,
+        delivered            = True,
     )
     force_get_task_result_failed.sig = None
     return force_get_task_result_failed
 
 
-def handle_receive_force_get_task_result_upload_for_requestor(decoded_message: message.concents.ForceGetTaskResultUpload) -> message.concents.ForceGetTaskResultUpload:
+def handle_receive_force_get_task_result_upload_for_requestor(
+    request,
+    decoded_message:                       message.concents.ForceGetTaskResultUpload,
+    previous_message_status_from_database: ReceiveStatus
+) -> message.concents.ForceGetTaskResultUpload:
     assert decoded_message.TYPE in message.registered_message_types
 
-    current_time = int(datetime.datetime.now().timestamp())
+    client_public_key   = decode_client_public_key(request)
+    current_time        = int(datetime.datetime.now().timestamp())
     file_transfer_token = message.concents.FileTransferToken(
         token_expiration_deadline    = current_time + settings.TOKEN_EXPIRATION_DEADLINE,
         storage_cluster_address      = decoded_message.file_transfer_token.storage_cluster_address,
@@ -380,7 +491,7 @@ def handle_receive_force_get_task_result_upload_for_requestor(decoded_message: m
     assert file_transfer_token.timestamp <= file_transfer_token.token_expiration_deadline  # pylint: disable=no-member
 
     force_get_task_result_upload = message.concents.ForceGetTaskResultUpload(
-        file_transfer_token   = file_transfer_token,
+        file_transfer_token = file_transfer_token,
     )
     force_get_task_result_upload.force_get_task_result = decoded_message.force_get_task_result
 
@@ -388,8 +499,10 @@ def handle_receive_force_get_task_result_upload_for_requestor(decoded_message: m
         force_get_task_result_upload.TYPE,
         force_get_task_result_upload.force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'],
         force_get_task_result_upload.serialize(),
-        status    = ReceiveStatus,
-        delivered = True,
+        provider_public_key  = previous_message_status_from_database.message.auth.provider_public_key_bytes,
+        requestor_public_key = client_public_key,
+        status               = ReceiveStatus,
+        delivered            = True,
     )
     force_get_task_result_upload.sig = None
     return force_get_task_result_upload
@@ -401,7 +514,8 @@ def set_message_as_delivered(client_message):
     client_message.save()
 
 
-def handle_receive_out_of_band_ack_report_computed_task(undelivered_message):
+def handle_receive_out_of_band_ack_report_computed_task(request, undelivered_message):
+    client_public_key = decode_client_public_key(request)
     decoded_ack_report_computed_task = deserialize_message(undelivered_message.data.tobytes())
 
     force_report_computed_task                  = message.ForceReportComputedTask()
@@ -415,14 +529,17 @@ def handle_receive_out_of_band_ack_report_computed_task(undelivered_message):
         message_verdict.TYPE,
         decoded_ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
         message_verdict.serialize(),
-        status = ReceiveOutOfBandStatus,
-        delivered = True
+        provider_public_key  = undelivered_message.auth.provider_public_key_bytes,
+        requestor_public_key = client_public_key,
+        status               = ReceiveOutOfBandStatus,
+        delivered            = True
     )
     message_verdict.sig = None
     return message_verdict
 
 
-def handle_receive_out_of_band_force_report_computed_task(undelivered_message):
+def handle_receive_out_of_band_force_report_computed_task(request, undelivered_message):
+    client_public_key = decode_client_public_key(request)
     decoded_force_report_computed_task = deserialize_message(undelivered_message.data.tobytes())
 
     ack_report_computed_task                    = message.AckReportComputedTask()
@@ -436,14 +553,17 @@ def handle_receive_out_of_band_force_report_computed_task(undelivered_message):
         message_verdict.TYPE,
         decoded_force_report_computed_task.task_to_compute.compute_task_def['task_id'],
         message_verdict.serialize(),
-        status = ReceiveOutOfBandStatus,
-        delivered = True
+        provider_public_key  = undelivered_message.auth.provider_public_key_bytes,
+        requestor_public_key = client_public_key,
+        status               = ReceiveOutOfBandStatus,
+        delivered            = True
     )
     message_verdict.sig = None
     return message_verdict
 
 
-def handle_receive_out_of_band_reject_report_computed_task(undelivered_message):
+def handle_receive_out_of_band_reject_report_computed_task(request, undelivered_message):
+    client_public_key = decode_client_public_key(request)
     decoded_reject_report_computed_task = deserialize_message(undelivered_message.data.tobytes())
 
     message_verdict                                          = message.VerdictReportComputedTask()
@@ -454,8 +574,10 @@ def handle_receive_out_of_band_reject_report_computed_task(undelivered_message):
         message_verdict.TYPE,
         decoded_reject_report_computed_task.cannot_compute_task.task_to_compute.compute_task_def['task_id'],
         message_verdict.serialize(),
-        status = ReceiveOutOfBandStatus,
-        delivered = True
+        provider_public_key  = undelivered_message.auth.provider_public_key_bytes,
+        requestor_public_key = client_public_key,
+        status               = ReceiveOutOfBandStatus,
+        delivered            = True
     )
     message_verdict.sig = None
     return message_verdict
@@ -524,9 +646,19 @@ def validate_task_id(task_id):
         raise Http400("task_id cannot be longer than {} chars.".format(MESSAGE_TASK_ID_MAX_LENGTH))
 
 
-def store_message_and_message_status(golem_message_type: int, task_id: str, raw_golem_message: bytes, status = None, delivered: bool = False):
+def store_message_and_message_status(
+    golem_message_type:     int,
+    task_id:                str,
+    raw_golem_message:      bytes,
+    provider_public_key:    str,
+    requestor_public_key:   str,
+    status:                 type    = None,
+    delivered:              bool    = False
+):
     assert golem_message_type   in message.registered_message_types
     assert status               in [ReceiveStatus, ReceiveOutOfBandStatus, None]
+    assert provider_public_key  is not None
+    assert requestor_public_key is not None
 
     message_timestamp = datetime.datetime.now(timezone.utc)
     golem_message = Message(
@@ -537,6 +669,14 @@ def store_message_and_message_status(golem_message_type: int, task_id: str, raw_
     )
     golem_message.full_clean()
     golem_message.save()
+
+    message_auth = MessageAuth(
+        message                    = golem_message,
+        provider_public_key_bytes  = provider_public_key,
+        requestor_public_key_bytes = requestor_public_key,
+    )
+    message_auth.full_clean()
+    message_auth.save()
 
     if status is not None:
         receive_message_status  = status(
@@ -586,3 +726,17 @@ def get_file_status(file_transfer_token_from_database: message.concents.FileTran
         return False
     else:
         raise exceptions.UnexpectedResponse()
+
+
+def decode_client_public_key(request):
+    assert 'HTTP_CONCENT_CLIENT_PUBLIC_KEY' in request.META
+    return decode_key(request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'])
+
+
+def decode_other_party_public_key(request):
+    if 'HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY' not in request.META:
+        raise Http400('Missing Concent-Other-Party-Public-Key HTTP when expected.')
+    try:
+        return decode_key(request.META['HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY'])
+    except binascii.Error:
+        raise Http400('The value in the Concent-Other-Party-Public-Key HTTP is not a valid base64-encoded value.')

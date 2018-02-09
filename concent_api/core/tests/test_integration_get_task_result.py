@@ -1,5 +1,5 @@
-import mock
 from unittest               import skip
+import mock
 
 from django.test            import override_settings
 from django.urls            import reverse

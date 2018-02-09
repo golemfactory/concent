@@ -1,4 +1,4 @@
-from golem_messages.exceptions      import InvalidSignature
+from golem_messages.exceptions      import MessageError
 from golem_messages.message         import Message
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
@@ -21,26 +21,10 @@ def print_golem_message(message, private_key, public_key, indent = 4):
     ]
 
     for field, value in zip(fields, values):
-        if isinstance(value, bytes):
-            try:
-                nested_message = load(
-                    value,
-                    private_key,
-                    public_key,
-                    check_time=False,
-                )
-            except InvalidSignature as exception:
-                print("Failed to decode a Golem Message.")
-            if nested_message is None:
-                print('{}{:30} = <BINARY DATA>'.format(' ' * indent, field))
-            else:
-                print('{}{:30} ='.format(' ' * indent, field))
-                print_golem_message(nested_message, private_key, public_key, indent = indent + 4)
+        if isinstance(value, Message):
+            print_golem_message(value, private_key, public_key, indent = indent + 4)
         else:
-            if isinstance(value, Message):
-                print_golem_message(value, private_key, public_key, indent = indent + 4)
-            else:
-                print('{}{:30} = {}'.format(' ' * indent, field, value))
+            print('{}{:30} = {}'.format(' ' * indent, field, value))
 
 
 def api_request(host, endpoint, private_key, public_key, data = None, headers = None):
@@ -61,7 +45,7 @@ def api_request(host, endpoint, private_key, public_key, data = None, headers = 
         )
 
     if data is None:
-        response = requests.post("{}".format(url), headers = headers)
+        response = requests.post("{}".format(url), headers = headers, data = '')
     else:
         response = requests.post("{}".format(url), headers = headers, data = data)
 
@@ -78,7 +62,7 @@ def api_request(host, endpoint, private_key, public_key, data = None, headers = 
                     public_key,
                     check_time = False
                 )
-            except InvalidSignature as exception:
+            except MessageError as exception:
                 print("Failed to decode a Golem Message.")
 
             print_golem_message(decoded_response, private_key, public_key)

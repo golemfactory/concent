@@ -40,6 +40,12 @@ def send(request, client_message):
     elif isinstance(client_message, message.concents.ForceGetTaskResult) and client_message.report_computed_task is not None:
         return handle_send_force_get_task_result(request, client_message)
 
+    elif isinstance(client_message, message.concents.ForceSubtaskResults) and client_message.ack_report_computed_task is not None:
+        return handle_send_force_subtask_results(request, client_message)
+
+    elif isinstance(client_message, message.concents.ForceSubtaskResultsResponse):
+        return handle_send_force_subtask_results_results_response(request, client_message)
+
     else:
         return handle_unsupported_golem_messages_type(client_message)
 
@@ -112,6 +118,7 @@ def receive(request, _message):
             current_time <= decoded_message_data.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME and
             client_public_key == last_undelivered_message_status.message.auth.provider_public_key_bytes
         ):
+            set_message_as_delivered(last_undelivered_message_status)
             decoded_message_data.sig = None
             return decoded_message_data
         return None
@@ -125,6 +132,26 @@ def receive(request, _message):
             decoded_message_data,
             last_undelivered_message_status,
         )
+
+    if isinstance(decoded_message_data, message.concents.ForceSubtaskResults):
+        if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
+            return None
+        set_message_as_delivered(last_undelivered_message_status)
+        if current_time < decoded_message_data.timestamp + settings.CONCENT_MESSAGING_TIME:
+            return handle_receive_force_subtasks_results(
+                request,
+                decoded_message_data,
+                last_undelivered_message_status,
+            )
+        decoded_message_data.sig = None
+        return decoded_message_data
+
+    if isinstance(decoded_message_data, message.concents.ForceSubtaskResultsResponse):
+        if client_public_key != last_undelivered_message_status.message.auth.provider_public_key_bytes:
+            return None
+        set_message_as_delivered(last_undelivered_message_status)
+        decoded_message_data.sig = None
+        return decoded_message_data
 
     assert isinstance(decoded_message_data, message.RejectReportComputedTask), (
         "At this point ReceiveStatus must contain ForceReportComputedTask because AckReportComputedTask and RejectReportComputedTask have already been handled"
@@ -335,13 +362,13 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
         task_id                    = client_message.report_computed_task.task_to_compute.compute_task_def['task_id'],
         auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
     ).exists():
-        return message.concents.ForceGetTaskResultRejected(
+        return message.concents.ServiceRefused(
             header = MessageHeader(
-                type_     = message.concents.ForceGetTaskResultRejected.TYPE,
+                type_     = message.concents.ServiceRefused.TYPE,
                 timestamp = client_message.timestamp,
                 encrypted = False,
             ),
-            reason      = message.concents.ForceGetTaskResultRejected.REASON.OperationAlreadyInitiated,
+            reason      = message.concents.ServiceRefused.REASON.DuplicateRequest,
         )
 
     elif client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.FORCE_ACCEPTANCE_TIME < current_time:
@@ -371,6 +398,83 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
                 encrypted = False,
             )
         )
+
+
+def handle_send_force_subtask_results(request, client_message: message.concents.ForceSubtaskResults):
+    assert client_message.TYPE in message.registered_message_types
+
+    current_time           = int(datetime.datetime.now().timestamp())
+    client_public_key      = decode_client_public_key(request)
+    other_party_public_key = decode_other_party_public_key(request)
+
+    if Message.objects.filter(
+        type    = client_message.TYPE,
+        task_id = client_message.ack_report_computed_task.task_to_compute.compute_task_def['task_id']
+    ).exists():
+        return message.concents.ServiceRefused(
+            reason      = message.concents.ServiceRefused.REASON.DuplicateRequest,
+        )
+
+    if not is_provider_account_status_positive(client_message):
+        if not tmp_is_provider_account_status_positive(request):
+            return message.concents.ServiceRefused(
+                reason      = message.concents.ServiceRefused.REASON.TooSmallProviderDeposit,
+            )
+
+    client_message_send_to_soon = client_message.ack_report_computed_task.timestamp + settings.CONCENT_MESSAGING_TIME
+    client_message_send_to_late = client_message.ack_report_computed_task.timestamp + settings.CONCENT_MESSAGING_TIME + settings.FORCE_ACCEPTANCE_TIME
+    if client_message_send_to_late < current_time:
+        return message.concents.ForceSubtaskResultsRejected(
+            reason = message.concents.ForceSubtaskResultsRejected.REASON.RequestTooLate,
+        )
+    elif current_time < client_message_send_to_soon:
+        return message.concents.ForceSubtaskResultsRejected(
+            reason = message.concents.ForceSubtaskResultsRejected.REASON.RequestPremature,
+        )
+    else:
+        client_message.sig = None
+        store_message_and_message_status(
+            client_message.TYPE,
+            client_message.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
+            client_message.serialize(),
+            status               = ReceiveStatus,
+            provider_public_key  = client_public_key,
+            requestor_public_key = other_party_public_key,
+        )
+        return HttpResponse("", status = 202)
+
+
+def handle_send_force_subtask_results_results_response(request, client_message):
+    assert client_message.TYPE in message.registered_message_types
+
+    current_time      = int(datetime.datetime.now().timestamp())
+    client_public_key = decode_client_public_key(request)
+
+    if isinstance(client_message.subtask_results_accepted, message.tasks.SubtaskResultsAccepted):
+        client_message_task_id = client_message.subtask_results_accepted.subtask_id
+    else:
+        client_message_task_id = client_message.subtask_results_rejected.report_computed_task.subtask_id
+    if current_time < client_message.timestamp + settings.CONCENT_MESSAGING_TIME:
+        force_subtask_results                   = Message.objects.filter(task_id = client_message_task_id, type = message.concents.ForceSubtaskResults.TYPE)
+        previous_force_subtask_results_response = Message.objects.filter(task_id = client_message_task_id, type = message.concents.ForceSubtaskResultsResponse.TYPE)
+
+        if not force_subtask_results.exists():
+            raise Http400("'ForceSubtaskResults' for this subtask has not been initiated yet. Can't accept your '{}'.".format(client_message.TYPE))
+        if previous_force_subtask_results_response.exists():
+            raise Http400("This subtask has been resolved already.")
+
+        client_message.sig = None
+        store_message_and_message_status(
+            client_message.TYPE,
+            client_message_task_id,
+            client_message.serialize(),
+            status               = ReceiveStatus,
+            provider_public_key  = force_subtask_results.last().auth.provider_public_key_bytes,
+            requestor_public_key = client_public_key,
+        )
+        return HttpResponse("", status = 202)
+    else:
+        raise Http400("Time to acknowledge this task is already over.")
 
 
 def handle_unsupported_golem_messages_type(client_message):
@@ -506,6 +610,31 @@ def handle_receive_force_get_task_result_upload_for_requestor(
     )
     force_get_task_result_upload.sig = None
     return force_get_task_result_upload
+
+
+def handle_receive_force_subtasks_results(
+    request,
+    decoded_message:                 message.concents.ForceSubtaskResults,
+    last_undelivered_message_status: ReceiveStatus
+):
+    assert decoded_message.TYPE in message.registered_message_types
+
+    client_public_key = decode_client_public_key(request)
+
+    requestor_force_subtask_results                             = message.concents.ForceSubtaskResults()
+    requestor_force_subtask_results.ack_report_computed_task    = decoded_message.ack_report_computed_task
+
+    store_message_and_message_status(
+        requestor_force_subtask_results.TYPE,
+        decoded_message.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
+        requestor_force_subtask_results.serialize(),
+        provider_public_key  = last_undelivered_message_status.message.auth.provider_public_key_bytes,
+        requestor_public_key = client_public_key,
+        status               = ReceiveStatus,
+        delivered            = True,
+    )
+    requestor_force_subtask_results.sig = None
+    return requestor_force_subtask_results
 
 
 def set_message_as_delivered(client_message):
@@ -740,3 +869,14 @@ def decode_other_party_public_key(request):
         return decode_key(request.META['HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY'])
     except binascii.Error:
         raise Http400('The value in the Concent-Other-Party-Public-Key HTTP is not a valid base64-encoded value.')
+
+
+def is_provider_account_status_positive(_message):
+    pass
+
+
+def tmp_is_provider_account_status_positive(request):
+    try:
+        return bool(request.META['HTTP_TEMPORARY_ACCOUNT_FUNDS'])
+    except KeyError:
+        return False

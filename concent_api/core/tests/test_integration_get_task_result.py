@@ -78,7 +78,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         Expected message exchange:
         Requestor -> Concent:    ForceGetTaskResult
         Requestor -> Concent:    ForceGetTaskResult
-        Concent   -> Requestor:  ForceGetTaskResultRejected
+        Concent   -> Requestor:  ServiceRefused
         """
 
         # STEP 1: Requestor forces get task result via Concent.
@@ -120,9 +120,9 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         message_from_concent = load(response.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
-        self.assertIsInstance(message_from_concent, message.concents.ForceGetTaskResultRejected)
+        self.assertIsInstance(message_from_concent, message.concents.ServiceRefused)
         self.assertEqual(message_from_concent.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:08"))
-        self.assertEqual(message_from_concent.reason, message_from_concent.REASON.OperationAlreadyInitiated)
+        self.assertEqual(message_from_concent.reason, message_from_concent.REASON.DuplicateRequest)
 
     def test_requestor_forces_get_task_result_and_concent_immediately_sends_acknowledgement(self):
         """

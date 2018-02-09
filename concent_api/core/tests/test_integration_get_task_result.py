@@ -1,4 +1,5 @@
 import mock
+from unittest               import skip
 
 from django.test            import override_settings
 from django.urls            import reverse
@@ -70,6 +71,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_from_concent.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:11"))
         self.assertEqual(message_from_concent.reason, message_from_concent.REASON.AcceptanceTimeLimitExceeded)
 
+    @skip('Waiting for change to ServiceRefused instead ForceGetTaskResultRejected')
     def test_requestor_forces_get_task_result_and_concent_immediately_sends_rejection_due_to_already_sent_message(self):
         """
         Tests if on requestor ForceGetTaskResult message Concent will return ForceGetTaskResultRejected

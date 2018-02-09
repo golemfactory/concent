@@ -1,4 +1,5 @@
 import mock
+from unittest               import skip
 
 from django.test            import override_settings
 from django.urls            import reverse
@@ -30,6 +31,7 @@ def get_file_status_false_mock(_file_transfer_token_from_database):
 )
 class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
+    @skip('Waiting for change to ServiceRefused instead ForceGetTaskResultRejected')
     def test_requestor_forces_get_task_result_and_concent_immediately_sends_rejection_due_to_already_sent_message_should_work_only_with_correct_keys(self):
         """
         Tests if on requestor ForceGetTaskResult message Concent will return ForceGetTaskResultRejected

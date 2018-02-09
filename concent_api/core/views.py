@@ -362,13 +362,13 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
         task_id                    = client_message.report_computed_task.task_to_compute.compute_task_def['task_id'],
         auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
     ).exists():
-        return message.concents.ForceGetTaskResultRejected(
+        return message.concents.ServiceRefused(
             header = MessageHeader(
-                type_     = message.concents.ForceGetTaskResultRejected.TYPE,
+                type_     = message.concents.ServiceRefused.TYPE,
                 timestamp = client_message.timestamp,
                 encrypted = False,
             ),
-            reason      = message.concents.ForceGetTaskResultRejected.REASON.OperationAlreadyInitiated,
+            reason      = message.concents.ServiceRefused.REASON.DuplicateRequest,
         )
 
     elif client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.FORCE_ACCEPTANCE_TIME < current_time:

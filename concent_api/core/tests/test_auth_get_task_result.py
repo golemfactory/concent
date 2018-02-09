@@ -1,4 +1,3 @@
-from unittest               import skip
 import mock
 
 from django.test            import override_settings
@@ -31,7 +30,6 @@ def get_file_status_false_mock(_file_transfer_token_from_database):
 )
 class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
-    @skip('Waiting for change to ServiceRefused instead ForceGetTaskResultRejected')
     def test_requestor_forces_get_task_result_and_concent_immediately_sends_rejection_due_to_already_sent_message_should_work_only_with_correct_keys(self):
         """
         Tests if on requestor ForceGetTaskResult message Concent will return ForceGetTaskResultRejected
@@ -156,9 +154,9 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         message_from_concent = load(response.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
-        self.assertIsInstance(message_from_concent,      message.concents.ForceGetTaskResultRejected)
+        self.assertIsInstance(message_from_concent,      message.concents.ServiceRefused)
         self.assertEqual(message_from_concent.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:08"))
-        self.assertEqual(message_from_concent.reason,    message_from_concent.REASON.OperationAlreadyInitiated)
+        self.assertEqual(message_from_concent.reason,    message_from_concent.REASON.DuplicateRequest)
 
         self.assertEqual(MessageAuth.objects.count(), 3)
 

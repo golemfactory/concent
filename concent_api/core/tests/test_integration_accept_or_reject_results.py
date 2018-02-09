@@ -578,3 +578,629 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             task_id                  = '2',
             receive_delivered_status = True,
         )
+
+    def test_requestor_sends_subtask_results_acceptance_but_provider_does_not_submitted_force_subtask_results_concent_should_reject_it(self):
+        """
+        Test if Requestor want submit SubtaskResultsAccepted message,
+        but Provider doesn't submitted ForceResultsAccepted before
+
+        Exptected message exchange:
+        Requestor   -> Concent:     SubtaskResultsAccepted
+        Concent     -> Requestor:   HTTP 400
+        """
+
+        serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
+            requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
+            timestamp               = "2018-02-05 11:00:00",
+            subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
+                timestamp               = "2018-02-05 11:00:00",
+                subtask_id              = '2',
+                payment_ts              = "2018-02-05 11:00:01",
+            )
+        )
+
+        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+            with freeze_time("2018-02-05 11:00:01"):
+                response_1 = self.client.post(
+                    reverse('core:send'),
+                    data                            = serialized_force_subtask_results_response,
+                    content_type                    = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
+                )
+
+        self._test_400_response(response_1)
+
+    def test_requestor_sends_subtask_results_rejection_but_provider_does_not_submitted_force_subtask_results_concent_should_reject_it(self):
+        """
+        Test if Requestor want submit ForceSubtaskResultsResponse with SubtaskResultsRejected message,
+        but Provider doesn't submitted ForceResultsAccepted before
+
+
+        Exptected message exchange:
+        Requestor   -> Concent:     ForceSubtaskResultsResponse with SubtaskResultsRejected
+        Concent     -> Requestor:   HTTP 400
+        """
+        serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
+            timestamp               = "2018-02-05 11:00:00",
+            requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
+            subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
+                timestamp               = "2018-02-05 11:00:00",
+                reason                  = message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
+                report_computed_task    = self._get_deserialized_report_computed_task(
+                    timestamp   = "2018-02-05 11:00:00",
+                    subtask_id  = 'xxyyzz',
+                    task_to_compute = self._get_deserialized_task_to_compute(
+                        timestamp   = "2018-02-05 11:00:00",
+                        deadline    = "2018-02-05 11:00:05",
+                        task_id     = 'xxyyzz',
+                    )
+                )
+            )
+        )
+
+        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+            with freeze_time("2018-02-05 11:00:01"):
+                response_1 = self.client.post(
+                    reverse('core:send'),
+                    data                            = serialized_force_subtask_results_response,
+                    content_type                    = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
+                )
+
+        self._test_400_response(response_1)
+
+    def test_provider_sends_messages_with_wrong_timestamps_concent_should_reject_them(self):
+        """
+        Test if Provider wants to submit ForceSubtaskResults,
+        Concent won't let Provider to submit this message
+
+        Expected message exchange:
+        Provider    -> Concent:     ForceSubtaskResults (much too soon)
+        Concent     -> Provider:    HTTP 400
+        Provider    -> Concent:     ForceSubtaskResults (much too late)
+        Concent     -> Provider:    HTTP 400
+        """
+
+        serialized_force_subtask_results = self._get_serialized_force_subtask_results(
+            timestamp                   = "2018-04-05 10:00:15",
+            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
+                timestamp       = "2018-04-05 10:00:15",
+                subtask_id      = "2",
+                task_to_compute = self._get_deserialized_task_to_compute(
+                    timestamp   = "2018-04-05 10:00:00",
+                    deadline    = "2018-04-05 10:00:10",
+                    task_id     = '2',
+                )
+            )
+        )
+
+        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+            with freeze_time("2018-03-05 10:00:30"):
+                response_1 = self.client.post(
+                    reverse('core:send'),
+                    data                                = serialized_force_subtask_results,
+                    content_type                        = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                )
+
+        self._test_400_response(response_1)
+
+        serialized_force_subtask_results = self._get_serialized_force_subtask_results(
+            timestamp                   = "2018-04-05 10:00:15",
+            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
+                timestamp       = "2018-04-05 10:00:15",
+                subtask_id      = '2',
+                task_to_compute = self._get_deserialized_task_to_compute(
+                    timestamp   = "2018-04-05 10:00:00",
+                    deadline    = "2018-04-05 10:00:10",
+                    task_id     = '2',
+                )
+            )
+        )
+
+        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+            with freeze_time("2018-03-05 10:00:40"):
+                response_2 = self.client.post(
+                    reverse('core:send'),
+                    data                                = serialized_force_subtask_results,
+                    content_type                        = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                )
+
+        self._test_400_response(response_2)
+
+    def test_requestor_sends_messages_with_wrong_timestamps_concent_should_return_http_400(self):
+        """
+        Test if Requestor want to submit SubtaskResultsAccepted and SubtaskResultsRejected,
+        Concent won't let Requestor to submit this messages
+
+        Expected message exchange:
+        Provider    -> Concent:     ForceSubtaskResults
+        Concent     -> Provider:    HTTP 202
+        Requestor   -> Concent:     SubtaskResultsAccepted (future timestamp)
+        Concent     -> Requestor:   HTTP 400
+        Requestor   -> Concent:     SubtaskResultsAccepted (past timestamp)
+        Concent     -> Requestor:   HTTP 400
+        Requestor   -> Concent:     SubtaskResultsRejected (future timestamp)
+        Concent     -> Requestor:   HTTP 400
+        Requestor   -> Concent:     SubtaskResultsRejected (past timestamp)
+        Concent     -> Requestor:   HTTP 400
+        """
+
+        serialized_force_subtask_results = self._get_serialized_force_subtask_results(
+            timestamp                   = "2018-02-05 10:00:15",
+            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
+                timestamp       = "2018-02-05 10:00:15",
+                subtask_id      = "2",
+                task_to_compute = self._get_deserialized_task_to_compute(
+                    timestamp   = "2018-02-05 10:00:00",
+                    deadline    = "2018-02-05 10:00:10",
+                    task_id     = '2',
+                )
+            )
+        )
+
+        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+            with freeze_time("2018-02-05 10:00:30"):
+                response_1 = self.client.post(
+                    reverse('core:send'),
+                    data                                = serialized_force_subtask_results,
+                    content_type                        = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                )
+
+        assert len(response_1.content)  == 0
+        assert response_1.status_code   == 202
+
+        serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
+            requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
+            timestamp               = "2018-02-05 12:00:00",
+            subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
+                timestamp               = "2018-02-05 12:00:00",
+                subtask_id              = '2',
+                payment_ts              = "2018-02-05 12:00:01",
+            )
+        )
+
+        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+            with freeze_time("2018-02-05 11:00:00"):
+                response_2 = self.client.post(
+                    reverse('core:send'),
+                    data                            = serialized_force_subtask_results_response,
+                    content_type                    = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
+                )
+
+        self._test_400_response(response_2)
+
+        serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
+            requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
+            timestamp               = "2018-02-05 10:00:00",
+            subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
+                timestamp               = "2018-02-05 10:00:00",
+                subtask_id              = '2',
+                payment_ts              = "2018-02-05 10:00:01",
+            )
+        )
+
+        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+            with freeze_time("2018-02-05 11:00:00"):
+                response_3 = self.client.post(
+                    reverse('core:send'),
+                    data                            = serialized_force_subtask_results_response,
+                    content_type                    = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
+                )
+
+        self._test_400_response(response_3)
+
+        serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
+            requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
+            timestamp               = "2018-02-05 12:00:00",
+            subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
+                timestamp               = "2018-02-05 12:00:00",
+                reason                  = message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
+                report_computed_task    = self._get_deserialized_report_computed_task(
+                    timestamp   = "2018-02-05 12:00:00",
+                    subtask_id  = '2',
+                    task_to_compute = self._get_deserialized_task_to_compute(
+                        timestamp   = "2018-02-05 12:00:00",
+                        deadline    = "2018-02-05 12:00:05",
+                        task_id     = '2',
+                    )
+                )
+            )
+        )
+
+        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+            with freeze_time("2018-02-05 11:00:00"):
+                response_4 = self.client.post(
+                    reverse('core:send'),
+                    data                            = serialized_force_subtask_results_response,
+                    content_type                    = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
+                )
+
+        self._test_400_response(response_4)
+
+        serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
+            requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
+            timestamp               = "2018-02-05 10:00:00",
+            subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
+                timestamp               = "2018-02-05 10:00:00",
+                reason                  = message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
+                report_computed_task    = self._get_deserialized_report_computed_task(
+                    timestamp   = "2018-02-05 12:00:00",
+                    subtask_id  = '2',
+                    task_to_compute = self._get_deserialized_task_to_compute(
+                        timestamp   = "2018-02-05 10:00:00",
+                        deadline    = "2018-02-05 10:00:05",
+                        task_id     = '2',
+                    )
+                )
+            )
+        )
+
+        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+            with freeze_time("2018-02-05 11:00:00"):
+                response_5 = self.client.post(
+                    reverse('core:send'),
+                    data                            = serialized_force_subtask_results_response,
+                    content_type                    = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
+                )
+
+        self._test_400_response(response_5)
+
+    def test_requestor_or_provider_send_message_with_wrong_nested_message_type_concent_should_return_http_400(self):
+        """
+        Test if Provider want to submit ForceSubtaskResults with AckReportComputedTask with nested
+        CannotComputeTask insted of TaskToCompute
+
+        Expected message exchange:
+        Provider    -> Concent:     ForceSubtaskResults
+        Concent     -> Provider:    HTTP 400
+        """
+
+        serialized_force_subtask_results = self._get_serialized_force_subtask_results(
+            timestamp                   = "2018-02-05 10:00:15",
+            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
+                subtask_id      = "20sd",
+                task_to_compute = message.CannotComputeTask()
+            )
+        )
+
+        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+            with freeze_time("2018-02-05 10:00:30"):
+                response_1 = self.client.post(
+                    reverse('core:send'),
+                    data                                = serialized_force_subtask_results,
+                    content_type                        = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                )
+
+        self._test_400_response(response_1)
+
+    def test_full_requestor_and_provider_communication_concent_should_accept_messages(self):
+        """
+        Test if Provider want to submit ForceSubtaskResults with correct timestamp,
+        Requestor should receive it from Concent with new timestamp.
+        If Requestor sends SubtaskResultsAccepted,
+        Provider should receive it with correct timestamp
+
+        Expected message exchange:
+        Provider    -> Concent:     ForceSubtaskResults
+        Concent     -> Provider:    HTTP 202
+        Concent     -> Requestor:   ForceSubtaskResults
+        Requestor   -> Concent:     SubtaskResultsAccepted
+        Concent     -> Requestor:   HTTP 202
+        Concent     -> Provider:    SubtaskResultsAccepted
+        """
+
+        serialized_force_subtask_results = self._get_serialized_force_subtask_results(
+            timestamp                   = "2018-02-05 10:00:20",
+            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
+                timestamp                   = "2018-02-05 10:00:20",
+                subtask_id      = "xxyyzz",
+                task_to_compute = self._get_deserialized_task_to_compute(
+                    timestamp   = "2018-02-05 10:00:00",
+                    deadline    = "2018-02-05 10:00:10",
+                    task_id     = '1',
+                )
+            )
+        )
+
+        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+            with freeze_time("2018-02-05 10:00:30"):
+                response_1 = self.client.post(
+                    reverse('core:send'),
+                    data                                = serialized_force_subtask_results,
+                    content_type                        = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                )
+
+        assert len(response_1.content) == 0
+        assert response_1.status_code  == 202
+
+        self._test_database_objects(
+            last_object_type         = message.concents.ForceSubtaskResults,
+            task_id                  = '1',
+            receive_delivered_status = False,
+        )
+
+        with freeze_time("2018-02-05 10:00:29"):
+            response_2 = self.client.post(
+                reverse('core:receive'),
+                data                            = '',
+                content_type                    = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
+            )
+        deserialized_compute_task_def = self._get_deserialized_compute_task_def(
+            deadline    = "2018-02-05 10:00:10",
+            task_id     = '1',
+        )
+        self._test_response(
+            response_2,
+            status       = 200,
+            key          = self.REQUESTOR_PRIVATE_KEY,
+            message_type = message.concents.ForceSubtaskResults,
+            fields       = {
+                'timestamp':                                            self._parse_iso_date_to_timestamp("2018-02-05 10:00:29"),
+                'ack_report_computed_task.subtask_id':                  'xxyyzz',
+                'ack_report_computed_task.task_to_compute.compute_task_def': deserialized_compute_task_def,
+            }
+        )
+
+        serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
+            requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
+            timestamp               = "2018-02-05 11:00:00",
+            subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
+                timestamp               = "2018-02-05 11:00:00",
+                subtask_id              = '1',
+                payment_ts              = "2018-02-05 11:00:01",
+            )
+        )
+
+        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+            with freeze_time("2018-02-05 11:00:01"):
+                response_3 = self.client.post(
+                    reverse('core:send'),
+                    data                            = serialized_force_subtask_results_response,
+                    content_type                    = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
+                )
+
+        assert len(response_3.content) == 0
+        assert response_3.status_code  == 202
+
+        self._test_database_objects(
+            last_object_type         = message.concents.ForceSubtaskResultsResponse,
+            task_id                  = '1',
+            receive_delivered_status = False,
+        )
+
+        with freeze_time("2018-02-05 11:00:10"):
+            response_4 = self.client.post(
+                reverse('core:receive'),
+                data                            = '',
+                content_type                    = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
+            )
+
+        self._test_response(
+            response_4,
+            status = 200,
+            key = self.PROVIDER_PRIVATE_KEY,
+            message_type = message.concents.ForceSubtaskResultsResponse,
+            fields = {
+                'timestamp':                            self._parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
+                'subtask_results_accepted.timestamp':   self._parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
+                'subtask_results_accepted.subtask_id':  '1',
+                'subtask_results_accepted.payment_ts':  self._parse_iso_date_to_timestamp("2018-02-05 11:00:01")
+            }
+        )
+
+    def test_requstor_send_again_subtask_results_accepted_or_rejected_when_message_already_accepted_concent_should_return_http_400(self):
+        """
+        Test if Requestor wants to send  SubtaskResultsAccepted or SubtaskResultsRejected
+        when already SubtaskResultsAccepted was accepted via Concent,
+        Concent should return HTTP 400.
+
+        Expected message exchange:
+        Requestor   -> Concent: SubtaskResultsAccepted
+        Concent     -> Requestor: HTTP 400
+        Requestor   -> Concent: SubtaskResultsRejected
+        Concent     -> Requestor: HTTP 400
+        """
+        deserialized_force_subtask_results = self._get_deserialized_force_subtask_results(
+            timestamp                   = "2018-02-05 10:00:15",
+            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
+                subtask_id      = "xxyyzz",
+                task_to_compute = self._get_deserialized_task_to_compute(
+                    timestamp   = "2018-02-05 10:00:00",
+                    deadline    = "2018-02-05 10:00:10",
+                    task_id     = '2',
+                )
+            )
+        )
+
+        self._store_golem_messages_in_database(
+            message_type    = deserialized_force_subtask_results.TYPE,
+            timestamp       = "2018-02-05 10:00:30",
+            data            = deserialized_force_subtask_results,
+            task_id         = deserialized_force_subtask_results.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
+            status          = ReceiveStatus,
+            delivered       = True,
+        )
+
+        deserialized_subtask_results_response = self._get_deserialized_force_subtask_results_response(
+            timestamp = "2018-02-05 11:00:00",
+            subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
+                timestamp   = "2018-02-05 11:00:00",
+                subtask_id  = '2',
+                payment_ts = "2018-02-05 11:00:01",
+            )
+        )
+
+        self._store_golem_messages_in_database(
+            message_type    = deserialized_subtask_results_accepted.TYPE,
+            timestamp       = "2018-02-05 11:00:01",
+            data            = deserialized_subtask_results_accepted,
+            task_id         = deserialized_subtask_results_accepted.subtask_id,
+            status          = ReceiveStatus,
+            delivered       = True,
+        )
+
+        serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
+            requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
+            timestamp               = "2018-02-05 11:00:01",
+            subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
+                timestamp               = "2018-02-05 11:00:01",
+                subtask_id              = '2',
+                payment_ts              = "2018-02-05 11:00:02",
+            )
+        )
+
+        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+            with freeze_time("2018-02-05 11:00:02"):
+                response_1 = self.client.post(
+                    reverse('core:send'),
+                    data                            = serialized_force_subtask_results_response,
+                    content_type                    = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
+                )
+
+        self._test_400_response(response_1)
+
+        serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
+            requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
+            timestamp               = "2018-02-05 11:00:01",
+            subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
+                timestamp               = "2018-02-05 11:00:01",
+                reason                  = message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
+                report_computed_task    = self._get_deserialized_report_computed_task(
+                    timestamp   = "2018-02-05 11:00:01",
+                    subtask_id  = '2',
+                    task_to_compute = self._get_deserialized_task_to_compute(
+                        timestamp   = "2018-02-05 11:00:01",
+                        deadline    = "2018-02-05 11:00:06",
+                        task_id     = '2',
+                    )
+                )
+            )
+        )
+
+        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+            with freeze_time("2018-02-05 11:00:02"):
+                response_2 = self.client.post(
+                    reverse('core:send'),
+                    data                            = serialized_force_subtask_results_response,
+                    content_type                    = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
+                )
+
+        self._test_400_response(response_2)
+
+    def test_requstor_send_again_subtask_results_accepted_or_rejected_when_message_already_rejected_concent_should_return_http_400(self):
+        """
+        Test if Requestor wants to send SubtaskResultsAccepted or SubtaskResultsRejected
+        when already SubtaskResultsAccepted was accepted via Concent,
+        Concent should return HTTP 400.
+
+        Expected message exchange:
+        Requestor   -> Concent: SubtaskResultsAccepted
+        Concent     -> Requestor: HTTP 400
+        Requestor   -> Concent: SubtaskResultsRejected
+        Concent     -> Requestor: HTTP 400
+        """
+        deserialized_force_subtask_results = self._get_deserialized_force_subtask_results(
+            timestamp                   = "2018-02-05 10:00:15",
+            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
+                subtask_id      = "2",
+                task_to_compute = self._get_deserialized_task_to_compute(
+                    timestamp   = "2018-02-05 10:00:00",
+                    deadline    = "2018-02-05 10:00:10",
+                    task_id     = '2',
+                )
+            )
+        )
+
+        self._store_golem_messages_in_database(
+            message_type    = deserialized_force_subtask_results.TYPE,
+            timestamp       = "2018-02-05 10:00:30",
+            data            = deserialized_force_subtask_results,
+            task_id         = deserialized_force_subtask_results.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
+            status          = ReceiveStatus,
+            delivered       = True,
+        )
+
+        deserialized_subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
+            timestamp   = "2018-02-05 11:00:00",
+            reason      = message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
+            report_computed_task = self._get_deserialized_report_computed_task(
+                subtask_id = '2',
+                task_to_compute = self._get_deserialized_task_to_compute(
+                    timestamp   = "2018-02-05 11:00:00",
+                    deadline    = "2018-02-05 11:00:05",
+                    task_id     = '2',
+                )
+            )
+        )
+
+        self._store_golem_messages_in_database(
+            message_type    = deserialized_subtask_results_rejected.TYPE,
+            timestamp       = "2018-02-05 11:00:01",
+            data            = deserialized_subtask_results_rejected,
+            task_id         = deserialized_subtask_results_rejected.report_computed_task.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
+            status          = ReceiveStatus,
+            delivered       = True,
+        )
+
+        serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
+            requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
+            timestamp               = "2018-02-05 11:00:01",
+            subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
+                timestamp               = "2018-02-05 11:00:01",
+                subtask_id              = '2',
+                payment_ts              = "2018-02-05 11:00:02",
+            )
+        )
+
+        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+            with freeze_time("2018-02-05 11:00:02"):
+                response_1 = self.client.post(
+                    reverse('core:send'),
+                    data                            = serialized_force_subtask_results_response,
+                    content_type                    = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
+                )
+        self._test_400_response(response_1)
+
+        serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
+            requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
+            timestamp               = "2018-02-05 11:00:01",
+            subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
+                timestamp               = "2018-02-05 11:00:01",
+                reason                  = message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
+                report_computed_task    = self._get_deserialized_report_computed_task(
+                    timestamp   = "2018-02-05 11:00:01",
+                    subtask_id  = '2',
+                    task_to_compute = self._get_deserialized_task_to_compute(
+                        timestamp   = "2018-02-05 11:00:01",
+                        deadline    = "2018-02-05 11:00:06",
+                        task_id     = '2',
+                    )
+                )
+            )
+        )
+
+        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+            with freeze_time("2018-02-05 11:00:02"):
+                response_2 = self.client.post(
+                    reverse('core:send'),
+                    data                            = serialized_force_subtask_results_response,
+                    content_type                    = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
+                )
+
+        self._test_400_response(response_2)

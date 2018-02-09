@@ -79,7 +79,12 @@ class ConcentIntegrationTestCase(TestCase):
             )
         return report_computed_task
 
-    def _get_deserialized_task_to_compute(self, timestamp, deadline, task_id='1'):
+    def _get_deserialized_task_to_compute(
+        self,
+        timestamp   = None,
+        deadline    = None,
+        task_id     = '1'
+    ):
         """ Returns TaskToCompute deserialized. """
         compute_task_def                = message.ComputeTaskDef()
         compute_task_def['task_id']     = task_id
@@ -93,20 +98,28 @@ class ConcentIntegrationTestCase(TestCase):
             )
         return task_to_compute
 
-
-    def _get_deserialized_ack_report_computed_task(self, timestamp = None, deadline = None, subtask_id = '1', task_to_compute = None):
+    def _get_deserialized_ack_report_computed_task(
+        self,
+        timestamp       = None,
+        deadline        = None,
+        subtask_id      = '1',
+        task_to_compute = None
+    ):
         """ Returns AckReportComputedTask deserialized. """
         with freeze_time(timestamp or self._get_timestamp_string()):
             ack_report_computed_task = message.AckReportComputedTask(
                 subtask_id      = subtask_id,
                 task_to_compute = (
                     task_to_compute or
-                    self._get_deserialized_task_to_compute(timestamp, (timestamp + 10) or deadline)
+                    self._get_deserialized_task_to_compute(
+                        timestamp = timestamp,
+                        deadline  = deadline
+                    )
                 ),
             )
         return ack_report_computed_task
 
-    def _parse_iso_date_to_timestamp(self, date_string):  # pylint: disable=no-self-use
+    def _parse_iso_date_to_timestamp(self, date_string):    # pylint: disable=no-self-use
         return int(dateutil.parser.parse(date_string).timestamp())
 
     def _get_timestamp_string(self):                        # pylint: disable=no-self-use
@@ -118,7 +131,6 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _test_response(self, response, status, key, message_type = None, fields = None):
         self.assertEqual(response.status_code, status)
-
         if message_type:
             message_from_concent = load(
                 response.content,
@@ -155,12 +167,12 @@ class ConcentIntegrationTestCase(TestCase):
         """ Returns ForceSubtaskResults deserialized. """
         with freeze_time(timestamp or self._get_timestamp_string()):
             force_subtask_results = message.concents.ForceSubtaskResults(
-                timestamp = self._parse_iso_date_to_timestamp(timestamp),
+                # timestamp = self._parse_iso_date_to_timestamp(timestamp),
                 ack_report_computed_task = (
                     ack_report_computed_task or
                     self._get_deserialized_ack_report_computed_task(
-                        timestamp       = self._parse_iso_date_to_timestamp(timestamp),
-                        deadline        = self._parse_iso_date_to_timestamp(timestamp + 10),
+                        timestamp       = timestamp,
+                        deadline        = (self._parse_iso_date_to_timestamp(timestamp) + 10),
                     )
                 )
             )
@@ -185,16 +197,16 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_subtask_results_accepted(
         self,
-        timestamp               = None,
-        subtask_id              = 'xxyyxx',
-        payments_ts             = None,
+        timestamp   = None,
+        subtask_id  = '1',
+        payment_ts  = None,
     ):
         """ Return SubtaskResultsAccepted deserialized """
         with freeze_time(timestamp or self._get_timestamp_string()):
-            subtask_results_accepted = message.concents.SubtaskResultsAccepted(
+            subtask_results_accepted = message.tasks.SubtaskResultsAccepted(
                 subtask_id      = subtask_id,
-                payments_ts     = (
-                    self._parse_iso_date_to_timestamp(payments_ts) or
+                payment_ts     = (
+                    self._parse_iso_date_to_timestamp(payment_ts) or
                     self._parse_iso_date_to_timestamp(self._get_timestamp_string())
                 )
             )
@@ -223,7 +235,8 @@ class ConcentIntegrationTestCase(TestCase):
     def _get_deserialized_subtask_results_rejected(
         self,
         timestamp               = None,
-        subtask_id              = 'xxyyzz',
+        reason                  = None,
+        report_computed_task    = None,
     ):
         """ Return SubtaskResultsRejected deserialized """
         with freeze_time(timestamp or self._get_timestamp_string()):

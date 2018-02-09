@@ -41,7 +41,7 @@ def send(request, client_message):
         return handle_send_force_get_task_result(request, client_message)
 
     elif isinstance(client_message, message.concents.ForceSubtaskResults) and client_message.ack_report_computed_task is not None:
-        return handle_send_force_subtask_results(client_message, request)
+        return handle_send_force_subtask_results(request, client_message)
 
     elif isinstance(client_message, message.concents.ForceSubtaskResultsResponse):
         return handle_send_force_subtask_results_results_response(request, client_message)
@@ -118,6 +118,7 @@ def receive(request, _message):
             current_time <= decoded_message_data.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME and
             client_public_key == last_undelivered_message_status.message.auth.provider_public_key_bytes
         ):
+            set_message_as_delivered(last_undelivered_message_status)
             decoded_message_data.sig = None
             return decoded_message_data
         return None
@@ -133,13 +134,21 @@ def receive(request, _message):
         )
 
     if isinstance(decoded_message_data, message.concents.ForceSubtaskResults):
+        if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
+            return None
         set_message_as_delivered(last_undelivered_message_status)
         if current_time < decoded_message_data.timestamp + settings.CONCENT_MESSAGING_TIME:
-            return handle_receive_force_subtasks_results(decoded_message_data)
+            return handle_receive_force_subtasks_results(
+                request,
+                decoded_message_data,
+                last_undelivered_message_status,
+            )
         decoded_message_data.sig = None
         return decoded_message_data
 
     if isinstance(decoded_message_data, message.concents.ForceSubtaskResultsResponse):
+        if client_public_key != last_undelivered_message_status.message.auth.provider_public_key_bytes:
+            return None
         set_message_as_delivered(last_undelivered_message_status)
         decoded_message_data.sig = None
         return decoded_message_data
@@ -391,10 +400,12 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
         )
 
 
-def handle_send_force_subtask_results(client_message: message.concents.ForceSubtaskResults, request):
+def handle_send_force_subtask_results(request, client_message: message.concents.ForceSubtaskResults):
     assert client_message.TYPE in message.registered_message_types
 
-    current_time = int(datetime.datetime.now().timestamp())
+    current_time           = int(datetime.datetime.now().timestamp())
+    client_public_key      = decode_client_public_key(request)
+    other_party_public_key = decode_other_party_public_key(request)
 
     if Message.objects.filter(
         type    = client_message.TYPE,
@@ -426,7 +437,9 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
             client_message.TYPE,
             client_message.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
             client_message.serialize(),
-            status = ReceiveStatus,
+            status               = ReceiveStatus,
+            provider_public_key  = client_public_key,
+            requestor_public_key = other_party_public_key,
         )
         return HttpResponse("", status = 202)
 
@@ -455,7 +468,9 @@ def handle_send_force_subtask_results_results_response(request, client_message):
             client_message.TYPE,
             client_message_task_id,
             client_message.serialize(),
-            status = ReceiveStatus
+            status               = ReceiveStatus,
+            provider_public_key  = force_subtask_results.last().auth.provider_public_key_bytes,
+            requestor_public_key = client_public_key,
         )
         return HttpResponse("", status = 202)
     else:
@@ -597,20 +612,26 @@ def handle_receive_force_get_task_result_upload_for_requestor(
     return force_get_task_result_upload
 
 
-def handle_receive_force_subtasks_results(decoded_message: message.concents.ForceSubtaskResults):
+def handle_receive_force_subtasks_results(
+    request,
+    decoded_message:                 message.concents.ForceSubtaskResults,
+    last_undelivered_message_status: ReceiveStatus
+):
     assert decoded_message.TYPE in message.registered_message_types
 
-    current_time                                                = int(datetime.datetime.now().timestamp())
+    client_public_key = decode_client_public_key(request)
+
     requestor_force_subtask_results                             = message.concents.ForceSubtaskResults()
-    requestor_force_subtask_results.timestamp                   = current_time
     requestor_force_subtask_results.ack_report_computed_task    = decoded_message.ack_report_computed_task
 
     store_message_and_message_status(
         requestor_force_subtask_results.TYPE,
         decoded_message.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
         requestor_force_subtask_results.serialize(),
-        status    = ReceiveStatus,
-        delivered = True,
+        provider_public_key  = last_undelivered_message_status.message.auth.provider_public_key_bytes,
+        requestor_public_key = client_public_key,
+        status               = ReceiveStatus,
+        delivered            = True,
     )
     requestor_force_subtask_results.sig = None
     return requestor_force_subtask_results

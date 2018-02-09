@@ -64,6 +64,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
 
         assert len(response_1.content)  == 0
@@ -84,6 +85,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
         self._test_response(
@@ -120,6 +122,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     data                            = serialized_force_subtask_results,
                     content_type                    = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
 
         self.assertEqual(Message.objects.last(), None)
@@ -170,6 +173,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
 
         self._test_response(
@@ -203,6 +207,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
 
         self._test_response(
@@ -247,6 +252,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
 
         assert len(response_1.content) == 0
@@ -314,6 +320,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
 
         assert len(response_1.content) == 0
@@ -382,6 +389,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
 
         assert len(response_1.content)  == 0
@@ -437,7 +445,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                            = '',
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
             )
 
         self._test_response(
@@ -681,6 +689,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
 
         self._test_400_response(response_1)
@@ -747,6 +756,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
 
         assert len(response_1.content)  == 0
@@ -877,6 +887,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
 
         self._test_400_response(response_1)
@@ -917,6 +928,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
 
         assert len(response_1.content) == 0
@@ -1025,12 +1037,14 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
 
         self._store_golem_messages_in_database(
-            message_type    = deserialized_force_subtask_results.TYPE,
-            timestamp       = "2018-02-05 10:00:30",
-            data            = deserialized_force_subtask_results,
-            task_id         = deserialized_force_subtask_results.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-            status          = ReceiveStatus,
-            delivered       = True,
+            message_type            = deserialized_force_subtask_results.TYPE,
+            timestamp               = "2018-02-05 10:00:30",
+            data                    = deserialized_force_subtask_results,
+            task_id                 = deserialized_force_subtask_results.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
+            status                  = ReceiveStatus,
+            delivered               = True,
+            provider_public_key     = self.PROVIDER_PUBLIC_KEY,
+            requestor_public_key    = self.REQUESTOR_PUBLIC_KEY,
         )
 
         deserialized_subtask_results_response = self._get_deserialized_force_subtask_results_response(
@@ -1043,12 +1057,14 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
 
         self._store_golem_messages_in_database(
-            message_type    = deserialized_subtask_results_accepted.TYPE,
-            timestamp       = "2018-02-05 11:00:01",
-            data            = deserialized_subtask_results_accepted,
-            task_id         = deserialized_subtask_results_accepted.subtask_id,
-            status          = ReceiveStatus,
-            delivered       = True,
+            message_type            = deserialized_subtask_results_response.TYPE,
+            timestamp               = "2018-02-05 11:00:01",
+            data                    = deserialized_subtask_results_response,
+            task_id                 = deserialized_subtask_results_response.subtask_results_accepted.subtask_id,  # pylint: disable=no-member
+            status                  = ReceiveStatus,
+            delivered               = True,
+            provider_public_key     = self.PROVIDER_PUBLIC_KEY,
+            requestor_public_key    = self.REQUESTOR_PUBLIC_KEY,
         )
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
@@ -1126,34 +1142,41 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
 
         self._store_golem_messages_in_database(
-            message_type    = deserialized_force_subtask_results.TYPE,
-            timestamp       = "2018-02-05 10:00:30",
-            data            = deserialized_force_subtask_results,
-            task_id         = deserialized_force_subtask_results.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-            status          = ReceiveStatus,
-            delivered       = True,
+            message_type            = deserialized_force_subtask_results.TYPE,
+            timestamp               = "2018-02-05 10:00:30",
+            data                    = deserialized_force_subtask_results,
+            task_id                 = deserialized_force_subtask_results.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
+            status                  = ReceiveStatus,
+            delivered               = True,
+            provider_public_key     = self.PROVIDER_PUBLIC_KEY,
+            requestor_public_key    = self.REQUESTOR_PUBLIC_KEY,
         )
 
-        deserialized_subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
-            timestamp   = "2018-02-05 11:00:00",
-            reason      = message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-            report_computed_task = self._get_deserialized_report_computed_task(
-                subtask_id = '2',
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp   = "2018-02-05 11:00:00",
-                    deadline    = "2018-02-05 11:00:05",
-                    task_id     = '2',
+        deserialized_subtask_results_response = self._get_deserialized_force_subtask_results_response(
+            timestamp = "2018-02-05 11:00:00",
+            subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
+                timestamp   = "2018-02-05 11:00:00",
+                reason      = message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
+                report_computed_task = self._get_deserialized_report_computed_task(
+                    subtask_id = '2',
+                    task_to_compute = self._get_deserialized_task_to_compute(
+                        timestamp   = "2018-02-05 11:00:00",
+                        deadline    = "2018-02-05 11:00:05",
+                        task_id     = '2',
+                    )
                 )
             )
         )
 
         self._store_golem_messages_in_database(
-            message_type    = deserialized_subtask_results_rejected.TYPE,
-            timestamp       = "2018-02-05 11:00:01",
-            data            = deserialized_subtask_results_rejected,
-            task_id         = deserialized_subtask_results_rejected.report_computed_task.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-            status          = ReceiveStatus,
-            delivered       = True,
+            message_type            = deserialized_subtask_results_response.TYPE,
+            timestamp               = "2018-02-05 11:00:01",
+            data                    = deserialized_subtask_results_response,
+            task_id                 = deserialized_subtask_results_response.subtask_results_rejected.report_computed_task.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
+            status                  = ReceiveStatus,
+            delivered               = True,
+            provider_public_key     = self.PROVIDER_PUBLIC_KEY,
+            requestor_public_key    = self.REQUESTOR_PUBLIC_KEY,
         )
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(

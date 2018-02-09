@@ -1439,7 +1439,6 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 data                                = serialized_ack_report_computed_task,
                 content_type                        = 'application/octet-stream',
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response_3.status_code,  202)

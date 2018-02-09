@@ -1,6 +1,6 @@
 Django >= 1.11, < 1.12
 psycopg2
--e git://github.com/golemfactory/golem-messages.git@v1.7.0#egg=golem_messages
+-e git://github.com/golemfactory/golem-messages.git@v1.8.0#egg=golem_messages --extra-index-url=https://builds.golem.network
 freezegun
 pyyaml
 requests

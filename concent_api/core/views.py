@@ -43,7 +43,10 @@ def send(request, client_message):
     elif isinstance(client_message, message.concents.ForceSubtaskResults) and client_message.ack_report_computed_task is not None:
         return handle_send_force_subtask_results(request, client_message)
 
-    elif isinstance(client_message, message.concents.ForceSubtaskResultsResponse):
+    elif (
+        isinstance(client_message, message.concents.ForceSubtaskResultsResponse) and
+        (client_message.subtask_results_accepted is not None or client_message.subtask_results_rejected is not None)
+    ):
         return handle_send_force_subtask_results_results_response(request, client_message)
 
     else:

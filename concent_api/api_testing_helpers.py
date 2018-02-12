@@ -3,6 +3,7 @@ from golem_messages.message         import Message
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 
+import datetime
 import json
 import requests
 import http.client
@@ -78,6 +79,10 @@ def api_request(host, endpoint, private_key, public_key, data = None, headers = 
         if response.text not in ['', None]:
             print('RAW RESPONSE: {}'.format(response.text))
     print()
+
+
+def timestamp_to_isoformat(timestamp):
+    return datetime.datetime.fromtimestamp(timestamp).isoformat(' ')
 
 
 if __name__ == '__main__':

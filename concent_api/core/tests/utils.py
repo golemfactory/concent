@@ -125,6 +125,10 @@ class ConcentIntegrationTestCase(TestCase):
     def _get_timestamp_string(self):                        # pylint: disable=no-self-use
         return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    def _test_204_response(self, response):
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(len(response.content), 0)
+
     def _test_400_response(self, response):
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json().keys())

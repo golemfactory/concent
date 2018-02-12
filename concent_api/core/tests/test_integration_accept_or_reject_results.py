@@ -1227,3 +1227,72 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self._test_400_response(response_2)
+
+    def test_requestor_send_subtask_results_without_accepted_or_rejected_should_return_http_400(self):
+        """
+        Test if Requestor wants to send ForceSubtaskResultsResponse without SubtaskResultsAccepted
+        or SubtaskResultsRejected then Concent should return HTTP 400 as not supported.
+
+        Expected message exchange:
+        Requestor   -> Concent: ForceSubtaskResultsResponse (empty)
+        Concent     -> Requestor: HTTP 400
+        """
+        deserialized_force_subtask_results = self._get_deserialized_force_subtask_results(
+            timestamp                = "2018-02-05 10:00:15",
+            ack_report_computed_task = self._get_deserialized_ack_report_computed_task(
+                subtask_id = "xxyyzz",
+                task_to_compute = self._get_deserialized_task_to_compute(
+                    timestamp = "2018-02-05 10:00:00",
+                    deadline  = "2018-02-05 10:00:10",
+                    task_id   = '2',
+                )
+            )
+        )
+
+        self._store_golem_messages_in_database(
+            message_type         = deserialized_force_subtask_results.TYPE,
+            timestamp            = "2018-02-05 10:00:30",
+            data                 = deserialized_force_subtask_results,
+            task_id              = deserialized_force_subtask_results.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
+            # pylint: disable=no-member
+            status               = ReceiveStatus,
+            delivered            = True,
+            provider_public_key  = self.PROVIDER_PUBLIC_KEY,
+            requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
+        )
+
+        deserialized_subtask_results_response = self._get_deserialized_force_subtask_results_response(
+            timestamp                = "2018-02-05 11:00:00",
+            subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
+                timestamp  = "2018-02-05 11:00:00",
+                subtask_id = '2',
+                payment_ts = "2018-02-05 11:00:01",
+            )
+        )
+
+        self._store_golem_messages_in_database(
+            message_type         = deserialized_subtask_results_response.TYPE,
+            timestamp            = "2018-02-05 11:00:01",
+            data                 = deserialized_subtask_results_response,
+            task_id              = deserialized_subtask_results_response.subtask_results_accepted.subtask_id,  # pylint: disable=no-member
+            status               = ReceiveStatus,
+            delivered            = True,
+            provider_public_key  = self.PROVIDER_PUBLIC_KEY,
+            requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
+        )
+
+        serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
+            requestor_private_key = self.REQUESTOR_PRIVATE_KEY,
+            timestamp             = "2018-02-05 11:00:01",
+        )
+
+        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+            with freeze_time("2018-02-05 11:00:02"):
+                response_1 = self.client.post(
+                    reverse('core:send'),
+                    data                           = serialized_force_subtask_results_response,
+                    content_type                   = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
+                )
+
+        self._test_400_response(response_1)

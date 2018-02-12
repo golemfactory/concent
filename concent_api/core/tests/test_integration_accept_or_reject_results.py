@@ -23,10 +23,11 @@ def _get_provider_account_status_false_mock(_):
 
 
 @override_settings(
-    CONCENT_PRIVATE_KEY    = CONCENT_PRIVATE_KEY,
-    CONCENT_PUBLIC_KEY     = CONCENT_PUBLIC_KEY,
-    CONCENT_MESSAGING_TIME = 10,  # seconds
-    FORCE_ACCEPTANCE_TIME  = 10,  # seconds
+    CONCENT_PRIVATE_KEY       = CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY        = CONCENT_PUBLIC_KEY,
+    CONCENT_MESSAGING_TIME    = 10,  # seconds
+    FORCE_ACCEPTANCE_TIME     = 10,  # seconds
+    SUBTASK_VERIFICATION_TIME = 10,  # seconds
 )
 class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 

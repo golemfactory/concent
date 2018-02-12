@@ -1012,7 +1012,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             }
         )
 
-    def test_requstor_send_again_subtask_results_accepted_or_rejected_when_message_already_accepted_concent_should_return_http_400(self):
+    def test_requestor_send_again_subtask_results_accepted_or_rejected_when_message_already_accepted_concent_should_return_http_400(self):
         """
         Test if Requestor wants to send  SubtaskResultsAccepted or SubtaskResultsRejected
         when already SubtaskResultsAccepted was accepted via Concent,
@@ -1117,7 +1117,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_400_response(response_2)
 
-    def test_requstor_send_again_subtask_results_accepted_or_rejected_when_message_already_rejected_concent_should_return_http_400(self):
+    def test_requestor_send_again_subtask_results_accepted_or_rejected_when_message_already_rejected_concent_should_return_http_400(self):
         """
         Test if Requestor wants to send SubtaskResultsAccepted or SubtaskResultsRejected
         when already SubtaskResultsAccepted was accepted via Concent,

@@ -1,3 +1,4 @@
+--find-links https://builds.golem.network/simple/pyelliptic
 asn1crypto==0.24.0
 bitcoin==1.1.42
 cbor2==3.0.4

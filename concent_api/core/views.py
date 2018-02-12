@@ -424,8 +424,8 @@ def handle_send_force_subtask_results(request, client_message: message.concents.
                 reason      = message.concents.ServiceRefused.REASON.TooSmallProviderDeposit,
             )
 
-    client_message_send_to_soon = client_message.ack_report_computed_task.timestamp + settings.CONCENT_MESSAGING_TIME
-    client_message_send_to_late = client_message.ack_report_computed_task.timestamp + settings.CONCENT_MESSAGING_TIME + settings.FORCE_ACCEPTANCE_TIME
+    client_message_send_to_soon = client_message.ack_report_computed_task.timestamp + settings.SUBTASK_VERIFICATION_TIME
+    client_message_send_to_late = client_message.ack_report_computed_task.timestamp + settings.SUBTASK_VERIFICATION_TIME + settings.FORCE_ACCEPTANCE_TIME
     if client_message_send_to_late < current_time:
         return message.concents.ForceSubtaskResultsRejected(
             reason = message.concents.ForceSubtaskResultsRejected.REASON.RequestTooLate,

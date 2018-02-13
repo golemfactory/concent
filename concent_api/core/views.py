@@ -1,6 +1,7 @@
 from base64                         import b64encode
 import binascii
 import datetime
+from typing                         import Union
 
 import requests
 from django.conf                    import settings
@@ -75,11 +76,11 @@ def receive(request, _message):
         ):
             return handle_receive_delivered_force_report_computed_task(request, last_delivered_message_status)
 
+        decoded_message_data = deserialize_message(last_delivered_message_status.message.data.tobytes())
         if (
             last_delivered_message_status.message.type                            == message.concents.ForceGetTaskResultUpload.TYPE and
             last_delivered_message_status.message.auth.requestor_public_key_bytes == client_public_key
         ):
-            decoded_message_data = deserialize_message(last_delivered_message_status.message.data.tobytes())
             file_uploaded        = get_file_status(decoded_message_data.file_transfer_token)
             if file_uploaded:
                 return handle_receive_force_get_task_result_upload_for_requestor(
@@ -93,6 +94,13 @@ def receive(request, _message):
                     decoded_message_data,
                     last_delivered_message_status,
                 )
+        subtask_results_settled_timing = settings.SUBTASK_VERIFICATION_TIME + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME
+        if (
+            last_delivered_message_status.message.type                           == message.concents.ForceSubtaskResults.TYPE and
+            last_delivered_message_status.message.auth.provider_public_key_bytes == client_public_key and
+            current_time > decoded_message_data.ack_report_computed_task.timestamp + subtask_results_settled_timing
+        ):
+            return handle_receive_force_subtask_results(request, decoded_message_data, last_delivered_message_status, ReceiveStatus)
 
         return None
 
@@ -206,6 +214,13 @@ def receive_out_of_band(request, _message):
 
         if last_undelivered_receive_status.type == message.RejectReportComputedTask.TYPE:
             return handle_receive_out_of_band_reject_report_computed_task(request, last_undelivered_receive_status)
+
+        if last_undelivered_receive_status.type == message.concents.ForceSubtaskResults.TYPE:
+            subtask_results_settled_timing = settings.SUBTASK_VERIFICATION_TIME + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME
+            decoded_message_data = deserialize_message(last_undelivered_receive_status.data.tobytes())
+
+            if current_time > decoded_message_data.ack_report_computed_task.timestamp + subtask_results_settled_timing:
+                return handle_receive_force_subtask_results(request, decoded_message_data, last_undelivered_receive_status, ReceiveOutOfBandStatus)
         return None
 
     return None
@@ -510,6 +525,40 @@ def handle_receive_delivered_force_report_computed_task(request, delivered_messa
     )
     ack_report_computed_task.sig = None
     return ack_report_computed_task
+
+
+def handle_receive_force_subtask_results(
+    request,
+    decoded_message:                message.concents.ForceSubtaskResults,
+    previous_message_from_database: Union[ReceiveStatus, Message],
+    message_model
+) -> message.concents.ForceSubtaskResults:
+
+    assert decoded_message.TYPE in message.registered_message_types
+
+    client_public_key       = decode_client_public_key(request)
+    subtask_results_settled = message.concents.SubtaskResultsSettled(
+        origin = message.concents.SubtaskResultsSettled.Origin.ResultsAcceptedTimeout,
+    )
+
+    if isinstance(previous_message_from_database, ReceiveStatus):
+        provider_public_key = previous_message_from_database.message.auth.provider_public_key_bytes
+    elif isinstance(previous_message_from_database, Message):
+        provider_public_key = previous_message_from_database.auth.provider_public_key_bytes
+    else:
+        raise Http400("Unable to get provider public key for message {}.".format(previous_message_from_database))
+    subtask_results_settled.task_to_compute = decoded_message.ack_report_computed_task.task_to_compute
+    store_message_and_message_status(
+        subtask_results_settled.TYPE,
+        subtask_results_settled.task_to_compute.compute_task_def['task_id'],
+        subtask_results_settled.serialize(),
+        provider_public_key  = provider_public_key,
+        requestor_public_key = client_public_key,
+        status               = message_model,
+        delivered            = True,
+    )
+    subtask_results_settled.sig = None
+    return subtask_results_settled
 
 
 def handle_receive_ack_from_force_report_computed_task(decoded_message):

@@ -8,6 +8,7 @@ from base64                 import b64encode
 
 from golem_messages         import message
 
+from utils.helpers          import get_current_utc_timestamp
 from utils.testing_helpers  import generate_ecc_key_pair
 
 from api_testing_helpers    import api_request
@@ -56,7 +57,7 @@ def get_force_get_task_result(task_id, current_time, size, checksum):
 
 def main():
     cluster_url  = parse_command_line(sys.argv)
-    current_time = int(datetime.datetime.now().timestamp())
+    current_time = get_current_utc_timestamp()
 
     # Case 1 - test for existing file
     api_request(

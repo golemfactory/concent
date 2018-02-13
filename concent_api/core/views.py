@@ -18,6 +18,7 @@ from gatekeeper.constants           import GATEKEEPER_DOWNLOAD_PATH
 from utils.api_view                 import api_view
 from utils.api_view                 import Http400
 from utils.helpers                  import decode_key
+from utils.helpers                  import get_current_utc_timestamp
 from .constants                     import MESSAGE_TASK_ID_MAX_LENGTH
 from .models                        import Message
 from .models                        import MessageAuth
@@ -56,7 +57,7 @@ def send(request, client_message):
 @api_view
 @require_POST
 def receive(request, _message):
-    current_time      = int(datetime.datetime.now().timestamp())
+    current_time      = get_current_utc_timestamp()
     client_public_key = decode_client_public_key(request)
     last_undelivered_message_status = ReceiveStatus.objects.filter_public_key(
         request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
@@ -188,7 +189,7 @@ def receive_out_of_band(request, _message):
         auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
     ).order_by('timestamp').last()
 
-    current_time      = int(datetime.datetime.now().timestamp())
+    current_time = get_current_utc_timestamp()
 
     if last_undelivered_receive_out_of_band_status is None:
         if last_undelivered_receive_status is None:
@@ -211,7 +212,7 @@ def receive_out_of_band(request, _message):
 
 
 def handle_send_force_report_computed_task(request, client_message):
-    current_time           = int(datetime.datetime.now().timestamp())
+    current_time           = get_current_utc_timestamp()
     client_public_key      = decode_client_public_key(request)
     other_party_public_key = decode_other_party_public_key(request)
     validate_golem_message_task_to_compute(client_message.task_to_compute)
@@ -243,7 +244,7 @@ def handle_send_force_report_computed_task(request, client_message):
 
 
 def handle_send_ack_report_computed_task(request, client_message):
-    current_time      = int(datetime.datetime.now().timestamp())
+    current_time      = get_current_utc_timestamp()
     client_public_key = decode_client_public_key(request)
     validate_golem_message_task_to_compute(client_message.task_to_compute)
 
@@ -290,7 +291,7 @@ def handle_send_ack_report_computed_task(request, client_message):
 
 
 def handle_send_reject_report_computed_task(request, client_message):
-    current_time      = int(datetime.datetime.now().timestamp())
+    current_time      = get_current_utc_timestamp()
     client_public_key = decode_client_public_key(request)
     validate_golem_message_reject(client_message.cannot_compute_task)
 
@@ -355,7 +356,7 @@ def handle_send_reject_report_computed_task(request, client_message):
 def handle_send_force_get_task_result(request, client_message: message.concents.ForceGetTaskResult) -> message.concents:
     assert client_message.TYPE in message.registered_message_types
 
-    current_time           = int(datetime.datetime.now().timestamp())
+    current_time           = get_current_utc_timestamp()
     client_public_key      = decode_client_public_key(request)
     other_party_public_key = decode_other_party_public_key(request)
     validate_golem_message_task_to_compute(client_message.report_computed_task.task_to_compute)
@@ -517,7 +518,7 @@ def handle_receive_force_get_task_result_upload_for_provider(
 ) -> message.concents.ForceGetTaskResult:
     assert decoded_message.TYPE in message.registered_message_types
 
-    current_time            = int(datetime.datetime.now().timestamp())
+    current_time            = get_current_utc_timestamp()
     client_public_key       = decode_client_public_key(request)
     file_transfer_token     = message.concents.FileTransferToken(
         token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_DEADLINE,
@@ -586,7 +587,7 @@ def handle_receive_force_get_task_result_upload_for_requestor(
     assert decoded_message.TYPE in message.registered_message_types
 
     client_public_key   = decode_client_public_key(request)
-    current_time        = int(datetime.datetime.now().timestamp())
+    current_time        = get_current_utc_timestamp()
     file_transfer_token = message.concents.FileTransferToken(
         token_expiration_deadline    = current_time + settings.TOKEN_EXPIRATION_DEADLINE,
         storage_cluster_address      = decoded_message.file_transfer_token.storage_cluster_address,
@@ -826,7 +827,7 @@ def get_file_status(file_transfer_token_from_database: message.concents.FileTran
     assert not file_transfer_token_from_database.files[0]['path'].startswith(slash)
     assert settings.STORAGE_CLUSTER_ADDRESS.endswith(slash)
 
-    current_time = int(datetime.datetime.now().timestamp())
+    current_time = get_current_utc_timestamp()
     file_transfer_token = message.concents.FileTransferToken(
         token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_DEADLINE,
         storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,

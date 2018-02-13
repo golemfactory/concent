@@ -19,6 +19,7 @@ from golem_messages.message         import Message as GolemMessage
 from core.models                    import Message
 from core.models                    import MessageAuth
 from core.models                    import ReceiveStatus
+from utils.helpers                  import get_current_utc_timestamp
 from utils.testing_helpers          import generate_ecc_key_pair
 
 
@@ -37,7 +38,7 @@ class CoreViewSendTest(TestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def setUp(self):
-        self.message_timestamp = int(datetime.datetime.now().timestamp())  # 1510912800
+        self.message_timestamp = get_current_utc_timestamp()  # 1510912800
         self.compute_task_def = message.ComputeTaskDef()
         self.compute_task_def['task_id'] = '8'
         self.compute_task_def['deadline'] = self.message_timestamp

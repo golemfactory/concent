@@ -2,13 +2,13 @@
 
 import os
 import sys
-import datetime
 import random
 import time
 from base64                 import b64encode
 
 from golem_messages         import message
 
+from utils.helpers          import get_current_utc_timestamp
 from utils.testing_helpers  import generate_ecc_key_pair
 
 from api_testing_helpers    import api_request
@@ -95,7 +95,7 @@ def report_computed_task(subtask_id = None, task_to_compute = None):
 def main():
     cluster_url     = parse_command_line(sys.argv)
     task_id         = random.randrange(1, 100000)
-    current_time    = int(datetime.datetime.now().timestamp())
+    current_time    = get_current_utc_timestamp()
 
     #  Test CASE 2A + 2D + 3 - Send ForceSubtaskResults with same task_id as stored by Concent before
     #  Step 1. Send ForceSubtaskResults first time

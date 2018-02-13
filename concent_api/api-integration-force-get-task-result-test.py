@@ -120,8 +120,9 @@ def main():
             checksum    = file_check_sum
         ),
         headers = {
-            'Content-Type': 'application/octet-stream',
-            'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            'Content-Type':                     'application/octet-stream',
+            'concent-client-public-key':        b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            'concent-other-party-public-key':   b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         }
     )
     time.sleep(10)
@@ -162,8 +163,9 @@ def main():
             checksum = '098f6bcd4621d373cade4e832627b4f6'
         ),
         headers = {
-            'Content-Type': 'application/octet-stream',
-            'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
+            'Content-Type':                     'application/octet-stream',
+            'concent-client-public-key':        b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            'concent-other-party-public-key':   b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         }
     )
     time.sleep(10)
@@ -174,8 +176,8 @@ def main():
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         headers = {
-            'Content-Type': 'application/octet-stream',
-            'concent-client-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
+            'Content-Type':                 'application/octet-stream',
+            'concent-client-public-key':    b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
         }
     )
     time.sleep(10)
@@ -186,8 +188,8 @@ def main():
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         headers = {
-            'Content-Type': 'application/octet-stream',
-            'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
+            'Content-Type':                 'application/octet-stream',
+            'concent-client-public-key':    b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
         }
     )
 

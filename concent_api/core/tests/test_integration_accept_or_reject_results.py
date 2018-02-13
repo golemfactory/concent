@@ -1254,8 +1254,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             message_type         = deserialized_force_subtask_results.TYPE,
             timestamp            = "2018-02-05 10:00:30",
             data                 = deserialized_force_subtask_results,
-            task_id              = deserialized_force_subtask_results.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
-            # pylint: disable=no-member
+            task_id              = deserialized_force_subtask_results.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
             status               = ReceiveStatus,
             delivered            = True,
             provider_public_key  = self.PROVIDER_PUBLIC_KEY,

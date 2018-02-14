@@ -35,11 +35,16 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             compute_task_def    = compute_task_def,
         )
 
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp = "2017-12-01 11:01:00",
+            task_to_compute = task_to_compute,
+        )
+
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
             timestamp = "2017-12-01 11:01:00",
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
-                timestamp       = "2017-12-01 11:01:00",
-                task_to_compute = task_to_compute
+                timestamp               = "2017-12-01 11:01:00",
+                report_computed_task    = report_computed_task
             ),
             provider_private_key = self.PROVIDER_PRIVATE_KEY
         )
@@ -84,11 +89,16 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             compute_task_def    = compute_task_def,
         )
 
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            task_to_compute = task_to_compute,
+        )
+
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
             timestamp = "2017-12-01 10:59:00",
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
-                timestamp       = "2017-12-01 10:59:00",
-                task_to_compute = task_to_compute
+                timestamp               = "2017-12-01 10:59:00",
+                report_computed_task    = report_computed_task
             ),
             provider_private_key = self.PROVIDER_PRIVATE_KEY
         )
@@ -205,11 +215,16 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             compute_task_def    = compute_task_def,
         )
 
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            task_to_compute = task_to_compute,
+        )
+
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
             timestamp = "2017-12-01 10:59:00",
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
-                timestamp       = "2017-12-01 10:59:00",
-                task_to_compute = task_to_compute
+                timestamp               = "2017-12-01 10:59:00",
+                report_computed_task    = report_computed_task
             ),
             provider_private_key = self.PROVIDER_PRIVATE_KEY
         )
@@ -329,11 +344,16 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             compute_task_def    = compute_task_def,
         )
 
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            task_to_compute = task_to_compute,
+        )
+
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
             timestamp = "2017-12-01 10:59:00",
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
-                timestamp       = "2017-12-01 10:59:00",
-                task_to_compute = task_to_compute
+                timestamp               = "2017-12-01 10:59:00",
+                report_computed_task    = report_computed_task
             ),
             provider_private_key = self.PROVIDER_PRIVATE_KEY
         )
@@ -477,11 +497,16 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             compute_task_def    = compute_task_def,
         )
 
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            task_to_compute = task_to_compute,
+        )
+
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
             timestamp = "2017-12-01 10:59:00",
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
-                timestamp       = "2017-12-01 10:59:00",
-                task_to_compute = task_to_compute
+                timestamp               = "2017-12-01 10:59:00",
+                report_computed_task    = report_computed_task
             ),
             provider_private_key = self.PROVIDER_PRIVATE_KEY
         )
@@ -589,11 +614,16 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             compute_task_def    = compute_task_def,
         )
 
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            task_to_compute = task_to_compute,
+        )
+
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
             timestamp = "2017-12-01 10:59:00",
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
-                timestamp       = "2017-12-01 10:59:00",
-                task_to_compute = task_to_compute
+                timestamp               = "2017-12-01 10:59:00",
+                report_computed_task    = report_computed_task
             ),
             provider_private_key = self.PROVIDER_PRIVATE_KEY
         )
@@ -739,11 +769,16 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             compute_task_def    = compute_task_def,
         )
 
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            task_to_compute = task_to_compute,
+        )
+
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
             timestamp = "2017-12-01 10:59:00",
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
-                timestamp       = "2017-12-01 10:59:00",
-                task_to_compute = task_to_compute
+                timestamp               = "2017-12-01 10:59:00",
+                report_computed_task    = report_computed_task
             ),
             provider_private_key = self.PROVIDER_PRIVATE_KEY
         )
@@ -867,11 +902,16 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             compute_task_def    = compute_task_def,
         )
 
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            task_to_compute = task_to_compute,
+        )
+
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
             timestamp = "2017-12-01 10:59:00",
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
-                timestamp       = "2017-12-01 10:59:00",
-                task_to_compute = task_to_compute
+                timestamp               = "2017-12-01 10:59:00",
+                report_computed_task    = report_computed_task
             ),
             provider_private_key = self.PROVIDER_PRIVATE_KEY
         )
@@ -994,11 +1034,16 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             compute_task_def    = compute_task_def,
         )
 
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            task_to_compute = task_to_compute,
+        )
+
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
             timestamp = "2017-12-01 10:59:00",
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
-                timestamp       = "2017-12-01 10:59:00",
-                task_to_compute = task_to_compute
+                timestamp               = "2017-12-01 10:59:00",
+                report_computed_task    = report_computed_task
             ),
             provider_private_key = self.PROVIDER_PRIVATE_KEY
         )
@@ -1086,11 +1131,16 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             compute_task_def    = compute_task_def,
         )
 
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            task_to_compute = task_to_compute,
+        )
+
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
             timestamp = "2017-12-01 10:59:00",
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
-                timestamp       = "2017-12-01 10:59:00",
-                task_to_compute = task_to_compute
+                timestamp               = "2017-12-01 10:59:00",
+                report_computed_task    = report_computed_task
             ),
             provider_private_key = self.PROVIDER_PRIVATE_KEY
         )
@@ -1186,11 +1236,16 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             compute_task_def    = compute_task_def,
         )
 
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            task_to_compute = task_to_compute,
+        )
+
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
             timestamp = "2017-12-01 10:59:00",
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
-                timestamp       = "2017-12-01 10:59:00",
-                task_to_compute = task_to_compute
+                timestamp               = "2017-12-01 10:59:00",
+                report_computed_task    = report_computed_task
             ),
             provider_private_key = self.PROVIDER_PRIVATE_KEY
         )
@@ -1226,11 +1281,16 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             compute_task_def    = compute_task_def,
         )
 
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            task_to_compute = task_to_compute,
+        )
+
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
             timestamp = "2017-12-01 10:59:00",
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
-                timestamp       = "2017-12-01 10:59:00",
-                task_to_compute = task_to_compute
+                timestamp               = "2017-12-01 10:59:00",
+                report_computed_task    = report_computed_task
             ),
             provider_private_key = self.PROVIDER_PRIVATE_KEY
         )
@@ -1267,11 +1327,16 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             compute_task_def    = compute_task_def,
         )
 
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            task_to_compute = task_to_compute,
+        )
+
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
             timestamp = "2017-12-01 10:59:00",
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
-                timestamp       = "2017-12-01 10:59:00",
-                task_to_compute = task_to_compute
+                timestamp               = "2017-12-01 10:59:00",
+                report_computed_task    = report_computed_task
             ),
             provider_private_key = self.PROVIDER_PRIVATE_KEY
         )
@@ -1308,11 +1373,16 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             compute_task_def    = compute_task_def,
         )
 
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            task_to_compute = task_to_compute,
+        )
+
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
             timestamp = "2017-12-01 10:59:00",
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
-                timestamp       = "2017-12-01 10:59:00",
-                task_to_compute = task_to_compute
+                timestamp               = "2017-12-01 10:59:00",
+                report_computed_task    = report_computed_task
             ),
             provider_private_key = self.PROVIDER_PRIVATE_KEY
         )
@@ -1439,11 +1509,16 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             compute_task_def    = compute_task_def,
         )
 
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            task_to_compute = task_to_compute,
+        )
+
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
             timestamp = "2017-12-01 10:59:00",
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
-                timestamp       = "2017-12-01 10:59:00",
-                task_to_compute = task_to_compute
+                timestamp               = "2017-12-01 10:59:00",
+                report_computed_task    = report_computed_task
             ),
             provider_private_key = self.PROVIDER_PRIVATE_KEY
         )
@@ -1481,11 +1556,16 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             compute_task_def    = compute_task_def,
         )
 
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            task_to_compute = task_to_compute,
+        )
+
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
             timestamp = "2017-12-01 10:59:00",
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
-                timestamp       = "2017-12-01 10:59:00",
-                task_to_compute = task_to_compute
+                timestamp               = "2017-12-01 10:59:00",
+                report_computed_task    = report_computed_task
             ),
             provider_private_key = self.PROVIDER_PRIVATE_KEY
         )
@@ -1526,11 +1606,16 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             compute_task_def    = compute_task_def,
         )
 
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            task_to_compute = task_to_compute,
+        )
+
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
             timestamp = "2017-12-01 10:59:00",
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
-                timestamp       = "2017-12-01 10:59:00",
-                task_to_compute = task_to_compute
+                timestamp               = "2017-12-01 10:59:00",
+                report_computed_task    = report_computed_task
             ),
             provider_private_key = self.PROVIDER_PRIVATE_KEY
         )
@@ -1639,11 +1724,16 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             compute_task_def    = compute_task_def,
         )
 
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            task_to_compute = task_to_compute,
+        )
+
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
             timestamp = "2017-12-01 10:59:00",
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
-                timestamp       = "2017-12-01 10:59:00",
-                task_to_compute = task_to_compute
+                timestamp               = "2017-12-01 10:59:00",
+                report_computed_task    = report_computed_task
             ),
             provider_private_key = self.PROVIDER_PRIVATE_KEY
         )

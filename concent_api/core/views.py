@@ -99,6 +99,7 @@ def receive(request, _message):
             last_delivered_message_status.message.auth.provider_public_key_bytes == client_public_key and
             current_time > decoded_message_data.ack_report_computed_task.timestamp + acceptance_deadline
         ):
+            make_forced_payment('provider', 'requestor')
             return handle_receive_force_subtask_results(
                 decoded_message_data,
                 last_delivered_message_status.message.auth.provider_public_key_bytes,
@@ -954,3 +955,7 @@ def tmp_is_provider_account_status_positive(request):
         return bool(request.META['HTTP_TEMPORARY_ACCOUNT_FUNDS'])
     except KeyError:
         return False
+
+
+def make_forced_payment(_provider, _requestor):
+    pass

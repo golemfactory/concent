@@ -22,6 +22,10 @@ def _get_provider_account_status_false_mock(_):
     return False
 
 
+def _get_requestor_account_status(_provider, _requestor):
+    pass
+
+
 @override_settings(
     CONCENT_PRIVATE_KEY       = CONCENT_PRIVATE_KEY,
     CONCENT_PUBLIC_KEY        = CONCENT_PUBLIC_KEY,
@@ -1079,13 +1083,14 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             }
         )
 
-        with freeze_time("2018-02-05 10:00:51"):
-            response_3 = self.client.post(
-                reverse('core:receive'),
-                data                            = '',
-                content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
-            )
+        with mock.patch('core.views.make_forced_payment', _get_requestor_account_status):
+            with freeze_time("2018-02-05 10:00:51"):
+                response_3 = self.client.post(
+                    reverse('core:receive'),
+                    data                            = '',
+                    content_type                    = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
+                )
         self._test_response(
             response_3,
             status       = 200,

@@ -862,7 +862,7 @@ def get_file_status(file_transfer_token_from_database: message.concents.FileTran
     )
     if cluster_storage_response.status_code == 200:
         return True
-    elif cluster_storage_response.status_code == 404:
+    elif cluster_storage_response.status_code in [401, 404]:
         return False
     else:
         raise exceptions.UnexpectedResponse()

@@ -1,15 +1,20 @@
 from base64 import b64encode
+import datetime
 
 from django.test                    import override_settings
 from django.test                    import TestCase
 from django.urls                    import reverse
+from django.utils                   import timezone
 from freezegun                      import freeze_time
 import dateutil.parser
 
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 from golem_messages                 import message
-from core.models                    import ReceiveStatus
+
+from core.models            import Message
+from core.models            import ReceiveOutOfBandStatus
+from core.models            import ReceiveStatus
 from utils.testing_helpers  import generate_ecc_key_pair
 
 
@@ -1454,8 +1459,16 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             )
 
-        self.assertEqual(response_4.status_code,  204)
-        self.assertEqual(len(response_4.content), 0)
+        ack_report_computed_task_from_view = load(
+            response_4.content,
+            PROVIDER_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time = False
+        )
+
+        self.assertEqual(response_4.status_code,  200)
+        self.assertEqual(ack_report_computed_task_from_view.timestamp, ack_report_computed_task.timestamp)
+        self.assertEqual(ack_report_computed_task_from_view.task_to_compute.timestamp, ack_report_computed_task.task_to_compute.timestamp)
 
     def test_provider_forces_computed_task_report_and_tries_to_receive_twice(self):
         """
@@ -1571,3 +1584,261 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         self.assertEqual(response_5.status_code,  204)
         self.assertEqual(len(response_5.content), 0)
+
+    def test_if_reject_report_computed_task_after_deadline_is_in_database_concent_should_return_it(self):
+        """
+        Tests if on request to receive endpoint if there is RejectReportComputedTask message in database
+        Concent will return it even if it is after deadline.
+
+        """
+
+        compute_task_def = message.ComputeTaskDef()
+        compute_task_def['task_id'] = '1'
+        compute_task_def['deadline'] = int(dateutil.parser.parse("2017-11-17 9:59:00").timestamp())
+        with freeze_time("2017-11-17 10:00:00"):
+            task_to_compute = message.TaskToCompute(
+                compute_task_def = compute_task_def,
+            )
+        cannot_compute_task = message.CannotComputeTask(
+            task_to_compute = task_to_compute
+        )
+
+        reject_report_computed_task = message.RejectReportComputedTask(
+            cannot_compute_task = cannot_compute_task
+        )
+        force_report_computed_task = message.ForceReportComputedTask(
+            task_to_compute=task_to_compute
+        )
+
+        new_message_force = Message(
+            type        = message.ForceReportComputedTask.TYPE,
+            timestamp   = datetime.datetime.now(timezone.utc),
+            data        = force_report_computed_task.serialize(),
+            task_id     = '1',
+        )
+        new_message_force.full_clean()
+        new_message_force.save()
+        new_message_force_status = ReceiveStatus(
+            message   = new_message_force,
+            timestamp = new_message_force.timestamp,
+            delivered = False
+        )
+        new_message_force_status.full_clean()
+        new_message_force_status.save()
+
+        new_message_reject = Message(
+            type        = message.RejectReportComputedTask.TYPE,
+            timestamp   = datetime.datetime.now(timezone.utc),
+            data        = reject_report_computed_task.serialize(),
+            task_id     = '1',
+        )
+        new_message_reject.full_clean()
+        new_message_reject.save()
+        new_message_reject_status = ReceiveStatus(
+            message   = new_message_reject,
+            timestamp = new_message_reject.timestamp,
+            delivered = False
+        )
+        new_message_reject_status.full_clean()
+        new_message_reject_status.save()
+
+        with freeze_time("2017-12-01 12:00:00"):
+            response = self.client.post(
+                reverse('core:receive'),
+                data         = '',
+                content_type = '',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            )
+
+        reject_report_computed_task_from_view = load(
+            response.content,
+            PROVIDER_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time = False
+        )
+
+        self.assertEqual(response.status_code,  200)
+        self.assertEqual(reject_report_computed_task_from_view, reject_report_computed_task)
+
+    def test_if_there_is_undelivered_message_in_future_in_database_concent_should_return_it(self):
+        """
+        Tests if on request to receive_out_of_band endpoint if there is message in database
+        Concent will return it even if it has timestamp in future.
+
+        """
+
+        compute_task_def = message.ComputeTaskDef()
+        compute_task_def['task_id'] = '1'
+        compute_task_def['deadline'] = int(dateutil.parser.parse("2017-11-17 9:59:00").timestamp())
+        with freeze_time("2017-11-17 10:00:00"):
+            task_to_compute = message.TaskToCompute(
+                compute_task_def = compute_task_def,
+            )
+
+        ack_report_computed_task = message.AckReportComputedTask(
+            task_to_compute = task_to_compute
+        )
+        force_report_computed_task = message.ForceReportComputedTask(
+            task_to_compute=task_to_compute
+        )
+
+        new_message_force = Message(
+            type        = message.ForceReportComputedTask.TYPE,
+            timestamp   = datetime.datetime.now(timezone.utc),
+            data        = force_report_computed_task.serialize(),
+            task_id     = '1',
+        )
+        new_message_force.full_clean()
+        new_message_force.save()
+        new_message_force_status = ReceiveStatus(
+            message   = new_message_force,
+            timestamp = new_message_force.timestamp,
+            delivered = False
+        )
+        new_message_force_status.full_clean()
+        new_message_force_status.save()
+
+        new_message_ack = Message(
+            type        = message.AckReportComputedTask.TYPE,
+            timestamp   = datetime.datetime.now(timezone.utc),
+            data        = ack_report_computed_task.serialize(),
+            task_id     = '1',
+        )
+        new_message_ack.full_clean()
+        new_message_ack.save()
+        new_message_reject_status = ReceiveStatus(
+            message   = new_message_ack,
+            timestamp = new_message_ack.timestamp,
+            delivered = False
+        )
+        new_message_reject_status.full_clean()
+        new_message_reject_status.save()
+
+        with freeze_time("2017-12-01 09:00:00"):
+            response = self.client.post(
+                reverse('core:receive_out_of_band'),
+                data         = '',
+                content_type = '',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            )
+
+        message_verdict = load(
+            response.content,
+            PROVIDER_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time = False
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsInstance(message_verdict, message.VerdictReportComputedTask)
+        self.assertGreaterEqual(message_verdict.timestamp, int(dateutil.parser.parse("2017-12-01 09:00:00").timestamp()))
+        self.assertLessEqual(message_verdict.timestamp, int(dateutil.parser.parse("2017-12-01 09:00:15").timestamp()))
+
+    def test_if_there_is_undelivered_message_with_not_handled_type_database_concent_should_return_it_from_receive_out_of_band(self):
+        """
+        Tests if on request to receive_out_of_band endpoint if there is message in database
+        Concent will return it even if it is not handled.
+
+        """
+
+        compute_task_def = message.ComputeTaskDef()
+        compute_task_def['task_id'] = '1'
+        compute_task_def['deadline'] = int(dateutil.parser.parse("2017-11-17 9:59:00").timestamp())
+        with freeze_time("2017-11-17 10:00:00"):
+            task_to_compute = message.TaskToCompute(
+                compute_task_def = compute_task_def,
+            )
+
+        ack_report_computed_task = message.AckReportComputedTask(
+            task_to_compute = task_to_compute
+        )
+        force_report_computed_task = message.ForceReportComputedTask(
+            task_to_compute=task_to_compute
+        )
+
+        new_message_force = Message(
+            type        = message.ForceReportComputedTask.TYPE,
+            timestamp   = datetime.datetime.now(timezone.utc),
+            data        = force_report_computed_task.serialize(),
+            task_id     = '1',
+        )
+        new_message_force.full_clean()
+        new_message_force.save()
+        new_message_force_status = ReceiveStatus(
+            message   = new_message_force,
+            timestamp = new_message_force.timestamp,
+            delivered = False
+        )
+        new_message_force_status.full_clean()
+        new_message_force_status.save()
+
+        new_message_ack = Message(
+            type        = message.AckReportComputedTask.TYPE,
+            timestamp   = datetime.datetime.now(timezone.utc),
+            data        = ack_report_computed_task.serialize(),
+            task_id     = '1',
+        )
+        new_message_ack.full_clean()
+        new_message_ack.save()
+        new_message_reject_status = ReceiveOutOfBandStatus(
+            message   = new_message_ack,
+            timestamp = new_message_ack.timestamp,
+            delivered = False
+        )
+        new_message_reject_status.full_clean()
+        new_message_reject_status.save()
+
+        with freeze_time("2017-12-01 10:00:05"):
+            response = self.client.post(
+                reverse('core:receive_out_of_band'),
+                data         = '',
+                content_type = '',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            )
+
+        ack_report_computed_task_from_view = load(
+            response.content,
+            PROVIDER_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time = False
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsInstance(ack_report_computed_task_from_view, message.AckReportComputedTask)
+        self.assertEqual(ack_report_computed_task_from_view, ack_report_computed_task)
+
+    def test_if_there_is_no_undelivered_message_with_status_receive_out_of_band_but_message_with_not_handled_type_concent_should_return_204(self):
+        """
+        Tests if on request to receive_out_of_band endpoint if there is no undelivered message
+        with status receive out of band and message in database Concent will return 204 if it is not handled.
+
+        """
+
+        ping = message.Ping()
+
+        new_message_ping = Message(
+            type        = message.Ping.TYPE,
+            timestamp   = datetime.datetime.now(timezone.utc),
+            data        = ping.serialize(),
+            task_id     = '1',
+        )
+        new_message_ping.full_clean()
+        new_message_ping.save()
+        new_message_reject_status = ReceiveStatus(
+            message   = new_message_ping,
+            timestamp = new_message_ping.timestamp,
+            delivered = False
+        )
+        new_message_reject_status.full_clean()
+        new_message_reject_status.save()
+
+        with freeze_time("2017-12-01 10:00:05"):
+            response = self.client.post(
+                reverse('core:receive_out_of_band'),
+                data         = '',
+                content_type = '',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            )
+
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(len(response.content), 0)

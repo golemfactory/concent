@@ -15,6 +15,7 @@ from golem_messages.exceptions      import MessageError
 
 from core                           import exceptions
 from gatekeeper.constants           import GATEKEEPER_DOWNLOAD_PATH
+from utils                          import logging
 from utils.api_view                 import api_view
 from utils.api_view                 import Http400
 from utils.helpers                  import decode_key
@@ -29,6 +30,10 @@ from .models                        import ReceiveStatus
 @api_view
 @require_POST
 def send(request, client_message):
+    logging.log_message_received(
+        client_message,
+        request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+    )
     if isinstance(client_message, message.ForceReportComputedTask):
         return handle_send_force_report_computed_task(request, client_message)
 
@@ -117,34 +122,62 @@ def receive(request, _message):
             return None
         if decoded_message_data.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME < current_time:
             set_message_as_delivered(last_undelivered_message_status)
+            logging.log_message_delivered(
+                decoded_message_data,
+                client_public_key,
+            )
             return handle_receive_ack_from_force_report_computed_task(
                 request,
                 decoded_message_data,
                 last_undelivered_message_status
             )
+        logging.log_timeout(
+            decoded_message_data,
+            request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+            decoded_message_data.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
+        )
     else:
         if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
             set_message_as_delivered(last_undelivered_message_status)
+            logging.log_message_delivered(
+                decoded_message_data,
+                client_public_key,
+            )
 
     if isinstance(decoded_message_data, message.ForceReportComputedTask):
         if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
             return None
         set_message_as_delivered(last_undelivered_message_status)
+        logging.log_message_delivered(
+            decoded_message_data,
+            client_public_key,
+        )
         return handle_receive_force_report_computed_task(
             request,
             decoded_message_data,
             last_undelivered_message_status
         )
+
     if isinstance(decoded_message_data, message.AckReportComputedTask):
         if (
             current_time <= decoded_message_data.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME and
             client_public_key == last_undelivered_message_status.message.auth.provider_public_key_bytes
         ):
             set_message_as_delivered(last_undelivered_message_status)
+            logging.log_message_delivered(
+                decoded_message_data,
+                client_public_key,
+            )
             return handle_receive_ack_or_reject_report_computed_task(
                 request,
                 decoded_message_data,
                 last_undelivered_message_status,
+            )
+        elif current_time > decoded_message_data.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
+            logging.log_timeout(
+                decoded_message_data,
+                request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+                decoded_message_data.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
             )
         return None
 
@@ -152,6 +185,10 @@ def receive(request, _message):
         if client_public_key != last_undelivered_message_status.message.auth.provider_public_key_bytes:
             return None
         set_message_as_delivered(last_undelivered_message_status)
+        logging.log_message_delivered(
+            decoded_message_data,
+            client_public_key,
+        )
         return handle_receive_force_get_task_result_upload_for_provider(
             request,
             decoded_message_data,
@@ -162,6 +199,21 @@ def receive(request, _message):
         if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
             return None
         set_message_as_delivered(last_undelivered_message_status)
+        logging.log_message_delivered(
+            decoded_message_data,
+            client_public_key,
+        )
+        if current_time < decoded_message_data.timestamp + settings.CONCENT_MESSAGING_TIME:
+            return handle_receive_force_subtasks_results(
+                request,
+                decoded_message_data,
+                last_undelivered_message_status,
+            )
+        logging.log_timeout(
+            decoded_message_data,
+            request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+            decoded_message_data.timestamp + settings.CONCENT_MESSAGING_TIME,
+        )
         return handle_receive_force_subtasks_results(
             request,
             decoded_message_data,
@@ -172,6 +224,10 @@ def receive(request, _message):
         if client_public_key != last_undelivered_message_status.message.auth.provider_public_key_bytes:
             return None
         set_message_as_delivered(last_undelivered_message_status)
+        logging.log_message_delivered(
+            decoded_message_data,
+            client_public_key,
+        )
         return handle_receive_force_subtask_results_response(
             request,
             decoded_message_data,
@@ -204,6 +260,12 @@ def receive(request, _message):
             decoded_message_data,
             last_undelivered_message_status,
         )
+
+    logging.log_timeout(
+        decoded_message_data,
+        request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+        decoded_message_from_database.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME,
+    )
 
     return None
 
@@ -275,6 +337,11 @@ def handle_send_force_report_computed_task(request, client_message):
         raise Http400("{} is already being processed for this task.".format(client_message.__class__.__name__))
 
     if client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] < current_time:
+        logging.log_timeout(
+            client_message,
+            request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+            client_message.report_computed_task.task_to_compute.compute_task_def['deadline'],
+        )
         reject_force_report_computed_task                 = message.RejectReportComputedTask(
             header = MessageHeader(
                 type_     = message.RejectReportComputedTask.TYPE,
@@ -295,6 +362,10 @@ def handle_send_force_report_computed_task(request, client_message):
         provider_public_key  = client_public_key,
         requestor_public_key = other_party_public_key,
         status               = ReceiveStatus
+    )
+    logging.log_message_added_to_queue(
+        client_message,
+        client_public_key,
     )
     return HttpResponse("", status = 202)
 
@@ -340,9 +411,18 @@ def handle_send_ack_report_computed_task(request, client_message):
             requestor_public_key = client_public_key,
             status               = ReceiveStatus,
         )
+        logging.log_message_added_to_queue(
+            client_message,
+            client_public_key,
+        )
 
         return HttpResponse("", status = 202)
     else:
+        logging.log_timeout(
+            client_message,
+            request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+            client_message.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
+        )
         raise Http400("Time to acknowledge this task is already over.")
 
 
@@ -377,6 +457,10 @@ def handle_send_reject_report_computed_task(request, client_message):
             requestor_public_key = client_public_key,
             status               = ReceiveStatus
         )
+        logging.log_message_added_to_queue(
+            client_message,
+            client_public_key,
+        )
 
         return HttpResponse("", status = 202)
 
@@ -404,8 +488,17 @@ def handle_send_reject_report_computed_task(request, client_message):
             requestor_public_key = client_public_key,
             status               = ReceiveStatus
         )
+        logging.log_message_added_to_queue(
+            client_message,
+            client_public_key,
+        )
         return HttpResponse("", status = 202)
     else:
+        logging.log_timeout(
+            force_report_computed_task,
+            request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+            force_report_computed_task.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
+        )
         raise Http400("Time to acknowledge this task is already over.")
 
 
@@ -427,6 +520,11 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
         )
 
     elif client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.FORCE_ACCEPTANCE_TIME < current_time:
+        logging.log_timeout(
+            client_message,
+            request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+            client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.FORCE_ACCEPTANCE_TIME,
+        )
         return message.concents.ForceGetTaskResultRejected(
             reason    = message.concents.ForceGetTaskResultRejected.REASON.AcceptanceTimeLimitExceeded,
         )
@@ -470,10 +568,20 @@ def handle_send_force_subtask_results(request, client_message: message.concents.
     client_message_send_too_soon = client_message.ack_report_computed_task.timestamp + settings.SUBTASK_VERIFICATION_TIME
     client_message_send_too_late = client_message.ack_report_computed_task.timestamp + settings.SUBTASK_VERIFICATION_TIME + settings.FORCE_ACCEPTANCE_TIME
     if client_message_send_too_late < current_time:
+        logging.log_timeout(
+            client_message,
+            request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+            client_message_send_too_late,
+        )
         return message.concents.ForceSubtaskResultsRejected(
             reason = message.concents.ForceSubtaskResultsRejected.REASON.RequestTooLate,
         )
     elif current_time < client_message_send_too_soon:
+        logging.log_timeout(
+            client_message,
+            request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+            client_message_send_too_soon,
+        )
         return message.concents.ForceSubtaskResultsRejected(
             reason = message.concents.ForceSubtaskResultsRejected.REASON.RequestPremature,
         )
@@ -486,6 +594,10 @@ def handle_send_force_subtask_results(request, client_message: message.concents.
             status               = ReceiveStatus,
             provider_public_key  = client_public_key,
             requestor_public_key = other_party_public_key,
+        )
+        logging.log_message_added_to_queue(
+            client_message,
+            client_public_key,
         )
         return HttpResponse("", status = 202)
 
@@ -516,6 +628,11 @@ def handle_send_force_subtask_results_results_response(request, client_message):
     acceptance_deadline = verification_deadline + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME
 
     if current_time > acceptance_deadline:
+        logging.log_timeout(
+            client_message,
+            request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+            client_message.timestamp + settings.CONCENT_MESSAGING_TIME,
+        )
         raise Http400("Time to accept this task is already over.")
 
     client_message.sig = None
@@ -526,6 +643,10 @@ def handle_send_force_subtask_results_results_response(request, client_message):
         status               = ReceiveStatus,
         provider_public_key  = force_subtask_results.last().auth.provider_public_key_bytes,
         requestor_public_key = client_public_key,
+    )
+    logging.log_message_added_to_queue(
+        client_message,
+        client_public_key,
     )
     return HttpResponse("", status = 202)
 

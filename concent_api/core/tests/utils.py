@@ -217,14 +217,14 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_subtask_results_accepted(
         self,
-        timestamp   = None,
-        subtask_id  = '1',
-        payment_ts  = None,
+        timestamp           = None,
+        task_to_compute     = None,
+        payment_ts          = None,
     ):
         """ Return SubtaskResultsAccepted deserialized """
         with freeze_time(timestamp or self._get_timestamp_string()):
             subtask_results_accepted = message.tasks.SubtaskResultsAccepted(
-                subtask_id      = subtask_id,
+                task_to_compute = task_to_compute,
                 payment_ts     = (
                     self._parse_iso_date_to_timestamp(payment_ts) or
                     self._parse_iso_date_to_timestamp(self._get_timestamp_string())
@@ -234,16 +234,20 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_serialized_subtask_results_accepted(
         self,
-        timestamp               = None,
-        subtask_id              = '1',
-        payment_ts              = None,
-        requestor_private_key   = None,
+        timestamp                   = None,
+        payment_ts                  = None,
+        requestor_private_key       = None,
+        task_to_compute             = None,
+        subtask_results_accepted    = None
     ):
         """ Return SubtaskResultsAccepted serialized """
-        subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
-            timestamp   = timestamp,
-            subtask_id  = subtask_id,
-            payment_ts  = payment_ts,
+        subtask_results_accepted = (
+            subtask_results_accepted or
+            self._get_deserialized_subtask_results_accepted(
+                timestamp       = timestamp,
+                payment_ts      = payment_ts,
+                task_to_compute = task_to_compute
+            )
         )
 
         return dump(
@@ -276,17 +280,21 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_serialized_subtask_results_rejected(
         self,
-        reason                  = None,
-        timestamp               = None,
-        requestor_private_key   = None,
-        report_computed_task    = None,
+        reason                      = None,
+        timestamp                   = None,
+        requestor_private_key       = None,
+        report_computed_task        = None,
+        subtask_results_rejected    = None
     ):
         """ Return SubtaskResultsRejected serialized """
         with freeze_time(timestamp or self._get_timestamp_string()):
-            subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
-                reason                  = reason,
-                timestamp               = timestamp,
-                report_computed_task    = report_computed_task,
+            subtask_results_rejected = (
+                subtask_results_rejected or
+                self._get_deserialized_subtask_results_rejected(
+                    reason                  = reason,
+                    timestamp               = timestamp,
+                    report_computed_task    = report_computed_task,
+                )
             )
             return dump(
                 subtask_results_rejected,
@@ -340,12 +348,12 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_force_report_computed_task(
         self,
-        timestamp       = None,
-        task_to_compute = None,
+        timestamp               = None,
+        report_computed_task    = None,
     ):
         with freeze_time(timestamp or self._get_timestamp_string()):
             return message.concents.ForceReportComputedTask(
-                task_to_compute = task_to_compute,
+                report_computed_task = report_computed_task,
             )
 
     def _get_serialized_force_report_computed_task(

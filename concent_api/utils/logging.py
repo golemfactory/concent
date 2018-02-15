@@ -38,16 +38,24 @@ def log_message_accepted(message: Message, client_public_key: str):
     ))
 
 
-def log_message_added_to_queue():
-    logger.info('A new message has been added to queue.')
+def log_message_added_to_queue(message: Message, client_public_key: str):
+    logger.info('A new message has been added to queue -- MESSAGE_TYPE: {} -- TASK_ID: {} -- CLIENT PUBLIC KEY: {}'.format(
+        message.TYPE,
+        get_task_id_from_message(message) or '',
+        client_public_key,
+    ))
 
 
-def log_message_delivered():
-    logger.info('A message in queue has been marked as delivered.')
+def log_message_delivered(message: Message, client_public_key: str):
+    logger.info('A message in queue has been marked as delivered -- MESSAGE_TYPE: {} -- TASK_ID: {} -- CLIENT PUBLIC KEY: {}'.format(
+        message.TYPE,
+        get_task_id_from_message(message) or '',
+        client_public_key,
+    ))
 
 
-def log_deadline_exceeded(message: Message, client_public_key: str, deadline: int):
-    logger.info('A deadline has been exceeded -- MESSAGE_TYPE: {} -- TASK_ID: {} -- CLIENT PUBLIC KEY: {} -- DEADLINE: {}'.format(
+def log_timeout(message: Message, client_public_key: str, deadline: int):
+    logger.info('A deadline has been exceeded -- MESSAGE_TYPE: {} -- TASK_ID: {} -- CLIENT PUBLIC KEY: {} -- TIMEOUT: {}'.format(
         message.TYPE,
         get_task_id_from_message(message) or '',
         client_public_key,
@@ -56,14 +64,14 @@ def log_deadline_exceeded(message: Message, client_public_key: str, deadline: in
 
 
 def log_empty_queue(endpoint: str, client_public_key: str):
-    logger.info('A message queue is empty in `{}/` -- CLIENT PUBLIC KEY: {}'.format(
+    logger.info('A message queue is empty in `{}()` -- CLIENT PUBLIC KEY: {}'.format(
         endpoint,
         client_public_key,
     ))
 
 
 def log_400_error(endpoint: str, message: Message, client_public_key: str):
-    logger.info('Error 4xx has been returned from `{}/` -- MESSAGE_TYPE: {} -- TASK_ID: {} -- CLIENT PUBLIC KEY: {}'.format(
+    logger.info('Error 4xx has been returned from `{}()` -- MESSAGE_TYPE: {} -- TASK_ID: {} -- CLIENT PUBLIC KEY: {}'.format(
         endpoint,
         message.TYPE,
         get_task_id_from_message(message) or '',

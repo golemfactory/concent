@@ -51,7 +51,11 @@ def parse_datetime_to_timestamp(date_time: datetime.datetime) -> int:
 
 
 def get_task_id_from_message(golem_message: message.base.Message) -> str:
-    """ Returns task_id nested inside given Golem Message depending on its type. """
+    """
+    Returns task_id nested inside given Golem Message depending on its type.
+
+    Returns None if task_id is not available.
+    """
 
     if isinstance(golem_message,            message.ComputeTaskDef):
         return golem_message['task_id']

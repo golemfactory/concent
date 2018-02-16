@@ -458,27 +458,34 @@ def handle_send_force_subtask_results_results_response(request, client_message):
         client_message_task_id = client_message.subtask_results_accepted.subtask_id
     else:
         client_message_task_id = client_message.subtask_results_rejected.report_computed_task.subtask_id
-    if current_time < client_message.timestamp + settings.CONCENT_MESSAGING_TIME:
-        force_subtask_results                   = StoredMessage.objects.filter(task_id = client_message_task_id, type = message.concents.ForceSubtaskResults.TYPE)
-        previous_force_subtask_results_response = StoredMessage.objects.filter(task_id = client_message_task_id, type = message.concents.ForceSubtaskResultsResponse.TYPE)
 
-        if not force_subtask_results.exists():
-            raise Http400("'ForceSubtaskResults' for this subtask has not been initiated yet. Can't accept your '{}'.".format(client_message.TYPE))
-        if previous_force_subtask_results_response.exists():
-            raise Http400("This subtask has been resolved already.")
+    force_subtask_results                   = StoredMessage.objects.filter(task_id = client_message_task_id, type = message.concents.ForceSubtaskResults.TYPE)
+    previous_force_subtask_results_response = StoredMessage.objects.filter(task_id = client_message_task_id, type = message.concents.ForceSubtaskResultsResponse.TYPE)
 
-        client_message.sig = None
-        store_message_and_message_status(
-            client_message.TYPE,
-            client_message_task_id,
-            client_message.serialize(),
-            status               = ReceiveStatus,
-            provider_public_key  = force_subtask_results.last().auth.provider_public_key_bytes,
-            requestor_public_key = client_public_key,
-        )
-        return HttpResponse("", status = 202)
-    else:
-        raise Http400("Time to acknowledge this task is already over.")
+    if not force_subtask_results.exists():
+        raise Http400("'ForceSubtaskResults' for this subtask has not been initiated yet. Can't accept your '{}'.".format(client_message.TYPE))
+    if previous_force_subtask_results_response.exists():
+        raise Http400("This subtask has been resolved already.")
+
+    assert 1 <= force_subtask_results.count() <= 2, "Other amount of 'ForceSubtaskResults' than 1 or 2 found for this task_id."
+    decoded_message_from_database = deserialize_message(force_subtask_results.last().data.tobytes())
+
+    verification_deadline = decoded_message_from_database.ack_report_computed_task.timestamp + settings.SUBTASK_VERIFICATION_TIME
+    acceptance_deadline = verification_deadline + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME
+
+    if current_time > acceptance_deadline:
+        raise Http400("Time to accept this task is already over.")
+
+    client_message.sig = None
+    store_message_and_message_status(
+        client_message.TYPE,
+        client_message_task_id,
+        client_message.serialize(),
+        status               = ReceiveStatus,
+        provider_public_key  = force_subtask_results.last().auth.provider_public_key_bytes,
+        requestor_public_key = client_public_key,
+    )
+    return HttpResponse("", status = 202)
 
 
 def handle_unsupported_golem_messages_type(client_message):

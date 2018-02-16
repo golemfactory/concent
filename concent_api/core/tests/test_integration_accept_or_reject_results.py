@@ -418,16 +418,16 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
-            timestamp               = "2018-02-05 11:00:00",
+            timestamp               = "2018-02-05 10:00:43",
             subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
-                timestamp               = "2018-02-05 11:00:00",
+                timestamp               = "2018-02-05 10:00:43",
                 subtask_id              = '2',
-                payment_ts              = "2018-02-05 11:00:01",
+                payment_ts              = "2018-02-05 10:00:44",
             )
         )
 
         with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
-            with freeze_time("2018-02-05 11:00:01"):
+            with freeze_time("2018-02-05 10:00:44"):
                 self.client.post(
                     reverse('core:send'),
                     data                            = serialized_force_subtask_results_response,
@@ -455,10 +455,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             key             = self.PROVIDER_PRIVATE_KEY,
             message_type    = message.concents.ForceSubtaskResultsResponse,
             fields          = {
-                'timestamp':                            self._parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
-                'subtask_results_accepted.timestamp':   self._parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
+                'timestamp':                            self._parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
+                'subtask_results_accepted.timestamp':   self._parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
                 'subtask_results_accepted.subtask_id':  '2',
-                'subtask_results_accepted.payment_ts':  self._parse_iso_date_to_timestamp("2018-02-05 11:00:01")
+                'subtask_results_accepted.payment_ts':  self._parse_iso_date_to_timestamp("2018-02-05 10:00:44")
             }
         )
 
@@ -529,16 +529,16 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
-            timestamp               = "2018-02-05 11:00:00",
+            timestamp               = "2018-02-05 10:00:43",
             subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
-                timestamp               = "2018-02-05 11:00:00",
+                timestamp               = "2018-02-05 10:00:43",
                 reason                  = message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
                 report_computed_task    = self._get_deserialized_report_computed_task(
-                    timestamp   = "2018-02-05 11:00:00",
+                    timestamp   = "2018-02-05 10:00:44",
                     subtask_id  = '2',
                     task_to_compute = self._get_deserialized_task_to_compute(
-                        timestamp   = "2018-02-05 11:00:00",
-                        deadline    = "2018-02-05 11:00:01",
+                        timestamp   = "2018-02-05 10:00:43",
+                        deadline    = "2018-02-05 10:00:44",
                         task_id     = '2',
                     )
                 )
@@ -546,7 +546,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
-            with freeze_time("2018-02-05 11:00:01"):
+            with freeze_time("2018-02-05 10:00:44"):
                 self.client.post(
                     reverse('core:send'),
                     data                            = serialized_force_subtask_results_response,
@@ -574,10 +574,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             key             = self.PROVIDER_PRIVATE_KEY,
             message_type    = message.concents.ForceSubtaskResultsResponse,
             fields          = {
-                'timestamp':                                                self._parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
-                'subtask_results_rejected.timestamp':                       self._parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
+                'timestamp':                                                self._parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
+                'subtask_results_rejected.timestamp':                       self._parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
                 'subtask_results_rejected.reason':                          message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-                'subtask_results_rejected.report_computed_task.timestamp':  self._parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
+                'subtask_results_rejected.report_computed_task.timestamp':  self._parse_iso_date_to_timestamp("2018-02-05 10:00:44"),
                 'subtask_results_rejected.report_computed_task.subtask_id': '2'
             }
         )
@@ -966,16 +966,16 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
-            timestamp               = "2018-02-05 11:00:00",
+            timestamp               = "2018-02-05 10:00:48",
             subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
-                timestamp               = "2018-02-05 11:00:00",
+                timestamp               = "2018-02-05 10:00:48",
                 subtask_id              = '1',
-                payment_ts              = "2018-02-05 11:00:01",
+                payment_ts              = "2018-02-05 10:00:49",
             )
         )
 
         with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
-            with freeze_time("2018-02-05 11:00:01"):
+            with freeze_time("2018-02-05 10:00:49"):
                 response_3 = self.client.post(
                     reverse('core:send'),
                     data                            = serialized_force_subtask_results_response,
@@ -1006,10 +1006,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             key = self.PROVIDER_PRIVATE_KEY,
             message_type = message.concents.ForceSubtaskResultsResponse,
             fields = {
-                'timestamp':                            self._parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
-                'subtask_results_accepted.timestamp':   self._parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
+                'timestamp':                            self._parse_iso_date_to_timestamp("2018-02-05 10:00:48"),
+                'subtask_results_accepted.timestamp':   self._parse_iso_date_to_timestamp("2018-02-05 10:00:48"),
                 'subtask_results_accepted.subtask_id':  '1',
-                'subtask_results_accepted.payment_ts':  self._parse_iso_date_to_timestamp("2018-02-05 11:00:01")
+                'subtask_results_accepted.payment_ts':  self._parse_iso_date_to_timestamp("2018-02-05 10:00:49")
             }
         )
 

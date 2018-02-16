@@ -20,7 +20,7 @@ from utils.api_view                 import Http400
 from utils.helpers                  import decode_key
 from utils.helpers                  import get_current_utc_timestamp
 from .constants                     import MESSAGE_TASK_ID_MAX_LENGTH
-from .models                        import Message
+from .models                        import StoredMessage
 from .models                        import MessageAuth
 from .models                        import ReceiveOutOfBandStatus
 from .models                        import ReceiveStatus
@@ -164,7 +164,7 @@ def receive(request, _message):
     if client_public_key != last_undelivered_message_status.message.auth.provider_public_key_bytes:
         return None
 
-    force_report_computed_task = Message.objects.get(
+    force_report_computed_task = StoredMessage.objects.get(
         type    = message.ForceReportComputedTask.TYPE,
         task_id = decoded_message_data.cannot_compute_task.task_to_compute.compute_task_def['task_id']
     )
@@ -185,7 +185,7 @@ def receive(request, _message):
 def receive_out_of_band(request, _message):
     undelivered_receive_out_of_band_statuses    = ReceiveOutOfBandStatus.objects.filter(delivered = False)
     last_undelivered_receive_out_of_band_status = undelivered_receive_out_of_band_statuses.order_by('timestamp').last()
-    last_undelivered_receive_status             = Message.objects.filter(
+    last_undelivered_receive_status             = StoredMessage.objects.filter(
         auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
     ).order_by('timestamp').last()
 
@@ -217,7 +217,7 @@ def handle_send_force_report_computed_task(request, client_message):
     other_party_public_key = decode_other_party_public_key(request)
     validate_golem_message_task_to_compute(client_message.task_to_compute)
 
-    if Message.objects.filter(task_id = client_message.task_to_compute.compute_task_def['task_id']).exists():
+    if StoredMessage.objects.filter(task_id = client_message.task_to_compute.compute_task_def['task_id']).exists():
         raise Http400("{} is already being processed for this task.".format(client_message.__class__.__name__))
 
     if client_message.task_to_compute.compute_task_def['deadline'] < current_time:
@@ -249,17 +249,17 @@ def handle_send_ack_report_computed_task(request, client_message):
     validate_golem_message_task_to_compute(client_message.task_to_compute)
 
     if current_time <= client_message.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
-        force_task_to_compute   = Message.objects.filter(
+        force_task_to_compute   = StoredMessage.objects.filter(
             task_id                    = client_message.task_to_compute.compute_task_def['task_id'],
             type                       = message.ForceReportComputedTask.TYPE,
             auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
         )
-        previous_ack_message    = Message.objects.filter(
+        previous_ack_message    = StoredMessage.objects.filter(
             task_id                    = client_message.task_to_compute.compute_task_def['task_id'],
             type                       = message.AckReportComputedTask.TYPE,
             auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
         )
-        reject_message          = Message.objects.filter(
+        reject_message          = StoredMessage.objects.filter(
             task_id                    = client_message.task_to_compute.compute_task_def['task_id'],
             type                       = message.RejectReportComputedTask.TYPE,
             auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
@@ -295,7 +295,7 @@ def handle_send_reject_report_computed_task(request, client_message):
     client_public_key = decode_client_public_key(request)
     validate_golem_message_reject(client_message.cannot_compute_task)
 
-    force_report_computed_task_from_database = Message.objects.filter(
+    force_report_computed_task_from_database = StoredMessage.objects.filter(
         task_id                    = client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id'],
         type                       = message.ForceReportComputedTask.TYPE,
         auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
@@ -325,12 +325,12 @@ def handle_send_reject_report_computed_task(request, client_message):
         return HttpResponse("", status = 202)
 
     if current_time <= force_report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
-        ack_message             = Message.objects.filter(
+        ack_message             = StoredMessage.objects.filter(
             task_id                    = client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id'],
             type                       = message.AckReportComputedTask.TYPE,
             auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
         )
-        previous_reject_message = Message.objects.filter(
+        previous_reject_message = StoredMessage.objects.filter(
             task_id                    = client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id'],
             type                       = message.RejectReportComputedTask.TYPE,
             auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
@@ -361,7 +361,7 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
     other_party_public_key = decode_other_party_public_key(request)
     validate_golem_message_task_to_compute(client_message.report_computed_task.task_to_compute)
 
-    if Message.objects.filter(
+    if StoredMessage.objects.filter(
         type                       = client_message.TYPE,
         task_id                    = client_message.report_computed_task.task_to_compute.compute_task_def['task_id'],
         auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
@@ -411,7 +411,7 @@ def handle_send_force_subtask_results(request, client_message: message.concents.
     client_public_key      = decode_client_public_key(request)
     other_party_public_key = decode_other_party_public_key(request)
 
-    if Message.objects.filter(
+    if StoredMessage.objects.filter(
         type    = client_message.TYPE,
         task_id = client_message.ack_report_computed_task.task_to_compute.compute_task_def['task_id']
     ).exists():
@@ -459,8 +459,8 @@ def handle_send_force_subtask_results_results_response(request, client_message):
     else:
         client_message_task_id = client_message.subtask_results_rejected.report_computed_task.subtask_id
     if current_time < client_message.timestamp + settings.CONCENT_MESSAGING_TIME:
-        force_subtask_results                   = Message.objects.filter(task_id = client_message_task_id, type = message.concents.ForceSubtaskResults.TYPE)
-        previous_force_subtask_results_response = Message.objects.filter(task_id = client_message_task_id, type = message.concents.ForceSubtaskResultsResponse.TYPE)
+        force_subtask_results                   = StoredMessage.objects.filter(task_id = client_message_task_id, type = message.concents.ForceSubtaskResults.TYPE)
+        previous_force_subtask_results_response = StoredMessage.objects.filter(task_id = client_message_task_id, type = message.concents.ForceSubtaskResultsResponse.TYPE)
 
         if not force_subtask_results.exists():
             raise Http400("'ForceSubtaskResults' for this subtask has not been initiated yet. Can't accept your '{}'.".format(client_message.TYPE))
@@ -794,7 +794,7 @@ def store_message_and_message_status(
     assert requestor_public_key is not None
 
     message_timestamp = datetime.datetime.now(timezone.utc)
-    golem_message = Message(
+    golem_message = StoredMessage(
         type        = golem_message_type,
         timestamp   = message_timestamp,
         data        = raw_golem_message,

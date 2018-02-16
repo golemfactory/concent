@@ -930,9 +930,9 @@ def is_provider_account_status_positive(_message):
 
 
 def tmp_is_provider_account_status_positive(request):
-    try:
+    if 'HTTP_TEMPORARY_ACCOUNT_FUNDS' in request.META:
         return bool(request.META['HTTP_TEMPORARY_ACCOUNT_FUNDS'])
-    except KeyError:
+    else:
         return False
 
 

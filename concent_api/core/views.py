@@ -94,14 +94,14 @@ def receive(request, _message):
                     decoded_message_data,
                     last_delivered_message_status,
                 )
-        subtask_results_settled_timing = settings.SUBTASK_VERIFICATION_TIME + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME
+        acceptance_deadline = settings.SUBTASK_VERIFICATION_TIME + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME
         if (
             last_delivered_message_status.message.type                           == message.concents.ForceSubtaskResults.TYPE and
             last_delivered_message_status.message.auth.provider_public_key_bytes == client_public_key and
-            current_time > decoded_message_data.ack_report_computed_task.timestamp + subtask_results_settled_timing
+            current_time > decoded_message_data.ack_report_computed_task.timestamp + acceptance_deadline
         ):
             make_forced_payment('provider', 'requestor')
-            return handle_receive_force_subtask_results(request, decoded_message_data, last_delivered_message_status, ReceiveStatus)
+            return handle_receive_force_subtask_results(request, decoded_message_data, last_delivered_message_status.message.auth.provider_public_key_bytes, ReceiveStatus)
 
         return None
 
@@ -217,11 +217,11 @@ def receive_out_of_band(request, _message):
             return handle_receive_out_of_band_reject_report_computed_task(request, last_undelivered_receive_status)
 
         if last_undelivered_receive_status.type == message.concents.ForceSubtaskResults.TYPE:
-            subtask_results_settled_timing = settings.SUBTASK_VERIFICATION_TIME + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME
+            acceptance_deadline = settings.SUBTASK_VERIFICATION_TIME + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME
             decoded_message_data = deserialize_message(last_undelivered_receive_status.data.tobytes())
 
-            if current_time > decoded_message_data.ack_report_computed_task.timestamp + subtask_results_settled_timing:
-                return handle_receive_force_subtask_results(request, decoded_message_data, last_undelivered_receive_status, ReceiveOutOfBandStatus)
+            if current_time > decoded_message_data.ack_report_computed_task.timestamp + acceptance_deadline:
+                return handle_receive_force_subtask_results(request, decoded_message_data, last_undelivered_receive_status.auth.provider_public_key_bytes, ReceiveOutOfBandStatus)
         return None
 
     return None
@@ -421,7 +421,7 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
 
 
 def handle_send_force_subtask_results(request, client_message: message.concents.ForceSubtaskResults):
-    assert client_message.TYPE in message.registered_message_types
+    assert isinstance(client_message, message.concents.ForceSubtaskResults)
 
     current_time           = int(datetime.datetime.now().timestamp())
     client_public_key      = decode_client_public_key(request)
@@ -465,7 +465,7 @@ def handle_send_force_subtask_results(request, client_message: message.concents.
 
 
 def handle_send_force_subtask_results_results_response(request, client_message):
-    assert client_message.TYPE in message.registered_message_types
+    assert isinstance(client_message, message.concents.ForceSubtaskResultsResponse)
 
     current_time      = int(datetime.datetime.now().timestamp())
     client_public_key = decode_client_public_key(request)
@@ -530,24 +530,17 @@ def handle_receive_delivered_force_report_computed_task(request, delivered_messa
 
 def handle_receive_force_subtask_results(
     request,
-    decoded_message:                message.concents.ForceSubtaskResults,
-    previous_message_from_database: Union[ReceiveStatus, Message],
+    decoded_message:        message.concents.ForceSubtaskResults,
+    provider_public_key,
     message_model
 ) -> message.concents.ForceSubtaskResults:
-
-    assert decoded_message.TYPE in message.registered_message_types
+    assert isinstance(decoded_message, message.concents.ForceSubtaskResults)
 
     client_public_key       = decode_client_public_key(request)
     subtask_results_settled = message.concents.SubtaskResultsSettled(
         origin = message.concents.SubtaskResultsSettled.Origin.ResultsAcceptedTimeout,
     )
 
-    if isinstance(previous_message_from_database, ReceiveStatus):
-        provider_public_key = previous_message_from_database.message.auth.provider_public_key_bytes
-    elif isinstance(previous_message_from_database, Message):
-        provider_public_key = previous_message_from_database.auth.provider_public_key_bytes
-    else:
-        raise Http400("Unable to get provider public key for message {}.".format(previous_message_from_database))
     subtask_results_settled.task_to_compute = decoded_message.ack_report_computed_task.task_to_compute
     store_message_and_message_status(
         subtask_results_settled.TYPE,

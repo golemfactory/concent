@@ -55,6 +55,9 @@ def send(request, client_message):
     ):
         return handle_send_force_subtask_results_response(request, client_message)
 
+    elif isinstance(client_message, message.concents.ForcePayment):
+        return handle_send_force_payment(request, client_message)
+
     else:
         return handle_unsupported_golem_messages_type(client_message)
 
@@ -540,7 +543,7 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
 def handle_send_force_subtask_results(request, client_message: message.concents.ForceSubtaskResults):
     assert isinstance(client_message, message.concents.ForceSubtaskResults)
 
-    current_time           = int(datetime.datetime.now().timestamp())
+    current_time           = get_current_utc_timestamp()
     client_public_key      = decode_client_public_key(request)
     other_party_public_key = decode_other_party_public_key(request)
 
@@ -599,7 +602,7 @@ def handle_send_force_subtask_results(request, client_message: message.concents.
 def handle_send_force_subtask_results_response(request, client_message):
     assert isinstance(client_message, message.concents.ForceSubtaskResultsResponse)
 
-    current_time      = int(datetime.datetime.now().timestamp())
+    current_time      = get_current_utc_timestamp()
     client_public_key = decode_client_public_key(request)
 
     if isinstance(client_message.subtask_results_accepted, message.tasks.SubtaskResultsAccepted):
@@ -651,6 +654,121 @@ def handle_send_force_subtask_results_response(request, client_message):
         client_public_key,
     )
     return HttpResponse("", status = 202)
+
+
+def verify_message_subtask_results_accepted(subtask_results_accepted_list):
+    verify_public_key           = len(set(subtask_results_accepted.task_to_compute.requestor_public_key             for subtask_results_accepted in subtask_results_accepted_list)) == 1
+    verify_ethereum_public_key  = len(set(subtask_results_accepted.task_to_compute.requestor_ethereum_public_key    for subtask_results_accepted in subtask_results_accepted_list)) == 1
+    return bool(verify_public_key is True and verify_ethereum_public_key is True)
+
+
+def sum_payments(list_of_payments):
+    return sum([item.price for item in list_of_payments])
+
+
+def handle_send_force_payment(request, client_message):
+    client_public_key       = decode_client_public_key(request)
+    other_party_public_key  = decode_other_party_public_key(request)
+    current_time            = get_current_utc_timestamp()
+
+    if not verify_message_subtask_results_accepted(client_message.subtask_results_accepted_list):
+        return message.concents.ServiceRefused(
+            reason = message.concents.ServiceRefused.REASON.InvalidRequest
+        )
+    requestor_ethereum_public_key = client_message.subtask_results_accepted_list[0].task_to_compute.requestor_ethereum_public_key
+
+    # Concent defines time T0 equal to oldest payment_ts from passed SubtaskResultAccepted messages from subtask_results_accepted_list.
+    oldest_payments_ts = min(subtask_results_accepted.payment_ts for subtask_results_accepted in client_message.subtask_results_accepted_list)
+
+    # Concent gets list of transactions from payment API where timestamp >= T0.
+    list_of_transactions = _get_list_of_transactions(T0, current_time, request)
+
+    # Concent defines time T1 equal to youngest timestamp from list of transactions.
+    youngest_transaction = max(transaction['timestamp'] for transaction in list_of_transactions)
+
+    # Concent checks if all passed SubtaskResultAccepted messages from subtask_results_accepted_list have payment_ts < T1
+    T1_is_bigger_than_payments_ts = any(youngest_transaction > subtask_results_accepted.payment_ts for subtask_results_accepted in client_message.subtask_results_accepted_list)
+
+    # Any of the items from list of overdue acceptances matches condition current_time < payment_ts + PAYMENT_DUE_TIME + PAYMENT_GRACE_PERIOD.
+    acceptance_time_overdue = any(current_time < subtask_results_accepted.payment_ts + settings.PAYMENT_DUE_TIME + settings.PAYMENT_GRACE_PERIOD for subtask_results_accepted in client_message.subtask_results_accepted_list)
+
+    if T1_is_bigger_than_payments_ts or acceptance_time_overdue:
+        return message.concents.ForcePaymentRejected(
+            reason = message.concents.ForcePaymentRejected.REASON.TimestampError
+        )
+
+    # Concent gets list of list of forced payments from payment API where T0 <= payment_ts + PAYMENT_DUE_TIME + PAYMENT_GRACE_PERIOD.
+    list_of_forced_payments = _get_forced_payments(oldest_payments_ts, requestor_ethereum_public_key, client_public_key)
+
+    sum_of_payments = payment_summary(client_message.subtask_results_accepted_list, list_of_transactions, list_of_forced_payments, request)
+
+    # Concent defines time T2 (end time) equal to youngest payment_ts from passed SubtaskResultAccepted messages from subtask_results_accepted_list.
+    min(subtask_results_accepted.payment_ts for subtask_results_accepted in client_message.subtask_results_accepted_list)
+
+    if sum_of_payments <= 0:
+        return message.concents.ForcePaymentRejected(
+            reason = message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound
+        )
+    elif sum_of_payments > 0:
+        _make_payment_to_provider(sum_of_payments, requestor_ethereum_public_key, client_public_key)
+        provider_force_payment_commited = message.concents.ForcePaymentCommitted(
+            payment_ts              = current_time + 60,
+            task_owner_key          = requestor_ethereum_public_key,
+            provider_eth_account    = client_public_key,
+            amount_paid             = 10.99,
+            amount_pending          = 0.01,
+            recipient_type          = message.concents.ForcePaymentCommitted.Actor.Provider,
+        )
+
+        store_message_and_message_status(
+            provider_force_payment_commited.TYPE,
+            None,
+            provider_force_payment_commited.serialize(),
+            provider_public_key     = client_public_key,
+            requestor_public_key    = other_party_public_key,
+        )
+
+        provider_force_payment_commited.sig = None
+        return provider_force_payment_commited
+
+
+def payment_summary(subtask_results_accepted_list, list_of_transactions, list_of_forced_payments, request):
+    sum_of_payments_from_subtask_results_accepted   = sum_payments(subtask_results_accepted_list)
+    sum_of_payments_from_list_of_transactions       = sum_payments(list_of_transactions)
+    sum_of_payments_from_list_of_force_payments     = sum_payments(list_of_forced_payments)
+    if 'HTTP_TEMPORARY_V' in request.META:
+        return int(request.META['HTTP_TEMPORARY_V'])
+
+    return sum_of_payments_from_subtask_results_accepted - sum_of_payments_from_list_of_transactions - sum_of_payments_from_list_of_force_payments
+
+
+def _get_list_of_transactions(_T0, current_time, request):
+    '''
+    Function which return list of transactions from payment API
+    where timestamp >= T0
+    '''
+    if 'HTTP_TEMPORARY_LIST_OF_TRANSACTIONS' in request.META:
+        if bool(request.META['HTTP_TEMPORARY_LIST_OF_TRANSACTIONS']):
+            return [{'timestamp': current_time - 3700}, {'timestamp': current_time - 3800}, {'timestamp': current_time - 3900}]
+        else:
+            return [{'timestamp': current_time - 22}, {'timestamp': current_time - 23}, {'timestamp': current_time - 24}]
+    return True
+
+
+def _get_forced_payments(_T0, _requestor_ethereum_public_key, _provider_ethereum_public_key):
+    '''
+    Function which return list of forced paysments from payment API
+    where t0 <= payment_ts + PAYMENT_DUE_TIME + PAYMENT_GRACE_PERIOD
+    '''
+    return True
+
+
+def _make_payment_to_provider(_V, _requestor_ethereum_public_key, _provider_ethereum_public_key):
+    '''
+    Concent makes transaction from requestor's deposit to provider's account on amount V.
+    If there is less then V on requestor's deposit, Concent transfers as much as possible.
+    '''
+    return True
 
 
 def handle_unsupported_golem_messages_type(client_message):

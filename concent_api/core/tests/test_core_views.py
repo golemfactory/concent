@@ -16,7 +16,7 @@ from golem_messages.shortcuts       import load
 from golem_messages                 import message
 from golem_messages.message         import Message as GolemMessage
 
-from core.models                    import Message
+from core.models                    import StoredMessage
 from core.models                    import MessageAuth
 from core.models                    import ReceiveStatus
 from utils.helpers                  import get_current_utc_timestamp
@@ -74,7 +74,7 @@ class CoreViewSendTest(TestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_accept_valid_message(self):
-        assert Message.objects.count()       == 0
+        assert StoredMessage.objects.count() == 0
         assert ReceiveStatus.objects.count() == 0
 
         response = self.client.post(
@@ -88,15 +88,15 @@ class CoreViewSendTest(TestCase):
             HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
-        self.assertEqual(response.status_code, 202)
-        self.assertEqual(len(Message.objects.all()),       1)
-        self.assertEqual(Message.objects.last().type,      message.ForceReportComputedTask.TYPE)
-        self.assertEqual(len(ReceiveStatus.objects.all()), 1)
-        self.assertEqual(Message.objects.last().id,        ReceiveStatus.objects.last().message_id)
+        self.assertEqual(response.status_code,                   202)
+        self.assertEqual(len(StoredMessage.objects.all()),       1)
+        self.assertEqual(StoredMessage.objects.last().type,      message.ForceReportComputedTask.TYPE)
+        self.assertEqual(len(ReceiveStatus.objects.all()),       1)
+        self.assertEqual(StoredMessage.objects.last().id,        ReceiveStatus.objects.last().message_id)
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_200_if_message_timeout(self):
-        assert Message.objects.count()       == 0
+        assert StoredMessage.objects.count() == 0
         assert ReceiveStatus.objects.count() == 0
 
         task_to_compute = self.task_to_compute
@@ -126,7 +126,7 @@ class CoreViewSendTest(TestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_accept_valid_message_with_non_numeric_task_id(self):
-        assert Message.objects.count()       == 0
+        assert StoredMessage.objects.count() == 0
         assert ReceiveStatus.objects.count() == 0
 
         compute_task_def = message.ComputeTaskDef()
@@ -151,12 +151,12 @@ class CoreViewSendTest(TestCase):
             HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
-        self.assertEqual(response.status_code, 202)
-        self.assertEqual(len(Message.objects.all()),       1)
-        self.assertEqual(Message.objects.last().type,      message.ForceReportComputedTask.TYPE)
-        self.assertEqual(len(ReceiveStatus.objects.all()), 1)
-        self.assertEqual(Message.objects.last().id,        ReceiveStatus.objects.last().message_id)
-        self.assertEqual(Message.objects.last().task_id,   compute_task_def['task_id'])
+        self.assertEqual(response.status_code,                   202)
+        self.assertEqual(len(StoredMessage.objects.all()),       1)
+        self.assertEqual(StoredMessage.objects.last().type,      message.ForceReportComputedTask.TYPE)
+        self.assertEqual(len(ReceiveStatus.objects.all()),       1)
+        self.assertEqual(StoredMessage.objects.last().id,        ReceiveStatus.objects.last().message_id)
+        self.assertEqual(StoredMessage.objects.last().task_id,   compute_task_def['task_id'])
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_data_is_incorrect(self):
@@ -285,7 +285,7 @@ class CoreViewSendTest(TestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_reject_message_save_as_receive_out_of_band_status(self):
-        assert Message.objects.count()       == 0
+        assert StoredMessage.objects.count() == 0
         assert ReceiveStatus.objects.count() == 0
 
         force_response = self.client.post(
@@ -299,8 +299,8 @@ class CoreViewSendTest(TestCase):
             HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
-        self.assertEqual(force_response.status_code, 202)
-        self.assertEqual(Message.objects.last().type, message.ForceReportComputedTask.TYPE)
+        self.assertEqual(force_response.status_code,        202)
+        self.assertEqual(StoredMessage.objects.last().type, message.ForceReportComputedTask.TYPE)
 
         reject_response = self.client.post(
             reverse('core:send'),
@@ -313,8 +313,8 @@ class CoreViewSendTest(TestCase):
             HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
-        self.assertEqual(reject_response.status_code, 202)
-        self.assertEqual(Message.objects.last().type, message.RejectReportComputedTask.TYPE)
+        self.assertEqual(reject_response.status_code,       202)
+        self.assertEqual(StoredMessage.objects.last().type, message.RejectReportComputedTask.TYPE)
 
     def test_send_should_reject_message_when_timestamp_too_old(self):
         with freeze_time("2017-11-17 09:40:00"):
@@ -373,7 +373,7 @@ class CoreViewSendTest(TestCase):
         ]
 
         for deadline in invalid_values:
-            Message.objects.all().delete()
+            StoredMessage.objects.all().delete()
             compute_task_def['deadline'] = deadline
             task_to_compute = message.TaskToCompute(
                 compute_task_def = compute_task_def,
@@ -412,7 +412,7 @@ class CoreViewSendTest(TestCase):
         ]
 
         for i, deadline in enumerate(invalid_values):
-            Message.objects.all().delete()
+            StoredMessage.objects.all().delete()
             compute_task_def['task_id'] = str(i)
             compute_task_def['deadline'] = deadline
             task_to_compute = message.TaskToCompute(
@@ -462,7 +462,7 @@ class CoreViewReceiveTest(TestCase):
     @freeze_time("2017-11-17 10:00:00")
     def test_receive_should_accept_valid_message(self):
         message_timestamp   = datetime.datetime.now(timezone.utc)
-        new_message         = Message(
+        new_message         = StoredMessage(
             type        = self.force_golem_data.TYPE,
             timestamp   = message_timestamp,
             data        = self.force_golem_data.serialize(),
@@ -527,7 +527,7 @@ class CoreViewReceiveTest(TestCase):
                 task_to_compute = self.task_to_compute
             )
         message_timestamp = datetime.datetime.now(timezone.utc)
-        new_message = Message(
+        new_message = StoredMessage(
             type        = self.force_golem_data.TYPE,
             timestamp   = message_timestamp,
             data        = self.force_golem_data.serialize(),
@@ -597,7 +597,7 @@ class CoreViewReceiveOutOfBandTest(TestCase):
         assert self.force_golem_data.timestamp == 1510912800
 
         message_timestamp   = datetime.datetime.now(timezone.utc)
-        new_message         = Message(
+        new_message         = StoredMessage(
             type        = self.force_golem_data.TYPE,
             timestamp   = message_timestamp,
             data        = self.force_golem_data.serialize(),

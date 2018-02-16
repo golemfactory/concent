@@ -5,7 +5,7 @@ from django.urls            import reverse
 from freezegun              import freeze_time
 from golem_messages         import message
 
-from core.models            import Message
+from core.models            import StoredMessage
 from core.models            import ReceiveStatus
 from core.tests.utils       import ConcentIntegrationTestCase
 from utils.testing_helpers  import generate_ecc_key_pair
@@ -126,7 +126,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
 
-        self.assertEqual(Message.objects.last(), None)
+        self.assertEqual(StoredMessage.objects.last(), None)
 
         self._test_response(
             response_1,

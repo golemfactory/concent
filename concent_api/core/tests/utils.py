@@ -13,7 +13,7 @@ from freezegun              import freeze_time
 from golem_messages         import dump
 from golem_messages         import load
 from golem_messages         import message
-from core.models            import Message
+from core.models            import StoredMessage
 from core.models            import MessageAuth
 from core.models            import ReceiveStatus
 
@@ -156,8 +156,8 @@ class ConcentIntegrationTestCase(TestCase):
         task_id,
         receive_delivered_status = None,
     ):
-        self.assertEqual(Message.objects.last().type,           last_object_type.TYPE)
-        self.assertEqual(Message.objects.last().task_id,        task_id)
+        self.assertEqual(StoredMessage.objects.last().type,           last_object_type.TYPE)
+        self.assertEqual(StoredMessage.objects.last().task_id,        task_id)
 
         if receive_delivered_status is not None:
             self.assertEqual(ReceiveStatus.objects.last().delivered,        receive_delivered_status)
@@ -336,7 +336,7 @@ class ConcentIntegrationTestCase(TestCase):
         with freeze_time(timestamp or self._get_timestamp_string()):
             message_timestamp = datetime.datetime.now(timezone.utc)
             data.sig = None
-            golem_message = Message(
+            golem_message = StoredMessage(
                 type        = message_type,
                 timestamp   = message_timestamp,
                 data        = data.serialize(),

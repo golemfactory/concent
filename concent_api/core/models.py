@@ -16,14 +16,14 @@ from utils.helpers    import is_base64
 from .constants       import MESSAGE_TASK_ID_MAX_LENGTH
 
 
-class Message(Model):
+class StoredMessage(Model):
     type        = PositiveSmallIntegerField()
     timestamp   = DateTimeField()
     data        = BinaryField()
     task_id     = CharField(max_length = MESSAGE_TASK_ID_MAX_LENGTH, blank = False)
 
     def __str__(self):
-        return 'Message #{}, type:{}, {}'.format(self.id, self.type, self.timestamp)
+        return 'StoredMessage #{}, type:{}, {}'.format(self.id, self.type, self.timestamp)
 
 
 class ReceiveStatusManager(Manager):
@@ -38,7 +38,7 @@ class ReceiveStatusManager(Manager):
 
 
 class ReceiveStatus(Model):
-    message     = ForeignKey(Message)
+    message     = ForeignKey(StoredMessage)
     timestamp   = DateTimeField()
     delivered   = BooleanField(default = False)
 
@@ -53,7 +53,7 @@ class ReceiveStatus(Model):
 
 
 class ReceiveOutOfBandStatus(Model):
-    message     = ForeignKey(Message)
+    message     = ForeignKey(StoredMessage)
     timestamp   = DateTimeField()
     delivered   = BooleanField(default = False)
 
@@ -70,6 +70,6 @@ class MessageAuth(Model):
     This class is used to store provider and requestor keys for message exchange related to given initial message.
     """
 
-    message              = OneToOneField(Message, related_name = 'auth')
+    message              = OneToOneField(StoredMessage, related_name = 'auth')
     provider_public_key  = Base64Field(max_length=64)
     requestor_public_key = Base64Field(max_length=64)

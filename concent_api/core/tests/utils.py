@@ -86,10 +86,12 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_task_to_compute(
         self,
-        timestamp           = None,
-        deadline            = None,
-        task_id             = '1',
-        compute_task_def    = None
+        timestamp                       = None,
+        deadline                        = None,
+        task_id                         = '1',
+        compute_task_def                = None,
+        requestor_public_key            = None,
+        requestor_ethereum_public_key   = None,
     ):
         """ Returns TaskToCompute deserialized. """
         if compute_task_def is None:
@@ -104,7 +106,9 @@ class ConcentIntegrationTestCase(TestCase):
 
         with freeze_time(timestamp or self._get_timestamp_string()):
             task_to_compute = message.TaskToCompute(
-                compute_task_def = compute_task_def,
+                compute_task_def                = compute_task_def,
+                requestor_public_key            = requestor_public_key,
+                requestor_ethereum_public_key   = requestor_ethereum_public_key,
             )
         return task_to_compute
 

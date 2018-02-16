@@ -209,6 +209,118 @@ class GatekeeperViewUploadTest(TestCase):
             self.assertIn('message', response.json().keys())
             self.assertEqual("application/json", response["Content-Type"])
 
+    @freeze_time("2018-12-30 11:00:00")
+    def test_upload_should_return_401_if_newlines_in_message_checksum(self):
+        invalid_values = [
+            's\nha1:95a0f391c7ad866\n86ab1366bcd519ba5ab3cce89',
+            '\nsha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
+            'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89\n',
+        ]
+
+        for value in invalid_values:
+            file = FileTransferToken.FileInfo(
+                path     = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+                size     = 1024,
+            )
+
+            self.upload_token.files = [file]
+            self.upload_token.files[0]['checksum'] = value
+
+            golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+            encrypted_token = b64encode(golem_upload_token).decode()
+            response = self.client.post(
+                '{}{}'.format(
+                    reverse('gatekeeper:upload'),
+                    'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
+                ),
+                HTTP_AUTHORIZATION             = 'Golem ' + encrypted_token,
+                content_type                   = 'application/x-www-form-urlencoded',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key
+            )
+
+            self.assertIsInstance(response, JsonResponse)
+            self.assertEqual(response.status_code, 401)
+            self.assertIn('message', response.json().keys())
+            self.assertEqual("application/json", response["Content-Type"])
+
+    @freeze_time("2018-12-30 11:00:00")
+    def test_upload_should_return_401_if_newlines_in_message_path(self):
+        invalid_values = [
+            'blen\nder/benchmark/test_task/scene-Helicopter-2\n7-cycles.blend',
+            '\nblender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+            'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend\n',
+        ]
+
+        for value in invalid_values:
+            file = FileTransferToken.FileInfo(
+                path     = value,
+                checksum = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
+                size     = 1024,
+            )
+
+            self.upload_token.files = [file]
+
+            golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+            encrypted_token = b64encode(golem_upload_token).decode()
+            response = self.client.post(
+                '{}{}'.format(
+                    reverse('gatekeeper:upload'),
+                    'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
+                ),
+                HTTP_AUTHORIZATION             = 'Golem ' + encrypted_token,
+                content_type                   = 'application/x-www-form-urlencoded',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key
+            )
+
+            self.assertIsInstance(response, JsonResponse)
+            self.assertEqual(response.status_code, 401)
+            self.assertIn('message', response.json().keys())
+            self.assertEqual("application/json", response["Content-Type"])
+
+    @freeze_time("2018-02-12 16:19:00")
+    def test_upload_should_return_401_if_specific_authorization_header(self):
+
+        response = self.client.post(
+            '{}{}'.format(
+                reverse('gatekeeper:upload'),
+                '1/2/result'
+            ),
+            HTTP_AUTHORIZATION             = 'Golem D6UAAAAAWoG9YgGsJib/zgj2cAHGXunyxI7t2NYnHKPvrdzVkdT/B58TpQHpdfonuWy8sWq9nrpc9+/1nUTm8O9szLOrFrCPKL7hAQRWLO4JCR6cVGILFbqRKX6abR1AKMLqRUa/ucH5t0YrLe/OPEp6+2swgbRgcnu0dlvfaupn9bwRPZhjVc2hJlDlkz+7aRx+NDEFWQeRHt3q7b8vA0xd/UUvPGudSnzGR6DaM1+Ji4PifQ7AUdYkQHmRNP4yZH+xjCq706J8mftrySj2geoP+TLKZFgpqHhng5I9v0xKpjOnZk9MRTWkzPyxIMwl535ZVLte0J5VRIIaZFEyYFRXgZGVyGinnEIfXZKZdUdRpRELUBK086A/w4aG3shpEPXEzfo42hjdrDEfyx5bZTANyrGwj1hTLKPoVaPMN9wb3MdQ1D1B5Os3+5YdfASnQRZfZmaEJqNAHNlZveLHpA2DcPFNvltcwUy3Jj1gTI43IbbuXNsIXhMKgNaZrNgJKKpQpc+qF9D7CwfugtiD6y/g71UrrUgvVIcZ9UXVTu5OJg2agGiaIvRWrGxfhyzv/HyHR530p7fNTt/dJBCDO55Mx3uhxA/XGYxmz2uk/xIQMR8QU7Cc/tOdvzdHJ+WHhNBo2fe5oLk03AXIhpqOOgJb8nnM',
+            content_type                   = 'application/x-www-form-urlencoded',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key
+        )
+
+        self.assertIsInstance(response, JsonResponse)
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('message', response.json().keys())
+        self.assertEqual("application/json", response["Content-Type"])
+
+    def test_upload_should_return_401_if_specific_file_info_data(self):
+        file = FileTransferToken.FileInfo(
+            path     = '1/0/result',
+            size     = 1,
+            checksum = 'sha1:356a192b7913b04c54574d18c28d46e6395428ab\n',
+        )
+
+        self.upload_token.files = [file]
+
+        golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+        encrypted_token = b64encode(golem_upload_token).decode()
+        response = self.client.post(
+            '{}{}'.format(
+                reverse('gatekeeper:upload'),
+                '1/0/result'
+            ),
+            HTTP_AUTHORIZATION             = 'Golem ' + encrypted_token,
+            content_type                   = 'application/x-www-form-urlencoded',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key
+        )
+
+        self.assertIsInstance(response, JsonResponse)
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('message', response.json().keys())
+        self.assertEqual("application/json", response["Content-Type"])
+
 
 @override_settings(
     CONCENT_PRIVATE_KEY = b'l\xcdh\x19\xeb$>\xbcG\xa1\xc7v\xe8\xd7o\x0c\xbf\x0e\x0fM\x89lw\x1e\xd7K\xd6Hnv$\xa2',
@@ -392,6 +504,72 @@ class GatekeeperViewDownloadTest(TestCase):
             )
 
             self.upload_token.files = [file1, file2]
+
+            golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+            encrypted_token = b64encode(golem_upload_token).decode()
+            response = self.client.get(
+                '{}{}'.format(
+                    reverse('gatekeeper:download'),
+                    'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
+                ),
+                HTTP_AUTHORIZATION             = 'Golem ' + encrypted_token,
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key
+            )
+
+            self.assertIsInstance(response, JsonResponse)
+            self.assertEqual(response.status_code, 401)
+            self.assertIn('message', response.json().keys())
+            self.assertEqual("application/json", response["Content-Type"])
+
+    @freeze_time("2018-12-30 11:00:00")
+    def test_download_should_return_400_if_newlines_in_message_checksum(self):
+        invalid_values = [
+            's\nha1:95a0f391c7ad866\n86ab1366bcd519ba5ab3cce89',
+            '\nsha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
+            'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89\n',
+        ]
+
+        for value in invalid_values:
+            file = FileTransferToken.FileInfo(
+                path     = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+                checksum = value,
+                size     = 1024,
+            )
+
+            self.upload_token.files = [file]
+
+            golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+            encrypted_token = b64encode(golem_upload_token).decode()
+            response = self.client.get(
+                '{}{}'.format(
+                    reverse('gatekeeper:download'),
+                    'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
+                ),
+                HTTP_AUTHORIZATION             = 'Golem ' + encrypted_token,
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key
+            )
+
+            self.assertIsInstance(response, JsonResponse)
+            self.assertEqual(response.status_code, 401)
+            self.assertIn('message', response.json().keys())
+            self.assertEqual("application/json", response["Content-Type"])
+
+    @freeze_time("2018-12-30 11:00:00")
+    def test_download_should_return_400_if_newlines_in_message_path(self):
+        invalid_values = [
+            'blen\nder/benchmark/test_task/scene-Helicopter-2\n7-cycles.blend',
+            '\nblender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+            'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend\n',
+        ]
+
+        for value in invalid_values:
+            file = FileTransferToken.FileInfo(
+                path     = value,
+                checksum = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
+                size     = 1024,
+            )
+
+            self.upload_token.files = [file]
 
             golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
             encrypted_token = b64encode(golem_upload_token).decode()

@@ -1,7 +1,6 @@
 from base64                         import b64encode
 import binascii
 import datetime
-from typing                         import Union
 
 import requests
 from django.conf                    import settings
@@ -101,7 +100,12 @@ def receive(request, _message):
             current_time > decoded_message_data.ack_report_computed_task.timestamp + acceptance_deadline
         ):
             make_forced_payment('provider', 'requestor')
-            return handle_receive_force_subtask_results(request, decoded_message_data, last_delivered_message_status.message.auth.provider_public_key_bytes, ReceiveStatus)
+            return handle_receive_force_subtask_results(
+                decoded_message_data,
+                last_delivered_message_status.message.auth.provider_public_key_bytes,
+                last_delivered_message_status.message.auth.requestor_public_key_bytes,
+                ReceiveStatus
+            )
 
         return None
 
@@ -216,12 +220,24 @@ def receive_out_of_band(request, _message):
         if last_undelivered_receive_status.type == message.RejectReportComputedTask.TYPE:
             return handle_receive_out_of_band_reject_report_computed_task(request, last_undelivered_receive_status)
 
+        last_receive_status = ReceiveStatus.objects.filter(message__task_id=last_undelivered_receive_status.task_id).order_by('timestamp').last()
+        if last_undelivered_receive_status.type == last_receive_status.message.type and last_undelivered_receive_status.type == message.concents.SubtaskResultsSettled.TYPE:
+            last_undelivered_receive_status = StoredMessage.objects.filter(
+                auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+            ).exclude(id = last_undelivered_receive_status.id).order_by('timestamp').last()
+
         if last_undelivered_receive_status.type == message.concents.ForceSubtaskResults.TYPE:
             acceptance_deadline = settings.SUBTASK_VERIFICATION_TIME + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME
             decoded_message_data = deserialize_message(last_undelivered_receive_status.data.tobytes())
 
             if current_time > decoded_message_data.ack_report_computed_task.timestamp + acceptance_deadline:
-                return handle_receive_force_subtask_results(request, decoded_message_data, last_undelivered_receive_status.auth.provider_public_key_bytes, ReceiveOutOfBandStatus)
+
+                return handle_receive_force_subtask_results(
+                    decoded_message_data,
+                    last_undelivered_receive_status.auth.provider_public_key_bytes,
+                    last_undelivered_receive_status.auth.requestor_public_key_bytes,
+                    ReceiveOutOfBandStatus
+                )
         return None
 
     return None
@@ -529,14 +545,13 @@ def handle_receive_delivered_force_report_computed_task(request, delivered_messa
 
 
 def handle_receive_force_subtask_results(
-    request,
     decoded_message:        message.concents.ForceSubtaskResults,
     provider_public_key,
+    requestor_public_key,
     message_model
 ) -> message.concents.ForceSubtaskResults:
     assert isinstance(decoded_message, message.concents.ForceSubtaskResults)
 
-    client_public_key       = decode_client_public_key(request)
     subtask_results_settled = message.concents.SubtaskResultsSettled(
         origin = message.concents.SubtaskResultsSettled.Origin.ResultsAcceptedTimeout,
     )
@@ -547,7 +562,7 @@ def handle_receive_force_subtask_results(
         subtask_results_settled.task_to_compute.compute_task_def['task_id'],
         subtask_results_settled.serialize(),
         provider_public_key  = provider_public_key,
-        requestor_public_key = client_public_key,
+        requestor_public_key = requestor_public_key,
         status               = message_model,
         delivered            = True,
     )

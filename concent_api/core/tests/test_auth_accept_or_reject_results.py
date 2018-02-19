@@ -359,13 +359,21 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 4: Different requestor or provider sends forces subtask results response via Concent with different or mixed key.
         # Request is rejected.
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id  = '2',
+            deadline = "2018-02-05 11:00:00",
+        )
+
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
             timestamp               = "2018-02-05 10:00:43",
             subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
                 timestamp               = "2018-02-05 10:00:43",
-                subtask_id              = '2',
                 payment_ts              = "2018-02-05 10:00:44",
+                task_to_compute         = self._get_deserialized_task_to_compute(
+                    timestamp        = "2018-02-05 10:00:00",
+                    compute_task_def = compute_task_def,
+                ),
             )
         )
 
@@ -386,8 +394,11 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             timestamp               = "2018-02-05 10:00:43",
             subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
                 timestamp               = "2018-02-05 10:00:43",
-                subtask_id              = '2',
                 payment_ts              = "2018-02-05 10:00:44",
+                task_to_compute=self._get_deserialized_task_to_compute(
+                    timestamp="2018-02-05 10:00:00",
+                    compute_task_def=compute_task_def,
+                ),
             )
         )
 
@@ -409,9 +420,12 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             requestor_private_key = self.REQUESTOR_PRIVATE_KEY,
             timestamp             = "2018-02-05 10:00:43",
             subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
-                timestamp  = "2018-02-05 10:00:43",
-                subtask_id = '2',
-                payment_ts = "2018-02-05 10:00:44",
+                timestamp       = "2018-02-05 10:00:43",
+                payment_ts      = "2018-02-05 10:00:44",
+                task_to_compute = self._get_deserialized_task_to_compute(
+                    timestamp        = "2018-02-05 10:00:00",
+                    compute_task_def = compute_task_def,
+                ),
             )
         )
 
@@ -474,10 +488,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             key             = self.PROVIDER_PRIVATE_KEY,
             message_type    = message.concents.ForceSubtaskResultsResponse,
             fields          = {
-                'timestamp':                            self._parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
-                'subtask_results_accepted.timestamp':   self._parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
-                'subtask_results_accepted.subtask_id':  '2',
-                'subtask_results_accepted.payment_ts':  self._parse_iso_date_to_timestamp("2018-02-05 10:00:44")
+                'timestamp':                                                 self._parse_iso_date_to_timestamp("2018-02-05 11:00:02"),
+                'subtask_results_accepted.timestamp':                        self._parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
+                'subtask_results_accepted.task_to_compute.compute_task_def': compute_task_def,
+                'subtask_results_accepted.payment_ts':                       self._parse_iso_date_to_timestamp("2018-02-05 10:00:44")
             }
         )
 
@@ -735,7 +749,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             key             = self.PROVIDER_PRIVATE_KEY,
             message_type    = message.concents.ForceSubtaskResultsResponse,
             fields          = {
-                'timestamp':                                                self._parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
+                'timestamp':                                                self._parse_iso_date_to_timestamp("2018-02-05 11:00:02"),
                 'subtask_results_rejected.timestamp':                       self._parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
                 'subtask_results_rejected.reason':                          message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
                 'subtask_results_rejected.report_computed_task.timestamp':  self._parse_iso_date_to_timestamp("2018-02-05 10:00:43"),

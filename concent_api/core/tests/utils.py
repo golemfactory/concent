@@ -24,10 +24,15 @@ class ConcentIntegrationTestCase(TestCase):
 
     def setUp(self):
         super().setUp()
+
+        # Keys
         (self.PROVIDER_PRIVATE_KEY,  self.PROVIDER_PUBLIC_KEY)    = generate_ecc_key_pair()
         (self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY)   = generate_ecc_key_pair()
         (self.DIFFERENT_PROVIDER_PRIVATE_KEY, self.DIFFERENT_PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
         (self.DIFFERENT_REQUESTOR_PRIVATE_KEY, self.DIFFERENT_REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
+
+        # Auth
+        self.auth_message_counter = 0
 
     def _get_encoded_key(self, key):  # pylint: disable=no-self-use
         """ Returns given key encoded. """
@@ -450,3 +455,16 @@ class ConcentIntegrationTestCase(TestCase):
                 )
                 message_status.full_clean()
                 message_status.save()
+
+    def _assert_auth_message_counter_increased(self, increased_by = 1):
+        self.assertEqual(MessageAuth.objects.count(), self.auth_message_counter + increased_by)
+        self.auth_message_counter += increased_by
+
+    def _assert_auth_message_counter_not_increased(self):
+        self.assertEqual(self.auth_message_counter, MessageAuth.objects.count())
+
+    def _assert_auth_message_last(self, related_message, provider_public_key, requestor_public_key):
+        message_auth = MessageAuth.objects.last()
+        self.assertEqual(message_auth.message.type,         related_message.TYPE)
+        self.assertEqual(message_auth.provider_public_key,  provider_public_key)
+        self.assertEqual(message_auth.requestor_public_key, requestor_public_key)

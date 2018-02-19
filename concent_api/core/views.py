@@ -14,9 +14,10 @@ from golem_messages.datastructures  import MessageHeader
 from golem_messages.exceptions      import MessageError
 
 from core                           import exceptions
+from core.exceptions                import Http400
 from gatekeeper.constants           import GATEKEEPER_DOWNLOAD_PATH
 from utils.api_view                 import api_view
-from utils.api_view                 import Http400
+from utils.constants                import ErrorCode
 from utils.helpers                  import decode_key
 from utils.helpers                  import get_current_utc_timestamp
 from .constants                     import MESSAGE_TASK_ID_MAX_LENGTH
@@ -272,7 +273,10 @@ def handle_send_force_report_computed_task(request, client_message):
     validate_golem_message_task_to_compute(client_message.report_computed_task.task_to_compute)
 
     if StoredMessage.objects.filter(task_id = client_message.report_computed_task.task_to_compute.compute_task_def['task_id']).exists():
-        raise Http400("{} is already being processed for this task.".format(client_message.__class__.__name__))
+        raise Http400(
+            "{} is already being processed for this task.".format(client_message.__class__.__name__),
+            error_code = ErrorCode.QUEUE_MESSAGE_ALREADY_PROCESSED.value,
+        )
 
     if client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] < current_time:
         reject_force_report_computed_task                 = message.RejectReportComputedTask(
@@ -322,11 +326,15 @@ def handle_send_ack_report_computed_task(request, client_message):
         )
 
         if not force_task_to_compute.exists():
-            raise Http400("'ForceReportComputedTask' for this task and client has not been initiated yet. Can't accept your 'AckReportComputedTask'.")
+            raise Http400(
+                "'ForceReportComputedTask' for this task and client has not been initiated yet. Can't accept your 'AckReportComputedTask'.",
+                error_code = ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED.value,
+            )
         if previous_ack_message.exists() or reject_message.exists():
             raise Http400(
                 "Received AckReportComputedTask but RejectReportComputedTask "
-                "or another AckReportComputedTask for this task has already been submitted."
+                "or another AckReportComputedTask for this task has already been submitted.",
+                error_code = ErrorCode.QUEUE_RESPONSE_ALREADY_SUBMITTED.value,
             )
 
         assert force_task_to_compute.count() <= 2, "More that one 'ForceReportComputedTask' found for this task_id."
@@ -343,7 +351,10 @@ def handle_send_ack_report_computed_task(request, client_message):
 
         return HttpResponse("", status = 202)
     else:
-        raise Http400("Time to acknowledge this task is already over.")
+        raise Http400(
+            "Time to acknowledge this task is already over.",
+            error_code = ErrorCode.QUEUE_TIMEOUT.value,
+        )
 
 
 def handle_send_reject_report_computed_task(request, client_message):
@@ -358,7 +369,10 @@ def handle_send_reject_report_computed_task(request, client_message):
     )
 
     if not force_report_computed_task_from_database.exists():
-        raise Http400("'ForceReportComputedTask' for this task and client has not been initiated yet. Can't accept your 'RejectReportComputedTask'.")
+        raise Http400(
+            "'ForceReportComputedTask' for this task and client has not been initiated yet. Can't accept your 'RejectReportComputedTask'.",
+            error_code = ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED.value,
+        )
 
     assert force_report_computed_task_from_database.count() <= 2, "More that one 'ForceReportComputedTask' found for this task_id."
 
@@ -393,7 +407,10 @@ def handle_send_reject_report_computed_task(request, client_message):
         )
 
         if ack_message.exists() or previous_reject_message.exists():
-            raise Http400("Received RejectReportComputedTask but AckReportComputedTask or another RejectReportComputedTask for this task has already been submitted.")
+            raise Http400(
+                "Received RejectReportComputedTask but AckReportComputedTask or another RejectReportComputedTask for this task has already been submitted.",
+                error_code = ErrorCode.QUEUE_MESSAGE_ALREADY_PROCESSED.value,
+            )
 
         client_message.sig = None
         store_message_and_message_status(
@@ -406,7 +423,10 @@ def handle_send_reject_report_computed_task(request, client_message):
         )
         return HttpResponse("", status = 202)
     else:
-        raise Http400("Time to acknowledge this task is already over.")
+        raise Http400(
+            "Time to acknowledge this task is already over.",
+            error_code = ErrorCode.QUEUE_TIMEOUT.value,
+        )
 
 
 def handle_send_force_get_task_result(request, client_message: message.concents.ForceGetTaskResult) -> message.concents:
@@ -505,9 +525,15 @@ def handle_send_force_subtask_results_results_response(request, client_message):
     previous_force_subtask_results_response = StoredMessage.objects.filter(task_id = client_message_task_id, type = message.concents.ForceSubtaskResultsResponse.TYPE)
 
     if not force_subtask_results.exists():
-        raise Http400("'ForceSubtaskResults' for this subtask has not been initiated yet. Can't accept your '{}'.".format(client_message.TYPE))
+        raise Http400(
+            "'ForceSubtaskResults' for this subtask has not been initiated yet. Can't accept your '{}'.".format(client_message.TYPE),
+            error_code = ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED.value,
+        )
     if previous_force_subtask_results_response.exists():
-        raise Http400("This subtask has been resolved already.")
+        raise Http400(
+            "This subtask has been resolved already.",
+            error_code = ErrorCode.QUEUE_MESSAGE_ALREADY_PROCESSED.value,
+        )
 
     assert 1 <= force_subtask_results.count() <= 2, "Other amount of 'ForceSubtaskResults' than 1 or 2 found for this task_id."
     decoded_message_from_database = deserialize_message(force_subtask_results.last().data.tobytes())
@@ -516,7 +542,10 @@ def handle_send_force_subtask_results_results_response(request, client_message):
     acceptance_deadline = verification_deadline + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME
 
     if current_time > acceptance_deadline:
-        raise Http400("Time to accept this task is already over.")
+        raise Http400(
+            "Time to accept this task is already over.",
+            error_code = ErrorCode.QUEUE_TIMEOUT.value,
+        )
 
     client_message.sig = None
     store_message_and_message_status(
@@ -532,9 +561,15 @@ def handle_send_force_subtask_results_results_response(request, client_message):
 
 def handle_unsupported_golem_messages_type(client_message):
     if hasattr(client_message, 'TYPE'):
-        raise Http400("This message type ({}) is either not supported or cannot be submitted to Concent.".format(client_message.TYPE))
+        raise Http400(
+            "This message type ({}) is either not supported or cannot be submitted to Concent.".format(client_message.TYPE),
+            error_code = ErrorCode.MESSAGE_UNEXPECTED.value,
+        )
     else:
-        raise Http400("Unknown message type or not a Golem message.")
+        raise Http400(
+            "Unknown message type or not a Golem message.",
+            error_code = ErrorCode.MESSAGE_UNKNOWN.value,
+        )
 
 
 def handle_receive_delivered_force_report_computed_task(request, delivered_message):
@@ -890,12 +925,18 @@ def deserialize_message(raw_message_data):
         assert golem_message is not None
         return golem_message
     except MessageError as exception:
-        raise Http400("Unable to deserialize Golem Message: {}.".format(exception))
+        raise Http400(
+            "Unable to deserialize Golem Message: {}.".format(exception),
+            error_code = ErrorCode.MESSAGE_UNABLE_TO_DESERIALIZE.value,
+        )
 
 
 def validate_golem_message_task_to_compute(data):
     if not isinstance(data, message.TaskToCompute):
-        raise Http400("Expected TaskToCompute.")
+        raise Http400(
+            "Expected TaskToCompute.",
+            error_code = ErrorCode.MESSAGE_UNEXPECTED.value,
+        )
 
     data.compute_task_def['deadline'] = validate_int_value(data.compute_task_def['deadline'])
 
@@ -904,14 +945,20 @@ def validate_golem_message_task_to_compute(data):
 
 def validate_golem_message_reject(data):
     if not isinstance(data, message.CannotComputeTask) and not isinstance(data, message.TaskFailure) and not isinstance(data, message.TaskToCompute):
-        raise Http400("Expected CannotComputeTask, TaskFailure or TaskToCompute.")
+        raise Http400(
+            "Expected CannotComputeTask, TaskFailure or TaskToCompute.",
+            error_code = ErrorCode.MESSAGE_UNEXPECTED.value,
+        )
 
     if isinstance(data, message.CannotComputeTask):
         validate_task_id(data.task_to_compute.compute_task_def['task_id'])
 
     if isinstance(data, (message.TaskToCompute, message.TaskFailure)):
         if data.compute_task_def['task_id'] == '':
-            raise Http400("task_id cannot be blank.")
+            raise Http400(
+                "task_id cannot be blank.",
+                error_code = ErrorCode.MESSAGE_TASK_ID_BLANK.value,
+            )
 
         data.compute_task_def['deadline'] = validate_int_value(data.compute_task_def['deadline'])
 
@@ -926,21 +973,36 @@ def validate_int_value(value):
         try:
             value = int(value)
         except (ValueError, TypeError):
-            raise Http400("Wrong type, expected a value that can be converted to an integer.")
+            raise Http400(
+                "Wrong type, expected a value that can be converted to an integer.",
+                error_code = ErrorCode.MESSAGE_VALUE_NOT_INTEGER.value,
+            )
     if value < 0:
-        raise Http400("Wrong type, expected non-negative integer but negative integer provided.")
+        raise Http400(
+            "Wrong type, expected non-negative integer but negative integer provided.",
+            error_code = ErrorCode.MESSAGE_VALUE_NOT_INTEGER.value,
+        )
     return value
 
 
 def validate_task_id(task_id):
     if not isinstance(task_id, str):
-        raise Http400("task_id must be string.")
+        raise Http400(
+            "task_id must be string.",
+            error_code = ErrorCode.MESSAGE_TASK_ID_WRONG_TYPE.value,
+        )
 
     if task_id == '':
-        raise Http400("task_id cannot be blank.")
+        raise Http400(
+            "task_id cannot be blank.",
+            error_code = ErrorCode.MESSAGE_TASK_ID_BLANK.value,
+        )
 
     if len(task_id) > MESSAGE_TASK_ID_MAX_LENGTH:
-        raise Http400("task_id cannot be longer than {} chars.".format(MESSAGE_TASK_ID_MAX_LENGTH))
+        raise Http400(
+            "task_id cannot be longer than {} chars.".format(MESSAGE_TASK_ID_MAX_LENGTH),
+            error_code = ErrorCode.MESSAGE_TASK_ID_WRONG_LENGTH.value,
+        )
 
 
 def store_message_and_message_status(
@@ -1032,11 +1094,17 @@ def decode_client_public_key(request):
 
 def decode_other_party_public_key(request):
     if 'HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY' not in request.META:
-        raise Http400('Missing Concent-Other-Party-Public-Key HTTP when expected.')
+        raise Http400(
+            'Missing Concent-Other-Party-Public-Key HTTP when expected.',
+            error_code = ErrorCode.HEADER_OTHER_PARTY_PUBLIC_KEY_MISSING.value,
+        )
     try:
         return decode_key(request.META['HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY'])
     except binascii.Error:
-        raise Http400('The value in the Concent-Other-Party-Public-Key HTTP is not a valid base64-encoded value.')
+        raise Http400(
+            'The value in the Concent-Other-Party-Public-Key HTTP is not a valid base64-encoded value.',
+            error_code = ErrorCode.HEADER_OTHER_PARTY_PUBLIC_KEY_NOT_BASE64_ENCODED_VALUE.value,
+        )
 
 
 def is_provider_account_status_positive(_message):

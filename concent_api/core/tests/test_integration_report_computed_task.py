@@ -1,21 +1,15 @@
 from base64 import b64encode
 
 from django.test                    import override_settings
-from django.test                    import TestCase
 from django.urls                    import reverse
 from freezegun                      import freeze_time
-import dateutil.parser
 
-from golem_messages.shortcuts       import dump
-from golem_messages.shortcuts       import load
 from golem_messages                 import message
-from core.models                    import ReceiveStatus
-from utils.testing_helpers  import generate_ecc_key_pair
+from core.tests.utils               import ConcentIntegrationTestCase
+from utils.testing_helpers          import generate_ecc_key_pair
 
 
-(CONCENT_PRIVATE_KEY,   CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
-(PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)  = generate_ecc_key_pair()
-(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
+(CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
 @override_settings(
@@ -23,7 +17,7 @@ from utils.testing_helpers  import generate_ecc_key_pair
     CONCENT_PUBLIC_KEY     = CONCENT_PUBLIC_KEY,
     CONCENT_MESSAGING_TIME = 10,  # seconds
 )
-class ReportComputedTaskIntegrationTest(TestCase):
+class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
     def test_provider_forces_computed_task_report_and_concent_immediately_sends_rejection_due_to_exceeded_deadline(self):
         # Expected message exchange:
         # Provider -> Concent:     MessageForceReportComputedTask
@@ -31,40 +25,45 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent. Concent rejects computed task immediately when deadline is exceeded
 
-        compute_task_def = message.ComputeTaskDef()
-        compute_task_def['task_id']     = '1'
-        compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute(
-                compute_task_def = compute_task_def
-            )
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        with freeze_time("2017-12-01 11:01:00"):
-            force_report_computed_task = message.ForceReportComputedTask()
-        force_report_computed_task.task_to_compute = deserialized_task_to_compute
-
-        serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp = "2017-12-01 11:01:00",
+            force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                timestamp       = "2017-12-01 11:01:00",
+                task_to_compute = task_to_compute
+            ),
+            provider_private_key = self.PROVIDER_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 11:01:00"):
             response_1 = self.client.post(
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        self.assertEqual(response_1.status_code,  200)
-
-        message_from_concent = load(response_1.content, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
-
-        self.assertIsInstance(message_from_concent, message.RejectReportComputedTask)
-        self.assertEqual(message_from_concent.timestamp, int(dateutil.parser.parse("2017-12-01 11:01:00").timestamp()))
-        self.assertEqual(message_from_concent.reason, message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded)
-        self.assertEqual(message_from_concent.task_to_compute, deserialized_task_to_compute)
+        self._test_response(
+            response_1,
+            status          = 200,
+            key             = self.PROVIDER_PRIVATE_KEY,
+            message_type    = message.concents.RejectReportComputedTask,
+            fields          = {
+                'timestamp':                        self._parse_iso_date_to_timestamp("2017-12-01 11:01:00"),
+                'reason':                           message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
+                'task_to_compute.compute_task_def': compute_task_def
+            }
+        )
 
     def test_provider_forces_computed_task_report_and_requestor_sends_acknowledgement(self):
         # Expected message exchange:
@@ -75,34 +74,42 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        compute_task_def = message.ComputeTaskDef()
-        compute_task_def['task_id'] = '1'
-        compute_task_def['deadline'] = int(dateutil.parser.parse("2017-12-1 11:00:00").timestamp())
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute(
-                compute_task_def = compute_task_def
-            )
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        with freeze_time("2017-12-01 10:59:00"):
-            force_report_computed_task = message.ForceReportComputedTask()
-        force_report_computed_task.task_to_compute = deserialized_task_to_compute
-
-        serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                timestamp       = "2017-12-01 10:59:00",
+                task_to_compute = task_to_compute
+            ),
+            provider_private_key = self.PROVIDER_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 10:59:00"):
             response_1 = self.client.post(
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
+
+        self._test_database_objects(
+            last_object_type            = message.concents.ForceReportComputedTask,
+            task_id                     = '1',
+            receive_delivered_status    = False,
+        )
 
         # STEP 2: Concent forces computed task report on the requestor
 
@@ -111,37 +118,52 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 reverse('core:receive'),
                 data         = '',
                 content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        force_report_computed_task_from_view = load(
-            response_2.content,
-            REQUESTOR_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY,
-            check_time = False,
+        self._test_response(
+            response_2,
+            status          = 200,
+            key             = self.REQUESTOR_PRIVATE_KEY,
+            message_type    = message.concents.ForceReportComputedTask,
+            fields          = {
+                'timestamp':                        self._parse_iso_date_to_timestamp("2017-12-01 10:59:00"),
+                'task_to_compute.compute_task_def': compute_task_def,
+            }
         )
-
-        self.assertEqual(response_2.status_code,  200)
-        self.assertEqual(force_report_computed_task_from_view.timestamp, force_report_computed_task.timestamp)
+        self._test_database_objects(
+            last_object_type            = message.concents.ForceReportComputedTask,
+            task_id                     = '1',
+            receive_delivered_status    = True,
+        )
 
         # STEP 3: Requestor accepts computed task via Concent
 
-        with freeze_time("2017-12-01 11:00:05"):
-            ack_report_computed_task = message.AckReportComputedTask()
-        ack_report_computed_task.task_to_compute = deserialized_task_to_compute
-
-        serialized_ack_report_computed_task = dump(ack_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_ack_report_computed_task = self._get_serialized_ack_report_computed_task(
+            timestamp = "2017-12-01 11:00:05",
+            ack_report_computed_task = self._get_deserialized_ack_report_computed_task(
+                timestamp = "2017-12-01 11:00:05",
+                subtask_id = '1',
+                task_to_compute = task_to_compute
+            ),
+            requestor_private_key = self.REQUESTOR_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 11:00:05"):
             response_3 = self.client.post(
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_3.status_code,  202)
         self.assertEqual(len(response_3.content), 0)
+        self._test_database_objects(
+            last_object_type            = message.concents.AckReportComputedTask,
+            task_id                     = '1',
+            receive_delivered_status    = False,
+        )
 
         # STEP 4: Concent passes computed task acceptance to the provider
 
@@ -150,18 +172,19 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 reverse('core:receive'),
                 data         = '',
                 content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_provider_public_key(),
             )
 
-        ack_report_computed_task_from_view = load(
-            response_4.content,
-            PROVIDER_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY,
-            check_time = False,
+        self._test_response(
+            response_4,
+            status          = 200,
+            key             = self.PROVIDER_PRIVATE_KEY,
+            message_type    = message.concents.AckReportComputedTask,
+            fields          = {
+                'timestamp':                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'task_to_compute.compute_task_def': compute_task_def,
+            }
         )
-
-        self.assertEqual(response_4.status_code,  200)
-        self.assertEqual(ack_report_computed_task_from_view.timestamp, ack_report_computed_task.timestamp)
 
     def test_provider_forces_computed_task_report_and_requestor_sends_rejection_due_to_failed_computation(self):
         # Expected message exchange:
@@ -172,34 +195,41 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        compute_task_def = message.ComputeTaskDef()
-        compute_task_def['task_id']     = '1'
-        compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute(
-                compute_task_def = compute_task_def
-            )
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        with freeze_time("2017-12-01 10:59:00"):
-            force_report_computed_task = message.ForceReportComputedTask()
-
-        force_report_computed_task.task_to_compute = deserialized_task_to_compute
-        serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                timestamp       = "2017-12-01 10:59:00",
+                task_to_compute = task_to_compute
+            ),
+            provider_private_key = self.PROVIDER_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 10:59:00"):
             response_1 = self.client.post(
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
+        self._test_database_objects(
+            last_object_type            = message.concents.ForceReportComputedTask,
+            task_id                     = '1',
+            receive_delivered_status    = False,
+        )
 
         # STEP 2: Concent forces computed task report on the requestor
 
@@ -208,70 +238,76 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 reverse('core:receive'),
                 data         = '',
                 content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY   = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY   = self._get_encoded_requestor_public_key(),
             )
 
-        force_report_computed_task_from_view = load(
-            response_2.content,
-            REQUESTOR_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY,
-            check_time = False,
+        self._test_response(
+            response_2,
+            status          = 200,
+            key             = self.REQUESTOR_PRIVATE_KEY,
+            message_type    = message.concents.ForceReportComputedTask,
+            fields          = {
+                'timestamp':                        self._parse_iso_date_to_timestamp("2017-12-01 10:59:00"),
+                'task_to_compute.timestamp':        self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'task_to_compute.compute_task_def': compute_task_def,
+            }
         )
-
-        self.assertEqual(response_2.status_code,  200)
-        self.assertEqual(force_report_computed_task_from_view.timestamp, force_report_computed_task.timestamp)
-        self.assertEqual(force_report_computed_task_from_view.task_to_compute.timestamp, force_report_computed_task.task_to_compute.timestamp)
 
         # STEP 3: Requestor rejects computed task due to CannotComputeTask or TaskFailure
 
-        with freeze_time("2017-12-01 10:30:00"):
-            cannot_compute_task = message.CannotComputeTask()
-        cannot_compute_task.task_to_compute = message.TaskToCompute()
-        cannot_compute_task.task_to_compute.compute_task_def = message.ComputeTaskDef()
-        cannot_compute_task.task_to_compute.compute_task_def['task_id'] = '1'
-        cannot_compute_task.reason = message.CannotComputeTask.REASON.WrongKey
+        cannot_compute_task = self._get_deserialized_cannot_compute_task(
+            timestamp       = "2017-12-01 10:30:00",
+            task_to_compute = task_to_compute,
+            reason          = message.tasks.CannotComputeTask.REASON.WrongKey
+        )
 
-        serialized_cannot_compute_task      = dump(cannot_compute_task,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_cannot_compute_task    = load(serialized_cannot_compute_task,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time=False)
+        reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
+            timestamp           = "2017-12-01 11:00:05",
+            cannot_compute_task = cannot_compute_task,
+        )
 
-        with freeze_time("2017-12-01 11:00:05"):
-            reject_report_computed_task = message.RejectReportComputedTask()
-        reject_report_computed_task.cannot_compute_task = deserialized_cannot_compute_task
-
-        serialized_reject_report_computed_task = dump(reject_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_reject_report_computed_task = self._get_serialized_reject_report_computed_task(
+            timestamp = "2017-12-01 11:00:05",
+            reject_report_computed_task = reject_report_computed_task,
+            requestor_private_key       = self.REQUESTOR_PRIVATE_KEY,
+        )
 
         with freeze_time("2017-12-01 11:00:05"):
             response_3 = self.client.post(
                 reverse('core:send'),
                 data                            = serialized_reject_report_computed_task,
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_3.status_code,  202)
         self.assertEqual(len(response_3.content), 0)
-
+        self._test_database_objects(
+            last_object_type            = message.concents.RejectReportComputedTask,
+            task_id                     = '1',
+            receive_delivered_status    = False,
+        )
         # STEP 4: Concent passes computed task rejection to the provider
 
         with freeze_time("2017-12-01 11:00:15"):
             response_4 = self.client.post(
                 reverse('core:receive'),
-                data         = '',
-                content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                data                            = '',
+                content_type                    = '',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
             )
 
-        reject_report_computed_task_from_view = load(
-            response_4.content,
-            PROVIDER_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY,
-            check_time = False,
+        self._test_response(
+            response_4,
+            status          = 200,
+            key             = self.PROVIDER_PRIVATE_KEY,
+            message_type    = message.concents.RejectReportComputedTask,
+            fields          = {
+                'timestamp':                                            self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'cannot_compute_task.task_to_compute.timestamp':        self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'cannot_compute_task.task_to_compute.compute_task_def': compute_task_def,
+            }
         )
-
-        self.assertEqual(response_4.status_code,  200)
-        self.assertEqual(reject_report_computed_task_from_view.timestamp, reject_report_computed_task.timestamp)
-        self.assertEqual(reject_report_computed_task_from_view.cannot_compute_task.timestamp, reject_report_computed_task.cannot_compute_task.timestamp)
-        self.assertEqual(reject_report_computed_task_from_view.cannot_compute_task.task_to_compute.timestamp, reject_report_computed_task.cannot_compute_task.task_to_compute.timestamp)
 
     def test_provider_forces_computed_task_report_and_requestor_sends_rejection_due_to_exceeded_deadline(self):
         # Expected message exchange:
@@ -283,35 +319,41 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        compute_task_def = message.ComputeTaskDef()
-        compute_task_def['task_id']     = '1'
-        compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute(
-                compute_task_def = compute_task_def
-            )
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        with freeze_time("2017-12-01 10:59:00"):
-            force_report_computed_task = message.ForceReportComputedTask()
-
-        force_report_computed_task.task_to_compute = deserialized_task_to_compute
-
-        serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                timestamp       = "2017-12-01 10:59:00",
+                task_to_compute = task_to_compute
+            ),
+            provider_private_key = self.PROVIDER_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 10:59:00"):
             response_1 = self.client.post(
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
+        self._test_database_objects(
+            last_object_type            = message.concents.ForceReportComputedTask,
+            task_id                     = '1',
+            receive_delivered_status    = False,
+        )
 
         # STEP 2: Concent forces computed task report on the requestor
 
@@ -320,75 +362,78 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 reverse('core:receive'),
                 data         = '',
                 content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        force_report_computed_task_from_view = load(
-            response_2.content,
-            REQUESTOR_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY,
-            check_time = False,
+        self._test_response(
+            response_2,
+            status          = 200,
+            key             = self.REQUESTOR_PRIVATE_KEY,
+            message_type    = message.concents.ForceReportComputedTask,
+            fields          = {
+                'timestamp':                        self._parse_iso_date_to_timestamp("2017-12-01 10:59:00"),
+                'task_to_compute.timestamp':        self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'task_to_compute.compute_task_def': compute_task_def,
+            }
         )
-
-        self.assertEqual(response_2.status_code,  200)
-        self.assertEqual(force_report_computed_task_from_view.timestamp, force_report_computed_task.timestamp)
 
         # STEP 3: Requestor rejects computed task claiming that the deadline has been exceeded
 
-        with freeze_time("2017-12-01 10:30:00"):
-            cannot_compute_task = message.CannotComputeTask()
-        cannot_compute_task.task_to_compute = message.TaskToCompute()
-        cannot_compute_task.task_to_compute.compute_task_def = message.ComputeTaskDef()
-        cannot_compute_task.task_to_compute.compute_task_def['task_id'] = '1'
+        cannot_compute_task = self._get_deserialized_cannot_compute_task(
+            timestamp       = "2017-12-01 10:30:00",
+            task_to_compute = task_to_compute,
+            reason          = message.tasks.CannotComputeTask.REASON.WrongCTD
+        )
 
-        cannot_compute_task.reason = message.CannotComputeTask.REASON.WrongCTD
+        reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
+            timestamp           = "2017-12-01 11:00:05",
+            cannot_compute_task = cannot_compute_task,
+            reason              = message.concents.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
+        )
 
-        serialized_cannot_compute_task      = dump(cannot_compute_task,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_cannot_compute_task    = load(serialized_cannot_compute_task,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time=False)
-
-        with freeze_time("2017-12-01 11:00:05"):
-            reject_report_computed_task = message.RejectReportComputedTask()
-        reject_report_computed_task.reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
-        reject_report_computed_task.cannot_compute_task = deserialized_cannot_compute_task
-
-        serialized_reject_report_computed_task = dump(reject_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_reject_report_computed_task = self._get_serialized_reject_report_computed_task(
+            timestamp = "2017-12-01 11:00:05",
+            reject_report_computed_task = reject_report_computed_task,
+            requestor_private_key       = self.REQUESTOR_PRIVATE_KEY,
+        )
 
         with freeze_time("2017-12-01 11:00:05"):
             response_3 = self.client.post(
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_3.status_code,                    202)
         self.assertEqual(len(response_3.content),                   0)
-        self.assertEqual(ReceiveStatus.objects.last().message.type, message.RejectReportComputedTask.TYPE)
+        self._test_database_objects(
+            last_object_type            = message.concents.RejectReportComputedTask,
+            task_id                     = '1',
+            receive_delivered_status    = False,
+        )
 
         # STEP 4: Concent overrides computed task rejection and sends acceptance message to the provider
 
         with freeze_time("2017-12-01 11:00:15"):
             response_4 = self.client.post(
                 reverse('core:receive'),
-                data         = '',
-                content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                data                            = '',
+                content_type                    = '',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
             )
 
-        self.assertEqual(response_4.status_code,  200)
-
-        serialized_message_from_concent_to_provider = response_4.content
-        message_from_concent_to_provider            = load(
-            serialized_message_from_concent_to_provider,
-            PROVIDER_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY,
-            check_time=False
+        self._test_response(
+            response_4,
+            status          = 200,
+            key             = self.PROVIDER_PRIVATE_KEY,
+            message_type    = message.concents.AckReportComputedTask,
+            fields          = {
+                'timestamp':                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
+                'task_to_compute.timestamp':        self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'task_to_compute.compute_task_def': compute_task_def,
+            }
         )
-
-        self.assertIsInstance(message_from_concent_to_provider, message.AckReportComputedTask)
-        self.assertGreaterEqual(message_from_concent_to_provider.timestamp, int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))
-        self.assertLessEqual(   message_from_concent_to_provider.timestamp, int(dateutil.parser.parse("2017-12-01 11:00:15").timestamp()))
-        self.assertEqual(message_from_concent_to_provider.task_to_compute, deserialized_task_to_compute)
 
         # STEP 5: Requestor receives computed task report verdict out of band due to an overridden decision
 
@@ -397,21 +442,21 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 reverse('core:receive_out_of_band'),
                 data         = '',
                 content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        self.assertEqual(response_5.status_code, 200)
-
-        message_from_concent_to_requestor = load(
-            response_5.content,
-            REQUESTOR_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY,
-            check_time=False
+        self._test_response(
+            response_5,
+            status          = 200,
+            key             = self.REQUESTOR_PRIVATE_KEY,
+            message_type    = message.concents.VerdictReportComputedTask,
+            fields          = {
+                'timestamp':                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
+                'ack_report_computed_task.timestamp':                           self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
+                'ack_report_computed_task.task_to_compute.timestamp':           self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'ack_report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
+            }
         )
-        self.assertIsInstance(message_from_concent_to_requestor, message.VerdictReportComputedTask)
-        self.assertGreaterEqual(message_from_concent_to_requestor.timestamp, int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))
-        self.assertLessEqual(   message_from_concent_to_requestor.timestamp, int(dateutil.parser.parse("2017-12-01 11:00:15").timestamp()))
-        self.assertEqual(message_from_concent_to_requestor.ack_report_computed_task, message_from_concent_to_provider)
 
     def test_provider_forces_computed_task_report_and_requestor_does_not_respond(self):
         # Expected message exchange:
@@ -422,35 +467,41 @@ class ReportComputedTaskIntegrationTest(TestCase):
         # Concent   -> Requestor:  MessageVerdictReportComputedTask
 
         # STEP 1: Provider forces computed task report via Concent
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        compute_task_def = message.ComputeTaskDef()
-        compute_task_def['task_id']     = '1'
-        compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute(
-                compute_task_def = compute_task_def
-            )
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
-
-        with freeze_time("2017-12-01 10:59:00"):
-            force_report_computed_task = message.ForceReportComputedTask()
-        force_report_computed_task.task_to_compute = deserialized_task_to_compute
-
-        serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                timestamp       = "2017-12-01 10:59:00",
+                task_to_compute = task_to_compute
+            ),
+            provider_private_key = self.PROVIDER_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 10:59:00"):
             response_1 = self.client.post(
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
+        self._test_database_objects(
+            last_object_type            = message.concents.ForceReportComputedTask,
+            task_id                     = '1',
+            receive_delivered_status    = False,
+        )
 
         # STEP 2: Concent forces computed task report on the requestor
 
@@ -459,56 +510,63 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 reverse('core:receive'),
                 data         = '',
                 content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
-        force_report_computed_task_from_view = load(
-            response_2.content,
-            REQUESTOR_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY,
-            check_time = False,
-        )
 
-        self.assertEqual(response_2.status_code,  200)
-        self.assertEqual(force_report_computed_task_from_view.timestamp, force_report_computed_task.timestamp)
-        self.assertEqual(force_report_computed_task_from_view.task_to_compute.timestamp, force_report_computed_task.task_to_compute.timestamp)
+        self._test_response(
+            response_2,
+            status          = 200,
+            key             = self.REQUESTOR_PRIVATE_KEY,
+            message_type    = message.concents.ForceReportComputedTask,
+            fields          = {
+                'timestamp':                        self._parse_iso_date_to_timestamp("2017-12-01 10:59:00"),
+                'task_to_compute.timestamp':        self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'task_to_compute.compute_task_def': compute_task_def,
+            }
+        )
 
         # STEP 3: Concent accepts computed task due to lack of response from the requestor
 
         with freeze_time("2017-12-01 11:00:15"):
             response_3 = self.client.post(
                 reverse('core:receive'),
-                data         = '',
-                content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                data                            = '',
+                content_type                    = '',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
             )
-
-        self.assertEqual(response_3.status_code,  200)
-
-        message_from_concent_to_provider = load(response_3.content, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time=False)
-
-        self.assertIsInstance(message_from_concent_to_provider, message.AckReportComputedTask)
-        self.assertGreaterEqual(message_from_concent_to_provider.timestamp, int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))
-        self.assertLessEqual(   message_from_concent_to_provider.timestamp, int(dateutil.parser.parse("2017-12-01 11:00:15").timestamp()))
-        self.assertEqual(message_from_concent_to_provider.task_to_compute, deserialized_task_to_compute)
+        self._test_response(
+            response_3,
+            status          = 200,
+            key             = self.PROVIDER_PRIVATE_KEY,
+            message_type    = message.concents.AckReportComputedTask,
+            fields          = {
+                'timestamp':                         self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
+                'task_to_compute.timestamp':         self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'task_to_compute.compute_task_def':  compute_task_def,
+            }
+        )
 
         # STEP 4: Requestor receives task computation report verdict out of band due to lack of response
 
         with freeze_time("2017-12-01 11:00:15"):
             response_4 = self.client.post(
                 reverse('core:receive_out_of_band'),
-                data         = '',
-                content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                data                            = '',
+                content_type                    = '',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
-
-        self.assertEqual(response_4.status_code, 200)
-
-        message_from_concent_to_requestor = load(response_4.content, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time=False)
-
-        self.assertIsInstance(message_from_concent_to_requestor, message.VerdictReportComputedTask)
-        self.assertGreaterEqual(message_from_concent_to_requestor.timestamp, int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))
-        self.assertLessEqual(   message_from_concent_to_requestor.timestamp, int(dateutil.parser.parse("2017-12-01 11:00:15").timestamp()))
-        self.assertEqual(message_from_concent_to_requestor.ack_report_computed_task, message_from_concent_to_provider)
+        self._test_response(
+            response_4,
+            status          = 200,
+            key             = self.REQUESTOR_PRIVATE_KEY,
+            message_type    = message.concents.VerdictReportComputedTask,
+            fields          = {
+                'timestamp':                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
+                'ack_report_computed_task.timestamp':                           self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
+                'ack_report_computed_task.task_to_compute.timestamp':           self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'ack_report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
+            }
+        )
 
     def test_provider_forces_computed_task_report_twice_and_concent_returns_400_error(self):
         """
@@ -521,34 +579,41 @@ class ReportComputedTaskIntegrationTest(TestCase):
         """
 
         # STEP 1: Provider forces computed task report via Concent
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute()
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        task_to_compute.compute_task_def = message.ComputeTaskDef()
-        task_to_compute.compute_task_def['task_id']     = '1'
-        task_to_compute.compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
-
-        serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
-
-        with freeze_time("2017-12-01 10:59:00"):
-            force_report_computed_task = message.ForceReportComputedTask()
-        force_report_computed_task.task_to_compute = deserialized_task_to_compute
-
-        serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                timestamp       = "2017-12-01 10:59:00",
+                task_to_compute = task_to_compute
+            ),
+            provider_private_key = self.PROVIDER_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 10:59:00"):
             response_1 = self.client.post(
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
+        self._test_database_objects(
+            last_object_type            = message.concents.ForceReportComputedTask,
+            task_id                     = '1',
+            receive_delivered_status    = False,
+        )
 
         # STEP 2: Provider forces computed task report via Concent again
         with freeze_time("2017-12-01 10:59:00"):
@@ -556,12 +621,10 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
-
-        self.assertEqual(response_2.status_code, 400)
-        self.assertIn('error', response_2.json().keys())
+        self._test_400_response(response_2)
 
     def test_requestor_sends_ack_report_computed_task_but_provider_did_not_ask_for_it(self):
         """
@@ -574,32 +637,35 @@ class ReportComputedTaskIntegrationTest(TestCase):
         """
         # STEP 1: Requestor accepts computed task via Concent
 
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute()
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        task_to_compute.compute_task_def = message.ComputeTaskDef()
-        task_to_compute.compute_task_def['task_id']     = '1'
-        task_to_compute.compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        serialized_task_to_compute      = dump(task_to_compute,             REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY, check_time = False)
-
-        with freeze_time("2017-12-01 11:00:05"):
-            ack_report_computed_task = message.AckReportComputedTask()
-        ack_report_computed_task.task_to_compute = deserialized_task_to_compute
-
-        serialized_ack_report_computed_task = dump(ack_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_ack_report_computed_task = self._get_serialized_ack_report_computed_task(
+            timestamp = "2017-12-01 11:00:05",
+            ack_report_computed_task = self._get_deserialized_ack_report_computed_task(
+                timestamp = "2017-12-01 11:00:05",
+                subtask_id = '1',
+                task_to_compute = task_to_compute
+            ),
+            requestor_private_key = self.REQUESTOR_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        self.assertEqual(response.status_code,  400)
-        self.assertIn('error', response.json().keys())
+        self._test_400_response(response)
 
     def test_requestor_sends_reject_report_computed_task_but_provider_did_not_ask_for_it(self):
         """
@@ -612,32 +678,43 @@ class ReportComputedTaskIntegrationTest(TestCase):
         """
         # STEP 1: Requestor accepts computed task via Concent
 
-        with freeze_time("2017-12-01 10:30:00"):
-            cannot_compute_task = message.CannotComputeTask()
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        cannot_compute_task.reason = message.CannotComputeTask.REASON.WrongCTD
-        cannot_compute_task.task_to_compute = message.TaskToCompute()
-        cannot_compute_task.task_to_compute.compute_task_def = message.ComputeTaskDef()
-        cannot_compute_task.task_to_compute.compute_task_def['task_id'] = '1'
-        serialized_cannot_compute_task      = dump(cannot_compute_task,                 PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_cannot_compute_task    = load(serialized_cannot_compute_task,      REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        with freeze_time("2017-12-01 11:00:05"):
-            reject_report_computed_task = message.RejectReportComputedTask()
-        reject_report_computed_task.reason = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
-        reject_report_computed_task.cannot_compute_task = deserialized_cannot_compute_task
-        serialized_reject_report_computed_task = dump(reject_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        cannot_compute_task = self._get_deserialized_cannot_compute_task(
+            timestamp       = "2017-12-01 10:30:00",
+            task_to_compute = task_to_compute,
+            reason          = message.tasks.CannotComputeTask.REASON.WrongCTD
+        )
+
+        reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
+            timestamp           = "2017-12-01 11:00:05",
+            cannot_compute_task = cannot_compute_task,
+            reason              = message.concents.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
+        )
+
+        serialized_reject_report_computed_task = self._get_serialized_reject_report_computed_task(
+            timestamp = "2017-12-01 11:00:05",
+            reject_report_computed_task = reject_report_computed_task,
+            requestor_private_key       = self.REQUESTOR_PRIVATE_KEY,
+        )
 
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        self.assertEqual(response.status_code,  400)
-        self.assertIn('error', response.json().keys())
+        self._test_400_response(response)
 
     def test_requestor_sends_ack_report_computed_task_and_then_sends_reject_report_computed_task(self):
         """
@@ -653,32 +730,41 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute()
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        task_to_compute.compute_task_def = message.ComputeTaskDef()
-        task_to_compute.compute_task_def['task_id']     = '1'
-        task_to_compute.compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
-
-        with freeze_time("2017-12-01 10:59:00"):
-            force_report_computed_task = message.ForceReportComputedTask()
-        force_report_computed_task.task_to_compute = deserialized_task_to_compute
-        serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                timestamp       = "2017-12-01 10:59:00",
+                task_to_compute = task_to_compute
+            ),
+            provider_private_key = self.PROVIDER_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 10:59:00"):
             response_1 = self.client.post(
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
+        self._test_database_objects(
+            last_object_type            = message.concents.ForceReportComputedTask,
+            task_id                     = '1',
+            receive_delivered_status    = False,
+        )
 
         # STEP 2: Concent forces computed task report on the requestor
 
@@ -687,78 +773,76 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 reverse('core:receive'),
                 data         = '',
                 content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        force_report_computed_task_from_view = load(
-            response_2.content,
-            REQUESTOR_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY,
-            check_time = False
+        self._test_response(
+            response_2,
+            status          = 200,
+            key             = self.REQUESTOR_PRIVATE_KEY,
+            message_type    = message.concents.ForceReportComputedTask,
+            fields          = {
+                'timestamp':                        self._parse_iso_date_to_timestamp("2017-12-01 10:59:00"),
+                'task_to_compute.timestamp':        self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'task_to_compute.compute_task_def': compute_task_def,
+            }
         )
-
-        self.assertEqual(response_2.status_code,  200)
-        self.assertEqual(force_report_computed_task_from_view.task_to_compute.compute_task_def['task_id'], force_report_computed_task.task_to_compute.compute_task_def['task_id'])
-        self.assertEqual(force_report_computed_task_from_view.timestamp, force_report_computed_task.timestamp)
 
         # STEP 3: Requestor accepts computed task via Concent
 
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute()
-
-        task_to_compute.compute_task_def = message.ComputeTaskDef()
-        task_to_compute.compute_task_def['task_id']     = '1'
-        task_to_compute.compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
-
-        serialized_task_to_compute      = dump(task_to_compute,             REQUESTOR_PRIVATE_KEY, PROVIDER_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  PROVIDER_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, check_time = False)
-
-        with freeze_time("2017-12-01 11:00:05"):
-            ack_report_computed_task = message.AckReportComputedTask()
-        ack_report_computed_task.task_to_compute = deserialized_task_to_compute
-
-        serialized_ack_report_computed_task = dump(ack_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_ack_report_computed_task = self._get_serialized_ack_report_computed_task(
+            timestamp = "2017-12-01 11:00:05",
+            ack_report_computed_task = self._get_deserialized_ack_report_computed_task(
+                timestamp = "2017-12-01 11:00:05",
+                subtask_id = '1',
+                task_to_compute = task_to_compute
+            ),
+            requestor_private_key = self.REQUESTOR_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 11:00:05"):
             response_3 = self.client.post(
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_3.status_code,  202)
-
+        self.assertEqual(len(response_3.content), 0)
+        self._test_database_objects(
+            last_object_type            = message.concents.AckReportComputedTask,
+            task_id                     = '1',
+            receive_delivered_status    = False,
+        )
         # STEP 4: Requestor rejects computed task via Concent
 
-        with freeze_time("2017-12-01 10:30:00"):
-            cannot_compute_task = message.CannotComputeTask()
+        cannot_compute_task = self._get_deserialized_cannot_compute_task(
+            timestamp       = "2017-12-01 10:30:00",
+            task_to_compute = task_to_compute,
+            reason          = message.tasks.CannotComputeTask.REASON.WrongEnvironment
+        )
 
-        cannot_compute_task.task_to_compute = message.TaskToCompute()
-        cannot_compute_task.task_to_compute.compute_task_def = message.ComputeTaskDef()
-        cannot_compute_task.task_to_compute.compute_task_def['task_id'] = '1'
-        cannot_compute_task.reason = message.CannotComputeTask.REASON.WrongEnvironment
+        reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
+            timestamp           = "2017-12-01 11:00:05",
+            cannot_compute_task = cannot_compute_task,
+        )
 
-        serialized_cannot_compute_task      = dump(cannot_compute_task,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_cannot_compute_task    = load(serialized_cannot_compute_task,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
-
-        with freeze_time("2017-12-01 11:00:05"):
-            reject_report_computed_task = message.RejectReportComputedTask()
-        reject_report_computed_task.reason = reject_report_computed_task.REASON.TaskTimeLimitExceeded
-        reject_report_computed_task.cannot_compute_task = deserialized_cannot_compute_task
-
-        serialized_reject_report_computed_task = dump(reject_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_reject_report_computed_task = self._get_serialized_reject_report_computed_task(
+            timestamp = "2017-12-01 11:00:05",
+            reject_report_computed_task = reject_report_computed_task,
+            requestor_private_key       = self.REQUESTOR_PRIVATE_KEY,
+        )
 
         with freeze_time("2017-12-01 11:00:05"):
             response_4 = self.client.post(
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        self.assertEqual(response_4.status_code,  400)
-        self.assertIn('error', response_4.json().keys())
+        self._test_400_response(response_4)
 
     def test_requestor_sends_reject_report_computed_task_and_then_sends_ack_report_computed_task(self):
         """
@@ -774,31 +858,41 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute()
-        task_to_compute.compute_task_def = message.ComputeTaskDef()
-        task_to_compute.compute_task_def['task_id']     = '1'
-        task_to_compute.compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        serialized_task_to_compute = dump(task_to_compute, PROVIDER_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute = load(serialized_task_to_compute, REQUESTOR_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, check_time = False)
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        with freeze_time("2017-12-01 10:59:00"):
-            force_report_computed_task = message.ForceReportComputedTask()
-        force_report_computed_task.task_to_compute = deserialized_task_to_compute
-        serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                timestamp       = "2017-12-01 10:59:00",
+                task_to_compute = task_to_compute
+            ),
+            provider_private_key = self.PROVIDER_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 10:59:00"):
             response_1 = self.client.post(
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
+        self._test_database_objects(
+            last_object_type            = message.concents.ForceReportComputedTask,
+            task_id                     = '1',
+            receive_delivered_status    = False,
+        )
 
         # STEP 2: Concent forces computed task report on the requestor
 
@@ -807,75 +901,77 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 reverse('core:receive'),
                 data         = '',
                 content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
-        force_report_computed_task_from_view = load(
-            response_2.content,
-            REQUESTOR_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY,
-            check_time = False
-        )
 
-        self.assertEqual(response_2.status_code,  200)
-        self.assertEqual(force_report_computed_task_from_view.task_to_compute, force_report_computed_task.task_to_compute)
+        self._test_response(
+            response_2,
+            status          = 200,
+            key             = self.REQUESTOR_PRIVATE_KEY,
+            message_type    = message.concents.ForceReportComputedTask,
+            fields          = {
+                'timestamp':                        self._parse_iso_date_to_timestamp("2017-12-01 10:59:00"),
+                'task_to_compute.timestamp':        self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'task_to_compute.compute_task_def': compute_task_def,
+            }
+        )
 
         # STEP 3: Requestor rejects computed task via Concent
 
-        with freeze_time("2017-12-01 10:30:00"):
-            cannot_compute_task = message.CannotComputeTask()
-        cannot_compute_task.task_to_compute = message.TaskToCompute()
-        cannot_compute_task.task_to_compute.compute_task_def = message.ComputeTaskDef()
-        cannot_compute_task.task_to_compute.compute_task_def['task_id'] = '1'
-        cannot_compute_task.reason = message.CannotComputeTask.REASON.WrongCTD
+        cannot_compute_task = self._get_deserialized_cannot_compute_task(
+            timestamp       = "2017-12-01 10:30:00",
+            task_to_compute = task_to_compute,
+            reason          = message.tasks.CannotComputeTask.REASON.WrongCTD
+        )
 
-        serialized_cannot_compute_task      = dump(cannot_compute_task,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_cannot_compute_task    = load(serialized_cannot_compute_task,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
+        reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
+            timestamp           = "2017-12-01 11:00:05",
+            cannot_compute_task = cannot_compute_task,
+            reason              = message.concents.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
+        )
 
-        with freeze_time("2017-12-01 11:00:05"):
-            reject_report_computed_task = message.RejectReportComputedTask()
-        reject_report_computed_task.cannot_compute_task = deserialized_cannot_compute_task
-        reject_report_computed_task.reason = reject_report_computed_task.REASON.TaskTimeLimitExceeded
-
-        serialized_reject_report_computed_task = dump(reject_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_reject_report_computed_task = self._get_serialized_reject_report_computed_task(
+            timestamp = "2017-12-01 11:00:05",
+            reject_report_computed_task = reject_report_computed_task,
+            requestor_private_key       = self.REQUESTOR_PRIVATE_KEY,
+        )
 
         with freeze_time("2017-12-01 11:00:05"):
             response_3 = self.client.post(
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_3.status_code,  202)
+        self._test_database_objects(
+            last_object_type            = message.concents.RejectReportComputedTask,
+            task_id                     = '1',
+            receive_delivered_status    = False,
+        )
 
         # STEP 4: Requestor accepts computed task via Concent
 
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute()
-
-        task_to_compute.compute_task_def = message.ComputeTaskDef()
-        task_to_compute.compute_task_def['task_id']     = '1'
-        task_to_compute.compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
-
-        serialized_task_to_compute      = dump(task_to_compute,             REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY, check_time = False)
-
-        with freeze_time("2017-12-01 11:00:05"):
-            ack_report_computed_task = message.AckReportComputedTask()
-        ack_report_computed_task.task_to_compute = deserialized_task_to_compute
-
-        serialized_ack_report_computed_task = dump(ack_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_ack_report_computed_task = self._get_serialized_ack_report_computed_task(
+            timestamp = "2017-12-01 11:00:05",
+            ack_report_computed_task = self._get_deserialized_ack_report_computed_task(
+                timestamp       = "2017-12-01 11:00:05",
+                subtask_id      = '1',
+                task_to_compute = task_to_compute
+            ),
+            requestor_private_key = self.REQUESTOR_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 11:00:05"):
             response_4 = self.client.post(
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        self.assertEqual(response_4.status_code,  400)
-        self.assertIn('error', response_4.json().keys())
+        self._test_400_response(response_4)
 
     def test_requestor_sends_ack_report_computed_task_after_deadline_passed(self):
         """
@@ -890,32 +986,41 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute()
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        task_to_compute.compute_task_def = message.ComputeTaskDef()
-        task_to_compute.compute_task_def['task_id']     = '1'
-        task_to_compute.compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
-
-        with freeze_time("2017-12-01 10:59:00"):
-            force_report_computed_task = message.ForceReportComputedTask()
-        force_report_computed_task.task_to_compute = deserialized_task_to_compute
-        serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                timestamp       = "2017-12-01 10:59:00",
+                task_to_compute = task_to_compute
+            ),
+            provider_private_key = self.PROVIDER_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 10:59:00"):
             response_1 = self.client.post(
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
+        self._test_database_objects(
+            last_object_type            = message.concents.ForceReportComputedTask,
+            task_id                     = '1',
+            receive_delivered_status    = False,
+        )
 
         # STEP 2: Concent forces computed task report on the requestor
 
@@ -924,47 +1029,42 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 reverse('core:receive'),
                 data         = '',
                 content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        force_report_computed_task_from_view = load(
-            response_2.content,
-            REQUESTOR_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY,
-            check_time = False
+        self._test_response(
+            response_2,
+            status          = 200,
+            key             = self.REQUESTOR_PRIVATE_KEY,
+            message_type    = message.concents.ForceReportComputedTask,
+            fields          = {
+                'timestamp':                        self._parse_iso_date_to_timestamp("2017-12-01 10:59:00"),
+                'task_to_compute.timestamp':        self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'task_to_compute.compute_task_def': compute_task_def,
+            }
         )
-        self.assertEqual(response_2.status_code,  200)
-        self.assertEqual(force_report_computed_task_from_view.timestamp, force_report_computed_task.timestamp)
-        self.assertEqual(force_report_computed_task_from_view.task_to_compute.timestamp, force_report_computed_task.task_to_compute.timestamp)
 
         # STEP 3: Requestor accepts computed task via Concent after deadline
 
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute()
-
-        task_to_compute.compute_task_def = message.ComputeTaskDef()
-        task_to_compute.compute_task_def['task_id']     = '1'
-        task_to_compute.compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
-
-        serialized_task_to_compute      = dump(task_to_compute,             REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY, check_time = False)
-
-        with freeze_time("2017-12-01 11:00:15"):
-            ack_report_computed_task = message.AckReportComputedTask()
-        ack_report_computed_task.task_to_compute = deserialized_task_to_compute
-
-        serialized_ack_report_computed_task = dump(ack_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_ack_report_computed_task = self._get_serialized_ack_report_computed_task(
+            timestamp = "2017-12-01 11:00:15",
+            ack_report_computed_task = self._get_deserialized_ack_report_computed_task(
+                timestamp       = "2017-12-01 11:00:15",
+                subtask_id      = '1',
+                task_to_compute = task_to_compute
+            ),
+            requestor_private_key = self.REQUESTOR_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 11:00:15"):
             response_3 = self.client.post(
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        self.assertEqual(response_3.status_code,  400)
-        self.assertIn('error', response_3.json().keys())
+        self._test_400_response(response_3)
 
     def test_requestor_sends_reject_report_computed_task_after_deadline_passed(self):
         """
@@ -979,33 +1079,41 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute()
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        task_to_compute.compute_task_def = message.ComputeTaskDef()
-        task_to_compute.compute_task_def['task_id']     = '1'
-        task_to_compute.compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
-
-        with freeze_time("2017-12-01 10:59:00"):
-            force_report_computed_task = message.ForceReportComputedTask()
-        force_report_computed_task.task_to_compute = deserialized_task_to_compute
-
-        serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                timestamp       = "2017-12-01 10:59:00",
+                task_to_compute = task_to_compute
+            ),
+            provider_private_key = self.PROVIDER_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 10:59:00"):
             response_1 = self.client.post(
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
+        self._test_database_objects(
+            last_object_type            = message.concents.ForceReportComputedTask,
+            task_id                     = '1',
+            receive_delivered_status    = False,
+        )
 
         # STEP 2: Concent forces computed task report on the requestor
 
@@ -1014,47 +1122,50 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 reverse('core:receive'),
                 data         = '',
                 content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        force_report_computed_task_from_view = load(
-            response_2.content,
-            REQUESTOR_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY,
-            check_time = False
+        self._test_response(
+            response_2,
+            status          = 200,
+            key             = self.REQUESTOR_PRIVATE_KEY,
+            message_type    = message.concents.ForceReportComputedTask,
+            fields          = {
+                'timestamp':                        self._parse_iso_date_to_timestamp("2017-12-01 10:59:00"),
+                'task_to_compute.timestamp':        self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'task_to_compute.compute_task_def': compute_task_def,
+            }
         )
-        self.assertEqual(response_2.status_code,  200)
-        self.assertEqual(force_report_computed_task_from_view.timestamp, force_report_computed_task.timestamp)
 
         # STEP 3: Requestor rejects computed task via Concent after deadline
 
-        with freeze_time("2017-12-01 10:30:00"):
-            cannot_compute_task = message.CannotComputeTask()
-        cannot_compute_task.task_to_compute                             = message.TaskToCompute()
-        cannot_compute_task.task_to_compute.compute_task_def            = message.ComputeTaskDef()
-        cannot_compute_task.task_to_compute.compute_task_def['task_id'] = '1'
-        cannot_compute_task.reason                                      = message.CannotComputeTask.REASON.WrongKey
+        cannot_compute_task = self._get_deserialized_cannot_compute_task(
+            timestamp       = "2017-12-01 10:30:00",
+            task_to_compute = task_to_compute,
+            reason          = message.tasks.CannotComputeTask.REASON.WrongKey
+        )
 
-        serialized_cannot_compute_task      = dump(cannot_compute_task,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_cannot_compute_task    = load(serialized_cannot_compute_task,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
+        reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
+            timestamp           = "2017-12-01 11:00:15",
+            cannot_compute_task = cannot_compute_task,
+            reason              = message.concents.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
+        )
 
-        with freeze_time("2017-12-01 11:00:15"):
-            reject_report_computed_task = message.RejectReportComputedTask()
-        reject_report_computed_task.cannot_compute_task = deserialized_cannot_compute_task
-        reject_report_computed_task.reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
-        serialized_reject_report_computed_task = dump(reject_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_reject_report_computed_task = self._get_serialized_reject_report_computed_task(
+            timestamp = "2017-12-01 11:00:15",
+            reject_report_computed_task = reject_report_computed_task,
+            requestor_private_key       = self.REQUESTOR_PRIVATE_KEY,
+        )
 
         with freeze_time("2017-12-01 11:00:15"):
             response_3 = self.client.post(
                 reverse('core:send'),
-                data                                = serialized_reject_report_computed_task,
-                content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                data                            = serialized_reject_report_computed_task,
+                content_type                    = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
 
-        self.assertEqual(response_3.status_code,  400)
-        self.assertIn('error', response_3.json().keys())
+        self._test_400_response(response_3)
 
     def test_provider_forces_computed_task_report_missing_key_returns_400_error(self):
         """
@@ -1068,31 +1179,33 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute()
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        task_to_compute.compute_task_def = message.ComputeTaskDef()
-        task_to_compute.compute_task_def['task_id']     = '1'
-        task_to_compute.compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
-
-        with freeze_time("2017-12-01 10:59:00"):
-            force_report_computed_task = message.ForceReportComputedTask()
-        force_report_computed_task.task_to_compute = deserialized_task_to_compute
-
-        serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                timestamp       = "2017-12-01 10:59:00",
+                task_to_compute = task_to_compute
+            ),
+            provider_private_key = self.PROVIDER_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 10:59:00"):
             response_1 = self.client.post(
                 reverse('core:send'),
-                data                           = serialized_force_report_computed_task,
-                content_type                   = 'application/octet-stream',
+                data            = serialized_force_report_computed_task,
+                content_type    = 'application/octet-stream',
             )
 
-        self.assertEqual(response_1.status_code,  400)
-        self.assertIn('error', response_1.json().keys())
+        self._test_400_response(response_1)
 
     def test_provider_forces_computed_task_report_bad_key_returns_400_error(self):
         """
@@ -1106,20 +1219,24 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute()
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        task_to_compute.compute_task_def = message.ComputeTaskDef()
-        task_to_compute.compute_task_def['task_id'] = '1'
-        task_to_compute.compute_task_def['deadline'] = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
-
-        with freeze_time("2017-12-01 10:59:00"):
-            force_report_computed_task = message.ForceReportComputedTask()
-        force_report_computed_task.task_to_compute = deserialized_task_to_compute
-        serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                timestamp       = "2017-12-01 10:59:00",
+                task_to_compute = task_to_compute
+            ),
+            provider_private_key = self.PROVIDER_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 10:59:00"):
             response_1 = self.client.post(
@@ -1129,8 +1246,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = 'bad__key' * 11,
             )
 
-        self.assertEqual(response_1.status_code,  400)
-        self.assertIn('error', response_1.json().keys())
+        self._test_400_response(response_1)
 
     def test_provider_forces_computed_task_report_truncated_key_returns_400_error(self):
         """
@@ -1144,33 +1260,34 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute()
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        task_to_compute.compute_task_def = message.ComputeTaskDef()
-        task_to_compute.compute_task_def['task_id']     = '1'
-        task_to_compute.compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
-
-        with freeze_time("2017-12-01 10:59:00"):
-            force_report_computed_task = message.ForceReportComputedTask()
-
-        force_report_computed_task.task_to_compute = deserialized_task_to_compute
-
-        serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                timestamp       = "2017-12-01 10:59:00",
+                task_to_compute = task_to_compute
+            ),
+            provider_private_key = self.PROVIDER_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 10:59:00"):
             response_1 = self.client.post(
                 reverse('core:send'),
                 data                           = serialized_force_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY)[:32].decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.PROVIDER_PUBLIC_KEY)[:32].decode('ascii'),
             )
 
-        self.assertEqual(response_1.status_code, 400)
-        self.assertIn('error', response_1.json().keys())
+        self._test_400_response(response_1)
 
     def test_provider_forces_computed_task_report_empty_key_returns_400_error(self):
         """
@@ -1184,21 +1301,24 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute()
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        task_to_compute.compute_task_def = message.ComputeTaskDef()
-        task_to_compute.compute_task_def['task_id']     = '1'
-        task_to_compute.compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
-
-        with freeze_time("2017-12-01 10:59:00"):
-            force_report_computed_task = message.ForceReportComputedTask()
-        force_report_computed_task.task_to_compute = deserialized_task_to_compute
-
-        serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                timestamp       = "2017-12-01 10:59:00",
+                task_to_compute = task_to_compute
+            ),
+            provider_private_key = self.PROVIDER_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 10:59:00"):
             response_1 = self.client.post(
@@ -1208,8 +1328,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = '',
             )
 
-        self.assertEqual(response_1.status_code, 400)
-        self.assertIn('error', response_1.json().keys())
+        self._test_400_response(response_1)
 
     def test_requestor_sends_ack_report_computed_task_with_message_cannot_compute_task(self):
         """
@@ -1222,32 +1341,41 @@ class ReportComputedTaskIntegrationTest(TestCase):
         """
         # STEP 1: Requestor accepts computed task via Concent
 
-        with freeze_time("2017-12-01 10:00:00"):
-            cannot_compute_task = message.CannotComputeTask()
-        cannot_compute_task.task_to_compute = message.TaskToCompute()
-        cannot_compute_task.task_to_compute.compute_task_def = message.ComputeTaskDef()
-        cannot_compute_task.task_to_compute.compute_task_def['task_id']     = '1'
-        cannot_compute_task.task_to_compute.compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        serialized_cannot_compute_task      = dump(cannot_compute_task,             REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)
-        deserialized_cannot_compute_task    = load(serialized_cannot_compute_task,  PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY, check_time = False)
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        with freeze_time("2017-12-01 11:00:05"):
-            ack_report_computed_task = message.AckReportComputedTask()
-        ack_report_computed_task.task_to_compute = deserialized_cannot_compute_task
+        cannot_compute_task = self._get_deserialized_cannot_compute_task(
+            timestamp       = "2017-12-01 10:30:00",
+            task_to_compute = task_to_compute,
+            reason          = message.tasks.CannotComputeTask.REASON.WrongCTD
+        )
 
-        serialized_ack_report_computed_task = dump(ack_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_ack_report_computed_task = self._get_serialized_ack_report_computed_task(
+            timestamp = "2017-12-01 11:00:05",
+            ack_report_computed_task = self._get_deserialized_ack_report_computed_task(
+                timestamp       = "2017-12-01 11:00:05",
+                subtask_id      = '1',
+                task_to_compute = cannot_compute_task
+            ),
+            requestor_private_key = self.REQUESTOR_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        self.assertEqual(response.status_code,  400)
-        self.assertIn('error', response.json().keys())
+        self._test_400_response(response)
 
     def test_requestor_sends_reject_report_computed_task_with_message_task_to_compute(self):
         """
@@ -1260,26 +1388,34 @@ class ReportComputedTaskIntegrationTest(TestCase):
         """
         # STEP 1: Requestor accepts computed task via Concent
 
-        with freeze_time("2017-12-01 10:30:00"):
-            task_to_compute = message.TaskToCompute()
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        task_to_compute.compute_task_def = message.ComputeTaskDef()
-        task_to_compute.compute_task_def['task_id'] = '1'
-        serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        with freeze_time("2017-12-01 11:00:05"):
-            reject_report_computed_task = message.RejectReportComputedTask()
-        reject_report_computed_task.reason = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
-        reject_report_computed_task.task_to_compute = deserialized_task_to_compute
-        serialized_reject_report_computed_task = dump(reject_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
+            timestamp           = "2017-12-01 11:00:05",
+            task_to_compute     = task_to_compute,
+            reason              = message.concents.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
+        )
+
+        serialized_reject_report_computed_task = self._get_serialized_reject_report_computed_task(
+            timestamp = "2017-12-01 11:00:05",
+            reject_report_computed_task = reject_report_computed_task,
+            requestor_private_key       = self.REQUESTOR_PRIVATE_KEY,
+        )
 
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response.status_code,  400)
@@ -1297,33 +1433,35 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute()
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        task_to_compute.compute_task_def = message.ComputeTaskDef()
-        task_to_compute.compute_task_def['task_id']     = '1'
-        task_to_compute.compute_task_def['deadline']    = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
-
-        with freeze_time("2017-12-01 10:59:00"):
-            force_report_computed_task = message.ForceReportComputedTask()
-        force_report_computed_task.task_to_compute = deserialized_task_to_compute
-
-        serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                timestamp       = "2017-12-01 10:59:00",
+                task_to_compute = task_to_compute
+            ),
+            provider_private_key = self.PROVIDER_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 10:59:00"):
             response_1 = self.client.post(
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task[:50],
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        self.assertEqual(response_1.status_code,  400)
-        self.assertIn('error', response_1.json().keys())
+        self._test_400_response(response_1)
 
     def test_provider_sends_force_report_computed_task_with_malformed_message(self):
         """
@@ -1337,20 +1475,25 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute()
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        task_to_compute.compute_task_def = message.ComputeTaskDef()
-        task_to_compute.compute_task_def['task_id'] = '1'
-        task_to_compute.compute_task_def['deadline'] = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                timestamp       = "2017-12-01 10:59:00",
+                task_to_compute = task_to_compute
+            ),
+            provider_private_key = self.PROVIDER_PRIVATE_KEY
+        )
 
-        with freeze_time("2017-12-01 10:59:00"):
-            force_report_computed_task = message.ForceReportComputedTask()
-        force_report_computed_task.task_to_compute = deserialized_task_to_compute
-        serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
         serialized_force_report_computed_task = serialized_force_report_computed_task[:120] + b'\x00' + serialized_force_report_computed_task[120:]
 
         with freeze_time("2017-12-01 10:59:00"):
@@ -1358,12 +1501,10 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
-
-        self.assertEqual(response_1.status_code,  400)
-        self.assertIn('error', response_1.json().keys())
+        self._test_400_response(response_1)
 
     def test_provider_forces_computed_task_report_and_tries_to_receive_after_deadline(self):
         """
@@ -1379,31 +1520,41 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute()
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        task_to_compute.compute_task_def = message.ComputeTaskDef()
-        task_to_compute.compute_task_def['task_id'] = '1'
-        task_to_compute.compute_task_def['deadline'] = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
-        serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        with freeze_time("2017-12-01 10:59:00"):
-            force_report_computed_task = message.ForceReportComputedTask()
-        force_report_computed_task.task_to_compute = deserialized_task_to_compute
-        serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                timestamp       = "2017-12-01 10:59:00",
+                task_to_compute = task_to_compute
+            ),
+            provider_private_key = self.PROVIDER_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 10:59:00"):
             response_1 = self.client.post(
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
+        self._test_database_objects(
+            last_object_type            = message.concents.ForceReportComputedTask,
+            task_id                     = '1',
+            receive_delivered_status    = False,
+        )
 
         # STEP 2: Concent forces computed task report on the requestor
 
@@ -1412,50 +1563,60 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 reverse('core:receive'),
                 data         = '',
                 content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        force_report_computed_task_from_view = load(
-            response_2.content,
-            REQUESTOR_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY,
-            check_time = False,
+        self._test_response(
+            response_2,
+            status          = 200,
+            key             = self.REQUESTOR_PRIVATE_KEY,
+            message_type    = message.concents.ForceReportComputedTask,
+            fields          = {
+                'timestamp':                        self._parse_iso_date_to_timestamp("2017-12-01 10:59:00"),
+                'task_to_compute.timestamp':        self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'task_to_compute.compute_task_def': compute_task_def,
+            }
         )
-
-        self.assertEqual(response_2.status_code,  200)
-        self.assertEqual(force_report_computed_task_from_view.timestamp, force_report_computed_task.timestamp)
-        self.assertEqual(force_report_computed_task_from_view.task_to_compute.timestamp, force_report_computed_task.task_to_compute.timestamp)
 
         # STEP 3: Requestor accepts computed task via Concent
 
-        with freeze_time("2017-12-01 11:00:05"):
-            ack_report_computed_task = message.AckReportComputedTask()
-        ack_report_computed_task.task_to_compute = deserialized_task_to_compute
-        serialized_ack_report_computed_task = dump(ack_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_ack_report_computed_task = self._get_serialized_ack_report_computed_task(
+            timestamp = "2017-12-01 11:00:05",
+            ack_report_computed_task = self._get_deserialized_ack_report_computed_task(
+                timestamp       = "2017-12-01 11:00:05",
+                subtask_id      = '1',
+                task_to_compute = task_to_compute
+            ),
+            requestor_private_key = self.REQUESTOR_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 11:00:05"):
             response_3 = self.client.post(
                 reverse('core:send'),
-                data                                = serialized_ack_report_computed_task,
-                content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                data                            = serialized_ack_report_computed_task,
+                content_type                    = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_3.status_code,  202)
         self.assertEqual(len(response_3.content), 0)
+        self._test_database_objects(
+            last_object_type            = message.concents.AckReportComputedTask,
+            task_id                     = '1',
+            receive_delivered_status    = False,
+        )
 
         # STEP 4: Concent passes computed task acceptance to the provider
 
         with freeze_time("2017-12-01 11:00:30"):
             response_4 = self.client.post(
                 reverse('core:receive'),
-                data         = '',
-                content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                data                            = '',
+                content_type                    = '',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
             )
 
-        self.assertEqual(response_4.status_code,  204)
-        self.assertEqual(len(response_4.content), 0)
+        self._test_204_response(response_4)
 
     def test_provider_forces_computed_task_report_and_tries_to_receive_twice(self):
         """
@@ -1472,33 +1633,41 @@ class ReportComputedTaskIntegrationTest(TestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute()
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
 
-        task_to_compute.compute_task_def = message.ComputeTaskDef()
-        task_to_compute.compute_task_def['task_id'] = '1'
-        task_to_compute.compute_task_def['deadline'] = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
 
-        serialized_task_to_compute      = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute    = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
-
-        with freeze_time("2017-12-01 10:59:00"):
-            force_report_computed_task = message.ForceReportComputedTask()
-
-        force_report_computed_task.task_to_compute = deserialized_task_to_compute
-        serialized_force_report_computed_task = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                timestamp       = "2017-12-01 10:59:00",
+                task_to_compute = task_to_compute
+            ),
+            provider_private_key = self.PROVIDER_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 10:59:00"):
             response_1 = self.client.post(
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
+        self._test_database_objects(
+            last_object_type            = message.concents.ForceReportComputedTask,
+            task_id                     = '1',
+            receive_delivered_status    = False,
+        )
 
         # STEP 2: Concent forces computed task report on the requestor
 
@@ -1507,37 +1676,48 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 reverse('core:receive'),
                 data         = '',
                 content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
-        force_report_computed_task_from_view = load(
-            response_2.content,
-            REQUESTOR_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY,
-            check_time = False
-        )
 
-        self.assertEqual(response_2.status_code,  200)
-        self.assertIsInstance(force_report_computed_task_from_view, message.ForceReportComputedTask)
-        self.assertEqual(force_report_computed_task_from_view.timestamp, force_report_computed_task.timestamp)
-        self.assertEqual(force_report_computed_task_from_view.task_to_compute.timestamp, force_report_computed_task.task_to_compute.timestamp)
+        self._test_response(
+            response_2,
+            status          = 200,
+            key             = self.REQUESTOR_PRIVATE_KEY,
+            message_type    = message.concents.ForceReportComputedTask,
+            fields          = {
+                'timestamp':                        self._parse_iso_date_to_timestamp("2017-12-01 10:59:00"),
+                'task_to_compute.timestamp':        self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'task_to_compute.compute_task_def': compute_task_def,
+            }
+        )
 
         # STEP 3: Requestor accepts computed task via Concent
 
-        with freeze_time("2017-12-01 11:00:05"):
-            ack_report_computed_task = message.AckReportComputedTask()
-        ack_report_computed_task.task_to_compute = deserialized_task_to_compute
-        serialized_ack_report_computed_task = dump(ack_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_ack_report_computed_task = self._get_serialized_ack_report_computed_task(
+            timestamp = "2017-12-01 11:00:05",
+            ack_report_computed_task = self._get_deserialized_ack_report_computed_task(
+                timestamp       = "2017-12-01 11:00:05",
+                subtask_id      = '1',
+                task_to_compute = task_to_compute
+            ),
+            requestor_private_key = self.REQUESTOR_PRIVATE_KEY
+        )
 
         with freeze_time("2017-12-01 11:00:05"):
             response_3 = self.client.post(
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_3.status_code,  202)
         self.assertEqual(len(response_3.content), 0)
+        self._test_database_objects(
+            last_object_type            = message.concents.AckReportComputedTask,
+            task_id                     = '1',
+            receive_delivered_status    = False,
+        )
 
         # STEP 4: Concent passes computed task acceptance to the provider
 
@@ -1546,18 +1726,20 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 reverse('core:receive'),
                 data         = '',
                 content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_provider_public_key(),
             )
-        ack_report_computed_task_from_view = load(
-            response_4.content,
-            PROVIDER_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY,
-            check_time = False
-        )
 
-        self.assertEqual(response_4.status_code,  200)
-        self.assertEqual(ack_report_computed_task_from_view.timestamp, ack_report_computed_task.timestamp)
-        self.assertEqual(ack_report_computed_task_from_view.task_to_compute.timestamp, ack_report_computed_task.task_to_compute.timestamp)
+        self._test_response(
+            response_4,
+            status          = 200,
+            key             = self.PROVIDER_PRIVATE_KEY,
+            message_type    = message.concents.AckReportComputedTask,
+            fields          = {
+                'timestamp':                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'task_to_compute.timestamp':        self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'task_to_compute.compute_task_def': compute_task_def,
+            }
+        )
 
         # STEP 5: Concent passes computed task acceptance to the provider again
 
@@ -1566,8 +1748,7 @@ class ReportComputedTaskIntegrationTest(TestCase):
                 reverse('core:receive'),
                 data         = '',
                 content_type = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_provider_public_key(),
             )
 
-        self.assertEqual(response_5.status_code,  204)
-        self.assertEqual(len(response_5.content), 0)
+        self._test_204_response(response_5)

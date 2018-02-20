@@ -124,7 +124,7 @@ ACCEPTANCE<y:LabelModel>
     <node id="n6">
       <data key="d6">
         <y:ShapeNode>
-          <y:Geometry height="69.0" width="133.0" x="222.6045606067172" y="1134.991115926327"/>
+          <y:Geometry height="69.0" width="133.0" x="222.6045606067172" y="1252.884"/>
           <y:Fill color="#FFFF33" transparent="false"/>
           <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="67.9375" x="32.53125" y="25.515625">ACCEPTED<y:LabelModel>
@@ -161,8 +161,9 @@ ACCEPTANCE<y:LabelModel>
           <y:Geometry height="69.0" width="133.0" x="32.76453593354984" y="1134.991115926327"/>
           <y:Fill color="#33CCFF" transparent="false"/>
           <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
-          <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="31.9375" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="87.98828125" x="22.505859375" y="18.53125">ADDITIONAL
-VERIFICATION<y:LabelModel>
+          <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="45.90625" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="87.98828125" x="22.505859375" y="11.546875">VERIFICATION
+FILE
+TRANSFER<y:LabelModel>
               <y:SmartNodeLabelModel distance="4.0"/>
             </y:LabelModel>
             <y:ModelParameter>
@@ -176,10 +177,28 @@ VERIFICATION<y:LabelModel>
     <node id="n9">
       <data key="d6">
         <y:ShapeNode>
-          <y:Geometry height="69.0" width="133.0" x="395.5017334777899" y="1262.7744312025998"/>
+          <y:Geometry height="69.0" width="133.0" x="395.5017334777899" y="1323.5744312026"/>
           <y:Fill color="#FFFF33" transparent="false"/>
           <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="46.158203125" x="43.4208984375" y="25.515625">FAILED<y:LabelModel>
+              <y:SmartNodeLabelModel distance="4.0"/>
+            </y:LabelModel>
+            <y:ModelParameter>
+              <y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/>
+            </y:ModelParameter>
+          </y:NodeLabel>
+          <y:Shape type="ellipse"/>
+        </y:ShapeNode>
+      </data>
+    </node>
+    <node id="n10">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="69.0" width="133.0" x="32.76453593354984" y="1255.2085951607075"/>
+          <y:Fill color="#33CCFF" transparent="false"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="31.9375" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="87.98828125" x="22.505859375" y="18.53125">ADDITIONAL
+VERIFICATION<y:LabelModel>
               <y:SmartNodeLabelModel distance="4.0"/>
             </y:LabelModel>
             <y:ModelParameter>
@@ -278,10 +297,10 @@ VERIFICATION<y:LabelModel>
         </y:PolyLineEdge>
       </data>
     </edge>
-    <edge id="e8" source="n8" target="n6">
+    <edge id="e8" source="n10" target="n6">
       <data key="d10">
         <y:PolyLineEdge>
-          <y:Path sx="-44.612676056338046" sy="0.0" tx="0.0" ty="0.0"/>
+          <y:Path sx="57.07946406645016" sy="0.0" tx="-66.3802803033586" ty="2.3245951607075312"/>
           <y:LineStyle color="#00CC00" type="line" width="2.0"/>
           <y:Arrows source="none" target="standard"/>
           <y:BendStyle smoothed="false"/>
@@ -394,11 +413,35 @@ VERIFICATION<y:LabelModel>
         </y:PolyLineEdge>
       </data>
     </edge>
-    <edge id="e18" source="n8" target="n9">
+    <edge id="e18" source="n10" target="n9">
       <data key="d10">
         <y:PolyLineEdge>
-          <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0">
-            <y:Point x="99.26453593354984" y="1297.2744312025998"/>
+          <y:Path sx="0.0" sy="14.71756879740019" tx="0.0" ty="1.1175687974000539">
+            <y:Point x="99.26453593354984" y="1359.192"/>
+          </y:Path>
+          <y:LineStyle color="#CC3300" type="line" width="2.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e19" source="n8" target="n10">
+      <data key="d9"/>
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e20" source="n8" target="n9">
+      <data key="d9"/>
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="0.0" sy="0.0" tx="0.0" ty="-25.174431202599862">
+            <y:Point x="462.0017334777899" y="1169.491115926327"/>
           </y:Path>
           <y:LineStyle color="#CC3300" type="line" width="2.0"/>
           <y:Arrows source="none" target="standard"/>

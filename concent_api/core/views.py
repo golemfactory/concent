@@ -220,11 +220,17 @@ def receive_out_of_band(request, _message):
         if last_undelivered_receive_status.type == message.RejectReportComputedTask.TYPE:
             return handle_receive_out_of_band_reject_report_computed_task(request, last_undelivered_receive_status)
 
-        last_receive_status = ReceiveStatus.objects.filter(message__task_id=last_undelivered_receive_status.task_id).order_by('timestamp').last()
-        if last_undelivered_receive_status.type == last_receive_status.message.type and last_undelivered_receive_status.type == message.concents.SubtaskResultsSettled.TYPE:
+        last_receive_status = ReceiveStatus.objects.filter(
+            message__auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+            message__type = last_undelivered_receive_status.type
+        ).order_by('timestamp')
+
+        if last_receive_status.exists() and last_undelivered_receive_status.type == message.concents.SubtaskResultsSettled.TYPE:
             last_undelivered_receive_status = StoredMessage.objects.filter(
                 auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
             ).exclude(id = last_undelivered_receive_status.id).order_by('timestamp').last()
+            if last_undelivered_receive_status is None:
+                return None
 
         if last_undelivered_receive_status.type == message.concents.ForceSubtaskResults.TYPE:
             acceptance_deadline = settings.SUBTASK_VERIFICATION_TIME + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME

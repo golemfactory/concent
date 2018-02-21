@@ -4,9 +4,10 @@ import binascii
 import datetime
 import time
 
-from django.utils   import timezone
+from django.utils                   import timezone
 
-from golem_messages import message
+from golem_messages                 import message
+from golem_messages.datastructures  import FrozenDict
 
 
 def is_base64(data: str) -> bool:
@@ -50,48 +51,28 @@ def parse_datetime_to_timestamp(date_time: datetime.datetime) -> int:
         return int(date_time.astimezone(timezone.utc).timestamp())
 
 
-def get_task_id_from_message(golem_message: message.base.Message) -> str:
+def get_field_from_message(golem_message: message.base.Message, field_name: str) -> str:
     """
-    Returns task_id nested inside given Golem Message depending on its type.
+    Returns field value with given field name nested inside given Golem Message or FrozenDict
+    by checking recursively from top to bottom.
 
-    Returns None if task_id is not available.
+    Returns None if field is not available.
     """
 
-    if isinstance(golem_message,            message.ComputeTaskDef):
-        return golem_message['task_id']
+    def check_task_id(golem_message):
+        assert isinstance(golem_message, (message.base.Message, FrozenDict))
+        if isinstance(golem_message, FrozenDict):
+            if field_name in golem_message:
+                return golem_message[field_name]
+            else:
+                return None
+        elif hasattr(golem_message, field_name):
+            return getattr(golem_message, field_name)
+        for slot in golem_message.__slots__:
+            if isinstance(getattr(golem_message, slot), (message.base.Message, FrozenDict)):
+                task_id = check_task_id(getattr(golem_message, slot))
+                if task_id is not None:
+                    return task_id
+        return None
 
-    elif isinstance(golem_message,          message.TaskToCompute):
-        return golem_message.compute_task_def['task_id']
-
-    elif isinstance(golem_message,          message.concents.ForceGetTaskResult):
-        return golem_message.report_computed_task.task_to_compute.compute_task_def['task_id'],
-
-    elif isinstance(golem_message,          message.concents.ForceGetTaskResultUpload):
-        return golem_message.force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id']
-
-    elif isinstance(golem_message, (
-                                            message.VerdictReportComputedTask,
-                                            message.concents.ForceSubtaskResults,
-    )):
-        return golem_message.ack_report_computed_task.task_to_compute.compute_task_def['task_id']
-
-    elif isinstance(golem_message, (
-                                            message.ForceReportComputedTask,
-                                            message.AckReportComputedTask,
-                                            message.concents.ForceGetTaskResultFailed,
-    )):
-        return golem_message.task_to_compute.compute_task_def['task_id']
-
-    elif isinstance(golem_message,          message.RejectReportComputedTask):
-        if isinstance(golem_message.cannot_compute_task, message.tasks.CannotComputeTask):
-            return golem_message.cannot_compute_task.task_to_compute.compute_task_def['task_id']
-        elif isinstance(golem_message.task_to_compute, message.tasks.TaskToCompute):
-            return golem_message.task_to_compute.compute_task_def['task_id']
-
-    elif isinstance(golem_message,          message.concents.ForceSubtaskResultsResponse):
-        if isinstance(golem_message.subtask_results_accepted,   message.tasks.SubtaskResultsAccepted):
-            return golem_message.subtask_results_accepted.subtask_id
-        elif isinstance(golem_message.subtask_results_rejected, message.tasks.SubtaskResultsRejected):
-            return golem_message.subtask_results_rejected.report_computed_task.subtask_id
-
-    return None
+    return check_task_id(golem_message)

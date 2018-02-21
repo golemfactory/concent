@@ -106,7 +106,6 @@ def receive(request, _message):
         ):
             make_forced_payment('provider', 'requestor')
             return handle_receive_force_subtask_results(
-                request,
                 decoded_message_data,
                 last_delivered_message_status.message.auth.provider_public_key_bytes,
                 last_delivered_message_status.message.auth.requestor_public_key_bytes,
@@ -135,7 +134,7 @@ def receive(request, _message):
         logging.log_timeout(
             decoded_message_data,
             request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-            decoded_message_data.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
+            decoded_message_data.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
         )
     else:
         if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
@@ -318,7 +317,6 @@ def receive_out_of_band(request, _message):
             if current_time > decoded_message_data.ack_report_computed_task.timestamp + acceptance_deadline:
 
                 return handle_receive_force_subtask_results(
-                    request,
                     decoded_message_data,
                     last_undelivered_receive_status.auth.provider_public_key_bytes,
                     last_undelivered_receive_status.auth.requestor_public_key_bytes,
@@ -342,7 +340,7 @@ def handle_send_force_report_computed_task(request, client_message):
         logging.log_timeout(
             client_message,
             request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-            client_message.task_to_compute.compute_task_def['deadline'],
+            client_message.report_computed_task.task_to_compute.compute_task_def['deadline'],
         )
         reject_force_report_computed_task                 = message.RejectReportComputedTask(
             header = MessageHeader(
@@ -499,7 +497,7 @@ def handle_send_reject_report_computed_task(request, client_message):
         logging.log_timeout(
             force_report_computed_task,
             request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-            force_report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
+            force_report_computed_task.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
         )
         raise Http400("Time to acknowledge this task is already over.")
 
@@ -719,7 +717,6 @@ def handle_receive_force_report_computed_task(request, decoded_message, undelive
 
 
 def handle_receive_force_subtask_results(
-    request,
     decoded_message:        message.concents.ForceSubtaskResults,
     provider_public_key,
     requestor_public_key,
@@ -727,7 +724,6 @@ def handle_receive_force_subtask_results(
 ) -> message.concents.ForceSubtaskResults:
     assert isinstance(decoded_message, message.concents.ForceSubtaskResults)
 
-    client_public_key       = decode_client_public_key(request)
     subtask_results_settled = message.concents.SubtaskResultsSettled(
         origin = message.concents.SubtaskResultsSettled.Origin.ResultsAcceptedTimeout,
     )

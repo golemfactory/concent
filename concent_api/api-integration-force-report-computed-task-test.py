@@ -3,7 +3,6 @@
 import os
 import sys
 import random
-import time
 from base64                 import b64encode
 
 from golem_messages         import dump
@@ -87,20 +86,20 @@ def main():
             REQUESTOR_PUBLIC_KEY,
             current_time
         ), headers = {
-            'Content-Type':             'application/octet-stream',
-            'concent-client-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
+            'Content-Type':                     'application/octet-stream',
+            'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
         }
     )
-    time.sleep(65)
 
     api_request(
         cluster_url,
         'receive',
-        PROVIDER_PRIVATE_KEY,
+        REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         headers = {
-            'Content-Type':             'application/octet-stream',
-            'concent-client-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
+            'Content-Type':                     'application/octet-stream',
+            'concent-client-public-key':        b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         }
     )
 
@@ -120,16 +119,15 @@ def main():
             'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
         }
     )
-    time.sleep(10)
 
     api_request(
         cluster_url,
         'receive',
-        REQUESTOR_PRIVATE_KEY,
+        PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         headers = {
             'Content-Type':             'application/octet-stream',
-            'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
+            'concent-client-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
         }
     )
 

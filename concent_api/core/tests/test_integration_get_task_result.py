@@ -49,8 +49,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             task_to_compute = deserialized_task_to_compute
         )
         serialized_force_get_task_result = self._get_serialized_force_get_task_result(
-            report_computed_task = deserialized_report_computed_task,
-            timestamp       = "2017-12-01 11:00:11",
+            report_computed_task    = deserialized_report_computed_task,
+            timestamp               = "2017-12-01 11:00:11",
         )
 
         with freeze_time("2017-12-01 11:00:11"):
@@ -66,9 +66,9 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         message_from_concent = load(response.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
-        self.assertIsInstance(message_from_concent, message.concents.ForceGetTaskResultRejected)
-        self.assertEqual(message_from_concent.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:11"))
-        self.assertEqual(message_from_concent.reason, message_from_concent.REASON.AcceptanceTimeLimitExceeded)
+        self.assertIsInstance(message_from_concent,         message.concents.ForceGetTaskResultRejected)
+        self.assertEqual(message_from_concent.timestamp,    self._parse_iso_date_to_timestamp("2017-12-01 11:00:11"))
+        self.assertEqual(message_from_concent.reason,       message_from_concent.REASON.AcceptanceTimeLimitExceeded)
 
     def test_requestor_forces_get_task_result_and_concent_immediately_sends_rejection_due_to_already_sent_message(self):
         """
@@ -90,8 +90,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             task_to_compute = deserialized_task_to_compute
         )
         serialized_force_get_task_result = self._get_serialized_force_get_task_result(
-            report_computed_task = deserialized_report_computed_task,
-            timestamp       = "2017-12-01 11:00:08",
+            report_computed_task    = deserialized_report_computed_task,
+            timestamp               = "2017-12-01 11:00:08",
         )
 
         with freeze_time("2017-12-01 11:00:08"):
@@ -120,9 +120,9 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         message_from_concent = load(response.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
-        self.assertIsInstance(message_from_concent, message.concents.ServiceRefused)
-        self.assertEqual(message_from_concent.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:08"))
-        self.assertEqual(message_from_concent.reason, message_from_concent.REASON.DuplicateRequest)
+        self.assertIsInstance(message_from_concent,         message.concents.ServiceRefused)
+        self.assertEqual(message_from_concent.timestamp,    self._parse_iso_date_to_timestamp("2017-12-01 11:00:09"))
+        self.assertEqual(message_from_concent.reason,       message_from_concent.REASON.DuplicateRequest)
 
     def test_requestor_forces_get_task_result_and_concent_immediately_sends_acknowledgement(self):
         """
@@ -148,7 +148,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             timestamp       = "2017-12-01 11:00:09",
         )
 
-        with freeze_time("2017-12-01 11:00:09"):
+        with freeze_time("2017-12-01 11:00:10"):
             response = self.client.post(
                 reverse('core:send'),
                 data                                = serialized_force_get_task_result,
@@ -161,8 +161,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         message_from_concent = load(response.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
-        self.assertIsInstance(message_from_concent, message.concents.ForceGetTaskResultAck)
-        self.assertEqual(message_from_concent.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:09"))
+        self.assertIsInstance(message_from_concent,         message.concents.ForceGetTaskResultAck)
+        self.assertEqual(message_from_concent.timestamp,    self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"))
 
     def test_concent_requests_task_result_from_provider_and_requestor_receives_failure_because_provider_does_not_submit(self):
         """
@@ -195,7 +195,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             serialized_force_get_task_result,
             CONCENT_PRIVATE_KEY,
             self.REQUESTOR_PUBLIC_KEY,
-            check_time=False,
+            check_time = False,
         )
 
         with freeze_time("2017-12-01 11:00:01"):
@@ -221,7 +221,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_2.status_code, 200)
 
         message_from_concent = load(response_2.content, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
-        self.assertIsInstance(message_from_concent, message.concents.ForceGetTaskResultUpload)
+        self.assertIsInstance(message_from_concent,     message.concents.ForceGetTaskResultUpload)
 
         # Assign each message to correct variable
         message_force_get_task_result = message_from_concent.force_get_task_result
@@ -229,8 +229,9 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # Test ForceGetTaskResult message
 
-        self.assertIsInstance(message_force_get_task_result, message.concents.ForceGetTaskResult)
-        self.assertEqual(message_force_get_task_result.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:01"))
+        self.assertEqual(message_from_concent.timestamp,            self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
+        self.assertIsInstance(message_force_get_task_result,        message.concents.ForceGetTaskResult)
+        self.assertEqual(message_force_get_task_result.timestamp,   self._parse_iso_date_to_timestamp("2017-12-01 11:00:01"))
         self.assertEqual(
             message_force_get_task_result.report_computed_task.task_to_compute,
             deserialized_force_get_task_result.report_computed_task.task_to_compute
@@ -261,13 +262,13 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
-        self.assertEqual(response_3.status_code,  200)
+        self.assertEqual(response_3.status_code, 200)
 
         message_from_concent = load(response_3.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
-        self.assertIsInstance(message_from_concent, message.concents.ForceGetTaskResultFailed)
-        self.assertEqual(message_from_concent.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"))
-        self.assertEqual(message_from_concent.task_to_compute, deserialized_task_to_compute)
+        self.assertIsInstance(message_from_concent,                             message.concents.ForceGetTaskResultFailed)
+        self.assertEqual(message_from_concent.timestamp,                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"))
+        self.assertEqual(message_from_concent.task_to_compute,                  deserialized_task_to_compute)
         self.assertEqual(message_from_concent.task_to_compute.compute_task_def, deserialized_task_to_compute.compute_task_def)   # pylint: disable=no-member
         self.assertEqual(
             message_from_concent.task_to_compute.compute_task_def['deadline'],
@@ -340,8 +341,9 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # Test ForceGetTaskResult message
 
-        self.assertIsInstance(message_force_get_task_result, message.concents.ForceGetTaskResult)
-        self.assertEqual(message_force_get_task_result.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:01"))
+        self.assertEqual(message_from_concent.timestamp,            self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
+        self.assertIsInstance(message_force_get_task_result,        message.concents.ForceGetTaskResult)
+        self.assertEqual(message_force_get_task_result.timestamp,   self._parse_iso_date_to_timestamp("2017-12-01 11:00:01"))
         self.assertEqual(
             message_force_get_task_result.report_computed_task.task_to_compute,
             deserialized_force_get_task_result.report_computed_task.task_to_compute,
@@ -357,10 +359,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'], '99')
 
         # Test FileTransferToken message
-        self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
-        self.assertEqual(message_file_transfer_token.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
+        self.assertIsInstance(message_file_transfer_token,                      message.FileTransferToken)
+        self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:30:12"))
-        self.assertEqual(message_file_transfer_token.operation, 'upload')
+        self.assertEqual(message_file_transfer_token.operation,                 'upload')
 
         # STEP 3: Requestor receives force get task result failed due to lack of provider submit.
         with mock.patch('core.views.get_file_status', get_file_status_false_mock):
@@ -372,13 +374,13 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
-        self.assertEqual(response_3.status_code,  200)
+        self.assertEqual(response_3.status_code, 200)
 
         message_from_concent = load(response_3.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
-        self.assertIsInstance(message_from_concent, message.concents.ForceGetTaskResultFailed)
-        self.assertEqual(message_from_concent.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"))
-        self.assertEqual(message_from_concent.task_to_compute, deserialized_task_to_compute)
+        self.assertIsInstance(message_from_concent,                             message.concents.ForceGetTaskResultFailed)
+        self.assertEqual(message_from_concent.timestamp,                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"))
+        self.assertEqual(message_from_concent.task_to_compute,                  deserialized_task_to_compute)
         self.assertEqual(message_from_concent.task_to_compute.compute_task_def, deserialized_task_to_compute.compute_task_def)   # pylint: disable=no-member
         self.assertEqual(
             message_from_concent.task_to_compute.compute_task_def['deadline'],
@@ -417,7 +419,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             serialized_force_get_task_result,
             CONCENT_PRIVATE_KEY,
             self.REQUESTOR_PUBLIC_KEY,
-            check_time=False,
+            check_time = False,
         )
 
         with freeze_time("2017-12-01 11:00:01"):
@@ -446,13 +448,14 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertIsInstance(message_from_concent, message.concents.ForceGetTaskResultUpload)
 
         # Assign each message to correct variable
-        message_force_get_task_result = message_from_concent.force_get_task_result
-        message_file_transfer_token = message_from_concent.file_transfer_token
+        message_force_get_task_result   = message_from_concent.force_get_task_result
+        message_file_transfer_token     = message_from_concent.file_transfer_token
 
         # Test ForceGetTaskResult message
 
-        self.assertIsInstance(message_force_get_task_result, message.concents.ForceGetTaskResult)
-        self.assertEqual(message_force_get_task_result.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:01"))
+        self.assertEqual(message_from_concent.timestamp,            self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
+        self.assertIsInstance(message_force_get_task_result,        message.concents.ForceGetTaskResult)
+        self.assertEqual(message_force_get_task_result.timestamp,   self._parse_iso_date_to_timestamp("2017-12-01 11:00:01"))
         self.assertEqual(
             message_force_get_task_result.report_computed_task.task_to_compute,
             deserialized_force_get_task_result.report_computed_task.task_to_compute
@@ -468,10 +471,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'], '99')
 
         # Test FileTransferToken message
-        self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
-        self.assertEqual(message_file_transfer_token.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
+        self.assertIsInstance(message_file_transfer_token,                      message.FileTransferToken)
+        self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:30:12"))
-        self.assertEqual(message_file_transfer_token.operation, 'upload')
+        self.assertEqual(message_file_transfer_token.operation,                 'upload')
 
         # STEP 3: Requestor receives force get task result failed due to lack of provider submit.
         with mock.patch('core.views.get_file_status', get_file_status_false_mock):
@@ -483,13 +486,13 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
-        self.assertEqual(response_3.status_code,  200)
+        self.assertEqual(response_3.status_code, 200)
 
         message_from_concent = load(response_3.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
-        self.assertIsInstance(message_from_concent, message.concents.ForceGetTaskResultFailed)
-        self.assertEqual(message_from_concent.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"))
-        self.assertEqual(message_from_concent.task_to_compute, deserialized_task_to_compute)
+        self.assertIsInstance(message_from_concent,                             message.concents.ForceGetTaskResultFailed)
+        self.assertEqual(message_from_concent.timestamp,                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"))
+        self.assertEqual(message_from_concent.task_to_compute,                  deserialized_task_to_compute)
         self.assertEqual(message_from_concent.task_to_compute.compute_task_def, deserialized_task_to_compute.compute_task_def)   # pylint: disable=no-member
         self.assertEqual(
             message_from_concent.task_to_compute.compute_task_def['deadline'],
@@ -522,13 +525,13 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
         serialized_force_get_task_result = self._get_serialized_force_get_task_result(
             report_computed_task = deserialized_report_computed_task,
-            timestamp       = "2017-12-01 11:00:01",
+            timestamp = "2017-12-01 11:00:01",
         )
         deserialized_force_get_task_result = load(
             serialized_force_get_task_result,
             CONCENT_PRIVATE_KEY,
             self.REQUESTOR_PUBLIC_KEY,
-            check_time=False,
+            check_time = False,
         )
 
         with freeze_time("2017-12-01 11:00:01"):
@@ -557,14 +560,16 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertIsInstance(message_from_concent, message.concents.ForceGetTaskResultUpload)
 
         # Assign each message to correct variable
-        message_force_get_task_result = message_from_concent.force_get_task_result
-        message_file_transfer_token = message_from_concent.file_transfer_token
+        message_force_get_task_result   = message_from_concent.force_get_task_result
+        message_file_transfer_token     = message_from_concent.file_transfer_token
 
         # Test ForceGetTaskResult message
-        self.assertIsInstance(message_force_get_task_result, message.concents.ForceGetTaskResult)
-        self.assertEqual(message_force_get_task_result.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:01"))
-        self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute, deserialized_task_to_compute)
-        self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def, deserialized_task_to_compute.compute_task_def)   # pylint: disable=no-member
+
+        self.assertEqual(message_from_concent.timestamp,                                                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
+        self.assertIsInstance(message_force_get_task_result,                                                    message.concents.ForceGetTaskResult)
+        self.assertEqual(message_force_get_task_result.timestamp,                                               self._parse_iso_date_to_timestamp("2017-12-01 11:00:01"))
+        self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute,                    deserialized_task_to_compute)
+        self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def,   deserialized_task_to_compute.compute_task_def)   # pylint: disable=no-member
         self.assertEqual(
             message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['deadline'],
             self._parse_iso_date_to_timestamp("2017-12-01 11:00:00")
@@ -591,8 +596,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         message_from_concent = load(response_3.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
-        self.assertIsInstance(message_from_concent, message.concents.ForceGetTaskResultUpload)
-        self.assertEqual(message_from_concent.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"))
+        self.assertIsInstance(message_from_concent,         message.concents.ForceGetTaskResultUpload)
+        self.assertEqual(message_from_concent.timestamp,    self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"))
 
         self.assertEqual(
             message_from_concent.force_get_task_result.report_computed_task.task_to_compute,

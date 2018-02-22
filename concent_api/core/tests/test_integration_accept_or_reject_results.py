@@ -8,6 +8,7 @@ from golem_messages         import message
 from core.models            import StoredMessage
 from core.models            import ReceiveStatus
 from core.tests.utils       import ConcentIntegrationTestCase
+from utils.constants        import ErrorCode
 from utils.testing_helpers  import generate_ecc_key_pair
 
 
@@ -638,7 +639,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
                 )
 
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code = ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED,
+        )
 
     def test_requestor_sends_subtask_results_rejection_but_provider_does_not_submitted_force_subtask_results_concent_should_reject_it(self):
         """
@@ -677,7 +681,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
                 )
 
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code = ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED,
+        )
 
     def test_provider_sends_messages_with_wrong_timestamps_concent_should_reject_them(self):
         """
@@ -714,7 +721,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
 
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code = ErrorCode.MESSAGE_TIMESTAMP_TOO_FAR_IN_FUTURE,
+        )
 
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
             timestamp                   = "2018-04-05 10:00:15",
@@ -738,7 +748,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
                 )
 
-        self._test_400_response(response_2)
+        self._test_400_response(
+            response_2,
+            error_code = ErrorCode.MESSAGE_TIMESTAMP_TOO_FAR_IN_FUTURE,
+        )
 
     def test_requestor_sends_messages_with_wrong_timestamps_concent_should_return_http_400(self):
         """
@@ -815,7 +828,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
                 )
 
-        self._test_400_response(response_2)
+        self._test_400_response(
+            response_2,
+            error_code = ErrorCode.MESSAGE_TIMESTAMP_TOO_FAR_IN_FUTURE,
+        )
 
         compute_task_def = self._get_deserialized_compute_task_def(
             task_id     = '2',
@@ -844,7 +860,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
                 )
 
-        self._test_400_response(response_3)
+        self._test_400_response(
+            response_3,
+            error_code = ErrorCode.MESSAGE_TIMESTAMP_TOO_OLD,
+        )
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
@@ -873,7 +892,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
                 )
 
-        self._test_400_response(response_4)
+        self._test_400_response(
+            response_4,
+            error_code = ErrorCode.MESSAGE_TIMESTAMP_TOO_FAR_IN_FUTURE,
+        )
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
@@ -902,7 +924,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
                 )
 
-        self._test_400_response(response_5)
+        self._test_400_response(
+            response_5,
+            error_code = ErrorCode.MESSAGE_TIMESTAMP_TOO_OLD,
+        )
 
     def test_requestor_or_provider_send_message_with_wrong_nested_message_type_concent_should_return_http_400(self):
         """
@@ -932,7 +957,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
 
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code = ErrorCode.MESSAGE,
+        )
 
     def test_full_requestor_and_provider_communication_concent_should_accept_messages(self):
         """
@@ -1380,7 +1408,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
                 )
 
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code = ErrorCode.QUEUE_MESSAGE_ALREADY_PROCESSED,
+        )
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
@@ -1409,7 +1440,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
                 )
 
-        self._test_400_response(response_2)
+        self._test_400_response(
+            response_2,
+            error_code = ErrorCode.QUEUE_MESSAGE_ALREADY_PROCESSED,
+        )
 
     def test_requestor_send_again_subtask_results_accepted_or_rejected_when_message_already_rejected_concent_should_return_http_400(self):
         """
@@ -1499,7 +1533,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     content_type                    = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
                 )
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code = ErrorCode.QUEUE_MESSAGE_ALREADY_PROCESSED,
+        )
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
@@ -1528,7 +1565,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
                 )
 
-        self._test_400_response(response_2)
+        self._test_400_response(
+            response_2,
+            error_code = ErrorCode.QUEUE_MESSAGE_ALREADY_PROCESSED,
+        )
 
     def test_requestor_send_subtask_results_without_accepted_or_rejected_should_return_http_400(self):
         """
@@ -1604,4 +1644,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code = ErrorCode.MESSAGE_UNEXPECTED,
+        )

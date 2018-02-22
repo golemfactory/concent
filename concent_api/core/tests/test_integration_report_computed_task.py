@@ -6,6 +6,7 @@ from freezegun                      import freeze_time
 
 from golem_messages                 import message
 from core.tests.utils               import ConcentIntegrationTestCase
+from utils.constants                import ErrorCode
 from utils.testing_helpers          import generate_ecc_key_pair
 
 
@@ -660,7 +661,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
                 HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
-        self._test_400_response(response_2)
+        self._test_400_response(
+            response_2,
+            error_code = ErrorCode.QUEUE_MESSAGE_ALREADY_PROCESSED,
+        )
 
     def test_requestor_sends_ack_report_computed_task_but_provider_did_not_ask_for_it(self):
         """
@@ -701,7 +705,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        self._test_400_response(response)
+        self._test_400_response(
+            response,
+            error_code = ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED,
+        )
 
     def test_requestor_sends_reject_report_computed_task_but_provider_did_not_ask_for_it(self):
         """
@@ -750,7 +757,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        self._test_400_response(response)
+        self._test_400_response(
+            response,
+            error_code = ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED,
+        )
 
     def test_requestor_sends_ack_report_computed_task_and_then_sends_reject_report_computed_task(self):
         """
@@ -883,7 +893,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        self._test_400_response(response_4)
+        self._test_400_response(
+            response_4,
+            error_code = ErrorCode.QUEUE_MESSAGE_ALREADY_PROCESSED,
+        )
 
     def test_requestor_sends_reject_report_computed_task_and_then_sends_ack_report_computed_task(self):
         """
@@ -1017,7 +1030,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        self._test_400_response(response_4)
+        self._test_400_response(
+            response_4,
+            error_code = ErrorCode.QUEUE_RESPONSE_ALREADY_SUBMITTED,
+        )
 
     def test_requestor_sends_ack_report_computed_task_after_deadline_passed(self):
         """
@@ -1115,7 +1131,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        self._test_400_response(response_3)
+        self._test_400_response(
+            response_3,
+            error_code = ErrorCode.QUEUE_TIMEOUT,
+        )
 
     def test_requestor_sends_reject_report_computed_task_after_deadline_passed(self):
         """
@@ -1221,7 +1240,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
 
-        self._test_400_response(response_3)
+        self._test_400_response(
+            response_3,
+            error_code = ErrorCode.QUEUE_TIMEOUT,
+        )
 
     def test_provider_forces_computed_task_report_missing_key_returns_400_error(self):
         """
@@ -1266,7 +1288,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 content_type    = 'application/octet-stream',
             )
 
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code = ErrorCode.HEADER_CLIENT_PUBLIC_KEY_MISSING,
+        )
 
     def test_provider_forces_computed_task_report_bad_key_returns_400_error(self):
         """
@@ -1312,7 +1337,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = 'bad__key' * 11,
             )
 
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code = ErrorCode.HEADER_CLIENT_PUBLIC_KEY_NOT_BASE64_ENCODED_VALUE,
+        )
 
     def test_provider_forces_computed_task_report_truncated_key_returns_400_error(self):
         """
@@ -1358,7 +1386,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.PROVIDER_PUBLIC_KEY)[:32].decode('ascii'),
             )
 
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code = ErrorCode.HEADER_CLIENT_PUBLIC_KEY_WRONG_LENGTH,
+        )
 
     def test_provider_forces_computed_task_report_empty_key_returns_400_error(self):
         """
@@ -1404,7 +1435,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = '',
             )
 
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code = ErrorCode.HEADER_CLIENT_PUBLIC_KEY_MISSING,
+        )
 
     def test_requestor_sends_ack_report_computed_task_with_message_cannot_compute_task(self):
         """
@@ -1451,7 +1485,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        self._test_400_response(response)
+        self._test_400_response(
+            response,
+            error_code = ErrorCode.MESSAGE_WRONG_FIELDS,
+        )
 
     def test_requestor_sends_reject_report_computed_task_with_message_task_to_compute(self):
         """
@@ -1494,8 +1531,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        self.assertEqual(response.status_code,  400)
-        self.assertIn('error', response.json().keys())
+        self._test_400_response(
+            response,
+            error_code = ErrorCode.MESSAGE_UNEXPECTED,
+        )
 
     def test_provider_sends_force_report_computed_task_with_a_cut_message(self):
         """
@@ -1542,7 +1581,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code = ErrorCode.MESSAGE,
+        )
 
     def test_provider_sends_force_report_computed_task_with_malformed_message(self):
         """
@@ -1590,7 +1632,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
                 HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
-        self._test_400_response(response_1)
+
+        self._test_400_response(
+            response_1,
+            error_code = ErrorCode.MESSAGE,
+        )
 
     def test_provider_forces_computed_task_report_and_tries_to_receive_after_deadline(self):
         """

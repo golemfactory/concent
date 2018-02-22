@@ -105,7 +105,7 @@ def receive(request, _message):
             current_time > decoded_message_data.ack_report_computed_task.timestamp + acceptance_deadline
         ):
             make_forced_payment('provider', 'requestor')
-            return handle_receive_force_subtask_results(
+            return handle_receive_force_subtask_results_settled(
                 decoded_message_data,
                 last_delivered_message_status.message.auth.provider_public_key_bytes,
                 last_delivered_message_status.message.auth.requestor_public_key_bytes,
@@ -136,13 +136,6 @@ def receive(request, _message):
             request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
             decoded_message_data.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
         )
-    else:
-        if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
-            set_message_as_delivered(last_undelivered_message_status)
-            logging.log_message_delivered(
-                decoded_message_data,
-                client_public_key,
-            )
 
     if isinstance(decoded_message_data, message.ForceReportComputedTask):
         if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
@@ -204,7 +197,7 @@ def receive(request, _message):
             client_public_key,
         )
         if current_time < decoded_message_data.timestamp + settings.CONCENT_MESSAGING_TIME:
-            return handle_receive_force_subtasks_results(
+            return handle_receive_force_subtask_results(
                 request,
                 decoded_message_data,
                 last_undelivered_message_status,
@@ -214,7 +207,7 @@ def receive(request, _message):
             request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
             decoded_message_data.timestamp + settings.CONCENT_MESSAGING_TIME,
         )
-        return handle_receive_force_subtasks_results(
+        return handle_receive_force_subtask_results(
             request,
             decoded_message_data,
             last_undelivered_message_status,
@@ -316,7 +309,7 @@ def receive_out_of_band(request, _message):
 
             if current_time > decoded_message_data.ack_report_computed_task.timestamp + acceptance_deadline:
 
-                return handle_receive_force_subtask_results(
+                return handle_receive_force_subtask_results_settled(
                     decoded_message_data,
                     last_undelivered_receive_status.auth.provider_public_key_bytes,
                     last_undelivered_receive_status.auth.requestor_public_key_bytes,
@@ -552,8 +545,9 @@ def handle_send_force_subtask_results(request, client_message: message.concents.
     other_party_public_key = decode_other_party_public_key(request)
 
     if StoredMessage.objects.filter(
-        type    = client_message.TYPE,
-        task_id = client_message.ack_report_computed_task.task_to_compute.compute_task_def['task_id']
+        type                      = client_message.TYPE,
+        task_id                   = client_message.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
+        auth__provider_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
     ).exists():
         return message.concents.ServiceRefused(
             reason      = message.concents.ServiceRefused.REASON.DuplicateRequest,
@@ -613,8 +607,16 @@ def handle_send_force_subtask_results_results_response(request, client_message):
     else:
         client_message_task_id = client_message.subtask_results_rejected.report_computed_task.task_to_compute.compute_task_def['task_id']
 
-    force_subtask_results                   = StoredMessage.objects.filter(task_id = client_message_task_id, type = message.concents.ForceSubtaskResults.TYPE)
-    previous_force_subtask_results_response = StoredMessage.objects.filter(task_id = client_message_task_id, type = message.concents.ForceSubtaskResultsResponse.TYPE)
+    force_subtask_results                   = StoredMessage.objects.filter(
+        task_id                    = client_message_task_id,
+        type                       = message.concents.ForceSubtaskResults.TYPE,
+        auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+    )
+    previous_force_subtask_results_response = StoredMessage.objects.filter(
+        task_id                    = client_message_task_id,
+        type                       = message.concents.ForceSubtaskResultsResponse.TYPE,
+        auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+    )
 
     if not force_subtask_results.exists():
         raise Http400("'ForceSubtaskResults' for this subtask has not been initiated yet. Can't accept your '{}'.".format(client_message.TYPE))
@@ -716,7 +718,7 @@ def handle_receive_force_report_computed_task(request, decoded_message, undelive
     return force_report_computed_task
 
 
-def handle_receive_force_subtask_results(
+def handle_receive_force_subtask_results_settled(
     decoded_message:        message.concents.ForceSubtaskResults,
     provider_public_key,
     requestor_public_key,
@@ -900,7 +902,7 @@ def handle_receive_force_get_task_result_upload_for_requestor(
     return force_get_task_result_upload
 
 
-def handle_receive_force_subtasks_results(
+def handle_receive_force_subtask_results(
     request,
     decoded_message:                 message.concents.ForceSubtaskResults,
     last_undelivered_message_status: ReceiveStatus

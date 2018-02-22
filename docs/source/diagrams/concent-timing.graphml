@@ -193,7 +193,7 @@
           <data key="d6">
             <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
               <y:Geometry height="10.0" width="10.0" x="-282.19225358490564" y="-145.5382402402322"/>
-              <y:Fill color="#333333" color2="#800080" transparent="false"/>
+              <y:Fill color="#0000FF" color2="#0000FF" transparent="false"/>
               <y:BorderStyle color="#E38B00" type="line" width="1.0"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="8" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="13.3125" horizontalTextPosition="center" iconTextGap="4" modelName="eight_pos" modelPosition="e" textColor="#000000" verticalTextPosition="bottom" visible="true" width="24.6328125" x="14.0" y="-1.65625">FRCT</y:NodeLabel>
               <y:StyleProperties>
@@ -209,7 +209,7 @@
           <data key="d6">
             <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
               <y:Geometry height="10.0" width="10.0" x="-228.8339391194969" y="-129.5382402402322"/>
-              <y:Fill color="#333333" color2="#800080" transparent="false"/>
+              <y:Fill color="#0000FF" color2="#0000FF" transparent="false"/>
               <y:BorderStyle color="#E38B00" type="line" width="1.0"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="8" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="13.3125" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="49.7890625" x="6.916686799759191" y="-1.65625">ARCT/RRCT<y:LabelModel>
                   <y:SmartNodeLabelModel distance="4.0"/>
@@ -561,7 +561,7 @@
           <data key="d6">
             <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
               <y:Geometry height="10.0" width="10.0" x="289.9329419908935" y="222.95744281683193"/>
-              <y:Fill color="#333333" color2="#800080" transparent="false"/>
+              <y:Fill color="#0000FF" color2="#0000FF" transparent="false"/>
               <y:BorderStyle color="#E38B00" type="line" width="1.0"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="8" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="13.3125" horizontalTextPosition="center" iconTextGap="4" modelName="eight_pos" modelPosition="e" textColor="#000000" verticalTextPosition="bottom" visible="true" width="19.23828125" x="14.0" y="-1.65625">FSR</y:NodeLabel>
               <y:StyleProperties>
@@ -577,7 +577,7 @@
           <data key="d6">
             <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
               <y:Geometry height="10.0" width="10.0" x="389.54450371184873" y="239.9404828168319"/>
-              <y:Fill color="#333333" color2="#800080" transparent="false"/>
+              <y:Fill color="#0000FF" color2="#0000FF" transparent="false"/>
               <y:BorderStyle color="#E38B00" type="line" width="1.0"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="8" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="13.3125" horizontalTextPosition="center" iconTextGap="4" modelName="eight_pos" modelPosition="e" textColor="#000000" verticalTextPosition="bottom" visible="true" width="24.796875" x="14.0" y="-1.65625">FSRR</y:NodeLabel>
               <y:StyleProperties>
@@ -883,7 +883,7 @@ VERIFICATION<y:LabelModel>
           <data key="d6">
             <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
               <y:Geometry height="10.0" width="10.0" x="464.4078593837472" y="401.75489860883187"/>
-              <y:Fill color="#333333" color2="#800080" transparent="false"/>
+              <y:Fill color="#0000FF" color2="#0000FF" transparent="false"/>
               <y:BorderStyle color="#E38B00" type="line" width="1.0"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="8" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="13.3125" horizontalTextPosition="center" iconTextGap="4" modelName="eight_pos" modelPosition="e" textColor="#000000" verticalTextPosition="bottom" visible="true" width="20.109375" x="14.0" y="-1.65625">SRV</y:NodeLabel>
               <y:StyleProperties>
@@ -960,7 +960,7 @@ VERIFICATION<y:LabelModel>
           <data key="d6">
             <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
               <y:Geometry height="10.0" width="10.0" x="524.8993112203246" y="417.1404986088318"/>
-              <y:Fill color="#333333" color2="#800080" transparent="false"/>
+              <y:Fill color="#0000FF" color2="#0000FF" transparent="false"/>
               <y:BorderStyle color="#E38B00" type="line" width="1.0"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="8" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="13.3125" horizontalTextPosition="center" iconTextGap="4" modelName="eight_pos" modelPosition="e" textColor="#000000" verticalTextPosition="bottom" visible="true" width="53.02734375" x="14.0" y="-1.65625">upload ends</y:NodeLabel>
               <y:StyleProperties>
@@ -1195,7 +1195,7 @@ VERIFICATION<y:LabelModel>
           <data key="d6">
             <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
               <y:Geometry height="10.0" width="10.0" x="858.0229391742429" y="560.008670713538"/>
-              <y:Fill color="#333333" color2="#800080" transparent="false"/>
+              <y:Fill color="#0000FF" color2="#0000FF" transparent="false"/>
               <y:BorderStyle color="#E38B00" type="line" width="1.0"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="8" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="13.3125" horizontalTextPosition="center" iconTextGap="4" modelName="eight_pos" modelPosition="e" textColor="#000000" verticalTextPosition="bottom" visible="true" width="13.42578125" x="14.0" y="-1.65625">FP</y:NodeLabel>
               <y:StyleProperties>
@@ -1743,7 +1743,7 @@ TRANSFER<y:LabelModel>
           <data key="d6">
             <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
               <y:Geometry height="10.0" width="10.0" x="-118.34736402515728" y="29.48504249999995"/>
-              <y:Fill color="#333333" color2="#800080" transparent="false"/>
+              <y:Fill color="#0000FF" color2="#0000FF" transparent="false"/>
               <y:BorderStyle color="#E38B00" type="line" width="1.0"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="8" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="13.3125" horizontalTextPosition="center" iconTextGap="4" modelName="eight_pos" modelPosition="e" textColor="#000000" verticalTextPosition="bottom" visible="true" width="25.24609375" x="14.0" y="-1.65625">FGTR</y:NodeLabel>
               <y:StyleProperties>
@@ -1759,7 +1759,7 @@ TRANSFER<y:LabelModel>
           <data key="d6">
             <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
               <y:Geometry height="10.0" width="10.0" x="16.79364729559734" y="45.45480454799995"/>
-              <y:Fill color="#333333" color2="#800080" transparent="false"/>
+              <y:Fill color="#0000FF" color2="#0000FF" transparent="false"/>
               <y:BorderStyle color="#E38B00" type="line" width="1.0"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="8" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="13.3125" horizontalTextPosition="center" iconTextGap="4" modelName="eight_pos" modelPosition="e" textColor="#000000" verticalTextPosition="bottom" visible="true" width="53.02734375" x="14.0" y="-1.65625">upload ends</y:NodeLabel>
               <y:StyleProperties>
@@ -2108,10 +2108,10 @@ TRANSFER<y:LabelModel>
         <y:ProxyAutoBoundsNode>
           <y:Realizers active="0">
             <y:GenericGroupNode configuration="com.yworks.bpmn.Artifact.withShadow">
-              <y:Geometry height="208.59760202231098" width="673.1777207166178" x="-543.0431771635319" y="728.5903783018871"/>
+              <y:Geometry height="194.75891879310234" width="568.5231515530861" x="-438.38860800000015" y="728.5903783018871"/>
               <y:Fill color="#FFFFFFE6" transparent="false"/>
               <y:BorderStyle hasColor="false" type="dashed_dotted" width="1.0"/>
-              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="4.0" x="334.5888603583089" y="200.5976020223111">
+              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="4.0" x="282.26157577654305" y="186.75891879310234">
                 <y:LabelModel>
                   <y:SmartNodeLabelModel distance="4.0"/>
                 </y:LabelModel>
@@ -2127,7 +2127,7 @@ TRANSFER<y:LabelModel>
               </y:StyleProperties>
               <y:State autoResize="true" closed="false" closedHeight="80.0" closedWidth="100.0"/>
               <y:Insets bottom="15" bottomF="15.0" left="15" leftF="15.0" right="15" rightF="15.0" top="15" topF="15.0"/>
-              <y:BorderInsets bottom="14" bottomF="13.838683229208641" left="105" leftF="104.65456916353179" right="0" rightF="0.0" top="3" topF="2.589564669811125"/>
+              <y:BorderInsets bottom="0" bottomF="0.0" left="0" leftF="0.0" right="0" rightF="0.0" top="3" topF="2.589564669811125"/>
             </y:GenericGroupNode>
             <y:GenericGroupNode configuration="com.yworks.bpmn.Artifact.withShadow">
               <y:Geometry height="80.0" width="100.0" x="-387.09620799999993" y="802.9985849056607"/>
@@ -2197,22 +2197,6 @@ TRANSFER<y:LabelModel>
         </node>
         <node id="n16::n3">
           <data key="d6">
-            <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
-              <y:Geometry height="10.0" width="10.0" x="-417.3226450182683" y="811.2107786987625"/>
-              <y:Fill color="#333333" color2="#800080" transparent="false"/>
-              <y:BorderStyle color="#E38B00" type="line" width="1.0"/>
-              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="8" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="13.3125" horizontalTextPosition="center" iconTextGap="4" modelName="eight_pos" modelPosition="e" textColor="#000000" verticalTextPosition="bottom" visible="true" width="24.6328125" x="14.0" y="-1.65625">FRCT</y:NodeLabel>
-              <y:StyleProperties>
-                <y:Property class="java.awt.Color" name="com.yworks.bpmn.icon.line.color" value="#000000"/>
-                <y:Property class="java.awt.Color" name="com.yworks.bpmn.icon.fill2" value="#d4d4d4cc"/>
-                <y:Property class="java.awt.Color" name="com.yworks.bpmn.icon.fill" value="#ffffffe6"/>
-                <y:Property class="com.yworks.yfiles.bpmn.view.BPMNTypeEnum" name="com.yworks.bpmn.type" value="GATEWAY_TYPE_PLAIN"/>
-              </y:StyleProperties>
-            </y:GenericNode>
-          </data>
-        </node>
-        <node id="n16::n4">
-          <data key="d6">
             <y:ShapeNode>
               <y:Geometry height="16.0" width="53.343983245283255" x="-423.1039709421973" y="837.683925868574"/>
               <y:Fill color="#33CCFF" transparent="false"/>
@@ -2222,7 +2206,7 @@ TRANSFER<y:LabelModel>
             </y:ShapeNode>
           </data>
         </node>
-        <node id="n16::n5">
+        <node id="n16::n4">
           <data key="d6">
             <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
               <y:Geometry height="10.0" width="10.0" x="-418.127161538532" y="894.3649220949894"/>
@@ -2238,7 +2222,7 @@ TRANSFER<y:LabelModel>
             </y:GenericNode>
           </data>
         </node>
-        <node id="n16::n6">
+        <node id="n16::n5">
           <data key="d6">
             <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
               <y:Geometry height="10.0" width="10.0" x="-418.127161538532" y="840.683925868574"/>
@@ -2254,13 +2238,29 @@ TRANSFER<y:LabelModel>
             </y:GenericNode>
           </data>
         </node>
-        <node id="n16::n7">
+        <node id="n16::n6">
           <data key="d6">
             <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
               <y:Geometry height="10.0" width="10.0" x="-418.127161538532" y="866.9522730383854"/>
               <y:Fill color="#333333" color2="#800080" transparent="false"/>
               <y:BorderStyle color="#E38B00" type="line" width="1.0"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="free" modelPosition="anywhere" textColor="#000000" verticalTextPosition="bottom" visible="true" width="231.61328125" x="54.26471334824902" y="-3.984375">asynchronous response from Concent</y:NodeLabel>
+              <y:StyleProperties>
+                <y:Property class="java.awt.Color" name="com.yworks.bpmn.icon.line.color" value="#000000"/>
+                <y:Property class="java.awt.Color" name="com.yworks.bpmn.icon.fill2" value="#d4d4d4cc"/>
+                <y:Property class="java.awt.Color" name="com.yworks.bpmn.icon.fill" value="#ffffffe6"/>
+                <y:Property class="com.yworks.yfiles.bpmn.view.BPMNTypeEnum" name="com.yworks.bpmn.type" value="GATEWAY_TYPE_PLAIN"/>
+              </y:StyleProperties>
+            </y:GenericNode>
+          </data>
+        </node>
+        <node id="n16::n7">
+          <data key="d6">
+            <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
+              <y:Geometry height="10.0" width="10.0" x="-417.6734542898612" y="811.2107786987625"/>
+              <y:Fill color="#0000FF" color2="#0000FF" transparent="false"/>
+              <y:BorderStyle color="#E38B00" type="line" width="1.0"/>
+              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="8" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="13.3125" horizontalTextPosition="center" iconTextGap="4" modelName="eight_pos" modelPosition="e" textColor="#000000" verticalTextPosition="bottom" visible="true" width="24.6328125" x="14.0" y="-1.65625">FRCT</y:NodeLabel>
               <y:StyleProperties>
                 <y:Property class="java.awt.Color" name="com.yworks.bpmn.icon.line.color" value="#000000"/>
                 <y:Property class="java.awt.Color" name="com.yworks.bpmn.icon.fill2" value="#d4d4d4cc"/>

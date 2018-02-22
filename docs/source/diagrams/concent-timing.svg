@@ -782,7 +782,7 @@
       <rect fill="none" x="900.133" width="356.8256" height="16" y="106.4548" clip-path="url(#clipPath2)"/>
       <text x="906.133" xml:space="preserve" y="118.6091" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">ForceGetTaskResultFailed</text>
       <rect fill="none" x="900.133" width="356.8256" height="16" y="74.4548" clip-path="url(#clipPath2)"/>
-      <text x="906.133" xml:space="preserve" y="86.6091" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">ForceGetTaskResultAck</text>
+      <text x="906.133" xml:space="preserve" y="86.6091" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">AckForceGetTaskResult</text>
       <rect fill="none" x="900.133" width="356.8256" height="16" y="26.485" clip-path="url(#clipPath2)"/>
       <text x="906.133" xml:space="preserve" y="38.6393" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">ForceGetTaskResult</text>
       <rect fill="none" x="900.133" width="356.8256" height="16" y="42.4548" clip-path="url(#clipPath2)"/>
@@ -832,7 +832,7 @@
       <path fill="none" d="M-113.2034 77.1527 L-108.2034 82.1527 L-113.2034 87.1527 L-118.2034 82.1527 Z" clip-path="url(#clipPath2)"/>
     </g>
     <g font-size="8px" stroke-linecap="butt" transform="matrix(1,0,0,1,454,414)" text-rendering="geometricPrecision" font-family="sans-serif" shape-rendering="geometricPrecision" stroke-miterlimit="1.45">
-      <text x="-102.2034" xml:space="preserve" y="84.9222" clip-path="url(#clipPath2)" stroke="none">FGTRA</text>
+      <text x="-102.2034" xml:space="preserve" y="84.9222" clip-path="url(#clipPath2)" stroke="none">AFGTR</text>
     </g>
     <g text-rendering="geometricPrecision" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,327.7966,497.7986)" image-rendering="optimizeQuality">
       <image x="0" y="0" clip-path="url(#clipPath31)" width="66" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEIAAAAiCAYAAADroA+yAAABb0lEQVR42u2Y207C&#10;QBRFKW2xthYVUUEQVAwqXpFEo0ElXv//j9yTLJKm0QdffJienayQ9m327HMptZrJ&#10;ZDKZTCbT/ysoUFkD6iKCkOdKGbI0YEWsipTfBu+DqpgQc/CmaIktsSlykVTBjKUJ&#10;KQfviIEYin2xK9YxyVsziia4FPTEsTgXl2IijkRXbJCM0DczAg6VcEhnwljciHvx&#10;IO7ElRiRlCY9pO5jGnLiP8KER7EQr+IFUy7EgWiTHq9KJOR2XRr64owEuMN/iE/x&#10;Lp7ELWnpYFzsmxFJwYgJt7/AhC+MeBYzcUKvyBmpgU+l0aDuu9y4u/k5ZfGGKa5X&#10;XFM6OyLzLREBtZ6yMwwojxl9Yo4JU9LQK00O78anS8UajdDtDqckYMrEGFM6LR8b&#10;ZXmEFs3oszu4feJQ7BVMiH0bnb+ZkRH/bUZqm63SexPKX50xPSAjISkjNqqCCT+l&#10;I8KUyMeV2v6YMZlMJpPJZPqjvgGMghKVWC9MqQAAAABJRU5ErkJggg==" height="34" preserveAspectRatio="none"/>
@@ -930,12 +930,12 @@
       <text x="407.8325" font-size="10px" y="-226.798" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none" xml:space="preserve">REJECTED</text>
     </g>
     <g fill="rgb(51,204,255)" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,454,414)" stroke="rgb(51,204,255)">
-      <rect x="470.3647" width="246.5" height="40" y="-250.2599" clip-path="url(#clipPath2)" stroke="none"/>
+      <rect x="593.6147" width="123.25" height="40" y="-250.2599" clip-path="url(#clipPath2)" stroke="none"/>
     </g>
     <g text-rendering="geometricPrecision" stroke-miterlimit="1.45" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,454,414)" stroke-linecap="butt">
-      <rect fill="none" x="470.3647" width="246.5" height="40" y="-250.2599" clip-path="url(#clipPath2)"/>
-      <text x="562.6088" font-size="10px" y="-232.6183" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none" xml:space="preserve">ADDITIONAL</text>
-      <text x="558.6196" font-size="10px" y="-220.9777" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none" xml:space="preserve">VERIFICATION</text>
+      <rect fill="none" x="593.6147" width="123.25" height="40" y="-250.2599" clip-path="url(#clipPath2)"/>
+      <text x="624.2338" font-size="10px" y="-232.6183" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none" xml:space="preserve">ADDITIONAL</text>
+      <text x="620.2446" font-size="10px" y="-220.9777" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none" xml:space="preserve">VERIFICATION</text>
     </g>
     <g fill="rgb(255,255,51)" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,454,414)" stroke="rgb(255,255,51)">
       <rect x="717.3732" width="182.7598" height="40" y="-250.2599" clip-path="url(#clipPath2)" stroke="none"/>
@@ -945,6 +945,15 @@
       <text x="782.1125" font-size="10px" y="-226.798" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none" xml:space="preserve">ACCEPTED</text>
       <rect fill="none" x="-438.3886" width="93.75" height="40" y="-250.2599" clip-path="url(#clipPath2)"/>
       <text x="-405.8642" font-size="10px" y="-226.798" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none" xml:space="preserve">state:</text>
+    </g>
+    <g fill="rgb(51,204,255)" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,454,414)" stroke="rgb(51,204,255)">
+      <rect x="470.3647" width="123.25" height="40" y="-250.2599" clip-path="url(#clipPath2)" stroke="none"/>
+    </g>
+    <g text-rendering="geometricPrecision" stroke-miterlimit="1.45" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,454,414)" stroke-linecap="butt">
+      <rect fill="none" x="470.3647" width="123.25" height="40" y="-250.2599" clip-path="url(#clipPath2)"/>
+      <text x="496.9946" font-size="10px" y="-238.4386" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none" xml:space="preserve">VERIFICATION</text>
+      <text x="521.6943" font-size="10px" y="-226.798" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none" xml:space="preserve">FILE</text>
+      <text x="505.6176" font-size="10px" y="-215.1574" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none" xml:space="preserve">TRANSFER</text>
     </g>
   </g>
 </svg>

@@ -157,20 +157,22 @@
       <path d="M363.5045 1255.238 L369.1295 1241.738 L363.5045 1245.113 L357.8795 1241.738 Z" clip-path="url(#clipPath2)" stroke="none"/>
     </g>
     <g stroke-linecap="butt" font-size="10px" transform="matrix(1,0,0,1,449,-398)" fill="rgb(51,153,255)" text-rendering="geometricPrecision" font-family="'Arial'" shape-rendering="geometricPrecision" stroke="rgb(51,153,255)" font-weight="bold" stroke-miterlimit="1.45">
-      <text x="369.885" xml:space="preserve" y="1087.4595" clip-path="url(#clipPath2)" stroke="none">SubtaskResultsAccepted</text>
+      <text x="369.0897" xml:space="preserve" y="1083.5995" clip-path="url(#clipPath2)" stroke="none">SubtaskResultsResponse</text>
     </g>
     <g font-size="8px" stroke-linecap="butt" transform="matrix(1,0,0,1,449,-398)" text-rendering="geometricPrecision" font-family="monospace" shape-rendering="geometricPrecision" stroke-miterlimit="1.45">
-      <text x="368.2317" xml:space="preserve" y="1100.9525" clip-path="url(#clipPath2)" stroke="none">t &lt;= report + SVT + FAT + CMT</text>
+      <text x="370.3102" xml:space="preserve" y="1108.0787" clip-path="url(#clipPath2)" stroke="none">t &lt;= report + SVT + FAT + CMT</text>
+      <text x="371.1053" xml:space="preserve" y="1095.3834" clip-path="url(#clipPath2)" stroke="none">contains SubtaskResultsAccepted</text>
     </g>
     <g stroke-linecap="butt" transform="matrix(1,0,0,1,449,-398)" fill="rgb(204,51,0)" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" stroke="rgb(204,51,0)" stroke-width="2" stroke-miterlimit="1.45">
       <path fill="none" d="M99.2645 963.5386 L99.2645 1005.7736" clip-path="url(#clipPath2)"/>
       <path d="M99.2645 1014.7736 L104.8895 1001.2736 L99.2645 1004.6486 L93.6395 1001.2736 Z" clip-path="url(#clipPath2)" stroke="none"/>
     </g>
     <g stroke-linecap="butt" font-size="10px" transform="matrix(1,0,0,1,449,-398)" fill="rgb(51,153,255)" text-rendering="geometricPrecision" font-family="'Arial'" shape-rendering="geometricPrecision" stroke="rgb(51,153,255)" font-weight="bold" stroke-miterlimit="1.45">
-      <text x="106.4255" xml:space="preserve" y="985.2089" clip-path="url(#clipPath2)" stroke="none">SubtaskResultsRejected</text>
+      <text x="106.4255" xml:space="preserve" y="981.5843" clip-path="url(#clipPath2)" stroke="none">SubtaskResultsResponse</text>
     </g>
     <g font-size="8px" stroke-linecap="butt" transform="matrix(1,0,0,1,449,-398)" text-rendering="geometricPrecision" font-family="monospace" shape-rendering="geometricPrecision" stroke-miterlimit="1.45">
-      <text x="105.8266" xml:space="preserve" y="995.9344" clip-path="url(#clipPath2)" stroke="none">t &lt;= report + SVT + FAT + CMT</text>
+      <text x="105.8266" xml:space="preserve" y="1003.1836" clip-path="url(#clipPath2)" stroke="none">t &lt;= report + SVT + FAT + CMT</text>
+      <text x="105.4524" xml:space="preserve" y="991.7444" clip-path="url(#clipPath2)" stroke="none">contains SubtaskResultsRejected</text>
       <path fill="none" d="M-366.8832 482.7214 L-366.8832 1182.8242 L29.9248 1182.8242" clip-path="url(#clipPath2)"/>
       <path d="M37.9248 1182.8242 L25.9248 1177.8242 L28.9248 1182.8242 L25.9248 1187.8242 Z" stroke="none" clip-path="url(#clipPath2)"/>
     </g>
@@ -235,6 +237,14 @@
       <text x="12.7198" xml:space="preserve" y="1221.6823" clip-path="url(#clipPath2)" stroke="none">all files uploaded</text>
       <text x="-0.6595" font-size="8px" y="1233.7263" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">t &lt; rejection + AVCT</text>
     </g>
+    <g stroke-linecap="butt" transform="matrix(1,0,0,1,449,-398)" fill="rgb(0,204,0)" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" stroke="rgb(0,204,0)" stroke-width="2" stroke-miterlimit="1.45">
+      <path fill="none" d="M159.0521 1274.6174 L294.6921 1274.6174" clip-path="url(#clipPath2)"/>
+      <path d="M303.6921 1274.6174 L290.1921 1268.9924 L293.5671 1274.6174 L290.1921 1280.2424 Z" clip-path="url(#clipPath2)" stroke="none"/>
+    </g>
+    <g font-size="10px" stroke-linecap="butt" transform="matrix(1,0,0,1,449,-398)" text-rendering="geometricPrecision" font-family="'Arial'" shape-rendering="geometricPrecision" font-weight="bold" stroke-miterlimit="1.45">
+      <text x="166.3645" xml:space="preserve" y="1252.8843" clip-path="url(#clipPath2)" stroke="none">verification successful</text>
+      <text x="158.8713" font-size="8px" y="1266.587" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">t &lt; rejection + AVCT + SVT</text>
+    </g>
     <g stroke-linecap="butt" transform="matrix(1,0,0,1,449,-398)" fill="rgb(204,51,0)" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" stroke="rgb(204,51,0)" stroke-width="2" stroke-miterlimit="1.45">
       <path fill="none" d="M99.2645 1324.2086 L99.2645 1408.2744 L510.9017 1408.2744" clip-path="url(#clipPath2)"/>
       <path d="M519.9017 1408.2744 L506.4017 1402.6494 L509.7767 1408.2744 L506.4017 1413.8994 Z" clip-path="url(#clipPath2)" stroke="none"/>
@@ -250,14 +260,6 @@
     <g font-size="10px" stroke-linecap="butt" transform="matrix(1,0,0,1,449,-398)" text-rendering="geometricPrecision" font-family="'Arial'" shape-rendering="geometricPrecision" font-weight="bold" stroke-miterlimit="1.45">
       <text x="203.7303" xml:space="preserve" y="1323.9753" clip-path="url(#clipPath2)" stroke="none">timeout</text>
       <text x="169.2713" font-size="8px" y="1336.8782" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">t = rejection + AVCT + SVT</text>
-    </g>
-    <g stroke-linecap="butt" transform="matrix(1,0,0,1,449,-398)" fill="rgb(0,204,0)" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" stroke="rgb(0,204,0)" stroke-width="2" stroke-miterlimit="1.45">
-      <path fill="none" d="M159.0521 1274.6174 L294.6921 1274.6174" clip-path="url(#clipPath2)"/>
-      <path d="M303.6921 1274.6174 L290.1921 1268.9924 L293.5671 1274.6174 L290.1921 1280.2424 Z" clip-path="url(#clipPath2)" stroke="none"/>
-    </g>
-    <g font-size="10px" stroke-linecap="butt" transform="matrix(1,0,0,1,449,-398)" text-rendering="geometricPrecision" font-family="'Arial'" shape-rendering="geometricPrecision" font-weight="bold" stroke-miterlimit="1.45">
-      <text x="166.3645" xml:space="preserve" y="1252.8843" clip-path="url(#clipPath2)" stroke="none">verification successful</text>
-      <text x="158.8713" font-size="8px" y="1266.587" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">t &lt; rejection + AVCT + SVT</text>
     </g>
   </g>
 </svg>

@@ -34,3 +34,4 @@ class GatekeeperAccessDeniedResponseTest(TestCase):
         self.assertEqual(response_body["message"], self.message)
         self.assertEqual(response_body["path_to_file"], self.path)
         self.assertEqual(response_body["client_key"], self.client_key)
+        self.assertEqual(response_body["error_code"], ErrorCode.HEADER_AUTHORIZATION_MISSING.value)

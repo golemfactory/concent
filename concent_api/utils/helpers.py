@@ -4,7 +4,10 @@ import binascii
 import datetime
 import time
 
-from django.utils import timezone
+from django.utils                   import timezone
+
+from golem_messages                 import message
+from golem_messages.datastructures  import FrozenDict
 
 
 def is_base64(data: str) -> bool:
@@ -46,3 +49,30 @@ def parse_datetime_to_timestamp(date_time: datetime.datetime) -> int:
         return int(date_time.replace(tzinfo = timezone.utc).timestamp())
     else:
         return int(date_time.astimezone(timezone.utc).timestamp())
+
+
+def get_field_from_message(golem_message: message.base.Message, field_name: str) -> str:
+    """
+    Returns field value with given field name nested inside given Golem Message or FrozenDict
+    by checking recursively from top to bottom.
+
+    Returns None if field is not available.
+    """
+
+    def check_task_id(golem_message):
+        assert isinstance(golem_message, (message.base.Message, FrozenDict))
+        if isinstance(golem_message, FrozenDict):
+            if field_name in golem_message:
+                return golem_message[field_name]
+            else:
+                return None
+        elif hasattr(golem_message, field_name):
+            return getattr(golem_message, field_name)
+        for slot in golem_message.__slots__:
+            if isinstance(getattr(golem_message, slot), (message.base.Message, FrozenDict)):
+                task_id = check_task_id(getattr(golem_message, slot))
+                if task_id is not None:
+                    return task_id
+        return None
+
+    return check_task_id(golem_message)

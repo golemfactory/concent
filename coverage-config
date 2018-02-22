@@ -1,8 +1,8 @@
 # .coveragerc to control coverage.py
 [run]
 omit=
-    api-integration-test.py
-    api-test.py
+    api-integration-*-test.py
+    api_testing_helpers.py
     manage.py
     */__init__.py
     */admin.py

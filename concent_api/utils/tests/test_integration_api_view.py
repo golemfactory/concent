@@ -8,7 +8,8 @@ from golem_messages.cryptography    import ecdsa_verify
 from golem_messages.shortcuts       import dump
 from golem_messages                 import message
 
-from utils.testing_helpers  import generate_ecc_key_pair
+from utils.constants                import ErrorCode
+from utils.testing_helpers          import generate_ecc_key_pair
 
 
 (CONCENT_PRIVATE_KEY,   CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
@@ -39,7 +40,9 @@ class ApiViewsIntegrationTest(TestCase):
         )
 
         self.assertEqual(response.status_code,  400)
-        self.assertIn('error', response.json().keys())
+        self.assertIn('error',                          response.json())
+        self.assertIn('error_code',                     response.json())
+        self.assertEqual(response.json()['error_code'], ErrorCode.HEADER_CLIENT_PUBLIC_KEY_MISSING.value)
 
     def test_any_message_to_concent_report_bad_key_returns_400_error(self):
         """
@@ -55,7 +58,9 @@ class ApiViewsIntegrationTest(TestCase):
         )
 
         self.assertEqual(response.status_code,  400)
-        self.assertIn('error', response.json().keys())
+        self.assertIn('error',                          response.json())
+        self.assertIn('error_code',                     response.json())
+        self.assertEqual(response.json()['error_code'], ErrorCode.HEADER_CLIENT_PUBLIC_KEY_NOT_BASE64_ENCODED_VALUE.value)
 
     def test_any_message_to_concent_report_truncated_key_returns_400_error(self):
         """
@@ -71,7 +76,9 @@ class ApiViewsIntegrationTest(TestCase):
         )
 
         self.assertEqual(response.status_code, 400)
-        self.assertIn('error', response.json().keys())
+        self.assertIn('error',                          response.json())
+        self.assertIn('error_code',                     response.json())
+        self.assertEqual(response.json()['error_code'], ErrorCode.HEADER_CLIENT_PUBLIC_KEY_WRONG_LENGTH.value)
 
     def test_any_message_to_concent_report_empty_key_returns_400_error(self):
         """
@@ -87,7 +94,9 @@ class ApiViewsIntegrationTest(TestCase):
         )
 
         self.assertEqual(response.status_code, 400)
-        self.assertIn('error', response.json().keys())
+        self.assertIn('error',                          response.json())
+        self.assertIn('error_code',                     response.json())
+        self.assertEqual(response.json()['error_code'], ErrorCode.HEADER_CLIENT_PUBLIC_KEY_MISSING.value)
 
     def test_any_message_to_concent_report_empty_content_type_returns_400_error(self):
         """
@@ -103,7 +112,9 @@ class ApiViewsIntegrationTest(TestCase):
         )
 
         self.assertEqual(response.status_code,  400)
-        self.assertIn('error', response.json().keys())
+        self.assertIn('error',                          response.json())
+        self.assertIn('error_code',                     response.json())
+        self.assertEqual(response.json()['error_code'], ErrorCode.HEADER_CONTENT_TYPE_MISSING.value)
 
     def test_any_message_to_concent_report_wrong_signature_returns_400_error(self):
         """
@@ -119,4 +130,6 @@ class ApiViewsIntegrationTest(TestCase):
         )
 
         self.assertEqual(response.status_code, 400)
-        self.assertIn('error', response.json().keys())
+        self.assertIn('error',                          response.json())
+        self.assertIn('error_code',                     response.json())
+        self.assertEqual(response.json()['error_code'], ErrorCode.MESSAGE_FAILED_TO_DECODE.value)

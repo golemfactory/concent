@@ -147,9 +147,12 @@ class ConcentIntegrationTestCase(TestCase):
         self.assertEqual(response.status_code, 204)
         self.assertEqual(len(response.content), 0)
 
-    def _test_400_response(self, response):
+    def _test_400_response(self, response, error_code = None):
         self.assertEqual(response.status_code, 400)
-        self.assertIn('error', response.json().keys())
+        self.assertIn('error', response.json())
+        if error_code is not None:
+            self.assertIn('error_code', response.json())
+            self.assertEqual(response.json()['error_code'], error_code.value)
 
     def _test_response(self, response, status, key, message_type = None, fields = None):
         self.assertEqual(response.status_code, status)

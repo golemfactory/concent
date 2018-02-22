@@ -19,6 +19,7 @@ from golem_messages.message         import Message as GolemMessage
 from core.models                    import StoredMessage
 from core.models                    import MessageAuth
 from core.models                    import ReceiveStatus
+from utils.constants                import ErrorCode
 from utils.helpers                  import get_current_utc_timestamp
 from utils.testing_helpers          import generate_ecc_key_pair
 
@@ -191,8 +192,10 @@ class CoreViewSendTest(TestCase):
             HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('error', response.json().keys())
+        self.assertEqual(response.status_code,              400)
+        self.assertIn('error',                              response.json())
+        self.assertIn('error_code',                         response.json())
+        self.assertEqual(response.json()['error_code'],     ErrorCode.MESSAGE_TASK_ID_BLANK.value)
 
         data                        = message.ForceReportComputedTask()
         data.report_computed_task   = message.tasks.ReportComputedTask()
@@ -210,8 +213,10 @@ class CoreViewSendTest(TestCase):
             HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('error', response.json().keys())
+        self.assertEqual(response.status_code,              400)
+        self.assertIn('error',                              response.json())
+        self.assertIn('error_code',                         response.json())
+        self.assertEqual(response.json()['error_code'],     ErrorCode.MESSAGE_TASK_ID_BLANK.value)
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_task_id_already_use(self):
@@ -234,7 +239,7 @@ class CoreViewSendTest(TestCase):
         self.correct_golem_data.sig                                         = None
         self.correct_golem_data.report_computed_task.sig                    = None
         self.correct_golem_data.report_computed_task.task_to_compute.sig    = None
-        response_400 = self.client.post(
+        response = self.client.post(
             reverse('core:send'),
             data = dump(
                 self.correct_golem_data,
@@ -246,16 +251,18 @@ class CoreViewSendTest(TestCase):
             HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
-        self.assertIsInstance(response_400, JsonResponse)
-        self.assertEqual(response_400.status_code, 400)
-        self.assertIn('error', response_400.json().keys())
+        self.assertIsInstance(response,                     JsonResponse)
+        self.assertEqual(response.status_code,              400)
+        self.assertIn('error',                              response.json())
+        self.assertIn('error_code',                         response.json())
+        self.assertEqual(response.json()['error_code'],     ErrorCode.QUEUE_MESSAGE_ALREADY_PROCESSED.value)
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_get_invalid_type_of_message(self):
 
         assert isinstance(self.want_to_compute, message.Message)
 
-        response_400 = self.client.post(
+        response = self.client.post(
             reverse('core:send'),
             data = dump(
                 self.want_to_compute,
@@ -266,8 +273,10 @@ class CoreViewSendTest(TestCase):
             HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         )
 
-        self.assertEqual(response_400.status_code, 400)
-        self.assertIn('error', response_400.json().keys())
+        self.assertEqual(response.status_code,              400)
+        self.assertIn('error',                              response.json())
+        self.assertIn('error_code',                         response.json())
+        self.assertEqual(response.json()['error_code'],     ErrorCode.MESSAGE_UNEXPECTED.value)
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_task_to_compute_deadline_exceeded(self):
@@ -286,7 +295,7 @@ class CoreViewSendTest(TestCase):
         ack_report_computed_task = message.AckReportComputedTask()
         ack_report_computed_task.task_to_compute = deserialized_task_to_compute
 
-        response_400 = self.client.post(
+        response = self.client.post(
             reverse('core:send'),
             data = dump(
                 ack_report_computed_task,
@@ -297,8 +306,10 @@ class CoreViewSendTest(TestCase):
             HTTP_CONCENT_CLIENT_PUBLIC_KEY  = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         )
 
-        self.assertEqual(response_400.status_code, 400)
-        self.assertIn('error', response_400.json().keys())
+        self.assertEqual(response.status_code,              400)
+        self.assertIn('error',                              response.json())
+        self.assertIn('error_code',                         response.json())
+        self.assertEqual(response.json()['error_code'],     ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED.value)
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_reject_message_save_as_receive_out_of_band_status(self):
@@ -352,7 +363,9 @@ class CoreViewSendTest(TestCase):
             )
 
         self.assertEqual(response.status_code, 400)
-        self.assertIn('error', response.json().keys())
+        self.assertIn('error',                              response.json())
+        self.assertIn('error_code',                         response.json())
+        self.assertEqual(response.json()['error_code'],     ErrorCode.MESSAGE_TIMESTAMP_TOO_OLD.value)
 
     def test_send_should_reject_message_when_timestamp_too_far_in_future(self):
         with freeze_time("2017-11-17 10:10:00"):
@@ -373,7 +386,9 @@ class CoreViewSendTest(TestCase):
             )
 
         self.assertEqual(response.status_code, 400)
-        self.assertIn('error', response.json().keys())
+        self.assertIn('error',                              response.json())
+        self.assertIn('error_code',                         response.json())
+        self.assertEqual(response.json()['error_code'],     ErrorCode.MESSAGE_TIMESTAMP_TOO_FAR_IN_FUTURE.value)
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_task_to_compute_deadline_is_not_an_integer(self):
@@ -406,19 +421,22 @@ class CoreViewSendTest(TestCase):
                     )
                 )
 
-                response_400 = self.client.post(
+                response = self.client.post(
                     reverse('core:send'),
-                    data=dump(
+                    data                                = dump(
                         force_report_computed_task,
                         PROVIDER_PRIVATE_KEY,
                         CONCENT_PUBLIC_KEY
                     ),
-                    content_type = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                    content_type                        = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
                 )
 
-            self.assertEqual(response_400.status_code, 400)
-            self.assertIn('error', response_400.json().keys())
+            self.assertEqual(response.status_code,              400)
+            self.assertIn('error',                              response.json())
+            self.assertIn('error_code',                         response.json())
+            self.assertEqual(response.json()['error_code'],     ErrorCode.MESSAGE_VALUE_NOT_INTEGER.value)
 
     def test_send_should_return_http_202_if_task_to_compute_deadline_is_correct(self):
         compute_task_def = message.ComputeTaskDef()

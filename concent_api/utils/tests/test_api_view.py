@@ -7,6 +7,7 @@ from golem_messages.message import WantToComputeTask
 from golem_messages         import dump, load
 
 from utils.api_view         import api_view
+from utils.constants        import ErrorCode
 from utils.testing_helpers  import generate_ecc_key_pair
 
 
@@ -99,7 +100,9 @@ class ApiViewTestCase(TestCase):
         json_response = json.loads(response.content.decode())                   # pylint: disable=no-member
 
         self.assertEqual(response.status_code, 415)                             # pylint: disable=no-member
-        self.assertIn('error', json_response)
+        self.assertIn('error',                          json_response)
+        self.assertIn('error_code',                     json_response)
+        self.assertEqual(json_response['error_code'],   ErrorCode.HEADER_CONTENT_TYPE_NOT_SUPPORTED.value)
 
     def test_api_view_should_return_http_415_when_request_content_type_is_appplication_json(self):
 
@@ -112,8 +115,13 @@ class ApiViewTestCase(TestCase):
 
         response = dummy_view(request)                                          # pylint: disable=no-value-for-parameter
 
+        json_response = json.loads(response.content.decode())                   # pylint: disable=no-member
+
         self.assertEqual(response['content-type'], "application/json")
         self.assertEqual(response.status_code, 415)                             # pylint: disable=no-member
+        self.assertIn('error',                           json_response)
+        self.assertIn('error_code',                      json_response)
+        self.assertEqual(json_response['error_code'],  ErrorCode.HEADER_CONTENT_TYPE_NOT_SUPPORTED.value)
 
 
 def message_to_dict(message_from_view):

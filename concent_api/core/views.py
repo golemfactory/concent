@@ -14,6 +14,7 @@ from golem_messages.datastructures  import MessageHeader
 from golem_messages.exceptions      import MessageError
 
 from core                           import exceptions
+from core.payments.mock             import MockedPayments
 from gatekeeper.constants           import GATEKEEPER_DOWNLOAD_PATH
 from utils                          import logging
 from utils.api_view                 import api_view
@@ -665,10 +666,6 @@ def verify_message_subtask_results_accepted(subtask_results_accepted_list):
     return bool(verify_public_key is True and verify_ethereum_public_key is True)
 
 
-def sum_payments(list_of_payments):
-    return sum([item.price for item in list_of_payments])
-
-
 def handle_send_force_payment(request, client_message):
     client_public_key       = decode_client_public_key(request)
     other_party_public_key  = decode_other_party_public_key(request)
@@ -684,7 +681,7 @@ def handle_send_force_payment(request, client_message):
     oldest_payments_ts = min(subtask_results_accepted.payment_ts for subtask_results_accepted in client_message.subtask_results_accepted_list)
 
     # Concent gets list of transactions from payment API where timestamp >= T0.
-    list_of_transactions = _get_list_of_transactions(T0, current_time, request)
+    list_of_transactions = MockedPayments.get_list_of_transactions(current_time = current_time, request = request)
 
     # Concent defines time T1 equal to youngest timestamp from list of transactions.
     youngest_transaction = max(transaction['timestamp'] for transaction in list_of_transactions)
@@ -701,9 +698,9 @@ def handle_send_force_payment(request, client_message):
         )
 
     # Concent gets list of list of forced payments from payment API where T0 <= payment_ts + PAYMENT_DUE_TIME + PAYMENT_GRACE_PERIOD.
-    list_of_forced_payments = _get_forced_payments(oldest_payments_ts, requestor_ethereum_public_key, client_public_key)
+    list_of_forced_payments = MockedPayments.get_forced_payments(oldest_payments_ts, requestor_ethereum_public_key, client_public_key, request = request)
 
-    sum_of_payments = payment_summary(client_message.subtask_results_accepted_list, list_of_transactions, list_of_forced_payments, request)
+    sum_of_payments = MockedPayments.payment_summary(request = request, subtask_results_accepted_list = client_message.subtask_results_accepted_list, list_of_transactions = list_of_transactions, list_of_forced_payments = list_of_forced_payments)
 
     # Concent defines time T2 (end time) equal to youngest payment_ts from passed SubtaskResultAccepted messages from subtask_results_accepted_list.
     min(subtask_results_accepted.payment_ts for subtask_results_accepted in client_message.subtask_results_accepted_list)
@@ -713,7 +710,7 @@ def handle_send_force_payment(request, client_message):
             reason = message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound
         )
     elif sum_of_payments > 0:
-        _make_payment_to_provider(sum_of_payments, requestor_ethereum_public_key, client_public_key)
+        MockedPayments.make_payment_to_provider(sum_of_payments, requestor_ethereum_public_key, client_public_key)
         provider_force_payment_commited = message.concents.ForcePaymentCommitted(
             payment_ts              = current_time + 60,
             task_owner_key          = requestor_ethereum_public_key,
@@ -733,45 +730,6 @@ def handle_send_force_payment(request, client_message):
 
         provider_force_payment_commited.sig = None
         return provider_force_payment_commited
-
-
-def payment_summary(subtask_results_accepted_list, list_of_transactions, list_of_forced_payments, request):
-    sum_of_payments_from_subtask_results_accepted   = sum_payments(subtask_results_accepted_list)
-    sum_of_payments_from_list_of_transactions       = sum_payments(list_of_transactions)
-    sum_of_payments_from_list_of_force_payments     = sum_payments(list_of_forced_payments)
-    if 'HTTP_TEMPORARY_V' in request.META:
-        return int(request.META['HTTP_TEMPORARY_V'])
-
-    return sum_of_payments_from_subtask_results_accepted - sum_of_payments_from_list_of_transactions - sum_of_payments_from_list_of_force_payments
-
-
-def _get_list_of_transactions(_T0, current_time, request):
-    '''
-    Function which return list of transactions from payment API
-    where timestamp >= T0
-    '''
-    if 'HTTP_TEMPORARY_LIST_OF_TRANSACTIONS' in request.META:
-        if bool(request.META['HTTP_TEMPORARY_LIST_OF_TRANSACTIONS']):
-            return [{'timestamp': current_time - 3700}, {'timestamp': current_time - 3800}, {'timestamp': current_time - 3900}]
-        else:
-            return [{'timestamp': current_time - 22}, {'timestamp': current_time - 23}, {'timestamp': current_time - 24}]
-    return True
-
-
-def _get_forced_payments(_T0, _requestor_ethereum_public_key, _provider_ethereum_public_key):
-    '''
-    Function which return list of forced paysments from payment API
-    where t0 <= payment_ts + PAYMENT_DUE_TIME + PAYMENT_GRACE_PERIOD
-    '''
-    return True
-
-
-def _make_payment_to_provider(_V, _requestor_ethereum_public_key, _provider_ethereum_public_key):
-    '''
-    Concent makes transaction from requestor's deposit to provider's account on amount V.
-    If there is less then V on requestor's deposit, Concent transfers as much as possible.
-    '''
-    return True
 
 
 def handle_unsupported_golem_messages_type(client_message):

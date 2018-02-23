@@ -210,6 +210,15 @@ TOKEN_EXPIRATION_DEADLINE = 1800  # 30 minutes
 # A global constant defining the length of the time window within which a requestor can verify subtask.
 SUBTASK_VERIFICATION_TIME = 4 * 3600  # 4 hours
 
+# A global constant defining the lenght of the time window within which a requestor must pay
+PAYMENT_DUE_TIME = 12 * 3600  # 12 hours
+
+# A global constant defining the length of the time which a provider must wait before enforcing payment
+PAYMENT_GRACE_PERIOD = 1800   # 30 minutes
+
+# A global constant defining currently used payment backend.
+PAYMENT_BACKEND = 'core.payments.mock'
+
 # Which components of this Django application should be enabled in this particular server instance.
 # The application is basically a bunch of services with totally different responsibilites that share a lot of code.
 # In a typical setup each instance has only one or two features enabled. Some of them provide public APIs, others are

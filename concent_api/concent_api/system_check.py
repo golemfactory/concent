@@ -1,3 +1,5 @@
+import importlib
+
 from django.core.checks     import Error
 from django.core.checks     import Warning  # pylint: disable=redefined-builtin
 from django.core.checks     import register
@@ -63,5 +65,29 @@ def check_settings_storage_cluster_address(app_configs, **kwargs):  # pylint: di
                 hint = '{}'.format(error),
                 id   = 'concent.E011',
             )]
+
+    return []
+
+
+@register()
+def check_payment_backend(app_configs, **kwargs):  # pylint: disable=unused-argument
+    if 'concent-api' in settings.CONCENT_FEATURES and (
+        not hasattr(settings, 'PAYMENT_BACKEND') or
+        settings.PAYMENT_BACKEND in [None, '']
+    ):
+        return [Error(
+            'PAYMENT_BACKEND setting is not defined',
+            hint = 'Set PAYMENT_BACKEND in your local_settings.py to the python module realizing payment API.',
+            id   = 'concent.E012',
+        )]
+
+    try:
+        importlib.import_module(settings.PAYMENT_BACKEND)
+    except ImportError as error:
+        return [Error(
+            'PAYMENT_BACKEND settings is not a valid python module',
+            hint = '{}'.format(error),
+            id   = 'concent.E011',
+        )]
 
     return []

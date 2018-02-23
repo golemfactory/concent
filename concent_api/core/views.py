@@ -14,6 +14,7 @@ from golem_messages.datastructures  import MessageHeader
 from golem_messages.exceptions      import MessageError
 
 from core                           import exceptions
+from core.payments                  import base
 from gatekeeper.constants           import GATEKEEPER_DOWNLOAD_PATH
 from utils                          import logging
 from utils.api_view                 import api_view
@@ -54,6 +55,9 @@ def send(request, client_message):
         (client_message.subtask_results_accepted is not None or client_message.subtask_results_rejected is not None)
     ):
         return handle_send_force_subtask_results_response(request, client_message)
+
+    elif isinstance(client_message, message.concents.ForcePayment):
+        return handle_send_force_payment(request, client_message)
 
     else:
         return handle_unsupported_golem_messages_type(client_message)
@@ -272,7 +276,6 @@ def receive_out_of_band(request, _message):
         auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
     ).order_by('timestamp').last()
     current_time = get_current_utc_timestamp()
-
     if last_undelivered_receive_out_of_band_status is None:
         if last_undelivered_receive_status is None:
             return None
@@ -290,6 +293,9 @@ def receive_out_of_band(request, _message):
 
             elif isinstance(decoded_message.reject_report_computed_task, message.concents.RejectReportComputedTask):
                 return handle_receive_out_of_band_reject_report_computed_task(request, last_undelivered_receive_status)
+
+        if last_undelivered_receive_status.type == message.concents.ForcePaymentCommitted.TYPE:
+            return handle_receive_out_of_band_force_payment_commited(request, last_undelivered_receive_status)
 
         last_receive_status = ReceiveStatus.objects.filter(
             message__auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
@@ -540,7 +546,7 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
 def handle_send_force_subtask_results(request, client_message: message.concents.ForceSubtaskResults):
     assert isinstance(client_message, message.concents.ForceSubtaskResults)
 
-    current_time           = int(datetime.datetime.now().timestamp())
+    current_time           = get_current_utc_timestamp()
     client_public_key      = decode_client_public_key(request)
     other_party_public_key = decode_other_party_public_key(request)
 
@@ -599,7 +605,7 @@ def handle_send_force_subtask_results(request, client_message: message.concents.
 def handle_send_force_subtask_results_response(request, client_message):
     assert isinstance(client_message, message.concents.ForceSubtaskResultsResponse)
 
-    current_time      = int(datetime.datetime.now().timestamp())
+    current_time      = get_current_utc_timestamp()
     client_public_key = decode_client_public_key(request)
 
     if isinstance(client_message.subtask_results_accepted, message.tasks.SubtaskResultsAccepted):
@@ -651,6 +657,82 @@ def handle_send_force_subtask_results_response(request, client_message):
         client_public_key,
     )
     return HttpResponse("", status = 202)
+
+
+def verify_message_subtask_results_accepted(subtask_results_accepted_list: dict) -> bool:
+    """
+    function verify if all requestor public key and ethereum public key
+    in subtask_reesults_accepted_list are the same
+    """
+    verify_public_key           = len(set(subtask_results_accepted.task_to_compute.requestor_public_key             for subtask_results_accepted in subtask_results_accepted_list)) == 1
+    verify_ethereum_public_key  = len(set(subtask_results_accepted.task_to_compute.requestor_ethereum_public_key    for subtask_results_accepted in subtask_results_accepted_list)) == 1
+    return bool(verify_public_key is True and verify_ethereum_public_key is True)
+
+
+def handle_send_force_payment(request, client_message: message.concents.ForcePayment) -> message.concents.ForcePaymentCommitted:  # pylint: disable=inconsistent-return-statements
+    client_public_key       = decode_client_public_key(request)
+    other_party_public_key  = decode_other_party_public_key(request)
+    current_time            = get_current_utc_timestamp()
+
+    if not verify_message_subtask_results_accepted(client_message.subtask_results_accepted_list):
+        return message.concents.ServiceRefused(
+            reason = message.concents.ServiceRefused.REASON.InvalidRequest
+        )
+    requestor_ethereum_public_key = client_message.subtask_results_accepted_list[0].task_to_compute.requestor_ethereum_public_key
+
+    # Concent defines time T0 equal to oldest payment_ts from passed SubtaskResultAccepted messages from subtask_results_accepted_list.
+    oldest_payments_ts = min(subtask_results_accepted.payment_ts for subtask_results_accepted in client_message.subtask_results_accepted_list)
+
+    # Concent gets list of transactions from payment API where timestamp >= T0.
+    list_of_transactions = base.get_list_of_transactions(current_time = current_time, request = request)  # pylint: disable=no-value-for-parameter
+
+    # Concent defines time T1 equal to youngest timestamp from list of transactions.
+    youngest_transaction = max(transaction['timestamp'] for transaction in list_of_transactions)
+
+    # Concent checks if all passed SubtaskResultAccepted messages from subtask_results_accepted_list have payment_ts < T1
+    T1_is_bigger_than_payments_ts = any(youngest_transaction > subtask_results_accepted.payment_ts for subtask_results_accepted in client_message.subtask_results_accepted_list)
+
+    # Any of the items from list of overdue acceptances matches condition current_time < payment_ts + PAYMENT_DUE_TIME + PAYMENT_GRACE_PERIOD.
+    acceptance_time_overdue = any(current_time < subtask_results_accepted.payment_ts + settings.PAYMENT_DUE_TIME + settings.PAYMENT_GRACE_PERIOD for subtask_results_accepted in client_message.subtask_results_accepted_list)
+
+    if T1_is_bigger_than_payments_ts or acceptance_time_overdue:
+        return message.concents.ForcePaymentRejected(
+            reason = message.concents.ForcePaymentRejected.REASON.TimestampError
+        )
+
+    # Concent gets list of list of forced payments from payment API where T0 <= payment_ts + PAYMENT_DUE_TIME + PAYMENT_GRACE_PERIOD.
+    list_of_forced_payments = base.get_forced_payments(oldest_payments_ts, requestor_ethereum_public_key, client_public_key, request = request)
+
+    sum_of_payments = base.payment_summary(request = request, subtask_results_accepted_list = client_message.subtask_results_accepted_list, list_of_transactions = list_of_transactions, list_of_forced_payments = list_of_forced_payments)  # pylint: disable=no-value-for-parameter
+
+    # Concent defines time T2 (end time) equal to youngest payment_ts from passed SubtaskResultAccepted messages from subtask_results_accepted_list.
+    payment_ts = min(subtask_results_accepted.payment_ts for subtask_results_accepted in client_message.subtask_results_accepted_list)
+
+    if sum_of_payments <= 0:
+        return message.concents.ForcePaymentRejected(
+            reason = message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound
+        )
+    elif sum_of_payments > 0:
+        base.make_payment_to_provider(sum_of_payments, payment_ts, requestor_ethereum_public_key, client_public_key)
+        provider_force_payment_commited = message.concents.ForcePaymentCommitted(
+            payment_ts              = payment_ts,
+            task_owner_key          = requestor_ethereum_public_key,
+            provider_eth_account    = client_public_key,
+            amount_paid             = 10.99,
+            amount_pending          = 0.01,
+            recipient_type          = message.concents.ForcePaymentCommitted.Actor.Provider,
+        )
+
+        store_message_and_message_status(
+            provider_force_payment_commited.TYPE,
+            None,
+            provider_force_payment_commited.serialize(),
+            provider_public_key     = client_public_key,
+            requestor_public_key    = other_party_public_key,
+        )
+
+        provider_force_payment_commited.sig = None
+        return provider_force_payment_commited
 
 
 def handle_unsupported_golem_messages_type(client_message):
@@ -1001,6 +1083,42 @@ def handle_receive_out_of_band_reject_report_computed_task(request, undelivered_
     )
     message_verdict.sig = None
     return message_verdict
+
+
+def handle_receive_out_of_band_force_payment_commited(request, undelivered_message):
+    client_public_key = decode_client_public_key(request)
+
+    decoded_force_payment_commited  = deserialize_message(undelivered_message.data.tobytes())
+    last_force_payment              = ReceiveOutOfBandStatus.objects.filter(
+        delivered       = True,
+        message__type   = undelivered_message.type,
+    ).order_by('timestamp')
+    if last_force_payment.exists():
+        for force_payment_message in last_force_payment:
+            payment_ts = deserialize_message(force_payment_message.message.data.tobytes()).payment_ts
+            if decoded_force_payment_commited.payment_ts == payment_ts:
+                return None
+
+    requestor_force_payment_commited = message.concents.ForcePaymentCommitted(
+        payment_ts              = decoded_force_payment_commited.payment_ts,
+        task_owner_key          = decoded_force_payment_commited.task_owner_key,
+        provider_eth_account    = decoded_force_payment_commited.provider_eth_account,
+        amount_paid             = decoded_force_payment_commited.amount_paid,
+        amount_pending          = decoded_force_payment_commited.amount_pending,
+        recipient_type          = message.concents.ForcePaymentCommitted.Actor.Requestor,
+    )
+
+    store_message_and_message_status(
+        requestor_force_payment_commited.TYPE,
+        None,
+        requestor_force_payment_commited.serialize(),
+        status                  = ReceiveOutOfBandStatus,
+        delivered               = True,
+        provider_public_key     = undelivered_message.auth.provider_public_key_bytes,
+        requestor_public_key    = client_public_key,
+    )
+    requestor_force_payment_commited.sig = None
+    return requestor_force_payment_commited
 
 
 def deserialize_message(raw_message_data):

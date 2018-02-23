@@ -14,7 +14,7 @@ from golem_messages.datastructures  import MessageHeader
 from golem_messages.exceptions      import MessageError
 
 from core                           import exceptions
-from core.payments.mock             import MockedPayments
+from core.payments                  import base
 from gatekeeper.constants           import GATEKEEPER_DOWNLOAD_PATH
 from utils                          import logging
 from utils.api_view                 import api_view
@@ -276,7 +276,6 @@ def receive_out_of_band(request, _message):
         auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
     ).order_by('timestamp').last()
     current_time = get_current_utc_timestamp()
-
     if last_undelivered_receive_out_of_band_status is None:
         if last_undelivered_receive_status is None:
             return None
@@ -660,13 +659,17 @@ def handle_send_force_subtask_results_response(request, client_message):
     return HttpResponse("", status = 202)
 
 
-def verify_message_subtask_results_accepted(subtask_results_accepted_list):
+def verify_message_subtask_results_accepted(subtask_results_accepted_list: dict) -> bool:
+    """
+    function verify if all requestor public key and ethereum public key
+    in subtask_reesults_accepted_list are the same
+    """
     verify_public_key           = len(set(subtask_results_accepted.task_to_compute.requestor_public_key             for subtask_results_accepted in subtask_results_accepted_list)) == 1
     verify_ethereum_public_key  = len(set(subtask_results_accepted.task_to_compute.requestor_ethereum_public_key    for subtask_results_accepted in subtask_results_accepted_list)) == 1
     return bool(verify_public_key is True and verify_ethereum_public_key is True)
 
 
-def handle_send_force_payment(request, client_message):
+def handle_send_force_payment(request, client_message: message.concents.ForcePayment) -> message.concents.ForcePaymentCommitted:  # pylint: disable=inconsistent-return-statements
     client_public_key       = decode_client_public_key(request)
     other_party_public_key  = decode_other_party_public_key(request)
     current_time            = get_current_utc_timestamp()
@@ -681,7 +684,7 @@ def handle_send_force_payment(request, client_message):
     oldest_payments_ts = min(subtask_results_accepted.payment_ts for subtask_results_accepted in client_message.subtask_results_accepted_list)
 
     # Concent gets list of transactions from payment API where timestamp >= T0.
-    list_of_transactions = MockedPayments.get_list_of_transactions(current_time = current_time, request = request)
+    list_of_transactions = base.get_list_of_transactions(current_time = current_time, request = request)  # pylint: disable=no-value-for-parameter
 
     # Concent defines time T1 equal to youngest timestamp from list of transactions.
     youngest_transaction = max(transaction['timestamp'] for transaction in list_of_transactions)
@@ -698,21 +701,21 @@ def handle_send_force_payment(request, client_message):
         )
 
     # Concent gets list of list of forced payments from payment API where T0 <= payment_ts + PAYMENT_DUE_TIME + PAYMENT_GRACE_PERIOD.
-    list_of_forced_payments = MockedPayments.get_forced_payments(oldest_payments_ts, requestor_ethereum_public_key, client_public_key, request = request)
+    list_of_forced_payments = base.get_forced_payments(oldest_payments_ts, requestor_ethereum_public_key, client_public_key, request = request)
 
-    sum_of_payments = MockedPayments.payment_summary(request = request, subtask_results_accepted_list = client_message.subtask_results_accepted_list, list_of_transactions = list_of_transactions, list_of_forced_payments = list_of_forced_payments)
+    sum_of_payments = base.payment_summary(request = request, subtask_results_accepted_list = client_message.subtask_results_accepted_list, list_of_transactions = list_of_transactions, list_of_forced_payments = list_of_forced_payments)  # pylint: disable=no-value-for-parameter
 
     # Concent defines time T2 (end time) equal to youngest payment_ts from passed SubtaskResultAccepted messages from subtask_results_accepted_list.
-    min(subtask_results_accepted.payment_ts for subtask_results_accepted in client_message.subtask_results_accepted_list)
+    payment_ts = min(subtask_results_accepted.payment_ts for subtask_results_accepted in client_message.subtask_results_accepted_list)
 
     if sum_of_payments <= 0:
         return message.concents.ForcePaymentRejected(
             reason = message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound
         )
     elif sum_of_payments > 0:
-        MockedPayments.make_payment_to_provider(sum_of_payments, requestor_ethereum_public_key, client_public_key)
+        base.make_payment_to_provider(sum_of_payments, payment_ts, requestor_ethereum_public_key, client_public_key)
         provider_force_payment_commited = message.concents.ForcePaymentCommitted(
-            payment_ts              = current_time + 60,
+            payment_ts              = payment_ts,
             task_owner_key          = requestor_ethereum_public_key,
             provider_eth_account    = client_public_key,
             amount_paid             = 10.99,

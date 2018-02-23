@@ -17,6 +17,8 @@ from golem_messages.message         import Message
 from golem_messages                 import dump
 from golem_messages                 import load
 
+from utils                          import logging
+
 
 class Http400(Exception):
     pass
@@ -72,20 +74,37 @@ def api_view(view):
         try:
             response_from_view = view(request, message, *args, **kwargs)
         except Http400 as exception:
+            logging.log_400_error(
+                view.__name__,
+                message,
+                request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+            )
             return JsonResponse({'error': str(exception)}, status = 400)
         if isinstance(response_from_view, Message):
+            logging.log_message_returned(
+                response_from_view,
+                request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+            )
             serialized_message = dump(
                 response_from_view,
                 settings.CONCENT_PRIVATE_KEY,
-                client_public_key
+                client_public_key,
             )
 
             return HttpResponse(serialized_message, content_type = 'application/octet-stream')
         elif isinstance(response_from_view, dict):
             return JsonResponse(response_from_view, safe = False)
         elif isinstance(response_from_view, HttpResponse):
+            logging.log_message_accepted(
+                message,
+                request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+            )
             return response_from_view
         elif response_from_view is None:
+            logging.log_empty_queue(
+                view.__name__,
+                request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+            )
             return HttpResponse("", status = 204)
         elif isinstance(response_from_view, bytes):
             return HttpResponse(response_from_view)

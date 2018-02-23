@@ -53,7 +53,7 @@ def send(request, client_message):
         isinstance(client_message, message.concents.ForceSubtaskResultsResponse) and
         (client_message.subtask_results_accepted is not None or client_message.subtask_results_rejected is not None)
     ):
-        return handle_send_force_subtask_results_results_response(request, client_message)
+        return handle_send_force_subtask_results_response(request, client_message)
 
     else:
         return handle_unsupported_golem_messages_type(client_message)
@@ -596,7 +596,7 @@ def handle_send_force_subtask_results(request, client_message: message.concents.
         return HttpResponse("", status = 202)
 
 
-def handle_send_force_subtask_results_results_response(request, client_message):
+def handle_send_force_subtask_results_response(request, client_message):
     assert isinstance(client_message, message.concents.ForceSubtaskResultsResponse)
 
     current_time      = int(datetime.datetime.now().timestamp())

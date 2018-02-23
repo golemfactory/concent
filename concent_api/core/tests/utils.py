@@ -43,8 +43,20 @@ class ConcentIntegrationTestCase(TestCase):
         return self._get_encoded_key(self.PROVIDER_PUBLIC_KEY)
 
     def _get_encoded_requestor_public_key(self):
-        """ Returns provider public key encoded. """
+        """ Returns requestor public key encoded. """
         return self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY)
+
+    def _get_encoded_requestor_different_public_key(self):
+        """ Returns requestor public key encoded. """
+        return self._get_encoded_key(self.DIFFERENT_REQUESTOR_PUBLIC_KEY)
+
+    def _get_encoded_requestor_ethereum_public_key(self):
+        """ Returns requestor ethereum public key encoded. """
+        return '0x' + self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY)
+
+    def _get_encoded_requestor_ethereum_different_public_key(self):
+        """ Returns requestor ethereum public key encoded. """
+        return '0x' + self._get_encoded_key(self.DIFFERENT_REQUESTOR_PUBLIC_KEY)
 
     def _get_serialized_force_get_task_result(
         self,
@@ -418,6 +430,34 @@ class ConcentIntegrationTestCase(TestCase):
                 requestor_private_key or self.REQUESTOR_PRIVATE_KEY,
                 settings.CONCENT_PUBLIC_KEY
             )
+
+    def _get_deserialized_force_payment(
+        self,
+        timestamp = None,
+        subtask_results_accepted_list = None
+    ):
+        with freeze_time(timestamp or self._get_timestamp_string()):
+            force_payment = message.concents.ForcePayment(
+                subtask_results_accepted_list = subtask_results_accepted_list
+            )
+            return force_payment
+
+    def _get_serialized_force_payment(
+        self,
+        timestamp                       = None,
+        subtask_results_accepted_list   = None,
+        provider_private_key            = None
+    ):
+        with freeze_time(timestamp or self._get_timestamp_string()):
+            force_payment = self._get_deserialized_force_payment(
+                timestamp                       = timestamp,
+                subtask_results_accepted_list   = subtask_results_accepted_list,
+            )
+        return dump(
+            force_payment,
+            provider_private_key or self.PROVIDER_PRIVATE_KEY,
+            settings.CONCENT_PUBLIC_KEY
+        )
 
     def _store_golem_messages_in_database(
         self,

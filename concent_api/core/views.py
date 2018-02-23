@@ -108,7 +108,7 @@ def receive(request, _message):
             last_delivered_message_status.message.auth.provider_public_key_bytes == client_public_key and
             current_time > decoded_message_data.ack_report_computed_task.timestamp + acceptance_deadline
         ):
-            make_forced_payment('provider', 'requestor')
+            base.make_forced_payment('provider', 'requestor')
             return handle_receive_force_subtask_results_settled(
                 decoded_message_data,
                 last_delivered_message_status.message.auth.provider_public_key_bytes,
@@ -559,11 +559,10 @@ def handle_send_force_subtask_results(request, client_message: message.concents.
             reason      = message.concents.ServiceRefused.REASON.DuplicateRequest,
         )
 
-    if not is_provider_account_status_positive(client_message):
-        if not tmp_is_provider_account_status_positive(request):
-            return message.concents.ServiceRefused(
-                reason      = message.concents.ServiceRefused.REASON.TooSmallProviderDeposit,
-            )
+    if not base.is_provider_account_status_positive(request):
+        return message.concents.ServiceRefused(
+            reason      = message.concents.ServiceRefused.REASON.TooSmallProviderDeposit,
+        )
 
     client_message_send_too_soon = client_message.ack_report_computed_task.timestamp + settings.SUBTASK_VERIFICATION_TIME
     client_message_send_too_late = client_message.ack_report_computed_task.timestamp + settings.SUBTASK_VERIFICATION_TIME + settings.FORCE_ACCEPTANCE_TIME
@@ -1278,18 +1277,3 @@ def decode_other_party_public_key(request):
         return decode_key(request.META['HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY'])
     except binascii.Error:
         raise Http400('The value in the Concent-Other-Party-Public-Key HTTP is not a valid base64-encoded value.')
-
-
-def is_provider_account_status_positive(_message):
-    pass
-
-
-def tmp_is_provider_account_status_positive(request):
-    if 'HTTP_TEMPORARY_ACCOUNT_FUNDS' in request.META:
-        return bool(request.META['HTTP_TEMPORARY_ACCOUNT_FUNDS'])
-    else:
-        return False
-
-
-def make_forced_payment(_provider, _requestor):
-    pass

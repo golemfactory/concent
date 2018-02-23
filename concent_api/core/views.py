@@ -294,6 +294,9 @@ def receive_out_of_band(request, _message):
             elif isinstance(decoded_message.reject_report_computed_task, message.concents.RejectReportComputedTask):
                 return handle_receive_out_of_band_reject_report_computed_task(request, last_undelivered_receive_status)
 
+        if last_undelivered_receive_status.type == message.concents.ForcePaymentCommitted.TYPE:
+            return handle_receive_out_of_band_force_payment_commited(request, last_undelivered_receive_status)
+
         last_receive_status = ReceiveStatus.objects.filter(
             message__auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
             message__type = last_undelivered_receive_status.type
@@ -1119,6 +1122,42 @@ def handle_receive_out_of_band_reject_report_computed_task(request, undelivered_
     )
     message_verdict.sig = None
     return message_verdict
+
+
+def handle_receive_out_of_band_force_payment_commited(request, undelivered_message):
+    client_public_key = decode_client_public_key(request)
+
+    decoded_force_payment_commited  = deserialize_message(undelivered_message.data.tobytes())
+    last_force_payment              = ReceiveOutOfBandStatus.objects.filter(
+        delivered       = True,
+        message__type   = undelivered_message.type,
+    ).order_by('timestamp')
+    if last_force_payment.exists():
+        for force_payment_message in last_force_payment:
+            payment_ts = deserialize_message(force_payment_message.message.data.tobytes()).payment_ts
+            if decoded_force_payment_commited.payment_ts == payment_ts:
+                return None
+
+    requestor_force_payment_commited = message.concents.ForcePaymentCommitted(
+        payment_ts              = decoded_force_payment_commited.payment_ts,
+        task_owner_key          = decoded_force_payment_commited.task_owner_key,
+        provider_eth_account    = decoded_force_payment_commited.provider_eth_account,
+        amount_paid             = decoded_force_payment_commited.amount_paid,
+        amount_pending          = decoded_force_payment_commited.amount_pending,
+        recipient_type          = message.concents.ForcePaymentCommitted.Actor.Requestor,
+    )
+
+    store_message_and_message_status(
+        requestor_force_payment_commited.TYPE,
+        None,
+        requestor_force_payment_commited.serialize(),
+        status                  = ReceiveOutOfBandStatus,
+        delivered               = True,
+        provider_public_key     = undelivered_message.auth.provider_public_key_bytes,
+        requestor_public_key    = client_public_key,
+    )
+    requestor_force_payment_commited.sig = None
+    return requestor_force_payment_commited
 
 
 def deserialize_message(raw_message_data):

@@ -3,17 +3,18 @@
 import os
 import sys
 import random
-from base64                 import b64encode
+from base64                         import b64encode
 
-from golem_messages         import dump
-from golem_messages         import load
-from golem_messages.message import AckReportComputedTask
-from golem_messages.message import ComputeTaskDef
-from golem_messages.message import ForceReportComputedTask
-from golem_messages.message import TaskToCompute
+from golem_messages                 import dump
+from golem_messages                 import load
+from golem_messages.message         import AckReportComputedTask
+from golem_messages.message         import ComputeTaskDef
+from golem_messages.message         import ForceReportComputedTask
+from golem_messages.message         import TaskToCompute
+from golem_messages.message.tasks   import ReportComputedTask
 
-from utils.helpers          import get_current_utc_timestamp
-from utils.testing_helpers  import generate_ecc_key_pair
+from utils.helpers                  import get_current_utc_timestamp
+from utils.testing_helpers          import generate_ecc_key_pair
 
 from api_testing_helpers            import api_request
 
@@ -47,8 +48,11 @@ def force_report_computed_task(task_id, provider_private_key, provider_public_ke
     serialized_task_to_compute      = dump(task_to_compute,             requestor_private_key,  provider_public_key)
     deserialized_task_to_compute    = load(serialized_task_to_compute,  provider_private_key,   requestor_public_key, check_time = False)
 
-    force_report_computed_task = ForceReportComputedTask()
-    force_report_computed_task.task_to_compute = deserialized_task_to_compute
+    report_computed_task = ReportComputedTask()
+    report_computed_task.task_to_compute = deserialized_task_to_compute
+
+    force_report_computed_task  = ForceReportComputedTask()
+    force_report_computed_task.report_computed_task = report_computed_task
 
     return force_report_computed_task
 

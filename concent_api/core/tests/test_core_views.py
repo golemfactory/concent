@@ -46,8 +46,9 @@ class CoreViewSendTest(TestCase):
             compute_task_def = self.compute_task_def,
         )
 
-        self.correct_golem_data = message.ForceReportComputedTask()
-        self.correct_golem_data.task_to_compute = self.task_to_compute
+        self.correct_golem_data                                         = message.ForceReportComputedTask()
+        self.correct_golem_data.report_computed_task                    = message.tasks.ReportComputedTask()
+        self.correct_golem_data.report_computed_task.task_to_compute    = self.task_to_compute
         self.want_to_compute = message.WantToComputeTask(
             node_name           = 1,
             task_id             = 2,
@@ -101,8 +102,11 @@ class CoreViewSendTest(TestCase):
 
         task_to_compute = self.task_to_compute
         task_to_compute.compute_task_def['deadline'] = self.message_timestamp - 1   # pylint: disable=no-member
-        correct_golem_data = message.ForceReportComputedTask()
-        correct_golem_data.task_to_compute = task_to_compute
+        report_computed_task = message.tasks.ReportComputedTask(
+            task_to_compute = task_to_compute
+        )
+        correct_golem_data = message.ForceReportComputedTask(
+            report_computed_task = report_computed_task)
 
         response = self.client.post(
             reverse('core:send'),
@@ -136,8 +140,12 @@ class CoreViewSendTest(TestCase):
             compute_task_def = compute_task_def,
         )
 
+        report_computed_task = message.tasks.ReportComputedTask(
+            task_to_compute = task_to_compute
+        )
+
         correct_golem_data = message.ForceReportComputedTask(
-            task_to_compute = task_to_compute,
+            report_computed_task = report_computed_task,
         )
 
         response = self.client.post(
@@ -160,11 +168,18 @@ class CoreViewSendTest(TestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_data_is_incorrect(self):
+        compute_task_def    = message.ComputeTaskDef()
+        task_to_compute     = message.TaskToCompute(
+            compute_task_def = compute_task_def
+        )
+        report_computed_task = message.tasks.ReportComputedTask(
+            task_to_compute = task_to_compute
+        )
         with freeze_time("2017-11-17 9:56:00"):
-            force_report_computed_task = message.ForceReportComputedTask()
-        compute_task_def = message.ComputeTaskDef()
-        task_to_compute = message.TaskToCompute(compute_task_def = compute_task_def)
-        force_report_computed_task.task_to_compute = task_to_compute
+            force_report_computed_task = message.ForceReportComputedTask(
+                report_computed_task = report_computed_task
+            )
+
         response = self.client.post(
             reverse('core:send'),
             data = dump(
@@ -179,9 +194,10 @@ class CoreViewSendTest(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json().keys())
 
-        data = message.ForceReportComputedTask()
+        data                        = message.ForceReportComputedTask()
+        data.report_computed_task   = message.tasks.ReportComputedTask()
         compute_task_def['deadline'] = int(dateutil.parser.parse("2017-11-17 9:00:00").timestamp())
-        data.task_to_compute = message.TaskToCompute(compute_task_def = compute_task_def)
+        data.report_computed_task.task_to_compute = message.TaskToCompute(compute_task_def = compute_task_def)
 
         response = self.client.post(
             reverse('core:send'),
@@ -214,9 +230,10 @@ class CoreViewSendTest(TestCase):
 
         self.assertIsInstance(response_202, HttpResponse)
         self.assertEqual(response_202.status_code, 202)
-        self.correct_golem_data.encrypted = None
-        self.correct_golem_data.sig = None
-        self.correct_golem_data.task_to_compute.sig = None
+        self.correct_golem_data.encrypted                                   = None
+        self.correct_golem_data.sig                                         = None
+        self.correct_golem_data.report_computed_task.sig                    = None
+        self.correct_golem_data.report_computed_task.task_to_compute.sig    = None
         response_400 = self.client.post(
             reverse('core:send'),
             data = dump(
@@ -383,8 +400,11 @@ class CoreViewSendTest(TestCase):
             deserialized_task_to_compute = load(serialized_task_to_compute,  PROVIDER_PRIVATE_KEY,  REQUESTOR_PUBLIC_KEY, check_time = False)
 
             with freeze_time("2017-11-17 10:00:00"):
-                force_report_computed_task = message.ForceReportComputedTask()
-                force_report_computed_task.task_to_compute = deserialized_task_to_compute
+                force_report_computed_task = message.ForceReportComputedTask(
+                    report_computed_task = message.tasks.ReportComputedTask(
+                        task_to_compute = deserialized_task_to_compute
+                    )
+                )
 
                 response_400 = self.client.post(
                     reverse('core:send'),
@@ -423,8 +443,12 @@ class CoreViewSendTest(TestCase):
             deserialized_task_to_compute = load(serialized_task_to_compute,  PROVIDER_PRIVATE_KEY,  REQUESTOR_PUBLIC_KEY, check_time = False)
 
             with freeze_time("2017-11-17 10:00:00"):
-                force_report_computed_task = message.ForceReportComputedTask()
-                force_report_computed_task.task_to_compute = deserialized_task_to_compute
+                report_computed_task = message.tasks.ReportComputedTask(
+                    task_to_compute = deserialized_task_to_compute
+                )
+                force_report_computed_task = message.ForceReportComputedTask(
+                    report_computed_task = report_computed_task
+                )
 
                 response_202 = self.client.post(
                     reverse('core:send'),
@@ -456,8 +480,11 @@ class CoreViewReceiveTest(TestCase):
             self.task_to_compute = message.TaskToCompute(
                 compute_task_def = self.compute_task_def,
             )
-            self.force_golem_data = message.ForceReportComputedTask()
-        self.force_golem_data.task_to_compute = self.task_to_compute
+            self.force_golem_data = message.ForceReportComputedTask(
+                report_computed_task = message.tasks.ReportComputedTask(
+                    task_to_compute = self.task_to_compute
+                )
+            )
 
     @freeze_time("2017-11-17 10:00:00")
     def test_receive_should_accept_valid_message(self):
@@ -499,7 +526,7 @@ class CoreViewReceiveTest(TestCase):
             CONCENT_PUBLIC_KEY,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(new_message.task_id, decoded_response.task_to_compute.compute_task_def['task_id'])
+        self.assertEqual(new_message.task_id, decoded_response.report_computed_task.task_to_compute.compute_task_def['task_id'])
 
     @freeze_time("2017-11-17 10:00:00")
     def test_receive_return_http_204_if_no_messages_in_database(self):
@@ -524,8 +551,11 @@ class CoreViewReceiveTest(TestCase):
                 compute_task_def    = self.compute_task_def,
             )
             self.force_golem_data = message.ForceReportComputedTask(
-                task_to_compute = self.task_to_compute
+                report_computed_task = message.tasks.ReportComputedTask(
+                    task_to_compute = self.task_to_compute
+                )
             )
+
         message_timestamp = datetime.datetime.now(timezone.utc)
         new_message = StoredMessage(
             type        = self.force_golem_data.TYPE,
@@ -557,7 +587,7 @@ class CoreViewReceiveTest(TestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
             )
 
-        decoded_ack_response = load(
+        decoded_message = load(
             response.content,
             REQUESTOR_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY,
@@ -566,14 +596,13 @@ class CoreViewReceiveTest(TestCase):
 
         undelivered_messages = ReceiveStatus.objects.filter(delivered = False).count()
 
-        self.assertIsInstance(decoded_ack_response, message.AckReportComputedTask)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(undelivered_messages, 0)
-        self.assertGreaterEqual(decoded_ack_response.timestamp,                 int(dateutil.parser.parse("2017-11-17 12:00:00").timestamp()))
-        self.assertLessEqual(   decoded_ack_response.timestamp,                 int(dateutil.parser.parse("2017-11-17 12:00:15").timestamp()))
-        self.assertEqual(decoded_ack_response.task_to_compute.compute_task_def, self.task_to_compute.compute_task_def)  # pylint: disable=no-member
-        self.assertEqual(decoded_ack_response.task_to_compute.sig,              self.task_to_compute.sig)
-        self.assertEqual(decoded_ack_response.subtask_id,                       None)
+        self.assertIsInstance(decoded_message,                                                      message.concents.ForceReportComputedTaskResponse)
+        self.assertEqual(response.status_code,                                                      200)
+        self.assertEqual(undelivered_messages,                                                      0)
+        self.assertEqual(decoded_message.timestamp,                                                 int(dateutil.parser.parse("2017-11-17 12:00:00").timestamp()))
+        self.assertEqual(decoded_message.ack_report_computed_task.task_to_compute.compute_task_def, self.task_to_compute.compute_task_def)  # pylint: disable=no-member
+        self.assertEqual(decoded_message.ack_report_computed_task.task_to_compute.sig,              self.task_to_compute.sig)
+        self.assertEqual(decoded_message.ack_report_computed_task.subtask_id,                       None)
 
 
 @override_settings(
@@ -592,8 +621,11 @@ class CoreViewReceiveOutOfBandTest(TestCase):
             compute_task_def = self.compute_task_def,
         )
 
-        self.force_golem_data = message.ForceReportComputedTask()
-        self.force_golem_data.task_to_compute = self.task_to_compute
+        self.force_golem_data = message.ForceReportComputedTask(
+            report_computed_task = message.tasks.ReportComputedTask(
+                task_to_compute = self.task_to_compute
+            )
+        )
         assert self.force_golem_data.timestamp == 1510912800
 
         message_timestamp   = datetime.datetime.now(timezone.utc)
@@ -601,7 +633,7 @@ class CoreViewReceiveOutOfBandTest(TestCase):
             type        = self.force_golem_data.TYPE,
             timestamp   = message_timestamp,
             data        = self.force_golem_data.serialize(),
-            task_id     = self.force_golem_data.task_to_compute.compute_task_def['task_id'],
+            task_id     = self.force_golem_data.report_computed_task.task_to_compute.compute_task_def['task_id'],
         )
         new_message.full_clean()
         new_message.save()

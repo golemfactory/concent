@@ -33,7 +33,7 @@ def _get_requestor_account_status(_provider, _requestor):
     FORCE_ACCEPTANCE_TIME     = 10,  # seconds
     SUBTASK_VERIFICATION_TIME = 10,  # seconds
 )
-class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
+class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
     def test_provider_forces_subtask_results_for_task_which_was_already_submitted_concent_should_refuse(self):
         """
@@ -69,7 +69,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
         assert len(response_1.content)  == 0
@@ -124,10 +124,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2018-02-05 10:00:35"):
                 response_1 = self.client.post(
                     reverse('core:send'),
-                    data                            = serialized_force_subtask_results,
-                    content_type                    = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
+                    data                                = serialized_force_subtask_results,
+                    content_type                        = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
         self.assertEqual(StoredMessage.objects.last(), None)
@@ -354,7 +354,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             key          = self.REQUESTOR_PRIVATE_KEY,
             message_type = message.concents.ForceSubtaskResults,
             fields       = {
-                'timestamp':                                            self._parse_iso_date_to_timestamp("2018-02-05 10:00:20"),
+                'timestamp':                                            self._parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
                 'ack_report_computed_task.subtask_id':                  'xxyyzz',
                 'ack_report_computed_task.task_to_compute.compute_task_def': deserialized_compute_task_def,
             }
@@ -394,7 +394,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
         assert len(response_1.content)  == 0
@@ -414,19 +414,27 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             key             = self.REQUESTOR_PRIVATE_KEY,
             message_type    = message.concents.ForceSubtaskResults,
             fields          = {
-                'timestamp':                            self._parse_iso_date_to_timestamp("2018-02-05 10:00:15"),
+                'timestamp':                            self._parse_iso_date_to_timestamp("2018-02-05 11:00:02"),
                 'ack_report_computed_task.timestamp':   self._parse_iso_date_to_timestamp("2018-02-05 10:00:15"),
                 'ack_report_computed_task.subtask_id':  'xxyyzz',
             }
+        )
+
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '2',
+            deadline    = "2018-02-05 11:00:00",
         )
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
             timestamp               = "2018-02-05 10:00:43",
             subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
-                timestamp               = "2018-02-05 10:00:43",
-                subtask_id              = '2',
-                payment_ts              = "2018-02-05 10:00:44",
+                timestamp               = "2018-02-05 11:00:00",
+                payment_ts              = "2018-02-05 11:00:01",
+                task_to_compute         = self._get_deserialized_task_to_compute(
+                    timestamp           = "2018-02-05 10:00:00",
+                    compute_task_def    = compute_task_def,
+                ),
             )
         )
 
@@ -459,10 +467,11 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             key             = self.PROVIDER_PRIVATE_KEY,
             message_type    = message.concents.ForceSubtaskResultsResponse,
             fields          = {
-                'timestamp':                            self._parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
-                'subtask_results_accepted.timestamp':   self._parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
-                'subtask_results_accepted.subtask_id':  '2',
-                'subtask_results_accepted.payment_ts':  self._parse_iso_date_to_timestamp("2018-02-05 10:00:44")
+                'timestamp':                                                    self._parse_iso_date_to_timestamp("2018-02-05 11:00:02"),
+                'subtask_results_accepted.timestamp':                           self._parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
+                'subtask_results_accepted.payment_ts':                          self._parse_iso_date_to_timestamp("2018-02-05 11:00:01"),
+                'subtask_results_accepted.task_to_compute.timestamp':           self._parse_iso_date_to_timestamp("2018-02-05 10:00:00"),
+                'subtask_results_accepted.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
 
@@ -525,7 +534,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             key             = self.REQUESTOR_PRIVATE_KEY,
             message_type    = message.concents.ForceSubtaskResults,
             fields          = {
-                'timestamp':                            self._parse_iso_date_to_timestamp("2018-02-05 10:00:15"),
+                'timestamp':                            self._parse_iso_date_to_timestamp("2018-02-05 11:00:02"),
                 'ack_report_computed_task.timestamp':   self._parse_iso_date_to_timestamp("2018-02-05 10:00:15"),
                 'ack_report_computed_task.subtask_id':  'xxyyzz',
             }
@@ -578,7 +587,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             key             = self.PROVIDER_PRIVATE_KEY,
             message_type    = message.concents.ForceSubtaskResultsResponse,
             fields          = {
-                'timestamp':                                                self._parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
+                'timestamp':                                                self._parse_iso_date_to_timestamp("2018-02-05 11:00:02"),
                 'subtask_results_rejected.timestamp':                       self._parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
                 'subtask_results_rejected.reason':                          message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
                 'subtask_results_rejected.report_computed_task.timestamp':  self._parse_iso_date_to_timestamp("2018-02-05 10:00:44"),
@@ -602,13 +611,21 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         Concent     -> Requestor:   HTTP 400
         """
 
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '2',
+            deadline    = "2018-02-05 11:00:00",
+        )
+
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
             timestamp               = "2018-02-05 11:00:00",
             subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
                 timestamp               = "2018-02-05 11:00:00",
-                subtask_id              = '2',
-                payment_ts              = "2018-02-05 11:00:01",
+                payment_ts              = "2018-02-05 11:00:02",
+                task_to_compute         = self._get_deserialized_task_to_compute(
+                    timestamp           = "2018-02-05 10:00:00",
+                    compute_task_def    = compute_task_def,
+                ),
             )
         )
 
@@ -741,15 +758,19 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         Concent     -> Requestor:   HTTP 400
         """
 
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id = '2',
+            deadline = "2018-02-05 11:00:00",
+        )
+
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
             timestamp                   = "2018-02-05 10:00:15",
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2018-02-05 10:00:15",
                 subtask_id      = "2",
                 task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp   = "2018-02-05 10:00:00",
-                    deadline    = "2018-02-05 10:00:10",
-                    task_id     = '2',
+                    timestamp           = "2018-02-05 10:00:00",
+                    compute_task_def    = compute_task_def,
                 )
             )
         )
@@ -767,14 +788,22 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         assert len(response_1.content)  == 0
         assert response_1.status_code   == 202
 
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '2',
+            deadline    = "2018-02-05 11:00:00",
+        )
+
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
             timestamp               = "2018-02-05 12:00:00",
             subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
                 timestamp               = "2018-02-05 12:00:00",
-                subtask_id              = '2',
                 payment_ts              = "2018-02-05 12:00:01",
-            )
+                task_to_compute         = self._get_deserialized_task_to_compute(
+                    timestamp           = "2018-02-05 10:00:00",
+                    compute_task_def    = compute_task_def,
+                ),
+            ),
         )
 
         with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
@@ -788,14 +817,22 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_400_response(response_2)
 
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '2',
+            deadline    = "2018-02-05 10:00:00",
+        )
+
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
             timestamp               = "2018-02-05 10:00:00",
             subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
                 timestamp               = "2018-02-05 10:00:00",
-                subtask_id              = '2',
                 payment_ts              = "2018-02-05 10:00:01",
-            )
+                task_to_compute         = self._get_deserialized_task_to_compute(
+                    timestamp           = "2018-02-05 9:00:00",
+                    compute_task_def    = compute_task_def,
+                ),
+            ),
         )
 
         with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
@@ -972,9 +1009,12 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
             timestamp               = "2018-02-05 10:00:48",
             subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
-                timestamp               = "2018-02-05 10:00:48",
-                subtask_id              = '1',
-                payment_ts              = "2018-02-05 10:00:49",
+                timestamp               = "2018-02-05 11:00:00",
+                payment_ts              = "2018-02-05 11:00:01",
+                task_to_compute         = self._get_deserialized_task_to_compute(
+                    timestamp           = "2018-02-05 10:00:00",
+                    compute_task_def    = deserialized_compute_task_def,
+                ),
             )
         )
 
@@ -1010,10 +1050,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             key = self.PROVIDER_PRIVATE_KEY,
             message_type = message.concents.ForceSubtaskResultsResponse,
             fields = {
-                'timestamp':                            self._parse_iso_date_to_timestamp("2018-02-05 10:00:48"),
-                'subtask_results_accepted.timestamp':   self._parse_iso_date_to_timestamp("2018-02-05 10:00:48"),
-                'subtask_results_accepted.subtask_id':  '1',
-                'subtask_results_accepted.payment_ts':  self._parse_iso_date_to_timestamp("2018-02-05 10:00:49")
+                'timestamp':                                                    self._parse_iso_date_to_timestamp("2018-02-05 11:00:10"),
+                'subtask_results_accepted.timestamp':                           self._parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
+                'subtask_results_accepted.payment_ts':                          self._parse_iso_date_to_timestamp("2018-02-05 11:00:01"),
+                'subtask_results_accepted.task_to_compute.compute_task_def':    deserialized_compute_task_def,
             }
         )
 
@@ -1079,7 +1119,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             key          = self.REQUESTOR_PRIVATE_KEY,
             message_type = message.concents.ForceSubtaskResults,
             fields       = {
-                'timestamp':                                                 self._parse_iso_date_to_timestamp("2018-02-05 10:00:20"),
+                'timestamp':                                                 self._parse_iso_date_to_timestamp("2018-02-05 10:00:31"),
                 'ack_report_computed_task.subtask_id':                       'xxyyzz',
                 'ack_report_computed_task.task_to_compute.compute_task_def': deserialized_compute_task_def,
             }
@@ -1202,7 +1242,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             key          = self.REQUESTOR_PRIVATE_KEY,
             message_type = message.concents.ForceSubtaskResults,
             fields       = {
-                'timestamp':                                                 self._parse_iso_date_to_timestamp("2018-02-05 10:00:20"),
+                'timestamp':                                                 self._parse_iso_date_to_timestamp("2018-02-05 10:00:31"),
                 'ack_report_computed_task.subtask_id':                       'xxyyzz',
                 'ack_report_computed_task.task_to_compute.compute_task_def': deserialized_compute_task_def,
             }
@@ -1266,6 +1306,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         Requestor   -> Concent: SubtaskResultsRejected
         Concent     -> Requestor: HTTP 400
         """
+
         deserialized_force_subtask_results = self._get_deserialized_force_subtask_results(
             timestamp                   = "2018-02-05 10:00:15",
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
@@ -1289,20 +1330,28 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             requestor_public_key    = self.REQUESTOR_PUBLIC_KEY,
         )
 
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '2',
+            deadline    = "2018-02-05 11:00:00",
+        )
+
         deserialized_subtask_results_response = self._get_deserialized_force_subtask_results_response(
             timestamp = "2018-02-05 11:00:00",
             subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
                 timestamp   = "2018-02-05 11:00:00",
-                subtask_id  = '2',
                 payment_ts = "2018-02-05 11:00:01",
-            )
+                task_to_compute = self._get_deserialized_task_to_compute(
+                    timestamp           = "2018-02-05 10:00:00",
+                    compute_task_def    = compute_task_def,
+                ),
+            ),
         )
 
         self._store_golem_messages_in_database(
             message_type            = deserialized_subtask_results_response.TYPE,
             timestamp               = "2018-02-05 11:00:01",
             data                    = deserialized_subtask_results_response,
-            task_id                 = deserialized_subtask_results_response.subtask_results_accepted.subtask_id,  # pylint: disable=no-member
+            task_id                 = deserialized_subtask_results_response.subtask_results_accepted.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
             status                  = ReceiveStatus,
             delivered               = True,
             provider_public_key     = self.PROVIDER_PUBLIC_KEY,
@@ -1314,8 +1363,11 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             timestamp               = "2018-02-05 11:00:01",
             subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
                 timestamp               = "2018-02-05 11:00:01",
-                subtask_id              = '2',
                 payment_ts              = "2018-02-05 11:00:02",
+                task_to_compute = self._get_deserialized_task_to_compute(
+                    timestamp           = "2018-02-05 10:00:00",
+                    compute_task_def    = compute_task_def,
+                ),
             )
         )
 
@@ -1421,13 +1473,21 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             requestor_public_key    = self.REQUESTOR_PUBLIC_KEY,
         )
 
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '2',
+            deadline    = "2018-02-05 11:00:00",
+        )
+
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
             timestamp               = "2018-02-05 11:00:01",
             subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
                 timestamp               = "2018-02-05 11:00:01",
-                subtask_id              = '2',
                 payment_ts              = "2018-02-05 11:00:02",
+                task_to_compute         = self._get_deserialized_task_to_compute(
+                    timestamp           = "2018-02-05 10:00:00",
+                    compute_task_def    = compute_task_def,
+                ),
             )
         )
 
@@ -1502,12 +1562,20 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
         )
 
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '2',
+            deadline    = "2018-02-05 11:00:00",
+        )
+
         deserialized_subtask_results_response = self._get_deserialized_force_subtask_results_response(
             timestamp                = "2018-02-05 11:00:00",
             subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
                 timestamp  = "2018-02-05 11:00:00",
-                subtask_id = '2',
                 payment_ts = "2018-02-05 11:00:01",
+                task_to_compute = self._get_deserialized_task_to_compute(
+                    timestamp           = "2018-02-05 10:00:00",
+                    compute_task_def    = compute_task_def,
+                )
             )
         )
 
@@ -1515,7 +1583,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             message_type         = deserialized_subtask_results_response.TYPE,
             timestamp            = "2018-02-05 11:00:01",
             data                 = deserialized_subtask_results_response,
-            task_id              = deserialized_subtask_results_response.subtask_results_accepted.subtask_id,  # pylint: disable=no-member
+            task_id              = deserialized_subtask_results_response.subtask_results_accepted.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
             status               = ReceiveStatus,
             delivered            = True,
             provider_public_key  = self.PROVIDER_PUBLIC_KEY,

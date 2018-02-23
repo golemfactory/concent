@@ -1,4 +1,4 @@
---extra-index-url=https://builds.golem.network
+--find-links https://builds.golem.network/simple/pyelliptic
 Django >= 1.11, < 1.12
 psycopg2
 -e git://github.com/golemfactory/golem-messages.git@v1.9.0#egg=golem_messages

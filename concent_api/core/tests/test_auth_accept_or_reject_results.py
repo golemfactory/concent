@@ -63,7 +63,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.views.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:25"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -104,7 +104,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             provider_private_key = self.DIFFERENT_PROVIDER_PRIVATE_KEY,
         )
 
-        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.views.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:31"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -131,7 +131,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 3: Provider again forces subtask results via Concent with message with the same task_id with correct keys.
         # Request is refused.
-        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.views.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:31"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -180,7 +180,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.views.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:31"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -287,7 +287,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.views.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:30"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -377,7 +377,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.views.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:44"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -402,7 +402,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.views.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:44"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -429,7 +429,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.views.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:44"):
                 self.client.post(
                     reverse('core:send'),
@@ -538,7 +538,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.views.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:30"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -628,7 +628,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.views.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:44"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -658,7 +658,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.views.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:44"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -690,7 +690,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.views.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:44"):
                 self.client.post(
                     reverse('core:send'),
@@ -798,7 +798,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.views.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:30"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -877,7 +877,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # STEP 4: Different requestor does not receive subtask result settled via Concent with different key.
-        with mock.patch('core.views.make_forced_payment', _get_requestor_account_status):
+        with mock.patch('core.views.base.make_forced_payment', _get_requestor_account_status):
             with freeze_time("2018-02-05 10:00:51"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -890,7 +890,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._assert_auth_message_counter_not_increased()
 
         # STEP 5: Requestor receives subtask result settled via Concent with correct key.
-        with mock.patch('core.views.make_forced_payment', _get_requestor_account_status):
+        with mock.patch('core.views.base.make_forced_payment', _get_requestor_account_status):
             with freeze_time("2018-02-05 10:00:51"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -980,7 +980,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.views.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.views.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:30"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -1095,7 +1095,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # STEP 6: Different requestor does not receive subtask result settled via Concent with different key.
-        with mock.patch('core.views.make_forced_payment', _get_requestor_account_status):
+        with mock.patch('core.views.base.make_forced_payment', _get_requestor_account_status):
             with freeze_time("2018-02-05 10:00:51"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -1108,7 +1108,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._assert_auth_message_counter_not_increased()
 
         # STEP 7: Requestor receives subtask result settled via Concent with correct key.
-        with mock.patch('core.views.make_forced_payment', _get_requestor_account_status):
+        with mock.patch('core.views.base.make_forced_payment', _get_requestor_account_status):
             with freeze_time("2018-02-05 10:00:51"):
                 response = self.client.post(
                     reverse('core:receive'),

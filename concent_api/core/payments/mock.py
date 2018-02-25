@@ -21,10 +21,10 @@ def payment_summary(request = None, _subtask_results_accepted_list = None, _list
 
 
 def get_list_of_transactions(_oldest_payments_ts = None, current_time = None, _to_block = None, _payer_address = None, _payee_address = None, request = None):  # pylint: disable=inconsistent-return-statements
-    '''
+    """
     Function which return list of transactions from payment API
     where timestamp >= T0
-    '''
+    """
 
     if 'HTTP_TEMPORARY_LIST_OF_TRANSACTIONS' in request.META:
         if bool(request.META['HTTP_TEMPORARY_LIST_OF_TRANSACTIONS']):
@@ -35,10 +35,10 @@ def get_list_of_transactions(_oldest_payments_ts = None, current_time = None, _t
 
 
 def get_forced_payments(_oldest_payments_ts = None, _requestor_address = None, _provider_address = None, _to_block = None, request = None, current_time = None):  # pylint: disable=inconsistent-return-statements
-    '''
+    """
     Function which return list of forced paysments from payment API
     where t0 <= payment_ts + PAYMENT_DUE_TIME + PAYMENT_GRACE_PERIOD
-    '''
+    """
 
     if 'HTTP_TEMPORARY_LIST_OF_FORCED_TRANSACTIONS' in request.META:
         if bool(request.META['HTTP_TEMPORARY_LIST_OF_FORCED_TRANSACTIONS']):
@@ -49,8 +49,20 @@ def get_forced_payments(_oldest_payments_ts = None, _requestor_address = None, _
 
 
 def make_payment_to_provider(_sum_of_payments = None, _payment_ts = None, _requestor_ethereum_public_key = None, _provider_ethereum_public_key = None):
-    '''
+    """
     Concent makes transaction from requestor's deposit to provider's account on amount V.
     If there is less then V on requestor's deposit, Concent transfers as much as possible.
-    '''
+    """
     return True
+
+
+def make_forced_payment(_provider = None, _requestor = None):
+
+    return True
+
+
+def is_provider_account_status_positive(request = None):
+    if 'HTTP_TEMPORARY_ACCOUNT_FUNDS' in request.META:
+        return bool(request.META['HTTP_TEMPORARY_ACCOUNT_FUNDS'])
+    else:
+        return False

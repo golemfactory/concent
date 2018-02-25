@@ -49,3 +49,13 @@ def get_forced_payments(backend, _oldest_payments_ts = None, _requestor_address 
 @_add_backend
 def make_payment_to_provider(backend, _sum_of_payments = None, _payment_ts = None, _requestor_ethereum_public_key = None, _provider_ethereum_public_key = None):
     return backend.make_payment_to_provider(_sum_of_payments, _payment_ts, _requestor_ethereum_public_key, _provider_ethereum_public_key)
+
+
+@_add_backend
+def make_forced_payment(backend, _provider = None, _requestor = None):
+    return backend.make_forced_payment(_provider, _requestor)
+
+
+@_add_backend
+def is_provider_account_status_positive(backend, request = None):
+    return backend.is_provider_account_status_positive(request)

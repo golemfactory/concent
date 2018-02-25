@@ -169,7 +169,7 @@ def parse_headers(request: WSGIRequest, path_to_file: str) -> Union[FileTransfer
         return gatekeeper_access_denied_response("Unrecognized checksum type.", path_to_file, loaded_golem_message.subtask_id, client_public_key)
 
     assert set(HashingAlgorithm) == {HashingAlgorithm.SHA1}, "If you add a new hashing algorithms, you need to add validations below."
-    if any(VALID_SHA1_HASH_REGEX.match(file_checksum[1]) is None for file_checksum in file_checksums):
+    if any(VALID_SHA1_HASH_REGEX.fullmatch(file_checksum[1]) is None for file_checksum in file_checksums):
         return gatekeeper_access_denied_response("Invalid SHA1 hash.", path_to_file, loaded_golem_message.subtask_id, client_public_key)
 
     file_sizes = [file["size"] for file in loaded_golem_message.files]

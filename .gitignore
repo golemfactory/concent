@@ -102,3 +102,6 @@ ENV/
 
 # Vim's temporary files
 *.sw[ponm]
+
+# Version
+/RELEASE-VERSION

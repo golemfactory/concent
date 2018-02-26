@@ -5,8 +5,10 @@ import datetime
 import requests
 from django.conf                    import settings
 from django.http                    import HttpResponse
+from django.http                    import JsonResponse
 from django.utils                   import timezone
 from django.views.decorators.http   import require_POST
+from django.views.decorators.http   import require_GET
 
 from golem_messages                 import message
 from golem_messages                 import shortcuts
@@ -324,6 +326,31 @@ def receive_out_of_band(request, _message):
         return None
 
     return None
+
+
+@require_GET
+def protocol_constants(_request):
+    """ Endpoint which returns Concent time settings. """
+    return JsonResponse(
+        data = {
+            'concent_messaging_time': {
+                'name':  'CONCENT_MESSAGING_TIME',
+                'value': settings.CONCENT_MESSAGING_TIME,
+            },
+            'force_acceptance_time': {
+                'name': 'FORCE_ACCEPTANCE_TIME',
+                'value': settings.FORCE_ACCEPTANCE_TIME,
+            },
+            'subtask_verification_time': {
+                'name': 'SUBTASK_VERIFICATION_TIME',
+                'value': settings.SUBTASK_VERIFICATION_TIME,
+            },
+            'token_expiration_time': {
+                'name': 'TOKEN_EXPIRATION_TIME',
+                'value': settings.TOKEN_EXPIRATION_TIME,
+            },
+        }
+    )
 
 
 def handle_send_force_report_computed_task(request, client_message):

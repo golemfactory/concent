@@ -861,7 +861,7 @@ def handle_receive_force_get_task_result_upload_for_provider(
     current_time            = get_current_utc_timestamp()
     client_public_key       = decode_client_public_key(request)
     file_transfer_token     = message.concents.FileTransferToken(
-        token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_DEADLINE,
+        token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_TIME,
         storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
         authorized_client_public_key    = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
         operation                       = 'upload',
@@ -956,7 +956,7 @@ def handle_receive_force_get_task_result_upload_for_requestor(
     client_public_key   = decode_client_public_key(request)
     current_time        = get_current_utc_timestamp()
     file_transfer_token = message.concents.FileTransferToken(
-        token_expiration_deadline    = current_time + settings.TOKEN_EXPIRATION_DEADLINE,
+        token_expiration_deadline    = current_time + settings.TOKEN_EXPIRATION_TIME,
         storage_cluster_address      = decoded_message.file_transfer_token.storage_cluster_address,
         authorized_client_public_key = decoded_message.file_transfer_token.authorized_client_public_key,
         operation                    = 'download',
@@ -1233,7 +1233,7 @@ def get_file_status(file_transfer_token_from_database: message.concents.FileTran
 
     current_time = get_current_utc_timestamp()
     file_transfer_token = message.concents.FileTransferToken(
-        token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_DEADLINE,
+        token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_TIME,
         storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
         authorized_client_public_key    = settings.CONCENT_PUBLIC_KEY,
         operation                       = 'download',

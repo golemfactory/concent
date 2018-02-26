@@ -126,12 +126,12 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
     def test_requestor_forces_get_task_result_and_concent_immediately_sends_acknowledgement(self):
         """
-        Tests if on requestor ForceGetTaskResult message Concent will return ForceGetTaskResultAck
+        Tests if on requestor ForceGetTaskResult message Concent will return AckForceGetTaskResult
         if all conditions were met.
 
         Expected message exchange:
         Requestor -> Concent:    ForceGetTaskResult
-        Concent   -> Requestor:  ForceGetTaskResultAck
+        Concent   -> Requestor:  AckForceGetTaskResult
         """
 
         # STEP 1: Requestor forces get task result via Concent.
@@ -161,7 +161,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         message_from_concent = load(response.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
-        self.assertIsInstance(message_from_concent,         message.concents.ForceGetTaskResultAck)
+        self.assertIsInstance(message_from_concent,         message.concents.AckForceGetTaskResult)
         self.assertEqual(message_from_concent.timestamp,    self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"))
 
     def test_concent_requests_task_result_from_provider_and_requestor_receives_failure_because_provider_does_not_submit(self):
@@ -171,7 +171,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         Expected message exchange:
         Requestor -> Concent:     ForceGetTaskResult
-        Concent   -> Requestor:   ForceGetTaskResultAck
+        Concent   -> Requestor:   AckForceGetTaskResult
         Concent   -> Provider:    ForceGetTaskResultUpload
         Provider  -> Concent:     no response
         Concent   -> Requestor:   ForceGetTaskResultFailed
@@ -283,7 +283,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         Expected message exchange:
         Requestor -> Concent:     ForceGetTaskResult
-        Concent   -> Requestor:   ForceGetTaskResultAck
+        Concent   -> Requestor:   AckForceGetTaskResult
         Concent   -> Provider:    ForceGetTaskResultUpload
         Provider  -> Concent:     Starts Upload
         Concent   -> Requestor:   ForceGetTaskResultFailed
@@ -395,7 +395,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         Expected message exchange:
         Requestor -> Concent:     ForceGetTaskResult
-        Concent   -> Requestor:   ForceGetTaskResultAck
+        Concent   -> Requestor:   AckForceGetTaskResult
         Concent   -> Provider:    ForceGetTaskResultUpload
         Provider  -> Concent:     TODO: Upload bad files
         Concent   -> Requestor:   ForceGetTaskResultFailed
@@ -507,7 +507,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         Expected message exchange:
         Requestor -> Concent:     ForceGetTaskResult
-        Concent   -> Requestor:   ForceGetTaskResultAck
+        Concent   -> Requestor:   AckForceGetTaskResult
         Concent   -> Provider:    ForceGetTaskResultUpload
         Provider  -> Concent:     Upload good files
         Concent   -> Requestor:   ForceGetTaskResultUpload

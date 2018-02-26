@@ -538,7 +538,7 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
             requestor_public_key = client_public_key,
             status               = ReceiveStatus,
         )
-        return message.concents.ForceGetTaskResultAck(
+        return message.concents.AckForceGetTaskResult(
             force_get_task_result = client_message,
         )
 

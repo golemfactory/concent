@@ -37,9 +37,9 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         Expected message exchange:
         Requestor               -> Concent:                 ForceGetTaskResult
-        Concent                 -> Requestor:               ForceGetTaskResultAck
+        Concent                 -> Requestor:               AckForceGetTaskResult
         WrongRequestor/Provider -> Concent                  ForceGetTaskResult
-        Concent                 -> WrongRequestor/Provider  ForceGetTaskResultAck
+        Concent                 -> WrongRequestor/Provider  AckForceGetTaskResult
         Requestor               -> Concent:                 ForceGetTaskResult
         Concent                 -> Requestor:               ForceGetTaskResultRejected
         """
@@ -100,7 +100,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             check_time = False
         )
 
-        self.assertIsInstance(message_from_concent, message.concents.ForceGetTaskResultAck)
+        self.assertIsInstance(message_from_concent, message.concents.AckForceGetTaskResult)
         self.assertEqual(message_from_concent.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:08"))
 
         self.assertEqual(MessageAuth.objects.count(), 2)
@@ -129,7 +129,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         message_from_concent = load(response.content, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
-        self.assertIsInstance(message_from_concent, message.concents.ForceGetTaskResultAck)
+        self.assertIsInstance(message_from_concent, message.concents.AckForceGetTaskResult)
         self.assertEqual(message_from_concent.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:08"))
 
         self.assertEqual(MessageAuth.objects.count(), 3)
@@ -167,7 +167,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         Expected message exchange:
         Requestor -> Concent:                   ForceGetTaskResult
-        Concent   -> Requestor:                 ForceGetTaskResultAck
+        Concent   -> Requestor:                 AckForceGetTaskResult
         Concent   -> WrongProvider/Requestor:   HTTP 204
         Concent   -> Provider:                  ForceGetTaskResultUpload
         Provider  -> Concent:                   no response
@@ -364,7 +364,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         Expected message exchange:
         Requestor -> Concent:                   ForceGetTaskResult
-        Concent   -> Requestor:                 ForceGetTaskResultAck
+        Concent   -> Requestor:                 AckForceGetTaskResult
         Concent   -> WrongProvider/Requestor:   HTTP 204
         Concent   -> Provider:                  ForceGetTaskResultUpload
         Provider  -> Concent:                   Starts Upload
@@ -560,7 +560,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         Expected message exchange:
         Requestor -> Concent:                   ForceGetTaskResult
-        Concent   -> Requestor:                 ForceGetTaskResultAck
+        Concent   -> Requestor:                 AckForceGetTaskResult
         Concent   -> WrongProvider/Requestor:   ForceGetTaskResultUpload
         Concent   -> Provider:                  ForceGetTaskResultUpload
         Provider  -> Concent:                   Upload bad files
@@ -759,7 +759,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         Expected message exchange:
         Requestor -> Concent:                   ForceGetTaskResult
-        Concent   -> Requestor:                 ForceGetTaskResultAck
+        Concent   -> Requestor:                 AckForceGetTaskResult
         Concent   -> WrongProvider/Requestor:   HTTP 204
         Concent   -> Provider:                  ForceGetTaskResultUpload
         Provider  -> Concent:                   Upload good files

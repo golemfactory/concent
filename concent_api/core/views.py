@@ -15,7 +15,7 @@ from golem_messages.exceptions      import MessageError
 
 from core                           import exceptions
 from core.payments                  import base
-from gatekeeper.constants           import GATEKEEPER_DOWNLOAD_PATH
+from gatekeeper.constants           import CLUSTER_DOWNLOAD_PATH
 from utils                          import logging
 from utils.api_view                 import api_view
 from utils.api_view                 import Http400
@@ -1251,7 +1251,7 @@ def get_file_status(file_transfer_token_from_database: message.concents.FileTran
         'Authorization':                'Golem ' + b64encode(dumped_file_transfer_token).decode(),
         'Concent-Client-Public-Key':    b64encode(settings.CONCENT_PUBLIC_KEY).decode(),
     }
-    request_http_address = settings.STORAGE_CLUSTER_ADDRESS + GATEKEEPER_DOWNLOAD_PATH + file_transfer_token.files[0]['path']
+    request_http_address = settings.STORAGE_CLUSTER_ADDRESS + CLUSTER_DOWNLOAD_PATH + file_transfer_token.files[0]['path']
 
     cluster_storage_response = requests.head(
         request_http_address,

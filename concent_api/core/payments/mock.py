@@ -1,3 +1,4 @@
+from django.conf import settings
 
 
 def sum_payments(list_of_payments):
@@ -28,7 +29,8 @@ def get_list_of_transactions(_oldest_payments_ts = None, current_time = None, _t
 
     if 'HTTP_TEMPORARY_LIST_OF_TRANSACTIONS' in request.META:
         if bool(request.META['HTTP_TEMPORARY_LIST_OF_TRANSACTIONS']):
-            return [{'timestamp': current_time - 3700}, {'timestamp': current_time - 3800}, {'timestamp': current_time - 3900}]
+            payment_ts = current_time - settings.PAYMENT_DUE_TIME + settings.PAYMENT_GRACE_PERIOD
+            return [{'timestamp': payment_ts - 3700}, {'timestamp': payment_ts - 3800}, {'timestamp': payment_ts - 3900}]
         else:
             return [{'timestamp': current_time - 22}, {'timestamp': current_time - 23}, {'timestamp': current_time - 24}]
     return True

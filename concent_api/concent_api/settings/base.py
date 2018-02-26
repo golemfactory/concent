@@ -28,6 +28,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'concent_api.middleware.GolemMessagesVersionMiddleware',
+    'concent_api.middleware.ConcentVersionMiddleware',
 ]
 
 ROOT_URLCONF = 'concent_api.urls'

@@ -81,6 +81,7 @@ def api_view(view):
             )
             return JsonResponse({'error': str(exception)}, status = 400)
         if isinstance(response_from_view, Message):
+            assert response_from_view.sig is None
             logging.log_message_returned(
                 response_from_view,
                 request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],

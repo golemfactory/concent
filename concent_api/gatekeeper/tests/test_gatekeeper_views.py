@@ -278,7 +278,7 @@ class GatekeeperViewUploadTest(TestCase):
             self.assertEqual("application/json", response["Content-Type"])
 
     @freeze_time("2018-02-12 16:19:00")
-    def test_upload_should_return_401_if_specific_authorization_header(self):
+    def test_upload_should_return_401_if_previously_causing_500_error_authorization_header_is_used(self):
 
         response = self.client.post(
             '{}{}'.format(

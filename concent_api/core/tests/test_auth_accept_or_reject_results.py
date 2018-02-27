@@ -17,10 +17,6 @@ def _get_provider_account_status_true_mock(_):
     return True
 
 
-def _get_provider_account_status_false_mock(_):
-    return False
-
-
 def _get_requestor_account_status(_provider, _requestor):
     pass
 
@@ -32,7 +28,7 @@ def _get_requestor_account_status(_provider, _requestor):
     FORCE_ACCEPTANCE_TIME     = 10,  # seconds
     SUBTASK_VERIFICATION_TIME = 10,  # seconds
 )
-class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
+class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
     def test_provider_forces_subtask_results_for_task_which_was_already_submitted_concent_should_refuse_with_correct_keys(self):
         """

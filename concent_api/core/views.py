@@ -78,13 +78,14 @@ def receive(request, _message):
         if last_delivered_message_status is None:
             return None
 
+        decoded_message_data = deserialize_message(last_delivered_message_status.message.data.tobytes())
         if (
             last_delivered_message_status.message.type                           == message.ForceReportComputedTask.TYPE and
-            last_delivered_message_status.message.auth.provider_public_key_bytes == client_public_key
+            last_delivered_message_status.message.auth.provider_public_key_bytes == client_public_key and
+            current_time >= decoded_message_data.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME
         ):
             return handle_receive_delivered_force_report_computed_task(request, last_delivered_message_status)
 
-        decoded_message_data = deserialize_message(last_delivered_message_status.message.data.tobytes())
         if (
             last_delivered_message_status.message.type                            == message.concents.ForceGetTaskResultUpload.TYPE and
             last_delivered_message_status.message.auth.requestor_public_key_bytes == client_public_key

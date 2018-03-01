@@ -25,8 +25,9 @@ def get_file_status_false_mock(_file_transfer_token_from_database):
 @override_settings(
     CONCENT_PRIVATE_KEY    = CONCENT_PRIVATE_KEY,
     CONCENT_PUBLIC_KEY     = CONCENT_PUBLIC_KEY,
-    CONCENT_MESSAGING_TIME = 10,  # seconds
-    FORCE_ACCEPTANCE_TIME  = 10,  # seconds
+    CONCENT_MESSAGING_TIME = 10,    # seconds
+    FORCE_ACCEPTANCE_TIME  = 10,    # seconds
+    TOKEN_EXPIRATION_TIME  = 1800,  # 30 minutes
 )
 class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 

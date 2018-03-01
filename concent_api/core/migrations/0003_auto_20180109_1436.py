@@ -32,7 +32,7 @@ class Migration(migrations.Migration):
             name        = 'tmp_type',
             field       = models.PositiveSmallIntegerField(default=0),
         ),
-        migrations.RunPython(migrate_golem_messages_types_from_strings_to_ints),
+        migrations.RunPython(migrate_golem_messages_types_from_strings_to_ints, reverse_code = migrations.RunPython.noop),
         migrations.RemoveField(
             model_name  = 'message',
             name        = 'type',

@@ -1853,6 +1853,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
     def test_provider_forces_computed_task_report_and_tries_to_receive_ack_before_requestor_have_a_chance_to_respond_concent_should_return_http_204(self):
         # Expected message exchange:
         # Provider  -> Concent:    MessageForceReportComputedTask
+        # Concent   -> Provider:   HTTP 202
         # Concent   -> Provider:   HTTP 204
         # Concent   -> Requestor:  MessageForceReportComputedTask
         # Requestor -> Concent:    no response

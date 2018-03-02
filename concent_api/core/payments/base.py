@@ -27,13 +27,13 @@ def get_client_eth_account(backend):
 
 
 @_add_backend
-def get_number_of_eth_block(backend, request):
+def get_number_of_eth_block(backend, request = None):
     return backend.get_number_of_eth_block(request)
 
 
 @_add_backend
 def payment_summary(backend, request = None, subtask_results_accepted_list = None, list_of_transactions = None, list_of_forced_payments = None):
-    return backend.get_number_of_eth_block(request, subtask_results_accepted_list, list_of_transactions, list_of_forced_payments)
+    return backend.payment_summary(request, subtask_results_accepted_list, list_of_transactions, list_of_forced_payments)
 
 
 @_add_backend

@@ -101,6 +101,7 @@ class ConcentIntegrationTestCase(TestCase):
         timestamp                       = None,
         deadline                        = None,
         task_id                         = '1',
+        subtask_id                      = '2',
         compute_task_def                = None,
         requestor_public_key            = None,
         requestor_ethereum_public_key   = None,
@@ -109,6 +110,7 @@ class ConcentIntegrationTestCase(TestCase):
         if compute_task_def is None:
             compute_task_def                = message.ComputeTaskDef()
             compute_task_def['task_id']     = task_id
+            compute_task_def['subtask_id']  = subtask_id
             if isinstance(deadline, int):
                 compute_task_def['deadline'] = deadline
             elif isinstance(deadline, str):
@@ -328,10 +330,12 @@ class ConcentIntegrationTestCase(TestCase):
     def _get_deserialized_compute_task_def(
         self,
         task_id     = '1',
+        subtask_id  = '2',
         deadline    = None,
     ):
         compute_task_def                = message.tasks.ComputeTaskDef()
         compute_task_def['task_id']     = task_id
+        compute_task_def['subtask_id']  = subtask_id
         compute_task_def['deadline']    = self._parse_iso_date_to_timestamp(deadline)
 
         return compute_task_def

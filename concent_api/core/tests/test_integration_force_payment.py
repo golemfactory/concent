@@ -1,3 +1,4 @@
+from unittest               import skip
 import mock
 
 from django.test            import override_settings
@@ -391,5 +392,189 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             fields       = {
                 'recipient_type': message.concents.ForcePaymentCommitted.Actor.Requestor,
                 'timestamp':      self._parse_iso_date_to_timestamp("2018-02-05 12:00:21"),
+            }
+        )
+
+    def test_provider_send_force_payment_with_subtask_results_accepted_list_as_single_message_concent_should_return_http_400(self):
+        """
+        Expected message exchange:
+        Provider  -> Concent:    ForcePayment
+        Concent   -> Provider:   HTTP 400
+        """
+        subtask_results_accepted_list = self._get_deserialized_subtask_results_accepted(
+            timestamp       = "2018-02-05 10:00:15",
+            payment_ts      = "2018-02-05 12:00:00",
+            task_to_compute = self._get_deserialized_task_to_compute(
+                timestamp                       = "2018-02-05 10:00:00",
+                deadline                        = "2018-02-05 10:00:10",
+                task_id                         = '2',
+                requestor_public_key            = self._get_encoded_requestor_public_key(),
+                requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
+            )
+        )
+        serialized_force_payment = self._get_serialized_force_payment(
+            timestamp                     = "2018-02-05 12:00:20",
+            subtask_results_accepted_list = subtask_results_accepted_list
+        )
+
+        with freeze_time("2018-02-05 12:00:20"):
+            with mock.patch('core.views.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
+                with mock.patch('core.views.base.payment_summary', _get_payment_summary_positive):
+                    response = self.client.post(
+                        reverse('core:send'),
+                        data                                = serialized_force_payment,
+                        content_type                        = 'application/octet-stream',
+                        HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                        HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
+                    )
+
+        self._test_400_response(response)
+
+    def test_provider_send_force_payment_with_empty_subtask_results_accepted_list_concent_should_refuse(self):
+        """
+        Expected message exchange:
+        Provider  -> Concent:    ForcePayment
+        Concent   -> Provider:   ServiceRefused
+        """
+        subtask_results_accepted_list = []
+
+        serialized_force_payment = self._get_serialized_force_payment(
+            timestamp                     = "2018-02-05 12:00:20",
+            subtask_results_accepted_list = subtask_results_accepted_list
+        )
+
+        with freeze_time("2018-02-05 12:00:20"):
+            with mock.patch('core.views.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
+                with mock.patch('core.views.base.payment_summary', _get_payment_summary_positive):
+                    response = self.client.post(
+                        reverse('core:send'),
+                        data                                = serialized_force_payment,
+                        content_type                        = 'application/octet-stream',
+                        HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                        HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
+                    )
+        self._test_response(
+            response,
+            status       = 200,
+            key          = self.PROVIDER_PRIVATE_KEY,
+            message_type = message.concents.ServiceRefused,
+            fields       = {
+                'reason':    message.concents.ServiceRefused.REASON.InvalidRequest,
+                'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+            }
+        )
+
+    def test_provider_send_force_payment_with_empty_requestor_ethereum_public_key_concent_should_refuse(self):
+        """
+        Expected message exchange:
+        Provider  -> Concent:    ForcePayment
+        Concent   -> Provider:   ServiceRefused
+        """
+        subtask_results_accepted_list = [
+            self._get_deserialized_subtask_results_accepted(
+                timestamp       = "2018-02-05 10:00:15",
+                payment_ts      = "2018-02-05 12:00:00",
+                task_to_compute = self._get_deserialized_task_to_compute(
+                    timestamp                       = "2018-02-05 10:00:00",
+                    deadline                        = "2018-02-05 10:00:10",
+                    task_id                         = '2',
+                    requestor_public_key            = self._get_encoded_requestor_public_key(),
+                    requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
+                )
+            ),
+            self._get_deserialized_subtask_results_accepted(
+                timestamp       = "2018-02-05 9:00:15",
+                payment_ts      = "2018-02-05 11:00:00",
+                task_to_compute = self._get_deserialized_task_to_compute(
+                    timestamp                       = "2018-02-05 9:00:00",
+                    deadline                        = "2018-02-05 9:00:10",
+                    task_id                         = '3',
+                    requestor_public_key            = self._get_encoded_requestor_public_key(),
+                    requestor_ethereum_public_key   = '',
+                )
+            )
+        ]
+        serialized_force_payment = self._get_serialized_force_payment(
+            timestamp                     = "2018-02-05 12:00:20",
+            subtask_results_accepted_list = subtask_results_accepted_list
+        )
+
+        with freeze_time("2018-02-05 12:00:20"):
+            with mock.patch('core.views.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
+                with mock.patch('core.views.base.payment_summary', _get_payment_summary_positive):
+                    response = self.client.post(
+                        reverse('core:send'),
+                        data                                = serialized_force_payment,
+                        content_type                        = 'application/octet-stream',
+                        HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                        HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
+                    )
+        self._test_response(
+            response,
+            status       = 200,
+            key          = self.PROVIDER_PRIVATE_KEY,
+            message_type = message.concents.ServiceRefused,
+            fields       = {
+                'reason':    message.concents.ServiceRefused.REASON.InvalidRequest,
+                'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+            }
+        )
+
+    @skip("Logic for that case doesn't exist yet")
+    def test_provider_send_force_payment_with_same_subtasks_id_concent_should_refuse(self):
+        """
+        Expected message exchange:
+        Provider  -> Concent:    ForcePayment
+        Concent   -> Provider:   ServiceRefused
+        """
+        subtask_results_accepted_list = [
+            self._get_deserialized_subtask_results_accepted(
+                timestamp       = "2018-02-05 10:00:15",
+                payment_ts      = "2018-02-05 12:00:00",
+                task_to_compute = self._get_deserialized_task_to_compute(
+                    timestamp                       = "2018-02-05 10:00:00",
+                    deadline                        = "2018-02-05 10:00:10",
+                    task_id                         = '2',
+                    subtask_id                      = '4',
+                    requestor_public_key            = self._get_encoded_requestor_public_key(),
+                    requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
+                )
+            ),
+            self._get_deserialized_subtask_results_accepted(
+                timestamp       = "2018-02-05 9:00:15",
+                payment_ts      = "2018-02-05 11:00:00",
+                task_to_compute = self._get_deserialized_task_to_compute(
+                    timestamp                       = "2018-02-05 9:00:00",
+                    deadline                        = "2018-02-05 9:00:10",
+                    task_id                         = '3',
+                    subtask_id                      = '4',
+                    requestor_public_key            = self._get_encoded_requestor_public_key(),
+                    requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
+                )
+            )
+        ]
+        serialized_force_payment = self._get_serialized_force_payment(
+            timestamp                     = "2018-02-05 12:00:20",
+            subtask_results_accepted_list = subtask_results_accepted_list
+        )
+
+        with freeze_time("2018-02-05 12:00:20"):
+            with mock.patch('core.views.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
+                with mock.patch('core.views.base.payment_summary', _get_payment_summary_positive):
+                    response = self.client.post(
+                        reverse('core:send'),
+                        data                                = serialized_force_payment,
+                        content_type                        = 'application/octet-stream',
+                        HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                        HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
+                    )
+        self._test_response(
+            response,
+            status       = 200,
+            key          = self.PROVIDER_PRIVATE_KEY,
+            message_type = message.concents.ServiceRefused,
+            fields       = {
+                'reason':    message.concents.ServiceRefused.REASON.DuplicateRequest,
+                'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
             }
         )

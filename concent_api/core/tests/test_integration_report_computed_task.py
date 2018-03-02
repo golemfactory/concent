@@ -557,7 +557,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 3: Concent accepts computed task due to lack of response from the requestor
 
-        with freeze_time("2017-12-01 11:00:15"):
+        with freeze_time("2017-12-01 11:00:10"):
             response_3 = self.client.post(
                 reverse('core:receive'),
                 data                            = '',
@@ -570,8 +570,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             key             = self.PROVIDER_PRIVATE_KEY,
             message_type    = message.concents.ForceReportComputedTaskResponse,
             fields          = {
-                'timestamp':                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
-                'ack_report_computed_task.timestamp':                           self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
+                'timestamp':                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+                'ack_report_computed_task.timestamp':                           self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
                 'ack_report_computed_task.task_to_compute.timestamp':           self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
                 'ack_report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
@@ -579,7 +579,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 4: Requestor receives task computation report verdict out of band due to lack of response
 
-        with freeze_time("2017-12-01 11:00:15"):
+        with freeze_time("2017-12-01 11:00:11"):
             response_4 = self.client.post(
                 reverse('core:receive_out_of_band'),
                 data                            = '',
@@ -592,8 +592,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             key             = self.REQUESTOR_PRIVATE_KEY,
             message_type    = message.concents.VerdictReportComputedTask,
             fields          = {
-                'timestamp':                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
-                'ack_report_computed_task.timestamp':                           self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
+                'timestamp':                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:11"),
+                'ack_report_computed_task.timestamp':                           self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
                 'ack_report_computed_task.task_to_compute.timestamp':           self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
                 'ack_report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
@@ -1849,3 +1849,99 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self._test_204_response(response_5)
+
+    def test_provider_forces_computed_task_report_and_tries_to_receive_ack_before_requestor_have_a_chance_to_respond_concent_should_return_http_204(self):
+        # Expected message exchange:
+        # Provider  -> Concent:    MessageForceReportComputedTask
+        # Concent   -> Provider:   HTTP 202
+        # Concent   -> Provider:   HTTP 204
+        # Concent   -> Requestor:  MessageForceReportComputedTask
+        # Requestor -> Concent:    no response
+        # Concent   -> Provider:   HTTP 204
+
+        # STEP 1: Provider forces computed task report via Concent
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id     = '1',
+            deadline    = "2017-12-01 11:00:00"
+        )
+
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp           = "2017-12-01 10:00:00",
+            compute_task_def    = compute_task_def,
+        )
+
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            task_to_compute = task_to_compute,
+        )
+
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp = "2017-12-01 10:59:00",
+            force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                timestamp               = "2017-12-01 10:59:00",
+                report_computed_task    = report_computed_task
+            ),
+            provider_private_key = self.PROVIDER_PRIVATE_KEY
+        )
+
+        with freeze_time("2017-12-01 10:59:00"):
+            response_1 = self.client.post(
+                reverse('core:send'),
+                data                                = serialized_force_report_computed_task,
+                content_type                        = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
+            )
+
+        self.assertEqual(response_1.status_code,  202)
+        self.assertEqual(len(response_1.content), 0)
+        self._test_database_objects(
+            last_object_type            = message.concents.ForceReportComputedTask,
+            task_id                     = '1',
+            receive_delivered_status    = False,
+        )
+
+        # STEP 2: Provider tries to get Ack from Concent before compute_task_def.deadline + CONCENT_MESSAGING_TIME
+
+        with freeze_time("2017-12-01 11:00:00"):
+            response_2 = self.client.post(
+                reverse('core:receive'),
+                data                            = '',
+                content_type                    = '',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
+            )
+
+        self._test_204_response(response_2)
+
+        # STEP 3: Concent forces computed task report on the requestor
+
+        with freeze_time("2017-12-01 11:00:05"):
+            response_3 = self.client.post(
+                reverse('core:receive'),
+                data         = '',
+                content_type = '',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
+            )
+
+        self._test_response(
+            response_3,
+            status          = 200,
+            key             = self.REQUESTOR_PRIVATE_KEY,
+            message_type    = message.concents.ForceReportComputedTask,
+            fields          = {
+                'timestamp':                                                self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'report_computed_task.task_to_compute.timestamp':           self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
+            }
+        )
+
+        # STEP 4: Provider tries to get Ack from Concent too soon, again
+
+        with freeze_time("2017-12-01 11:00:06"):
+            response_4 = self.client.post(
+                reverse('core:receive'),
+                data                            = '',
+                content_type                    = '',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
+            )
+        self._test_204_response(response_4)

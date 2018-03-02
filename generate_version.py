@@ -22,7 +22,7 @@ def generate_version():
             version_script_path
         ))
 
-    os.system('python {}'.format(
+    os.system('python3 {}'.format(
         version_script_path
     ))
 

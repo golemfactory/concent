@@ -28,9 +28,10 @@ from utils.testing_helpers  import generate_ecc_key_pair
 class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
     def setUp(self):
-        self.compute_task_def = message.ComputeTaskDef()
-        self.compute_task_def['task_id'] = '1'
-        self.compute_task_def['deadline'] = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
+        self.compute_task_def               = message.ComputeTaskDef()
+        self.compute_task_def['task_id']    = '1'
+        self.compute_task_def['subtask_id'] = '8'
+        self.compute_task_def['deadline']   = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
         with freeze_time("2017-12-01 10:00:00"):
             self.task_to_compute = message.TaskToCompute(
                 compute_task_def = self.compute_task_def
@@ -254,8 +255,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         compute_task_def = message.ComputeTaskDef()
-        compute_task_def['task_id']  = '1'
-        compute_task_def['deadline'] = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
+        compute_task_def['task_id']    = '1'
+        compute_task_def['subtask_id'] = '1'
+        compute_task_def['deadline']   = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
         with freeze_time("2017-12-01 10:00:00"):
             task_to_compute = message.TaskToCompute(
                 compute_task_def = compute_task_def
@@ -348,10 +350,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 10:30:00"):
             cannot_compute_task = message.CannotComputeTask()
-        cannot_compute_task.task_to_compute                             = message.TaskToCompute()
-        cannot_compute_task.task_to_compute.compute_task_def            = message.ComputeTaskDef()
-        cannot_compute_task.task_to_compute.compute_task_def['task_id'] = '1'
-        cannot_compute_task.reason                                      = message.CannotComputeTask.REASON.WrongKey
+        cannot_compute_task.task_to_compute                  = message.TaskToCompute()
+        cannot_compute_task.task_to_compute.compute_task_def = compute_task_def
+        cannot_compute_task.reason                           = message.CannotComputeTask.REASON.WrongKey
 
         serialized_cannot_compute_task   = dump(cannot_compute_task,            PROVIDER_PRIVATE_KEY,  REQUESTOR_PUBLIC_KEY)
         deserialized_cannot_compute_task = load(serialized_cannot_compute_task, REQUESTOR_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, check_time = False)
@@ -466,8 +467,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         compute_task_def = message.ComputeTaskDef()
-        compute_task_def['task_id']  = '1'
-        compute_task_def['deadline'] = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
+        compute_task_def['task_id']    = '1'
+        compute_task_def['subtask_id'] = '1'
+        compute_task_def['deadline']   = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
         with freeze_time("2017-12-01 10:00:00"):
             task_to_compute = message.TaskToCompute(
                 compute_task_def = compute_task_def
@@ -560,10 +562,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 10:00:00"):
             cannot_compute_task = message.CannotComputeTask()
-        cannot_compute_task.task_to_compute                             = message.TaskToCompute()
-        cannot_compute_task.task_to_compute.compute_task_def            = message.ComputeTaskDef()
-        cannot_compute_task.task_to_compute.compute_task_def['task_id'] = '1'
-        cannot_compute_task.reason                                      = message.CannotComputeTask.REASON.WrongCTD
+        cannot_compute_task.task_to_compute                  = message.TaskToCompute()
+        cannot_compute_task.task_to_compute.compute_task_def = compute_task_def
+        cannot_compute_task.reason                           = message.CannotComputeTask.REASON.WrongCTD
 
         serialized_cannot_compute_task   = dump(cannot_compute_task,            PROVIDER_PRIVATE_KEY,  REQUESTOR_PUBLIC_KEY)
         deserialized_cannot_compute_task = load(serialized_cannot_compute_task, REQUESTOR_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, check_time = False)

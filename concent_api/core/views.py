@@ -356,7 +356,7 @@ def handle_send_force_report_computed_task(request, client_message):
         raise Http400("{} is already being processed for this task.".format(client_message.__class__.__name__))
 
     if Subtask.objects.filter(
-        subtask_id = client_message.report_computed_task.task_to_compute.compute_task_def['task_id'],  # TODO: Change to subtask when added to tests
+        subtask_id = client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'],
     ).exists():
         raise Http400("{} is already being processed for this task.".format(client_message.__class__.__name__))
 
@@ -554,6 +554,9 @@ def handle_send_reject_report_computed_task(request, client_message):
         return HttpResponse("", status = 202)
 
     if current_time <= force_report_computed_task.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
+        if subtask.ack_report_computed_task_id is not None or subtask.reject_report_computed_task_id is not None:
+            raise Http400("Received RejectReportComputedTask but AckReportComputedTask or another RejectReportComputedTask for this task has already been submitted.")
+
         ack_message             = StoredMessage.objects.filter(
             task_id                    = client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id'],
             type                       = message.AckReportComputedTask.TYPE,
@@ -614,6 +617,14 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
             reason      = message.concents.ServiceRefused.REASON.DuplicateRequest,
         )
 
+    elif Subtask.objects.filter(
+        subtask_id = client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'],
+        state      = Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name,  # pylint: disable=no-member
+    ).exists():
+        return message.concents.ServiceRefused(
+            reason = message.concents.ServiceRefused.REASON.DuplicateRequest,
+        )
+
     elif client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.FORCE_ACCEPTANCE_TIME < current_time:
         logging.log_timeout(
             client_message,
@@ -663,6 +674,14 @@ def handle_send_force_subtask_results(request, client_message: message.concents.
     ).exists():
         return message.concents.ServiceRefused(
             reason      = message.concents.ServiceRefused.REASON.DuplicateRequest,
+        )
+
+    if Subtask.objects.filter(
+        subtask_id = client_message.ack_report_computed_task.task_to_compute.compute_task_def['subtask_id'],
+        state      = Subtask.SubtaskState.FORCING_ACCEPTANCE.name,  # pylint: disable=no-member
+    ).exists():
+        return message.concents.ServiceRefused(
+            reason = message.concents.ServiceRefused.REASON.DuplicateRequest,
         )
 
     if not base.is_provider_account_status_positive(request):

@@ -117,7 +117,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response_1.content), 0)
 
         self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
+            last_object_type            = message.ReportComputedTask,
             task_id                     = '1',
             receive_delivered_status    = False,
         )
@@ -244,7 +244,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
         self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
+            last_object_type            = message.ReportComputedTask,
             task_id                     = '1',
             receive_delivered_status    = False,
         )
@@ -374,7 +374,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
         self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
+            last_object_type            = message.ReportComputedTask,
             task_id                     = '1',
             receive_delivered_status    = False,
         )
@@ -528,7 +528,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
         self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
+            last_object_type            = message.ReportComputedTask,
             task_id                     = '1',
             receive_delivered_status    = False,
         )
@@ -646,7 +646,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
         self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
+            last_object_type            = message.ReportComputedTask,
             task_id                     = '1',
             receive_delivered_status    = False,
         )
@@ -802,7 +802,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
         self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
+            last_object_type            = message.ReportComputedTask,
             task_id                     = '1',
             receive_delivered_status    = False,
         )
@@ -935,7 +935,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
         self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
+            last_object_type            = message.ReportComputedTask,
             task_id                     = '1',
             receive_delivered_status    = False,
         )
@@ -1068,7 +1068,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
         self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
+            last_object_type            = message.ReportComputedTask,
             task_id                     = '1',
             receive_delivered_status    = False,
         )
@@ -1166,7 +1166,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
         self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
+            last_object_type            = message.ReportComputedTask,
             task_id                     = '1',
             receive_delivered_status    = False,
         )
@@ -1642,7 +1642,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
         self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
+            last_object_type            = message.ReportComputedTask,
             task_id                     = '1',
             receive_delivered_status    = False,
         )
@@ -1760,7 +1760,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
         self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
+            last_object_type            = message.ReportComputedTask,
             task_id                     = '1',
             receive_delivered_status    = False,
         )
@@ -1896,7 +1896,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
         self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
+            last_object_type            = message.ReportComputedTask,
             task_id                     = '1',
             receive_delivered_status    = False,
         )

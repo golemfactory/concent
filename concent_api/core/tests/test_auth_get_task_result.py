@@ -76,7 +76,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_auth.requestor_public_key_bytes, self.REQUESTOR_PUBLIC_KEY)
 
         # STEP 2: Requestor again forces get task result via Concent with wrong key or mixed key.
-        # Concent do not rejects request immediately because message was already sent.
+        # Concent rejects request immediately because message with this subtask_id was already sent.
         serialized_force_get_task_result = self._get_serialized_force_get_task_result(
             report_computed_task  = deserialized_report_computed_task,
             timestamp             = "2017-12-01 11:00:08",
@@ -94,22 +94,13 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,  200)
 
-        message_from_concent = load(
-            response.content,
-            self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY,
-            check_time = False
-        )
+        message_from_concent = load(response.content, self.DIFFERENT_REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
-        self.assertIsInstance(message_from_concent, message.concents.AckForceGetTaskResult)
+        self.assertIsInstance(message_from_concent,      message.concents.ServiceRefused)
         self.assertEqual(message_from_concent.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:08"))
+        self.assertEqual(message_from_concent.reason,    message_from_concent.REASON.DuplicateRequest)
 
-        self.assertEqual(MessageAuth.objects.count(), 2)
-
-        message_auth = MessageAuth.objects.last()
-        self.assertEqual(message_auth.message.type,               message.concents.ForceGetTaskResult.TYPE)
-        self.assertEqual(message_auth.provider_public_key_bytes,  self.PROVIDER_PUBLIC_KEY)
-        self.assertEqual(message_auth.requestor_public_key_bytes, self.DIFFERENT_REQUESTOR_PUBLIC_KEY)
+        self.assertEqual(MessageAuth.objects.count(), 1)
 
         serialized_force_get_task_result = self._get_serialized_force_get_task_result(
             report_computed_task  = deserialized_report_computed_task,
@@ -130,15 +121,11 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         message_from_concent = load(response.content, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
-        self.assertIsInstance(message_from_concent, message.concents.AckForceGetTaskResult)
+        self.assertIsInstance(message_from_concent,      message.concents.ServiceRefused)
         self.assertEqual(message_from_concent.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:08"))
+        self.assertEqual(message_from_concent.reason,    message_from_concent.REASON.DuplicateRequest)
 
-        self.assertEqual(MessageAuth.objects.count(), 3)
-
-        message_auth = MessageAuth.objects.last()
-        self.assertEqual(message_auth.message.type,               message.concents.ForceGetTaskResult.TYPE)
-        self.assertEqual(message_auth.provider_public_key_bytes,  self.REQUESTOR_PUBLIC_KEY)
-        self.assertEqual(message_auth.requestor_public_key_bytes, self.PROVIDER_PUBLIC_KEY)
+        self.assertEqual(MessageAuth.objects.count(), 1)
 
         # STEP 3: Requestor again forces get task result via Concent with correct key.
         # Concent rejects request immediately because message was already sent.
@@ -159,7 +146,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_from_concent.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:08"))
         self.assertEqual(message_from_concent.reason,    message_from_concent.REASON.DuplicateRequest)
 
-        self.assertEqual(MessageAuth.objects.count(), 3)
+        self.assertEqual(MessageAuth.objects.count(), 1)
 
     def test_concent_requests_task_result_from_provider_and_requestor_receives_failure_because_provider_does_not_submit_should_work_only_with_correct_keys(self):
         """

@@ -73,7 +73,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         assert response.status_code   == 202
 
         self._test_database_objects(
-            last_object_type         = message.concents.ForceSubtaskResults,
+            last_object_type         = message.concents.AckReportComputedTask,
             task_id                  = '2',
             receive_delivered_status = False,
         )
@@ -85,7 +85,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # STEP 2: Different provider forces subtask results via Concent with message with the same task_id with different keys.
-        # Request is processed correctly.
+        # Request is refused because same subtask_id is used.
         different_serialized_force_subtask_results = self._get_serialized_force_subtask_results(
             timestamp                = "2018-02-05 10:00:15",
             ack_report_computed_task = self._get_deserialized_ack_report_computed_task(
@@ -110,20 +110,17 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
-        assert len(response.content)  == 0
-        assert response.status_code   == 202
-
-        self._test_database_objects(
-            last_object_type         = message.concents.ForceSubtaskResults,
-            task_id                  = '2',
-            receive_delivered_status = False,
+        self._test_response(
+            response,
+            status       = 200,
+            key          = self.DIFFERENT_PROVIDER_PRIVATE_KEY,
+            message_type = message.concents.ServiceRefused,
+            fields       = {
+                'reason':    message.concents.ServiceRefused.REASON.DuplicateRequest,
+                'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 10:00:31"),
+            }
         )
-        self._assert_auth_message_counter_increased()
-        self._assert_auth_message_last(
-            related_message      = message.concents.ForceSubtaskResults,
-            provider_public_key  = self._get_encoded_key(self.DIFFERENT_PROVIDER_PUBLIC_KEY),
-            requestor_public_key = self._get_encoded_requestor_public_key(),
-        )
+        self._assert_auth_message_counter_not_increased()
 
         # STEP 3: Provider again forces subtask results via Concent with message with the same task_id with correct keys.
         # Request is refused.
@@ -190,7 +187,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         assert response.status_code  == 202
 
         self._test_database_objects(
-            last_object_type         = message.concents.ForceSubtaskResults,
+            last_object_type         = message.concents.AckReportComputedTask,
             task_id                  = '2',
             receive_delivered_status = False,
         )
@@ -435,7 +432,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self._test_database_objects(
-            last_object_type         = message.concents.ForceSubtaskResultsResponse,
+            last_object_type         = message.tasks.SubtaskResultsAccepted,
             task_id                  = '2',
             receive_delivered_status = False,
         )
@@ -696,7 +693,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self._test_database_objects(
-            last_object_type         = message.concents.ForceSubtaskResultsResponse,
+            last_object_type         = message.tasks.SubtaskResultsRejected,
             task_id                  = '2',
             receive_delivered_status = False,
         )
@@ -808,7 +805,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         assert response.status_code  == 202
 
         self._test_database_objects(
-            last_object_type         = message.concents.ForceSubtaskResults,
+            last_object_type         = message.concents.AckReportComputedTask,
             task_id                  = '1',
             receive_delivered_status = False,
         )
@@ -990,7 +987,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         assert response.status_code  == 202
 
         self._test_database_objects(
-            last_object_type         = message.concents.ForceSubtaskResults,
+            last_object_type         = message.concents.AckReportComputedTask,
             task_id                  = '1',
             receive_delivered_status = False,
         )

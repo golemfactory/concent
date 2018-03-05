@@ -13,7 +13,9 @@ from freezegun              import freeze_time
 from golem_messages         import dump
 from golem_messages         import load
 from golem_messages         import message
+from core.models            import Client
 from core.models            import StoredMessage
+from core.models            import Subtask
 from core.models            import MessageAuth
 from core.models            import ReceiveStatus
 
@@ -203,6 +205,45 @@ class ConcentIntegrationTestCase(TestCase):
         if receive_delivered_status is not None:
             self.assertEqual(ReceiveStatus.objects.last().delivered,        receive_delivered_status)
             self.assertEqual(ReceiveStatus.objects.last().message.task_id,  task_id)
+
+    def _test_subtask_state(
+        self,
+        task_id:                    str,
+        subtask_id:                 str,
+        subtask_state:              Subtask.SubtaskState,
+        provider_key:               str,
+        requestor_key:              str,
+        expected_nested_messages:   set,
+        next_deadline:              int = None,
+    ):
+        self.assertTrue(StoredMessage.objects.filter(subtask_id = subtask_id).exists())
+        subtask = Subtask.objects.get(subtask_id = subtask_id)
+        self.assertEqual(subtask.task_id,              task_id)
+        self.assertEqual(subtask.subtask_id,           subtask_id)
+        self.assertEqual(subtask.state,                subtask_state.name)
+        self.assertEqual(subtask.provider.public_key,  provider_key)
+        self.assertEqual(subtask.requestor.public_key, requestor_key)
+
+        assert Client.objects.filter(public_key = provider_key).exists()
+        assert Client.objects.filter(public_key = requestor_key).exists()
+
+        subtask_deadline = None
+        if subtask.state_enum in Subtask.ACTIVE_STATES:
+            subtask_deadline = subtask.next_deadline.timestamp()
+        self.assertEqual(subtask_deadline, next_deadline)
+
+        self._test_subtask_nested_messages(subtask, expected_nested_messages)
+
+    def _test_subtask_nested_messages(self, subtask, expected_nested_messages):
+        all_possible_messages = {
+            'task_to_compute', 'report_computed_task', 'ack_report_computed_task', 'reject_report_computed_task', 'subtask_results_accepted', 'subtask_results_rejected'
+        }
+        required_messages = all_possible_messages & expected_nested_messages
+        for nested_message in required_messages:
+            self.assertIsNotNone(getattr(subtask, nested_message))
+        unset_messages = all_possible_messages - expected_nested_messages
+        for nested_message in unset_messages:
+            self.assertIsNone(getattr(subtask, nested_message))
 
     def _get_deserialized_force_subtask_results(
         self,

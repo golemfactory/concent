@@ -1,3 +1,5 @@
+import sys
+
 from golem_messages.exceptions      import MessageError
 from golem_messages.message         import Message
 from golem_messages.shortcuts       import dump
@@ -87,3 +89,14 @@ def timestamp_to_isoformat(timestamp):
 
 if __name__ == '__main__':
     pass
+
+
+def parse_command_line(command_line):
+    if len(command_line) <= 1:
+        sys.exit('Not enough arguments')
+
+    if len(command_line) >= 3:
+        sys.exit('Too many arguments')
+
+    cluster_url = command_line[1]
+    return cluster_url

@@ -16,7 +16,7 @@ from golem_messages.message.tasks   import ReportComputedTask
 from utils.helpers                  import get_current_utc_timestamp
 from utils.testing_helpers          import generate_ecc_key_pair
 
-from api_testing_common            import api_request
+from api_testing_common import api_request, parse_command_line
 
 import requests
 
@@ -24,17 +24,6 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
 (PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)  = generate_ecc_key_pair()
 (REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
-
-
-def parse_command_line(command_line):
-    if len(command_line) <= 1:
-        sys.exit('Not enough arguments')
-
-    if len(command_line) >= 3:
-        sys.exit('Too many arguments')
-
-    cluster_url = command_line[1]
-    return cluster_url
 
 
 def force_report_computed_task(task_id, provider_private_key, provider_public_key, requestor_private_key, requestor_public_key, current_time):

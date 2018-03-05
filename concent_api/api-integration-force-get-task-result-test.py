@@ -14,8 +14,8 @@ from golem_messages         import shortcuts
 from utils.helpers          import get_current_utc_timestamp
 from utils.testing_helpers  import generate_ecc_key_pair
 
-from api_testing_helpers    import api_request
-from api_testing_helpers    import timestamp_to_isoformat
+from api_testing_common    import api_request
+from api_testing_common    import timestamp_to_isoformat
 
 from freezegun              import freeze_time
 import requests

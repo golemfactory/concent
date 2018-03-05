@@ -5,6 +5,7 @@ from django.db.models       import BinaryField
 from django.db.models       import BooleanField
 from django.db.models       import CharField
 from django.db.models       import DateTimeField
+from django.db.models       import DecimalField
 from django.db.models       import ForeignKey
 from django.db.models       import Manager
 from django.db.models       import Model
@@ -12,6 +13,7 @@ from django.db.models       import OneToOneField
 from django.db.models       import PositiveSmallIntegerField
 from django.db.models       import Q
 from django.db.models       import QuerySet
+from django.utils           import timezone
 
 from golem_messages         import message
 
@@ -391,3 +393,72 @@ class Subtask(Model):
     @property
     def _current_state_enum(self):
         return Subtask.SubtaskState[self._current_state_name]
+
+
+class PendingResponse(Model):
+    """
+    Stores information about messages to be returned from the `receive` or `receive-out-of-band` endpoint.
+    """
+
+    class ResponseType(ChoiceEnum):
+        ForceReportComputedTask         = 'ForceReportComputedTask'
+        ForceReportComputedTaskResponse = 'ForceReportComputedTaskResponse'
+        VerdictReportComputedTask       = 'VerdictReportComputedTask'
+        ForceGetTaskResultRejected      = 'ForceGetTaskResultRejected'
+        ForceGetTaskResultFailed        = 'ForceGetTaskResultFailed'
+        ForceGetTaskResultUpload        = 'ForceGetTaskResultUpload'
+        ForceGetTaskResultDownload      = 'ForceGetTaskResultDownload'
+        ForceSubtaskResults             = 'ForceSubtaskResults'
+        SubtaskResultsSettled           = 'SubtaskResultsSettled'
+        ForceSubtaskResultsResponse     = 'ForceSubtaskResultsResponse'
+        SubtaskResultsRejected          = 'SubtaskResultsRejected'
+        ForcePaymentCommitted           = 'ForcePaymentCommitted'
+
+    class Queue(ChoiceEnum):
+        Receive             = 'receive'
+        ReceiveOutOfBand    = 'receive_out_of_band'
+
+    @property
+    def response_type_enum(self):
+        return PendingResponse.ResponseType[self.response_type]
+
+    response_type        = CharField(max_length = 32, choices = ResponseType.choices())
+    client               = ForeignKey(Client)
+    queue                = CharField(max_length = 32, choices = Queue.choices())
+
+    # TRUE if the client has already fetched the message.
+    delivered            = BooleanField(default = False)
+
+    subtask              = ForeignKey(Subtask, blank = True, null = True)
+    created_at           = DateTimeField(default = timezone.now)
+
+    def clean(self):
+        # payment_message can be included only if current state is ForcePaymentCommitted
+        if self.response_type != PendingResponse.ResponseType.ForcePaymentCommitted.name and self.payments.filter(pending_response__pk = self.pk).exists():  # pylint: disable=no-member
+            raise ValidationError({
+                'payments_message': "Only 'ForcePaymentCommitted' responses can have a 'PaymentInfo' instance associated with it"
+            })
+
+        # subtask must be None if current state is ForcePaymentCommitted
+        if self.response_type == PendingResponse.ResponseType.ForcePaymentCommitted.name and not hasattr(self, 'subtask'):  # pylint: disable=no-member
+            raise ValidationError({
+                'subtask': 'Payment message in queue cannot be associated with a subtask'
+            })
+
+
+class PaymentInfo(Model):
+    """
+    Stores the information needed to construt a PaymentCommitted message
+    """
+
+    class RecipientType(ChoiceEnum):
+        Provider    = 'provider'
+        Requestor   = 'requestor'
+
+    payment_ts              = DateTimeField()
+    task_owner_key          = Base64Field(max_length = 64)
+    provider_eth_account    = Base64Field(max_length = 64)
+    amount_paid             = DecimalField(max_digits = 10, decimal_places = 2)
+    recipient_type          = CharField(max_length = 32, choices = RecipientType.choices())
+    amount_pending          = DecimalField(max_digits = 10, decimal_places = 2)
+    pending_response        = ForeignKey(PendingResponse, related_name = 'payments')

@@ -24,11 +24,14 @@ from utils.api_view                 import api_view
 from utils.api_view                 import Http400
 from utils.helpers                  import decode_key
 from utils.helpers                  import get_current_utc_timestamp
+from utils.helpers                  import parse_timestamp_to_utc_datetime
 from .constants                     import MESSAGE_TASK_ID_MAX_LENGTH
-from .models                        import StoredMessage
+from .models                        import Client
 from .models                        import MessageAuth
 from .models                        import ReceiveOutOfBandStatus
 from .models                        import ReceiveStatus
+from .models                        import StoredMessage
+from .models                        import Subtask
 
 
 @api_view
@@ -1218,6 +1221,229 @@ def store_message_and_message_status(
         )
         receive_message_status.full_clean()
         receive_message_status.save()
+
+
+def store_subtask(
+    task_id:                        str,
+    subtask_id:                     str,
+    provider_public_key:            bytes,
+    requestor_public_key:           bytes,
+    state:                          Subtask.SubtaskState,
+    next_deadline:                  int,
+    task_to_compute:                message.TaskToCompute                = None,
+    report_computed_task:           message.ReportComputedTask           = None,
+    ack_report_computed_task:       message.AckReportComputedTask        = None,
+    reject_report_computed_task:    message.RejectReportComputedTask     = None,
+    subtask_results_accepted:       message.tasks.SubtaskResultsAccepted = None,
+    subtask_results_rejected:       message.tasks.SubtaskResultsRejected = None,
+):
+    """
+    Validates and stores subtask and its data in Subtask table.
+    Stores related messages in StoredMessage table and adds relation to newly created subtask.
+    """
+    assert isinstance(task_id,              str)
+    assert isinstance(subtask_id,           str)
+    assert isinstance(provider_public_key,  bytes)
+    assert isinstance(requestor_public_key, bytes)
+    assert state in Subtask.SubtaskState
+    assert (state in Subtask.ACTIVE_STATES)  == (next_deadline is not None)
+    assert (state in Subtask.PASSIVE_STATES) == (next_deadline is None)
+
+    provider  = Client.objects.get_or_create_full_clean(provider_public_key)
+    requestor = Client.objects.get_or_create_full_clean(requestor_public_key)
+
+    subtask = Subtask(
+        task_id         = task_id,
+        subtask_id      = subtask_id,
+        provider        = provider,
+        requestor       = requestor,
+        state           = state.name,
+        next_deadline   = parse_timestamp_to_utc_datetime(next_deadline),
+    )
+
+    set_subtask_messages(
+        subtask,
+        task_to_compute             = task_to_compute,
+        report_computed_task        = report_computed_task,
+        ack_report_computed_task    = ack_report_computed_task,
+        reject_report_computed_task = reject_report_computed_task,
+        subtask_results_accepted    = subtask_results_accepted,
+        subtask_results_rejected    = subtask_results_rejected,
+    )
+
+    subtask.full_clean()
+    subtask.save()
+
+    logging.log_subtask_stored(
+        task_id,
+        subtask_id,
+        state.name,
+        subtask.provider.public_key,
+        subtask.requestor.public_key,
+        next_deadline,
+    )
+
+
+def update_subtask(
+    subtask:                        Subtask,
+    state:                          Subtask.SubtaskState,
+    next_deadline:                  int                                  = None,
+    set_next_deadline:              bool                                 = False,
+    task_to_compute:                message.TaskToCompute                = None,
+    report_computed_task:           message.ReportComputedTask           = None,
+    ack_report_computed_task:       message.AckReportComputedTask        = None,
+    reject_report_computed_task:    message.RejectReportComputedTask     = None,
+    subtask_results_accepted:       message.tasks.SubtaskResultsAccepted = None,
+    subtask_results_rejected:       message.tasks.SubtaskResultsRejected = None,
+):
+    """
+    Validates and updates subtask and its data.
+    Stores related messages in StoredMessage table and adds relation to newly created subtask.
+    """
+    assert isinstance(subtask, Subtask)
+    assert state in Subtask.SubtaskState
+    assert (state in Subtask.ACTIVE_STATES)  == (next_deadline is not None)
+    assert (state in Subtask.PASSIVE_STATES) == (next_deadline is None)
+
+    set_subtask_messages(
+        subtask,
+        task_to_compute             = task_to_compute,
+        report_computed_task        = report_computed_task,
+        ack_report_computed_task    = ack_report_computed_task,
+        reject_report_computed_task = reject_report_computed_task,
+        subtask_results_accepted    = subtask_results_accepted,
+        subtask_results_rejected    = subtask_results_rejected,
+    )
+
+    if set_next_deadline:
+        subtask.next_deadline = next_deadline
+    subtask.state = state.name
+    subtask.full_clean()
+    subtask.save()
+
+    logging.log_subtask_updated(
+        subtask.task_id,
+        subtask.subtask_id,
+        state.name,
+        subtask.provider.public_key,
+        subtask.requestor.public_key,
+        next_deadline,
+    )
+
+
+def set_subtask_messages(
+    subtask:                        Subtask,
+    task_to_compute:                message.TaskToCompute                       = None,
+    report_computed_task:           message.ReportComputedTask                  = None,
+    ack_report_computed_task:       message.concents.AckReportComputedTask      = None,
+    reject_report_computed_task:    message.concents.RejectReportComputedTask   = None,
+    subtask_results_accepted:       message.tasks.SubtaskResultsAccepted        = None,
+    subtask_results_rejected:       message.tasks.SubtaskResultsRejected        = None,
+):
+    """
+    Stores and adds relation of passed StoredMessages to given subtask.
+    If the message name is not present in kwargs, it doesn't do anything with it.
+    """
+    subtask_messages_to_set = {
+        'task_to_compute':              task_to_compute,
+        'report_computed_task':         report_computed_task,
+        'ack_report_computed_task':     ack_report_computed_task,
+        'reject_report_computed_task':  reject_report_computed_task,
+        'subtask_results_accepted':     subtask_results_accepted,
+        'subtask_results_rejected':     subtask_results_rejected,
+    }
+
+    assert set(subtask_messages_to_set).issubset({f.name for f in Subtask._meta.get_fields()})
+    assert set(subtask_messages_to_set).issubset(set(Subtask.MESSAGE_FOR_FIELD))
+
+    for message_name, message_type in Subtask.MESSAGE_FOR_FIELD.items():
+        message_to_store = subtask_messages_to_set.get(message_name)
+        if message_to_store is not None and getattr(subtask, message_name) is None:
+            assert isinstance(message_to_store, message_type)
+            stored_message = store_message(
+                message_to_store,
+                subtask.task_id,
+                subtask.subtask_id,
+            )
+            setattr(subtask, message_name, stored_message)
+            logging.log_stored_message_added_to_subtask(
+                subtask.subtask_id,
+                subtask.state,
+                message_type.TYPE,
+            )
+
+
+def store_or_update_subtask(
+    task_id:                        str,
+    subtask_id:                     str,
+    provider_public_key:            bytes,
+    requestor_public_key:           bytes,
+    state:                          Subtask.SubtaskState,
+    next_deadline:                  int                                  = None,
+    set_next_deadline:              bool                                 = False,
+    task_to_compute:                message.TaskToCompute                = None,
+    report_computed_task:           message.ReportComputedTask           = None,
+    ack_report_computed_task:       message.AckReportComputedTask        = None,
+    reject_report_computed_task:    message.RejectReportComputedTask     = None,
+    subtask_results_accepted:       message.tasks.SubtaskResultsAccepted = None,
+    subtask_results_rejected:       message.tasks.SubtaskResultsRejected = None,
+):
+    try:
+        subtask = Subtask.objects.get(
+            subtask_id = subtask_id,
+        )
+    except Subtask.DoesNotExist:
+        subtask = None
+
+    if subtask is not None:
+        update_subtask(
+            subtask                         = subtask,
+            state                           = state,
+            next_deadline                   = next_deadline,
+            set_next_deadline               = set_next_deadline,
+            task_to_compute                 = task_to_compute,
+            report_computed_task            = report_computed_task,
+            ack_report_computed_task        = ack_report_computed_task,
+            reject_report_computed_task     = reject_report_computed_task,
+            subtask_results_accepted        = subtask_results_accepted,
+            subtask_results_rejected        = subtask_results_rejected,
+        )
+    else:
+        store_subtask(
+            task_id                         = task_id,
+            subtask_id                      = subtask_id,
+            provider_public_key             = provider_public_key,
+            requestor_public_key            = requestor_public_key,
+            state                           = state,
+            next_deadline                   = next_deadline,
+            task_to_compute                 = task_to_compute,
+            report_computed_task            = report_computed_task,
+            ack_report_computed_task        = ack_report_computed_task,
+            reject_report_computed_task     = reject_report_computed_task,
+            subtask_results_accepted        = subtask_results_accepted,
+            subtask_results_rejected        = subtask_results_rejected,
+        )
+
+
+def store_message(
+    golem_message:          message.base.Message,
+    task_id:                str,
+    subtask_id:             str,
+):
+    assert golem_message.TYPE in message.registered_message_types
+
+    message_timestamp = datetime.datetime.now(timezone.utc)
+    stored_message = StoredMessage(
+        type        = golem_message.TYPE,
+        timestamp   = message_timestamp,
+        data        = copy.copy(golem_message).serialize(),
+        task_id     = task_id,
+        subtask_id  = subtask_id,
+    )
+    stored_message.full_clean()
+    stored_message.save()
+
+    return stored_message
 
 
 def get_file_status(file_transfer_token_from_database: message.concents.FileTransferToken) -> bool:

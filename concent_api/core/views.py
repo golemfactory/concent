@@ -7,6 +7,7 @@ import requests
 from django.conf                    import settings
 from django.http                    import HttpResponse
 from django.http                    import JsonResponse
+from django.db.models               import Q
 from django.utils                   import timezone
 from django.views.decorators.http   import require_POST
 from django.views.decorators.http   import require_GET
@@ -28,6 +29,7 @@ from utils.helpers                  import parse_timestamp_to_utc_datetime
 from .constants                     import MESSAGE_TASK_ID_MAX_LENGTH
 from .models                        import Client
 from .models                        import MessageAuth
+from .models                        import PendingResponse
 from .models                        import ReceiveOutOfBandStatus
 from .models                        import ReceiveStatus
 from .models                        import StoredMessage
@@ -1443,6 +1445,110 @@ def store_subtask(
         subtask.requestor.public_key,
         next_deadline,
     )
+
+
+def update_concent_states(
+    client_public_key: bytes,
+):
+    clients_subtask_list = Subtask.objects.filter(
+        Q(requestor__public_key = b64encode(client_public_key)) | Q(provider__public_key = b64encode(client_public_key)),
+        state__in               = Subtask.SUBTASK_ACTIVE_STATES,
+        next_deadline__lte      = timezone.now()
+    )
+
+    if clients_subtask_list.exists():
+        for subtask in clients_subtask_list:
+            if subtask.state == Subtask.SubtaskState.FORCING_REPORT.name:  # pylint: disable=no-member
+                update_subtask_state(
+                    subtask                 = subtask,
+                    state                   = Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
+                )
+                store_pending_message(
+                    response_type       = PendingResponse.ResponseType.AckReportComputedTask,
+                    client_public_key   = subtask.provider.public_key_bytes,
+                    queue               = PendingResponse.Queue.Receive,
+                    subtask             = subtask,
+                )
+                store_pending_message(
+                    response_type       = PendingResponse.ResponseType.VerdictReportComputedTask,
+                    client_public_key   = subtask.requestor.public_key_bytes,
+                    queue               = PendingResponse.Queue.ReceiveOutOfBand,
+                    subtask             = subtask,
+                )
+            elif subtask.state == Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name:  # pylint: disable=no-member
+                update_subtask_state(
+                    subtask                 = subtask,
+                    state                   = Subtask.SubtaskState.FAILED.name,  # pylint: disable=no-member
+                )
+                store_pending_message(
+                    response_type       = PendingResponse.ResponseType.ForceGetTaskResultFailed,
+                    client_public_key   = subtask.requestor.public_key_bytes,
+                    queue               = PendingResponse.Queue.Receive,
+                    subtask             = subtask,
+                )
+            elif subtask.state == Subtask.SubtaskState.FORCING_ACCEPTANCE.name:  # pylint: disable=no-member
+                update_subtask_state(
+                    subtask                 = subtask,
+                    state                   = Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
+                )
+                store_pending_message(
+                    response_type       = PendingResponse.ResponseType.ForceSubtaskResultsSettled,
+                    client_public_key   = subtask.provider.public_key_bytes,
+                    queue               = PendingResponse.Queue.Receive,
+                    subtask             = subtask,
+                )
+                store_pending_message(
+                    response_type       = PendingResponse.ResponseType.ForceSubtaskResultsSettled,
+                    client_public_key   = subtask.requestor.public_key_bytes,
+                    queue               = PendingResponse.Queue.ReceiveOutOfBand,
+                    subtask             = subtask,
+                )
+            assert subtask.state is not Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name  # pylint: disable=no-member
+
+        logging.log_changes_in_subtask_states(
+            b64encode(client_public_key),
+            clients_subtask_list.count(),
+        )
+    else:
+        logging.log_no_changes_in_subtask_states(
+            b64encode(client_public_key)
+        )
+
+
+def update_subtask_state(
+    subtask,
+    state,
+):
+    logging.log_change_subtask_state_name(
+        subtask.state,
+        state.name,
+    )
+    subtask.state = state
+    subtask.full_clean()
+    subtask.save()
+
+
+def store_pending_message(
+    response_type       = None,
+    client_public_key   = None,
+    queue               = None,
+    subtask             = None,
+):
+    client = Client.objects.get_or_create_full_clean(client_public_key)
+    queue = PendingResponse(
+        response_type   = response_type.name,
+        client          = client,
+        queue           = queue.name,
+        subtask         = subtask,
+    )
+    logging.log_new_pending_response(
+        response_type.name,
+        queue.name,
+        subtask.subtask_id,
+        client.public_key,
+    )
+    queue.full_clean()
+    queue.save()
 
 
 def update_subtask(

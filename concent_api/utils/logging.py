@@ -179,6 +179,16 @@ def log_new_pending_response(response_type: str, queue_name: str, subtask_id: st
     ))
 
 
+def log_receive_message_from_database(message: Message, client_public_key: str, response_type: str, queue_name: str):
+    logger.info('Message {}, TYPE: {} has been received by {} endpoint -- RESPONSE_TYPE: {} -- CLIENT PUBLIC KEY: {}'.format(
+        message.__class__.__name__,
+        message.TYPE,
+        queue_name,
+        response_type,
+        client_public_key,
+    ))
+
+
 def get_task_id_for_logging(message):
     task_id = get_field_from_message(message, 'task_id')
     if not isinstance(task_id, str):

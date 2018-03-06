@@ -1,7 +1,7 @@
 import sys
 
 from golem_messages.exceptions      import MessageError
-from golem_messages.message         import Message
+from golem_messages.message import Message, ComputeTaskDef, TaskToCompute
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 
@@ -121,3 +121,12 @@ def parse_command_line(command_line):
 
     cluster_url = command_line[1]
     return cluster_url
+
+
+def create_task_to_compute(current_time, task_id):
+    compute_task_def = ComputeTaskDef()
+    compute_task_def['task_id'] = task_id
+    compute_task_def['deadline'] = current_time + 60
+    task_to_compute = TaskToCompute(
+        compute_task_def=compute_task_def)
+    return task_to_compute

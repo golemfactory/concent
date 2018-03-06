@@ -35,8 +35,5 @@ class ProtocolConstantsTest(ConcentIntegrationTestCase):
         )
 
         for setting_name, setting_value in protocol_constants_settings.items():
-            self.assertIn(setting_name.lower(),                              response.json())
-            self.assertIn('name',                                            response.json()[setting_name.lower()])
-            self.assertIn('value',                                           response.json()[setting_name.lower()])
-            self.assertEqual(response.json()[setting_name.lower()]['name'],  setting_name)
-            self.assertEqual(response.json()[setting_name.lower()]['value'], setting_value)
+            self.assertIn(setting_name.lower(),                     response.json())
+            self.assertEqual(response.json()[setting_name.lower()], setting_value)

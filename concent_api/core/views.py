@@ -334,22 +334,10 @@ def protocol_constants(_request):
     """ Endpoint which returns Concent time settings. """
     return JsonResponse(
         data = {
-            'concent_messaging_time': {
-                'name':  'CONCENT_MESSAGING_TIME',
-                'value': settings.CONCENT_MESSAGING_TIME,
-            },
-            'force_acceptance_time': {
-                'name': 'FORCE_ACCEPTANCE_TIME',
-                'value': settings.FORCE_ACCEPTANCE_TIME,
-            },
-            'subtask_verification_time': {
-                'name': 'SUBTASK_VERIFICATION_TIME',
-                'value': settings.SUBTASK_VERIFICATION_TIME,
-            },
-            'token_expiration_time': {
-                'name': 'TOKEN_EXPIRATION_TIME',
-                'value': settings.TOKEN_EXPIRATION_TIME,
-            },
+            'concent_messaging_time':    settings.CONCENT_MESSAGING_TIME,
+            'force_acceptance_time':     settings.FORCE_ACCEPTANCE_TIME,
+            'subtask_verification_time': settings.SUBTASK_VERIFICATION_TIME,
+            'token_expiration_time':     settings.TOKEN_EXPIRATION_TIME,
         }
     )
 

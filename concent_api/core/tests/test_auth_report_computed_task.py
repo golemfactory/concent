@@ -9,7 +9,6 @@ from golem_messages         import message
 import dateutil.parser
 
 from core.tests.utils       import ConcentIntegrationTestCase
-from core.models            import MessageAuth
 from core.models            import Subtask
 from utils.testing_helpers  import generate_ecc_key_pair
 
@@ -35,7 +34,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.compute_task_def['deadline']   = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
         with freeze_time("2017-12-01 10:00:00"):
             self.task_to_compute = message.TaskToCompute(
-                compute_task_def = self.compute_task_def
+                compute_task_def    = self.compute_task_def,
+                provider_public_key = PROVIDER_PUBLIC_KEY,
             )
 
         # sign task_to_compute message with PROVIDER sig
@@ -81,12 +81,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        202)
         self.assertEqual(len(response.content),       0)
-        self.assertEqual(MessageAuth.objects.count(), 1)
-
-        message_auth = MessageAuth.objects.last()
-        self.assertEqual(message_auth.message.type,               message.ForceReportComputedTask.TYPE)
-        self.assertEqual(message_auth.provider_public_key_bytes,  PROVIDER_PUBLIC_KEY)
-        self.assertEqual(message_auth.requestor_public_key_bytes, REQUESTOR_PUBLIC_KEY)
 
         self._test_subtask_state(
             task_id                  = '1',
@@ -120,7 +114,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
-        self.assertEqual(MessageAuth.objects.count(), 1)
 
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
@@ -132,7 +125,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
-        self.assertEqual(MessageAuth.objects.count(), 1)
 
         # STEP 3: Concent forces computed task report on the requestor with correct key
 
@@ -155,7 +147,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(force_report_computed_task_from_view.timestamp,                                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   self.force_report_computed_task.report_computed_task.task_to_compute.timestamp)
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             self.force_report_computed_task.report_computed_task.task_to_compute)
-        self.assertEqual(MessageAuth.objects.count(),                                                           2)
 
         # STEP 4: Requestor do not accepts computed task via Concent with different or mixed key
 
@@ -174,7 +165,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response.status_code,        400)
-        self.assertEqual(MessageAuth.objects.count(), 2)
 
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
@@ -185,7 +175,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response.status_code,        400)
-        self.assertEqual(MessageAuth.objects.count(), 2)
 
         # STEP 5: Requestor accepts computed task via Concent with correct key
 
@@ -204,12 +193,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response.status_code,        202)
-        self.assertEqual(MessageAuth.objects.count(), 3)
-
-        message_auth = MessageAuth.objects.last()
-        self.assertEqual(message_auth.message.type,               message.AckReportComputedTask.TYPE)
-        self.assertEqual(message_auth.provider_public_key_bytes,  PROVIDER_PUBLIC_KEY)
-        self.assertEqual(message_auth.requestor_public_key_bytes, REQUESTOR_PUBLIC_KEY)
 
         self._test_subtask_state(
             task_id                  = '1',
@@ -241,7 +224,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
-        self.assertEqual(MessageAuth.objects.count(), 3)
 
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
@@ -253,7 +235,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
-        self.assertEqual(MessageAuth.objects.count(), 3)
 
         # STEP 7: Concent passes computed task acceptance to the provider with correct key
 
@@ -274,7 +255,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,                         200)
         self.assertEqual(ack_report_computed_task_from_view.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"))
-        self.assertEqual(MessageAuth.objects.count(),                  4)
 
         self._assert_client_count_is_equal(2)
 
@@ -301,7 +281,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         compute_task_def['deadline']   = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
         with freeze_time("2017-12-01 10:00:00"):
             task_to_compute = message.TaskToCompute(
-                compute_task_def = compute_task_def
+                compute_task_def    = compute_task_def,
+                provider_public_key = PROVIDER_PUBLIC_KEY,
             )
 
         # sign task_to_compute message with PROVIDER sig
@@ -331,12 +312,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        202)
         self.assertEqual(len(response.content),       0)
-        self.assertEqual(MessageAuth.objects.count(), 1)
-
-        message_auth = MessageAuth.objects.last()
-        self.assertEqual(message_auth.message.type,               message.ForceReportComputedTask.TYPE)
-        self.assertEqual(message_auth.provider_public_key_bytes,  PROVIDER_PUBLIC_KEY)
-        self.assertEqual(message_auth.requestor_public_key_bytes, REQUESTOR_PUBLIC_KEY)
 
         self._test_subtask_state(
             task_id                  = '1',
@@ -370,7 +345,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
-        self.assertEqual(MessageAuth.objects.count(), 1)
 
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
@@ -382,7 +356,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
-        self.assertEqual(MessageAuth.objects.count(), 1)
 
         # STEP 3: Concent forces computed task report on the requestor with correct key
 
@@ -405,13 +378,14 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(force_report_computed_task_from_view.timestamp,                                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   force_report_computed_task.report_computed_task.task_to_compute.timestamp)
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             force_report_computed_task.report_computed_task.task_to_compute)
-        self.assertEqual(MessageAuth.objects.count(),                                                           2)
 
         # STEP 4: Requestor do not rejects computed task due to CannotComputeTask or TaskFailure with different or mixed key
 
         with freeze_time("2017-12-01 10:30:00"):
             cannot_compute_task = message.CannotComputeTask()
-        cannot_compute_task.task_to_compute                  = message.TaskToCompute()
+        cannot_compute_task.task_to_compute                  = message.TaskToCompute(
+            provider_public_key = PROVIDER_PUBLIC_KEY,
+        )
         cannot_compute_task.task_to_compute.compute_task_def = compute_task_def
         cannot_compute_task.reason                           = message.CannotComputeTask.REASON.WrongKey
 
@@ -433,7 +407,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response.status_code,        400)
-        self.assertEqual(MessageAuth.objects.count(), 2)
 
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
@@ -444,7 +417,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response.status_code,        400)
-        self.assertEqual(MessageAuth.objects.count(), 2)
 
         self._test_subtask_state(
             task_id                  = '1',
@@ -468,7 +440,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        202)
         self.assertEqual(len(response.content),       0)
-        self.assertEqual(MessageAuth.objects.count(), 3)
 
         self._test_subtask_state(
             task_id                  = '1',
@@ -499,7 +470,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response.status_code,        204)
-        self.assertEqual(MessageAuth.objects.count(), 3)
 
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
@@ -510,7 +480,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response.status_code, 204)
-        self.assertEqual(MessageAuth.objects.count(), 3)
 
         # STEP 7: Concent passes computed task rejection to the provider with correct key
 
@@ -534,7 +503,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(force_report_computed_task_response.reject_report_computed_task.timestamp,                                     self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
         self.assertEqual(force_report_computed_task_response.reject_report_computed_task.cannot_compute_task.timestamp,                 reject_report_computed_task.cannot_compute_task.timestamp)
         self.assertEqual(force_report_computed_task_response.reject_report_computed_task.cannot_compute_task.task_to_compute.timestamp, reject_report_computed_task.cannot_compute_task.task_to_compute.timestamp)
-        self.assertEqual(MessageAuth.objects.count(),                                                                                   4)
 
         self._assert_client_count_is_equal(2)
 
@@ -563,7 +531,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         compute_task_def['deadline']   = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
         with freeze_time("2017-12-01 10:00:00"):
             task_to_compute = message.TaskToCompute(
-                compute_task_def = compute_task_def
+                compute_task_def    = compute_task_def,
+                provider_public_key = PROVIDER_PUBLIC_KEY,
             )
 
         # sign task_to_compute message with PROVIDER sig
@@ -593,12 +562,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        202)
         self.assertEqual(len(response.content),       0)
-        self.assertEqual(MessageAuth.objects.count(), 1)
-
-        message_auth = MessageAuth.objects.last()
-        self.assertEqual(message_auth.message.type,               message.ForceReportComputedTask.TYPE)
-        self.assertEqual(message_auth.provider_public_key_bytes,  PROVIDER_PUBLIC_KEY)
-        self.assertEqual(message_auth.requestor_public_key_bytes, REQUESTOR_PUBLIC_KEY)
 
         self._test_subtask_state(
             task_id                  = '1',
@@ -632,7 +595,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
-        self.assertEqual(MessageAuth.objects.count(), 1)
 
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
@@ -644,7 +606,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
-        self.assertEqual(MessageAuth.objects.count(), 1)
 
         # STEP 3: Concent forces computed task report on the requestor with correct key
 
@@ -667,13 +628,14 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(force_report_computed_task_from_view.timestamp,                                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   force_report_computed_task.report_computed_task.task_to_compute.timestamp)
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             force_report_computed_task.report_computed_task.task_to_compute)
-        self.assertEqual(MessageAuth.objects.count(),                                                           2)
 
         # STEP 4: Requestor do not rejects computed task due to CannotComputeTask or TaskFailure with different or mixed key
 
         with freeze_time("2017-12-01 10:00:00"):
             cannot_compute_task = message.CannotComputeTask()
-        cannot_compute_task.task_to_compute                  = message.TaskToCompute()
+        cannot_compute_task.task_to_compute                  = message.TaskToCompute(
+            provider_public_key = PROVIDER_PUBLIC_KEY,
+        )
         cannot_compute_task.task_to_compute.compute_task_def = compute_task_def
         cannot_compute_task.reason                           = message.CannotComputeTask.REASON.WrongCTD
 
@@ -696,7 +658,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response.status_code,        400)
-        self.assertEqual(MessageAuth.objects.count(), 2)
 
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
@@ -707,7 +668,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response.status_code,        400)
-        self.assertEqual(MessageAuth.objects.count(), 2)
 
         self._test_subtask_state(
             task_id                  = '1',
@@ -731,17 +691,11 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        202)
         self.assertEqual(len(response.content),       0)
-        self.assertEqual(MessageAuth.objects.count(), 3)
-
-        message_auth = MessageAuth.objects.last()
-        self.assertEqual(message_auth.message.type,               message.RejectReportComputedTask.TYPE)
-        self.assertEqual(message_auth.provider_public_key_bytes,  PROVIDER_PUBLIC_KEY)
-        self.assertEqual(message_auth.requestor_public_key_bytes, REQUESTOR_PUBLIC_KEY)
 
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
-            subtask_state            = Subtask.SubtaskState.FAILED,
+            subtask_state            = Subtask.SubtaskState.REPORTED,
             provider_key             = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             requestor_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task', 'reject_report_computed_task'},
@@ -768,7 +722,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
-        self.assertEqual(MessageAuth.objects.count(), 3)
 
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
@@ -780,7 +733,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
-        self.assertEqual(MessageAuth.objects.count(), 3)
 
         # STEP 7: Concent overrides computed task rejection and sends acceptance message to the provider with correct key
 
@@ -793,7 +745,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response.status_code,        200)
-        self.assertEqual(MessageAuth.objects.count(), 4)
 
         serialized_message_from_concent_to_provider = response.content
         message_from_concent_to_provider            = load(
@@ -819,7 +770,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
-        self.assertEqual(MessageAuth.objects.count(), 4)
 
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
@@ -831,7 +781,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
-        self.assertEqual(MessageAuth.objects.count(), 4)
 
         # STEP 9: Requestor receives computed task report verdict out of band due to an overridden decision with correct key
 
@@ -844,24 +793,18 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response.status_code,        200)
-        self.assertEqual(MessageAuth.objects.count(), 5)
-
-        message_auth = MessageAuth.objects.last()
-        self.assertEqual(message_auth.message.type,               message.VerdictReportComputedTask.TYPE)
-        self.assertEqual(message_auth.provider_public_key_bytes,  PROVIDER_PUBLIC_KEY)
-        self.assertEqual(message_auth.requestor_public_key_bytes, REQUESTOR_PUBLIC_KEY)
 
         message_from_concent_to_requestor = load(response.content, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
-        self.assertIsInstance(message_from_concent_to_requestor,                     message.VerdictReportComputedTask)
-        self.assertGreaterEqual(message_from_concent_to_requestor.timestamp,         int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))
-        self.assertLessEqual(   message_from_concent_to_requestor.timestamp,         int(dateutil.parser.parse("2017-12-01 11:00:15").timestamp()))
-        self.assertEqual(message_from_concent_to_requestor.ack_report_computed_task, message_from_concent_to_provider.ack_report_computed_task)
+        self.assertIsInstance(message_from_concent_to_requestor,                                message.VerdictReportComputedTask)
+        self.assertGreaterEqual(message_from_concent_to_requestor.timestamp,                    int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))
+        self.assertLessEqual(   message_from_concent_to_requestor.timestamp,                    int(dateutil.parser.parse("2017-12-01 11:00:15").timestamp()))
+        self.assertEqual(message_from_concent_to_requestor.ack_report_computed_task.subtask_id, message_from_concent_to_provider.ack_report_computed_task.subtask_id)
 
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
-            subtask_state            = Subtask.SubtaskState.FAILED,
+            subtask_state            = Subtask.SubtaskState.REPORTED,
             provider_key             = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             requestor_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task', 'reject_report_computed_task'},
@@ -898,12 +841,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        202)
         self.assertEqual(len(response.content),       0)
-        self.assertEqual(MessageAuth.objects.count(), 1)
-
-        message_auth = MessageAuth.objects.last()
-        self.assertEqual(message_auth.message.type,               message.ForceReportComputedTask.TYPE)
-        self.assertEqual(message_auth.provider_public_key_bytes,  PROVIDER_PUBLIC_KEY)
-        self.assertEqual(message_auth.requestor_public_key_bytes, REQUESTOR_PUBLIC_KEY)
 
         self._test_subtask_state(
             task_id                  = '1',
@@ -937,7 +874,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
-        self.assertEqual(MessageAuth.objects.count(), 1)
 
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
@@ -949,7 +885,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
-        self.assertEqual(MessageAuth.objects.count(), 1)
 
         # STEP 3: Concent forces computed task report on the requestor with correct key
 
@@ -972,7 +907,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(force_report_computed_task_from_view.timestamp,                                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   self.force_report_computed_task.report_computed_task.task_to_compute.timestamp)
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             self.force_report_computed_task.report_computed_task.task_to_compute)
-        self.assertEqual(MessageAuth.objects.count(),                                                           2)
 
         # STEP 4: Concent do not accepts computed task due to lack of response from the requestor with different or mixed key
 
@@ -985,7 +919,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response.status_code,        204)
-        self.assertEqual(MessageAuth.objects.count(), 2)
 
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
@@ -996,7 +929,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response.status_code,        204)
-        self.assertEqual(MessageAuth.objects.count(), 2)
 
         # STEP 5: Concent accepts computed task due to lack of response from the requestor with correct key
 
@@ -1009,12 +941,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response.status_code,        200)
-        self.assertEqual(MessageAuth.objects.count(), 3)
-
-        message_auth = MessageAuth.objects.last()
-        self.assertEqual(message_auth.message.type,               message.concents.ForceReportComputedTaskResponse.TYPE)
-        self.assertEqual(message_auth.provider_public_key_bytes,  PROVIDER_PUBLIC_KEY)
-        self.assertEqual(message_auth.requestor_public_key_bytes, REQUESTOR_PUBLIC_KEY)
 
         message_from_concent_to_provider = load(response.content, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time=False)
         self.assertIsInstance(message_from_concent_to_provider,                                     message.concents.ForceReportComputedTaskResponse)
@@ -1024,11 +950,11 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
-            subtask_state            = Subtask.SubtaskState.FORCING_REPORT,  # TODO: Should be REPORTED
+            subtask_state            = Subtask.SubtaskState.REPORTED,
             provider_key             = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             requestor_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},  # TODO: Add ack_report_computed_task if REPORTED
-            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),  # TODO: Should be removed if REPORTED
+            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            next_deadline            = None,
         )
 
         # STEP 6: Requestor do not receives task computation report verdict out of band due to lack of response with different or mixed key
@@ -1042,7 +968,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response.status_code,        204)
-        self.assertEqual(MessageAuth.objects.count(), 3)
 
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
@@ -1053,7 +978,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response.status_code,        204)
-        self.assertEqual(MessageAuth.objects.count(), 3)
 
         # STEP 7: Requestor receives task computation report verdict out of band due to lack of response with correct key
 
@@ -1066,12 +990,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response.status_code,        200)
-        self.assertEqual(MessageAuth.objects.count(), 4)
-
-        message_auth = MessageAuth.objects.last()
-        self.assertEqual(message_auth.message.type,               message.VerdictReportComputedTask.TYPE)
-        self.assertEqual(message_auth.provider_public_key_bytes,  PROVIDER_PUBLIC_KEY)
-        self.assertEqual(message_auth.requestor_public_key_bytes, REQUESTOR_PUBLIC_KEY)
 
         message_from_concent_to_requestor = load(
             response.content,
@@ -1080,18 +998,18 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             check_time = False
         )
 
-        self.assertIsInstance(message_from_concent_to_requestor,                     message.VerdictReportComputedTask)
-        self.assertGreaterEqual(message_from_concent_to_requestor.timestamp,         int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))
-        self.assertLessEqual(message_from_concent_to_requestor.timestamp,            int(dateutil.parser.parse("2017-12-01 11:00:15").timestamp()))
-        self.assertEqual(message_from_concent_to_requestor.ack_report_computed_task, message_from_concent_to_provider.ack_report_computed_task)
+        self.assertIsInstance(message_from_concent_to_requestor,                                message.VerdictReportComputedTask)
+        self.assertGreaterEqual(message_from_concent_to_requestor.timestamp,                    int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))
+        self.assertLessEqual(message_from_concent_to_requestor.timestamp,                       int(dateutil.parser.parse("2017-12-01 11:00:15").timestamp()))
+        self.assertEqual(message_from_concent_to_requestor.ack_report_computed_task.subtask_id, message_from_concent_to_provider.ack_report_computed_task.subtask_id)
 
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
-            subtask_state            = Subtask.SubtaskState.FORCING_REPORT,  # TODO: Should be REPORTED
+            subtask_state            = Subtask.SubtaskState.REPORTED,
             provider_key             = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             requestor_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},  # TODO: Add ack_report_computed_task if REPORTED
-            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),  # TODO: Should be removed if REPORTED
+            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            next_deadline            = None,
         )
         self._assert_client_count_is_equal(2)

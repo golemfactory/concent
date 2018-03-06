@@ -169,9 +169,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_database_objects(
             last_object_type            = message.concents.ForceReportComputedTask,
             task_id                     = '1',
-            receive_delivered_status    = True,
         )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 3: Requestor accepts computed task via Concent
 
@@ -196,7 +195,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_3.status_code,  202)
         self.assertEqual(len(response_3.content), 0)
         self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
+            last_object_type            = message.concents.AckReportComputedTask,
             task_id                     = '1',
             receive_delivered_status    = False,
         )
@@ -240,7 +239,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 'ack_report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(2)
 
@@ -336,7 +335,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 3: Requestor rejects computed task due to CannotComputeTask or TaskFailure
 
@@ -368,7 +367,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_3.status_code,  202)
         self.assertEqual(len(response_3.content), 0)
         self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
+            last_object_type            = message.concents.RejectReportComputedTask,
             task_id                     = '1',
             receive_delivered_status    = False,
         )
@@ -413,7 +412,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 'reject_report_computed_task.cannot_compute_task.task_to_compute.compute_task_def': compute_task_def,
             }
         )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(2)
 
@@ -510,7 +509,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 3: Requestor rejects computed task claiming that the deadline has been exceeded
 
@@ -543,18 +542,18 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_3.status_code,                    202)
         self.assertEqual(len(response_3.content),                   0)
         self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
+            last_object_type            = message.concents.RejectReportComputedTask,
             task_id                     = '1',
             receive_delivered_status    = False,
         )
         self._assert_stored_message_counter_increased(increased_by = 2)
 
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
-            subtask_state            = Subtask.SubtaskState.FAILED,  # TODO: Should be 'REPORTED'
-            provider_key             = self._get_encoded_provider_public_key(),
-            requestor_key            = self._get_encoded_requestor_public_key(),
+            task_id                     = '1',
+            subtask_id                  = '8',
+            subtask_state               = Subtask.SubtaskState.REPORTED,
+            provider_key                = self._get_encoded_provider_public_key(),
+            requestor_key               = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task', 'reject_report_computed_task'},  # TODO: Switch reject to ack if 'REPORTED'
         )
         self._test_last_stored_messages(
@@ -589,7 +588,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 'ack_report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 5: Requestor receives computed task report verdict out of band due to an overridden decision
 
@@ -613,7 +612,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 'ack_report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(2)
 
@@ -709,7 +708,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 3: Concent accepts computed task due to lack of response from the requestor
 
@@ -732,15 +731,15 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 'ack_report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_not_increased()
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
-            subtask_state            = Subtask.SubtaskState.FORCING_REPORT,  # TODO: Should be REPORTED
-            provider_key             = self._get_encoded_provider_public_key(),
-            requestor_key            = self._get_encoded_requestor_public_key(),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},  # TODO: Add ack_report_computed_task if REPORTED
-            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),  # TODO: Should be removed
+            task_id                     = '1',
+            subtask_id                  = '8',
+            subtask_state               = Subtask.SubtaskState.REPORTED,
+            provider_key                = self._get_encoded_provider_public_key(),
+            requestor_key               = self._get_encoded_requestor_public_key(),
+            expected_nested_messages    = {'task_to_compute', 'report_computed_task'},  # TODO: Add ack_report_computed_task if REPORTED
+            next_deadline               = None,
         )
 
         # STEP 4: Requestor receives task computation report verdict out of band due to lack of response
@@ -759,12 +758,12 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             message_type    = message.concents.VerdictReportComputedTask,
             fields          = {
                 'timestamp':                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:11"),
-                'ack_report_computed_task.timestamp':                           self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+                'ack_report_computed_task.timestamp':                           self._parse_iso_date_to_timestamp("2017-12-01 11:00:11"),
                 'ack_report_computed_task.task_to_compute.timestamp':           self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
                 'ack_report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(2)
 
@@ -1046,7 +1045,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 3: Requestor accepts computed task via Concent
 
@@ -1071,7 +1070,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_3.status_code,  202)
         self.assertEqual(len(response_3.content), 0)
         self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
+            last_object_type            = message.concents.AckReportComputedTask,
             task_id                     = '1',
             receive_delivered_status    = False,
         )
@@ -1222,7 +1221,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 3: Requestor rejects computed task via Concent
 
@@ -1254,7 +1253,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_3.status_code,  202)
         self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
+            last_object_type            = message.concents.RejectReportComputedTask,
             task_id                     = '1',
             receive_delivered_status    = False,
         )
@@ -1262,7 +1261,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
-            subtask_state            = Subtask.SubtaskState.FAILED,
+            subtask_state            = Subtask.SubtaskState.REPORTED,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task', 'reject_report_computed_task'},
@@ -1397,7 +1396,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 3: Requestor accepts computed task via Concent after deadline
 
@@ -1519,7 +1518,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 3: Requestor rejects computed task via Concent after deadline
 
@@ -2036,7 +2035,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 3: Requestor accepts computed task via Concent
 
@@ -2061,7 +2060,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_3.status_code,  202)
         self.assertEqual(len(response_3.content), 0)
         self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
+            last_object_type            = message.concents.AckReportComputedTask,
             task_id                     = '1',
             receive_delivered_status    = False,
         )
@@ -2094,7 +2093,18 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
             )
 
-        self._test_204_response(response_4)
+        self._test_response(
+            response_4,
+            status       = 200,
+            key          = self.PROVIDER_PRIVATE_KEY,
+            message_type = message.concents.ForceReportComputedTaskResponse,
+            fields = {
+                'timestamp':                                                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:30"),
+                'ack_report_computed_task.timestamp':                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'ack_report_computed_task.task_to_compute.timestamp':        self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'ack_report_computed_task.task_to_compute.compute_task_def': compute_task_def,
+            }
+        )
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(2)
@@ -2197,7 +2207,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 3: Requestor accepts computed task via Concent
 
@@ -2222,7 +2232,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_3.status_code,  202)
         self.assertEqual(len(response_3.content), 0)
         self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
+            last_object_type            = message.concents.AckReportComputedTask,
             task_id                     = '1',
             receive_delivered_status    = False,
         )
@@ -2267,7 +2277,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 'ack_report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 5: Concent passes computed task acceptance to the provider again
 
@@ -2388,7 +2398,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 4: Provider tries to get Ack from Concent too soon, again
 

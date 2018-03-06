@@ -1025,7 +1025,7 @@ VERIFICATION<y:LabelModel>
               </y:StyleProperties>
               <y:State autoResize="true" closed="false" closedHeight="80.0" closedWidth="100.0"/>
               <y:Insets bottom="0" bottomF="0.0" left="0" leftF="0.0" right="0" rightF="0.0" top="0" topF="0.0"/>
-              <y:BorderInsets bottom="0" bottomF="0.0" left="0" leftF="0.0" right="0" rightF="0.0" top="0" topF="0.0"/>
+              <y:BorderInsets bottom="0" bottomF="0.0" left="0" leftF="0.0" right="0" rightF="0.0" top="0" topF="2.2737367544323206E-13"/>
             </y:GenericGroupNode>
             <y:GenericGroupNode configuration="com.yworks.bpmn.Artifact.withShadow">
               <y:Geometry height="80.0" width="100.0" x="-318.5" y="-180.0"/>
@@ -1056,10 +1056,10 @@ VERIFICATION<y:LabelModel>
         <node id="n3::n0">
           <data key="d6">
             <y:ShapeNode>
-              <y:Geometry height="56.0" width="110.77984008913052" x="746.403357019497" y="501.0086707135382"/>
+              <y:Geometry height="56.0" width="148.77984008913063" x="746.403357019497" y="501.0086707135382"/>
               <y:Fill color="#CCFFCC" transparent="false"/>
               <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
-              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="27.806640625" x="41.486599732065315" y="19.015625">PDT<y:LabelModel>
+              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="27.806640625" x="60.486599732065315" y="19.015625">PDT<y:LabelModel>
                   <y:SmartNodeLabelModel distance="4.0"/>
                 </y:LabelModel>
                 <y:ModelParameter>
@@ -1071,23 +1071,6 @@ VERIFICATION<y:LabelModel>
           </data>
         </node>
         <node id="n3::n1">
-          <data key="d6">
-            <y:ShapeNode>
-              <y:Geometry height="56.0" width="38.0" x="857.1831971086276" y="501.008670713538"/>
-              <y:Fill color="#CCFFCC" transparent="false"/>
-              <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
-              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="27.771484375" x="5.1142578125" y="19.015625">PGP<y:LabelModel>
-                  <y:SmartNodeLabelModel distance="4.0"/>
-                </y:LabelModel>
-                <y:ModelParameter>
-                  <y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/>
-                </y:ModelParameter>
-              </y:NodeLabel>
-              <y:Shape type="rectangle"/>
-            </y:ShapeNode>
-          </data>
-        </node>
-        <node id="n3::n2">
           <data key="d6">
             <y:ShapeNode>
               <y:Geometry height="15.999999999999886" width="1298.9311091086277" x="-344.6386079999999" y="557.0086707135381"/>
@@ -1105,7 +1088,7 @@ VERIFICATION<y:LabelModel>
             </y:ShapeNode>
           </data>
         </node>
-        <node id="n3::n3">
+        <node id="n3::n2">
           <data key="d6">
             <y:ShapeNode>
               <y:Geometry height="16.0" width="59.10930400000001" x="895.1831971086276" y="557.008670713538"/>
@@ -1123,7 +1106,7 @@ VERIFICATION<y:LabelModel>
             </y:ShapeNode>
           </data>
         </node>
-        <node id="n3::n4">
+        <node id="n3::n3">
           <data key="d6">
             <y:ShapeNode>
               <y:Geometry height="103.77941371999998" width="93.75000000000011" x="-438.38860800000015" y="501.394431993538"/>
@@ -1140,7 +1123,7 @@ VERIFICATION<y:LabelModel>
             </y:ShapeNode>
           </data>
         </node>
-        <node id="n3::n5">
+        <node id="n3::n4">
           <data key="d6">
             <y:ShapeNode>
               <y:Geometry height="16.0" width="356.8256" x="954.2925011086277" y="557.008670713538"/>
@@ -1151,7 +1134,7 @@ VERIFICATION<y:LabelModel>
             </y:ShapeNode>
           </data>
         </node>
-        <node id="n3::n6">
+        <node id="n3::n5">
           <data key="d6">
             <y:ShapeNode>
               <y:Geometry height="32.0" width="1298.9311091086277" x="-344.6386079999999" y="573.1738457135378"/>
@@ -1169,7 +1152,7 @@ VERIFICATION<y:LabelModel>
             </y:ShapeNode>
           </data>
         </node>
-        <node id="n3::n7">
+        <node id="n3::n6">
           <data key="d6">
             <y:ShapeNode>
               <y:Geometry height="16.0" width="356.8256" x="954.2925011086278" y="573.008670713538"/>
@@ -1180,7 +1163,7 @@ VERIFICATION<y:LabelModel>
             </y:ShapeNode>
           </data>
         </node>
-        <node id="n3::n8">
+        <node id="n3::n7">
           <data key="d6">
             <y:ShapeNode>
               <y:Geometry height="16.0" width="356.8256" x="954.2925011086278" y="589.008670713538"/>
@@ -1191,7 +1174,7 @@ VERIFICATION<y:LabelModel>
             </y:ShapeNode>
           </data>
         </node>
-        <node id="n3::n9">
+        <node id="n3::n8">
           <data key="d6">
             <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
               <y:Geometry height="10.0" width="10.0" x="912.1824205596" y="560.008670713538"/>
@@ -1207,7 +1190,7 @@ VERIFICATION<y:LabelModel>
             </y:GenericNode>
           </data>
         </node>
-        <node id="n3::n10">
+        <node id="n3::n9">
           <data key="d6">
             <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
               <y:Geometry height="10.0" width="10.0" x="912.4027154983877" y="576.0890452121381"/>
@@ -1223,7 +1206,7 @@ VERIFICATION<y:LabelModel>
             </y:GenericNode>
           </data>
         </node>
-        <node id="n3::n11">
+        <node id="n3::n10">
           <data key="d6">
             <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
               <y:Geometry height="10.0" width="10.0" x="912.4027154983877" y="591.547069801139"/>
@@ -2429,7 +2412,7 @@ TRANSFER<y:LabelModel>
         </y:PolyLineEdge>
       </data>
     </edge>
-    <edge id="n3::e0" source="n3::n7" target="n3::n4">
+    <edge id="n3::e0" source="n3::n6" target="n3::n3">
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="0.0" sy="8.0" tx="0.0" ty="35.91006813584522">

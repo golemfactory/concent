@@ -33,6 +33,9 @@ class ConcentIntegrationTestCase(TestCase):
         (self.DIFFERENT_PROVIDER_PRIVATE_KEY, self.DIFFERENT_PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
         (self.DIFFERENT_REQUESTOR_PRIVATE_KEY, self.DIFFERENT_REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
+        # StoredMessage
+        self.stored_message_counter = 0
+
         # Auth
         self.auth_message_counter = 0
 
@@ -543,6 +546,13 @@ class ConcentIntegrationTestCase(TestCase):
                 )
                 message_status.full_clean()
                 message_status.save()
+
+    def _assert_stored_message_counter_increased(self, increased_by = 1):
+        self.assertEqual(StoredMessage.objects.count(), self.stored_message_counter + increased_by)
+        self.stored_message_counter += increased_by
+
+    def _assert_stored_message_counter_not_increased(self):
+        self.assertEqual(self.stored_message_counter, StoredMessage.objects.count())
 
     def _assert_auth_message_counter_increased(self, increased_by = 1):
         self.assertEqual(MessageAuth.objects.count(), self.auth_message_counter + increased_by)

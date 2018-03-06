@@ -317,7 +317,7 @@
         <node id="n0::n16">
           <data key="d6">
             <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
-              <y:Geometry height="10.0" width="10.0" x="-229.23393911949694" y="-113.33822700763238"/>
+              <y:Geometry height="10.0" width="10.0" x="-282.4036423341679" y="-113.33822700763238"/>
               <y:Fill color="#333333" color2="#800080" transparent="false"/>
               <y:BorderStyle color="#E38B00" type="line" width="1.0"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="8" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="13.3125" horizontalTextPosition="center" iconTextGap="4" modelName="eight_pos" modelPosition="e" textColor="#000000" verticalTextPosition="bottom" visible="true" width="24.6328125" x="14.0" y="-1.65625">FRCT</y:NodeLabel>
@@ -592,7 +592,7 @@
         <node id="n1::n13">
           <data key="d6">
             <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
-              <y:Geometry height="10.0" width="10.0" x="443.8338840332056" y="273.50272"/>
+              <y:Geometry height="10.0" width="10.0" x="344.37063875018674" y="273.50272"/>
               <y:Fill color="#333333" color2="#800080" transparent="false"/>
               <y:BorderStyle color="#E38B00" type="line" width="1.0"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="8" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="13.3125" horizontalTextPosition="center" iconTextGap="4" modelName="eight_pos" modelPosition="e" textColor="#000000" verticalTextPosition="bottom" visible="true" width="19.23828125" x="14.0" y="-1.65625">FSR</y:NodeLabel>

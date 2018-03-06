@@ -400,7 +400,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp':      self._parse_iso_date_to_timestamp("2018-02-05 12:00:21"),
             }
         )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_not_increased()
 
     def test_provider_send_force_payment_with_subtask_results_accepted_list_as_single_message_concent_should_return_http_400(self):
         """

@@ -14,7 +14,7 @@ from golem_messages         import shortcuts
 from utils.helpers          import get_current_utc_timestamp
 from utils.testing_helpers  import generate_ecc_key_pair
 
-from api_testing_common import api_request, parse_command_line
+from api_testing_common import api_request, parse_command_line, create_task_to_compute
 from api_testing_common    import timestamp_to_isoformat
 
 from freezegun              import freeze_time
@@ -61,13 +61,8 @@ def upload_new_file_on_cluster(task_id = '0', part_id = '0', current_time = 0):
 
 
 def get_force_get_task_result(task_id, current_time, size, package_hash):
+    task_to_compute = create_task_to_compute(current_time, task_id)
 
-    compute_task_def = message.ComputeTaskDef()
-    compute_task_def['task_id'] = task_id
-    compute_task_def['deadline'] = current_time + 60
-    task_to_compute = message.TaskToCompute(
-        compute_task_def = compute_task_def
-    )
     report_computed_task = message.ReportComputedTask(
         task_to_compute = task_to_compute,
         size            = size,

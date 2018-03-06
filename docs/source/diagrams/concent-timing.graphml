@@ -456,10 +456,10 @@
         <node id="n1::n4">
           <data key="d6">
             <y:ShapeNode>
-              <y:Geometry height="16.0" width="711.2234426331557" x="-289.88326524779853" y="219.95744281683193"/>
+              <y:Geometry height="16.0" width="82.93069600000001" x="338.4094813853572" y="219.95744281683193"/>
               <y:Fill color="#66FF33" transparent="false"/>
               <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
-              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="4.0" x="353.61172131657787" y="6.0">
+              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="4.0" x="39.465348000000006" y="6.0">
                 <y:LabelModel>
                   <y:SmartNodeLabelModel distance="4.0"/>
                 </y:LabelModel>

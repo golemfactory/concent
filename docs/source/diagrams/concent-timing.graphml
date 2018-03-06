@@ -474,10 +474,10 @@
         <node id="n1::n5">
           <data key="d6">
             <y:ShapeNode>
-              <y:Geometry height="17.966080000000005" width="120.93069600000003" x="338.4094813853572" y="235.95744281683193"/>
+              <y:Geometry height="17.966080000000005" width="109.99292848155342" x="349.3472489038038" y="235.95744281683193"/>
               <y:Fill color="#66FF33" transparent="false"/>
               <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
-              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="4.0" x="58.465348000000006" y="6.983040000000017">
+              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="4.0" x="52.99646424077673" y="6.983040000000017">
                 <y:LabelModel>
                   <y:SmartNodeLabelModel distance="4.0"/>
                 </y:LabelModel>

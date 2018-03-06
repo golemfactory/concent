@@ -5,6 +5,7 @@ import sys
 import random
 import time
 from base64                 import b64encode
+from collections import namedtuple
 from freezegun              import freeze_time
 
 from golem_messages         import message
@@ -16,6 +17,9 @@ from api_testing_common import api_request, parse_command_line
 from api_testing_common    import timestamp_to_isoformat
 
 import requests
+
+HOUR = 3600
+TIME_GUARD = 10
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
@@ -66,10 +70,10 @@ def force_subtask_results_response(timestamp = None, subtask_results_accepted = 
         )
 
 
-def subtask_results_accepted(timestamp = None, subtask_id = None, payment_ts = None):
+def subtask_results_accepted(timestamp = None, task_to_compute = None, payment_ts = None):
     with freeze_time(timestamp):
         return message.tasks.SubtaskResultsAccepted(
-            subtask_id = subtask_id,
+            task_to_compute = task_to_compute,
             payment_ts = payment_ts,
         )
 
@@ -90,40 +94,86 @@ def report_computed_task(timestamp = None, subtask_id = None, task_to_compute = 
         )
 
 
+def create_task(task_to_compute_timestamp, task_id, compute_task_def_deadline):
+    return task_to_compute(
+        timestamp=task_to_compute_timestamp,
+        compute_task_def=compute_task_def(
+            task_id=task_id,
+            subtask_id=task_id,
+            deadline=compute_task_def_deadline,
+        )
+    )
+
+
+ProtocolConstants = namedtuple("ProtocolConstants",
+                               ["concent_messaging_time",
+                                "subtask_verification_time",
+                                "force_acceptance_time",
+                                "token_expiration_time"])
+
+
+def get_protocol_constants(cluster_url):
+    url = f"{cluster_url}/api/v1/protocol-constants/"
+    resp = requests.get(url)
+    json = resp.json()
+    concent_messaging_time = json['concent_messaging_time']['value']
+    subtask_verification_time = json['subtask_verification_time']['value']
+    force_acceptance_time = json['force_acceptance_time']['value']
+    token_expiration_time = json['token_expiration_time']['value']
+    constants = ProtocolConstants(concent_messaging_time, subtask_verification_time, force_acceptance_time,
+                                  token_expiration_time)
+    return constants
+
+
+def print_protocol_constants(constants):
+    print("PROTOCOL_CONSTANTS: ")
+    print(f"concent_messaging_time = {constants.concent_messaging_time}")
+    print(f"subtask_verification_time = {constants.subtask_verification_time}")
+    print(f"force_acceptance_time = {constants.force_acceptance_time}")
+    print(f"token_expiration_time = {constants.token_expiration_time}\n")
+
+
 def main():
     cluster_url     = parse_command_line(sys.argv)
     task_id         = str(random.randrange(1, 100000))
     current_time    = get_current_utc_timestamp()
 
+    cluster_consts = get_protocol_constants(cluster_url)
+    print_protocol_constants(cluster_consts)
+
+    current_timestamp = timestamp_to_isoformat(current_time)
+    ack_report_computed_task_timestamp = timestamp_to_isoformat(
+        current_time - cluster_consts.subtask_verification_time - TIME_GUARD)  # now - SVT - TIME_GUARD (~4:00:10)
+    report_computed_task_timestamp = ack_report_computed_task_timestamp   # now - SVT - TIME_GUARD (~4:00:10)
+    task_to_compute_timestamp = timestamp_to_isoformat(
+        current_time - cluster_consts.subtask_verification_time - 2 * TIME_GUARD)  # now - SVT - 2* TIME_GUARD (~4:00:20)
+    compute_task_def_deadline = current_time + HOUR
+
     #  Test CASE 2A + 2D + 3 - Send ForceSubtaskResults with same task_id as stored by Concent before
     #  Step 1. Send ForceSubtaskResults first time
+    task_1 = create_task(task_to_compute_timestamp, task_id + "2A", compute_task_def_deadline)
+
     api_request(
         cluster_url,
         'send',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         force_subtask_results(
-            timestamp = timestamp_to_isoformat(current_time),  # current_time
-            ack_report_computed_task = ack_report_computed_task(
-                timestamp = timestamp_to_isoformat(current_time - 14401),  # current_time - 4:00:01
-                subtask_id = task_id + '2A',
-                task_to_compute = task_to_compute(
-                    timestamp = timestamp_to_isoformat(current_time - 14405),  # current_time - 4:00:05
-                    compute_task_def = compute_task_def(
-                        task_id     = task_id + '2A',
-                        subtask_id  = task_id + '2A',
-                        deadline    = current_time + 3600,  # current_time + 01:00:00
-                    )
-                )
+            timestamp=current_timestamp,  # current_time
+            ack_report_computed_task=ack_report_computed_task(
+                timestamp=ack_report_computed_task_timestamp,  # current_time - 4:00:10
+                subtask_id=task_id + '2A',
+                task_to_compute=task_1
             )
         ),
-        headers = {
-            'Content-Type':                     'application/octet-stream',
-            'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-            'temporary-account-funds':          'True'
-        }
+        headers={
+            'Content-Type': 'application/octet-stream',
+            'concent-client-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            'concent-other-party-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            'temporary-account-funds': 'True'
+        },
     )
+
     time.sleep(1)
     #  Step 2. Send ForceSubtaskResults second time with same task_id
     api_request(
@@ -132,26 +182,19 @@ def main():
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         force_subtask_results(
-            timestamp = timestamp_to_isoformat(current_time),  # current_time
-            ack_report_computed_task = ack_report_computed_task(
-                timestamp = timestamp_to_isoformat(current_time - 14401),  # current_time - 4:00:01
-                subtask_id = task_id + '2A',
-                task_to_compute = task_to_compute(
-                    timestamp = timestamp_to_isoformat(current_time - 14405),  # current_time - 4:00:05
-                    compute_task_def = compute_task_def(
-                        task_id     = task_id + '2A',
-                        subtask_id  = task_id + '2A',
-                        deadline    = current_time + 3600,  # current_time + 01:00:00
-                    )
-                )
+            timestamp=current_timestamp,  # current_time
+            ack_report_computed_task=ack_report_computed_task(
+                timestamp=ack_report_computed_task_timestamp,  # current_time - 4:00:10
+                subtask_id=task_id + '2A',
+                task_to_compute=task_1
             )
         ),
-        headers = {
-            'Content-Type':                     'application/octet-stream',
-            'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-            'temporary-account-funds':          'True'
-        }
+        headers={
+            'Content-Type': 'application/octet-stream',
+            'concent-client-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            'concent-other-party-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            'temporary-account-funds': 'True'
+        },
     )
 
     #  Step 3. Requestor wants to receive ForceSubtaskResults from Concent
@@ -160,11 +203,12 @@ def main():
         'receive',
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        headers = {
+        headers={
             'Content-Type': 'application/octet-stream',
             'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-        }
+        },
     )
+
 
     #  Test CASE 2B - Send ForceSubtaskResults with not enough amount of funds on account
     api_request(
@@ -173,18 +217,11 @@ def main():
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         force_subtask_results(
-            timestamp = timestamp_to_isoformat(current_time),  # current_time
+            timestamp = current_timestamp,  # current_time
             ack_report_computed_task = ack_report_computed_task(
-                timestamp = timestamp_to_isoformat(current_time - 14401),  # current_time - 4:00:01
+                timestamp = ack_report_computed_task_timestamp,  # current_time - 4:00:10
                 subtask_id = task_id,
-                task_to_compute = task_to_compute(
-                    timestamp = timestamp_to_isoformat(current_time - 15401),  # current_time - 4:00:05
-                    compute_task_def = compute_task_def(
-                        task_id     = task_id,
-                        subtask_id  = task_id,
-                        deadline    = current_time + 3600,  # current_time + 01:00:00
-                    )
-                )
+                task_to_compute =create_task(task_to_compute_timestamp, task_id, compute_task_def_deadline)
             )
         ),
         headers = {
@@ -192,7 +229,7 @@ def main():
             'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':          ''
-        }
+        },
     )
 
     #  Test CASE 2C - Send ForceSubtaskResults with wrong timestamps
@@ -204,16 +241,10 @@ def main():
         force_subtask_results(
             timestamp = timestamp_to_isoformat(current_time),
             ack_report_computed_task =ack_report_computed_task(
-                timestamp = timestamp_to_isoformat(current_time - 28801),  # current_time - 08:00:01
+                timestamp = timestamp_to_isoformat(
+                                current_time - 2 * cluster_consts.subtask_verification_time - TIME_GUARD),  # current_time - 08:00:10
                 subtask_id = task_id + '2C',
-                task_to_compute = task_to_compute(
-                    timestamp = timestamp_to_isoformat(current_time - 28802),  # current_time - 08:00:02
-                    compute_task_def = compute_task_def(
-                        task_id     = task_id + '2C',
-                        subtask_id  = task_id + '2C',
-                        deadline    = current_time,
-                    )
-                )
+                task_to_compute = create_task(timestamp_to_isoformat(current_time - 28802), task_id + '2C', current_time)
             )
         ),
         headers = {
@@ -221,7 +252,7 @@ def main():
             'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':          'True'
-        }
+        },
     )
 
     # Test CASE 4B + 5. Requestor sends ForceSubtaskResultsResponse with SubtaskResultsAccepted
@@ -231,10 +262,10 @@ def main():
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         force_subtask_results_response(
-            timestamp = timestamp_to_isoformat(current_time),
+            timestamp = current_timestamp,
             subtask_results_accepted = subtask_results_accepted(
-                timestamp = timestamp_to_isoformat(current_time),
-                subtask_id = task_id + '2A',
+                timestamp = current_timestamp,
+                task_to_compute = task_1,
                 payment_ts = current_time + 1,
             )
         ),
@@ -242,7 +273,7 @@ def main():
             'Content-Type':                 'application/octet-stream',
             'concent-client-public-key':    b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':      'True'
-        }
+        },
     )
 
     api_request(
@@ -253,28 +284,23 @@ def main():
         headers = {
             'Content-Type': 'application/octet-stream',
             'concent-client-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-        }
+        },
     )
 
     # Test CASE 2D + 3 + 4B + 5. Requestor sends ForceSubtaskResultsResponse with SubtaskResultsRejected
+    task_2 = create_task(task_to_compute_timestamp, task_id + '2D', compute_task_def_deadline)
+
     api_request(
         cluster_url,
         'send',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         force_subtask_results(
-            timestamp = timestamp_to_isoformat(current_time),
+            timestamp = current_timestamp,
             ack_report_computed_task = ack_report_computed_task(
-                timestamp = timestamp_to_isoformat(current_time - 14401),  # current_time - 04:00:01
+                timestamp = ack_report_computed_task_timestamp,  # current_time - 04:00:10
                 subtask_id = task_id + '2D',
-                task_to_compute = task_to_compute(
-                    timestamp = timestamp_to_isoformat(current_time - 14402),  # current_time - 04:00:02
-                    compute_task_def = compute_task_def(
-                        task_id     = task_id + '2D',
-                        subtask_id  = task_id + '2D',
-                        deadline    = current_time + 3600,  # current_time + 01:00:00
-                    )
-                )
+                task_to_compute = task_2
             )
         ),
         headers = {
@@ -282,7 +308,7 @@ def main():
             'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':          'True'
-        }
+        },
     )
 
     api_request(
@@ -293,7 +319,7 @@ def main():
         headers = {
             'Content-Type': 'application/octet-stream',
             'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-        }
+        },
     )
 
     api_request(
@@ -302,20 +328,13 @@ def main():
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         force_subtask_results_response(
-            timestamp = timestamp_to_isoformat(current_time),
+            timestamp = current_timestamp,
             subtask_results_rejected = subtask_results_rejected(
-                timestamp = timestamp_to_isoformat(current_time),
+                timestamp = current_timestamp,
                 report_computed_task = report_computed_task(
-                    timestamp = timestamp_to_isoformat(current_time - 14401),  # current_time - 04:00:01
+                    timestamp = report_computed_task_timestamp,  # current_time - 04:00:10
                     subtask_id      = task_id + '2D',
-                    task_to_compute = task_to_compute(
-                        timestamp = timestamp_to_isoformat(current_time - 14402),  # current_time - 04:00:02
-                        compute_task_def = compute_task_def(
-                            deadline    = current_time + 3600,  # current_time + 01:00:00
-                            task_id     = task_id + '2D',
-                            subtask_id  = task_id + '2D',
-                        )
-                    )
+                    task_to_compute = task_2
                 )
             )
         ),
@@ -323,7 +342,7 @@ def main():
             'Content-Type':                 'application/octet-stream',
             'concent-client-public-key':    b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':      'True'
-        }
+        },
     )
 
     api_request(
@@ -335,7 +354,7 @@ def main():
             'Content-Type':                     'application/octet-stream',
             'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-        }
+        },
     )
 
 

@@ -172,6 +172,7 @@ def main():
             'concent-other-party-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds': 'True'
         },
+        expected_status=202
     )
 
     time.sleep(1)
@@ -195,6 +196,7 @@ def main():
             'concent-other-party-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds': 'True'
         },
+        expected_status=200
     )
 
     #  Step 3. Requestor wants to receive ForceSubtaskResults from Concent
@@ -207,6 +209,7 @@ def main():
             'Content-Type': 'application/octet-stream',
             'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         },
+        expected_status=200
     )
 
 
@@ -230,6 +233,7 @@ def main():
             'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':          ''
         },
+        expected_status=200
     )
 
     #  Test CASE 2C - Send ForceSubtaskResults with wrong timestamps
@@ -253,6 +257,7 @@ def main():
             'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':          'True'
         },
+        expected_status=200
     )
 
     # Test CASE 4B + 5. Requestor sends ForceSubtaskResultsResponse with SubtaskResultsAccepted
@@ -274,6 +279,7 @@ def main():
             'concent-client-public-key':    b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':      'True'
         },
+        expected_status=202
     )
 
     api_request(
@@ -285,6 +291,7 @@ def main():
             'Content-Type': 'application/octet-stream',
             'concent-client-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         },
+        expected_status=200
     )
 
     # Test CASE 2D + 3 + 4B + 5. Requestor sends ForceSubtaskResultsResponse with SubtaskResultsRejected
@@ -309,6 +316,7 @@ def main():
             'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':          'True'
         },
+        expected_status=202
     )
 
     api_request(
@@ -320,6 +328,7 @@ def main():
             'Content-Type': 'application/octet-stream',
             'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         },
+        expected_status=200
     )
 
     api_request(
@@ -343,6 +352,7 @@ def main():
             'concent-client-public-key':    b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':      'True'
         },
+        expected_status=202
     )
 
     api_request(
@@ -355,6 +365,7 @@ def main():
             'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         },
+        expected_status=200
     )
 
 

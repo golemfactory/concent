@@ -30,7 +30,12 @@ def print_golem_message(message, private_key, public_key, indent = 4):
             print('{}{:30} = {}'.format(' ' * indent, field, value))
 
 
-def api_request(host, endpoint, private_key, public_key, data = None, headers = None):
+def validate_response(actual_status_code, expected_status):
+    if expected_status is not None:
+        assert expected_status == actual_status_code, f"Expected:HTTP{expected_status}, actual:HTTP{actual_status_code}"
+
+
+def api_request(host, endpoint, private_key, public_key, data=None, headers=None, expected_status=None):
     def _prepare_data(data):
         if data is None:
             return ''
@@ -56,7 +61,7 @@ def api_request(host, endpoint, private_key, public_key, data = None, headers = 
     response = requests.post("{}".format(url), headers = headers, data = _prepare_data(data))
 
     _print_response(private_key, public_key, response)
-
+    validate_response(response.status_code, expected_status)
     print()
 
 
@@ -74,6 +79,7 @@ def _print_response(private_key, public_key, response):
 def _print_messge_from_response(private_key, public_key, response):
     print('STATUS: {} {}'.format(response.status_code, http.client.responses[response.status_code]))
     print('MESSAGE:')
+    print('Concent-Golem-Messages-Version = {}'.format(response.headers['concent-golem-messages-version']))
     if response.headers['Content-Type'] == 'application/octet-stream':
         _print_message_from_stream(private_key, public_key, response)
     elif response.headers['Content-Type'] == 'application/json':
@@ -115,7 +121,3 @@ def parse_command_line(command_line):
 
     cluster_url = command_line[1]
     return cluster_url
-
-
-if __name__ == '__main__':
-    pass

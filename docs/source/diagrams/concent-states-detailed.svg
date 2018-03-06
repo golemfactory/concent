@@ -153,15 +153,23 @@
       <text x="105.7528" font-size="8px" y="876.9987" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">report + SVT &lt; t &lt;= report + SVT + FAT</text>
     </g>
     <g stroke-linecap="butt" transform="matrix(1,0,0,1,449,-398)" fill="rgb(0,204,0)" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" stroke="rgb(0,204,0)" stroke-width="2" stroke-miterlimit="1.45">
-      <path fill="none" d="M159.6917 943.4719 L363.5045 943.4719 L363.5045 1246.238" clip-path="url(#clipPath2)"/>
-      <path d="M363.5045 1255.238 L369.1295 1241.738 L363.5045 1245.113 L357.8795 1241.738 Z" clip-path="url(#clipPath2)" stroke="none"/>
+      <path fill="none" d="M165.8023 929.0562 L383.5045 929.0562 L383.5045 1247.7933" clip-path="url(#clipPath2)"/>
+      <path d="M383.5045 1256.7933 L389.1295 1243.2933 L383.5045 1246.6683 L377.8795 1243.2933 Z" clip-path="url(#clipPath2)" stroke="none"/>
     </g>
     <g stroke-linecap="butt" font-size="10px" transform="matrix(1,0,0,1,449,-398)" fill="rgb(51,153,255)" text-rendering="geometricPrecision" font-family="'Arial'" shape-rendering="geometricPrecision" stroke="rgb(51,153,255)" font-weight="bold" stroke-miterlimit="1.45">
-      <text x="369.0897" xml:space="preserve" y="1083.5995" clip-path="url(#clipPath2)" stroke="none">SubtaskResultsResponse</text>
+      <text x="389.0897" xml:space="preserve" y="1075.7692" clip-path="url(#clipPath2)" stroke="none">SubtaskResultsResponse</text>
     </g>
     <g font-size="8px" stroke-linecap="butt" transform="matrix(1,0,0,1,449,-398)" text-rendering="geometricPrecision" font-family="monospace" shape-rendering="geometricPrecision" stroke-miterlimit="1.45">
-      <text x="370.3102" xml:space="preserve" y="1108.0787" clip-path="url(#clipPath2)" stroke="none">t &lt;= report + SVT + FAT + CMT</text>
-      <text x="371.1053" xml:space="preserve" y="1095.3834" clip-path="url(#clipPath2)" stroke="none">contains SubtaskResultsAccepted</text>
+      <text x="390.3102" xml:space="preserve" y="1101.4376" clip-path="url(#clipPath2)" stroke="none">t &lt;= report + SVT + FAT + CMT</text>
+      <text x="391.1053" xml:space="preserve" y="1088.1323" clip-path="url(#clipPath2)" stroke="none">contains SubtaskResultsAccepted</text>
+    </g>
+    <g stroke-linecap="butt" transform="matrix(1,0,0,1,449,-398)" fill="rgb(0,204,0)" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" stroke="rgb(0,204,0)" stroke-width="2" stroke-miterlimit="1.45">
+      <path fill="none" d="M159.5792 943.5546 L343.5045 943.5546 L343.5045 1247.8209" clip-path="url(#clipPath2)"/>
+      <path d="M343.5045 1256.8209 L349.1295 1243.3209 L343.5045 1246.6959 L337.8795 1243.3209 Z" clip-path="url(#clipPath2)" stroke="none"/>
+    </g>
+    <g font-size="10px" stroke-linecap="butt" transform="matrix(1,0,0,1,449,-398)" text-rendering="geometricPrecision" font-family="'Arial'" shape-rendering="geometricPrecision" font-weight="bold" stroke-miterlimit="1.45">
+      <text x="299.075" xml:space="preserve" y="1075.4734" clip-path="url(#clipPath2)" stroke="none">timeout</text>
+      <text x="199.0205" font-size="8px" y="1089.6559" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">t = report + SVT + FAT + CMT</text>
     </g>
     <g stroke-linecap="butt" transform="matrix(1,0,0,1,449,-398)" fill="rgb(204,51,0)" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" stroke="rgb(204,51,0)" stroke-width="2" stroke-miterlimit="1.45">
       <path fill="none" d="M99.2645 963.5386 L99.2645 1005.7736" clip-path="url(#clipPath2)"/>

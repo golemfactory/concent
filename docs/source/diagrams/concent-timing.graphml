@@ -914,7 +914,7 @@ VERIFICATION<y:LabelModel>
         <node id="n2::n11">
           <data key="d6">
             <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
-              <y:Geometry height="10.0" width="10.0" x="766.3117979292047" y="466.3452986088318"/>
+              <y:Geometry height="10.0" width="10.0" x="741.3979941371874" y="466.3452986088318"/>
               <y:Fill color="#333333" color2="#800080" transparent="false"/>
               <y:BorderStyle color="#E38B00" type="line" width="1.0"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="8" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="13.3125" horizontalTextPosition="center" iconTextGap="4" modelName="eight_pos" modelPosition="e" textColor="#000000" verticalTextPosition="bottom" visible="true" width="19.71484375" x="14.0" y="-1.65625">SRS</y:NodeLabel>
@@ -986,7 +986,7 @@ VERIFICATION<y:LabelModel>
         <node id="n2::n16">
           <data key="d6">
             <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
-              <y:Geometry height="10.0" width="10.0" x="766.3117979292047" y="449.49848544801677"/>
+              <y:Geometry height="10.0" width="10.0" x="741.3979941371874" y="449.49848544801677"/>
               <y:Fill color="#333333" color2="#800080" transparent="false"/>
               <y:BorderStyle color="#E38B00" type="line" width="1.0"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="8" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="13.3125" horizontalTextPosition="center" iconTextGap="4" modelName="eight_pos" modelPosition="e" textColor="#000000" verticalTextPosition="bottom" visible="true" width="20.1953125" x="14.0" y="-1.65625">SRR</y:NodeLabel>
@@ -1056,10 +1056,10 @@ VERIFICATION<y:LabelModel>
         <node id="n3::n0">
           <data key="d6">
             <y:ShapeNode>
-              <y:Geometry height="56.0" width="85.6505459119494" x="771.5326511966782" y="501.0086707135382"/>
+              <y:Geometry height="56.0" width="110.77984008913052" x="746.403357019497" y="501.0086707135382"/>
               <y:Fill color="#CCFFCC" transparent="false"/>
               <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
-              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="27.806640625" x="28.921952643474697" y="19.015625">PDT<y:LabelModel>
+              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="27.806640625" x="41.486599732065315" y="19.015625">PDT<y:LabelModel>
                   <y:SmartNodeLabelModel distance="4.0"/>
                 </y:LabelModel>
                 <y:ModelParameter>
@@ -1385,7 +1385,7 @@ deadline<y:LabelModel>
     <node id="n12">
       <data key="d6">
         <y:ShapeNode>
-          <y:Geometry height="5.0" width="5.0" x="768.9504059292046" y="-298.5552262347947"/>
+          <y:Geometry height="5.0" width="5.0" x="743.9158428224085" y="-298.5552262347947"/>
           <y:Fill color="#000000" transparent="false"/>
           <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="152.078125" x="-73.5390625" y="-28.25">SubtaskResultsAccepted<y:LabelModel>
@@ -1402,7 +1402,7 @@ deadline<y:LabelModel>
     <node id="n13">
       <data key="d6">
         <y:ShapeNode>
-          <y:Geometry height="5.0" width="5.0" x="768.8117979292047" y="683.3525154667922"/>
+          <y:Geometry height="5.0" width="5.0" x="743.7772348224086" y="683.3525154667922"/>
           <y:Fill color="#000000" transparent="false"/>
           <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="4.0" x="0.5" y="-14.28125">
@@ -2049,10 +2049,10 @@ ACCEPTANCE<y:LabelModel>
         <node id="n15::n7">
           <data key="d6">
             <y:ShapeNode>
-              <y:Geometry height="40.0" width="123.25000000000006" x="647.7342373757456" y="-250.2599105228644"/>
+              <y:Geometry height="40.0" width="98.64002308349524" x="647.7342373757456" y="-250.2599105228644"/>
               <y:Fill color="#33CCFF" transparent="false"/>
               <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
-              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="10" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="27.28125" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="73.990234375" x="24.6298828125" y="6.359375">ADDITIONAL
+              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="10" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="27.28125" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="73.990234375" x="12.32489435424759" y="6.359375">ADDITIONAL
 VERIFICATION<y:LabelModel>
                   <y:SmartNodeLabelModel distance="4.0"/>
                 </y:LabelModel>
@@ -2067,10 +2067,10 @@ VERIFICATION<y:LabelModel>
         <node id="n15::n8">
           <data key="d6">
             <y:ShapeNode>
-              <y:Geometry height="40.0" width="182.7598499119493" x="771.4926952373808" y="-250.2599105228644"/>
+              <y:Geometry height="40.0" width="207.8782846900893" x="746.3742604592408" y="-250.2599105228644"/>
               <y:Fill color="#FFFF33" transparent="false"/>
               <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
-              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="10" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="15.640625" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="57.28125" x="62.739299955974616" y="12.1796875">ACCEPTED<y:LabelModel>
+              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="10" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="15.640625" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="57.28125" x="75.29851734504462" y="12.1796875">ACCEPTED<y:LabelModel>
                   <y:SmartNodeLabelModel distance="4.0"/>
                 </y:LabelModel>
                 <y:ModelParameter>
@@ -2341,8 +2341,8 @@ TRANSFER<y:LabelModel>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0">
-            <y:Point x="771.3117979292047" y="61.71843999999996"/>
-            <y:Point x="771.4504059292046" y="61.71843999999996"/>
+            <y:Point x="746.2772348224086" y="61.71843999999996"/>
+            <y:Point x="746.4158428224085" y="61.71843999999996"/>
           </y:Path>
           <y:LineStyle color="#000000" type="dashed" width="1.0"/>
           <y:Arrows source="none" target="none"/>

@@ -18,7 +18,7 @@ from utils.testing_helpers  import generate_ecc_key_pair
 )
 class ProtocolConstantsTest(ConcentIntegrationTestCase):
 
-    def test_(self):
+    def test_protocol_constants_should_return_values_from_settings(self):
         """
         Tests if call to `provider-constants` endpoint returns protocol constants from settings.
         """
@@ -30,10 +30,10 @@ class ProtocolConstantsTest(ConcentIntegrationTestCase):
             'TOKEN_EXPIRATION_TIME':        settings.TOKEN_EXPIRATION_TIME,
         }
 
+        expected_protocol_constants = {name.lower(): value for name, value in protocol_constants_settings.items()}
+
         response = self.client.get(
             reverse('core:protocol_constants'),
         )
 
-        for setting_name, setting_value in protocol_constants_settings.items():
-            self.assertIn(setting_name.lower(),                     response.json())
-            self.assertEqual(response.json()[setting_name.lower()], setting_value)
+        self.assertEqual(response.json(), expected_protocol_constants)

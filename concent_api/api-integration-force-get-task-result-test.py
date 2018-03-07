@@ -4,8 +4,9 @@ import os
 import sys
 import datetime
 import hashlib
-import time
 import random
+import requests
+import time
 from base64                 import b64encode
 
 from golem_messages         import message
@@ -14,11 +15,10 @@ from golem_messages         import shortcuts
 from utils.helpers          import get_current_utc_timestamp
 from utils.testing_helpers  import generate_ecc_key_pair
 
-from api_testing_common import api_request, parse_command_line, create_task_to_compute
-from api_testing_common    import timestamp_to_isoformat
+from api_testing_common     import api_request, parse_command_line, create_task_to_compute
+from api_testing_common     import timestamp_to_isoformat
 
 from freezegun              import freeze_time
-import requests
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
@@ -87,10 +87,11 @@ def main():
         part_id = '0',
         current_time = current_time,
     )
-    if response_status_code == 200:
-        print('\nCreated file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(task_id, file_check_sum, file_size))
-    else:
-        print('File has not been stored on cluster')
+
+    assert response_status_code == 200, 'File has not been stored on cluster'
+
+    print('\nCreated file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(task_id, file_check_sum, file_size))
+
     # Case 1 - test for existing file
     api_request(
         cluster_url,

@@ -7,6 +7,7 @@ from golem_messages         import load
 from golem_messages         import message
 
 from core.tests.utils       import ConcentIntegrationTestCase
+from core.models            import Subtask
 from utils.testing_helpers  import generate_ecc_key_pair
 
 
@@ -70,6 +71,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertIsInstance(message_from_concent,         message.concents.ForceGetTaskResultRejected)
         self.assertEqual(message_from_concent.timestamp,    self._parse_iso_date_to_timestamp("2017-12-01 11:00:11"))
         self.assertEqual(message_from_concent.reason,       message_from_concent.REASON.AcceptanceTimeLimitExceeded)
+        self._assert_stored_message_counter_not_increased()
 
     def test_requestor_forces_get_task_result_and_concent_immediately_sends_rejection_due_to_already_sent_message(self):
         """
@@ -86,9 +88,12 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         deserialized_task_to_compute = self._get_deserialized_task_to_compute(
             timestamp   = "2017-12-01 10:00:00",
             deadline    = "2017-12-01 11:00:00",
+            task_id     = '1',
+            subtask_id  = '8',
         )
         deserialized_report_computed_task = self._get_deserialized_report_computed_task(
-            task_to_compute = deserialized_task_to_compute
+            task_to_compute = deserialized_task_to_compute,
+            timestamp       = "2017-12-01 11:00:08",
         )
         serialized_force_get_task_result = self._get_serialized_force_get_task_result(
             report_computed_task    = deserialized_report_computed_task,
@@ -105,6 +110,16 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
 
         assert response.status_code == 200
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                  = '1',
+            subtask_id               = '8',
+            subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
+            provider_key             = self._get_encoded_provider_public_key(),
+            requestor_key            = self._get_encoded_requestor_public_key(),
+            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:28"),
+        )
 
         # STEP 2: Requestor again forces get task result via Concent.
         # Concent rejects request immediately because message was already sent.
@@ -124,6 +139,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertIsInstance(message_from_concent,         message.concents.ServiceRefused)
         self.assertEqual(message_from_concent.timestamp,    self._parse_iso_date_to_timestamp("2017-12-01 11:00:09"))
         self.assertEqual(message_from_concent.reason,       message_from_concent.REASON.DuplicateRequest)
+        self._assert_stored_message_counter_not_increased()
 
     def test_requestor_forces_get_task_result_and_concent_immediately_sends_acknowledgement(self):
         """
@@ -140,9 +156,12 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         deserialized_task_to_compute = self._get_deserialized_task_to_compute(
             timestamp   = "2017-12-01 10:00:00",
             deadline    = "2017-12-01 11:00:00",
+            task_id     = '1',
+            subtask_id  = '8',
         )
         deserialized_report_computed_task = self._get_deserialized_report_computed_task(
-            task_to_compute = deserialized_task_to_compute
+            task_to_compute = deserialized_task_to_compute,
+            timestamp       = "2017-12-01 11:00:09",
         )
         serialized_force_get_task_result = self._get_serialized_force_get_task_result(
             report_computed_task = deserialized_report_computed_task,
@@ -165,6 +184,17 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertIsInstance(message_from_concent,         message.concents.AckForceGetTaskResult)
         self.assertEqual(message_from_concent.timestamp,    self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"))
 
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                  = '1',
+            subtask_id               = '8',
+            subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
+            provider_key             = self._get_encoded_provider_public_key(),
+            requestor_key            = self._get_encoded_requestor_public_key(),
+            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:29"),
+        )
+
     def test_concent_requests_task_result_from_provider_and_requestor_receives_failure_because_provider_does_not_submit(self):
         """
         Tests if on requestor ForceGetTaskResult message Concent will return ForceGetTaskResultFailed
@@ -183,10 +213,12 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         deserialized_task_to_compute = self._get_deserialized_task_to_compute(
             timestamp   = "2017-12-01 10:00:00",
             task_id     = '99',
+            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
         deserialized_report_computed_task = self._get_deserialized_report_computed_task(
-            task_to_compute = deserialized_task_to_compute
+            task_to_compute = deserialized_task_to_compute,
+            timestamp       = "2017-12-01 11:00:01",
         )
         serialized_force_get_task_result = self._get_serialized_force_get_task_result(
             report_computed_task = deserialized_report_computed_task,
@@ -209,6 +241,16 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response_1.status_code, 200)
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                  = '99',
+            subtask_id               = '8',
+            subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
+            provider_key             = self._get_encoded_provider_public_key(),
+            requestor_key            = self._get_encoded_requestor_public_key(),
+            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"),
+        )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.
         with freeze_time("2017-12-01 11:00:12"):
@@ -220,6 +262,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response_2.status_code, 200)
+        self._assert_stored_message_counter_increased()
 
         message_from_concent = load(response_2.content, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
         self.assertIsInstance(message_from_concent,     message.concents.ForceGetTaskResultUpload)
@@ -264,6 +307,16 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self.assertEqual(response_3.status_code, 200)
+        self._assert_stored_message_counter_increased()
+        self._test_subtask_state(
+            task_id                  = '99',
+            subtask_id               = '8',
+            subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,  # Should be FAILED?
+            provider_key             = self._get_encoded_provider_public_key(),
+            requestor_key            = self._get_encoded_requestor_public_key(),
+            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"),  # Remove if in FAILED state
+        )
 
         message_from_concent = load(response_3.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
@@ -295,10 +348,12 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         deserialized_task_to_compute = self._get_deserialized_task_to_compute(
             timestamp   = "2017-12-01 10:00:00",
             task_id     = '99',
+            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
         deserialized_report_computed_task = self._get_deserialized_report_computed_task(
-            task_to_compute = deserialized_task_to_compute
+            task_to_compute = deserialized_task_to_compute,
+            timestamp       = "2017-12-01 11:00:01",
         )
         serialized_force_get_task_result = self._get_serialized_force_get_task_result(
             report_computed_task = deserialized_report_computed_task,
@@ -321,6 +376,16 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response_1.status_code, 200)
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                  = '99',
+            subtask_id               = '8',
+            subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
+            provider_key             = self._get_encoded_provider_public_key(),
+            requestor_key            = self._get_encoded_requestor_public_key(),
+            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"),
+        )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.
         with freeze_time("2017-12-01 11:00:12"):
@@ -332,6 +397,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response_2.status_code, 200)
+        self._assert_stored_message_counter_increased()
 
         message_from_concent = load(response_2.content, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
         self.assertIsInstance(message_from_concent, message.concents.ForceGetTaskResultUpload)
@@ -376,6 +442,16 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self.assertEqual(response_3.status_code, 200)
+        self._assert_stored_message_counter_increased()
+        self._test_subtask_state(
+            task_id                  = '99',
+            subtask_id               = '8',
+            subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,  # Should be FAILED?
+            provider_key             = self._get_encoded_provider_public_key(),
+            requestor_key            = self._get_encoded_requestor_public_key(),
+            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"),  # Remove if in FAILED state
+        )
 
         message_from_concent = load(response_3.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
@@ -407,10 +483,12 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         deserialized_task_to_compute = self._get_deserialized_task_to_compute(
             timestamp   = "2017-12-01 10:00:00",
             task_id     = '99',
+            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
         deserialized_report_computed_task = self._get_deserialized_report_computed_task(
-            task_to_compute = deserialized_task_to_compute
+            task_to_compute = deserialized_task_to_compute,
+            timestamp       = "2017-12-01 11:00:01",
         )
         serialized_force_get_task_result = self._get_serialized_force_get_task_result(
             report_computed_task = deserialized_report_computed_task,
@@ -433,6 +511,16 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response_1.status_code, 200)
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                  = '99',
+            subtask_id               = '8',
+            subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
+            provider_key             = self._get_encoded_provider_public_key(),
+            requestor_key            = self._get_encoded_requestor_public_key(),
+            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"),
+        )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.
         with freeze_time("2017-12-01 11:00:12"):
@@ -444,6 +532,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response_2.status_code, 200)
+        self._assert_stored_message_counter_increased()
 
         message_from_concent = load(response_2.content, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
         self.assertIsInstance(message_from_concent, message.concents.ForceGetTaskResultUpload)
@@ -488,6 +577,16 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self.assertEqual(response_3.status_code, 200)
+        self._assert_stored_message_counter_increased()
+        self._test_subtask_state(
+            task_id                  = '99',
+            subtask_id               = '8',
+            subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,  # Should be FAILED?
+            provider_key             = self._get_encoded_provider_public_key(),
+            requestor_key            = self._get_encoded_requestor_public_key(),
+            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"),  # Remove if in FAILED state
+        )
 
         message_from_concent = load(response_3.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
@@ -519,14 +618,16 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         deserialized_task_to_compute = self._get_deserialized_task_to_compute(
             timestamp   = "2017-12-01 10:00:00",
             task_id     = '99',
+            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
         deserialized_report_computed_task = self._get_deserialized_report_computed_task(
-            task_to_compute = deserialized_task_to_compute
+            task_to_compute = deserialized_task_to_compute,
+            timestamp       = "2017-12-01 11:00:01",
         )
         serialized_force_get_task_result = self._get_serialized_force_get_task_result(
             report_computed_task = deserialized_report_computed_task,
-            timestamp = "2017-12-01 11:00:01",
+            timestamp            = "2017-12-01 11:00:01",
         )
         deserialized_force_get_task_result = load(
             serialized_force_get_task_result,
@@ -545,6 +646,16 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response_1.status_code, 200)
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                  = '99',
+            subtask_id               = '8',
+            subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
+            provider_key             = self._get_encoded_provider_public_key(),
+            requestor_key            = self._get_encoded_requestor_public_key(),
+            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"),
+        )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.
         with freeze_time("2017-12-01 11:00:12"):
@@ -556,6 +667,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response_2.status_code, 200)
+        self._assert_stored_message_counter_increased()
 
         message_from_concent = load(response_2.content, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
         self.assertIsInstance(message_from_concent, message.concents.ForceGetTaskResultUpload)
@@ -594,6 +706,15 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self.assertEqual(response_3.status_code,  200)
+        self._test_subtask_state(
+            task_id                  = '99',
+            subtask_id               = '8',
+            subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,  # Should be RESULT_UPLOADED?
+            provider_key             = self._get_encoded_provider_public_key(),
+            requestor_key            = self._get_encoded_requestor_public_key(),
+            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"),  # Remove if in RESULT_UPLOADED state
+        )
 
         message_from_concent = load(response_3.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 

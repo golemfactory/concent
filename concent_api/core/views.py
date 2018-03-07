@@ -43,6 +43,12 @@ def send(request, client_message):
         client_message,
         request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
     )
+
+    client_public_key = decode_client_public_key(request)
+    update_timed_out_subtasks(
+        client_public_key = client_public_key,
+    )
+
     if isinstance(client_message, message.ForceReportComputedTask):
         return handle_send_force_report_computed_task(request, client_message)
 
@@ -74,265 +80,27 @@ def send(request, client_message):
 @api_view
 @require_POST
 def receive(request, _message):
-    current_time      = get_current_utc_timestamp()
     client_public_key = decode_client_public_key(request)
-    last_undelivered_message_status = ReceiveStatus.objects.filter_public_key(
-        request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
-    ).filter(delivered = False).order_by('timestamp').last()
-    if last_undelivered_message_status is None:
-        last_delivered_message_status = ReceiveStatus.objects.filter_public_key(
-            request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
-        ).order_by('timestamp').last()
-        if last_delivered_message_status is None:
-            return None
-
-        decoded_message_data = deserialize_message(last_delivered_message_status.message.data.tobytes())
-        if (
-            last_delivered_message_status.message.type                           == message.ForceReportComputedTask.TYPE and
-            last_delivered_message_status.message.auth.provider_public_key_bytes == client_public_key and
-            current_time >= decoded_message_data.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME
-        ):
-            return handle_receive_delivered_force_report_computed_task(request, last_delivered_message_status)
-
-        if (
-            last_delivered_message_status.message.type                            == message.concents.ForceGetTaskResultUpload.TYPE and
-            last_delivered_message_status.message.auth.requestor_public_key_bytes == client_public_key
-        ):
-            file_uploaded        = get_file_status(decoded_message_data.file_transfer_token)
-            if file_uploaded:
-                return handle_receive_force_get_task_result_upload_for_requestor(
-                    request,
-                    decoded_message_data,
-                    last_delivered_message_status,
-                )
-            else:
-                return handle_receive_force_get_task_result_failed(
-                    request,
-                    decoded_message_data,
-                    last_delivered_message_status,
-                )
-        acceptance_deadline = settings.SUBTASK_VERIFICATION_TIME + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME
-        if (
-            last_delivered_message_status.message.type                           == message.concents.ForceSubtaskResults.TYPE and
-            last_delivered_message_status.message.auth.provider_public_key_bytes == client_public_key and
-            current_time > decoded_message_data.ack_report_computed_task.timestamp + acceptance_deadline
-        ):
-            base.make_forced_payment('provider', 'requestor')
-            return handle_receive_force_subtask_results_settled(
-                decoded_message_data,
-                last_delivered_message_status.message.auth.provider_public_key_bytes,
-                last_delivered_message_status.message.auth.requestor_public_key_bytes,
-                ReceiveStatus
-            )
-
-        return None
-
-    decoded_message_data = deserialize_message(last_undelivered_message_status.message.data.tobytes())
-
-    assert last_undelivered_message_status.message.type == decoded_message_data.TYPE
-    if last_undelivered_message_status.message.type == message.ForceReportComputedTask.TYPE:
-        if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
-            return None
-        if decoded_message_data.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME < current_time:
-            set_message_as_delivered(last_undelivered_message_status)
-            logging.log_message_delivered(
-                decoded_message_data,
-                client_public_key,
-            )
-            return handle_receive_ack_from_force_report_computed_task(
-                request,
-                decoded_message_data,
-                last_undelivered_message_status
-            )
-        logging.log_timeout(
-            decoded_message_data,
-            request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-            decoded_message_data.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
-        )
-
-    if isinstance(decoded_message_data, message.ForceReportComputedTask):
-        if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
-            return None
-        set_message_as_delivered(last_undelivered_message_status)
-        logging.log_message_delivered(
-            decoded_message_data,
-            client_public_key,
-        )
-        return handle_receive_force_report_computed_task(
-            request,
-            decoded_message_data,
-            last_undelivered_message_status
-        )
-
-    if isinstance(decoded_message_data, message.AckReportComputedTask):
-        if (
-            current_time <= decoded_message_data.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME and
-            client_public_key == last_undelivered_message_status.message.auth.provider_public_key_bytes
-        ):
-            set_message_as_delivered(last_undelivered_message_status)
-            logging.log_message_delivered(
-                decoded_message_data,
-                client_public_key,
-            )
-            return handle_receive_ack_or_reject_report_computed_task(
-                request,
-                decoded_message_data,
-                last_undelivered_message_status,
-            )
-        elif current_time > decoded_message_data.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
-            logging.log_timeout(
-                decoded_message_data,
-                request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-                decoded_message_data.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
-            )
-        return None
-
-    if isinstance(decoded_message_data, message.concents.ForceGetTaskResult):
-        if client_public_key != last_undelivered_message_status.message.auth.provider_public_key_bytes:
-            return None
-        set_message_as_delivered(last_undelivered_message_status)
-        logging.log_message_delivered(
-            decoded_message_data,
-            client_public_key,
-        )
-        return handle_receive_force_get_task_result_upload_for_provider(
-            request,
-            decoded_message_data,
-            last_undelivered_message_status,
-        )
-
-    if isinstance(decoded_message_data, message.concents.ForceSubtaskResults):
-        if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
-            return None
-        set_message_as_delivered(last_undelivered_message_status)
-        logging.log_message_delivered(
-            decoded_message_data,
-            client_public_key,
-        )
-        if current_time < decoded_message_data.timestamp + settings.CONCENT_MESSAGING_TIME:
-            return handle_receive_force_subtask_results(
-                request,
-                decoded_message_data,
-                last_undelivered_message_status,
-            )
-        logging.log_timeout(
-            decoded_message_data,
-            request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-            decoded_message_data.timestamp + settings.CONCENT_MESSAGING_TIME,
-        )
-        return handle_receive_force_subtask_results(
-            request,
-            decoded_message_data,
-            last_undelivered_message_status,
-        )
-
-    if isinstance(decoded_message_data, message.concents.ForceSubtaskResultsResponse):
-        if client_public_key != last_undelivered_message_status.message.auth.provider_public_key_bytes:
-            return None
-        set_message_as_delivered(last_undelivered_message_status)
-        logging.log_message_delivered(
-            decoded_message_data,
-            client_public_key,
-        )
-        return handle_receive_force_subtask_results_response(
-            request,
-            decoded_message_data,
-            last_undelivered_message_status
-        )
-
-    assert isinstance(decoded_message_data, message.RejectReportComputedTask), (
-        "At this point ReceiveStatus must contain ForceReportComputedTask because AckReportComputedTask and RejectReportComputedTask have already been handled"
+    update_timed_out_subtasks(
+        client_public_key = client_public_key,
     )
-
-    if client_public_key != last_undelivered_message_status.message.auth.provider_public_key_bytes:
-        return None
-
-    force_report_computed_task = StoredMessage.objects.filter(
-        type    = message.ForceReportComputedTask.TYPE,
-        task_id = decoded_message_data.cannot_compute_task.task_to_compute.compute_task_def['task_id']
-    ).order_by('timestamp').last()
-
-    decoded_message_from_database = deserialize_message(force_report_computed_task.data.tobytes())
-
-    if current_time <= decoded_message_from_database.report_computed_task.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
-        if decoded_message_data.reason is not None and decoded_message_data.reason == message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded:
-            return handle_receive_ack_from_force_report_computed_task(
-                request,
-                decoded_message_from_database,
-                last_undelivered_message_status
-            )
-        return handle_receive_ack_or_reject_report_computed_task(
-            request,
-            decoded_message_data,
-            last_undelivered_message_status,
-        )
-
-    logging.log_timeout(
-        decoded_message_data,
-        request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-        decoded_message_from_database.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME,
+    return handle_messages_from_database(
+        client_public_key  = client_public_key,
+        response_type      = PendingResponse.Queue.Receive,
     )
-
-    return None
 
 
 @api_view
 @require_POST
 def receive_out_of_band(request, _message):
-    undelivered_receive_out_of_band_statuses    = ReceiveOutOfBandStatus.objects.filter(delivered = False)
-    last_undelivered_receive_out_of_band_status = undelivered_receive_out_of_band_statuses.order_by('timestamp').last()
-    last_undelivered_receive_status             = StoredMessage.objects.filter(
-        auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-    ).order_by('timestamp').last()
-    current_time = get_current_utc_timestamp()
-    if last_undelivered_receive_out_of_band_status is None:
-        if last_undelivered_receive_status is None:
-            return None
-
-        if last_undelivered_receive_status.timestamp.timestamp() > current_time:
-            return None
-
-        if last_undelivered_receive_status.type == message.ForceReportComputedTask.TYPE:
-            return handle_receive_out_of_band_force_report_computed_task(request, last_undelivered_receive_status)
-
-        if last_undelivered_receive_status.type == message.concents.ForceReportComputedTaskResponse.TYPE:
-            decoded_message = deserialize_message(last_undelivered_receive_status.data.tobytes())
-            if isinstance(decoded_message.ack_report_computed_task, message.concents.AckReportComputedTask):
-                return handle_receive_out_of_band_ack_report_computed_task(request, last_undelivered_receive_status)
-
-            elif isinstance(decoded_message.reject_report_computed_task, message.concents.RejectReportComputedTask):
-                return handle_receive_out_of_band_reject_report_computed_task(request, last_undelivered_receive_status)
-
-        if last_undelivered_receive_status.type == message.concents.ForcePaymentCommitted.TYPE:
-            return handle_receive_out_of_band_force_payment_commited(request, last_undelivered_receive_status)
-
-        last_receive_status = ReceiveStatus.objects.filter(
-            message__auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-            message__type = last_undelivered_receive_status.type
-        ).order_by('timestamp')
-
-        if last_receive_status.exists() and last_undelivered_receive_status.type == message.concents.SubtaskResultsSettled.TYPE:
-            last_undelivered_receive_status = StoredMessage.objects.filter(
-                auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-            ).exclude(id = last_undelivered_receive_status.id).order_by('timestamp').last()
-            if last_undelivered_receive_status is None:
-                return None
-
-        if last_undelivered_receive_status.type == message.concents.ForceSubtaskResults.TYPE:
-            acceptance_deadline = settings.SUBTASK_VERIFICATION_TIME + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME
-            decoded_message_data = deserialize_message(last_undelivered_receive_status.data.tobytes())
-
-            if current_time > decoded_message_data.ack_report_computed_task.timestamp + acceptance_deadline:
-
-                return handle_receive_force_subtask_results_settled(
-                    decoded_message_data,
-                    last_undelivered_receive_status.auth.provider_public_key_bytes,
-                    last_undelivered_receive_status.auth.requestor_public_key_bytes,
-                    ReceiveOutOfBandStatus
-                )
-        return None
-
-    return None
+    client_public_key = decode_client_public_key(request)
+    update_timed_out_subtasks(
+        client_public_key = client_public_key,
+    )
+    return handle_messages_from_database(
+        client_public_key  = client_public_key,
+        response_type      = PendingResponse.Queue.ReceiveOutOfBand,
+    )
 
 
 @require_GET

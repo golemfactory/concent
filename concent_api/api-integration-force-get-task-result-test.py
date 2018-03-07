@@ -77,19 +77,27 @@ def get_force_get_task_result(task_id, current_time, size, package_hash):
     return force_get_task_result
 
 
-def count_fails(fun):
-    def wrapper(f):
-        count_fails.fails = 0
+class count_fails(object):
+    instances = []
 
-        def inner(*args, **kwargs):
-            try:
-                f(*args, **kwargs)
-            except AssertionError as e:
-                print("{}: FAILED".format(fun.__name__))
-                print(e)
-                count_fails.fails += 1
-        return inner
-    return wrapper(fun)
+    def __init__(self, fun):
+        self.fun = fun
+        self.failed = False
+        count_fails.instances.append(self)
+
+    def __call__(self, *args, **kwargs):
+            def inner(*args, **kwargs):
+                try:
+                    self.fun(*args, **kwargs)
+                except AssertionError as e:
+                    print("{}: FAILED".format(self.fun.__name__))
+                    print(e)
+                    self.failed = True
+            return inner(*args, **kwargs)
+
+    @classmethod
+    def get_failes(cls):
+        return cls.instances.count(True)
 
 
 def main():
@@ -102,8 +110,9 @@ def main():
 
     case_2_test_for_non_existing_file(cluster_url, current_time, task_id)
 
-    if hasattr(count_fails, "fails"):
-        print(f'Total failed tests : {count_fails.fails} out of {number_of_tests}')
+    total_fails = count_fails.get_failes()
+    if total_fails > 0:
+        print(f'Total failed tests : {total_fails} out of {number_of_tests}')
     print("END")
 
 

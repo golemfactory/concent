@@ -388,7 +388,7 @@ def handle_send_force_report_computed_task(request, client_message):
         requestor_public_key = other_party_public_key,
         status               = ReceiveStatus
     )
-    store_subtask(
+    subtask = store_subtask(
         task_id              = client_message.report_computed_task.task_to_compute.compute_task_def['task_id'],
         subtask_id           = client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'],
         provider_public_key  = client_public_key,
@@ -397,6 +397,12 @@ def handle_send_force_report_computed_task(request, client_message):
         next_deadline        = client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
         task_to_compute      = client_message.report_computed_task.task_to_compute,
         report_computed_task = client_message.report_computed_task,
+    )
+    store_pending_message(
+        response_type       = PendingResponse.ResponseType.ForceReportComputedTask,
+        client_public_key   = other_party_public_key,
+        queue               = PendingResponse.Queue.Receive,
+        subtask             = subtask,
     )
     logging.log_message_added_to_queue(
         client_message,
@@ -469,12 +475,18 @@ def handle_send_ack_report_computed_task(request, client_message):
             requestor_public_key = client_public_key,
             status               = ReceiveStatus,
         )
-        update_subtask(
+        subtask = update_subtask(
             subtask                     = subtask,
             state                       = Subtask.SubtaskState.REPORTED,
             next_deadline               = None,
             set_next_deadline           = True,
             ack_report_computed_task    = client_message,
+        )
+        store_pending_message(
+            response_type       = PendingResponse.ResponseType.AckReportComputedTask,
+            client_public_key   = client_message.task_to_compute.provider_public_key,
+            queue               = PendingResponse.Queue.Receive,
+            subtask             = subtask,
         )
         logging.log_message_added_to_queue(
             client_message,
@@ -541,12 +553,24 @@ def handle_send_reject_report_computed_task(request, client_message):
             requestor_public_key = client_public_key,
             status               = ReceiveStatus
         )
-        update_subtask(
+        subtask = update_subtask(
             subtask                     = subtask,
-            state                       = Subtask.SubtaskState.FAILED,
+            state                       = Subtask.SubtaskState.REPORTED,
             next_deadline               = None,
             set_next_deadline           = True,
             reject_report_computed_task = client_message,
+        )
+        store_pending_message(
+            response_type       = PendingResponse.ResponseType.AckReportComputedTask,
+            client_public_key   = client_message.cannot_compute_task.task_to_compute.provider_public_key,
+            queue               = PendingResponse.Queue.Receive,
+            subtask             = subtask,
+        )
+        store_pending_message(
+            response_type       = PendingResponse.ResponseType.VerdictReportComputedTask,
+            client_public_key   = subtask.requestor.public_key_bytes,
+            queue               = PendingResponse.Queue.ReceiveOutOfBand,
+            subtask             = subtask,
         )
         logging.log_message_added_to_queue(
             client_message,
@@ -581,12 +605,18 @@ def handle_send_reject_report_computed_task(request, client_message):
             requestor_public_key = client_public_key,
             status               = ReceiveStatus
         )
-        update_subtask(
+        subtask = update_subtask(
             subtask                     = subtask,
             state                       = Subtask.SubtaskState.FAILED,
             next_deadline               = None,
             set_next_deadline           = True,
             reject_report_computed_task = client_message,
+        )
+        store_pending_message(
+            response_type       = PendingResponse.ResponseType.RejectReportComputedTask,
+            client_public_key   = client_message.cannot_compute_task.task_to_compute.provider_public_key,
+            queue               = PendingResponse.Queue.Receive,
+            subtask             = subtask,
         )
         logging.log_message_added_to_queue(
             client_message,
@@ -646,7 +676,7 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
             requestor_public_key = client_public_key,
             status               = ReceiveStatus,
         )
-        store_or_update_subtask(
+        subtask = store_or_update_subtask(
             task_id                     = client_message.report_computed_task.task_to_compute.compute_task_def['task_id'],
             subtask_id                  = client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'],
             provider_public_key         = other_party_public_key,
@@ -656,6 +686,12 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
             set_next_deadline           = True,
             report_computed_task        = client_message.report_computed_task,
             task_to_compute             = client_message.report_computed_task.task_to_compute,
+        )
+        store_pending_message(
+            response_type       = PendingResponse.ResponseType.ForceGetTaskResultUpload,
+            client_public_key   = other_party_public_key,
+            queue               = PendingResponse.Queue.Receive,
+            subtask             = subtask,
         )
         return message.concents.AckForceGetTaskResult(
             force_get_task_result = client_message,
@@ -720,7 +756,7 @@ def handle_send_force_subtask_results(request, client_message: message.concents.
             provider_public_key  = client_public_key,
             requestor_public_key = other_party_public_key,
         )
-        store_or_update_subtask(
+        subtask = store_or_update_subtask(
             task_id                     = client_message.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
             subtask_id                  = client_message.ack_report_computed_task.task_to_compute.compute_task_def['subtask_id'],
             provider_public_key         = client_public_key,
@@ -730,6 +766,12 @@ def handle_send_force_subtask_results(request, client_message: message.concents.
             set_next_deadline           = True,
             ack_report_computed_task    = client_message.ack_report_computed_task,
             task_to_compute             = client_message.ack_report_computed_task.task_to_compute,
+        )
+        store_pending_message(
+            response_type       = PendingResponse.ResponseType.ForceSubtaskResults,
+            client_public_key   = other_party_public_key,
+            queue               = PendingResponse.Queue.Receive,
+            subtask             = subtask,
         )
         logging.log_message_added_to_queue(
             client_message,
@@ -751,6 +793,8 @@ def handle_send_force_subtask_results_response(request, client_message):
         subtask_results_accepted  = client_message.subtask_results_accepted
         subtask_results_rejected  = None
         state                     = Subtask.SubtaskState.ACCEPTED
+        response_type             = PendingResponse.ResponseType.ForceSubtaskResultsResponse
+        provider_public_key       = client_message.subtask_results_accepted.task_to_compute.provider_public_key
     else:
         client_message_task_id    = client_message.subtask_results_rejected.report_computed_task.task_to_compute.compute_task_def['task_id']
         client_message_subtask_id = client_message.subtask_results_rejected.report_computed_task.task_to_compute.compute_task_def['subtask_id']
@@ -758,6 +802,8 @@ def handle_send_force_subtask_results_response(request, client_message):
         subtask_results_accepted  = None
         subtask_results_rejected  = client_message.subtask_results_rejected
         state                     = Subtask.SubtaskState.REJECTED
+        response_type             = PendingResponse.ResponseType.SubtaskResultsRejected
+        provider_public_key       = client_message.subtask_results_rejected.report_computed_task.task_to_compute.provider_public_key
 
     try:
         subtask = Subtask.objects.get(
@@ -818,7 +864,7 @@ def handle_send_force_subtask_results_response(request, client_message):
         provider_public_key  = force_subtask_results.last().auth.provider_public_key_bytes,
         requestor_public_key = client_public_key,
     )
-    update_subtask(
+    subtask = update_subtask(
         subtask                     = subtask,
         state                       = state,
         next_deadline               = None,
@@ -826,6 +872,12 @@ def handle_send_force_subtask_results_response(request, client_message):
         report_computed_task        = report_computed_task,
         subtask_results_accepted    = subtask_results_accepted,
         subtask_results_rejected    = subtask_results_rejected,
+    )
+    store_pending_message(
+        response_type       = response_type,
+        client_public_key   = provider_public_key,
+        queue               = PendingResponse.Queue.Receive,
+        subtask             = subtask,
     )
     logging.log_message_added_to_queue(
         client_message,
@@ -1446,6 +1498,7 @@ def store_subtask(
         next_deadline,
     )
 
+    return subtask
 
 def update_concent_states(
     client_public_key: bytes,
@@ -1597,6 +1650,8 @@ def update_subtask(
         next_deadline,
     )
 
+    return subtask
+
 
 def set_subtask_messages(
     subtask:                        Subtask,
@@ -1663,7 +1718,7 @@ def store_or_update_subtask(
         subtask = None
 
     if subtask is not None:
-        update_subtask(
+        subtask = update_subtask(
             subtask                         = subtask,
             state                           = state,
             next_deadline                   = next_deadline,
@@ -1676,7 +1731,7 @@ def store_or_update_subtask(
             subtask_results_rejected        = subtask_results_rejected,
         )
     else:
-        store_subtask(
+        subtask = store_subtask(
             task_id                         = task_id,
             subtask_id                      = subtask_id,
             provider_public_key             = provider_public_key,
@@ -1690,6 +1745,7 @@ def store_or_update_subtask(
             subtask_results_accepted        = subtask_results_accepted,
             subtask_results_rejected        = subtask_results_rejected,
         )
+    return subtask
 
 
 def store_message(

@@ -77,21 +77,47 @@ def get_force_get_task_result(task_id, current_time, size, package_hash):
     return force_get_task_result
 
 
+def count_fails(fun):
+    def wrapper(f):
+        count_fails.fails = 0
+
+        def inner(*args, **kwargs):
+            try:
+                f(*args, **kwargs)
+            except AssertionError as e:
+                print("{}: FAILED".format(fun.__name__))
+                print(e)
+                count_fails.fails += 1
+        return inner
+    return wrapper(fun)
+
+
 def main():
     cluster_url     = parse_command_line(sys.argv)
     current_time    = get_current_utc_timestamp()
     task_id         = str(random.randrange(1, 100000))
+    number_of_tests = 2
 
+    case_1_test_for_existing_file(cluster_url, current_time, task_id)
+
+    case_2_test_for_non_existing_file(cluster_url, current_time, task_id)
+
+    if hasattr(count_fails, "fails"):
+        print(f'Total failed tests : {count_fails.fails} out of {number_of_tests}')
+    print("END")
+
+
+@count_fails
+def case_1_test_for_existing_file(cluster_url, current_time, task_id):
     (response_status_code, file_size, file_check_sum) = upload_new_file_on_cluster(
-        task_id = task_id,
-        part_id = '0',
-        current_time = current_time,
+        task_id=task_id,
+        part_id='0',
+        current_time=current_time,
     )
-
     assert response_status_code == 200, 'File has not been stored on cluster'
-
-    print('\nCreated file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(task_id, file_check_sum, file_size))
-
+    print('\nCreated file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(task_id,
+                                                                                                               file_check_sum,
+                                                                                                               file_size))
     # Case 1 - test for existing file
     api_request(
         cluster_url,
@@ -111,7 +137,6 @@ def main():
         }
     )
     time.sleep(10)
-
     api_request(
         cluster_url,
         'receive',
@@ -123,7 +148,6 @@ def main():
         }
     )
     time.sleep(10)
-
     api_request(
         cluster_url,
         'receive',
@@ -135,6 +159,9 @@ def main():
         }
     )
 
+
+@count_fails
+def case_2_test_for_non_existing_file(cluster_url, current_time, task_id):
     # Case 2 - test for non existing file
     api_request(
         cluster_url,
@@ -154,7 +181,6 @@ def main():
         }
     )
     time.sleep(10)
-
     api_request(
         cluster_url,
         'receive',
@@ -166,7 +192,6 @@ def main():
         }
     )
     time.sleep(10)
-
     api_request(
         cluster_url,
         'receive',

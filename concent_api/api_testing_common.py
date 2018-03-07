@@ -26,6 +26,8 @@ def print_golem_message(message, private_key, public_key, indent = 4):
     for field, value in zip(fields, values):
         if isinstance(value, Message):
             print_golem_message(value, private_key, public_key, indent = indent + 4)
+        elif field == 'timestamp':
+            print('{}{:30} = {}  # UTC: {}'.format(' ' * indent, field, value, timestamp_to_isoformat(value)))
         else:
             print('{}{:30} = {}'.format(' ' * indent, field, value))
 

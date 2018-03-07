@@ -1,4 +1,5 @@
 from base64                         import b64encode
+from decimal                        import Decimal
 import binascii
 import copy
 import datetime
@@ -30,6 +31,7 @@ from .constants                     import MESSAGE_TASK_ID_MAX_LENGTH
 from .models                        import Client
 from .models                        import MessageAuth
 from .models                        import PendingResponse
+from .models                        import PaymentInfo
 from .models                        import ReceiveOutOfBandStatus
 from .models                        import ReceiveStatus
 from .models                        import StoredMessage
@@ -713,8 +715,8 @@ def handle_send_force_payment(request, client_message: message.concents.ForcePay
             payment_ts              = payment_ts,
             task_owner_key          = requestor_ethereum_public_key,
             provider_eth_account    = client_public_key,
-            amount_paid             = 10.99,
-            amount_pending          = 0.01,
+            amount_paid             = Decimal('10.99'),
+            amount_pending          = Decimal('0.01'),
             recipient_type          = message.concents.ForcePaymentCommitted.Actor.Provider,
         )
 
@@ -726,6 +728,22 @@ def handle_send_force_payment(request, client_message: message.concents.ForcePay
             requestor_public_key    = other_party_public_key,
         )
 
+        requestor_force_payment_commited = message.concents.ForcePaymentCommitted(
+            payment_ts              = payment_ts,
+            task_owner_key          = requestor_ethereum_public_key,
+            provider_eth_account    = client_public_key,
+            amount_paid             = Decimal('10.99'),
+            amount_pending          = Decimal('0.01'),
+            recipient_type          = message.concents.ForcePaymentCommitted.Actor.Requestor,
+        )
+        store_pending_message(
+            response_type       = PendingResponse.ResponseType.ForcePaymentCommitted,
+            client_public_key   = other_party_public_key,
+            queue               = PendingResponse.Queue.ReceiveOutOfBand,
+            payment_message     = requestor_force_payment_commited
+        )
+
+        provider_force_payment_commited.sig = None
         return provider_force_payment_commited
 
 
@@ -1354,22 +1372,39 @@ def store_pending_message(
     client_public_key   = None,
     queue               = None,
     subtask             = None,
+    payment_message     = None,
 ):
-    client = Client.objects.get_or_create_full_clean(client_public_key)
-    queue = PendingResponse(
+    client          = Client.objects.get_or_create_full_clean(client_public_key)
+    receive_queue   = PendingResponse(
         response_type   = response_type.name,
         client          = client,
         queue           = queue.name,
         subtask         = subtask,
     )
+    receive_queue.full_clean()
+    receive_queue.save()
+    if payment_message is not None:
+        payment_committed_message = PaymentInfo(
+            payment_ts                  = datetime.datetime.fromtimestamp(payment_message.payment_ts, timezone.utc),
+            task_owner_key_bytes        = decode_key(payment_message.task_owner_key),
+            provider_eth_account_bytes  = payment_message.provider_eth_account,
+            amount_paid                 = payment_message.amount_paid,
+            recipient_type              = payment_message.recipient_type.name,  # pylint: disable=no-member
+            amount_pending              = payment_message.amount_pending,
+            pending_response            = receive_queue
+        )
+        payment_committed_message.full_clean()
+        payment_committed_message.save()
+        subtask_id = None
+    else:
+        subtask_id = subtask.subtask_id
+
     logging.log_new_pending_response(
         response_type.name,
         queue.name,
-        subtask.subtask_id,
+        subtask_id,
         client.public_key,
     )
-    queue.full_clean()
-    queue.save()
 
 
 def handle_messages_from_database(
@@ -1519,6 +1554,27 @@ def handle_messages_from_database(
         response_to_client = message.concents.ForceSubtaskResultsResponse(
             subtask_results_rejected = subtask_results_rejected,
         )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
+
+    elif pending_response.response_type == PendingResponse.ResponseType.ForcePaymentCommitted.name:  # pylint: disable=no-member
+        payment_message = pending_response.payments.filter(
+            pending_response__pk = pending_response.pk
+        ).order_by('id').last()
+
+        response_to_client = message.concents.ForcePaymentCommitted(
+            payment_ts              = datetime.datetime.timestamp(payment_message.payment_ts),
+            task_owner_key          = payment_message.task_owner_key,
+            provider_eth_account    = payment_message.provider_eth_account,
+            amount_paid             = payment_message.amount_paid,
+            amount_pending          = payment_message.amount_pending,
+        )
+        if payment_message.recipient_type == PaymentInfo.RecipientType.Requestor.name:  # pylint: disable=no-member
+            response_to_client.recipient_type = message.concents.ForcePaymentCommitted.Actor.Requestor
+        elif payment_message.recipient_type == PaymentInfo.RecipientType.Provider.name:  # pylint: disable=no-member
+            response_to_client.recipient_type = message.concents.ForcePaymentCommitted.Actor.Provider
+        else:
+            return None
         mark_message_as_delivered_and_log(pending_response, response_to_client)
         return response_to_client
 

@@ -2,10 +2,10 @@
 
 import os
 import random
+import requests
 import sys
 import time
 from base64                 import b64encode
-from collections            import namedtuple
 from freezegun              import freeze_time
 
 from golem_messages         import message
@@ -13,10 +13,8 @@ from golem_messages         import message
 from utils.helpers          import get_current_utc_timestamp
 from utils.testing_helpers  import generate_ecc_key_pair
 
-from api_testing_common     import api_request, parse_command_line
+from api_testing_common     import api_request, parse_command_line, get_protocol_constants, print_protocol_constants
 from api_testing_common     import timestamp_to_isoformat
-
-import requests
 
 HOUR = 3600
 TIME_GUARD = 10
@@ -103,34 +101,6 @@ def create_task(task_to_compute_timestamp, task_id, compute_task_def_deadline):
             deadline=compute_task_def_deadline,
         )
     )
-
-
-ProtocolConstants = namedtuple("ProtocolConstants",
-                               ["concent_messaging_time",
-                                "subtask_verification_time",
-                                "force_acceptance_time",
-                                "token_expiration_time"])
-
-
-def get_protocol_constants(cluster_url):
-    url = f"{cluster_url}/api/v1/protocol-constants/"
-    resp = requests.get(url)
-    json = resp.json()
-    concent_messaging_time = json['concent_messaging_time']['value']
-    subtask_verification_time = json['subtask_verification_time']['value']
-    force_acceptance_time = json['force_acceptance_time']['value']
-    token_expiration_time = json['token_expiration_time']['value']
-    constants = ProtocolConstants(concent_messaging_time, subtask_verification_time, force_acceptance_time,
-                                  token_expiration_time)
-    return constants
-
-
-def print_protocol_constants(constants):
-    print("PROTOCOL_CONSTANTS: ")
-    print(f"concent_messaging_time = {constants.concent_messaging_time}")
-    print(f"subtask_verification_time = {constants.subtask_verification_time}")
-    print(f"force_acceptance_time = {constants.force_acceptance_time}")
-    print(f"token_expiration_time = {constants.token_expiration_time}\n")
 
 
 def main():

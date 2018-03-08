@@ -7,20 +7,28 @@ import hashlib
 import random
 import requests
 import time
-from base64                 import b64encode
 
-from golem_messages         import message
-from golem_messages         import shortcuts
+from base64                          import b64encode
+from golem_messages                  import message
+from golem_messages                  import shortcuts
+from golem_messages.message.concents import AckForceGetTaskResult, ForceGetTaskResultUpload, ForceGetTaskResultFailed
 
-from utils.helpers          import get_current_utc_timestamp
-from utils.testing_helpers  import generate_ecc_key_pair
+from utils.helpers                   import get_current_utc_timestamp
+from utils.testing_helpers           import generate_ecc_key_pair
 
-from api_testing_common     import api_request, parse_command_line, create_task_to_compute
-from api_testing_common     import timestamp_to_isoformat
+from api_testing_common              import api_request, parse_command_line, create_task_to_compute, get_protocol_constants, \
+    print_protocol_constants
+from api_testing_common              import timestamp_to_isoformat
 
-from freezegun              import freeze_time
+from freezegun                       import freeze_time
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
+
+DEADLINE_OFFSET        = 5
+CONCENT_MESSAGING_TIME = 30
+FORCE_ACCEPTANCE_TIME  = 30
+
+WAIT_TIME_1            = DEADLINE_OFFSET + FORCE_ACCEPTANCE_TIME
 
 (PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)  = generate_ecc_key_pair()
 (REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
@@ -60,8 +68,8 @@ def upload_new_file_on_cluster(task_id = '0', part_id = '0', current_time = 0):
     return (response.status_code, file_size, file_check_sum)
 
 
-def get_force_get_task_result(task_id, current_time, size, package_hash):
-    task_to_compute = create_task_to_compute(current_time, task_id)
+def get_force_get_task_result(task_id, current_time, size, package_hash, task_deadline_offset=60):
+    task_to_compute      = create_task_to_compute(current_time, task_id, task_deadline_offset)
 
     report_computed_task = message.ReportComputedTask(
         task_to_compute = task_to_compute,
@@ -81,47 +89,31 @@ class count_fails(object):
     instances = []
 
     def __init__(self, fun):
-        self.fun = fun
-        self.failed = False
+        self._fun     = fun
+        self._name    = fun.__name__
+        self._failed  = False
         count_fails.instances.append(self)
 
     def __call__(self, *args, **kwargs):
-            def inner(*args, **kwargs):
                 try:
-                    self.fun(*args, **kwargs)
+                    print("Running TC: " + self._name)
+                    return self._fun(*args, **kwargs)
                 except AssertionError as e:
-                    print("{}: FAILED".format(self.fun.__name__))
+                    print("{}: FAILED".format(self._name))
                     print(e)
-                    self.failed = True
-            return inner(*args, **kwargs)
+                    self._failed = True
 
     @classmethod
-    def get_failes(cls):
+    def get_fails(cls):
         return cls.instances.count(True)
-
-
-def main():
-    cluster_url     = parse_command_line(sys.argv)
-    current_time    = get_current_utc_timestamp()
-    task_id         = str(random.randrange(1, 100000))
-    number_of_tests = 2
-
-    case_1_test_for_existing_file(cluster_url, current_time, task_id)
-
-    case_2_test_for_non_existing_file(cluster_url, current_time, task_id)
-
-    total_fails = count_fails.get_failes()
-    if total_fails > 0:
-        print(f'Total failed tests : {total_fails} out of {number_of_tests}')
-    print("END")
 
 
 @count_fails
 def case_1_test_for_existing_file(cluster_url, current_time, task_id):
     (response_status_code, file_size, file_check_sum) = upload_new_file_on_cluster(
-        task_id=task_id,
-        part_id='0',
-        current_time=current_time,
+            task_id      = task_id,
+            part_id      = '0',
+            current_time = current_time,
     )
     assert response_status_code == 200, 'File has not been stored on cluster'
     print('\nCreated file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(task_id,
@@ -136,16 +128,19 @@ def case_1_test_for_existing_file(cluster_url, current_time, task_id):
         get_force_get_task_result(
             task_id,
             current_time,
-            size         = file_size,
-            package_hash = file_check_sum
-        ),
-        headers = {
-            'Content-Type':                     'application/octet-stream',
-            'concent-client-public-key':        b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-            'concent-other-party-public-key':   b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-        }
+            size=file_size,
+            package_hash=file_check_sum),
+
+        headers={
+            'Content-Type': 'application/octet-stream',
+            'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            'concent-other-party-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+        },
+        expected_status  = 200,
+        expected_message = AckForceGetTaskResult
     )
-    time.sleep(10)
+    print(f"Waiting {WAIT_TIME_1} seconds...")
+    time.sleep(WAIT_TIME_1)  # TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME < current time <= TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME + CONCENT_MESSAGING_TIME
     api_request(
         cluster_url,
         'receive',
@@ -154,9 +149,12 @@ def case_1_test_for_existing_file(cluster_url, current_time, task_id):
         headers = {
             'Content-Type': 'application/octet-stream',
             'concent-client-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-        }
+        },
+        expected_status  = 200,
+        expected_message = ForceGetTaskResultUpload
     )
-    time.sleep(10)
+    print(f"Waiting {CONCENT_MESSAGING_TIME} seconds...")
+    time.sleep(CONCENT_MESSAGING_TIME)  # TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME + CONCENT_MESSAGING_TIME < current time <= TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME + 2 * CONCENT_MESSAGING_TIME.
     api_request(
         cluster_url,
         'receive',
@@ -165,32 +163,45 @@ def case_1_test_for_existing_file(cluster_url, current_time, task_id):
         headers = {
             'Content-Type': 'application/octet-stream',
             'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-        }
+        },
+        expected_status  = 200,
+        expected_message = ForceGetTaskResultUpload
     )
 
 
 @count_fails
-def case_2_test_for_non_existing_file(cluster_url, current_time, task_id):
-    # Case 2 - test for non existing file
-    api_request(
+def case_4a_concent_reports_a_failure_to_get_task_results_if_the_provider_does_not_submit_anything(cluster_url,
+                                                                                                   current_time,
+                                                                                                   task_id):
+    """
+    Case 4A:
+    Requestor -> Concent:    ForceGetTaskResult
+    Concent   -> Requestor:  ForceGetTaskResultAck
+    Concent   -> Provider:   ForceGetTaskResult + FileTransferToken
+    Concent   -> Requestor:  ForceGetTaskResultFailed (provider does not submit anything)
+    """
+    api_request(    # Requestor -> Concent:    ForceGetTaskResult
         cluster_url,
         'send',
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         get_force_get_task_result(
-            task_id + 'non_existing_file',
+            task_id + '4A',
             current_time,
-            size    = 1024,
-            package_hash = '098f6bcd4621d373cade4e832627b4f6'
-        ),
-        headers = {
-            'Content-Type':                     'application/octet-stream',
-            'concent-client-public-key':        b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-            'concent-other-party-public-key':   b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-        }
+            size=1024,
+            package_hash='098f6bcd4621d373cade4e832627b4f6',
+        task_deadline_offset = DEADLINE_OFFSET),
+        headers={
+            'Content-Type': 'application/octet-stream',
+            'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            'concent-other-party-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+        },
+        expected_status  = 200,
+        expected_message = AckForceGetTaskResult
     )
-    time.sleep(10)
-    api_request(
+    print(f"Waiting {WAIT_TIME_1} seconds...")
+    time.sleep(WAIT_TIME_1)  # TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME < current time <= TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME + CONCENT_MESSAGING_TIME
+    api_request(    # Concent   -> Provider:   ForceGetTaskResult + FileTransferToken
         cluster_url,
         'receive',
         PROVIDER_PRIVATE_KEY,
@@ -198,10 +209,13 @@ def case_2_test_for_non_existing_file(cluster_url, current_time, task_id):
         headers = {
             'Content-Type':                 'application/octet-stream',
             'concent-client-public-key':    b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
-        }
+        },
+        expected_status  = 200,
+        expected_message = ForceGetTaskResultUpload
     )
-    time.sleep(10)
-    api_request(
+    print(f"Waiting {CONCENT_MESSAGING_TIME} seconds...")
+    time.sleep(CONCENT_MESSAGING_TIME)  # TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME + CONCENT_MESSAGING_TIME < current time <= TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME + 2 * CONCENT_MESSAGING_TIME.
+    api_request(  # Concent   -> Requestor:  ForceGetTaskResultFailed (provider does not submit anything)
         cluster_url,
         'receive',
         REQUESTOR_PRIVATE_KEY,
@@ -209,8 +223,40 @@ def case_2_test_for_non_existing_file(cluster_url, current_time, task_id):
         headers = {
             'Content-Type':                 'application/octet-stream',
             'concent-client-public-key':    b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
-        }
+        },
+        expected_status  = 200,
+        expected_message = ForceGetTaskResultFailed
     )
+
+
+def main():
+    global CONCENT_MESSAGING_TIME
+    global FORCE_ACCEPTANCE_TIME
+    global WAIT_TIME_1
+
+    cluster_url     = parse_command_line(sys.argv)
+    current_time    = get_current_utc_timestamp()
+    task_id         = str(random.randrange(1, 100000))
+    number_of_tests = 2
+
+    cluster_consts         = get_protocol_constants(cluster_url)
+    print_protocol_constants(cluster_consts)
+    CONCENT_MESSAGING_TIME = cluster_consts.concent_messaging_time
+    FORCE_ACCEPTANCE_TIME  = cluster_consts.force_acceptance_time
+    WAIT_TIME_1            = DEADLINE_OFFSET + FORCE_ACCEPTANCE_TIME  # recalculated as it could change due to cluster_consts
+
+    case_1_test_for_existing_file(cluster_url, current_time, task_id)
+
+    print("-" * 80)
+
+    case_4a_concent_reports_a_failure_to_get_task_results_if_the_provider_does_not_submit_anything(cluster_url,
+                                                                                                   current_time,
+                                                                                                   task_id)
+
+    total_fails = count_fails.get_fails()
+    if total_fails > 0:
+        print(f'Total failed tests : {total_fails} out of {number_of_tests}')
+    print("END")
 
 
 if __name__ == '__main__':

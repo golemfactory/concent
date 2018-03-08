@@ -66,8 +66,10 @@ def validate_response_status(actual_status_code, expected_status):
         assert expected_status == actual_status_code, f"Expected:HTTP{expected_status}, actual:HTTP{actual_status_code}"
 
 
-def validate_response_message(response, expected_message):
-    pass
+def validate_response_message(encoded_message, expected_message, private_key, public_key,):
+    if expected_message is not None:
+        decoded_message = try_to_decode_golem_message(private_key, public_key, encoded_message)
+        assert isinstance(decoded_message, expected_message), f"Expected:{expected_message}, actual:{decoded_message}"
 
 
 def api_request(host, endpoint, private_key, public_key, data=None, headers=None, expected_status=None, expected_message=None):
@@ -97,7 +99,7 @@ def api_request(host, endpoint, private_key, public_key, data=None, headers=None
 
     _print_response(private_key, public_key, response)
     validate_response_status(response.status_code, expected_status)
-    validate_response_message(response, expected_message)
+    validate_response_message(response.content, expected_message, private_key, public_key,)
     print()
 
 

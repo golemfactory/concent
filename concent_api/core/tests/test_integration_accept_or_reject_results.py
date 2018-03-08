@@ -6,6 +6,7 @@ from freezegun              import freeze_time
 from golem_messages         import message
 
 from core.models            import StoredMessage
+from core.models            import Subtask
 from core.models            import ReceiveStatus
 from core.tests.utils       import ConcentIntegrationTestCase
 from utils.testing_helpers  import generate_ecc_key_pair
@@ -58,6 +59,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     timestamp   = "2018-02-05 10:00:00",
                     deadline    = "2018-02-05 10:00:10",
                     task_id     = '2',
+                    subtask_id  = 'xxyyzz',
                 )
             )
         )
@@ -79,6 +81,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             last_object_type         = message.concents.AckReportComputedTask,
             task_id                  = '2',
             receive_delivered_status = False,
+        )
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                      = '2',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.FORCING_ACCEPTANCE,
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
+            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
 
         # STEP 2: Provider again forces subtask results via Concent with message with the same task_id.
@@ -103,6 +115,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 10:00:31"),
             }
         )
+        self._assert_stored_message_counter_not_increased()
 
     def test_provider_forces_subtask_results_with_not_enough_funds_on_this_account_concent_should_refuse(self):
         """
@@ -142,6 +155,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp':    self._parse_iso_date_to_timestamp("2018-02-05 10:00:35")
             }
         )
+        self._assert_stored_message_counter_not_increased()
 
     def test_provider_forces_subtask_results_but_it_was_sent_to_too_late_or_too_soon_concent_should_reject(self):
         """
@@ -178,7 +192,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
         self._test_response(
@@ -191,6 +205,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp':    self._parse_iso_date_to_timestamp("2018-03-05 10:00:24"),
             }
         )
+        self._assert_stored_message_counter_not_increased()
 
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
             timestamp                   = "2018-03-05 10:00:15",
@@ -212,7 +227,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
         self._test_response(
@@ -225,6 +240,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp':    self._parse_iso_date_to_timestamp("2018-03-05 10:00:40"),
             }
         )
+        self._assert_stored_message_counter_not_increased()
 
     def test_requestor_should_receive_subtask_results_from_concent(self):
         """
@@ -246,6 +262,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     timestamp   = "2018-02-05 10:00:00",
                     deadline    = "2018-02-05 10:00:10",
                     task_id     = '2',
+                    subtask_id  = 'xxyyzz',
                 )
             )
         )
@@ -257,7 +274,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
         assert len(response_1.content) == 0
@@ -267,6 +284,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             last_object_type         = message.concents.AckReportComputedTask,
             task_id                  = '2',
             receive_delivered_status = False,
+        )
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                      = '2',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.FORCING_ACCEPTANCE,
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
+            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:50"),
         )
 
         with freeze_time("2018-02-05 10:00:29"):
@@ -280,6 +307,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         deserialized_compute_task_def = self._get_deserialized_compute_task_def(
             deadline    = "2018-02-05 10:00:10",
             task_id     = '2',
+            subtask_id  = 'xxyyzz',
         )
         self._test_response(
             response_2,
@@ -293,6 +321,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             }
         )
         self.assertEqual(ReceiveStatus.objects.last().delivered, True)
+        self._assert_stored_message_counter_increased()
 
     def test_requestor_should_not_receive_correct_subtask_results_from_concent_if_asked_concent_after_deadline(self):
         """
@@ -314,6 +343,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     timestamp   = "2018-02-05 10:00:00",
                     deadline    = "2018-02-05 10:00:10",
                     task_id     = '2',
+                    subtask_id  = 'xxyyzz',
                 )
             )
         )
@@ -325,7 +355,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
         assert len(response_1.content) == 0
@@ -335,6 +365,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             last_object_type         = message.concents.AckReportComputedTask,
             task_id                  = '2',
             receive_delivered_status = False,
+        )
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                      = '2',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.FORCING_ACCEPTANCE,
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
+            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:50"),
         )
 
         with freeze_time("2018-02-05 11:00:00"):
@@ -347,6 +387,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         deserialized_compute_task_def = self._get_deserialized_compute_task_def(
             deadline    = "2018-02-05 10:00:10",
             task_id     = '2',
+            subtask_id  = 'xxyyzz',
         )
         self._test_response(
             response_2,
@@ -354,12 +395,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             key          = self.REQUESTOR_PRIVATE_KEY,
             message_type = message.concents.ForceSubtaskResults,
             fields       = {
-                'timestamp':                                            self._parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
-                'ack_report_computed_task.subtask_id':                  'xxyyzz',
+                'timestamp':                                                 self._parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
+                'ack_report_computed_task.subtask_id':                       'xxyyzz',
                 'ack_report_computed_task.task_to_compute.compute_task_def': deserialized_compute_task_def,
             }
         )
         self.assertEqual(ReceiveStatus.objects.last().delivered, True)
+        self._assert_stored_message_counter_increased()
 
     def test_requestor_sends_subtask_results_accepted_and_concent_should_return_it_to_provider(self):
         """
@@ -383,6 +425,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     timestamp   = "2018-02-05 10:00:00",
                     deadline    = "2018-02-05 10:00:10",
                     task_id     = '2',
+                    subtask_id  = 'xxyyzz',
                 )
             )
         )
@@ -399,6 +442,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         assert len(response_1.content)  == 0
         assert response_1.status_code   == 202
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                      = '2',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.FORCING_ACCEPTANCE,
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
+            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
+        )
 
         with freeze_time("2018-02-05 11:00:02"):
             response_2 = self.client.post(
@@ -419,9 +472,11 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'ack_report_computed_task.subtask_id':  'xxyyzz',
             }
         )
+        self._assert_stored_message_counter_increased()
 
         compute_task_def = self._get_deserialized_compute_task_def(
             task_id     = '2',
+            subtask_id = 'xxyyzz',
             deadline    = "2018-02-05 11:00:00",
         )
 
@@ -452,6 +507,15 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             task_id                  = '2',
             receive_delivered_status = False,
         )
+        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._test_subtask_state(
+            task_id                      = '2',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.ACCEPTED,
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task', 'subtask_results_accepted'},
+        )
 
         with freeze_time("2018-02-05 11:00:02"):
             response_3 = self.client.post(
@@ -480,6 +544,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             task_id                  = '2',
             receive_delivered_status = True,
         )
+        self._assert_stored_message_counter_increased()
 
     def test_requestor_sends_subtask_results_rejected_and_concent_should_return_it_to_provider(self):
         """
@@ -503,6 +568,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     timestamp   = "2018-02-05 10:00:00",
                     deadline    = "2018-02-05 10:00:10",
                     task_id     = '2',
+                    subtask_id  = 'xxyyzz',
                 )
             )
         )
@@ -519,6 +585,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         assert len(response_1.content)  == 0
         assert response_1.status_code   == 202
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                      = '2',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.FORCING_ACCEPTANCE,
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
+            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
+        )
 
         with freeze_time("2018-02-05 11:00:02"):
             response_2 = self.client.post(
@@ -539,6 +615,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'ack_report_computed_task.subtask_id':  'xxyyzz',
             }
         )
+        self._assert_stored_message_counter_increased()
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
@@ -548,11 +625,12 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reason                  = message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
                 report_computed_task    = self._get_deserialized_report_computed_task(
                     timestamp   = "2018-02-05 10:00:44",
-                    subtask_id  = '2',
+                    subtask_id  = 'xxyyzz',
                     task_to_compute = self._get_deserialized_task_to_compute(
                         timestamp   = "2018-02-05 10:00:43",
                         deadline    = "2018-02-05 10:00:44",
                         task_id     = '2',
+                        subtask_id  = 'xxyyzz',
                     )
                 )
             )
@@ -571,6 +649,15 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             last_object_type         = message.tasks.SubtaskResultsRejected,
             task_id                  = '2',
             receive_delivered_status = False,
+        )
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                      = '2',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.REJECTED,
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'report_computed_task', 'ack_report_computed_task', 'subtask_results_rejected'},
         )
 
         with freeze_time("2018-02-05 11:00:02"):
@@ -591,7 +678,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'subtask_results_rejected.timestamp':                       self._parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
                 'subtask_results_rejected.reason':                          message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
                 'subtask_results_rejected.report_computed_task.timestamp':  self._parse_iso_date_to_timestamp("2018-02-05 10:00:44"),
-                'subtask_results_rejected.report_computed_task.subtask_id': '2'
+                'subtask_results_rejected.report_computed_task.subtask_id': 'xxyyzz'
             }
         )
 
@@ -600,6 +687,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             task_id                  = '2',
             receive_delivered_status = True,
         )
+        self._assert_stored_message_counter_increased()
 
     def test_requestor_sends_subtask_results_acceptance_but_provider_does_not_submitted_force_subtask_results_concent_should_reject_it(self):
         """
@@ -639,6 +727,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self._test_400_response(response_1)
+        self._assert_stored_message_counter_not_increased()
 
     def test_requestor_sends_subtask_results_rejection_but_provider_does_not_submitted_force_subtask_results_concent_should_reject_it(self):
         """
@@ -678,6 +767,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self._test_400_response(response_1)
+        self._assert_stored_message_counter_not_increased()
 
     def test_provider_sends_messages_with_wrong_timestamps_concent_should_reject_them(self):
         """
@@ -715,6 +805,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self._test_400_response(response_1)
+        self._assert_stored_message_counter_not_increased()
 
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
             timestamp                   = "2018-04-05 10:00:15",
@@ -739,6 +830,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self._test_400_response(response_2)
+        self._assert_stored_message_counter_not_increased()
 
     def test_requestor_sends_messages_with_wrong_timestamps_concent_should_return_http_400(self):
         """
@@ -759,15 +851,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         """
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id = '2',
-            deadline = "2018-02-05 11:00:00",
+            task_id     = '2',
+            subtask_id  = "xxyyzz",
+            deadline    = "2018-02-05 11:00:00",
         )
 
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
             timestamp                   = "2018-02-05 10:00:15",
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2018-02-05 10:00:15",
-                subtask_id      = "2",
+                subtask_id      = "xxyyzz",
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp           = "2018-02-05 10:00:00",
                     compute_task_def    = compute_task_def,
@@ -782,11 +875,21 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
         assert len(response_1.content)  == 0
         assert response_1.status_code   == 202
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                      = '2',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.FORCING_ACCEPTANCE,
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
+            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
+        )
 
         compute_task_def = self._get_deserialized_compute_task_def(
             task_id     = '2',
@@ -816,6 +919,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self._test_400_response(response_2)
+        self._assert_stored_message_counter_not_increased()
 
         compute_task_def = self._get_deserialized_compute_task_def(
             task_id     = '2',
@@ -845,6 +949,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self._test_400_response(response_3)
+        self._assert_stored_message_counter_not_increased()
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
@@ -874,6 +979,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self._test_400_response(response_4)
+        self._assert_stored_message_counter_not_increased()
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
@@ -903,6 +1009,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self._test_400_response(response_5)
+        self._assert_stored_message_counter_not_increased()
 
     def test_requestor_or_provider_send_message_with_wrong_nested_message_type_concent_should_return_http_400(self):
         """
@@ -933,6 +1040,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self._test_400_response(response_1)
+        self._assert_stored_message_counter_not_increased()
 
     def test_full_requestor_and_provider_communication_concent_should_accept_messages(self):
         """
@@ -1078,7 +1186,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp   = "2018-02-05 10:00:00",
                     deadline    = "2018-02-05 10:00:10",
-                    task_id     = '1',
+                    task_id     = '2',
+                    subtask_id  = 'xxyyzz',
                 )
             )
         )
@@ -1098,8 +1207,18 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_database_objects(
             last_object_type         = message.concents.AckReportComputedTask,
-            task_id                  = '1',
+            task_id                  = '2',
             receive_delivered_status = False,
+        )
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                      = '2',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.FORCING_ACCEPTANCE,
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
+            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:50"),
         )
 
         with freeze_time("2018-02-05 10:00:31"):
@@ -1111,7 +1230,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         deserialized_compute_task_def = self._get_deserialized_compute_task_def(
             deadline    = "2018-02-05 10:00:10",
-            task_id     = '1',
+            task_id     = '2',
+            subtask_id  = 'xxyyzz',
         )
         self._test_response(
             response_2,
@@ -1124,6 +1244,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'ack_report_computed_task.task_to_compute.compute_task_def': deserialized_compute_task_def,
             }
         )
+        self._assert_stored_message_counter_increased()
 
         with mock.patch('core.views.base.make_forced_payment', _get_requestor_account_status):
             with freeze_time("2018-02-05 10:00:51"):
@@ -1143,6 +1264,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'task_to_compute.compute_task_def': deserialized_compute_task_def,
             }
         )
+        self._assert_stored_message_counter_increased()
+        self._test_subtask_state(
+            task_id                      = '2',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.FORCING_ACCEPTANCE,  # TODO: Should be ACCEPTED
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},  # TODO Add subtask_results_accepted if state=ACCEPTED
+            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:50"),  # TODO: Remove if state=ACCEPTED
+        )
 
         with mock.patch('core.views.base.make_forced_payment', _get_requestor_account_status):
             with freeze_time("2018-02-05 10:00:52"):
@@ -1153,6 +1284,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
                 )
         self._test_204_response(response_3b)
+        self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 10:00:51"):
             response_4a = self.client.post(
@@ -1171,6 +1303,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'task_to_compute.compute_task_def': deserialized_compute_task_def,
             }
         )
+        self._assert_stored_message_counter_increased()
 
         with freeze_time("2018-02-05 10:00:52"):
             response_4b = self.client.post(
@@ -1180,6 +1313,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
         self._test_204_response(response_4b)
+        self._assert_stored_message_counter_not_increased()
 
     def test_requestor_doesnt_provide_response_should_end_with_subtask_results_settled_received_from_concent_different_configuration(self):
         """
@@ -1201,7 +1335,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp   = "2018-02-05 10:00:00",
                     deadline    = "2018-02-05 10:00:10",
-                    task_id     = '1',
+                    task_id     = '2',
+                    subtask_id  = "xxyyzz",
                 )
             )
         )
@@ -1221,8 +1356,18 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_database_objects(
             last_object_type         = message.concents.AckReportComputedTask,
-            task_id                  = '1',
+            task_id                  = '2',
             receive_delivered_status = False,
+        )
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                      = '2',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.FORCING_ACCEPTANCE,
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
+            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:50"),
         )
 
         with freeze_time("2018-02-05 10:00:31"):
@@ -1234,7 +1379,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         deserialized_compute_task_def = self._get_deserialized_compute_task_def(
             deadline    = "2018-02-05 10:00:10",
-            task_id     = '1',
+            task_id     = '2',
+            subtask_id  = 'xxyyzz',
         )
         self._test_response(
             response_2,
@@ -1247,6 +1393,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'ack_report_computed_task.task_to_compute.compute_task_def': deserialized_compute_task_def,
             }
         )
+        self._assert_stored_message_counter_increased()
 
         with freeze_time("2018-02-05 10:00:51"):
             response_3 = self.client.post(
@@ -1264,6 +1411,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp':                        self._parse_iso_date_to_timestamp("2018-02-05 10:00:51"),
                 'task_to_compute.compute_task_def': deserialized_compute_task_def,
             }
+        )
+        self._assert_stored_message_counter_increased()
+        self._test_subtask_state(
+            task_id                      = '2',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.FORCING_ACCEPTANCE,  # TODO: Should be ACCEPTED
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},  # TODO: Add subtask_results_accepted if state=ACCEPTED
+            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:50"),  # TODO: Remove if state=ACCEPTED
         )
 
         with mock.patch('core.views.base.make_forced_payment', _get_requestor_account_status):
@@ -1284,6 +1441,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'task_to_compute.compute_task_def': deserialized_compute_task_def,
             }
         )
+        self._assert_stored_message_counter_increased()
 
         with freeze_time("2018-02-05 10:00:52"):
             response_5 = self.client.post(
@@ -1293,6 +1451,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
         self._test_204_response(response_5)
+        self._assert_stored_message_counter_not_increased()
 
     def test_requestor_send_again_subtask_results_accepted_or_rejected_when_message_already_accepted_concent_should_return_http_400(self):
         """
@@ -1329,6 +1488,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key     = self.PROVIDER_PUBLIC_KEY,
             requestor_public_key    = self.REQUESTOR_PUBLIC_KEY,
         )
+        self._assert_stored_message_counter_increased()
 
         compute_task_def = self._get_deserialized_compute_task_def(
             task_id     = '2',
@@ -1357,6 +1517,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key     = self.PROVIDER_PUBLIC_KEY,
             requestor_public_key    = self.REQUESTOR_PUBLIC_KEY,
         )
+        self._assert_stored_message_counter_increased()
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
@@ -1381,6 +1542,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self._test_400_response(response_1)
+        self._assert_stored_message_counter_not_increased()
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
@@ -1410,6 +1572,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self._test_400_response(response_2)
+        self._assert_stored_message_counter_not_increased()
 
     def test_requestor_send_again_subtask_results_accepted_or_rejected_when_message_already_rejected_concent_should_return_http_400(self):
         """
@@ -1445,6 +1608,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key     = self.PROVIDER_PUBLIC_KEY,
             requestor_public_key    = self.REQUESTOR_PUBLIC_KEY,
         )
+        self._assert_stored_message_counter_increased()
 
         deserialized_subtask_results_response = self._get_deserialized_force_subtask_results_response(
             timestamp = "2018-02-05 11:00:00",
@@ -1472,6 +1636,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key     = self.PROVIDER_PUBLIC_KEY,
             requestor_public_key    = self.REQUESTOR_PUBLIC_KEY,
         )
+        self._assert_stored_message_counter_increased()
 
         compute_task_def = self._get_deserialized_compute_task_def(
             task_id     = '2',
@@ -1500,6 +1665,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
                 )
         self._test_400_response(response_1)
+        self._assert_stored_message_counter_not_increased()
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
@@ -1529,6 +1695,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self._test_400_response(response_2)
+        self._assert_stored_message_counter_not_increased()
 
     def test_requestor_send_subtask_results_without_accepted_or_rejected_should_return_http_400(self):
         """
@@ -1561,6 +1728,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key  = self.PROVIDER_PUBLIC_KEY,
             requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
         )
+        self._assert_stored_message_counter_increased()
 
         compute_task_def = self._get_deserialized_compute_task_def(
             task_id     = '2',
@@ -1589,6 +1757,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key  = self.PROVIDER_PUBLIC_KEY,
             requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
         )
+        self._assert_stored_message_counter_increased()
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key = self.REQUESTOR_PRIVATE_KEY,
@@ -1605,3 +1774,4 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self._test_400_response(response_1)
+        self._assert_stored_message_counter_not_increased()

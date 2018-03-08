@@ -92,6 +92,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 10:00:25"),
             }
         )
+        self._assert_stored_message_counter_not_increased()
 
     def test_provider_send_force_payment_with_subtask_results_accepted_where_ethereum_accounts_are_different_concent_should_refuse(self):
         """
@@ -146,6 +147,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 10:00:25"),
             }
         )
+        self._assert_stored_message_counter_not_increased()
 
     def test_provider_send_force_payment_beyond_payment_time_concent_should_reject(self):
         """
@@ -202,6 +204,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:19"),
             }
         )
+        self._assert_stored_message_counter_not_increased()
 
     def test_provider_send_force_payment_with_invalid_list_of_ether_transactions_concent_should_reject(self):
         """
@@ -258,6 +261,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
             }
         )
+        self._assert_stored_message_counter_not_increased()
 
     def test_provider_send_force_payment_with_no_value_to_be_paid_concent_should_reject(self):
         """
@@ -314,6 +318,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
             }
         )
+        self._assert_stored_message_counter_not_increased()
 
     def test_provider_send_correct_force_payment_concent_should_accept(self):
         """
@@ -376,6 +381,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             last_object_type         = message.concents.ForcePaymentCommitted,
             task_id                  = None,
         )
+        self._assert_stored_message_counter_increased()
 
         with freeze_time("2018-02-05 12:00:21"):
             response_2 = self.client.post(
@@ -394,6 +400,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp':      self._parse_iso_date_to_timestamp("2018-02-05 12:00:21"),
             }
         )
+        self._assert_stored_message_counter_increased()
 
     def test_provider_send_force_payment_with_subtask_results_accepted_list_as_single_message_concent_should_return_http_400(self):
         """
@@ -429,6 +436,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     )
 
         self._test_400_response(response)
+        self._assert_stored_message_counter_not_increased()
 
     def test_provider_send_force_payment_with_empty_subtask_results_accepted_list_concent_should_refuse(self):
         """
@@ -463,6 +471,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
             }
         )
+        self._assert_stored_message_counter_not_increased()
 
     def test_provider_send_force_payment_with_empty_requestor_ethereum_public_key_concent_should_refuse(self):
         """
@@ -519,6 +528,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
             }
         )
+        self._assert_stored_message_counter_not_increased()
 
     @skip("Logic for that case doesn't exist yet")
     def test_provider_send_force_payment_with_same_subtasks_id_concent_should_refuse(self):
@@ -578,3 +588,4 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
             }
         )
+        self._assert_stored_message_counter_not_increased()

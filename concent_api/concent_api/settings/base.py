@@ -6,12 +6,16 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 # Application definition
 
 INSTALLED_APPS = [
+    # Built-in apps:
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # Third-party apps:
+    'raven.contrib.django.raven_compat',
 
     # Our apps:
     'concent_api',
@@ -29,6 +33,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'concent_api.middleware.GolemMessagesVersionMiddleware',
     'concent_api.middleware.ConcentVersionMiddleware',
+    'raven.contrib.django.raven_compat.middleware.Sentry404CatchMiddleware',
 ]
 
 ROOT_URLCONF = 'concent_api.urls'
@@ -125,6 +130,10 @@ LOGGING = {
         }
     },
     'handlers': {
+        'sentry': {
+            'level': 'ERROR',
+            'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
+        },
         'mail_admins': {
             'level':   'ERROR',
             'filters': ['require_debug_false'],
@@ -184,7 +193,7 @@ LOGGING = {
         },
         'django.request': {
             # Level is DEBUG because we're leaving filtering up to the handler.
-            'handlers':  ['mail_admins'],
+            'handlers':  ['mail_admins', 'sentry'],
             'level':     'DEBUG',
             'propagate': True,
         },

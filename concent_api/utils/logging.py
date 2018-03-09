@@ -189,6 +189,14 @@ def log_receive_message_from_database(message: Message, client_public_key: str, 
     ))
 
 
+def log_file_status(subtask_id: str, requestor_public_key: str, provider_public_key: str):
+    logger.info('File assigned to subtask with {} id already uploaded. -- REQUESTOR PUBLIC KEY: {} -- PROVIDER PUBLIC KEY {}'.format(
+        subtask_id,
+        requestor_public_key,
+        provider_public_key,
+    ))
+
+
 def get_task_id_for_logging(message):
     task_id = get_field_from_message(message, 'task_id')
     if not isinstance(task_id, str):

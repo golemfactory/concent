@@ -23,10 +23,10 @@ def get_protocol_constants(cluster_url):
     url = f"{cluster_url}/api/v1/protocol-constants/"
     resp = requests.get(url)
     json = resp.json()
-    concent_messaging_time = json['concent_messaging_time']['value']
-    subtask_verification_time = json['subtask_verification_time']['value']
-    force_acceptance_time = json['force_acceptance_time']['value']
-    token_expiration_time = json['token_expiration_time']['value']
+    concent_messaging_time = json['concent_messaging_time']
+    subtask_verification_time = json['subtask_verification_time']
+    force_acceptance_time = json['force_acceptance_time']
+    token_expiration_time = json['token_expiration_time']
     constants = ProtocolConstants(concent_messaging_time, subtask_verification_time, force_acceptance_time,
                                   token_expiration_time)
     return constants

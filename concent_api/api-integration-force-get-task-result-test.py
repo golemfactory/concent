@@ -27,6 +27,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 DEADLINE_OFFSET        = 5
 CONCENT_MESSAGING_TIME = 30
 FORCE_ACCEPTANCE_TIME  = 30
+TOKEN_EXPIRATION_TIME  = 3600
 
 WAIT_TIME_1            = DEADLINE_OFFSET + FORCE_ACCEPTANCE_TIME
 
@@ -34,38 +35,48 @@ WAIT_TIME_1            = DEADLINE_OFFSET + FORCE_ACCEPTANCE_TIME
 (REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
-def upload_new_file_on_cluster(task_id = '0', part_id = '0', current_time = 0):
+def prepare_hash(file_check_sum, hash_offset):
+    return file_check_sum[:-1] + hex(int(file_check_sum[-1], 16) + hash_offset)[2:]
 
-    file_content    = task_id
-    file_size       = len(file_content)
-    file_check_sum  = 'sha1:' + hashlib.sha1(file_content.encode()).hexdigest()
-    file_path       = '{}/{}/result'.format(task_id, part_id)
 
-    file_transfer_token = message.FileTransferToken()
-    file_transfer_token.token_expiration_deadline       = int(datetime.datetime.now().timestamp()) + 3600
-    file_transfer_token.storage_cluster_address         = STORAGE_CLUSTER_ADDRESS
-    file_transfer_token.authorized_client_public_key    = CONCENT_PUBLIC_KEY
-    file_transfer_token.operation                       = 'upload'
+def upload_new_file_on_cluster(task_id = '0', part_id = '0', time_offset = TOKEN_EXPIRATION_TIME, wrong_hash = 0):
 
-    file_transfer_token.files                   = [message.FileTransferToken.FileInfo()]
-    file_transfer_token.files[0]['path']        = file_path
-    file_transfer_token.files[0]['checksum']    = file_check_sum
-    file_transfer_token.files[0]['size']        = file_size
+    file_check_sum, file_content, file_size, headers = prepare_file_for_transfer(part_id, task_id, time_offset)
 
-    upload_token    = shortcuts.dump(file_transfer_token, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
-    encrypted_token = b64encode(upload_token).decode()
-
-    authorized_golem_transfer_token = 'Golem ' + encrypted_token
-
-    headers = {
-            'Authorization':                authorized_golem_transfer_token,
-            'Concent-Client-Public-Key':    b64encode(CONCENT_PUBLIC_KEY).decode(),
-            'Concent-upload-path':          '{}/{}/result'.format(task_id, part_id),
-            'Content-Type':                 'application/x-www-form-urlencoded'
-    }
-
-    response = requests.post("{}".format(STORAGE_CLUSTER_ADDRESS + 'upload/'), headers = headers, data = file_content)
+    response = upload_file(file_content, headers)
     return (response.status_code, file_size, file_check_sum)
+
+
+def prepare_file_for_transfer(part_id, task_id, time_offset):
+    file_content = task_id
+    file_size = len(file_content)
+    file_check_sum = 'sha1:' + hashlib.sha1(file_content.encode()).hexdigest()
+    file_path = '{}/{}/result'.format(task_id, part_id)
+    file_transfer_token = message.FileTransferToken()
+    file_transfer_token.token_expiration_deadline = int(datetime.datetime.now().timestamp()) + time_offset
+    file_transfer_token.storage_cluster_address = STORAGE_CLUSTER_ADDRESS
+    file_transfer_token.authorized_client_public_key = CONCENT_PUBLIC_KEY
+    file_transfer_token.operation = 'upload'
+    file_transfer_token.files = [message.FileTransferToken.FileInfo()]
+    file_transfer_token.files[0]['path'] = file_path
+    file_transfer_token.files[0]['checksum'] = file_check_sum  # prepare_hash(file_check_sum, wrong_hash)
+    file_transfer_token.files[0]['size'] = file_size
+    upload_token = shortcuts.dump(file_transfer_token, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+    encrypted_token = b64encode(upload_token).decode()
+    authorized_golem_transfer_token = 'Golem ' + encrypted_token
+    headers = {
+        'Authorization'            : authorized_golem_transfer_token,
+        'Concent-Client-Public-Key': b64encode(CONCENT_PUBLIC_KEY).decode(),
+        'Concent-upload-path'      : '{}/{}/result'.format(task_id, part_id),
+        'Content-Type'             : 'application/x-www-form-urlencoded'
+    }
+    return file_check_sum, file_content, file_size, headers
+
+
+def upload_file(file_content, headers):
+    response = requests.post("{}".format(STORAGE_CLUSTER_ADDRESS + 'upload/'), headers = headers, data = file_content,
+                             verify = False)
+    return response
 
 
 def get_force_get_task_result(task_id, current_time, size, package_hash, task_deadline_offset=60):
@@ -109,13 +120,12 @@ class count_fails(object):
 
 
 @count_fails
-def case_1_test_for_existing_file(cluster_url, current_time, task_id):
-    (response_status_code, file_size, file_check_sum) = upload_new_file_on_cluster(
-            task_id      = task_id,
-            part_id      = '0',
-            current_time = current_time,
-    )
-    assert response_status_code == 200, 'File has not been stored on cluster'
+def case_4d_concent_notifies_the_provider_that_task_results_are_ready(cluster_url, current_time, task_id):
+    file_check_sum, file_content, file_size, headers = prepare_file_for_transfer('0', task_id, TOKEN_EXPIRATION_TIME)
+
+    response = upload_file(file_content, headers)
+
+    assert response.status_code == 200, 'File has not been stored on cluster'
     print('\nCreated file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(task_id,
                                                                                                                file_check_sum,
                                                                                                                file_size))
@@ -166,6 +176,66 @@ def case_1_test_for_existing_file(cluster_url, current_time, task_id):
         },
         expected_status  = 200,
         expected_message = ForceGetTaskResultUpload
+    )
+
+
+@count_fails
+def case_4c_concent_reports_a_failure_to_get_task_results_if_file_has_bad_hash(cluster_url, current_time, task_id):
+    """
+    Requestor -> Concent:    ForceGetTaskResult
+    Concent   -> Requestor:  ForceGetTaskResultAck
+    Concent   -> Provider:   ForceGetTaskResult + FileTransferToken
+    Provider  -> Concent:    Upload is done with bad file
+    Concent   -> Requestor:  ForceGetTaskResultFailed (Any of the files had a hash or size that did not match ReportComputedTask)
+    """
+    file_check_sum, file_content, file_size, headers = prepare_file_for_transfer('0', task_id, TOKEN_EXPIRATION_TIME)
+
+    api_request(
+        cluster_url,
+        'send',
+        REQUESTOR_PRIVATE_KEY,
+        CONCENT_PUBLIC_KEY,
+        get_force_get_task_result(task_id, current_time, size = file_size, checksum = file_check_sum),
+        headers = {
+            'Content-Type': 'application/octet-stream',
+            'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            'concent-other-party-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+        },
+        expected_status  = 200,
+        expected_message = AckForceGetTaskResult
+    )
+    print(f"Waiting {WAIT_TIME_1} seconds...")
+    time.sleep(WAIT_TIME_1)  # TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME < current time <= TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME + CONCENT_MESSAGING_TIME
+    api_request(
+        cluster_url,
+        'receive',
+        PROVIDER_PRIVATE_KEY,
+        CONCENT_PUBLIC_KEY,
+        headers = {
+            'Content-Type': 'application/octet-stream',
+            'concent-client-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+        },
+        expected_status  = 200,
+        expected_message = ForceGetTaskResultUpload
+    )
+    response = upload_file(file_content + "random_data", headers)
+    print(f"UPLOAD STATUS = {response.status_code}")
+
+    assert response.status_code == 400, "File has been approved but it shouldn't have"
+
+    print(f"Waiting {CONCENT_MESSAGING_TIME} seconds...")
+    time.sleep(CONCENT_MESSAGING_TIME)  # TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME + CONCENT_MESSAGING_TIME < current time <= TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME + 2 * CONCENT_MESSAGING_TIME.
+    api_request(
+        cluster_url,
+        'receive',
+        REQUESTOR_PRIVATE_KEY,
+        CONCENT_PUBLIC_KEY,
+        headers={
+            'Content-Type': 'application/octet-stream',
+            'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+        },
+        expected_status  = 200,
+        expected_message = ForceGetTaskResultFailed
     )
 
 
@@ -232,26 +302,32 @@ def case_4a_concent_reports_a_failure_to_get_task_results_if_the_provider_does_n
 def main():
     global CONCENT_MESSAGING_TIME
     global FORCE_ACCEPTANCE_TIME
+    global TOKEN_EXPIRATION_TIME
     global WAIT_TIME_1
 
     cluster_url     = parse_command_line(sys.argv)
     current_time    = get_current_utc_timestamp()
     task_id         = str(random.randrange(1, 100000))
-    number_of_tests = 2
+    number_of_tests = 3
 
     cluster_consts         = get_protocol_constants(cluster_url)
     print_protocol_constants(cluster_consts)
     CONCENT_MESSAGING_TIME = cluster_consts.concent_messaging_time
     FORCE_ACCEPTANCE_TIME  = cluster_consts.force_acceptance_time
+    TOKEN_EXPIRATION_TIME  = cluster_consts.token_expiration_time
     WAIT_TIME_1            = DEADLINE_OFFSET + FORCE_ACCEPTANCE_TIME  # recalculated as it could change due to cluster_consts
-
-    case_1_test_for_existing_file(cluster_url, current_time, task_id)
-
-    print("-" * 80)
 
     case_4a_concent_reports_a_failure_to_get_task_results_if_the_provider_does_not_submit_anything(cluster_url,
                                                                                                    current_time,
-                                                                                                   task_id)
+                                                                                                   task_id + '4a')
+
+    print("-" * 80)
+
+    case_4c_concent_reports_a_failure_to_get_task_results_if_file_has_bad_hash(cluster_url, current_time, task_id + '4c')
+
+    print("-" * 80)
+
+    case_4d_concent_notifies_the_provider_that_task_results_are_ready(cluster_url, current_time, task_id + '4d')
 
     total_fails = count_fails.get_fails()
     if total_fails > 0:

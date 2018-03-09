@@ -1,5 +1,6 @@
 import base64
 import binascii
+import enum
 
 from django.core.exceptions import ValidationError
 from django.db              import models
@@ -48,3 +49,14 @@ class Base64Field(models.TextField):
                 self.error_messages['not_base64'],
                 params = {'value': value}
             )
+
+
+@enum.unique
+class ChoiceEnum(enum.Enum):
+    """
+    Subclass of native python Enum class which can be used in Django models.
+    """
+
+    @classmethod
+    def choices(cls):
+        return tuple((x.name, x.value) for x in cls)

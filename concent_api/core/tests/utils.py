@@ -202,8 +202,8 @@ class ConcentIntegrationTestCase(TestCase):
         task_id                     = None,
         receive_delivered_status    = None,
     ):
-        self.assertEqual(StoredMessage.objects.last().type,           last_object_type.TYPE)
-        self.assertEqual(StoredMessage.objects.last().task_id,        task_id)
+        self.assertEqual(StoredMessage.objects.order_by('timestamp').last().type,      last_object_type.TYPE)
+        self.assertEqual(StoredMessage.objects.order_by('timestamp').last().task_id,   task_id)
 
         if receive_delivered_status is not None:
             self.assertEqual(ReceiveStatus.objects.last().delivered,        receive_delivered_status)

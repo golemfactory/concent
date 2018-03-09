@@ -78,7 +78,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         assert response_1.status_code   == 202
 
         self._test_database_objects(
-            last_object_type         = message.concents.AckReportComputedTask,
+            last_object_type         = message.concents.ForceSubtaskResults,
             task_id                  = '2',
             receive_delivered_status = False,
         )
@@ -281,7 +281,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         assert response_1.status_code  == 202
 
         self._test_database_objects(
-            last_object_type         = message.concents.AckReportComputedTask,
+            last_object_type         = message.concents.ForceSubtaskResults,
             task_id                  = '2',
             receive_delivered_status = False,
         )
@@ -362,7 +362,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         assert response_1.status_code  == 202
 
         self._test_database_objects(
-            last_object_type         = message.concents.AckReportComputedTask,
+            last_object_type         = message.concents.ForceSubtaskResults,
             task_id                  = '2',
             receive_delivered_status = False,
         )
@@ -503,7 +503,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self._test_database_objects(
-            last_object_type         = message.tasks.SubtaskResultsAccepted,
+            last_object_type         = message.concents.ForceSubtaskResults,
             task_id                  = '2',
             receive_delivered_status = False,
         )
@@ -540,7 +540,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         self._test_database_objects(
-            last_object_type         = message.concents.ForceSubtaskResultsResponse,
+            last_object_type         = message.concents.ForceSubtaskResults,
             task_id                  = '2',
             receive_delivered_status = True,
         )
@@ -646,7 +646,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         self._test_database_objects(
-            last_object_type         = message.tasks.SubtaskResultsRejected,
+            last_object_type         = message.concents.ForceSubtaskResults,
             task_id                  = '2',
             receive_delivered_status = False,
         )
@@ -683,7 +683,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         self._test_database_objects(
-            last_object_type         = message.concents.ForceSubtaskResultsResponse,
+            last_object_type         = message.concents.ForceSubtaskResults,
             task_id                  = '2',
             receive_delivered_status = True,
         )
@@ -1083,7 +1083,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         assert response_1.status_code  == 202
 
         self._test_database_objects(
-            last_object_type         = message.concents.AckReportComputedTask,
+            last_object_type         = message.concents.ForceSubtaskResults,
             task_id                  = '2',
             receive_delivered_status = False,
         )
@@ -1232,7 +1232,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         assert response_1.status_code  == 202
 
         self._test_database_objects(
-            last_object_type         = message.concents.AckReportComputedTask,
+            last_object_type         = message.concents.ForceSubtaskResults,
             task_id                  = '2',
             receive_delivered_status = False,
         )

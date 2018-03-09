@@ -231,9 +231,6 @@ class CoreViewSendTest(TestCase):
         self.assertIsInstance(response_202, HttpResponse)
         self.assertEqual(response_202.status_code, 202)
         self.correct_golem_data.encrypted                                   = None
-        self.correct_golem_data.sig                                         = None
-        self.correct_golem_data.report_computed_task.sig                    = None
-        self.correct_golem_data.report_computed_task.task_to_compute.sig    = None
         response_400 = self.client.post(
             reverse('core:send'),
             data = dump(
@@ -601,7 +598,6 @@ class CoreViewReceiveTest(TestCase):
         self.assertEqual(undelivered_messages,                                                      0)
         self.assertEqual(decoded_message.timestamp,                                                 int(dateutil.parser.parse("2017-11-17 12:00:00").timestamp()))
         self.assertEqual(decoded_message.ack_report_computed_task.task_to_compute.compute_task_def, self.task_to_compute.compute_task_def)  # pylint: disable=no-member
-        self.assertEqual(decoded_message.ack_report_computed_task.task_to_compute.sig,              self.task_to_compute.sig)
         self.assertEqual(decoded_message.ack_report_computed_task.subtask_id,                       None)
 
 

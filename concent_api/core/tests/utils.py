@@ -476,7 +476,6 @@ class ConcentIntegrationTestCase(TestCase):
     ):
         with freeze_time(timestamp or self._get_timestamp_string()):
             message_timestamp = datetime.datetime.now(timezone.utc)
-            data.sig = None
             golem_message = StoredMessage(
                 type        = message_type,
                 timestamp   = message_timestamp,

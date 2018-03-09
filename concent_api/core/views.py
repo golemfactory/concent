@@ -1286,12 +1286,54 @@ def store_subtask(
 
     return subtask
 
+
+def verify_file_status(
+    client_public_key: bytes,
+):
+    """
+    Function to verify existence of a file on cluster storage
+    """
+
+    force_get_task_result_list = Subtask.objects.filter(
+        requestor__public_key  = b64encode(client_public_key),
+        state                  = Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name,  # pylint: disable=no-member
+    )
+
+    for get_task_result in force_get_task_result_list:
+        report_computed_task    = deserialize_message(get_task_result.report_computed_task.data.tobytes())
+        file_transfer_token     = create_file_transfer_token(
+            report_computed_task,
+            client_public_key,
+            'upload'
+        )
+        if request_upload_status(file_transfer_token):
+            subtask               = get_task_result
+            subtask.state         = Subtask.SubtaskState.RESULT_UPLOADED.name  # pylint: disable=no-member
+            subtask.next_deadline = None
+            subtask.full_clean()
+            subtask.save()
+
+            store_pending_message(
+                response_type       = PendingResponse.ResponseType.ForceGetTaskResultDownload,
+                client_public_key   = subtask.requestor.public_key_bytes,
+                queue               = PendingResponse.Queue.Receive,
+                subtask             = subtask,
+            )
+            logging.log_file_status(
+                subtask.subtask_id,
+                subtask.requestor.public_key,
+                subtask.provider.public_key,
+            )
+
+
 def update_timed_out_subtasks(
     client_public_key: bytes,
 ):
+    verify_file_status(client_public_key)
+
     clients_subtask_list = Subtask.objects.filter(
         Q(requestor__public_key = b64encode(client_public_key)) | Q(provider__public_key = b64encode(client_public_key)),
-        state__in               = Subtask.SUBTASK_ACTIVE_STATES,
+        state__in               = [state.name for state in Subtask.ACTIVE_STATES],
         next_deadline__lte      = timezone.now()
     )
 
@@ -1360,9 +1402,10 @@ def update_subtask_state(
 ):
     logging.log_change_subtask_state_name(
         subtask.state,
-        state.name,
+        state,
     )
-    subtask.state = state
+    subtask.state    = state
+    subtask.next_deadline = None
     subtask.full_clean()
     subtask.save()
 
@@ -1497,33 +1540,39 @@ def handle_messages_from_database(
         mark_message_as_delivered_and_log(pending_response, response_to_client)
         return response_to_client
 
-    elif database_message.response_type == PendingResponse.ResponseType.ForceGetTaskResultUpload.name:  # pylint: disable=no-member
-        force_get_task_result = deserialize_message(database_message.subtask.force_get_task_result.data.tobytes())
-
-        task_id     = force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id']
-        subtask_id  = force_get_task_result.report_computed_task.task_to_compute.compute_task_def['subtask_id']
-        file_path   = '{}/{}/result'.format(subtask_id, task_id)
-
-        file_transfer_token = message.concents.FileTransferToken(
-            token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_TIME,
-            storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
-            authorized_client_public_key    = b64encode(client_public_key),
-            operation                       = 'upload',
+    elif pending_response.response_type == PendingResponse.ResponseType.ForceGetTaskResultUpload.name:  # pylint: disable=no-member
+        report_computed_task    = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
+        file_transfer_token     = create_file_transfer_token(
+            report_computed_task,
+            client_public_key,
+            'upload',
         )
-        file_transfer_token.files = [message.concents.FileTransferToken.FileInfo()]
-        file_transfer_token.files[0]['path']      = file_path
-        file_transfer_token.files[0]['checksum']  = force_get_task_result.report_computed_task.checksum
-        file_transfer_token.files[0]['size']      = force_get_task_result.report_computed_task.size
 
-        mark_message_as_delivered(database_message)
-        return message.concents.ForceGetTaskResultUpload(
+        response_to_client = message.concents.ForceGetTaskResultUpload(
             file_transfer_token     = file_transfer_token,
-            force_get_task_result   = force_get_task_result,
+            force_get_task_result   = message.concents.ForceGetTaskResult(
+                report_computed_task = report_computed_task,
+            )
+        )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
+
+    elif pending_response.response_type == PendingResponse.ResponseType.ForceGetTaskResultDownload.name:  # pylint: disable=no-member
+        report_computed_task    = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
+        file_transfer_token     = create_file_transfer_token(
+            report_computed_task,
+            client_public_key,
+            'download',
         )
 
-    elif database_message.response_type == PendingResponse.ResponseType.ForgetGetTaskResultDownload.name:  # pylint: disable=no-member
-        raise NotImplementedError
-        # TODO Message isn't even implemented yet in golem_messages library
+        response_to_client = message.concents.ForceGetTaskResultDownload(
+            file_transfer_token     = file_transfer_token,
+            force_get_task_result   = message.concents.ForceGetTaskResult(
+                report_computed_task = report_computed_task,
+            )
+        )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
 
     elif pending_response.response_type == PendingResponse.ResponseType.ForceSubtaskResults.name:  # pylint: disable=no-member
         ack_report_computed_task = deserialize_message(pending_response.subtask.ack_report_computed_task.data.tobytes())
@@ -1582,10 +1631,17 @@ def handle_messages_from_database(
         return None
 
 
-def mark_message_as_delivered(message):
-    message.delivered = True
-    message.full_clean()
-    message.save()
+def mark_message_as_delivered_and_log(undelivered_message, log_message):
+    undelivered_message.delivered = True
+    undelivered_message.full_clean()
+    undelivered_message.save()
+
+    logging.log_receive_message_from_database(
+        log_message,
+        undelivered_message.client.public_key,
+        undelivered_message.response_type,
+        undelivered_message.queue
+    )
 
 
 def update_subtask(
@@ -1753,7 +1809,34 @@ def store_message(
     return stored_message
 
 
-def get_file_status(file_transfer_token_from_database: message.concents.FileTransferToken) -> bool:
+def create_file_transfer_token(
+    report_computed_task:   message.tasks.ReportComputedTask,
+    client_public_key:      bytes,
+    operation:              str,
+) -> message.concents.FileTransferToken:
+    """
+    Function to create FileTransferToken from ReportComputedTask message
+    """
+    current_time    = get_current_utc_timestamp()
+    task_id         = report_computed_task.task_to_compute.compute_task_def['task_id']
+    subtask_id      = report_computed_task.task_to_compute.compute_task_def['subtask_id']
+    file_path       = '{}/{}/result'.format(subtask_id, task_id)
+
+    file_transfer_token = message.concents.FileTransferToken(
+        token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_TIME,
+        storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
+        authorized_client_public_key    = b64encode(client_public_key),
+        operation                       = operation,
+    )
+    file_transfer_token.files = [message.concents.FileTransferToken.FileInfo()]
+    file_transfer_token.files[0]['path']      = file_path
+    file_transfer_token.files[0]['checksum']  = report_computed_task.package_hash
+    file_transfer_token.files[0]['size']      = report_computed_task.size
+
+    return file_transfer_token
+
+
+def request_upload_status(file_transfer_token_from_database: message.concents.FileTransferToken) -> bool:
     slash = '/'
     assert len(file_transfer_token_from_database.files) == 1
     assert not file_transfer_token_from_database.files[0]['path'].startswith(slash)
@@ -1764,7 +1847,7 @@ def get_file_status(file_transfer_token_from_database: message.concents.FileTran
         token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_TIME,
         storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
         authorized_client_public_key    = settings.CONCENT_PUBLIC_KEY,
-        operation                       = 'download',
+        operation                       = 'upload',
     )
 
     assert file_transfer_token.timestamp <= file_transfer_token.token_expiration_deadline  # pylint: disable=no-member

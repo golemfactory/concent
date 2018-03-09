@@ -18,9 +18,6 @@ from utils.testing_helpers           import generate_ecc_key_pair
 
 from api_testing_common              import api_request, parse_command_line, create_task_to_compute, get_protocol_constants, \
     print_protocol_constants
-from api_testing_common              import timestamp_to_isoformat
-
-from freezegun                       import freeze_time
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
@@ -88,10 +85,9 @@ def get_force_get_task_result(task_id, current_time, size, package_hash, task_de
         package_hash    = package_hash,
     )
 
-    with freeze_time(timestamp_to_isoformat(current_time)):
-        force_get_task_result = message.concents.ForceGetTaskResult(
-            report_computed_task = report_computed_task,
-        )
+    force_get_task_result = message.concents.ForceGetTaskResult(
+        report_computed_task = report_computed_task,
+    )
 
     return force_get_task_result
 

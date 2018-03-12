@@ -127,6 +127,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
         self._assert_stored_message_counter_not_increased()
 
+        self._assert_client_count_is_equal(2)
+
     def test_provider_forces_subtask_results_with_not_enough_funds_on_this_account_concent_should_refuse(self):
         """
         Test if on provider ForceSubtaskResult message Concent will return ServiceRefused
@@ -166,6 +168,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             }
         )
         self._assert_stored_message_counter_not_increased()
+
+        self._assert_client_count_is_equal(0)
 
     def test_provider_forces_subtask_results_but_it_was_sent_to_too_late_or_too_soon_concent_should_reject(self):
         """
@@ -251,6 +255,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             }
         )
         self._assert_stored_message_counter_not_increased()
+
+        self._assert_client_count_is_equal(0)
 
     def test_requestor_should_receive_subtask_results_from_concent(self):
         """
@@ -343,6 +349,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(ReceiveStatus.objects.last().delivered, True)
         self._assert_stored_message_counter_increased()
 
+        self._assert_client_count_is_equal(2)
+
     def test_requestor_should_not_receive_correct_subtask_results_from_concent_if_asked_concent_after_deadline(self):
         """
         Test if Provider submitted ForceSubtaskResults, Requestor won't receive from Concent
@@ -432,6 +440,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
         self.assertEqual(ReceiveStatus.objects.last().delivered, True)
         self._assert_stored_message_counter_increased()
+
+        self._assert_client_count_is_equal(2)
 
     def test_requestor_sends_subtask_results_accepted_and_concent_should_return_it_to_provider(self):
         """
@@ -594,6 +604,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             receive_delivered_status = True,
         )
         self._assert_stored_message_counter_increased()
+
+        self._assert_client_count_is_equal(2)
 
     def test_requestor_sends_subtask_results_rejected_and_concent_should_return_it_to_provider(self):
         """
@@ -758,6 +770,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
         self._assert_stored_message_counter_increased()
 
+        self._assert_client_count_is_equal(2)
+
     def test_requestor_sends_subtask_results_acceptance_but_provider_does_not_submitted_force_subtask_results_concent_should_reject_it(self):
         """
         Test if Requestor want submit SubtaskResultsAccepted message,
@@ -798,6 +812,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(response_1)
         self._assert_stored_message_counter_not_increased()
 
+        self._assert_client_count_is_equal(0)
+
     def test_requestor_sends_subtask_results_rejection_but_provider_does_not_submitted_force_subtask_results_concent_should_reject_it(self):
         """
         Test if Requestor want submit ForceSubtaskResultsResponse with SubtaskResultsRejected message,
@@ -837,6 +853,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_400_response(response_1)
         self._assert_stored_message_counter_not_increased()
+
+        self._assert_client_count_is_equal(0)
 
     def test_provider_sends_messages_with_wrong_timestamps_concent_should_reject_them(self):
         """
@@ -900,6 +918,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_400_response(response_2)
         self._assert_stored_message_counter_not_increased()
+
+        self._assert_client_count_is_equal(0)
 
     def test_requestor_sends_messages_with_wrong_timestamps_concent_should_return_http_400(self):
         """
@@ -1090,6 +1110,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(response_5)
         self._assert_stored_message_counter_not_increased()
 
+        self._assert_client_count_is_equal(2)
+
     def test_requestor_or_provider_send_message_with_wrong_nested_message_type_concent_should_return_http_400(self):
         """
         Test if Provider want to submit ForceSubtaskResults with AckReportComputedTask with nested
@@ -1120,6 +1142,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_400_response(response_1)
         self._assert_stored_message_counter_not_increased()
+
+        self._assert_client_count_is_equal(0)
 
     def test_requestor_doesnt_provide_response_should_end_with_subtask_results_settled_received_from_concent(self):
         """
@@ -1281,6 +1305,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._test_204_response(response_4b)
         self._assert_stored_message_counter_not_increased()
 
+        self._assert_client_count_is_equal(2)
+
     def test_requestor_doesnt_provide_response_should_end_with_subtask_results_settled_received_from_concent_different_configuration(self):
         """
         Expected message exchange:
@@ -1429,6 +1455,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._test_204_response(response_5)
         self._assert_stored_message_counter_not_increased()
 
+        self._assert_client_count_is_equal(2)
+
     def test_requestor_send_again_subtask_results_accepted_or_rejected_when_message_already_accepted_concent_should_return_http_400(self):
         """
         Test if Requestor wants to send  SubtaskResultsAccepted or SubtaskResultsRejected
@@ -1549,6 +1577,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_400_response(response_2)
         self._assert_stored_message_counter_not_increased()
+
+        self._assert_client_count_is_equal(0)
 
     def test_requestor_send_again_subtask_results_accepted_or_rejected_when_message_already_rejected_concent_should_return_http_400(self):
         """
@@ -1673,6 +1703,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(response_2)
         self._assert_stored_message_counter_not_increased()
 
+        self._assert_client_count_is_equal(0)
+
     def test_requestor_send_subtask_results_without_accepted_or_rejected_should_return_http_400(self):
         """
         Test if Requestor wants to send ForceSubtaskResultsResponse without SubtaskResultsAccepted
@@ -1751,3 +1783,5 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_400_response(response_1)
         self._assert_stored_message_counter_not_increased()
+
+        self._assert_client_count_is_equal(0)

@@ -107,14 +107,14 @@ def _print_response(private_key, public_key, response):
     if response.content is None:
         print('RAW RESPONSE: Reponse content is None')
     elif len(response.content) != 0:
-        _print_messge_from_response(private_key, public_key, response)
+        _print_message_from_response(private_key, public_key, response)
     else:
         print('STATUS: {} {}'.format(response.status_code, http.client.responses[response.status_code]))
         if response.text not in ['', None]:
             print('RAW RESPONSE: {}'.format(response.text))
 
 
-def _print_messge_from_response(private_key, public_key, response):
+def _print_message_from_response(private_key, public_key, response):
     print('STATUS: {} {}'.format(response.status_code, http.client.responses[response.status_code]))
     print('MESSAGE:')
     print('Concent-Golem-Messages-Version = {}'.format(response.headers['concent-golem-messages-version']))

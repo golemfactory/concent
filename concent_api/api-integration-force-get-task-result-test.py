@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import argparse
 import os
 import sys
 import datetime
@@ -97,22 +97,22 @@ class count_fails(object):
 
     def __init__(self, fun):
         self._fun     = fun
-        self._name    = fun.__name__
-        self._failed  = False
+        self.__name__ = fun.__name__
+        self.failed  = False
         count_fails.instances.append(self)
 
     def __call__(self, *args, **kwargs):
                 try:
-                    print("Running TC: " + self._name)
+                    print("Running TC: " + self.__name__)
                     return self._fun(*args, **kwargs)
                 except AssertionError as e:
-                    print("{}: FAILED".format(self._name))
+                    print("{}: FAILED".format(self.__name__))
                     print(e)
-                    self._failed = True
+                    self.failed = True
 
     @classmethod
     def get_fails(cls):
-        return cls.instances.count(True)
+        return sum([instance.failed for instance in cls.instances])
 
 
 @count_fails
@@ -295,16 +295,48 @@ def case_4a_concent_reports_a_failure_to_get_task_results_if_the_provider_does_n
     )
 
 
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("cluster_url")
+    parser.add_argument("tc_patterns", nargs='*')
+    args = parser.parse_args()
+    return args.cluster_url, args.tc_patterns
+
+
+def get_tests_list(patterns, all_objects):
+    def _is_a_test(x):
+        return "case_" in x
+
+    tests = list(filter(lambda x: _is_a_test(x), all_objects))
+    if len(patterns) > 0:
+        safe_patterns = [pattern for pattern in patterns if _is_a_test(pattern)]
+        tests = [test for pattern in safe_patterns for test in tests if pattern in test]
+    return sorted(tests)
+
+
+def execute_tests(tests_to_execute, **kwargs):
+    objects = globals()
+    tests = [objects[name] for name in tests_to_execute]
+    for test in tests:
+        task_id = kwargs['task_id'] + test.__name__
+        kw = {k: v for k, v in kwargs.items() if k != 'task_id'}
+        test(task_id=task_id, **kw)
+        print("-" * 80)
+
+
 def main():
     global CONCENT_MESSAGING_TIME
     global FORCE_ACCEPTANCE_TIME
     global TOKEN_EXPIRATION_TIME
     global WAIT_TIME_1
 
-    cluster_url     = parse_command_line(sys.argv)
-    current_time    = get_current_utc_timestamp()
-    task_id         = str(random.randrange(1, 100000))
-    number_of_tests = 3
+    cluster_url, patterns   = parse_arguments()
+    current_time            = get_current_utc_timestamp()
+    task_id                 = str(random.randrange(1, 100000))
+    tests_to_execute        = get_tests_list(patterns, list(globals().keys()))
+    print("Tests to be executed: \n * " + "\n * ".join(tests_to_execute))
+    print()
+    number_of_tests         = len(tests_to_execute)
 
     cluster_consts         = get_protocol_constants(cluster_url)
     print_protocol_constants(cluster_consts)
@@ -313,17 +345,7 @@ def main():
     TOKEN_EXPIRATION_TIME  = cluster_consts.token_expiration_time
     WAIT_TIME_1            = DEADLINE_OFFSET + FORCE_ACCEPTANCE_TIME  # recalculated as it could change due to cluster_consts
 
-    case_4a_concent_reports_a_failure_to_get_task_results_if_the_provider_does_not_submit_anything(cluster_url,
-                                                                                                   current_time,
-                                                                                                   task_id + '4a')
-
-    print("-" * 80)
-
-    case_4c_concent_reports_a_failure_to_get_task_results_if_file_has_bad_hash(cluster_url, current_time, task_id + '4c')
-
-    print("-" * 80)
-
-    case_4d_concent_notifies_the_provider_that_task_results_are_ready(cluster_url, current_time, task_id + '4d')
+    execute_tests(tests_to_execute, cluster_url=cluster_url, current_time=current_time, task_id=task_id)
 
     total_fails = count_fails.get_fails()
     if total_fails > 0:

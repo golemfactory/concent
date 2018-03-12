@@ -242,6 +242,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._assert_stored_message_counter_increased()
 
+        self._assert_client_count_is_equal(2)
+
     def test_provider_forces_computed_task_report_and_requestor_sends_rejection_due_to_failed_computation(self):
         # Expected message exchange:
         # Provider  -> Concent:    MessageForceReportComputedTask
@@ -412,6 +414,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             }
         )
         self._assert_stored_message_counter_increased()
+
+        self._assert_client_count_is_equal(2)
 
     def test_provider_forces_computed_task_report_and_requestor_sends_rejection_due_to_exceeded_deadline(self):
         # Expected message exchange:
@@ -611,6 +615,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._assert_stored_message_counter_increased()
 
+        self._assert_client_count_is_equal(2)
+
     def test_provider_forces_computed_task_report_and_requestor_does_not_respond(self):
         # Expected message exchange:
         # Provider  -> Concent:    MessageForceReportComputedTask
@@ -760,6 +766,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._assert_stored_message_counter_increased()
 
+        self._assert_client_count_is_equal(2)
+
     def test_provider_forces_computed_task_report_twice_and_concent_returns_400_error(self):
         """
         Tests if on provider ForceReportComputedTask message Concent will return HTTP 400 error
@@ -845,6 +853,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(response_2)
         self._assert_stored_message_counter_not_increased()
 
+        self._assert_client_count_is_equal(2)
+
     def test_requestor_sends_ack_report_computed_task_but_provider_did_not_ask_for_it(self):
         """
         Tests if on request AckReportComputedTask message Concent will return HTTP 400 error
@@ -885,6 +895,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
         self._test_400_response(response)
         self._assert_stored_message_counter_not_increased()
+
+        self._assert_client_count_is_equal(0)
 
     def test_requestor_sends_reject_report_computed_task_but_provider_did_not_ask_for_it(self):
         """
@@ -934,6 +946,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
         self._test_400_response(response)
         self._assert_stored_message_counter_not_increased()
+
+        self._assert_client_count_is_equal(0)
 
     def test_requestor_sends_ack_report_computed_task_and_then_sends_reject_report_computed_task(self):
         """
@@ -1109,6 +1123,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(response_4)
         self._assert_stored_message_counter_not_increased()
 
+        self._assert_client_count_is_equal(2)
+
     def test_requestor_sends_reject_report_computed_task_and_then_sends_ack_report_computed_task(self):
         """
         Tests if on request AckReportComputedTask message Concent will return HTTP 400 error
@@ -1283,6 +1299,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(response_4)
         self._assert_stored_message_counter_not_increased()
 
+        self._assert_client_count_is_equal(2)
+
     def test_requestor_sends_ack_report_computed_task_after_deadline_passed(self):
         """
         Tests if on request AckReportComputedTask message Concent will return HTTP 400 error
@@ -1402,6 +1420,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
         self._test_400_response(response_3)
         self._assert_stored_message_counter_not_increased()
+
+        self._assert_client_count_is_equal(2)
 
     def test_requestor_sends_reject_report_computed_task_after_deadline_passed(self):
         """
@@ -1531,6 +1551,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(response_3)
         self._assert_stored_message_counter_not_increased()
 
+        self._assert_client_count_is_equal(2)
+
     def test_provider_forces_computed_task_report_missing_key_returns_400_error(self):
         """
         Tests if on provider ForceReportComputedTask message Concent will return HTTP 400 error
@@ -1575,6 +1597,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
         self._test_400_response(response_1)
         self._assert_stored_message_counter_not_increased()
+
+        self._assert_client_count_is_equal(0)
 
     def test_provider_forces_computed_task_report_bad_key_returns_400_error(self):
         """
@@ -1622,6 +1646,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(response_1)
         self._assert_stored_message_counter_not_increased()
 
+        self._assert_client_count_is_equal(0)
+
     def test_provider_forces_computed_task_report_truncated_key_returns_400_error(self):
         """
         Tests if on provider ForceReportComputedTask message Concent will return HTTP 400 error
@@ -1668,6 +1694,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(response_1)
         self._assert_stored_message_counter_not_increased()
 
+        self._assert_client_count_is_equal(0)
+
     def test_provider_forces_computed_task_report_empty_key_returns_400_error(self):
         """
         Tests if on provider ForceReportComputedTask message Concent will return HTTP 400 error
@@ -1713,6 +1741,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
         self._test_400_response(response_1)
         self._assert_stored_message_counter_not_increased()
+
+        self._assert_client_count_is_equal(0)
 
     def test_requestor_sends_ack_report_computed_task_with_message_cannot_compute_task(self):
         """
@@ -1761,6 +1791,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(response)
         self._assert_stored_message_counter_not_increased()
 
+        self._assert_client_count_is_equal(0)
+
     def test_requestor_sends_reject_report_computed_task_with_message_task_to_compute(self):
         """
         Tests if on request RejectReportComputedTask message Concent will return HTTP 400 error
@@ -1804,6 +1836,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response.status_code,  400)
         self.assertIn('error', response.json().keys())
         self._assert_stored_message_counter_not_increased()
+
+        self._assert_client_count_is_equal(0)
 
     def test_provider_sends_force_report_computed_task_with_a_cut_message(self):
         """
@@ -1851,6 +1885,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
         self._test_400_response(response_1)
         self._assert_stored_message_counter_not_increased()
+
+        self._assert_client_count_is_equal(0)
 
     def test_provider_sends_force_report_computed_task_with_malformed_message(self):
         """
@@ -1900,6 +1936,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
         self._test_400_response(response_1)
         self._assert_stored_message_counter_not_increased()
+
+        self._assert_client_count_is_equal(0)
 
     def test_provider_forces_computed_task_report_and_tries_to_receive_after_deadline(self):
         """
@@ -2058,6 +2096,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_204_response(response_4)
         self._assert_stored_message_counter_not_increased()
+
+        self._assert_client_count_is_equal(2)
 
     def test_provider_forces_computed_task_report_and_tries_to_receive_twice(self):
         """
@@ -2241,6 +2281,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_204_response(response_5)
         self._assert_stored_message_counter_not_increased()
 
+        self._assert_client_count_is_equal(2)
+
     def test_provider_forces_computed_task_report_and_tries_to_receive_ack_before_requestor_have_a_chance_to_respond_concent_should_return_http_204(self):
         # Expected message exchange:
         # Provider  -> Concent:    MessageForceReportComputedTask
@@ -2359,3 +2401,5 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
         self._test_204_response(response_4)
         self._assert_stored_message_counter_not_increased()
+
+        self._assert_client_count_is_equal(2)

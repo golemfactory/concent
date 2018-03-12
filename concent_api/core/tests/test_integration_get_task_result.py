@@ -151,6 +151,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_from_concent.reason,       message_from_concent.REASON.DuplicateRequest)
         self._assert_stored_message_counter_not_increased()
 
+        self._assert_client_count_is_equal(2)
+
     def test_requestor_forces_get_task_result_and_concent_immediately_sends_acknowledgement(self):
         """
         Tests if on requestor ForceGetTaskResult message Concent will return AckForceGetTaskResult
@@ -214,6 +216,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = '8',
             timestamp       = "2017-12-01 11:00:10"
         )
+
+        self._assert_client_count_is_equal(2)
 
     def test_concent_requests_task_result_from_provider_and_requestor_receives_failure_because_provider_does_not_submit(self):
         """
@@ -360,6 +364,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
         self.assertEqual(message_from_concent.task_to_compute.compute_task_def['task_id'], '99')
 
+        self._assert_client_count_is_equal(2)
+
     def test_concent_requests_task_result_from_provider_and_requestor_receives_failure_because_provider_does_not_finish_upload(self):
         """
         Tests if on requestor ForceGetTaskResult message Concent will return ForceGetTaskResultFailed
@@ -505,6 +511,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
         self.assertEqual(message_from_concent.task_to_compute.compute_task_def['task_id'], '99')
 
+        self._assert_client_count_is_equal(2)
+
     def test_concent_requests_task_result_from_provider_and_requestor_receives_failure_because_provider_uploads_bad_files(self):
         """
         Tests if on requestor ForceGetTaskResult message Concent will return ForceGetTaskResultFailed
@@ -649,6 +657,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             self._parse_iso_date_to_timestamp("2017-12-01 11:00:00")
         )
         self.assertEqual(message_from_concent.task_to_compute.compute_task_def['task_id'], '99')
+
+        self._assert_client_count_is_equal(2)
 
     def test_concent_requests_task_result_from_provider_and_requestor_receives_task_result(self):
         """
@@ -805,3 +815,5 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             self._parse_iso_date_to_timestamp("2017-12-01 11:30:21")
         )
         self.assertEqual(message_from_concent.file_transfer_token.operation, 'download')
+
+        self._assert_client_count_is_equal(2)

@@ -215,10 +215,10 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json().keys())
 
-        data                        = message.ForceReportComputedTask()
-        data.report_computed_task   = message.tasks.ReportComputedTask()
-        compute_task_def['deadline'] = int(dateutil.parser.parse("2017-11-17 9:00:00").timestamp())
-        data.report_computed_task.task_to_compute = message.TaskToCompute(compute_task_def = compute_task_def)
+        data                                        = message.ForceReportComputedTask()
+        data.report_computed_task                   = message.tasks.ReportComputedTask()
+        compute_task_def['deadline']                = self.message_timestamp - 3600
+        data.report_computed_task.task_to_compute   = message.TaskToCompute(compute_task_def = compute_task_def)
 
         response = self.client.post(
             reverse('core:send'),
@@ -493,11 +493,11 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 class CoreViewReceiveTest(TestCase):
 
     def setUp(self):
-        self.compute_task_def               = message.ComputeTaskDef()
-        self.compute_task_def['task_id']    = '1'
-        self.compute_task_def['subtask_id'] = '1'
-        self.compute_task_def['deadline']   = int(dateutil.parser.parse("2017-11-17 10:37:00").timestamp())
         with freeze_time("2017-11-17 10:00:00"):
+            self.compute_task_def               = message.ComputeTaskDef()
+            self.compute_task_def['task_id']    = '1'
+            self.compute_task_def['subtask_id'] = '1'
+            self.compute_task_def['deadline']   = get_current_utc_timestamp() + (60 * 37)
             self.task_to_compute = message.TaskToCompute(
                 compute_task_def = self.compute_task_def,
             )
@@ -563,12 +563,12 @@ class CoreViewReceiveTest(TestCase):
         assert len(ReceiveStatus.objects.filter(delivered=False)) == 0
 
     def test_receive_should_return_ack_if_the_receive_queue_contains_only_force_report_and_its_past_deadline(self):
-        self.compute_task_def               = message.ComputeTaskDef()
-        self.compute_task_def['task_id']    = '2'
-        self.compute_task_def['subtask_id'] = '2'
-        self.compute_task_def['deadline']   = int(dateutil.parser.parse("2017-11-17 10:00:00").timestamp())
 
         with freeze_time("2017-11-17 10:00:00"):
+            self.compute_task_def               = message.ComputeTaskDef()
+            self.compute_task_def['task_id']    = '2'
+            self.compute_task_def['subtask_id'] = '2'
+            self.compute_task_def['deadline']   = get_current_utc_timestamp()
             self.task_to_compute = message.TaskToCompute(
                 compute_task_def    = self.compute_task_def,
             )
@@ -638,7 +638,7 @@ class CoreViewReceiveOutOfBandTest(TestCase):
         self.compute_task_def               = message.ComputeTaskDef()
         self.compute_task_def['task_id']    = '1'
         self.compute_task_def['subtask_id'] = '1'
-        self.compute_task_def['deadline']   = int(dateutil.parser.parse("2017-11-17 9:59:00").timestamp())
+        self.compute_task_def['deadline']   = get_current_utc_timestamp() - 60
         self.task_to_compute                = message.TaskToCompute(
             compute_task_def = self.compute_task_def,
         )

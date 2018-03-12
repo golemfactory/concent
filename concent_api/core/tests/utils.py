@@ -248,6 +248,22 @@ class ConcentIntegrationTestCase(TestCase):
         for nested_message in unset_messages:
             self.assertIsNone(getattr(subtask, nested_message))
 
+    def _test_last_stored_messages(self, expected_messages, task_id, subtask_id, timestamp):
+        assert isinstance(expected_messages, list)
+        assert isinstance(task_id,           str)
+        assert isinstance(subtask_id,        str)
+
+        expected_message_types = [expected_message.TYPE for expected_message in expected_messages]
+
+        for stored_message in StoredMessage.objects.order_by('-id')[:len(expected_message_types)]:
+            self.assertIn(stored_message.type,                      expected_message_types)
+            self.assertEqual(stored_message.task_id,                task_id)
+            # TODO: Uncomment this in final step, as currently we store subtask_id only for messages stored by new logic
+            # self.assertEqual(stored_message.subtask_id,             subtask_id)
+            self.assertEqual(stored_message.timestamp.timestamp(),  self._parse_iso_date_to_timestamp(timestamp))
+
+            expected_message_types.remove(stored_message.type)
+
     def _get_deserialized_force_subtask_results(
         self,
         timestamp                   = None,
@@ -566,3 +582,6 @@ class ConcentIntegrationTestCase(TestCase):
         self.assertEqual(message_auth.message.type,         related_message.TYPE)
         self.assertEqual(message_auth.provider_public_key,  provider_public_key)
         self.assertEqual(message_auth.requestor_public_key, requestor_public_key)
+
+    def _assert_client_count_is_equal(self, count):
+        self.assertEqual(Client.objects.count(), count)

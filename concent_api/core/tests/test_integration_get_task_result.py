@@ -120,6 +120,16 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:28"),
         )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceGetTaskResult,  # TODO: Remove in final step
+                message.tasks.TaskToCompute,
+                message.tasks.ReportComputedTask,
+            ],
+            task_id         = '1',
+            subtask_id      = '8',
+            timestamp       = "2017-12-01 11:00:08"
+        )
 
         # STEP 2: Requestor again forces get task result via Concent.
         # Concent rejects request immediately because message was already sent.
@@ -194,6 +204,16 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:29"),
         )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceGetTaskResult,  # TODO: Remove in final step
+                message.tasks.TaskToCompute,
+                message.tasks.ReportComputedTask,
+            ],
+            task_id         = '1',
+            subtask_id      = '8',
+            timestamp       = "2017-12-01 11:00:10"
+        )
 
     def test_concent_requests_task_result_from_provider_and_requestor_receives_failure_because_provider_does_not_submit(self):
         """
@@ -250,6 +270,16 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"),
+        )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceGetTaskResult,  # TODO: Remove in final step
+                message.tasks.TaskToCompute,
+                message.tasks.ReportComputedTask,
+            ],
+            task_id         = '99',
+            subtask_id      = '8',
+            timestamp       = "2017-12-01 11:00:01"
         )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.
@@ -386,6 +416,16 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"),
         )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceGetTaskResult,  # TODO: Remove in final step
+                message.tasks.TaskToCompute,
+                message.tasks.ReportComputedTask,
+            ],
+            task_id         = '99',
+            subtask_id      = '8',
+            timestamp       = "2017-12-01 11:00:01"
+        )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.
         with freeze_time("2017-12-01 11:00:12"):
@@ -521,6 +561,16 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"),
         )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceGetTaskResult,  # TODO: Remove in final step
+                message.tasks.TaskToCompute,
+                message.tasks.ReportComputedTask,
+            ],
+            task_id         = '99',
+            subtask_id      = '8',
+            timestamp       = "2017-12-01 11:00:01"
+        )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.
         with freeze_time("2017-12-01 11:00:12"):
@@ -655,6 +705,16 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"),
+        )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceGetTaskResult,  # TODO: Remove in final step
+                message.tasks.TaskToCompute,
+                message.tasks.ReportComputedTask,
+            ],
+            task_id         = '99',
+            subtask_id      = '8',
+            timestamp       = "2017-12-01 11:00:01"
         )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.

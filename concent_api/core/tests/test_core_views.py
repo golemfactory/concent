@@ -19,6 +19,7 @@ from golem_messages.message         import Message as GolemMessage
 from core.models                    import StoredMessage
 from core.models                    import MessageAuth
 from core.models                    import ReceiveStatus
+from core.tests.utils               import ConcentIntegrationTestCase
 from utils.helpers                  import get_current_utc_timestamp
 from utils.testing_helpers          import generate_ecc_key_pair
 
@@ -34,10 +35,11 @@ from utils.testing_helpers          import generate_ecc_key_pair
     CONCENT_PUBLIC_KEY     = CONCENT_PUBLIC_KEY,
     CONCENT_MESSAGING_TIME = 3600,
 )
-class CoreViewSendTest(TestCase):
+class CoreViewSendTest(ConcentIntegrationTestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def setUp(self):
+        self.stored_message_counter         = 0
         self.message_timestamp              = get_current_utc_timestamp()  # 1510912800
         self.compute_task_def               = message.ComputeTaskDef()
         self.compute_task_def['task_id']    = '8'
@@ -91,11 +93,20 @@ class CoreViewSendTest(TestCase):
             HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
-        self.assertEqual(response.status_code,                202)
-        self.assertEqual(len(StoredMessage.objects.all()),    3)
-        self.assertEqual(StoredMessage.objects.first().type,  message.ForceReportComputedTask.TYPE)
-        self.assertEqual(len(ReceiveStatus.objects.all()),    1)
-        self.assertEqual(StoredMessage.objects.first().id,    ReceiveStatus.objects.last().message_id)
+        self.assertEqual(response.status_code,                   202)
+        self.assertEqual(len(ReceiveStatus.objects.all()),       1)
+        self.assertEqual(StoredMessage.objects.first().id,       ReceiveStatus.objects.last().message_id)
+        self._assert_stored_message_counter_increased(increased_by=3)
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
+                message.TaskToCompute,
+                message.ReportComputedTask,
+            ],
+            task_id         = '8',
+            subtask_id      = '8',
+            timestamp       = "2017-11-17 10:00:00"
+        )
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_200_if_message_timeout(self):
@@ -162,12 +173,19 @@ class CoreViewSendTest(TestCase):
             HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
-        self.assertEqual(response.status_code,                                          202)
-        self.assertEqual(len(StoredMessage.objects.all()),                              3)
-        self.assertEqual(StoredMessage.objects.order_by('timestamp').first().type,      message.ForceReportComputedTask.TYPE)
-        self.assertEqual(len(ReceiveStatus.objects.all()),                              1)
-        self.assertEqual(StoredMessage.objects.order_by('timestamp').first().id,        ReceiveStatus.objects.last().message_id)
-        self.assertEqual(StoredMessage.objects.order_by('timestamp').first().task_id,   compute_task_def['task_id'])
+        self.assertEqual(response.status_code,                   202)
+        self.assertEqual(len(ReceiveStatus.objects.all()),       1)
+        self._assert_stored_message_counter_increased(increased_by=3)
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
+                message.TaskToCompute,
+                message.ReportComputedTask,
+            ],
+            task_id         = 'ABC00XYZ',
+            subtask_id      = 'ABC00XYZ',
+            timestamp       = "2017-11-17 10:00:00"
+        )
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_data_is_incorrect(self):

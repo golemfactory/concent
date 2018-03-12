@@ -92,6 +92,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
             next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
+                message.TaskToCompute,
+                message.AckReportComputedTask,
+            ],
+            task_id         = '2',
+            subtask_id      = 'xxyyzz',
+            timestamp       = "2018-02-05 10:00:25"
+        )
 
         # STEP 2: Provider again forces subtask results via Concent with message with the same task_id.
         # Request is refused.
@@ -295,6 +305,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
             next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:50"),
         )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
+                message.TaskToCompute,
+                message.AckReportComputedTask,
+            ],
+            task_id         = '2',
+            subtask_id      = 'xxyyzz',
+            timestamp       = "2018-02-05 10:00:31"
+        )
 
         with freeze_time("2018-02-05 10:00:29"):
             response_2 = self.client.post(
@@ -376,6 +396,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
             next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:50"),
         )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
+                message.TaskToCompute,
+                message.AckReportComputedTask,
+            ],
+            task_id         = '2',
+            subtask_id      = 'xxyyzz',
+            timestamp       = "2018-02-05 10:00:31"
+        )
 
         with freeze_time("2018-02-05 11:00:00"):
             response_2 = self.client.post(
@@ -452,6 +482,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
             next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
+                message.TaskToCompute,
+                message.AckReportComputedTask,
+            ],
+            task_id         = '2',
+            subtask_id      = 'xxyyzz',
+            timestamp       = "2018-02-05 10:00:30"
+        )
 
         with freeze_time("2018-02-05 11:00:02"):
             response_2 = self.client.post(
@@ -515,6 +555,15 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_key                 = self._get_encoded_provider_public_key(),
             requestor_key                = self._get_encoded_requestor_public_key(),
             expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task', 'subtask_results_accepted'},
+        )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceSubtaskResultsResponse,  # TODO: Remove in final step
+                message.tasks.SubtaskResultsAccepted,
+            ],
+            task_id         = '2',
+            subtask_id      = 'xxyyzz',
+            timestamp       = "2018-02-05 10:00:44"
         )
 
         with freeze_time("2018-02-05 11:00:02"):
@@ -595,6 +644,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
             next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
+                message.TaskToCompute,
+                message.AckReportComputedTask,
+            ],
+            task_id         = '2',
+            subtask_id      = 'xxyyzz',
+            timestamp       = "2018-02-05 10:00:30"
+        )
 
         with freeze_time("2018-02-05 11:00:02"):
             response_2 = self.client.post(
@@ -658,6 +717,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_key                 = self._get_encoded_provider_public_key(),
             requestor_key                = self._get_encoded_requestor_public_key(),
             expected_nested_messages     = {'task_to_compute', 'report_computed_task', 'ack_report_computed_task', 'subtask_results_rejected'},
+        )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceSubtaskResultsResponse,  # TODO: Remove in final step
+                message.tasks.ReportComputedTask,
+                message.tasks.SubtaskResultsRejected,
+            ],
+            task_id         = '2',
+            subtask_id      = 'xxyyzz',
+            timestamp       = "2018-02-05 10:00:44"
         )
 
         with freeze_time("2018-02-05 11:00:02"):
@@ -890,6 +959,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
             next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
+                message.TaskToCompute,
+                message.AckReportComputedTask,
+            ],
+            task_id         = '2',
+            subtask_id      = 'xxyyzz',
+            timestamp       = "2018-02-05 10:00:30"
+        )
 
         compute_task_def = self._get_deserialized_compute_task_def(
             task_id     = '2',
@@ -1097,6 +1176,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
             next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:50"),
         )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
+                message.TaskToCompute,
+                message.AckReportComputedTask,
+            ],
+            task_id         = '2',
+            subtask_id      = 'xxyyzz',
+            timestamp       = "2018-02-05 10:00:30"
+        )
 
         with freeze_time("2018-02-05 10:00:31"):
             response_2 = self.client.post(
@@ -1245,6 +1334,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             requestor_key                = self._get_encoded_requestor_public_key(),
             expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
             next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:50"),
+        )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
+                message.TaskToCompute,
+                message.AckReportComputedTask,
+            ],
+            task_id         = '2',
+            subtask_id      = 'xxyyzz',
+            timestamp       = "2018-02-05 10:00:30"
         )
 
         with freeze_time("2018-02-05 10:00:31"):

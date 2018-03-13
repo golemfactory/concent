@@ -97,7 +97,7 @@ def create_task(task_to_compute_timestamp, task_id, compute_task_def_deadline):
             timestamp           = task_to_compute_timestamp,
             compute_task_def    = compute_task_def(
                     task_id     = task_id,
-                    subtask_id  = task_id,
+                    subtask_id  = "subtask_" + task_id,
                     deadline    = compute_task_def_deadline,
         )
     )

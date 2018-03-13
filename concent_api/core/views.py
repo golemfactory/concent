@@ -1043,7 +1043,7 @@ def handle_receive_force_get_task_result_upload_for_provider(
 
     file_transfer_token.files                 = [message.concents.FileTransferToken.FileInfo()]
     file_transfer_token.files[0]['path']      = file_path
-    file_transfer_token.files[0]['checksum']  = decoded_message.report_computed_task.checksum
+    file_transfer_token.files[0]['checksum']  = decoded_message.report_computed_task.package_hash
     file_transfer_token.files[0]['size']      = decoded_message.report_computed_task.size
 
     force_get_task_result_upload = message.concents.ForceGetTaskResultUpload(

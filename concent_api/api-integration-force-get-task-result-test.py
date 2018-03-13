@@ -71,7 +71,7 @@ def upload_new_file_on_cluster(task_id = '0', part_id = '0', current_time = 0):
     return (response.status_code, file_size, file_check_sum)
 
 
-def get_force_get_task_result(task_id, current_time, size, checksum):
+def get_force_get_task_result(task_id, current_time, size, package_hash):
 
     compute_task_def = message.ComputeTaskDef()
     compute_task_def['task_id'] = task_id
@@ -82,7 +82,7 @@ def get_force_get_task_result(task_id, current_time, size, checksum):
     report_computed_task = message.ReportComputedTask(
         task_to_compute = task_to_compute,
         size            = size,
-        checksum        = checksum,
+        package_hash    = package_hash,
     )
 
     with freeze_time(timestamp_to_isoformat(current_time)):
@@ -116,8 +116,8 @@ def main():
         get_force_get_task_result(
             task_id,
             current_time,
-            size        = file_size,
-            checksum    = file_check_sum
+            size         = file_size,
+            package_hash = file_check_sum
         ),
         headers = {
             'Content-Type':                     'application/octet-stream',
@@ -160,7 +160,7 @@ def main():
             task_id + 'non_existing_file',
             current_time,
             size    = 1024,
-            checksum = '098f6bcd4621d373cade4e832627b4f6'
+            package_hash = '098f6bcd4621d373cade4e832627b4f6'
         ),
         headers = {
             'Content-Type':                     'application/octet-stream',

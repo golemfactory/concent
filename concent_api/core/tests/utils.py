@@ -85,7 +85,7 @@ class ConcentIntegrationTestCase(TestCase):
         subtask_id      = '1',
         task_to_compute = None,
         size            = None,
-        checksum        = None,
+        package_hash    = None,
         timestamp       = None,
     ):
         """ Returns ReportComputedTask deserialized. """
@@ -97,7 +97,7 @@ class ConcentIntegrationTestCase(TestCase):
                     self._get_deserialized_task_to_compute()
                 ),
                 size            = size,
-                checksum        = checksum
+                package_hash    = package_hash
             )
         return report_computed_task
 

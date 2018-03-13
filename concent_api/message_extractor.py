@@ -4,22 +4,24 @@ from typing import Dict, Text, Any, List
 
 from golem_messages.message import Message
 
+JsonType = Dict[Text, Any]
+
 MESSAGE_NAMES = ['ForceReportComputedTask']
 
 
-def validate_message_list(message_list):
+def validate_message_list(message_list: List[Message]) -> None:
     if len(message_list) > 1:
         raise ValueError("Malformed message definition")
 
 
-def create_message(message_name: str, message_params: Dict[str, Any]) -> Message:
+def create_message(message_name: str, message_params: JsonType) -> Message:
     module = importlib.import_module("concents", "golem_messages.message")
     msg_class = getattr(module, message_name)
     message = msg_class(**message_params)
     return message
 
 
-def substitue_message(json, message_name, message):
+def substitue_message(json: JsonType, message_name: str, message: Message) -> JsonType:
     params = {k: v for k, v in json.items()}
     params[message_name] = message
     return params
@@ -29,7 +31,7 @@ class MessageExtractor(object):
     def __init__(self):
         self.messages = []  # type: List[Message]
 
-    def extract_message(self, json: Dict[Text, Any], name: str = None) -> Message:
+    def extract_message(self, json: JsonType, name: str = None) -> Message:
         if name is None:
             self._process_top_level(json)
         else:
@@ -44,7 +46,7 @@ class MessageExtractor(object):
             raise
         message = self.extract_message(body, name)
 
-    def _processs_body(self, json, name):
+    def _processs_body(self, json: JsonType, name: str) -> Message:
         message_list = [key for key in json.keys() if key in MESSAGE_NAMES]
         if self._contains_valid_message(message_list):
             message_name = message_list[0]
@@ -54,6 +56,6 @@ class MessageExtractor(object):
         else:
             return create_message(name, json)
 
-    def _contains_valid_message(self, message_list):
-        return len(message_list) == 1
+    def _contains_valid_message(self, message_names: List[Text]) -> bool:
+        return len(message_names) == 1
 

@@ -11,13 +11,17 @@ import time
 from base64                          import b64encode
 from golem_messages                  import message
 from golem_messages                  import shortcuts
-from golem_messages.message.concents import AckForceGetTaskResult, ForceGetTaskResultUpload, ForceGetTaskResultFailed
+from golem_messages.message.concents import AckForceGetTaskResult
+from golem_messages.message.concents import ForceGetTaskResultFailed
+from golem_messages.message.concents import ForceGetTaskResultUpload
 
 from utils.helpers                   import get_current_utc_timestamp
 from utils.testing_helpers           import generate_ecc_key_pair
 
-from api_testing_common              import api_request, parse_command_line, create_task_to_compute, get_protocol_constants, \
-    print_protocol_constants
+from api_testing_common              import api_request
+from api_testing_common              import create_task_to_compute
+from api_testing_common              import get_protocol_constants
+from api_testing_common              import print_protocol_constants
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
@@ -32,47 +36,50 @@ WAIT_TIME_1            = DEADLINE_OFFSET + FORCE_ACCEPTANCE_TIME
 (REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
-def prepare_hash(file_check_sum, hash_offset):
-    return file_check_sum[:-1] + hex(int(file_check_sum[-1], 16) + hash_offset)[2:]
-
-
-def upload_new_file_on_cluster(task_id = '0', part_id = '0', time_offset = TOKEN_EXPIRATION_TIME, wrong_hash = 0):
-
-    file_check_sum, file_content, file_size, headers = prepare_file_for_transfer(part_id, task_id, time_offset)
-
-    response = upload_file(file_content, headers)
+def upload_new_file_on_cluster(task_id = '0', part_id = '0', time_offset = TOKEN_EXPIRATION_TIME):
+    file_check_sum, file_content, file_size, headers    = prepare_file_for_transfer(part_id, task_id, time_offset)
+    response                                            = upload_file(file_content, headers)
     return (response.status_code, file_size, file_check_sum)
 
 
 def prepare_file_for_transfer(part_id, task_id, time_offset):
-    file_content = task_id
+    file_content                                        = task_id
     file_size = len(file_content)
-    file_check_sum = 'sha1:' + hashlib.sha1(file_content.encode()).hexdigest()
-    file_path = '{}/{}/result'.format(task_id, part_id)
+    file_check_sum                                      = 'sha1:' + hashlib.sha1(file_content.encode()).hexdigest()
+    file_path                                           = '{}/{}/result'.format(task_id, part_id)
     file_transfer_token = message.FileTransferToken()
-    file_transfer_token.token_expiration_deadline = int(datetime.datetime.now().timestamp()) + time_offset
-    file_transfer_token.storage_cluster_address = STORAGE_CLUSTER_ADDRESS
-    file_transfer_token.authorized_client_public_key = CONCENT_PUBLIC_KEY
-    file_transfer_token.operation = 'upload'
-    file_transfer_token.files = [message.FileTransferToken.FileInfo()]
-    file_transfer_token.files[0]['path'] = file_path
-    file_transfer_token.files[0]['checksum'] = file_check_sum  # prepare_hash(file_check_sum, wrong_hash)
-    file_transfer_token.files[0]['size'] = file_size
-    upload_token = shortcuts.dump(file_transfer_token, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
-    encrypted_token = b64encode(upload_token).decode()
-    authorized_golem_transfer_token = 'Golem ' + encrypted_token
+    file_transfer_token.token_expiration_deadline       = int(datetime.datetime.now().timestamp()) + time_offset
+    file_transfer_token.storage_cluster_address         = STORAGE_CLUSTER_ADDRESS
+    file_transfer_token.authorized_client_public_key    = CONCENT_PUBLIC_KEY
+    file_transfer_token.operation                       = 'upload'
+    file_transfer_token.files                           = [message.FileTransferToken.FileInfo()]
+    file_transfer_token.files[0]['path']                = file_path
+    file_transfer_token.files[0]['checksum']            = file_check_sum  # prepare_hash(file_check_sum, wrong_hash)
+    file_transfer_token.files[0]['size']                = file_size
+    upload_token                                        = shortcuts.dump(file_transfer_token,
+                                                                         CONCENT_PRIVATE_KEY,
+                                                                         CONCENT_PUBLIC_KEY
+                                                                         )
+    encrypted_token                                     = b64encode(upload_token).decode()
+    authorized_golem_transfer_token                     = 'Golem ' + encrypted_token
     headers = {
         'Authorization'            : authorized_golem_transfer_token,
         'Concent-Client-Public-Key': b64encode(CONCENT_PUBLIC_KEY).decode(),
         'Concent-upload-path'      : '{}/{}/result'.format(task_id, part_id),
         'Content-Type'             : 'application/x-www-form-urlencoded'
     }
-    return file_check_sum, file_content, file_size, headers
+    return (file_check_sum, file_content, file_size, headers)
 
 
 def upload_file(file_content, headers):
-    response = requests.post("{}".format(STORAGE_CLUSTER_ADDRESS + 'upload/'), headers = headers, data = file_content,
-                             verify = False)
+    response    = requests.post(
+                    "{}".format(
+                        STORAGE_CLUSTER_ADDRESS + 'upload/'
+                    ),
+                    headers = headers,
+                    data    = file_content,
+                    verify  = False,
+                  )
     return response
 
 
@@ -93,6 +100,9 @@ def get_force_get_task_result(task_id, current_time, size, package_hash, task_de
 
 
 class count_fails(object):
+    """
+    Decorator that wraps a test functions for intercepting assertions and counting them.
+    """
     instances = []
 
     def __init__(self, fun):
@@ -102,13 +112,13 @@ class count_fails(object):
         count_fails.instances.append(self)
 
     def __call__(self, *args, **kwargs):
-                try:
-                    print("Running TC: " + self.__name__)
-                    return self._fun(*args, **kwargs)
-                except AssertionError as e:
-                    print("{}: FAILED".format(self.__name__))
-                    print(e)
-                    self.failed = True
+        try:
+            print("Running TC: " + self.__name__)
+            return self._fun(*args, **kwargs)
+        except AssertionError as e:
+            print("{}: FAILED".format(self.__name__))
+            print(e)
+            self.failed = True
 
     @classmethod
     def get_fails(cls):
@@ -138,8 +148,8 @@ def case_4d_concent_notifies_the_provider_that_task_results_are_ready(cluster_ur
             package_hash=file_check_sum),
 
         headers={
-            'Content-Type': 'application/octet-stream',
-            'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            'Content-Type'                  : 'application/octet-stream',
+            'concent-client-public-key'     : b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'concent-other-party-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         },
         expected_status  = 200,
@@ -153,7 +163,7 @@ def case_4d_concent_notifies_the_provider_that_task_results_are_ready(cluster_ur
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         headers = {
-            'Content-Type': 'application/octet-stream',
+            'Content-Type'             : 'application/octet-stream',
             'concent-client-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         },
         expected_status  = 200,
@@ -167,7 +177,7 @@ def case_4d_concent_notifies_the_provider_that_task_results_are_ready(cluster_ur
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         headers = {
-            'Content-Type': 'application/octet-stream',
+            'Content-Type'             : 'application/octet-stream',
             'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         },
         expected_status  = 200,
@@ -193,8 +203,8 @@ def case_4c_concent_reports_a_failure_to_get_task_results_if_file_has_bad_hash(c
         CONCENT_PUBLIC_KEY,
         get_force_get_task_result(task_id, current_time, size = file_size, checksum = file_check_sum),
         headers = {
-            'Content-Type': 'application/octet-stream',
-            'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            'Content-Type'                  : 'application/octet-stream',
+            'concent-client-public-key'     : b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'concent-other-party-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         },
         expected_status  = 200,
@@ -208,7 +218,7 @@ def case_4c_concent_reports_a_failure_to_get_task_results_if_file_has_bad_hash(c
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         headers = {
-            'Content-Type': 'application/octet-stream',
+            'Content-Type'             : 'application/octet-stream',
             'concent-client-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         },
         expected_status  = 200,
@@ -226,8 +236,8 @@ def case_4c_concent_reports_a_failure_to_get_task_results_if_file_has_bad_hash(c
         'receive',
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        headers={
-            'Content-Type': 'application/octet-stream',
+        headers = {
+            'Content-Type'             : 'application/octet-stream',
             'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         },
         expected_status  = 200,
@@ -251,15 +261,15 @@ def case_4a_concent_reports_a_failure_to_get_task_results_if_the_provider_does_n
         'send',
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        get_force_get_task_result(
-            task_id + '4A',
-            current_time,
-            size=1024,
-            package_hash='098f6bcd4621d373cade4e832627b4f6',
-        task_deadline_offset = DEADLINE_OFFSET),
-        headers={
-            'Content-Type': 'application/octet-stream',
-            'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+        get_force_get_task_result(task_id + '4A',
+          current_time,
+          size                  = 1024,
+          package_hash          = '098f6bcd4621d373cade4e832627b4f6',
+          task_deadline_offset  = DEADLINE_OFFSET
+        ),
+        headers = {
+            'Content-Type'                  : 'application/octet-stream',
+            'concent-client-public-key'     : b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'concent-other-party-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         },
         expected_status  = 200,
@@ -296,11 +306,11 @@ def case_4a_concent_reports_a_failure_to_get_task_results_if_the_provider_does_n
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser()
+    parser  = argparse.ArgumentParser()
     parser.add_argument("cluster_url")
     parser.add_argument("tc_patterns", nargs='*')
-    args = parser.parse_args()
-    return args.cluster_url, args.tc_patterns
+    args    = parser.parse_args()
+    return (args.cluster_url, args.tc_patterns)
 
 
 def get_tests_list(patterns, all_objects):
@@ -309,8 +319,8 @@ def get_tests_list(patterns, all_objects):
 
     tests = list(filter(lambda x: _is_a_test(x), all_objects))
     if len(patterns) > 0:
-        safe_patterns = [pattern for pattern in patterns if _is_a_test(pattern)]
-        tests = [test for pattern in safe_patterns for test in tests if pattern in test]
+        safe_patterns   = [pattern for pattern in patterns if _is_a_test(pattern)]
+        tests           = [test for pattern in safe_patterns for test in tests if pattern in test]
     return sorted(tests)
 
 
@@ -340,10 +350,11 @@ def main():
 
     cluster_consts         = get_protocol_constants(cluster_url)
     print_protocol_constants(cluster_consts)
+    # GLOBALS should be recalculated as it could change due to cluster_consts
     CONCENT_MESSAGING_TIME = cluster_consts.concent_messaging_time
     FORCE_ACCEPTANCE_TIME  = cluster_consts.force_acceptance_time
     TOKEN_EXPIRATION_TIME  = cluster_consts.token_expiration_time
-    WAIT_TIME_1            = DEADLINE_OFFSET + FORCE_ACCEPTANCE_TIME  # recalculated as it could change due to cluster_consts
+    WAIT_TIME_1            = DEADLINE_OFFSET + FORCE_ACCEPTANCE_TIME
 
     execute_tests(tests_to_execute, cluster_url=cluster_url, current_time=current_time, task_id=task_id)
 

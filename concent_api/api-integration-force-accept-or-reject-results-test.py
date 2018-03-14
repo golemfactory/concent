@@ -13,7 +13,10 @@ from golem_messages         import message
 from utils.helpers          import get_current_utc_timestamp
 from utils.testing_helpers  import generate_ecc_key_pair
 
-from api_testing_common     import api_request, parse_command_line, get_protocol_constants, print_protocol_constants
+from api_testing_common     import api_request
+from api_testing_common     import get_protocol_constants
+from api_testing_common     import parse_command_line
+from api_testing_common     import print_protocol_constants
 from api_testing_common     import timestamp_to_isoformat
 
 HOUR = 3600
@@ -191,15 +194,19 @@ def main():
             timestamp = current_timestamp,  # current_time
             ack_report_computed_task    = ack_report_computed_task(
                     timestamp           = ack_report_computed_task_timestamp,  # current_time - 4:00:10
-                    subtask_id          = task_id,
-                    task_to_compute     = create_task(task_to_compute_timestamp, task_id, compute_task_def_deadline)
+                    subtask_id          = task_id + '2B',
+                    task_to_compute     = create_task(
+                            task_to_compute_timestamp,
+                            task_id,
+                            compute_task_def_deadline
+                    )
             )
         ),
         headers = {
             'Content-Type'                  : 'application/octet-stream',
             'concent-client-public-key'     : b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             'concent-other-party-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-            'temporary-account-funds'       :          ''
+            'temporary-account-funds'       : ''
         },
         expected_status = 200
     )
@@ -213,9 +220,14 @@ def main():
         force_subtask_results(
             timestamp                   = timestamp_to_isoformat(current_time),
             ack_report_computed_task    = ack_report_computed_task(
-                timestamp               = timestamp_to_isoformat(current_time - 2 * cluster_consts.subtask_verification_time - TIME_GUARD),  # current_time - 08:00:10
+                timestamp               = timestamp_to_isoformat(
+                    current_time - 2 * cluster_consts.subtask_verification_time - TIME_GUARD), # current_time - 08:00:10
                 subtask_id              = task_id + '2C',
-                task_to_compute         = create_task(timestamp_to_isoformat(current_time - 28802), task_id + '2C', current_time)
+                task_to_compute         = create_task(
+                        timestamp_to_isoformat(current_time - 28802),
+                        task_id + '2C',
+                        current_time
+                )
             )
         ),
         headers = {

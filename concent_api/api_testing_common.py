@@ -101,11 +101,11 @@ def api_request(host, endpoint, private_key, public_key, data=None, headers=None
             print_golem_message(data)
 
     assert all(value not in ['', None] for value in [endpoint, host, headers])
-    url = "{}/api/v1/{}/".format(host, endpoint)
+    url         = "{}/api/v1/{}/".format(host, endpoint)
 
     _print_data(data, url)
 
-    response = requests.post("{}".format(url), headers = headers, data = _prepare_data(data))
+    response    = requests.post("{}".format(url), headers = headers, data = _prepare_data(data))
 
     _print_response(private_key, public_key, response)
     validate_response_status(response.status_code, expected_status)
@@ -178,9 +178,10 @@ def parse_command_line(command_line):
 
 
 def create_task_to_compute(current_time, task_id, deadline_offset=60):
-    compute_task_def = ComputeTaskDef()
-    compute_task_def['task_id'] = task_id
-    compute_task_def['deadline'] = current_time + deadline_offset
+    compute_task_def                = ComputeTaskDef()
+    compute_task_def['task_id']     = task_id
+    compute_task_def['deadline']    = current_time + deadline_offset
     task_to_compute = TaskToCompute(
-        compute_task_def=compute_task_def)
+        compute_task_def = compute_task_def
+    )
     return task_to_compute

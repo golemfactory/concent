@@ -3,6 +3,7 @@
 import os
 import sys
 import random
+import requests
 from base64                         import b64encode
 
 from golem_messages                 import dump
@@ -14,9 +15,9 @@ from golem_messages.message.tasks   import ReportComputedTask
 from utils.helpers                  import get_current_utc_timestamp
 from utils.testing_helpers          import generate_ecc_key_pair
 
-from api_testing_common import api_request, parse_command_line, create_task_to_compute
-
-import requests
+from api_testing_common             import api_request
+from api_testing_common             import create_task_to_compute
+from api_testing_common             import parse_command_line
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 

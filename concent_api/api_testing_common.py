@@ -7,28 +7,38 @@ import sys
 from collections                    import namedtuple
 
 from golem_messages.exceptions      import MessageError
-from golem_messages.message         import Message, ComputeTaskDef, TaskToCompute
+from golem_messages.message         import ComputeTaskDef
+from golem_messages.message         import Message
+from golem_messages.message         import TaskToCompute
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 
 
-ProtocolConstants = namedtuple("ProtocolConstants",
-                               ["concent_messaging_time",
-                                "subtask_verification_time",
-                                "force_acceptance_time",
-                                "token_expiration_time"])
+ProtocolConstants = namedtuple(
+    "ProtocolConstants",
+    [
+        "concent_messaging_time",
+        "subtask_verification_time",
+        "force_acceptance_time",
+        "token_expiration_time",
+    ]
+)
 
 
 def get_protocol_constants(cluster_url):
-    url = f"{cluster_url}/api/v1/protocol-constants/"
-    response = requests.get(url)
-    json = response.json()
-    concent_messaging_time = json['concent_messaging_time']
-    subtask_verification_time = json['subtask_verification_time']
-    force_acceptance_time = json['force_acceptance_time']
-    token_expiration_time = json['token_expiration_time']
-    constants = ProtocolConstants(concent_messaging_time, subtask_verification_time, force_acceptance_time,
-                                  token_expiration_time)
+    url                         = f"{cluster_url}/api/v1/protocol-constants/"
+    response                    = requests.get(url)
+    json                        = response.json()
+    concent_messaging_time      = json['concent_messaging_time']
+    subtask_verification_time   = json['subtask_verification_time']
+    force_acceptance_time       = json['force_acceptance_time']
+    token_expiration_time       = json['token_expiration_time']
+    constants                   = ProtocolConstants(
+            concent_messaging_time      = concent_messaging_time,
+            subtask_verification_time   = subtask_verification_time,
+            force_acceptance_time       = force_acceptance_time,
+            token_expiration_time       = token_expiration_time
+    )
     return constants
 
 
@@ -144,7 +154,7 @@ def try_to_decode_golem_message(private_key, public_key, content):
             content,
             private_key,
             public_key,
-            check_time=False
+            check_time = False
         )
     except MessageError:
         print("Failed to decode a Golem Message.")

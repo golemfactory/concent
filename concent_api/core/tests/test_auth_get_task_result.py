@@ -7,6 +7,7 @@ from golem_messages         import load
 from golem_messages         import message
 
 from core.models            import MessageAuth
+from core.models            import PendingResponse
 from core.models            import Subtask
 from core.tests.utils       import ConcentIntegrationTestCase
 from utils.testing_helpers  import generate_ecc_key_pair
@@ -93,6 +94,13 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = '8',
             timestamp       = "2017-12-01 11:00:08"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceGetTaskResultUpload,
+            ]
+        )
 
         # STEP 2: Requestor again forces get task result via Concent with wrong key or mixed key.
         # Concent rejects request immediately because message with this subtask_id was already sent.
@@ -119,6 +127,14 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_from_concent.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:08"))
         self.assertEqual(message_from_concent.reason,    message_from_concent.REASON.DuplicateRequest)
 
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceGetTaskResultUpload,
+            ]
+        )
+
         serialized_force_get_task_result = self._get_serialized_force_get_task_result(
             report_computed_task  = deserialized_report_computed_task,
             timestamp             = "2017-12-01 11:00:08",
@@ -143,6 +159,14 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_from_concent.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:08"))
         self.assertEqual(message_from_concent.reason,    message_from_concent.REASON.DuplicateRequest)
 
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceGetTaskResultUpload,
+            ]
+        )
+
         self.assertEqual(MessageAuth.objects.count(), 1)
 
         self._assert_stored_message_counter_not_increased()
@@ -166,6 +190,14 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertIsInstance(message_from_concent,      message.concents.ServiceRefused)
         self.assertEqual(message_from_concent.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:08"))
         self.assertEqual(message_from_concent.reason,    message_from_concent.REASON.DuplicateRequest)
+
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceGetTaskResultUpload,
+            ]
+        )
 
         self.assertEqual(MessageAuth.objects.count(), 1)
 
@@ -241,6 +273,13 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = '8',
             timestamp       = "2017-12-01 11:00:01"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceGetTaskResultUpload,
+            ]
+        )
 
         # STEP 2: Provider do not receive force get task result and file transfer token inside
         # ForceGetTaskResultUpload via Concent with different or mixed key.
@@ -268,6 +307,14 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response.content),       0)
 
         self._assert_stored_message_counter_not_increased()
+
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceGetTaskResultUpload,
+            ]
+        )
 
         # STEP 3: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via
         # Concent with correct key.
@@ -461,6 +508,13 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = '8',
             timestamp       = "2017-12-01 11:00:01"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceGetTaskResultUpload,
+            ]
+        )
 
         # STEP 2: Provider do not receive force get task result and file transfer token inside
         # ForceGetTaskResultUpload via Concent with different or mixed key.
@@ -487,11 +541,18 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key()
                 )
 
-
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
 
         self._assert_stored_message_counter_not_increased()
+
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceGetTaskResultUpload,
+            ]
+        )
 
         # STEP 3: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via
         # Concent with correct key.
@@ -684,6 +745,13 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = '8',
             timestamp       = "2017-12-01 11:00:01"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceGetTaskResultUpload,
+            ]
+        )
 
         # STEP 2: Provider do not receive force get task result and file transfer token inside
         # ForceGetTaskResultUpload via Concent with with different or mixed key.
@@ -714,6 +782,14 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response.content),       0)
 
         self._assert_stored_message_counter_not_increased()
+
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceGetTaskResultUpload,
+            ]
+        )
 
         # STEP 3: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via
         # Concent with correct key.
@@ -909,6 +985,13 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = '8',
             timestamp       = "2017-12-01 11:00:01"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceGetTaskResultUpload,
+            ]
+        )
 
         # STEP 2: Provider do not receive force get task result and file transfer token inside
         # ForceGetTaskResultUpload via Concent with with different or mixed key.
@@ -939,6 +1022,14 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response.content),       0)
 
         self._assert_stored_message_counter_not_increased()
+
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceGetTaskResultUpload,
+            ]
+        )
 
         # STEP 3: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via
         # Concent with correct key.

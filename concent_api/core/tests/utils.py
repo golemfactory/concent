@@ -14,10 +14,11 @@ from golem_messages         import dump
 from golem_messages         import load
 from golem_messages         import message
 from core.models            import Client
+from core.models            import MessageAuth
+from core.models            import PendingResponse
+from core.models            import ReceiveStatus
 from core.models            import StoredMessage
 from core.models            import Subtask
-from core.models            import MessageAuth
-from core.models            import ReceiveStatus
 
 from utils.testing_helpers  import generate_ecc_key_pair
 
@@ -267,6 +268,60 @@ class ConcentIntegrationTestCase(TestCase):
             self.assertEqual(stored_message.timestamp.timestamp(),  self._parse_iso_date_to_timestamp(timestamp))
 
             expected_message_types.remove(stored_message.type)
+
+        assert expected_message_types == []
+
+    def _test_undelivered_pending_responses(
+        self,
+        client_public_key,
+        subtask_id,
+        client_public_key_out_of_band                   = None,
+        expected_pending_responses_receive              = None,
+        expected_pending_responses_receive_out_of_band  = None,
+    ):
+        if expected_pending_responses_receive is None:
+            expected_pending_responses_receive = []
+
+        if expected_pending_responses_receive_out_of_band is None:
+            expected_pending_responses_receive_out_of_band = []
+
+        assert isinstance(expected_pending_responses_receive,               list)
+        assert isinstance(expected_pending_responses_receive_out_of_band,   list)
+        assert isinstance(client_public_key,                                str)
+        assert isinstance(subtask_id,                                       str)
+        if client_public_key_out_of_band is not None:
+            assert isinstance(client_public_key_out_of_band, str)
+
+        expected_pending_responses_receive_types = [
+            expected_pending_response_receive.name for expected_pending_response_receive in expected_pending_responses_receive
+        ]
+        expected_pending_responses_receive_out_of_band_types = [
+            expected_pending_response_receive_out_of_band.name for expected_pending_response_receive_out_of_band in expected_pending_responses_receive_out_of_band
+        ]
+
+        for pending_response in PendingResponse.objects.filter(
+            delivered   = False,
+            queue       = PendingResponse.Queue.Receive.name,  # pylint: disable=no-member
+        ):
+            self.assertIn(pending_response.response_type,           expected_pending_responses_receive_types)
+            self.assertEqual(pending_response.subtask.subtask_id,   subtask_id)
+            self.assertEqual(pending_response.client.public_key,    client_public_key)
+
+            expected_pending_responses_receive_types.remove(pending_response.response_type)
+
+        assert expected_pending_responses_receive_types == []
+
+        for pending_response in PendingResponse.objects.filter(
+            delivered   = False,
+            queue       = PendingResponse.Queue.ReceiveOutOfBand.name,  # pylint: disable=no-member
+        ):
+            self.assertIn(pending_response.response_type,           expected_pending_responses_receive_out_of_band_types)
+            self.assertEqual(pending_response.subtask.subtask_id,   subtask_id)
+            self.assertEqual(pending_response.client.public_key,    client_public_key_out_of_band)
+
+            expected_pending_responses_receive_out_of_band_types.remove(pending_response.response_type)
+
+        assert expected_pending_responses_receive_out_of_band_types == []
 
     def _get_deserialized_force_subtask_results(
         self,

@@ -9,6 +9,7 @@ from golem_messages         import message
 import dateutil.parser
 
 from core.tests.utils       import ConcentIntegrationTestCase
+from core.models            import PendingResponse
 from core.models            import Subtask
 from utils.testing_helpers  import generate_ecc_key_pair
 
@@ -28,6 +29,7 @@ from utils.testing_helpers  import generate_ecc_key_pair
 class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
     def setUp(self):
+        super().setUp()
         self.compute_task_def               = message.ComputeTaskDef()
         self.compute_task_def['task_id']    = '1'
         self.compute_task_def['subtask_id'] = '8'
@@ -100,6 +102,13 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '1',
             subtask_id      = '8',
             timestamp       = "2017-12-01 10:59:00"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_key(REQUESTOR_PUBLIC_KEY),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTask,
+            ]
         )
 
         # STEP 2: Concent do not forces computed task report on the requestor with different or mixed key
@@ -210,6 +219,13 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '1',
             subtask_id      = '8',
             timestamp       = "2017-12-01 11:00:05"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_key(PROVIDER_PUBLIC_KEY),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTaskResponse,
+            ]
         )
 
         # STEP 6: Concent do not passes computed task acceptance to the provider with different or mixed key
@@ -331,6 +347,13 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '1',
             subtask_id      = '8',
             timestamp       = "2017-12-01 10:59:00"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_key(REQUESTOR_PUBLIC_KEY),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTask,
+            ]
         )
 
         # STEP 2: Concent do not forces computed task report on the requestor with different or mixed key
@@ -458,6 +481,13 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = '8',
             timestamp       = "2017-12-01 11:00:05"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_key(PROVIDER_PUBLIC_KEY),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTaskResponse,
+            ]
+        )
 
         # STEP 6: Concent do not passes computed task rejection to the provider with different or mixed key
 
@@ -581,6 +611,13 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '1',
             subtask_id      = '8',
             timestamp       = "2017-12-01 10:59:00"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_key(REQUESTOR_PUBLIC_KEY),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTask,
+            ]
         )
 
         # STEP 2: Concent do not forces computed task report on the requestor with different or mixed key
@@ -708,6 +745,17 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '1',
             subtask_id      = '8',
             timestamp       = "2017-12-01 11:00:05"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                          = '8',
+            client_public_key                   = self._get_encoded_key(PROVIDER_PUBLIC_KEY),
+            client_public_key_out_of_band       = self._get_encoded_key(REQUESTOR_PUBLIC_KEY),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTaskResponse,
+            ],
+            expected_pending_responses_receive_out_of_band = [
+                PendingResponse.ResponseType.VerdictReportComputedTask,
+            ]
         )
 
         # STEP 6: Concent do not overrides computed task rejection and sends acceptance message to the provider with different or mixed key
@@ -861,6 +909,13 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = '8',
             timestamp       = "2017-12-01 10:59:00"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_key(REQUESTOR_PUBLIC_KEY),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTask,
+            ]
+        )
 
         # STEP 2: Concent do not forces computed task report on the requestor with different or mixed key
 
@@ -956,7 +1011,14 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
             next_deadline            = None,
         )
-
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_key(PROVIDER_PUBLIC_KEY),
+            client_public_key_out_of_band      = self._get_encoded_key(REQUESTOR_PUBLIC_KEY),
+            expected_pending_responses_receive_out_of_band = [
+                PendingResponse.ResponseType.VerdictReportComputedTask,
+            ]
+        )
         # STEP 6: Requestor do not receives task computation report verdict out of band due to lack of response with different or mixed key
 
         with freeze_time("2017-12-01 11:00:15"):

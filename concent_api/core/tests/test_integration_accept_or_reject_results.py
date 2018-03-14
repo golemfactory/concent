@@ -7,6 +7,7 @@ from golem_messages         import message
 
 from core.models            import StoredMessage
 from core.models            import Subtask
+from core.models            import PendingResponse
 from core.models            import ReceiveStatus
 from core.tests.utils       import ConcentIntegrationTestCase
 from utils.testing_helpers  import generate_ecc_key_pair
@@ -101,6 +102,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '2',
             subtask_id      = 'xxyyzz',
             timestamp       = "2018-02-05 10:00:25"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceSubtaskResults,
+            ]
         )
 
         # STEP 2: Provider again forces subtask results via Concent with message with the same task_id.
@@ -321,6 +329,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = 'xxyyzz',
             timestamp       = "2018-02-05 10:00:31"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceSubtaskResults,
+            ]
+        )
 
         with freeze_time("2018-02-05 10:00:29"):
             response_2 = self.client.post(
@@ -416,6 +431,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = 'xxyyzz',
             timestamp       = "2018-02-05 10:00:31"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceSubtaskResults,
+            ]
+        )
 
         with freeze_time("2018-02-05 11:00:00"):
             response_2 = self.client.post(
@@ -441,6 +463,18 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             }
         )
         self._assert_stored_message_counter_not_increased()
+
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            client_public_key_out_of_band      = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.SubtaskResultsSettled,
+            ],
+            expected_pending_responses_receive_out_of_band = [
+                PendingResponse.ResponseType.SubtaskResultsSettled,
+            ]
+        )
 
         with freeze_time("2018-02-05 11:00:01"):
             response = self.client.post(
@@ -542,6 +576,14 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp       = "2018-02-05 10:00:30"
         )
 
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceSubtaskResults,
+            ]
+        )
+
         with freeze_time("2018-02-05 10:00:44"):
             response_2 = self.client.post(
                 reverse('core:receive'),
@@ -613,6 +655,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '2',
             subtask_id      = 'xxyyzz',
             timestamp       = "2018-02-05 10:00:44"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceSubtaskResultsResponse,
+            ]
         )
 
         with freeze_time("2018-02-05 11:00:02"):
@@ -704,6 +753,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = 'xxyyzz',
             timestamp       = "2018-02-05 10:00:30"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceSubtaskResults,
+            ]
+        )
 
         with freeze_time("2018-02-05 10:00:44"):
             response_2 = self.client.post(
@@ -777,6 +833,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '2',
             subtask_id      = 'xxyyzz',
             timestamp       = "2018-02-05 10:00:44"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.SubtaskResultsRejected,
+            ]
         )
 
         with freeze_time("2018-02-05 11:00:02"):
@@ -1026,6 +1089,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = 'xxyyzz',
             timestamp       = "2018-02-05 10:00:30"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceSubtaskResults,
+            ]
+        )
 
         compute_task_def = self._get_deserialized_compute_task_def(
             task_id     = '2',
@@ -1247,6 +1317,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = 'xxyyzz',
             timestamp       = "2018-02-05 10:00:30"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceSubtaskResults,
+            ]
+        )
 
         with freeze_time("2018-02-05 10:00:31"):
             response_2 = self.client.post(
@@ -1300,6 +1377,14 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             requestor_key               = self._get_encoded_requestor_public_key(),
             expected_nested_messages    = {'task_to_compute', 'ack_report_computed_task'},
             next_deadline               = None,
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            client_public_key_out_of_band      = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive_out_of_band = [
+                PendingResponse.ResponseType.SubtaskResultsSettled,
+            ]
         )
 
         with mock.patch('core.views.base.make_forced_payment', _get_requestor_account_status):
@@ -1408,6 +1493,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = 'xxyyzz',
             timestamp       = "2018-02-05 10:00:30"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceSubtaskResults,
+            ]
+        )
 
         with freeze_time("2018-02-05 10:00:31"):
             response_2 = self.client.post(
@@ -1460,6 +1552,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             requestor_key                = self._get_encoded_requestor_public_key(),
             expected_nested_messages      = {'task_to_compute', 'ack_report_computed_task'},
             next_deadline                = None,
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.SubtaskResultsSettled,
+            ]
         )
 
         with mock.patch('core.views.base.make_forced_payment', _get_requestor_account_status):

@@ -5,6 +5,7 @@ from django.urls                    import reverse
 from freezegun                      import freeze_time
 
 from golem_messages                 import message
+from core.models                    import PendingResponse
 from core.models                    import Subtask
 from core.tests.utils               import ConcentIntegrationTestCase
 from utils.testing_helpers          import generate_ecc_key_pair
@@ -144,6 +145,13 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = '8',
             timestamp       = "2017-12-01 10:59:00"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTask,
+            ]
+        )
 
         # STEP 2: Concent forces computed task report on the requestor
 
@@ -216,6 +224,13 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '1',
             subtask_id      = '8',
             timestamp       = "2017-12-01 11:00:05"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTaskResponse,
+            ]
         )
 
         # STEP 4: Concent passes computed task acceptance to the provider
@@ -313,6 +328,13 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = '8',
             timestamp       = "2017-12-01 10:59:00"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTask,
+            ]
+        )
 
         # STEP 2: Concent forces computed task report on the requestor
 
@@ -388,6 +410,13 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '1',
             subtask_id      = '8',
             timestamp       = "2017-12-01 11:00:05"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTaskResponse,
+            ]
         )
 
         # STEP 4: Concent passes computed task rejection to the provider
@@ -487,6 +516,20 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = '8',
             timestamp       = "2017-12-01 10:59:00"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTask,
+            ]
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTask,
+            ]
+        )
 
         # STEP 2: Concent forces computed task report on the requestor
 
@@ -564,6 +607,17 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '1',
             subtask_id      = '8',
             timestamp       = "2017-12-01 11:00:05"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            client_public_key_out_of_band      = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTaskResponse,
+            ],
+            expected_pending_responses_receive_out_of_band = [
+                PendingResponse.ResponseType.VerdictReportComputedTask,
+            ]
         )
 
         # STEP 4: Concent overrides computed task rejection and sends acceptance message to the provider
@@ -685,6 +739,13 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '1',
             subtask_id      = '8',
             timestamp       = "2017-12-01 10:59:00"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTask,
+            ]
         )
 
         # STEP 2: Concent forces computed task report on the requestor
@@ -838,6 +899,13 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '1',
             subtask_id      = '8',
             timestamp       = "2017-12-01 10:59:00"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTask,
+            ]
         )
 
         # STEP 2: Provider forces computed task report via Concent again
@@ -1023,6 +1091,13 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = '8',
             timestamp       = "2017-12-01 10:59:00"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTask,
+            ]
+        )
 
         # STEP 2: Concent forces computed task report on the requestor
 
@@ -1091,6 +1166,13 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '1',
             subtask_id      = '8',
             timestamp       = "2017-12-01 11:00:05"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTaskResponse,
+            ]
         )
 
         # STEP 4: Requestor rejects computed task via Concent
@@ -1199,6 +1281,13 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = '8',
             timestamp       = "2017-12-01 10:59:00"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTask,
+            ]
+        )
 
         # STEP 2: Concent forces computed task report on the requestor
 
@@ -1274,6 +1363,17 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '1',
             subtask_id      = '8',
             timestamp       = "2017-12-01 11:00:05"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            client_public_key_out_of_band      = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTaskResponse,
+            ],
+            expected_pending_responses_receive_out_of_band = [
+                PendingResponse.ResponseType.VerdictReportComputedTask,
+            ]
         )
 
         # STEP 4: Requestor accepts computed task via Concent
@@ -1373,6 +1473,13 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '1',
             subtask_id      = '8',
             timestamp       = "2017-12-01 10:59:00"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTask,
+            ]
         )
 
         # STEP 2: Concent forces computed task report on the requestor
@@ -1495,6 +1602,13 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '1',
             subtask_id      = '8',
             timestamp       = "2017-12-01 10:59:00"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTask,
+            ]
         )
 
         # STEP 2: Concent forces computed task report on the requestor
@@ -2013,6 +2127,13 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = '8',
             timestamp       = "2017-12-01 10:59:00"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTask,
+            ]
+        )
 
         # STEP 2: Concent forces computed task report on the requestor
 
@@ -2081,6 +2202,13 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '1',
             subtask_id      = '8',
             timestamp       = "2017-12-01 11:00:05"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTaskResponse,
+            ]
         )
 
         # STEP 4: Concent passes computed task acceptance to the provider
@@ -2185,6 +2313,13 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = '8',
             timestamp       = "2017-12-01 10:59:00"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTask,
+            ]
+        )
 
         # STEP 2: Concent forces computed task report on the requestor
 
@@ -2253,6 +2388,13 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '1',
             subtask_id      = '8',
             timestamp       = "2017-12-01 11:00:05"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTaskResponse,
+            ]
         )
 
         # STEP 4: Concent passes computed task acceptance to the provider
@@ -2363,6 +2505,13 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '1',
             subtask_id      = '8',
             timestamp       = "2017-12-01 10:59:00"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = '8',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceReportComputedTask,
+            ]
         )
 
         # STEP 2: Provider tries to get Ack from Concent before compute_task_def.deadline + CONCENT_MESSAGING_TIME

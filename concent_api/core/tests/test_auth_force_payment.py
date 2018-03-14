@@ -145,4 +145,4 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
         self._assert_stored_message_counter_not_increased()
 
-        self._assert_client_count_is_equal(1) # POSSIBLE BUG
+        self._assert_client_count_is_equal(1)

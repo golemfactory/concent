@@ -251,7 +251,8 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
         self.assertIsInstance(response_202, HttpResponse)
         self.assertEqual(response_202.status_code, 202)
-        self.correct_golem_data.encrypted                                   = None
+        self.correct_golem_data.encrypted  = None
+        self.correct_golem_data.sig        = None
         response_400 = self.client.post(
             reverse('core:send'),
             data = dump(

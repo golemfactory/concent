@@ -93,6 +93,7 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key  = self._get_encoded_provider_public_key(),
             requestor_public_key = self._get_encoded_requestor_public_key(),
         )
+        self._assert_stored_message_counter_increased()
 
         with freeze_time("2018-02-05 12:00:21"):
             response_2 = self.client.post(
@@ -104,6 +105,7 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_204_response(response_2)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 12:00:22"):
             response_3 = self.client.post(
@@ -115,6 +117,7 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_204_response(response_3)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 12:00:23"):
             response_4 = self.client.post(
@@ -134,9 +137,12 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             }
         )
 
-        self._assert_auth_message_counter_increased()
+        self._assert_auth_message_counter_not_increased()
         self._assert_auth_message_last(
             related_message      = message.concents.ForcePaymentCommitted,
             provider_public_key  = self._get_encoded_provider_public_key(),
             requestor_public_key = self._get_encoded_requestor_public_key(),
         )
+        self._assert_stored_message_counter_not_increased()
+
+        self._assert_client_count_is_equal(1)

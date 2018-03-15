@@ -16,9 +16,12 @@ from golem_messages.shortcuts       import load
 from golem_messages                 import message
 from golem_messages.message         import Message as GolemMessage
 
+from core.models                    import Client
 from core.models                    import StoredMessage
-from core.models                    import MessageAuth
+from core.models                    import PendingResponse
 from core.models                    import ReceiveStatus
+from core.tests.utils               import ConcentIntegrationTestCase
+from core.models                    import Subtask
 from utils.helpers                  import get_current_utc_timestamp
 from utils.testing_helpers          import generate_ecc_key_pair
 
@@ -34,15 +37,17 @@ from utils.testing_helpers          import generate_ecc_key_pair
     CONCENT_PUBLIC_KEY     = CONCENT_PUBLIC_KEY,
     CONCENT_MESSAGING_TIME = 3600,
 )
-class CoreViewSendTest(TestCase):
+class CoreViewSendTest(ConcentIntegrationTestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def setUp(self):
-        self.message_timestamp = get_current_utc_timestamp()  # 1510912800
-        self.compute_task_def = message.ComputeTaskDef()
-        self.compute_task_def['task_id'] = '8'
-        self.compute_task_def['deadline'] = self.message_timestamp
-        self.task_to_compute = message.TaskToCompute(
+        self.stored_message_counter         = 0
+        self.message_timestamp              = get_current_utc_timestamp()  # 1510912800
+        self.compute_task_def               = message.ComputeTaskDef()
+        self.compute_task_def['task_id']    = '8'
+        self.compute_task_def['subtask_id'] = '8'
+        self.compute_task_def['deadline']   = self.message_timestamp
+        self.task_to_compute                = message.TaskToCompute(
             compute_task_def = self.compute_task_def,
         )
 
@@ -59,14 +64,19 @@ class CoreViewSendTest(TestCase):
             num_cores           = 7,
         )
 
-        self.task_to_compute_for_cannot_compute_message = message.TaskToCompute()
+        self.task_to_compute_for_cannot_compute_message = message.TaskToCompute(
+            provider_public_key = PROVIDER_PUBLIC_KEY,
+        )
 
         self.cannot_compute_task = message.CannotComputeTask()
-        self.cannot_compute_task.task_to_compute = message.TaskToCompute()
+        self.cannot_compute_task.task_to_compute = message.TaskToCompute(
+            provider_public_key = PROVIDER_PUBLIC_KEY,
+        )
 
         self.cannot_compute_task.task_to_compute.compute_task_def               = message.ComputeTaskDef()
         self.cannot_compute_task.task_to_compute.compute_task_def['deadline']   = self.message_timestamp + 600
         self.cannot_compute_task.task_to_compute.compute_task_def['task_id']    = '8'
+        self.cannot_compute_task.task_to_compute.compute_task_def['subtask_id'] = '8'
 
         self.reject_report_computed_task = message.RejectReportComputedTask()
 
@@ -90,10 +100,19 @@ class CoreViewSendTest(TestCase):
         )
 
         self.assertEqual(response.status_code,                   202)
-        self.assertEqual(len(StoredMessage.objects.all()),       1)
-        self.assertEqual(StoredMessage.objects.last().type,      message.ForceReportComputedTask.TYPE)
         self.assertEqual(len(ReceiveStatus.objects.all()),       1)
-        self.assertEqual(StoredMessage.objects.last().id,        ReceiveStatus.objects.last().message_id)
+        self.assertEqual(StoredMessage.objects.first().id,       ReceiveStatus.objects.last().message_id)
+        self._assert_stored_message_counter_increased(increased_by=3)
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
+                message.TaskToCompute,
+                message.ReportComputedTask,
+            ],
+            task_id         = '8',
+            subtask_id      = '8',
+            timestamp       = "2017-11-17 10:00:00"
+        )
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_200_if_message_timeout(self):
@@ -134,9 +153,10 @@ class CoreViewSendTest(TestCase):
         assert ReceiveStatus.objects.count() == 0
 
         compute_task_def = message.ComputeTaskDef()
-        compute_task_def['task_id'] = 'ABC00XYZ'
-        compute_task_def['deadline'] = self.message_timestamp
-        task_to_compute = message.TaskToCompute(
+        compute_task_def['task_id']     = 'ABC00XYZ'
+        compute_task_def['subtask_id']  = 'ABC00XYZ'
+        compute_task_def['deadline']    = self.message_timestamp
+        task_to_compute                 = message.TaskToCompute(
             compute_task_def = compute_task_def,
         )
 
@@ -160,11 +180,18 @@ class CoreViewSendTest(TestCase):
         )
 
         self.assertEqual(response.status_code,                   202)
-        self.assertEqual(len(StoredMessage.objects.all()),       1)
-        self.assertEqual(StoredMessage.objects.last().type,      message.ForceReportComputedTask.TYPE)
         self.assertEqual(len(ReceiveStatus.objects.all()),       1)
-        self.assertEqual(StoredMessage.objects.last().id,        ReceiveStatus.objects.last().message_id)
-        self.assertEqual(StoredMessage.objects.last().task_id,   compute_task_def['task_id'])
+        self._assert_stored_message_counter_increased(increased_by=3)
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
+                message.TaskToCompute,
+                message.ReportComputedTask,
+            ],
+            task_id         = 'ABC00XYZ',
+            subtask_id      = 'ABC00XYZ',
+            timestamp       = "2017-11-17 10:00:00"
+        )
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_data_is_incorrect(self):
@@ -194,10 +221,10 @@ class CoreViewSendTest(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json().keys())
 
-        data                        = message.ForceReportComputedTask()
-        data.report_computed_task   = message.tasks.ReportComputedTask()
-        compute_task_def['deadline'] = int(dateutil.parser.parse("2017-11-17 9:00:00").timestamp())
-        data.report_computed_task.task_to_compute = message.TaskToCompute(compute_task_def = compute_task_def)
+        data                                        = message.ForceReportComputedTask()
+        data.report_computed_task                   = message.tasks.ReportComputedTask()
+        compute_task_def['deadline']                = self.message_timestamp - 3600
+        data.report_computed_task.task_to_compute   = message.TaskToCompute(compute_task_def = compute_task_def)
 
         response = self.client.post(
             reverse('core:send'),
@@ -230,7 +257,8 @@ class CoreViewSendTest(TestCase):
 
         self.assertIsInstance(response_202, HttpResponse)
         self.assertEqual(response_202.status_code, 202)
-        self.correct_golem_data.encrypted                                   = None
+        self.correct_golem_data.encrypted  = None
+        self.correct_golem_data.sig        = None
         response_400 = self.client.post(
             reverse('core:send'),
             data = dump(
@@ -313,8 +341,8 @@ class CoreViewSendTest(TestCase):
             HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
-        self.assertEqual(force_response.status_code,        202)
-        self.assertEqual(StoredMessage.objects.last().type, message.ForceReportComputedTask.TYPE)
+        self.assertEqual(force_response.status_code,                                202)
+        self.assertEqual(StoredMessage.objects.order_by('timestamp').first().type,  message.ForceReportComputedTask.TYPE)
 
         reject_response = self.client.post(
             reverse('core:send'),
@@ -375,7 +403,8 @@ class CoreViewSendTest(TestCase):
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_task_to_compute_deadline_is_not_an_integer(self):
         compute_task_def = message.ComputeTaskDef()
-        compute_task_def['task_id'] = '8'
+        compute_task_def['task_id']    = '8'
+        compute_task_def['subtask_id'] = '8'
 
         invalid_values = [
             -11,
@@ -430,9 +459,10 @@ class CoreViewSendTest(TestCase):
 
         for i, deadline in enumerate(invalid_values):
             StoredMessage.objects.all().delete()
-            compute_task_def['task_id'] = str(i)
-            compute_task_def['deadline'] = deadline
-            task_to_compute = message.TaskToCompute(
+            compute_task_def['task_id']     = str(i)
+            compute_task_def['subtask_id']  = str(i)
+            compute_task_def['deadline']    = deadline
+            task_to_compute                 = message.TaskToCompute(
                 compute_task_def = compute_task_def,
             )
 
@@ -470,10 +500,11 @@ class CoreViewSendTest(TestCase):
 class CoreViewReceiveTest(TestCase):
 
     def setUp(self):
-        self.compute_task_def = message.ComputeTaskDef()
-        self.compute_task_def['task_id'] = '1'
-        self.compute_task_def['deadline'] = int(dateutil.parser.parse("2017-11-17 10:37:00").timestamp())
         with freeze_time("2017-11-17 10:00:00"):
+            self.compute_task_def               = message.ComputeTaskDef()
+            self.compute_task_def['task_id']    = '1'
+            self.compute_task_def['subtask_id'] = '1'
+            self.compute_task_def['deadline']   = get_current_utc_timestamp() + (60 * 37)
             self.task_to_compute = message.TaskToCompute(
                 compute_task_def = self.compute_task_def,
             )
@@ -485,31 +516,59 @@ class CoreViewReceiveTest(TestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def test_receive_should_accept_valid_message(self):
-        message_timestamp   = datetime.datetime.now(timezone.utc)
-        new_message         = StoredMessage(
-            type        = self.force_golem_data.TYPE,
+        message_timestamp = datetime.datetime.now(timezone.utc)
+        new_message       = StoredMessage(
+            type        = self.force_golem_data.report_computed_task.TYPE,
             timestamp   = message_timestamp,
-            data        = self.force_golem_data.serialize(),
-            task_id     = self.task_to_compute.compute_task_def['task_id']  # pylint: disable=no-member
+            data        = self.force_golem_data.report_computed_task.serialize(),
+            task_id     = self.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id  = self.task_to_compute.compute_task_def['subtask_id'],  # pylint: disable=no-member
         )
         new_message.full_clean()
         new_message.save()
-        new_message_status = ReceiveStatus(
-            message   = new_message,
-            timestamp = message_timestamp,
-            delivered = False
-        )
-        new_message_status.full_clean()
-        new_message_status.save()
-        new_message_auth = MessageAuth(
-            message                    = new_message,
-            provider_public_key_bytes  = PROVIDER_PUBLIC_KEY,
-            requestor_public_key_bytes = REQUESTOR_PUBLIC_KEY,
-        )
-        new_message_auth.full_clean()
-        new_message_auth.save()
 
-        assert len(ReceiveStatus.objects.filter(delivered=False)) == 1
+        client_provider = Client(
+            public_key_bytes = PROVIDER_PUBLIC_KEY
+        )
+        client_provider.full_clean()
+        client_provider.save()
+
+        client_requestor = Client(
+            public_key_bytes = REQUESTOR_PUBLIC_KEY
+        )
+        client_requestor.full_clean()
+        client_requestor.save()
+
+        task_to_compute_message = StoredMessage(
+            type        = self.task_to_compute.TYPE,
+            timestamp   = message_timestamp,
+            data        = self.task_to_compute.serialize(),
+            task_id     = self.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id  = self.task_to_compute.compute_task_def['subtask_id'],  # pylint: disable=no-member
+        )
+        task_to_compute_message.full_clean()
+        task_to_compute_message.save()
+
+        subtask = Subtask(
+            task_id                 = self.compute_task_def['task_id'],
+            subtask_id              = self.compute_task_def['subtask_id'],
+            task_to_compute         = task_to_compute_message,
+            report_computed_task    = new_message,
+            state                   = Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
+            provider                = client_provider,
+            requestor               = client_requestor,
+        )
+        subtask.full_clean()
+        subtask.save()
+
+        new_message_inbox = PendingResponse(
+            response_type = PendingResponse.ResponseType.ForceReportComputedTask.name,  # pylint: disable=no-member
+            client        = client_requestor,
+            queue         = PendingResponse.Queue.Receive.name,  # pylint: disable=no-member
+            subtask       = subtask,
+        )
+        new_message_inbox.full_clean()
+        new_message_inbox.save()
 
         response = self.client.post(
             reverse('core:receive'),
@@ -522,8 +581,9 @@ class CoreViewReceiveTest(TestCase):
             REQUESTOR_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY,
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(new_message.task_id, decoded_response.report_computed_task.task_to_compute.compute_task_def['task_id'])
+        self.assertEqual(response.status_code,   200)
+        self.assertEqual(new_message.task_id,    decoded_response.report_computed_task.task_to_compute.compute_task_def['task_id'])
+        self.assertEqual(new_message.subtask_id, decoded_response.report_computed_task.task_to_compute.compute_task_def['subtask_id'])
 
     @freeze_time("2017-11-17 10:00:00")
     def test_receive_return_http_204_if_no_messages_in_database(self):
@@ -536,14 +596,14 @@ class CoreViewReceiveTest(TestCase):
 
         self.assertEqual(response.status_code, 204)
         self.assertEqual(response.content.decode(), '')
-        assert len(ReceiveStatus.objects.filter(delivered=False)) == 0
 
     def test_receive_should_return_ack_if_the_receive_queue_contains_only_force_report_and_its_past_deadline(self):
-        self.compute_task_def               = message.ComputeTaskDef()
-        self.compute_task_def['task_id']    = '2'
-        self.compute_task_def['deadline']   = int(dateutil.parser.parse("2017-11-17 10:00:00").timestamp())
 
         with freeze_time("2017-11-17 10:00:00"):
+            self.compute_task_def               = message.ComputeTaskDef()
+            self.compute_task_def['task_id']    = '2'
+            self.compute_task_def['subtask_id'] = '2'
+            self.compute_task_def['deadline']   = get_current_utc_timestamp()
             self.task_to_compute = message.TaskToCompute(
                 compute_task_def    = self.compute_task_def,
             )
@@ -553,28 +613,85 @@ class CoreViewReceiveTest(TestCase):
                 )
             )
 
+    def test_receive_should_return_first_messages_in_order_they_were_added_to_queue_if_the_receive_queue_contains_only_force_report_and_its_past_deadline(self):
         message_timestamp = datetime.datetime.now(timezone.utc)
-        new_message = StoredMessage(
-            type        = self.force_golem_data.TYPE,
+        new_message       = StoredMessage(
+            type        = self.force_golem_data.report_computed_task.TYPE,
             timestamp   = message_timestamp,
-            data        = self.force_golem_data.serialize(),
-            task_id     = self.task_to_compute.compute_task_def['task_id']  # pylint: disable=no-member
+            data        = self.force_golem_data.report_computed_task.serialize(),
+            task_id     = self.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id  = self.task_to_compute.compute_task_def['subtask_id'],  # pylint: disable=no-member
         )
         new_message.full_clean()
         new_message.save()
-        new_message_status = ReceiveStatus(
-            message   = new_message,
-            timestamp = message_timestamp,
-            delivered = False
-        )
-        new_message_status.full_clean()
-        new_message_status.save()
 
-        MessageAuth.objects.create(
-            message                    = new_message,
-            provider_public_key_bytes  = PROVIDER_PUBLIC_KEY,
-            requestor_public_key_bytes = REQUESTOR_PUBLIC_KEY,
+        task_to_compute_message = StoredMessage(
+            type        = self.task_to_compute.TYPE,
+            timestamp   = message_timestamp,
+            data        = self.task_to_compute.serialize(),
+            task_id     = self.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id  = self.task_to_compute.compute_task_def['subtask_id'],  # pylint: disable=no-member
         )
+        task_to_compute_message.full_clean()
+        task_to_compute_message.save()
+
+        ack_report_computed_task = message.concents.AckReportComputedTask(
+            task_to_compute = self.task_to_compute,
+            subtask_id      = self.task_to_compute.compute_task_def['subtask_id']  # pylint: disable=no-member
+        )
+
+        stored_ack_report_computed_task = StoredMessage(
+            type        = ack_report_computed_task.TYPE,
+            timestamp   = message_timestamp,
+            data        = ack_report_computed_task.serialize(),
+            task_id     = self.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id  = self.task_to_compute.compute_task_def['subtask_id'],  # pylint: disable=no-member
+        )
+        stored_ack_report_computed_task.full_clean()
+        stored_ack_report_computed_task.save()
+
+        client_provider = Client(
+            public_key_bytes = PROVIDER_PUBLIC_KEY
+        )
+        client_provider.full_clean()
+        client_provider.save()
+
+        client_requestor = Client(
+            public_key_bytes = REQUESTOR_PUBLIC_KEY
+        )
+        client_requestor.full_clean()
+        client_requestor.save()
+
+        subtask = Subtask(
+            task_id                  = self.compute_task_def['task_id'],
+            subtask_id               = self.compute_task_def['subtask_id'],
+            report_computed_task     = new_message,
+            task_to_compute          = task_to_compute_message,
+            ack_report_computed_task = stored_ack_report_computed_task,
+            state                    = Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
+            provider                 = client_provider,
+            requestor                = client_requestor,
+        )
+        subtask.full_clean()
+        subtask.save()
+
+        new_message_inbox = PendingResponse(
+            response_type = PendingResponse.ResponseType.ForceReportComputedTask.name,  # pylint: disable=no-member
+            client        = client_requestor,
+            queue         = PendingResponse.Queue.Receive.name,  # pylint: disable=no-member
+            subtask       = subtask,
+        )
+        new_message_inbox.full_clean()
+        new_message_inbox.save()
+
+        new_message_inbox_out_of_band = PendingResponse(
+            response_type = PendingResponse.ResponseType.VerdictReportComputedTask.name,  # pylint: disable=no-member
+            client        = client_requestor,
+            queue         = PendingResponse.Queue.ReceiveOutOfBand.name,  # pylint: disable=no-member
+            subtask       = subtask,
+        )
+        new_message_inbox_out_of_band.full_clean()
+        new_message_inbox_out_of_band.save()
 
         with freeze_time("2017-11-17 12:00:00"):
             response = self.client.post(
@@ -591,14 +708,34 @@ class CoreViewReceiveTest(TestCase):
             check_time = False,
         )
 
-        undelivered_messages = ReceiveStatus.objects.filter(delivered = False).count()
+        self.assertIsInstance(decoded_message,                                                  message.concents.ForceReportComputedTask)
+        self.assertEqual(response.status_code,                                                  200)
+        self.assertEqual(decoded_message.timestamp,                                             int(dateutil.parser.parse("2017-11-17 12:00:00").timestamp()))
+        self.assertEqual(decoded_message.report_computed_task.task_to_compute.compute_task_def, self.task_to_compute.compute_task_def)  # pylint: disable=no-member
+        self.assertEqual(decoded_message.report_computed_task.task_to_compute.sig,              self.task_to_compute.sig)
+        self.assertEqual(decoded_message.report_computed_task.subtask_id,                       None)
 
-        self.assertIsInstance(decoded_message,                                                      message.concents.ForceReportComputedTaskResponse)
+        with freeze_time("2017-11-17 12:00:00"):
+            response = self.client.post(
+                reverse('core:receive_out_of_band'),
+                content_type                   = 'application/octet-stream',
+                data                           = '',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
+            )
+
+        decoded_message = load(
+            response.content,
+            REQUESTOR_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
+            check_time = False,
+        )
+
+        self.assertIsInstance(decoded_message,                                                      message.concents.VerdictReportComputedTask)
         self.assertEqual(response.status_code,                                                      200)
-        self.assertEqual(undelivered_messages,                                                      0)
         self.assertEqual(decoded_message.timestamp,                                                 int(dateutil.parser.parse("2017-11-17 12:00:00").timestamp()))
         self.assertEqual(decoded_message.ack_report_computed_task.task_to_compute.compute_task_def, self.task_to_compute.compute_task_def)  # pylint: disable=no-member
-        self.assertEqual(decoded_message.ack_report_computed_task.subtask_id,                       None)
+        self.assertEqual(decoded_message.ack_report_computed_task.task_to_compute.sig,              self.task_to_compute.sig)
+        self.assertEqual(decoded_message.ack_report_computed_task.subtask_id,                       '1')
 
 
 @override_settings(
@@ -608,12 +745,12 @@ class CoreViewReceiveTest(TestCase):
 )
 class CoreViewReceiveOutOfBandTest(TestCase):
 
-    @freeze_time("2017-11-17 10:00:00")
     def setUp(self):
-        self.compute_task_def = message.ComputeTaskDef()
-        self.compute_task_def['task_id'] = '1'
-        self.compute_task_def['deadline'] = int(dateutil.parser.parse("2017-11-17 9:59:00").timestamp())
-        self.task_to_compute = message.TaskToCompute(
+        self.compute_task_def               = message.ComputeTaskDef()
+        self.compute_task_def['task_id']    = '1'
+        self.compute_task_def['subtask_id'] = '1'
+        self.compute_task_def['deadline']   = get_current_utc_timestamp() - 60
+        self.task_to_compute                = message.TaskToCompute(
             compute_task_def = self.compute_task_def,
         )
 
@@ -622,22 +759,82 @@ class CoreViewReceiveOutOfBandTest(TestCase):
                 task_to_compute = self.task_to_compute
             )
         )
-        assert self.force_golem_data.timestamp == 1510912800
 
-        message_timestamp   = datetime.datetime.now(timezone.utc)
-        new_message         = StoredMessage(
-            type        = self.force_golem_data.TYPE,
+        with freeze_time("2017-11-17 10:00:00"):
+            self.force_golem_data = message.ForceReportComputedTask(
+                report_computed_task = message.tasks.ReportComputedTask(
+                    task_to_compute = self.task_to_compute
+                )
+            )
+        message_timestamp = datetime.datetime.now(timezone.utc)
+        new_message       = StoredMessage(
+            type        = self.force_golem_data.report_computed_task.TYPE,
             timestamp   = message_timestamp,
-            data        = self.force_golem_data.serialize(),
-            task_id     = self.force_golem_data.report_computed_task.task_to_compute.compute_task_def['task_id'],
+            data        = self.force_golem_data.report_computed_task.serialize(),
+            task_id     = self.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id  = self.task_to_compute.compute_task_def['subtask_id'],  # pylint: disable=no-member
         )
         new_message.full_clean()
         new_message.save()
-        MessageAuth.objects.create(
-            message                    = new_message,
-            provider_public_key_bytes  = PROVIDER_PUBLIC_KEY,
-            requestor_public_key_bytes = REQUESTOR_PUBLIC_KEY,
+
+        task_to_compute_message = StoredMessage(
+            type        = self.task_to_compute.TYPE,
+            timestamp   = message_timestamp,
+            data        = self.task_to_compute.serialize(),
+            task_id     = self.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id  = self.task_to_compute.compute_task_def['subtask_id'],  # pylint: disable=no-member
         )
+        task_to_compute_message.full_clean()
+        task_to_compute_message.save()
+
+        ack_report_computed_task = message.concents.AckReportComputedTask(
+            task_to_compute = self.task_to_compute,
+            subtask_id      = self.task_to_compute.compute_task_def['subtask_id']  # pylint: disable=no-member
+        )
+
+        stored_ack_report_computed_task = StoredMessage(
+            type        = ack_report_computed_task.TYPE,
+            timestamp   = message_timestamp,
+            data        = ack_report_computed_task.serialize(),
+            task_id     = self.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id  = self.task_to_compute.compute_task_def['subtask_id'],  # pylint: disable=no-member
+        )
+        stored_ack_report_computed_task.full_clean()
+        stored_ack_report_computed_task.save()
+
+        client_provider = Client(
+            public_key_bytes = PROVIDER_PUBLIC_KEY
+        )
+        client_provider.full_clean()
+        client_provider.save()
+
+        client_requestor = Client(
+            public_key_bytes = REQUESTOR_PUBLIC_KEY
+        )
+        client_requestor.full_clean()
+        client_requestor.save()
+
+        subtask = Subtask(
+            task_id                  = self.compute_task_def['task_id'],
+            subtask_id               = self.compute_task_def['subtask_id'],
+            report_computed_task     = new_message,
+            task_to_compute          = task_to_compute_message,
+            ack_report_computed_task = stored_ack_report_computed_task,
+            state                    = Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
+            provider                 = client_provider,
+            requestor                = client_requestor,
+        )
+        subtask.full_clean()
+        subtask.save()
+
+        new_message_inbox = PendingResponse(
+            response_type = PendingResponse.ResponseType.ForceReportComputedTask.name,  # pylint: disable=no-member
+            client        = client_requestor,
+            queue         = PendingResponse.Queue.ReceiveOutOfBand.name,  # pylint: disable=no-member
+            subtask       = subtask,
+        )
+        new_message_inbox.full_clean()
+        new_message_inbox.save()
 
     @freeze_time("2017-11-17 11:40:00")
     def test_view_receive_out_of_band_should_accept_valid_message(self):

@@ -6,6 +6,7 @@ from freezegun              import freeze_time
 from golem_messages         import message
 
 from core.models            import ReceiveStatus
+from core.models            import Subtask
 from core.tests.utils       import ConcentIntegrationTestCase
 from utils.testing_helpers  import generate_ecc_key_pair
 
@@ -54,7 +55,8 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp   = "2018-02-05 10:00:00",
                     deadline    = "2018-02-05 10:00:10",
-                    task_id     = '2',
+                    task_id     = "2",
+                    subtask_id  = "xxyyzz",
                 )
             )
         )
@@ -74,7 +76,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_database_objects(
             last_object_type         = message.concents.ForceSubtaskResults,
-            task_id                  = '2',
+            task_id                  = "2",
             receive_delivered_status = False,
         )
         self._assert_auth_message_counter_increased()
@@ -83,18 +85,39 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key  = self._get_encoded_provider_public_key(),
             requestor_public_key = self._get_encoded_requestor_public_key(),
         )
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                      = '2',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.FORCING_ACCEPTANCE,
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
+            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
+        )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
+                message.TaskToCompute,
+                message.AckReportComputedTask,
+            ],
+            task_id         = '2',
+            subtask_id      = 'xxyyzz',
+            timestamp       = "2018-02-05 10:00:25"
+        )
 
         # STEP 2: Different provider forces subtask results via Concent with message with the same task_id with different keys.
-        # Request is processed correctly.
+        # Request is refused because same subtask_id is used.
         different_serialized_force_subtask_results = self._get_serialized_force_subtask_results(
             timestamp                = "2018-02-05 10:00:15",
             ack_report_computed_task = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2018-02-05 10:00:15",
                 subtask_id      = "xxyyzz",
                 task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp = "2018-02-05 10:00:00",
-                    deadline  = "2018-02-05 10:00:10",
-                    task_id   = '2',
+                    timestamp   = "2018-02-05 10:00:00",
+                    deadline    = "2018-02-05 10:00:10",
+                    task_id     = "2",
+                    subtask_id  = "xxyyzz",
                 )
             ),
             provider_private_key = self.DIFFERENT_PROVIDER_PRIVATE_KEY,
@@ -110,20 +133,19 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
-        assert len(response.content)  == 0
-        assert response.status_code   == 202
+        self._test_response(
+            response,
+            status       = 200,
+            key          = self.DIFFERENT_PROVIDER_PRIVATE_KEY,
+            message_type = message.concents.ServiceRefused,
+            fields       = {
+                'reason':    message.concents.ServiceRefused.REASON.DuplicateRequest,
+                'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 10:00:31"),
+            }
+        )
+        self._assert_auth_message_counter_not_increased()
 
-        self._test_database_objects(
-            last_object_type         = message.concents.ForceSubtaskResults,
-            task_id                  = '2',
-            receive_delivered_status = False,
-        )
-        self._assert_auth_message_counter_increased()
-        self._assert_auth_message_last(
-            related_message      = message.concents.ForceSubtaskResults,
-            provider_public_key  = self._get_encoded_key(self.DIFFERENT_PROVIDER_PUBLIC_KEY),
-            requestor_public_key = self._get_encoded_requestor_public_key(),
-        )
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 3: Provider again forces subtask results via Concent with message with the same task_id with correct keys.
         # Request is refused.
@@ -149,6 +171,10 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
         self._assert_auth_message_counter_not_increased()
 
+        self._assert_stored_message_counter_not_increased()
+
+        self._assert_client_count_is_equal(2)
+
     def test_requestor_should_receive_subtask_results_from_concent_with_correct_keys(self):
         """
         Test if Provider submitted ForceSubtaskResults, Concent will return message to Requestor with new timestamp
@@ -171,7 +197,8 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp   = "2018-02-05 10:00:00",
                     deadline    = "2018-02-05 10:00:10",
-                    task_id     = '2',
+                    task_id     = "2",
+                    subtask_id  = "xxyyzz",
                 )
             )
         )
@@ -200,6 +227,26 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key  = self._get_encoded_provider_public_key(),
             requestor_public_key = self._get_encoded_requestor_public_key(),
         )
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                      = '2',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.FORCING_ACCEPTANCE,
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
+            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:50"),
+        )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
+                message.TaskToCompute,
+                message.AckReportComputedTask,
+            ],
+            task_id         = '2',
+            subtask_id      = 'xxyyzz',
+            timestamp       = "2018-02-05 10:00:31"
+        )
 
         # STEP 2: Different requestor or provider does not receive forces subtask results via Concent with different or mixed key.
         with freeze_time("2018-02-05 10:00:29"):
@@ -212,6 +259,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_204_response(response)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 10:00:29"):
             response = self.client.post(
@@ -223,6 +271,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_204_response(response)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 3: Requestor receives forces subtask results via Concent with correct key.
         with freeze_time("2018-02-05 10:00:29"):
@@ -236,6 +285,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         deserialized_compute_task_def = self._get_deserialized_compute_task_def(
             deadline    = "2018-02-05 10:00:10",
             task_id     = '2',
+            subtask_id  = "xxyyzz",
         )
         self._test_response(
             response,
@@ -249,6 +299,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             }
         )
         self.assertEqual(ReceiveStatus.objects.last().delivered, True)
+        self._assert_stored_message_counter_increased()
+
+        self._assert_client_count_is_equal(2)
 
     def test_requestor_sends_subtask_results_accepted_and_concent_should_return_it_to_provider_with_correct_keys(self):
         """
@@ -278,7 +331,8 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp   = "2018-02-05 10:00:00",
                     deadline    = "2018-02-05 10:00:10",
-                    task_id     = '2',
+                    task_id     = "2",
+                    subtask_id  = "xxyyzz",
                 )
             )
         )
@@ -302,6 +356,26 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key  = self._get_encoded_provider_public_key(),
             requestor_public_key = self._get_encoded_requestor_public_key(),
         )
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                      = '2',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.FORCING_ACCEPTANCE,
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
+            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
+        )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
+                message.TaskToCompute,
+                message.AckReportComputedTask,
+            ],
+            task_id         = '2',
+            subtask_id      = 'xxyyzz',
+            timestamp       = "2018-02-05 10:00:30"
+        )
 
         # STEP 2: Different requestor or provider does not receive forces subtask results via Concent with different or mixed key.
         with freeze_time("2018-02-05 10:00:24"):
@@ -314,6 +388,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_204_response(response)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 10:00:24"):
             response = self.client.post(
@@ -325,6 +400,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_204_response(response)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 3: Requestor receives forces subtask results via Concent with correct key.
         with freeze_time("2018-02-05 10:00:24"):
@@ -352,12 +428,14 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key  = self._get_encoded_provider_public_key(),
             requestor_public_key = self._get_encoded_requestor_public_key(),
         )
+        self._assert_stored_message_counter_increased()
 
         # STEP 4: Different requestor or provider sends forces subtask results response via Concent with different or mixed key.
         # Request is rejected.
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id  = '2',
-            deadline = "2018-02-05 11:00:00",
+            task_id     = '2',
+            subtask_id  = "xxyyzz",
+            deadline    = "2018-02-05 11:00:00",
         )
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
@@ -384,6 +462,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_400_response(response)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.PROVIDER_PRIVATE_KEY,
@@ -409,6 +488,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_400_response(response)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 5: Requestor sends forces subtask results response via Concent with correct keys.
         # Request is processed correctly.
@@ -445,6 +525,24 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key  = self._get_encoded_provider_public_key(),
             requestor_public_key = self._get_encoded_requestor_public_key(),
         )
+        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._test_subtask_state(
+            task_id                      = '2',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.ACCEPTED,
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task', 'subtask_results_accepted'},
+        )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceSubtaskResultsResponse,  # TODO: Remove in final step
+                message.tasks.SubtaskResultsAccepted,
+            ],
+            task_id         = '2',
+            subtask_id      = 'xxyyzz',
+            timestamp       = "2018-02-05 10:00:44"
+        )
 
         # STEP 6: Different provider or requestor does not receive forces subtask results via Concent with different or mixed key.
         with freeze_time("2018-02-05 11:00:02"):
@@ -457,6 +555,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_204_response(response)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 11:00:02"):
             response = self.client.post(
@@ -468,6 +567,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_204_response(response)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 7: Provider does receives forces subtask results via Concent with correct key.
         with freeze_time("2018-02-05 11:00:02"):
@@ -502,6 +602,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key  = self._get_encoded_provider_public_key(),
             requestor_public_key = self._get_encoded_requestor_public_key(),
         )
+        self._assert_stored_message_counter_increased()
+
+        self._assert_client_count_is_equal(2)
 
     def test_requestor_sends_subtask_results_rejected_and_concent_should_return_it_to_provider_with_correct_keys(self):
         """
@@ -529,7 +632,8 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp   = "2018-02-05 10:00:00",
                     deadline    = "2018-02-05 10:00:10",
-                    task_id     = '2',
+                    task_id     = "2",
+                    subtask_id  = "xxyyzz",
                 )
             )
         )
@@ -553,6 +657,26 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key  = self._get_encoded_provider_public_key(),
             requestor_public_key = self._get_encoded_requestor_public_key(),
         )
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                      = '2',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.FORCING_ACCEPTANCE,
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
+            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
+        )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
+                message.TaskToCompute,
+                message.AckReportComputedTask,
+            ],
+            task_id         = '2',
+            subtask_id      = 'xxyyzz',
+            timestamp       = "2018-02-05 10:00:30"
+        )
 
         # STEP 2: Different requestor or provider does not receive forces subtask results via Concent with different or mixed key.
         with freeze_time("2018-02-05 10:00:24"):
@@ -565,6 +689,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_204_response(response)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 10:00:24"):
             response = self.client.post(
@@ -576,6 +701,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_204_response(response)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 3: Requestor receives forces subtask results via Concent with correct key.
         with freeze_time("2018-02-05 10:00:24"):
@@ -603,6 +729,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key  = self._get_encoded_provider_public_key(),
             requestor_public_key = self._get_encoded_requestor_public_key(),
         )
+        self._assert_stored_message_counter_increased()
 
         # STEP 4: Different requestor or provider sends forces subtask results response via Concent with different or mixed key.
         # Request is rejected.
@@ -614,11 +741,12 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reason               = message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
                 report_computed_task = self._get_deserialized_report_computed_task(
                     timestamp       = "2018-02-05 10:00:43",
-                    subtask_id      = '2',
+                    subtask_id      = "xxyyzz",
                     task_to_compute = self._get_deserialized_task_to_compute(
-                        timestamp = "2018-02-05 10:00:43",
-                        deadline  = "2018-02-05 10:00:44",
-                        task_id   = '2',
+                        timestamp   = "2018-02-05 10:00:43",
+                        deadline    = "2018-02-05 10:00:44",
+                        task_id     = '2',
+                        subtask_id  = "xxyyzz",
                     )
                 )
             )
@@ -635,6 +763,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_400_response(response)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key    = self.PROVIDER_PRIVATE_KEY,
@@ -644,11 +773,12 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reason               = message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
                 report_computed_task = self._get_deserialized_report_computed_task(
                     timestamp       = "2018-02-05 10:00:43",
-                    subtask_id      = '2',
+                    subtask_id      = "xxyyzz",
                     task_to_compute = self._get_deserialized_task_to_compute(
-                        timestamp = "2018-02-05 10:00:43",
-                        deadline  = "2018-02-05 10:00:44",
-                        task_id   = '2',
+                        timestamp   = "2018-02-05 10:00:43",
+                        deadline    = "2018-02-05 10:00:44",
+                        task_id     = '2',
+                        subtask_id  = "xxyyzz",
                     )
                 )
             )
@@ -665,6 +795,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_400_response(response)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 5: Requestor sends forces subtask results response via Concent with correct keys.
         # Request is processed correctly.
@@ -676,11 +807,12 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reason                  = message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
                 report_computed_task    = self._get_deserialized_report_computed_task(
                     timestamp   = "2018-02-05 10:00:43",
-                    subtask_id  = '2',
+                    subtask_id  = "xxyyzz",
                     task_to_compute = self._get_deserialized_task_to_compute(
                         timestamp   = "2018-02-05 10:00:43",
                         deadline    = "2018-02-05 10:00:44",
                         task_id     = '2',
+                        subtask_id  = "xxyyzz",
                     )
                 )
             )
@@ -706,6 +838,25 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key  = self._get_encoded_provider_public_key(),
             requestor_public_key = self._get_encoded_requestor_public_key(),
         )
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                      = '2',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.REJECTED,
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'report_computed_task', 'ack_report_computed_task', 'subtask_results_rejected'},
+        )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceSubtaskResultsResponse,  # TODO: Remove in final step
+                message.tasks.ReportComputedTask,
+                message.tasks.SubtaskResultsRejected,
+            ],
+            task_id         = '2',
+            subtask_id      = 'xxyyzz',
+            timestamp       = "2018-02-05 10:00:44"
+        )
 
         # STEP 6: Different provider or requestor does not receive forces subtask results via Concent with different or mixed key.
         with freeze_time("2018-02-05 11:00:02"):
@@ -718,6 +869,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_204_response(response)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 11:00:02"):
             response = self.client.post(
@@ -729,6 +881,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_204_response(response)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 7: Provider does receives forces subtask results via Concent with correct key.
         with freeze_time("2018-02-05 11:00:02"):
@@ -749,7 +902,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'subtask_results_rejected.timestamp':                       self._parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
                 'subtask_results_rejected.reason':                          message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
                 'subtask_results_rejected.report_computed_task.timestamp':  self._parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
-                'subtask_results_rejected.report_computed_task.subtask_id': '2'
+                'subtask_results_rejected.report_computed_task.subtask_id': 'xxyyzz'
             }
         )
 
@@ -764,6 +917,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key  = self._get_encoded_provider_public_key(),
             requestor_public_key = self._get_encoded_requestor_public_key(),
         )
+        self._assert_stored_message_counter_increased()
+
+        self._assert_client_count_is_equal(2)
 
     def test_requestor_doesnt_provide_response_should_end_with_subtask_results_settled_received_from_concent_with_correct_keys(self):
         """
@@ -790,6 +946,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     timestamp   = "2018-02-05 10:00:00",
                     deadline    = "2018-02-05 10:00:10",
                     task_id     = '1',
+                    subtask_id  = "xxyyzz",
                 )
             )
         )
@@ -818,6 +975,26 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key     = self._get_encoded_provider_public_key(),
             requestor_public_key    = self._get_encoded_requestor_public_key(),
         )
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                      = '1',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.FORCING_ACCEPTANCE,
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
+            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:50"),
+        )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
+                message.TaskToCompute,
+                message.AckReportComputedTask,
+            ],
+            task_id         = '1',
+            subtask_id      = 'xxyyzz',
+            timestamp       = "2018-02-05 10:00:30"
+        )
 
         # STEP 2: Different requestor or provider does not receive forces subtask results via Concent with different or mixed key.
         with freeze_time("2018-02-05 10:00:24"):
@@ -830,6 +1007,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_204_response(response)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 10:00:24"):
             response = self.client.post(
@@ -841,6 +1019,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_204_response(response)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 3: Requestor receives forces subtask results via Concent with correct key.
         with freeze_time("2018-02-05 10:00:24"):
@@ -853,6 +1032,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         deserialized_compute_task_def = self._get_deserialized_compute_task_def(
             deadline    = "2018-02-05 10:00:10",
             task_id     = '1',
+            subtask_id  = "xxyyzz",
         )
         self._test_response(
             response,
@@ -871,6 +1051,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key     = self._get_encoded_provider_public_key(),
             requestor_public_key    = self._get_encoded_requestor_public_key(),
         )
+        self._assert_stored_message_counter_increased()
 
         # STEP 4: Different requestor does not receive subtask result settled via Concent with different key.
         with mock.patch('core.views.base.make_forced_payment', _get_requestor_account_status):
@@ -884,6 +1065,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_204_response(response)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 5: Requestor receives subtask result settled via Concent with correct key.
         with mock.patch('core.views.base.make_forced_payment', _get_requestor_account_status):
@@ -910,6 +1092,16 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key  = self._get_encoded_provider_public_key(),
             requestor_public_key = self._get_encoded_requestor_public_key(),
         )
+        self._assert_stored_message_counter_increased()
+        self._test_subtask_state(
+            task_id                      = '1',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.FORCING_ACCEPTANCE,  # TODO: Should be ACCEPTED
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},  # TODO Add subtask_results_accepted if state=ACCEPTED
+            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:50"),  # TODO: Remove if state=ACCEPTED
+        )
 
         # STEP 6: Different provider does not receive subtask result settled via Concent with different key.
         with freeze_time("2018-02-05 10:00:51"):
@@ -921,6 +1113,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         self._test_204_response(response)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 7: Provider receives subtask result settled via Concent with correct key.
         with freeze_time("2018-02-05 10:00:51"):
@@ -946,6 +1139,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key  = self._get_encoded_provider_public_key(),
             requestor_public_key = self._get_encoded_requestor_public_key(),
         )
+        self._assert_stored_message_counter_increased()
+
+        self._assert_client_count_is_equal(2)
 
     def test_requestor_doesnt_provide_response_should_end_with_subtask_results_settled_received_from_concent_different_configuration_with_correct_keys(self):
         """
@@ -972,6 +1168,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     timestamp   = "2018-02-05 10:00:00",
                     deadline    = "2018-02-05 10:00:10",
                     task_id     = '1',
+                    subtask_id  = "xxyyzz",
                 )
             )
         )
@@ -1000,6 +1197,26 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key     = self._get_encoded_provider_public_key(),
             requestor_public_key    = self._get_encoded_requestor_public_key(),
         )
+        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._test_subtask_state(
+            task_id                      = '1',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.FORCING_ACCEPTANCE,
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
+            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:50"),
+        )
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
+                message.TaskToCompute,
+                message.AckReportComputedTask,
+            ],
+            task_id         = '1',
+            subtask_id      = 'xxyyzz',
+            timestamp       = "2018-02-05 10:00:30"
+        )
 
         # STEP 2: Different requestor or provider does not receive forces subtask results via Concent with different or mixed key.
         with freeze_time("2018-02-05 10:00:24"):
@@ -1023,6 +1240,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_204_response(response)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 3: Requestor receives forces subtask results via Concent with correct key.
         with freeze_time("2018-02-05 10:00:24"):
@@ -1035,6 +1253,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         deserialized_compute_task_def = self._get_deserialized_compute_task_def(
             deadline    = "2018-02-05 10:00:10",
             task_id     = '1',
+            subtask_id  = "xxyyzz",
         )
         self._test_response(
             response,
@@ -1053,6 +1272,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key     = self._get_encoded_provider_public_key(),
             requestor_public_key    = self._get_encoded_requestor_public_key(),
         )
+        self._assert_stored_message_counter_increased()
 
         # STEP 4: Different provider does not receive subtask result settled via Concent with different key.
         with freeze_time("2018-02-05 10:00:51"):
@@ -1064,6 +1284,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         self._test_204_response(response)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 5: Provider receives subtask result settled via Concent with correct key.
         with freeze_time("2018-02-05 10:00:51"):
@@ -1089,6 +1310,16 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key  = self._get_encoded_provider_public_key(),
             requestor_public_key = self._get_encoded_requestor_public_key(),
         )
+        self._assert_stored_message_counter_increased()
+        self._test_subtask_state(
+            task_id                      = '1',
+            subtask_id                   = 'xxyyzz',
+            subtask_state                = Subtask.SubtaskState.FORCING_ACCEPTANCE,  # TODO: Should be ACCEPTED
+            provider_key                 = self._get_encoded_provider_public_key(),
+            requestor_key                = self._get_encoded_requestor_public_key(),
+            expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},  # TODO: Add subtask_results_accepted if state=ACCEPTED
+            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:50"),  # TODO: Remove if state=ACCEPTED
+        )
 
         # STEP 6: Different requestor does not receive subtask result settled via Concent with different key.
         with mock.patch('core.views.base.make_forced_payment', _get_requestor_account_status):
@@ -1102,6 +1333,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_204_response(response)
         self._assert_auth_message_counter_not_increased()
+        self._assert_stored_message_counter_not_increased()
 
         # STEP 7: Requestor receives subtask result settled via Concent with correct key.
         with mock.patch('core.views.base.make_forced_payment', _get_requestor_account_status):
@@ -1128,3 +1360,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key  = self._get_encoded_provider_public_key(),
             requestor_public_key = self._get_encoded_requestor_public_key(),
         )
+        self._assert_stored_message_counter_increased()
+
+        self._assert_client_count_is_equal(2)

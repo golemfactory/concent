@@ -13,7 +13,9 @@ from freezegun              import freeze_time
 from golem_messages         import dump
 from golem_messages         import load
 from golem_messages         import message
+from core.models            import Client
 from core.models            import StoredMessage
+from core.models            import Subtask
 from core.models            import MessageAuth
 from core.models            import ReceiveStatus
 
@@ -30,6 +32,9 @@ class ConcentIntegrationTestCase(TestCase):
         (self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY)   = generate_ecc_key_pair()
         (self.DIFFERENT_PROVIDER_PRIVATE_KEY, self.DIFFERENT_PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
         (self.DIFFERENT_REQUESTOR_PRIVATE_KEY, self.DIFFERENT_REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
+
+        # StoredMessage
+        self.stored_message_counter = 0
 
         # Auth
         self.auth_message_counter = 0
@@ -80,7 +85,7 @@ class ConcentIntegrationTestCase(TestCase):
         subtask_id      = '1',
         task_to_compute = None,
         size            = None,
-        checksum        = None,
+        package_hash    = None,
         timestamp       = None,
     ):
         """ Returns ReportComputedTask deserialized. """
@@ -92,7 +97,7 @@ class ConcentIntegrationTestCase(TestCase):
                     self._get_deserialized_task_to_compute()
                 ),
                 size            = size,
-                checksum        = checksum
+                package_hash    = package_hash
             )
         return report_computed_task
 
@@ -197,12 +202,67 @@ class ConcentIntegrationTestCase(TestCase):
         task_id                     = None,
         receive_delivered_status    = None,
     ):
-        self.assertEqual(StoredMessage.objects.last().type,           last_object_type.TYPE)
-        self.assertEqual(StoredMessage.objects.last().task_id,        task_id)
+        self.assertEqual(StoredMessage.objects.order_by('timestamp').last().type,      last_object_type.TYPE)
+        self.assertEqual(StoredMessage.objects.order_by('timestamp').last().task_id,   task_id)
 
         if receive_delivered_status is not None:
             self.assertEqual(ReceiveStatus.objects.last().delivered,        receive_delivered_status)
             self.assertEqual(ReceiveStatus.objects.last().message.task_id,  task_id)
+
+    def _test_subtask_state(
+        self,
+        task_id:                    str,
+        subtask_id:                 str,
+        subtask_state:              Subtask.SubtaskState,
+        provider_key:               str,
+        requestor_key:              str,
+        expected_nested_messages:   set,
+        next_deadline:              int = None,
+    ):
+        self.assertTrue(StoredMessage.objects.filter(subtask_id = subtask_id).exists())
+        subtask = Subtask.objects.get(subtask_id = subtask_id)
+        self.assertEqual(subtask.task_id,              task_id)
+        self.assertEqual(subtask.subtask_id,           subtask_id)
+        self.assertEqual(subtask.state,                subtask_state.name)
+        self.assertEqual(subtask.provider.public_key,  provider_key)
+        self.assertEqual(subtask.requestor.public_key, requestor_key)
+
+        assert Client.objects.filter(public_key = provider_key).exists()
+        assert Client.objects.filter(public_key = requestor_key).exists()
+
+        subtask_deadline = None
+        if subtask.state_enum in Subtask.ACTIVE_STATES:
+            subtask_deadline = subtask.next_deadline.timestamp()
+        self.assertEqual(subtask_deadline, next_deadline)
+
+        self._test_subtask_nested_messages(subtask, expected_nested_messages)
+
+    def _test_subtask_nested_messages(self, subtask, expected_nested_messages):
+        all_possible_messages = {
+            'task_to_compute', 'report_computed_task', 'ack_report_computed_task', 'reject_report_computed_task', 'subtask_results_accepted', 'subtask_results_rejected'
+        }
+        required_messages = all_possible_messages & expected_nested_messages
+        for nested_message in required_messages:
+            self.assertIsNotNone(getattr(subtask, nested_message))
+        unset_messages = all_possible_messages - expected_nested_messages
+        for nested_message in unset_messages:
+            self.assertIsNone(getattr(subtask, nested_message))
+
+    def _test_last_stored_messages(self, expected_messages, task_id, subtask_id, timestamp):
+        assert isinstance(expected_messages, list)
+        assert isinstance(task_id,           str)
+        assert isinstance(subtask_id,        str)
+
+        expected_message_types = [expected_message.TYPE for expected_message in expected_messages]
+
+        for stored_message in StoredMessage.objects.order_by('-id')[:len(expected_message_types)]:
+            self.assertIn(stored_message.type,                      expected_message_types)
+            self.assertEqual(stored_message.task_id,                task_id)
+            # TODO: Uncomment this in final step, as currently we store subtask_id only for messages stored by new logic
+            # self.assertEqual(stored_message.subtask_id,             subtask_id)
+            self.assertEqual(stored_message.timestamp.timestamp(),  self._parse_iso_date_to_timestamp(timestamp))
+
+            expected_message_types.remove(stored_message.type)
 
     def _get_deserialized_force_subtask_results(
         self,
@@ -503,6 +563,13 @@ class ConcentIntegrationTestCase(TestCase):
                 message_status.full_clean()
                 message_status.save()
 
+    def _assert_stored_message_counter_increased(self, increased_by = 1):
+        self.assertEqual(StoredMessage.objects.count(), self.stored_message_counter + increased_by)
+        self.stored_message_counter += increased_by
+
+    def _assert_stored_message_counter_not_increased(self):
+        self.assertEqual(self.stored_message_counter, StoredMessage.objects.count())
+
     def _assert_auth_message_counter_increased(self, increased_by = 1):
         self.assertEqual(MessageAuth.objects.count(), self.auth_message_counter + increased_by)
         self.auth_message_counter += increased_by
@@ -515,3 +582,6 @@ class ConcentIntegrationTestCase(TestCase):
         self.assertEqual(message_auth.message.type,         related_message.TYPE)
         self.assertEqual(message_auth.provider_public_key,  provider_public_key)
         self.assertEqual(message_auth.requestor_public_key, requestor_public_key)
+
+    def _assert_client_count_is_equal(self, count):
+        self.assertEqual(Client.objects.count(), count)

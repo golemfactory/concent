@@ -100,6 +100,54 @@ def log_400_error(endpoint: str, message: Message, client_public_key: str):
     ))
 
 
+def log_subtask_stored(
+    task_id:              str,
+    subtask_id:           str,
+    state:                str,
+    provider_public_key:  str,
+    requestor_public_key: str,
+    next_deadline:        int          = None,
+):
+    logger.info('A subtask has been stored -- STATE: {} -- NEXT_DEADLINE: {} -- TASK_ID: {} -- SUBTASK_ID: {} -- PROVIDER PUBLIC KEY: {} -- REQUESTOR PUBLIC KEY: {}'.format(
+        state,
+        next_deadline or '',
+        task_id,
+        subtask_id,
+        provider_public_key,
+        requestor_public_key,
+    ))
+
+
+def log_subtask_updated(
+    task_id:              str,
+    subtask_id:           str,
+    state:                str,
+    provider_public_key:  str,
+    requestor_public_key: str,
+    next_deadline:        int          = None,
+):
+    logger.info('A subtask has been updated -- STATE: {} -- NEXT_DEADLINE: {} -- TASK_ID: {} -- SUBTASK_ID: {} -- PROVIDER PUBLIC KEY: {} -- REQUESTOR PUBLIC KEY: {}'.format(
+        state,
+        next_deadline if next_deadline is not None else '',
+        task_id,
+        subtask_id,
+        provider_public_key,
+        requestor_public_key,
+    ))
+
+
+def log_stored_message_added_to_subtask(
+    subtask_id:           str,
+    state:                str,
+    stored_message_type:  int,
+):
+    logger.info('A stored message has beed added to subtask -- STATE: {} SUBTASK_ID: {} STORED_MESSAGE_TYPE: {}'.format(
+        state,
+        subtask_id,
+        stored_message_type,
+    ))
+
+
 def get_task_id_for_logging(message):
     task_id = get_field_from_message(message, 'task_id')
     if not isinstance(task_id, str):

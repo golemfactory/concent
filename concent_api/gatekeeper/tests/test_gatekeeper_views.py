@@ -150,6 +150,7 @@ class GatekeeperViewUploadTest(TestCase):
             )
 
             self.upload_token.files = [file1, file2]
+            self.upload_token.sig   = None
 
             golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
             encrypted_token = b64encode(golem_upload_token).decode()
@@ -191,6 +192,7 @@ class GatekeeperViewUploadTest(TestCase):
             )
 
             self.upload_token.files = [file1, file2]
+            self.upload_token.sig   = None
 
             golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
             encrypted_token = b64encode(golem_upload_token).decode()
@@ -225,6 +227,7 @@ class GatekeeperViewUploadTest(TestCase):
 
             self.upload_token.files = [file]
             self.upload_token.files[0]['checksum'] = value
+            self.upload_token.sig = None
 
             golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
             encrypted_token = b64encode(golem_upload_token).decode()
@@ -259,6 +262,7 @@ class GatekeeperViewUploadTest(TestCase):
             )
 
             self.upload_token.files = [file]
+            self.upload_token.sig   = None
 
             golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
             encrypted_token = b64encode(golem_upload_token).decode()
@@ -464,6 +468,7 @@ class GatekeeperViewDownloadTest(TestCase):
             )
 
             self.upload_token.files = [file1, file2]
+            self.upload_token.sig   = None
 
             golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
             encrypted_token = b64encode(golem_upload_token).decode()
@@ -504,6 +509,7 @@ class GatekeeperViewDownloadTest(TestCase):
             )
 
             self.upload_token.files = [file1, file2]
+            self.upload_token.sig   = None
 
             golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
             encrypted_token = b64encode(golem_upload_token).decode()
@@ -537,6 +543,7 @@ class GatekeeperViewDownloadTest(TestCase):
             )
 
             self.upload_token.files = [file]
+            self.upload_token.sig   = None
 
             golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
             encrypted_token = b64encode(golem_upload_token).decode()
@@ -570,6 +577,7 @@ class GatekeeperViewDownloadTest(TestCase):
             )
 
             self.upload_token.files = [file]
+            self.upload_token.sig   = None
 
             golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
             encrypted_token = b64encode(golem_upload_token).decode()

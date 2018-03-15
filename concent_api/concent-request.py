@@ -1,41 +1,38 @@
-from jsonschema import validate, Draft4Validator
+from jsonschema import Draft4Validator
 import argparse
 import json
-import sys
+
 
 def verify_schema(json_data):
     schema = {
-        "type" : "object",
-        "properties" : {
-            "timestamp": {"type" : "string"},
+        "type": "object",
+        "properties": {
+            "timestamp": {"type": "string"},
             "inner_golem_message": {
-                "type" : "object",
-                "properties" : {
-                    "timestamp": {"type" : "string"},
-                    "deadline": {"type" : "string"}
+                "type": "object",
+                "properties": {
+                    "timestamp": {"type": "string"},
+                    "deadline": {"type": "string"}
                 }
-            }    
+            }
         },
-    }    
+    }
     v = Draft4Validator(schema)
     errors = sorted(v.iter_errors(json_data), key=lambda e: e.path)
- 
+
     if errors:
         error_number = 0
         print('\nUploaded schema has following errors:\n')
         for error in errors:
             error_number += 1
             print(str(error_number) + '->', list(error.path), ':', error.message)
-        print('\nEND')  
+        print('\nEND')
         exit()
-    # for error in errors:
-    #     print(list(error.path), error.message)   
-    # print('cluster_url:', args.cluster_url)
+
 
 def get_json_data(args):
-    
     if args.message_file:
-        json_data = json.load(open(args.message_file))   
+        json_data = json.load(open(args.message_file))
     elif args.message:
         json_data = json.loads(args.message)
     print(json_data)
@@ -43,12 +40,11 @@ def get_json_data(args):
     return json_data
 
 
-
 def send_message(args):
     cluster_url = args.cluster_url
     json_data = get_json_data(args)
     print('------------------------\n      Message sent\n------------------------')
-    
+
     print(json_data, cluster_url)
 
 
@@ -82,15 +78,14 @@ def parse_arguments():
     # receive
     parser_receive_message = subparsers.add_parser('receive')
     parser_receive_message.set_defaults(func=receive_message)
-    parser_receive_message.add_argument("cluster_url",)
+    parser_receive_message.add_argument("cluster_url", )
     parser_receive_message.add_argument('--subtask_id', action="store")
 
     # ENDPOINT
     # receive-out-of-band
     parser_receive_out_of_band_message = subparsers.add_parser('receive-out-of-band')
     parser_receive_out_of_band_message.set_defaults(func=receive_out_of_band_message)
-    parser_receive_out_of_band_message.add_argument("cluster_url",)
-
+    parser_receive_out_of_band_message.add_argument("cluster_url", )
 
     parser_receive_out_of_band_message.add_argument('--subtask_id', action="store")
     args = parser.parse_args()
@@ -100,7 +95,3 @@ def parse_arguments():
 
 if __name__ == '__main__':
     parse_arguments()
-
-# send --string abcd concent.golem.network
-# send --file abcd concent.golem.network
-# receive concent.golem.network --subtask_id 2

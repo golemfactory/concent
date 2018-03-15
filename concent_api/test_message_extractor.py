@@ -14,24 +14,23 @@ class TestMessageExtractor(TestCase):
         self.fail("not implemented yet")
 
     def test_that_compute_task_def_is_created_when_appropriate_dict_is_given(self):
-        task_id = 2
-        timestamp = 1510390800
+        task_id = "2"
+        subtask_id = "12"
         deadline = 1510394400
         input = {
             "name": "compute_task_def",
             "body": {
-                "timestamp": str(timestamp),
-                "task_id": str(task_id),
-                "deadline": str(deadline)
+                "task_id": task_id,
+                "subtask_id": subtask_id,
+                "deadline": deadline
             }
         }
 
         task = MessageExtractor().extract_message(input)
-
         assert_that(task).is_instance_of(ComputeTaskDef)
-        assert_that(task.task_id).is_equal_to(task_id)
-        assert_that(task.timestamp).is_equal_to(timestamp)
-        assert_that(task.deadline).is_equal_to(deadline)
+        assert_that(task["task_id"]).is_equal_to(task_id)
+        assert_that(task["subtask_id"]).is_equal_to(subtask_id)
+        assert_that(task["deadline"]).is_equal_to(deadline)
 
 
 class TestMessageConverter(TestCase):
@@ -54,4 +53,3 @@ class TestMessageConverter(TestCase):
         input = ""
         task = convert_message_name(input)
         assert_that(task).is_equal_to('')
-

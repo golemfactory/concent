@@ -13,9 +13,10 @@ from freezegun              import freeze_time
 from golem_messages         import dump
 from golem_messages         import load
 from golem_messages         import message
+from core.models            import Client
+from core.models            import PendingResponse
 from core.models            import StoredMessage
-from core.models            import MessageAuth
-from core.models            import ReceiveStatus
+from core.models            import Subtask
 
 from utils.testing_helpers  import generate_ecc_key_pair
 
@@ -30,6 +31,9 @@ class ConcentIntegrationTestCase(TestCase):
         (self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY)   = generate_ecc_key_pair()
         (self.DIFFERENT_PROVIDER_PRIVATE_KEY, self.DIFFERENT_PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
         (self.DIFFERENT_REQUESTOR_PRIVATE_KEY, self.DIFFERENT_REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
+
+        # StoredMessage
+        self.stored_message_counter = 0
 
         # Auth
         self.auth_message_counter = 0
@@ -80,7 +84,7 @@ class ConcentIntegrationTestCase(TestCase):
         subtask_id      = '1',
         task_to_compute = None,
         size            = None,
-        checksum        = None,
+        package_hash    = None,
         timestamp       = None,
     ):
         """ Returns ReportComputedTask deserialized. """
@@ -92,7 +96,7 @@ class ConcentIntegrationTestCase(TestCase):
                     self._get_deserialized_task_to_compute()
                 ),
                 size            = size,
-                checksum        = checksum
+                package_hash    = package_hash
             )
         return report_computed_task
 
@@ -105,6 +109,7 @@ class ConcentIntegrationTestCase(TestCase):
         compute_task_def                = None,
         requestor_public_key            = None,
         requestor_ethereum_public_key   = None,
+        provider_public_key             = None,
     ):
         """ Returns TaskToCompute deserialized. """
         if compute_task_def is None:
@@ -123,6 +128,9 @@ class ConcentIntegrationTestCase(TestCase):
                 compute_task_def                = compute_task_def,
                 requestor_public_key            = requestor_public_key,
                 requestor_ethereum_public_key   = requestor_ethereum_public_key,
+                provider_public_key             = (
+                    provider_public_key if provider_public_key is not None else self.PROVIDER_PUBLIC_KEY
+                )
             )
         return task_to_compute
 
@@ -191,18 +199,113 @@ class ConcentIntegrationTestCase(TestCase):
         else:
             self.assertEqual(len(response.content), 0)
 
-    def _test_database_objects(
+    def _test_subtask_state(
         self,
-        last_object_type            = None,
-        task_id                     = None,
-        receive_delivered_status    = None,
+        task_id:                    str,
+        subtask_id:                 str,
+        subtask_state:              Subtask.SubtaskState,
+        provider_key:               str,
+        requestor_key:              str,
+        expected_nested_messages:   set,
+        next_deadline:              int = None,
     ):
-        self.assertEqual(StoredMessage.objects.last().type,           last_object_type.TYPE)
-        self.assertEqual(StoredMessage.objects.last().task_id,        task_id)
+        self.assertTrue(StoredMessage.objects.filter(subtask_id = subtask_id).exists())
+        subtask = Subtask.objects.get(subtask_id = subtask_id)
+        self.assertEqual(subtask.task_id,              task_id)
+        self.assertEqual(subtask.subtask_id,           subtask_id)
+        self.assertEqual(subtask.state,                subtask_state.name)
+        self.assertEqual(subtask.provider.public_key,  provider_key)
+        self.assertEqual(subtask.requestor.public_key, requestor_key)
 
-        if receive_delivered_status is not None:
-            self.assertEqual(ReceiveStatus.objects.last().delivered,        receive_delivered_status)
-            self.assertEqual(ReceiveStatus.objects.last().message.task_id,  task_id)
+        assert Client.objects.filter(public_key = provider_key).exists()
+        assert Client.objects.filter(public_key = requestor_key).exists()
+
+        subtask_deadline = None
+        if subtask.state_enum in Subtask.ACTIVE_STATES:
+            subtask_deadline = subtask.next_deadline.timestamp()
+        self.assertEqual(subtask_deadline, next_deadline)
+
+        self._test_subtask_nested_messages(subtask, expected_nested_messages)
+
+    def _test_subtask_nested_messages(self, subtask, expected_nested_messages):
+        all_possible_messages = {
+            'task_to_compute', 'report_computed_task', 'ack_report_computed_task', 'reject_report_computed_task', 'subtask_results_accepted', 'subtask_results_rejected'
+        }
+        required_messages = all_possible_messages & expected_nested_messages
+        for nested_message in required_messages:
+            self.assertIsNotNone(getattr(subtask, nested_message))
+        unset_messages = all_possible_messages - expected_nested_messages
+        for nested_message in unset_messages:
+            self.assertIsNone(getattr(subtask, nested_message))
+
+    def _test_last_stored_messages(self, expected_messages, task_id, subtask_id, timestamp):
+        assert isinstance(expected_messages, list)
+        assert isinstance(task_id,           str)
+        assert isinstance(subtask_id,        str)
+
+        expected_message_types = [expected_message.TYPE for expected_message in expected_messages]
+
+        for stored_message in StoredMessage.objects.order_by('-id')[:len(expected_message_types)]:
+            self.assertIn(stored_message.type,                      expected_message_types)
+            self.assertEqual(stored_message.task_id,                task_id)
+            self.assertEqual(stored_message.subtask_id,             subtask_id)
+            self.assertEqual(stored_message.timestamp.timestamp(),  self._parse_iso_date_to_timestamp(timestamp))
+
+            expected_message_types.remove(stored_message.type)
+
+        assert expected_message_types == []
+
+    def _test_undelivered_pending_responses(
+        self,
+        client_public_key,
+        subtask_id,
+        client_public_key_out_of_band                   = None,
+        expected_pending_responses_receive              = None,
+        expected_pending_responses_receive_out_of_band  = None,
+    ):
+        if expected_pending_responses_receive is None:
+            expected_pending_responses_receive = []
+
+        if expected_pending_responses_receive_out_of_band is None:
+            expected_pending_responses_receive_out_of_band = []
+
+        assert isinstance(expected_pending_responses_receive,               list)
+        assert isinstance(expected_pending_responses_receive_out_of_band,   list)
+        assert isinstance(client_public_key,                                str)
+        assert isinstance(subtask_id,                                       str)
+        if client_public_key_out_of_band is not None:
+            assert isinstance(client_public_key_out_of_band, str)
+
+        expected_pending_responses_receive_types = [
+            expected_pending_response_receive.name for expected_pending_response_receive in expected_pending_responses_receive
+        ]
+        expected_pending_responses_receive_out_of_band_types = [
+            expected_pending_response_receive_out_of_band.name for expected_pending_response_receive_out_of_band in expected_pending_responses_receive_out_of_band
+        ]
+
+        for pending_response in PendingResponse.objects.filter(
+            delivered   = False,
+            queue       = PendingResponse.Queue.Receive.name,  # pylint: disable=no-member
+        ):
+            self.assertIn(pending_response.response_type,           expected_pending_responses_receive_types)
+            self.assertEqual(pending_response.subtask.subtask_id,   subtask_id)
+            self.assertEqual(pending_response.client.public_key,    client_public_key)
+
+            expected_pending_responses_receive_types.remove(pending_response.response_type)
+
+        assert expected_pending_responses_receive_types == []
+
+        for pending_response in PendingResponse.objects.filter(
+            delivered   = False,
+            queue       = PendingResponse.Queue.ReceiveOutOfBand.name,  # pylint: disable=no-member
+        ):
+            self.assertIn(pending_response.response_type,           expected_pending_responses_receive_out_of_band_types)
+            self.assertEqual(pending_response.subtask.subtask_id,   subtask_id)
+            self.assertEqual(pending_response.client.public_key,    client_public_key_out_of_band)
+
+            expected_pending_responses_receive_out_of_band_types.remove(pending_response.response_type)
+
+        assert expected_pending_responses_receive_out_of_band_types == []
 
     def _get_deserialized_force_subtask_results(
         self,
@@ -469,10 +572,6 @@ class ConcentIntegrationTestCase(TestCase):
         timestamp,
         data,
         task_id,
-        status                  = None,
-        delivered               = False,
-        provider_public_key     = None,
-        requestor_public_key    = None,
     ):
         with freeze_time(timestamp or self._get_timestamp_string()):
             message_timestamp = datetime.datetime.now(timezone.utc)
@@ -486,32 +585,12 @@ class ConcentIntegrationTestCase(TestCase):
             golem_message.full_clean()
             golem_message.save()
 
-            message_auth = MessageAuth(
-                message                    = golem_message,
-                provider_public_key_bytes  = provider_public_key,
-                requestor_public_key_bytes = requestor_public_key,
-            )
-            message_auth.full_clean()
-            message_auth.save()
+    def _assert_stored_message_counter_increased(self, increased_by = 1):
+        self.assertEqual(StoredMessage.objects.count(), self.stored_message_counter + increased_by)
+        self.stored_message_counter += increased_by
 
-            if status is not None:
-                message_status = status(
-                    message     = golem_message,
-                    timestamp   = message_timestamp,
-                    delivered   = delivered,
-                )
-                message_status.full_clean()
-                message_status.save()
+    def _assert_stored_message_counter_not_increased(self):
+        self.assertEqual(self.stored_message_counter, StoredMessage.objects.count())
 
-    def _assert_auth_message_counter_increased(self, increased_by = 1):
-        self.assertEqual(MessageAuth.objects.count(), self.auth_message_counter + increased_by)
-        self.auth_message_counter += increased_by
-
-    def _assert_auth_message_counter_not_increased(self):
-        self.assertEqual(self.auth_message_counter, MessageAuth.objects.count())
-
-    def _assert_auth_message_last(self, related_message, provider_public_key, requestor_public_key):
-        message_auth = MessageAuth.objects.last()
-        self.assertEqual(message_auth.message.type,         related_message.TYPE)
-        self.assertEqual(message_auth.provider_public_key,  provider_public_key)
-        self.assertEqual(message_auth.requestor_public_key, requestor_public_key)
+    def _assert_client_count_is_equal(self, count):
+        self.assertEqual(Client.objects.count(), count)

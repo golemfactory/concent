@@ -24,10 +24,10 @@ class TestAssertionException(Exception):
 def assert_condition(actual, expected, error_message = '', function = None):
     message = error_message or f"Actual: {actual} != expected: {expected}"
     if function is not None:
-        if actual != expected:
+        if not function(actual, expected):
             raise TestAssertionException(message)
     else:
-        if not function(actual, expected):
+        if actual != expected:
             raise TestAssertionException(message)
 
 

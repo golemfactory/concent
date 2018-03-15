@@ -27,6 +27,9 @@ def substitue_message(json: JsonType, message_name: str, message: Message) -> Js
     return params
 
 
+def convert_message_name(message):
+    return ''.join([(word[:1].capitalize() + word[1:]) for word in message.split('_')])
+
 class MessageExtractor(object):
     def __init__(self):
         self.messages = []  # type: List[Message]

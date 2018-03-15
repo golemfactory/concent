@@ -5,6 +5,7 @@ import requests
 import sys
 
 from collections                    import namedtuple
+from typing import NamedTuple
 
 from golem_messages.exceptions      import MessageError
 from golem_messages.message         import ComputeTaskDef
@@ -13,41 +14,70 @@ from golem_messages.message         import TaskToCompute
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 
+DEFAULT_DEADLINE_OFFSET = 60
 
-ProtocolConstants = namedtuple(
+
+class TestAssertionException(Exception):
+    pass
+
+
+def assert_condition(actual, expected, error_message = '', function = None):
+    message = error_message or f"Actual: {actual} != expected: {expected}"
+    if function is not None:
+        if actual != expected:
+            raise TestAssertionException(message)
+    else:
+        if not function(actual, expected):
+            raise TestAssertionException(message)
+
+
+class count_fails(object):
+    """
+    Decorator that wraps a test functions for intercepting assertions and counting them.
+    """
+    instances = []
+
+    def __init__(self, function):
+        self._function     = function
+        self.__name__ = function.__name__
+        self.failed  = False
+        count_fails.instances.append(self)
+
+    def __call__(self, *args, **kwargs):
+        try:
+            print("Running TC: " + self.__name__)
+            return self._function(*args, **kwargs)
+        except TestAssertionException as exception:
+            print("{}: FAILED".format(self.__name__))
+            print(exception)
+            self.failed = True
+
+    @classmethod
+    def get_fails(cls):
+        return sum([instance.failed for instance in cls.instances])
+
+
+ProtocolConstants = NamedTuple(
     "ProtocolConstants",
     [
-        "concent_messaging_time",
-        "subtask_verification_time",
-        "force_acceptance_time",
-        "token_expiration_time",
+        ("concent_messaging_time",      int),
+        ("subtask_verification_time",   int),
+        ("force_acceptance_time",       int),
+        ("token_expiration_time",       int),
     ]
 )
 
 
 def get_protocol_constants(cluster_url):
-    url                         = f"{cluster_url}/api/v1/protocol-constants/"
-    response                    = requests.get(url)
-    json                        = response.json()
-    concent_messaging_time      = json['concent_messaging_time']
-    subtask_verification_time   = json['subtask_verification_time']
-    force_acceptance_time       = json['force_acceptance_time']
-    token_expiration_time       = json['token_expiration_time']
-    constants                   = ProtocolConstants(
-            concent_messaging_time      = concent_messaging_time,
-            subtask_verification_time   = subtask_verification_time,
-            force_acceptance_time       = force_acceptance_time,
-            token_expiration_time       = token_expiration_time
-    )
-    return constants
+    url         = f"{cluster_url}/api/v1/protocol-constants/"
+    response    = requests.get(url, verify = False)
+    json        = response.json()
+    return ProtocolConstants(**json)
 
 
 def print_protocol_constants(constants):
     print("PROTOCOL_CONSTANTS: ")
-    print(f"concent_messaging_time = {constants.concent_messaging_time}")
-    print(f"subtask_verification_time = {constants.subtask_verification_time}")
-    print(f"force_acceptance_time = {constants.force_acceptance_time}")
-    print(f"token_expiration_time = {constants.token_expiration_time}\n")
+    print("\n".join(f"{field} = {getattr(constants, field)}" for field in constants._fields))
 
 
 def print_golem_message(message, indent=4):
@@ -73,16 +103,35 @@ def print_golem_message(message, indent=4):
 
 def validate_response_status(actual_status_code, expected_status):
     if expected_status is not None:
-        assert expected_status == actual_status_code, f"Expected:HTTP{expected_status}, actual:HTTP{actual_status_code}"
+        assert_condition(actual_status_code, expected_status,
+                         f"Expected:HTTP{expected_status}, actual:HTTP{actual_status_code}"
+        )
 
 
-def validate_response_message(encoded_message, expected_message, private_key, public_key,):
+def validate_response_message(encoded_message, expected_message, private_key, public_key):
     if expected_message is not None:
         decoded_message = try_to_decode_golem_message(private_key, public_key, encoded_message)
-        assert isinstance(decoded_message, expected_message), f"Expected:{expected_message}, actual:{decoded_message}"
+        assert_condition(decoded_message,
+                         expected_message,
+                         error_message  = f"Expected:{expected_message}, actual:{decoded_message}",
+                         function       = isinstance
+        )
 
 
-def api_request(host, endpoint, private_key, public_key, data=None, headers=None, expected_status=None, expected_message=None):
+def validate_content_type(actual_content_type, expected_content_type):
+    if expected_content_type is not None:
+        assert_condition(actual_content_type, expected_content_type,
+                         f"Wrong content type for Golem Message: {actual_content_type}"
+        )
+
+
+def api_request(host, endpoint, private_key, public_key,
+                data                    = None,
+                headers                 = None,
+                expected_status         = None,
+                expected_message        = None,
+                expected_content_type   = None
+                ):
     def _prepare_data(data):
         if data is None:
             return ''
@@ -105,11 +154,12 @@ def api_request(host, endpoint, private_key, public_key, data=None, headers=None
 
     _print_data(data, url)
 
-    response    = requests.post("{}".format(url), headers = headers, data = _prepare_data(data))
+    response    = requests.post("{}".format(url), headers = headers, data = _prepare_data(data), verify = False)
 
     _print_response(private_key, public_key, response)
     validate_response_status(response.status_code, expected_status)
-    validate_response_message(response.content, expected_message, private_key, public_key,)
+    validate_content_type(response.headers['Content-Type'], expected_content_type)
+    validate_response_message(response.content, expected_message, private_key, public_key)
     print()
 
 
@@ -177,7 +227,7 @@ def parse_command_line(command_line):
     return cluster_url
 
 
-def create_task_to_compute(current_time, task_id, deadline_offset=60):
+def create_task_to_compute(current_time, task_id, deadline_offset = DEFAULT_DEADLINE_OFFSET):
     compute_task_def                = ComputeTaskDef()
     compute_task_def['task_id']     = task_id
     compute_task_def['deadline']    = current_time + deadline_offset

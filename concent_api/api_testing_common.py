@@ -230,6 +230,7 @@ def parse_command_line(command_line):
 def create_task_to_compute(current_time, task_id, deadline_offset = DEFAULT_DEADLINE_OFFSET):
     compute_task_def                = ComputeTaskDef()
     compute_task_def['task_id']     = task_id
+    compute_task_def['subtask_id']  = "sub_" + task_id
     compute_task_def['deadline']    = current_time + deadline_offset
     task_to_compute = TaskToCompute(
         compute_task_def = compute_task_def

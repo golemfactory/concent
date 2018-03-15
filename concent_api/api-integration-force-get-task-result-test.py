@@ -51,6 +51,7 @@ def prepare_file_for_transfer(part_id, task_id, time_offset):
     file_check_sum                                      = 'sha1:' + hashlib.sha1(file_content.encode()).hexdigest()
     file_path                                           = '{}/{}/result'.format(task_id, part_id)
     file_transfer_token = message.FileTransferToken()
+    file_transfer_token.subtask_id                      = "sub_" + task_id
     file_transfer_token.token_expiration_deadline       = int(datetime.datetime.now().timestamp()) + time_offset
     file_transfer_token.storage_cluster_address         = STORAGE_CLUSTER_ADDRESS
     file_transfer_token.authorized_client_public_key    = CONCENT_PUBLIC_KEY
@@ -86,13 +87,14 @@ def upload_file(file_content, headers):
     return response
 
 
-def get_force_get_task_result(task_id, current_time, size, package_hash, task_deadline_offset=60):
+def get_force_get_task_result(task_id, current_time, size, package_hash, task_deadline_offset = DEFAULT_DEADLINE_OFFSET):
     task_to_compute      = create_task_to_compute(current_time, task_id, task_deadline_offset)
 
     report_computed_task = message.ReportComputedTask(
-        task_to_compute = task_to_compute,
-        size            = size,
-        package_hash    = package_hash,
+        subtask_id          = "sub_" + task_id,
+        task_to_compute     = task_to_compute,
+        size                = size,
+        package_hash        = package_hash,
     )
 
     force_get_task_result = message.concents.ForceGetTaskResult(

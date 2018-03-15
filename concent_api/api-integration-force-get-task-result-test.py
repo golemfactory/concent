@@ -8,36 +8,39 @@ import random
 import requests
 import time
 
-from base64                          import b64encode
-from golem_messages                  import message
-from golem_messages                  import shortcuts
-from golem_messages.message.concents import AckForceGetTaskResult
-from golem_messages.message.concents import ForceGetTaskResultFailed
-from golem_messages.message.concents import ForceGetTaskResultUpload
+from base64                             import b64encode
+from golem_messages                     import message
+from golem_messages                     import shortcuts
+from golem_messages.message.concents    import AckForceGetTaskResult
+from golem_messages.message.concents    import ForceGetTaskResultFailed
+from golem_messages.message.concents    import ForceGetTaskResultUpload
 
-from utils.helpers                   import get_current_utc_timestamp
-from utils.testing_helpers           import generate_ecc_key_pair
+from utils.helpers                      import get_current_utc_timestamp
+from utils.testing_helpers              import generate_ecc_key_pair
 
-from api_testing_common              import api_request
-from api_testing_common              import create_task_to_compute
-from api_testing_common              import get_protocol_constants
-from api_testing_common              import print_protocol_constants
+from api_testing_common                 import api_request
+from api_testing_common                 import assert_condition
+from api_testing_common                 import count_fails
+from api_testing_common                 import DEFAULT_DEADLINE_OFFSET
+from api_testing_common                 import create_task_to_compute
+from api_testing_common                 import get_protocol_constants
+from api_testing_common                 import print_protocol_constants
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
-DEADLINE_OFFSET        = 5
+DEFAULT_TASK_DURATION  = 5
 CONCENT_MESSAGING_TIME = 30
 FORCE_ACCEPTANCE_TIME  = 30
 TOKEN_EXPIRATION_TIME  = 3600
 
-WAIT_TIME_1            = DEADLINE_OFFSET + FORCE_ACCEPTANCE_TIME
+WAIT_TIME_FOR_CONCENT  = DEFAULT_TASK_DURATION + FORCE_ACCEPTANCE_TIME
 
 (PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)  = generate_ecc_key_pair()
 (REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
 def upload_new_file_on_cluster(task_id = '0', part_id = '0', time_offset = TOKEN_EXPIRATION_TIME):
-    file_check_sum, file_content, file_size, headers    = prepare_file_for_transfer(part_id, task_id, time_offset)
+    (file_check_sum, file_content, file_size, headers)  = prepare_file_for_transfer(part_id, task_id, time_offset)
     response                                            = upload_file(file_content, headers)
     return (response.status_code, file_size, file_check_sum)
 
@@ -99,39 +102,13 @@ def get_force_get_task_result(task_id, current_time, size, package_hash, task_de
     return force_get_task_result
 
 
-class count_fails(object):
-    """
-    Decorator that wraps a test functions for intercepting assertions and counting them.
-    """
-    instances = []
-
-    def __init__(self, fun):
-        self._fun     = fun
-        self.__name__ = fun.__name__
-        self.failed  = False
-        count_fails.instances.append(self)
-
-    def __call__(self, *args, **kwargs):
-        try:
-            print("Running TC: " + self.__name__)
-            return self._fun(*args, **kwargs)
-        except AssertionError as e:
-            print("{}: FAILED".format(self.__name__))
-            print(e)
-            self.failed = True
-
-    @classmethod
-    def get_fails(cls):
-        return sum([instance.failed for instance in cls.instances])
-
-
 @count_fails
 def case_4d_concent_notifies_the_provider_that_task_results_are_ready(cluster_url, current_time, task_id):
     file_check_sum, file_content, file_size, headers = prepare_file_for_transfer('0', task_id, TOKEN_EXPIRATION_TIME)
 
     response = upload_file(file_content, headers)
 
-    assert response.status_code == 200, 'File has not been stored on cluster'
+    assert_condition(response.status_code, 200, 'File has not been stored on cluster')
     print('\nCreated file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(task_id,
                                                                                                                file_check_sum,
                                                                                                                file_size))
@@ -155,8 +132,8 @@ def case_4d_concent_notifies_the_provider_that_task_results_are_ready(cluster_ur
         expected_status  = 200,
         expected_message = AckForceGetTaskResult
     )
-    print(f"Waiting {WAIT_TIME_1} seconds...")
-    time.sleep(WAIT_TIME_1)  # TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME < current time <= TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME + CONCENT_MESSAGING_TIME
+    print(f"Waiting {WAIT_TIME_FOR_CONCENT} seconds...")
+    time.sleep(WAIT_TIME_FOR_CONCENT)  # TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME < current time <= TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME + CONCENT_MESSAGING_TIME
     api_request(
         cluster_url,
         'receive',
@@ -210,8 +187,8 @@ def case_4c_concent_reports_a_failure_to_get_task_results_if_file_has_bad_hash(c
         expected_status  = 200,
         expected_message = AckForceGetTaskResult
     )
-    print(f"Waiting {WAIT_TIME_1} seconds...")
-    time.sleep(WAIT_TIME_1)  # TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME < current time <= TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME + CONCENT_MESSAGING_TIME
+    print(f"Waiting {WAIT_TIME_FOR_CONCENT} seconds...")
+    time.sleep(WAIT_TIME_FOR_CONCENT)  # TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME < current time <= TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME + CONCENT_MESSAGING_TIME
     api_request(
         cluster_url,
         'receive',
@@ -227,7 +204,7 @@ def case_4c_concent_reports_a_failure_to_get_task_results_if_file_has_bad_hash(c
     response = upload_file(file_content + "random_data", headers)
     print(f"UPLOAD STATUS = {response.status_code}")
 
-    assert response.status_code == 400, "File has been approved but it shouldn't have"
+    assert_condition(response.status_code, 400, "File has been approved but it shouldn't have")
 
     print(f"Waiting {CONCENT_MESSAGING_TIME} seconds...")
     time.sleep(CONCENT_MESSAGING_TIME)  # TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME + CONCENT_MESSAGING_TIME < current time <= TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME + 2 * CONCENT_MESSAGING_TIME.
@@ -265,7 +242,7 @@ def case_4a_concent_reports_a_failure_to_get_task_results_if_the_provider_does_n
           current_time,
           size                  = 1024,
           package_hash          = '098f6bcd4621d373cade4e832627b4f6',
-          task_deadline_offset  = DEADLINE_OFFSET
+          task_deadline_offset  = DEFAULT_TASK_DURATION
         ),
         headers = {
             'Content-Type'                  : 'application/octet-stream',
@@ -275,8 +252,8 @@ def case_4a_concent_reports_a_failure_to_get_task_results_if_the_provider_does_n
         expected_status  = 200,
         expected_message = AckForceGetTaskResult
     )
-    print(f"Waiting {WAIT_TIME_1} seconds...")
-    time.sleep(WAIT_TIME_1)  # TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME < current time <= TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME + CONCENT_MESSAGING_TIME
+    print(f"Waiting {WAIT_TIME_FOR_CONCENT} seconds...")
+    time.sleep(WAIT_TIME_FOR_CONCENT)  # TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME < current time <= TaskToCompute.deadline + FORCE_ACCEPTANCE_TIME + CONCENT_MESSAGING_TIME
     api_request(    # Concent   -> Provider:   ForceGetTaskResult + FileTransferToken
         cluster_url,
         'receive',
@@ -338,7 +315,7 @@ def main():
     global CONCENT_MESSAGING_TIME
     global FORCE_ACCEPTANCE_TIME
     global TOKEN_EXPIRATION_TIME
-    global WAIT_TIME_1
+    global WAIT_TIME_FOR_CONCENT
 
     cluster_url, patterns   = parse_arguments()
     current_time            = get_current_utc_timestamp()
@@ -354,7 +331,7 @@ def main():
     CONCENT_MESSAGING_TIME = cluster_consts.concent_messaging_time
     FORCE_ACCEPTANCE_TIME  = cluster_consts.force_acceptance_time
     TOKEN_EXPIRATION_TIME  = cluster_consts.token_expiration_time
-    WAIT_TIME_1            = DEADLINE_OFFSET + FORCE_ACCEPTANCE_TIME
+    WAIT_TIME_FOR_CONCENT  = DEFAULT_TASK_DURATION + FORCE_ACCEPTANCE_TIME
 
     execute_tests(tests_to_execute, cluster_url=cluster_url, current_time=current_time, task_id=task_id)
 

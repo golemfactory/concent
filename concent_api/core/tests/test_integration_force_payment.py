@@ -376,12 +376,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp':      self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
             }
         )
-
-        self._test_database_objects(
-            last_object_type         = message.concents.ForcePaymentCommitted,
-            task_id                  = None,
-        )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 12:00:21"):
             response_2 = self.client.post(

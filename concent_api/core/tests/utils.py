@@ -14,9 +14,7 @@ from golem_messages         import dump
 from golem_messages         import load
 from golem_messages         import message
 from core.models            import Client
-from core.models            import MessageAuth
 from core.models            import PendingResponse
-from core.models            import ReceiveStatus
 from core.models            import StoredMessage
 from core.models            import Subtask
 
@@ -201,19 +199,6 @@ class ConcentIntegrationTestCase(TestCase):
         else:
             self.assertEqual(len(response.content), 0)
 
-    def _test_database_objects(
-        self,
-        last_object_type            = None,
-        task_id                     = None,
-        receive_delivered_status    = None,
-    ):
-        self.assertEqual(StoredMessage.objects.order_by('timestamp').last().type,      last_object_type.TYPE)
-        self.assertEqual(StoredMessage.objects.order_by('timestamp').last().task_id,   task_id)
-
-        if receive_delivered_status is not None:
-            self.assertEqual(ReceiveStatus.objects.last().delivered,        receive_delivered_status)
-            self.assertEqual(ReceiveStatus.objects.last().message.task_id,  task_id)
-
     def _test_subtask_state(
         self,
         task_id:                    str,
@@ -263,8 +248,7 @@ class ConcentIntegrationTestCase(TestCase):
         for stored_message in StoredMessage.objects.order_by('-id')[:len(expected_message_types)]:
             self.assertIn(stored_message.type,                      expected_message_types)
             self.assertEqual(stored_message.task_id,                task_id)
-            # TODO: Uncomment this in final step, as currently we store subtask_id only for messages stored by new logic
-            # self.assertEqual(stored_message.subtask_id,             subtask_id)
+            self.assertEqual(stored_message.subtask_id,             subtask_id)
             self.assertEqual(stored_message.timestamp.timestamp(),  self._parse_iso_date_to_timestamp(timestamp))
 
             expected_message_types.remove(stored_message.type)
@@ -588,10 +572,6 @@ class ConcentIntegrationTestCase(TestCase):
         timestamp,
         data,
         task_id,
-        status                  = None,
-        delivered               = False,
-        provider_public_key     = None,
-        requestor_public_key    = None,
     ):
         with freeze_time(timestamp or self._get_timestamp_string()):
             message_timestamp = datetime.datetime.now(timezone.utc)
@@ -605,42 +585,12 @@ class ConcentIntegrationTestCase(TestCase):
             golem_message.full_clean()
             golem_message.save()
 
-            message_auth = MessageAuth(
-                message                    = golem_message,
-                provider_public_key_bytes  = provider_public_key,
-                requestor_public_key_bytes = requestor_public_key,
-            )
-            message_auth.full_clean()
-            message_auth.save()
-
-            if status is not None:
-                message_status = status(
-                    message     = golem_message,
-                    timestamp   = message_timestamp,
-                    delivered   = delivered,
-                )
-                message_status.full_clean()
-                message_status.save()
-
     def _assert_stored_message_counter_increased(self, increased_by = 1):
         self.assertEqual(StoredMessage.objects.count(), self.stored_message_counter + increased_by)
         self.stored_message_counter += increased_by
 
     def _assert_stored_message_counter_not_increased(self):
         self.assertEqual(self.stored_message_counter, StoredMessage.objects.count())
-
-    def _assert_auth_message_counter_increased(self, increased_by = 1):
-        self.assertEqual(MessageAuth.objects.count(), self.auth_message_counter + increased_by)
-        self.auth_message_counter += increased_by
-
-    def _assert_auth_message_counter_not_increased(self):
-        self.assertEqual(self.auth_message_counter, MessageAuth.objects.count())
-
-    def _assert_auth_message_last(self, related_message, provider_public_key, requestor_public_key):
-        message_auth = MessageAuth.objects.last()
-        self.assertEqual(message_auth.message.type,         related_message.TYPE)
-        self.assertEqual(message_auth.provider_public_key,  provider_public_key)
-        self.assertEqual(message_auth.requestor_public_key, requestor_public_key)
 
     def _assert_client_count_is_equal(self, count):
         self.assertEqual(Client.objects.count(), count)

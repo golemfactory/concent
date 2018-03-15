@@ -120,12 +120,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
 
-        self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
-            task_id                     = '1',
-            receive_delivered_status    = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
@@ -137,7 +132,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
@@ -174,10 +168,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
-        self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
-            task_id                     = '1',
-        )
         self._assert_stored_message_counter_not_increased()
 
         # STEP 3: Requestor accepts computed task via Concent
@@ -202,12 +192,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_3.status_code,  202)
         self.assertEqual(len(response_3.content), 0)
-        self._test_database_objects(
-            last_object_type            = message.concents.AckReportComputedTask,
-            task_id                     = '1',
-            receive_delivered_status    = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by = 1)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
@@ -218,7 +203,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.concents.AckReportComputedTask,  # TODO: Remove in final step
                 message.concents.AckReportComputedTask,
             ],
             task_id         = '1',
@@ -303,12 +287,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
-            task_id                     = '1',
-            receive_delivered_status    = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
@@ -320,7 +299,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
@@ -388,12 +366,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_3.status_code,  202)
         self.assertEqual(len(response_3.content), 0)
-        self._test_database_objects(
-            last_object_type            = message.concents.RejectReportComputedTask,
-            task_id                     = '1',
-            receive_delivered_status    = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by = 1)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
@@ -404,7 +377,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.concents.RejectReportComputedTask,  # TODO: Remove in final step
                 message.concents.RejectReportComputedTask,
             ],
             task_id         = '1',
@@ -491,12 +463,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
-            task_id                     = '1',
-            receive_delivered_status    = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
@@ -508,7 +475,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
@@ -584,24 +550,17 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_3.status_code,                    202)
         self.assertEqual(len(response_3.content),                   0)
-        self._test_database_objects(
-            last_object_type            = message.concents.RejectReportComputedTask,
-            task_id                     = '1',
-            receive_delivered_status    = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 2)
-
+        self._assert_stored_message_counter_increased(increased_by = 1)
         self._test_subtask_state(
             task_id                     = '1',
             subtask_id                  = '8',
             subtask_state               = Subtask.SubtaskState.REPORTED,
             provider_key                = self._get_encoded_provider_public_key(),
             requestor_key               = self._get_encoded_requestor_public_key(),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task', 'reject_report_computed_task'},  # TODO: Switch reject to ack if 'REPORTED'
+            expected_nested_messages    = {'task_to_compute', 'report_computed_task', 'reject_report_computed_task'},
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.concents.RejectReportComputedTask,  # TODO: Remove in final step
                 message.concents.RejectReportComputedTask,
             ],
             task_id         = '1',
@@ -715,12 +674,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
-            task_id                     = '1',
-            receive_delivered_status    = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 3)
+
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
@@ -732,7 +687,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
@@ -799,7 +753,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             subtask_state               = Subtask.SubtaskState.REPORTED,
             provider_key                = self._get_encoded_provider_public_key(),
             requestor_key               = self._get_encoded_requestor_public_key(),
-            expected_nested_messages    = {'task_to_compute', 'report_computed_task'},  # TODO: Add ack_report_computed_task if REPORTED
+            expected_nested_messages    = {'task_to_compute', 'report_computed_task'},
             next_deadline               = None,
         )
 
@@ -875,12 +829,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
-            task_id                     = '1',
-            receive_delivered_status    = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
@@ -892,7 +841,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
@@ -1066,12 +1014,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
-            task_id                     = '1',
-            receive_delivered_status    = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
@@ -1083,7 +1026,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
@@ -1144,12 +1086,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_3.status_code,  202)
         self.assertEqual(len(response_3.content), 0)
-        self._test_database_objects(
-            last_object_type            = message.concents.AckReportComputedTask,
-            task_id                     = '1',
-            receive_delivered_status    = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by = 1)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
@@ -1160,7 +1097,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.concents.AckReportComputedTask,  # TODO: Remove in final step
                 message.concents.AckReportComputedTask,
             ],
             task_id         = '1',
@@ -1256,12 +1192,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
-            task_id                     = '1',
-            receive_delivered_status    = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
@@ -1273,7 +1204,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
@@ -1341,12 +1271,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response_3.status_code,  202)
-        self._test_database_objects(
-            last_object_type            = message.concents.RejectReportComputedTask,
-            task_id                     = '1',
-            receive_delivered_status    = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by = 1)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
@@ -1357,7 +1282,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.concents.RejectReportComputedTask,  # TODO: Remove in final step
                 message.concents.RejectReportComputedTask,
             ],
             task_id         = '1',
@@ -1449,12 +1373,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
-            task_id                     = '1',
-            receive_delivered_status    = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
@@ -1466,7 +1385,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
@@ -1578,12 +1496,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
-            task_id                     = '1',
-            receive_delivered_status    = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
@@ -1595,7 +1508,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
@@ -2102,12 +2014,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
-            task_id                     = '1',
-            receive_delivered_status    = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
@@ -2119,7 +2026,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
@@ -2180,12 +2086,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_3.status_code,  202)
         self.assertEqual(len(response_3.content), 0)
-        self._test_database_objects(
-            last_object_type            = message.concents.AckReportComputedTask,
-            task_id                     = '1',
-            receive_delivered_status    = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by = 1)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
@@ -2196,7 +2097,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.concents.AckReportComputedTask,  # TODO: Remove in final step
                 message.concents.AckReportComputedTask,
             ],
             task_id         = '1',
@@ -2288,12 +2188,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
-            task_id                     = '1',
-            receive_delivered_status    = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
@@ -2305,7 +2200,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
@@ -2366,12 +2260,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_3.status_code,  202)
         self.assertEqual(len(response_3.content), 0)
-        self._test_database_objects(
-            last_object_type            = message.concents.AckReportComputedTask,
-            task_id                     = '1',
-            receive_delivered_status    = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by = 1)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
@@ -2382,7 +2271,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.concents.AckReportComputedTask,  # TODO: Remove in final step
                 message.concents.AckReportComputedTask,
             ],
             task_id         = '1',
@@ -2481,12 +2369,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._test_database_objects(
-            last_object_type            = message.concents.ForceReportComputedTask,
-            task_id                     = '1',
-            receive_delivered_status    = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
@@ -2498,7 +2381,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],

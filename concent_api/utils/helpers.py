@@ -51,6 +51,13 @@ def parse_datetime_to_timestamp(date_time: datetime.datetime) -> int:
         return int(date_time.astimezone(timezone.utc).timestamp())
 
 
+def parse_timestamp_to_utc_datetime(timestamp: int) -> datetime.datetime:
+    """
+    Returns UTC datetime from given timestamp.
+    """
+    return datetime.datetime.fromtimestamp(timestamp, timezone.utc)
+
+
 def get_field_from_message(golem_message: message.base.Message, field_name: str) -> str:
     """
     Returns field value with given field name nested inside given Golem Message or FrozenDict

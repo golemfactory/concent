@@ -148,6 +148,55 @@ def log_stored_message_added_to_subtask(
     ))
 
 
+def log_no_changes_in_subtask_states(client_public_key: bytes):
+    logger.info('None of subtask changed state -- CLIENT PUBLIC KEY: {}'.format(
+        client_public_key,
+    ))
+
+
+def log_changes_in_subtask_states(client_public_key: bytes, count: int):
+    assert count >= 1
+    logger.info('{} {} state -- CLIENT PUBLIC KEY: {}'.format(
+        count,
+        "subtasks changed their" if count >= 2 else "subtask changed its",
+        client_public_key,
+    ))
+
+
+def log_change_subtask_state_name(old_state, new_state):
+    logger.info('Subtask changed its state from {} to {}'.format(
+        old_state,
+        new_state,
+    ))
+
+
+def log_new_pending_response(response_type: str, queue_name: str, subtask_id: str, client_public_key: str):
+    logger.info('New pending response in {} endpoint -- RESPONSE_TYPE: {} -- SUBTASK_ID: {} -- CLIENT PUBLIC KEY: {}'.format(
+        queue_name,
+        response_type,
+        subtask_id,
+        client_public_key,
+    ))
+
+
+def log_receive_message_from_database(message: Message, client_public_key: str, response_type: str, queue_name: str):
+    logger.info('Message {}, TYPE: {} has been received by {} endpoint -- RESPONSE_TYPE: {} -- CLIENT PUBLIC KEY: {}'.format(
+        message.__class__.__name__,
+        message.TYPE,
+        queue_name,
+        response_type,
+        client_public_key,
+    ))
+
+
+def log_file_status(subtask_id: str, requestor_public_key: str, provider_public_key: str):
+    logger.info('File assigned to subtask with {} id already uploaded. -- REQUESTOR PUBLIC KEY: {} -- PROVIDER PUBLIC KEY {}'.format(
+        subtask_id,
+        requestor_public_key,
+        provider_public_key,
+    ))
+
+
 def get_task_id_for_logging(message):
     task_id = get_field_from_message(message, 'task_id')
     if not isinstance(task_id, str):

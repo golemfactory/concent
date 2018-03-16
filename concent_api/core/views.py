@@ -1,4 +1,5 @@
 from base64                         import b64encode
+from decimal                        import Decimal
 import binascii
 import copy
 import datetime
@@ -7,6 +8,7 @@ import requests
 from django.conf                    import settings
 from django.http                    import HttpResponse
 from django.http                    import JsonResponse
+from django.db.models               import Q
 from django.utils                   import timezone
 from django.views.decorators.http   import require_POST
 from django.views.decorators.http   import require_GET
@@ -28,6 +30,8 @@ from utils.helpers                  import parse_timestamp_to_utc_datetime
 from .constants                     import MESSAGE_TASK_ID_MAX_LENGTH
 from .models                        import Client
 from .models                        import MessageAuth
+from .models                        import PendingResponse
+from .models                        import PaymentInfo
 from .models                        import ReceiveOutOfBandStatus
 from .models                        import ReceiveStatus
 from .models                        import StoredMessage
@@ -41,6 +45,12 @@ def send(request, client_message):
         client_message,
         request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
     )
+
+    client_public_key = decode_client_public_key(request)
+    update_timed_out_subtasks(
+        client_public_key = client_public_key,
+    )
+
     if isinstance(client_message, message.ForceReportComputedTask):
         return handle_send_force_report_computed_task(request, client_message)
 
@@ -72,265 +82,27 @@ def send(request, client_message):
 @api_view
 @require_POST
 def receive(request, _message):
-    current_time      = get_current_utc_timestamp()
     client_public_key = decode_client_public_key(request)
-    last_undelivered_message_status = ReceiveStatus.objects.filter_public_key(
-        request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
-    ).filter(delivered = False).order_by('timestamp').last()
-    if last_undelivered_message_status is None:
-        last_delivered_message_status = ReceiveStatus.objects.filter_public_key(
-            request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
-        ).order_by('timestamp').last()
-        if last_delivered_message_status is None:
-            return None
-
-        decoded_message_data = deserialize_message(last_delivered_message_status.message.data.tobytes())
-        if (
-            last_delivered_message_status.message.type                           == message.ForceReportComputedTask.TYPE and
-            last_delivered_message_status.message.auth.provider_public_key_bytes == client_public_key and
-            current_time >= decoded_message_data.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME
-        ):
-            return handle_receive_delivered_force_report_computed_task(request, last_delivered_message_status)
-
-        if (
-            last_delivered_message_status.message.type                            == message.concents.ForceGetTaskResultUpload.TYPE and
-            last_delivered_message_status.message.auth.requestor_public_key_bytes == client_public_key
-        ):
-            file_uploaded        = get_file_status(decoded_message_data.file_transfer_token)
-            if file_uploaded:
-                return handle_receive_force_get_task_result_upload_for_requestor(
-                    request,
-                    decoded_message_data,
-                    last_delivered_message_status,
-                )
-            else:
-                return handle_receive_force_get_task_result_failed(
-                    request,
-                    decoded_message_data,
-                    last_delivered_message_status,
-                )
-        acceptance_deadline = settings.SUBTASK_VERIFICATION_TIME + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME
-        if (
-            last_delivered_message_status.message.type                           == message.concents.ForceSubtaskResults.TYPE and
-            last_delivered_message_status.message.auth.provider_public_key_bytes == client_public_key and
-            current_time > decoded_message_data.ack_report_computed_task.timestamp + acceptance_deadline
-        ):
-            base.make_forced_payment('provider', 'requestor')
-            return handle_receive_force_subtask_results_settled(
-                decoded_message_data,
-                last_delivered_message_status.message.auth.provider_public_key_bytes,
-                last_delivered_message_status.message.auth.requestor_public_key_bytes,
-                ReceiveStatus
-            )
-
-        return None
-
-    decoded_message_data = deserialize_message(last_undelivered_message_status.message.data.tobytes())
-
-    assert last_undelivered_message_status.message.type == decoded_message_data.TYPE
-    if last_undelivered_message_status.message.type == message.ForceReportComputedTask.TYPE:
-        if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
-            return None
-        if decoded_message_data.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME < current_time:
-            set_message_as_delivered(last_undelivered_message_status)
-            logging.log_message_delivered(
-                decoded_message_data,
-                client_public_key,
-            )
-            return handle_receive_ack_from_force_report_computed_task(
-                request,
-                decoded_message_data,
-                last_undelivered_message_status
-            )
-        logging.log_timeout(
-            decoded_message_data,
-            request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-            decoded_message_data.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
-        )
-
-    if isinstance(decoded_message_data, message.ForceReportComputedTask):
-        if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
-            return None
-        set_message_as_delivered(last_undelivered_message_status)
-        logging.log_message_delivered(
-            decoded_message_data,
-            client_public_key,
-        )
-        return handle_receive_force_report_computed_task(
-            request,
-            decoded_message_data,
-            last_undelivered_message_status
-        )
-
-    if isinstance(decoded_message_data, message.AckReportComputedTask):
-        if (
-            current_time <= decoded_message_data.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME and
-            client_public_key == last_undelivered_message_status.message.auth.provider_public_key_bytes
-        ):
-            set_message_as_delivered(last_undelivered_message_status)
-            logging.log_message_delivered(
-                decoded_message_data,
-                client_public_key,
-            )
-            return handle_receive_ack_or_reject_report_computed_task(
-                request,
-                decoded_message_data,
-                last_undelivered_message_status,
-            )
-        elif current_time > decoded_message_data.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
-            logging.log_timeout(
-                decoded_message_data,
-                request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-                decoded_message_data.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
-            )
-        return None
-
-    if isinstance(decoded_message_data, message.concents.ForceGetTaskResult):
-        if client_public_key != last_undelivered_message_status.message.auth.provider_public_key_bytes:
-            return None
-        set_message_as_delivered(last_undelivered_message_status)
-        logging.log_message_delivered(
-            decoded_message_data,
-            client_public_key,
-        )
-        return handle_receive_force_get_task_result_upload_for_provider(
-            request,
-            decoded_message_data,
-            last_undelivered_message_status,
-        )
-
-    if isinstance(decoded_message_data, message.concents.ForceSubtaskResults):
-        if client_public_key != last_undelivered_message_status.message.auth.requestor_public_key_bytes:
-            return None
-        set_message_as_delivered(last_undelivered_message_status)
-        logging.log_message_delivered(
-            decoded_message_data,
-            client_public_key,
-        )
-        if current_time < decoded_message_data.timestamp + settings.CONCENT_MESSAGING_TIME:
-            return handle_receive_force_subtask_results(
-                request,
-                decoded_message_data,
-                last_undelivered_message_status,
-            )
-        logging.log_timeout(
-            decoded_message_data,
-            request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-            decoded_message_data.timestamp + settings.CONCENT_MESSAGING_TIME,
-        )
-        return handle_receive_force_subtask_results(
-            request,
-            decoded_message_data,
-            last_undelivered_message_status,
-        )
-
-    if isinstance(decoded_message_data, message.concents.ForceSubtaskResultsResponse):
-        if client_public_key != last_undelivered_message_status.message.auth.provider_public_key_bytes:
-            return None
-        set_message_as_delivered(last_undelivered_message_status)
-        logging.log_message_delivered(
-            decoded_message_data,
-            client_public_key,
-        )
-        return handle_receive_force_subtask_results_response(
-            request,
-            decoded_message_data,
-            last_undelivered_message_status
-        )
-
-    assert isinstance(decoded_message_data, message.RejectReportComputedTask), (
-        "At this point ReceiveStatus must contain ForceReportComputedTask because AckReportComputedTask and RejectReportComputedTask have already been handled"
+    update_timed_out_subtasks(
+        client_public_key = client_public_key,
     )
-
-    if client_public_key != last_undelivered_message_status.message.auth.provider_public_key_bytes:
-        return None
-
-    force_report_computed_task = StoredMessage.objects.filter(
-        type    = message.ForceReportComputedTask.TYPE,
-        task_id = decoded_message_data.cannot_compute_task.task_to_compute.compute_task_def['task_id']
-    ).order_by('timestamp').last()
-
-    decoded_message_from_database = deserialize_message(force_report_computed_task.data.tobytes())
-
-    if current_time <= decoded_message_from_database.report_computed_task.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME:
-        if decoded_message_data.reason is not None and decoded_message_data.reason == message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded:
-            return handle_receive_ack_from_force_report_computed_task(
-                request,
-                decoded_message_from_database,
-                last_undelivered_message_status
-            )
-        return handle_receive_ack_or_reject_report_computed_task(
-            request,
-            decoded_message_data,
-            last_undelivered_message_status,
-        )
-
-    logging.log_timeout(
-        decoded_message_data,
-        request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-        decoded_message_from_database.task_to_compute.compute_task_def['deadline'] + 2 * settings.CONCENT_MESSAGING_TIME,
+    return handle_messages_from_database(
+        client_public_key  = client_public_key,
+        response_type      = PendingResponse.Queue.Receive,
     )
-
-    return None
 
 
 @api_view
 @require_POST
 def receive_out_of_band(request, _message):
-    undelivered_receive_out_of_band_statuses    = ReceiveOutOfBandStatus.objects.filter(delivered = False)
-    last_undelivered_receive_out_of_band_status = undelivered_receive_out_of_band_statuses.order_by('timestamp').last()
-    last_undelivered_receive_status             = StoredMessage.objects.filter(
-        auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-    ).order_by('timestamp').last()
-    current_time = get_current_utc_timestamp()
-    if last_undelivered_receive_out_of_band_status is None:
-        if last_undelivered_receive_status is None:
-            return None
-
-        if last_undelivered_receive_status.timestamp.timestamp() > current_time:
-            return None
-
-        if last_undelivered_receive_status.type == message.ForceReportComputedTask.TYPE:
-            return handle_receive_out_of_band_force_report_computed_task(request, last_undelivered_receive_status)
-
-        if last_undelivered_receive_status.type == message.concents.ForceReportComputedTaskResponse.TYPE:
-            decoded_message = deserialize_message(last_undelivered_receive_status.data.tobytes())
-            if isinstance(decoded_message.ack_report_computed_task, message.concents.AckReportComputedTask):
-                return handle_receive_out_of_band_ack_report_computed_task(request, last_undelivered_receive_status)
-
-            elif isinstance(decoded_message.reject_report_computed_task, message.concents.RejectReportComputedTask):
-                return handle_receive_out_of_band_reject_report_computed_task(request, last_undelivered_receive_status)
-
-        if last_undelivered_receive_status.type == message.concents.ForcePaymentCommitted.TYPE:
-            return handle_receive_out_of_band_force_payment_commited(request, last_undelivered_receive_status)
-
-        last_receive_status = ReceiveStatus.objects.filter(
-            message__auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-            message__type = last_undelivered_receive_status.type
-        ).order_by('timestamp')
-
-        if last_receive_status.exists() and last_undelivered_receive_status.type == message.concents.SubtaskResultsSettled.TYPE:
-            last_undelivered_receive_status = StoredMessage.objects.filter(
-                auth__requestor_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-            ).exclude(id = last_undelivered_receive_status.id).order_by('timestamp').last()
-            if last_undelivered_receive_status is None:
-                return None
-
-        if last_undelivered_receive_status.type == message.concents.ForceSubtaskResults.TYPE:
-            acceptance_deadline = settings.SUBTASK_VERIFICATION_TIME + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME
-            decoded_message_data = deserialize_message(last_undelivered_receive_status.data.tobytes())
-
-            if current_time > decoded_message_data.ack_report_computed_task.timestamp + acceptance_deadline:
-
-                return handle_receive_force_subtask_results_settled(
-                    decoded_message_data,
-                    last_undelivered_receive_status.auth.provider_public_key_bytes,
-                    last_undelivered_receive_status.auth.requestor_public_key_bytes,
-                    ReceiveOutOfBandStatus
-                )
-        return None
-
-    return None
+    client_public_key = decode_client_public_key(request)
+    update_timed_out_subtasks(
+        client_public_key = client_public_key,
+    )
+    return handle_messages_from_database(
+        client_public_key  = client_public_key,
+        response_type      = PendingResponse.Queue.ReceiveOutOfBand,
+    )
 
 
 @require_GET
@@ -386,7 +158,7 @@ def handle_send_force_report_computed_task(request, client_message):
         requestor_public_key = other_party_public_key,
         status               = ReceiveStatus
     )
-    store_subtask(
+    subtask = store_subtask(
         task_id              = client_message.report_computed_task.task_to_compute.compute_task_def['task_id'],
         subtask_id           = client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'],
         provider_public_key  = client_public_key,
@@ -395,6 +167,12 @@ def handle_send_force_report_computed_task(request, client_message):
         next_deadline        = client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
         task_to_compute      = client_message.report_computed_task.task_to_compute,
         report_computed_task = client_message.report_computed_task,
+    )
+    store_pending_message(
+        response_type       = PendingResponse.ResponseType.ForceReportComputedTask,
+        client_public_key   = other_party_public_key,
+        queue               = PendingResponse.Queue.Receive,
+        subtask             = subtask,
     )
     logging.log_message_added_to_queue(
         client_message,
@@ -467,12 +245,18 @@ def handle_send_ack_report_computed_task(request, client_message):
             requestor_public_key = client_public_key,
             status               = ReceiveStatus,
         )
-        update_subtask(
+        subtask = update_subtask(
             subtask                     = subtask,
             state                       = Subtask.SubtaskState.REPORTED,
             next_deadline               = None,
             set_next_deadline           = True,
             ack_report_computed_task    = client_message,
+        )
+        store_pending_message(
+            response_type       = PendingResponse.ResponseType.ForceReportComputedTaskResponse,
+            client_public_key   = client_message.task_to_compute.provider_public_key,
+            queue               = PendingResponse.Queue.Receive,
+            subtask             = subtask,
         )
         logging.log_message_added_to_queue(
             client_message,
@@ -539,12 +323,24 @@ def handle_send_reject_report_computed_task(request, client_message):
             requestor_public_key = client_public_key,
             status               = ReceiveStatus
         )
-        update_subtask(
+        subtask = update_subtask(
             subtask                     = subtask,
-            state                       = Subtask.SubtaskState.FAILED,
+            state                       = Subtask.SubtaskState.REPORTED,
             next_deadline               = None,
             set_next_deadline           = True,
             reject_report_computed_task = client_message,
+        )
+        store_pending_message(
+            response_type       = PendingResponse.ResponseType.ForceReportComputedTaskResponse,
+            client_public_key   = client_message.cannot_compute_task.task_to_compute.provider_public_key,
+            queue               = PendingResponse.Queue.Receive,
+            subtask             = subtask,
+        )
+        store_pending_message(
+            response_type       = PendingResponse.ResponseType.VerdictReportComputedTask,
+            client_public_key   = subtask.requestor.public_key_bytes,
+            queue               = PendingResponse.Queue.ReceiveOutOfBand,
+            subtask             = subtask,
         )
         logging.log_message_added_to_queue(
             client_message,
@@ -579,12 +375,18 @@ def handle_send_reject_report_computed_task(request, client_message):
             requestor_public_key = client_public_key,
             status               = ReceiveStatus
         )
-        update_subtask(
+        subtask = update_subtask(
             subtask                     = subtask,
             state                       = Subtask.SubtaskState.FAILED,
             next_deadline               = None,
             set_next_deadline           = True,
             reject_report_computed_task = client_message,
+        )
+        store_pending_message(
+            response_type       = PendingResponse.ResponseType.ForceReportComputedTaskResponse,
+            client_public_key   = client_message.cannot_compute_task.task_to_compute.provider_public_key,
+            queue               = PendingResponse.Queue.Receive,
+            subtask             = subtask,
         )
         logging.log_message_added_to_queue(
             client_message,
@@ -644,7 +446,7 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
             requestor_public_key = client_public_key,
             status               = ReceiveStatus,
         )
-        store_or_update_subtask(
+        subtask = store_or_update_subtask(
             task_id                     = client_message.report_computed_task.task_to_compute.compute_task_def['task_id'],
             subtask_id                  = client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'],
             provider_public_key         = other_party_public_key,
@@ -654,6 +456,12 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
             set_next_deadline           = True,
             report_computed_task        = client_message.report_computed_task,
             task_to_compute             = client_message.report_computed_task.task_to_compute,
+        )
+        store_pending_message(
+            response_type       = PendingResponse.ResponseType.ForceGetTaskResultUpload,
+            client_public_key   = other_party_public_key,
+            queue               = PendingResponse.Queue.Receive,
+            subtask             = subtask,
         )
         return message.concents.AckForceGetTaskResult(
             force_get_task_result = client_message,
@@ -718,7 +526,7 @@ def handle_send_force_subtask_results(request, client_message: message.concents.
             provider_public_key  = client_public_key,
             requestor_public_key = other_party_public_key,
         )
-        store_or_update_subtask(
+        subtask = store_or_update_subtask(
             task_id                     = client_message.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
             subtask_id                  = client_message.ack_report_computed_task.task_to_compute.compute_task_def['subtask_id'],
             provider_public_key         = client_public_key,
@@ -728,6 +536,12 @@ def handle_send_force_subtask_results(request, client_message: message.concents.
             set_next_deadline           = True,
             ack_report_computed_task    = client_message.ack_report_computed_task,
             task_to_compute             = client_message.ack_report_computed_task.task_to_compute,
+        )
+        store_pending_message(
+            response_type       = PendingResponse.ResponseType.ForceSubtaskResults,
+            client_public_key   = other_party_public_key,
+            queue               = PendingResponse.Queue.Receive,
+            subtask             = subtask,
         )
         logging.log_message_added_to_queue(
             client_message,
@@ -749,6 +563,8 @@ def handle_send_force_subtask_results_response(request, client_message):
         subtask_results_accepted  = client_message.subtask_results_accepted
         subtask_results_rejected  = None
         state                     = Subtask.SubtaskState.ACCEPTED
+        response_type             = PendingResponse.ResponseType.ForceSubtaskResultsResponse
+        provider_public_key       = client_message.subtask_results_accepted.task_to_compute.provider_public_key
     else:
         client_message_task_id    = client_message.subtask_results_rejected.report_computed_task.task_to_compute.compute_task_def['task_id']
         client_message_subtask_id = client_message.subtask_results_rejected.report_computed_task.task_to_compute.compute_task_def['subtask_id']
@@ -756,6 +572,8 @@ def handle_send_force_subtask_results_response(request, client_message):
         subtask_results_accepted  = None
         subtask_results_rejected  = client_message.subtask_results_rejected
         state                     = Subtask.SubtaskState.REJECTED
+        response_type             = PendingResponse.ResponseType.SubtaskResultsRejected
+        provider_public_key       = client_message.subtask_results_rejected.report_computed_task.task_to_compute.provider_public_key
 
     try:
         subtask = Subtask.objects.get(
@@ -816,7 +634,7 @@ def handle_send_force_subtask_results_response(request, client_message):
         provider_public_key  = force_subtask_results.last().auth.provider_public_key_bytes,
         requestor_public_key = client_public_key,
     )
-    update_subtask(
+    subtask = update_subtask(
         subtask                     = subtask,
         state                       = state,
         next_deadline               = None,
@@ -824,6 +642,12 @@ def handle_send_force_subtask_results_response(request, client_message):
         report_computed_task        = report_computed_task,
         subtask_results_accepted    = subtask_results_accepted,
         subtask_results_rejected    = subtask_results_rejected,
+    )
+    store_pending_message(
+        response_type       = response_type,
+        client_public_key   = provider_public_key,
+        queue               = PendingResponse.Queue.Receive,
+        subtask             = subtask,
     )
     logging.log_message_added_to_queue(
         client_message,
@@ -891,8 +715,8 @@ def handle_send_force_payment(request, client_message: message.concents.ForcePay
             payment_ts              = payment_ts,
             task_owner_key          = requestor_ethereum_public_key,
             provider_eth_account    = client_public_key,
-            amount_paid             = 10.99,
-            amount_pending          = 0.01,
+            amount_paid             = Decimal('10.99'),
+            amount_pending          = Decimal('0.01'),
             recipient_type          = message.concents.ForcePaymentCommitted.Actor.Provider,
         )
 
@@ -904,6 +728,22 @@ def handle_send_force_payment(request, client_message: message.concents.ForcePay
             requestor_public_key    = other_party_public_key,
         )
 
+        requestor_force_payment_commited = message.concents.ForcePaymentCommitted(
+            payment_ts              = payment_ts,
+            task_owner_key          = requestor_ethereum_public_key,
+            provider_eth_account    = client_public_key,
+            amount_paid             = Decimal('10.99'),
+            amount_pending          = Decimal('0.01'),
+            recipient_type          = message.concents.ForcePaymentCommitted.Actor.Requestor,
+        )
+        store_pending_message(
+            response_type       = PendingResponse.ResponseType.ForcePaymentCommitted,
+            client_public_key   = other_party_public_key,
+            queue               = PendingResponse.Queue.ReceiveOutOfBand,
+            payment_message     = requestor_force_payment_commited
+        )
+
+        provider_force_payment_commited.sig = None
         return provider_force_payment_commited
 
 
@@ -1444,6 +1284,365 @@ def store_subtask(
         next_deadline,
     )
 
+    return subtask
+
+
+def verify_file_status(
+    client_public_key: bytes,
+):
+    """
+    Function to verify existence of a file on cluster storage
+    """
+
+    force_get_task_result_list = Subtask.objects.filter(
+        requestor__public_key  = b64encode(client_public_key),
+        state                  = Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name,  # pylint: disable=no-member
+    )
+
+    for get_task_result in force_get_task_result_list:
+        report_computed_task    = deserialize_message(get_task_result.report_computed_task.data.tobytes())
+        file_transfer_token     = create_file_transfer_token(
+            report_computed_task,
+            client_public_key,
+            'upload'
+        )
+        if request_upload_status(file_transfer_token):
+            subtask               = get_task_result
+            subtask.state         = Subtask.SubtaskState.RESULT_UPLOADED.name  # pylint: disable=no-member
+            subtask.next_deadline = None
+            subtask.full_clean()
+            subtask.save()
+
+            store_pending_message(
+                response_type       = PendingResponse.ResponseType.ForceGetTaskResultDownload,
+                client_public_key   = subtask.requestor.public_key_bytes,
+                queue               = PendingResponse.Queue.Receive,
+                subtask             = subtask,
+            )
+            logging.log_file_status(
+                subtask.subtask_id,
+                subtask.requestor.public_key,
+                subtask.provider.public_key,
+            )
+
+
+def update_timed_out_subtasks(
+    client_public_key: bytes,
+):
+    verify_file_status(client_public_key)
+
+    clients_subtask_list = Subtask.objects.filter(
+        Q(requestor__public_key = b64encode(client_public_key)) | Q(provider__public_key = b64encode(client_public_key)),
+        state__in               = [state.name for state in Subtask.ACTIVE_STATES],
+        next_deadline__lte      = timezone.now()
+    )
+
+    if clients_subtask_list.exists():
+        for subtask in clients_subtask_list:
+            if subtask.state == Subtask.SubtaskState.FORCING_REPORT.name:  # pylint: disable=no-member
+                update_subtask_state(
+                    subtask                 = subtask,
+                    state                   = Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
+                )
+                store_pending_message(
+                    response_type       = PendingResponse.ResponseType.ForceReportComputedTaskResponse,
+                    client_public_key   = subtask.provider.public_key_bytes,
+                    queue               = PendingResponse.Queue.Receive,
+                    subtask             = subtask,
+                )
+                store_pending_message(
+                    response_type       = PendingResponse.ResponseType.VerdictReportComputedTask,
+                    client_public_key   = subtask.requestor.public_key_bytes,
+                    queue               = PendingResponse.Queue.ReceiveOutOfBand,
+                    subtask             = subtask,
+                )
+            elif subtask.state == Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name:  # pylint: disable=no-member
+                update_subtask_state(
+                    subtask                 = subtask,
+                    state                   = Subtask.SubtaskState.FAILED.name,  # pylint: disable=no-member
+                )
+                store_pending_message(
+                    response_type       = PendingResponse.ResponseType.ForceGetTaskResultFailed,
+                    client_public_key   = subtask.requestor.public_key_bytes,
+                    queue               = PendingResponse.Queue.Receive,
+                    subtask             = subtask,
+                )
+            elif subtask.state == Subtask.SubtaskState.FORCING_ACCEPTANCE.name:  # pylint: disable=no-member
+                update_subtask_state(
+                    subtask                 = subtask,
+                    state                   = Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
+                )
+                store_pending_message(
+                    response_type       = PendingResponse.ResponseType.SubtaskResultsSettled,
+                    client_public_key   = subtask.provider.public_key_bytes,
+                    queue               = PendingResponse.Queue.Receive,
+                    subtask             = subtask,
+                )
+                store_pending_message(
+                    response_type       = PendingResponse.ResponseType.SubtaskResultsSettled,
+                    client_public_key   = subtask.requestor.public_key_bytes,
+                    queue               = PendingResponse.Queue.ReceiveOutOfBand,
+                    subtask             = subtask,
+                )
+            assert subtask.state is not Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name  # pylint: disable=no-member
+
+        logging.log_changes_in_subtask_states(
+            b64encode(client_public_key),
+            clients_subtask_list.count(),
+        )
+    else:
+        logging.log_no_changes_in_subtask_states(
+            b64encode(client_public_key)
+        )
+
+
+def update_subtask_state(
+    subtask,
+    state,
+):
+    logging.log_change_subtask_state_name(
+        subtask.state,
+        state,
+    )
+    subtask.state    = state
+    subtask.next_deadline = None
+    subtask.full_clean()
+    subtask.save()
+
+
+def store_pending_message(
+    response_type       = None,
+    client_public_key   = None,
+    queue               = None,
+    subtask             = None,
+    payment_message     = None,
+):
+    client          = Client.objects.get_or_create_full_clean(client_public_key)
+    receive_queue   = PendingResponse(
+        response_type   = response_type.name,
+        client          = client,
+        queue           = queue.name,
+        subtask         = subtask,
+    )
+    receive_queue.full_clean()
+    receive_queue.save()
+    if payment_message is not None:
+        payment_committed_message = PaymentInfo(
+            payment_ts                  = datetime.datetime.fromtimestamp(payment_message.payment_ts, timezone.utc),
+            task_owner_key_bytes        = decode_key(payment_message.task_owner_key),
+            provider_eth_account_bytes  = payment_message.provider_eth_account,
+            amount_paid                 = payment_message.amount_paid,
+            recipient_type              = payment_message.recipient_type.name,  # pylint: disable=no-member
+            amount_pending              = payment_message.amount_pending,
+            pending_response            = receive_queue
+        )
+        payment_committed_message.full_clean()
+        payment_committed_message.save()
+        subtask_id = None
+    else:
+        subtask_id = subtask.subtask_id
+
+    logging.log_new_pending_response(
+        response_type.name,
+        queue.name,
+        subtask_id,
+        client.public_key,
+    )
+
+
+def handle_messages_from_database(
+    client_public_key:  bytes                   = None,
+    response_type:      PendingResponse.Queue   = None,
+):
+    assert client_public_key    not in ['', None]
+
+    pending_response = PendingResponse.objects.filter(
+        client__public_key = b64encode(client_public_key),
+        queue              = response_type.name,
+        delivered          = False,
+    ).order_by('created_at').first()
+
+    if pending_response is None:
+        return None
+
+    assert pending_response.response_type_enum in set(PendingResponse.ResponseType)
+
+    if pending_response.response_type == PendingResponse.ResponseType.ForceReportComputedTask.name:  # pylint: disable=no-member
+        report_computed_task = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
+        response_to_client = message.concents.ForceReportComputedTask(
+            report_computed_task = report_computed_task
+        )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
+
+    elif pending_response.response_type == PendingResponse.ResponseType.ForceReportComputedTaskResponse.name:  # pylint: disable=no-member
+        if pending_response.subtask.ack_report_computed_task is not None:
+            ack_report_computed_task = deserialize_message(pending_response.subtask.ack_report_computed_task.data.tobytes())
+            response_to_client = message.concents.ForceReportComputedTaskResponse(
+                ack_report_computed_task = ack_report_computed_task,
+            )
+            mark_message_as_delivered_and_log(pending_response, response_to_client)
+            return response_to_client
+
+        elif pending_response.subtask.reject_report_computed_task is not None:
+            reject_report_computed_task = deserialize_message(pending_response.subtask.reject_report_computed_task.data.tobytes())
+            response_to_client          = message.concents.ForceReportComputedTaskResponse(
+                reject_report_computed_task = reject_report_computed_task,
+            )
+            if reject_report_computed_task.reason == message.concents.RejectReportComputedTask.REASON.TaskTimeLimitExceeded:
+                ack_report_computed_task = message.concents.AckReportComputedTask(
+                    task_to_compute = deserialize_message(pending_response.subtask.task_to_compute.data.tobytes()),
+                    subtask_id      = pending_response.subtask.subtask_id,
+                )
+                response_to_client.ack_report_computed_task = ack_report_computed_task
+            mark_message_as_delivered_and_log(pending_response, response_to_client)
+            return response_to_client
+        else:
+            response_to_client = message.concents.ForceReportComputedTaskResponse(
+                ack_report_computed_task = message.concents.AckReportComputedTask(
+                    task_to_compute = deserialize_message(pending_response.subtask.task_to_compute.data.tobytes()),
+                    subtask_id      = pending_response.subtask.subtask_id,
+                ),
+            )
+            mark_message_as_delivered_and_log(pending_response, response_to_client)
+            return response_to_client
+
+    elif pending_response.response_type == PendingResponse.ResponseType.VerdictReportComputedTask.name:  # pylint: disable=no-member
+        ack_report_computed_task = message.concents.AckReportComputedTask(
+            task_to_compute = deserialize_message(pending_response.subtask.task_to_compute.data.tobytes()),
+            subtask_id      = pending_response.subtask.subtask_id,
+        )
+        report_computed_task     = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
+        response_to_client = message.concents.VerdictReportComputedTask(
+            ack_report_computed_task    = ack_report_computed_task,
+            force_report_computed_task  = message.concents.ForceReportComputedTask(
+                report_computed_task = report_computed_task,
+            ),
+        )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
+
+    elif pending_response.response_type == PendingResponse.ResponseType.ForceGetTaskResultRejected.name:  # pylint: disable=no-member
+        report_computed_task = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
+        response_to_client = message.concents.ForceGetTaskResultRejected(
+            force_get_task_result = message.concents.ForceGetTaskResult(
+                report_computed_task = report_computed_task,
+            )
+        )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
+
+    elif pending_response.response_type == PendingResponse.ResponseType.ForceGetTaskResultFailed.name:  # pylint: disable=no-member
+        task_to_compute = deserialize_message(pending_response.subtask.task_to_compute.data.tobytes())
+        response_to_client = message.concents.ForceGetTaskResultFailed(
+            task_to_compute = task_to_compute,
+        )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
+
+    elif pending_response.response_type == PendingResponse.ResponseType.ForceGetTaskResultUpload.name:  # pylint: disable=no-member
+        report_computed_task    = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
+        file_transfer_token     = create_file_transfer_token(
+            report_computed_task,
+            client_public_key,
+            'upload',
+        )
+
+        response_to_client = message.concents.ForceGetTaskResultUpload(
+            file_transfer_token     = file_transfer_token,
+            force_get_task_result   = message.concents.ForceGetTaskResult(
+                report_computed_task = report_computed_task,
+            )
+        )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
+
+    elif pending_response.response_type == PendingResponse.ResponseType.ForceGetTaskResultDownload.name:  # pylint: disable=no-member
+        report_computed_task    = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
+        file_transfer_token     = create_file_transfer_token(
+            report_computed_task,
+            client_public_key,
+            'download',
+        )
+
+        response_to_client = message.concents.ForceGetTaskResultDownload(
+            file_transfer_token     = file_transfer_token,
+            force_get_task_result   = message.concents.ForceGetTaskResult(
+                report_computed_task = report_computed_task,
+            )
+        )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
+
+    elif pending_response.response_type == PendingResponse.ResponseType.ForceSubtaskResults.name:  # pylint: disable=no-member
+        ack_report_computed_task = deserialize_message(pending_response.subtask.ack_report_computed_task.data.tobytes())
+        response_to_client = message.concents.ForceSubtaskResults(
+            ack_report_computed_task = ack_report_computed_task
+        )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
+
+    elif pending_response.response_type == PendingResponse.ResponseType.SubtaskResultsSettled.name:  # pylint: disable=no-member
+        task_to_compute = deserialize_message(pending_response.subtask.task_to_compute.data.tobytes())
+        response_to_client = message.concents.SubtaskResultsSettled(
+            task_to_compute = task_to_compute,
+        )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
+
+    elif pending_response.response_type == PendingResponse.ResponseType.ForceSubtaskResultsResponse.name:  # pylint: disable=no-member
+        subtask_results_accepted = deserialize_message(pending_response.subtask.subtask_results_accepted.data.tobytes())
+        response_to_client = message.concents.ForceSubtaskResultsResponse(
+            subtask_results_accepted = subtask_results_accepted,
+        )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
+
+    elif pending_response.response_type == PendingResponse.ResponseType.SubtaskResultsRejected.name:  # pylint: disable=no-member
+        subtask_results_rejected = deserialize_message(pending_response.subtask.subtask_results_rejected.data.tobytes())
+        response_to_client = message.concents.ForceSubtaskResultsResponse(
+            subtask_results_rejected = subtask_results_rejected,
+        )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
+
+    elif pending_response.response_type == PendingResponse.ResponseType.ForcePaymentCommitted.name:  # pylint: disable=no-member
+        payment_message = pending_response.payments.filter(
+            pending_response__pk = pending_response.pk
+        ).order_by('id').last()
+
+        response_to_client = message.concents.ForcePaymentCommitted(
+            payment_ts              = datetime.datetime.timestamp(payment_message.payment_ts),
+            task_owner_key          = payment_message.task_owner_key,
+            provider_eth_account    = payment_message.provider_eth_account,
+            amount_paid             = payment_message.amount_paid,
+            amount_pending          = payment_message.amount_pending,
+        )
+        if payment_message.recipient_type == PaymentInfo.RecipientType.Requestor.name:  # pylint: disable=no-member
+            response_to_client.recipient_type = message.concents.ForcePaymentCommitted.Actor.Requestor
+        elif payment_message.recipient_type == PaymentInfo.RecipientType.Provider.name:  # pylint: disable=no-member
+            response_to_client.recipient_type = message.concents.ForcePaymentCommitted.Actor.Provider
+        else:
+            return None
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
+
+    else:
+        return None
+
+
+def mark_message_as_delivered_and_log(undelivered_message, log_message):
+    undelivered_message.delivered = True
+    undelivered_message.full_clean()
+    undelivered_message.save()
+
+    logging.log_receive_message_from_database(
+        log_message,
+        undelivered_message.client.public_key,
+        undelivered_message.response_type,
+        undelivered_message.queue
+    )
+
 
 def update_subtask(
     subtask:                        Subtask,
@@ -1490,6 +1689,8 @@ def update_subtask(
         subtask.requestor.public_key,
         next_deadline,
     )
+
+    return subtask
 
 
 def set_subtask_messages(
@@ -1557,7 +1758,7 @@ def store_or_update_subtask(
         subtask = None
 
     if subtask is not None:
-        update_subtask(
+        subtask = update_subtask(
             subtask                         = subtask,
             state                           = state,
             next_deadline                   = next_deadline,
@@ -1570,7 +1771,7 @@ def store_or_update_subtask(
             subtask_results_rejected        = subtask_results_rejected,
         )
     else:
-        store_subtask(
+        subtask = store_subtask(
             task_id                         = task_id,
             subtask_id                      = subtask_id,
             provider_public_key             = provider_public_key,
@@ -1584,6 +1785,7 @@ def store_or_update_subtask(
             subtask_results_accepted        = subtask_results_accepted,
             subtask_results_rejected        = subtask_results_rejected,
         )
+    return subtask
 
 
 def store_message(
@@ -1607,7 +1809,34 @@ def store_message(
     return stored_message
 
 
-def get_file_status(file_transfer_token_from_database: message.concents.FileTransferToken) -> bool:
+def create_file_transfer_token(
+    report_computed_task:   message.tasks.ReportComputedTask,
+    client_public_key:      bytes,
+    operation:              str,
+) -> message.concents.FileTransferToken:
+    """
+    Function to create FileTransferToken from ReportComputedTask message
+    """
+    current_time    = get_current_utc_timestamp()
+    task_id         = report_computed_task.task_to_compute.compute_task_def['task_id']
+    subtask_id      = report_computed_task.task_to_compute.compute_task_def['subtask_id']
+    file_path       = '{}/{}/result'.format(subtask_id, task_id)
+
+    file_transfer_token = message.concents.FileTransferToken(
+        token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_TIME,
+        storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
+        authorized_client_public_key    = b64encode(client_public_key),
+        operation                       = operation,
+    )
+    file_transfer_token.files = [message.concents.FileTransferToken.FileInfo()]
+    file_transfer_token.files[0]['path']      = file_path
+    file_transfer_token.files[0]['checksum']  = report_computed_task.package_hash
+    file_transfer_token.files[0]['size']      = report_computed_task.size
+
+    return file_transfer_token
+
+
+def request_upload_status(file_transfer_token_from_database: message.concents.FileTransferToken) -> bool:
     slash = '/'
     assert len(file_transfer_token_from_database.files) == 1
     assert not file_transfer_token_from_database.files[0]['path'].startswith(slash)
@@ -1618,7 +1847,7 @@ def get_file_status(file_transfer_token_from_database: message.concents.FileTran
         token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_TIME,
         storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
         authorized_client_public_key    = settings.CONCENT_PUBLIC_KEY,
-        operation                       = 'download',
+        operation                       = 'upload',
     )
 
     assert file_transfer_token.timestamp <= file_transfer_token.token_expiration_deadline  # pylint: disable=no-member

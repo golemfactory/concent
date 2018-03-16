@@ -137,12 +137,12 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             }
         )
 
-        self._assert_auth_message_counter_increased()
+        self._assert_auth_message_counter_not_increased()
         self._assert_auth_message_last(
             related_message      = message.concents.ForcePaymentCommitted,
             provider_public_key  = self._get_encoded_provider_public_key(),
             requestor_public_key = self._get_encoded_requestor_public_key(),
         )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_not_increased()
 
-        self._assert_client_count_is_equal(0)
+        self._assert_client_count_is_equal(1)

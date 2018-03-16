@@ -6,7 +6,7 @@ from golem_messages.message import Message
 
 JsonType = Dict[Text, Any]
 
-MESSAGE_NAMES = ['ForceReportComputedTask']
+FIELD_NAMES = ['task_to_compute', 'compute_task_def', 'report_computed_task', 'force_get_task_result']
 
 
 def validate_message_list(message_list: List[Message]) -> None:
@@ -16,9 +16,21 @@ def validate_message_list(message_list: List[Message]) -> None:
 
 def create_message(message_name: str, message_params: JsonType) -> Message:
     module = importlib.import_module("golem_messages.message")
-    msg_class = getattr(module, convert_message_name(message_name))
-    message = msg_class(**message_params)
+    module = module if hasattr(module, convert_message_name(message_name)) else importlib.import_module(
+        "golem_messages.message.concents")
+    message = getattr(module, convert_message_name(message_name))(**message_params)
+
     return message
+
+    # module = importlib.import_module("golem_messages.message")
+    #
+    # if hasattr(module, convert_message_name(message_name)):
+    #     msg_class = getattr(module, convert_message_name(message_name))
+    # else:
+    #     module = importlib.import_module("golem_messages.message.concents")
+    #     msg_class = getattr(module, convert_message_name(message_name))
+    #
+    # message = msg_class(**message_params)
 
 
 def substitue_message(json: JsonType, message_name: str, message: Message) -> JsonType:
@@ -39,7 +51,7 @@ class MessageExtractor(object):
         if name is None:
             return self._process_top_level(json)
         else:
-            return self._processs_body(json, name)
+            return self._process_body(json, name)
 
     def _process_top_level(self, json):
         try:
@@ -50,15 +62,15 @@ class MessageExtractor(object):
             raise
         return self.extract_message(body, name)
 
-    def _processs_body(self, json: JsonType, name: str) -> Message:
-        message_list = [key for key in json.keys() if key in MESSAGE_NAMES]
+    def _process_body(self, json: JsonType, name: str) -> Message:
+        message_list = [key for key in json.keys() if key in FIELD_NAMES]
         if self._contains_valid_message(message_list):
             message_name = message_list[0]
-            message = self._processs_body(json['message_name'], message_name)
+            message = self._process_body(json[message_name], message_name)
             params = substitue_message(json, message_name, message)
             return create_message(name, params)
         else:
             return create_message(name, json)
 
-    def _contains_valid_message(self, message_names: List[Text]) -> bool:
-        return len(message_names) == 1
+    def _contains_valid_message(self, FIELD_NAMES: List[Text]) -> bool:
+        return len(FIELD_NAMES) == 1

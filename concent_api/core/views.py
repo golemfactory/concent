@@ -120,6 +120,8 @@ def handle_send_force_report_computed_task(request, client_message):
     client_public_key      = decode_client_public_key(request)
     other_party_public_key = decode_other_party_public_key(request)
     validate_golem_message_task_to_compute(client_message.report_computed_task.task_to_compute)
+    validate_id_value(client_message.report_computed_task.task_to_compute.compute_task_def['task_id'],      'task_id')
+    validate_id_value(client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'],   'subtask_id')
 
     if Subtask.objects.filter(
         subtask_id = client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'],
@@ -172,6 +174,8 @@ def handle_send_ack_report_computed_task(request, client_message):
     current_time      = get_current_utc_timestamp()
     client_public_key = decode_client_public_key(request)
     validate_golem_message_task_to_compute(client_message.task_to_compute)
+    validate_id_value(client_message.task_to_compute.compute_task_def['task_id'],       'task_id')
+    validate_id_value(client_message.task_to_compute.compute_task_def['subtask_id'],    'subtask_id')
 
     if current_time <= client_message.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
         try:
@@ -229,6 +233,8 @@ def handle_send_reject_report_computed_task(request, client_message):
     current_time      = get_current_utc_timestamp()
     client_public_key = decode_client_public_key(request)
     validate_golem_message_reject(client_message.cannot_compute_task)
+    validate_id_value(client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id'],       'task_id')
+    validate_id_value(client_message.cannot_compute_task.task_to_compute.compute_task_def['subtask_id'],    'subtask_id')
 
     try:
         subtask = Subtask.objects.get(
@@ -314,6 +320,8 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
     client_public_key      = decode_client_public_key(request)
     other_party_public_key = decode_other_party_public_key(request)
     validate_golem_message_task_to_compute(client_message.report_computed_task.task_to_compute)
+    validate_id_value(client_message.report_computed_task.task_to_compute.compute_task_def['task_id'],      'task_id')
+    validate_id_value(client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'],   'subtask_id')
 
     if Subtask.objects.filter(
         subtask_id = client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'],
@@ -358,6 +366,8 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
 
 def handle_send_force_subtask_results(request, client_message: message.concents.ForceSubtaskResults):
     assert isinstance(client_message, message.concents.ForceSubtaskResults)
+    validate_id_value(client_message.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],      'task_id')
+    validate_id_value(client_message.ack_report_computed_task.task_to_compute.compute_task_def['subtask_id'],   'subtask_id')
 
     current_time           = get_current_utc_timestamp()
     client_public_key      = decode_client_public_key(request)
@@ -607,7 +617,7 @@ def validate_golem_message_task_to_compute(data):
 
     data.compute_task_def['deadline'] = validate_int_value(data.compute_task_def['deadline'])
 
-    validate_task_id(data.compute_task_def['task_id'])
+    validate_id_value(data.compute_task_def['task_id'], 'task_id')
 
 
 def validate_golem_message_reject(data):
@@ -615,7 +625,7 @@ def validate_golem_message_reject(data):
         raise Http400("Expected CannotComputeTask, TaskFailure or TaskToCompute.")
 
     if isinstance(data, message.CannotComputeTask):
-        validate_task_id(data.task_to_compute.compute_task_def['task_id'])
+        validate_id_value(data.task_to_compute.compute_task_def['task_id'], 'task_id')
 
     if isinstance(data, (message.TaskToCompute, message.TaskFailure)):
         if data.compute_task_def['task_id'] == '':
@@ -640,15 +650,15 @@ def validate_int_value(value):
     return value
 
 
-def validate_task_id(task_id):
-    if not isinstance(task_id, str):
-        raise Http400("task_id must be string.")
+def validate_id_value(value, field_name):
+    if not isinstance(value, str):
+        raise Http400("{} must be string.".format(field_name))
 
-    if task_id == '':
-        raise Http400("task_id cannot be blank.")
+    if value == '':
+        raise Http400("{} cannot be blank.".format(field_name))
 
-    if len(task_id) > MESSAGE_TASK_ID_MAX_LENGTH:
-        raise Http400("task_id cannot be longer than {} chars.".format(MESSAGE_TASK_ID_MAX_LENGTH))
+    if len(value) > MESSAGE_TASK_ID_MAX_LENGTH:
+        raise Http400("{} cannot be longer than {} chars.".format(field_name, MESSAGE_TASK_ID_MAX_LENGTH))
 
 
 def store_subtask(

@@ -6,3 +6,4 @@ freezegun
 pyyaml
 requests
 mock
+raven

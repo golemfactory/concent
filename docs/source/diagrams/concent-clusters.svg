@@ -57,13 +57,6 @@
       <text x="561.0038" xml:space="preserve" y="-30.8866" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">Ethereum client</text>
     </g>
     <g fill="rgb(255,204,0)" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,586,182)" stroke="rgb(255,204,0)">
-      <rect x="555.8339" width="106" height="52" y="-151.5409" clip-path="url(#clipPath2)" stroke="none"/>
-    </g>
-    <g text-rendering="geometricPrecision" stroke-miterlimit="1.45" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,586,182)" stroke-linecap="butt">
-      <rect fill="none" x="555.8339" width="106" height="52" y="-151.5409" clip-path="url(#clipPath2)"/>
-      <text x="578.4824" xml:space="preserve" y="-121.3866" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">Watchdog</text>
-    </g>
-    <g fill="rgb(255,204,0)" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,586,182)" stroke="rgb(255,204,0)">
       <rect x="416.8339" width="106" height="52" y="-151.5409" clip-path="url(#clipPath2)" stroke="none"/>
     </g>
     <g text-rendering="geometricPrecision" stroke-miterlimit="1.45" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,586,182)" stroke-linecap="butt">
@@ -75,8 +68,6 @@
       <path fill="blue" d="M555.8339 -35.0409 L543.8339 -40.0409 L546.8339 -35.0409 L543.8339 -30.0409 Z" clip-path="url(#clipPath2)" stroke="none"/>
       <path fill="none" d="M469.8339 -61.0409 L469.8339 -91.5409" clip-path="url(#clipPath2)"/>
       <path d="M469.8339 -99.5409 L464.8339 -87.5409 L469.8339 -90.5409 L474.8339 -87.5409 Z" clip-path="url(#clipPath2)" stroke="none"/>
-      <path fill="none" d="M555.8339 -125.5409 L530.8339 -125.5409" clip-path="url(#clipPath2)"/>
-      <path d="M522.8339 -125.5409 L534.8339 -120.5409 L531.8339 -125.5409 L534.8339 -130.5409 Z" clip-path="url(#clipPath2)" stroke="none"/>
     </g>
     <g text-rendering="geometricPrecision" shape-rendering="geometricPrecision" transform="matrix(2.2734,0,0,2.2734,97.1637,288.7656)" image-rendering="optimizeQuality">
       <image x="0" y="0" clip-path="url(#clipPath4)" width="276" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARQAAADFCAYAAACVZQ1HAAADTUlEQVR42u3c7UrD&#10;MBSA4a2J93/LMlAIpYN+nGzpyfPA+aHMqJt9ia328QAAAAAAAACAw57GmCnmIxFZ&#10;jDGpp2tc2ogUY8w00wYmNCavxetq2k9cO31Ddef7Rl633HzdM4+pnb6+b6679TH1&#10;RuteDcvzUzExxuSc9nhfooLyWvBnFRK/ZxqTe8J3KW1Q1qVyBtyY3LOsdiphQSkb&#10;MQHy/2nI+vgPC4qYwHxRCT3+BQUERVAAQQEEBRAUQQEEBRAUQFAEBQRFUABBAYYh&#10;KICgAGMHxT8HAnYogKAAibjKA4wblP8tzyIoICiCAviVBxAUQFAEBRAUQFAAQREU&#10;EBRBAQQFEBRAUAQFEBRAUABBERQQFEEBjhMUQFCAsYPirveAHQogKEAirvIAggII&#10;CiAoggIICiAogKAICgiKoACCAggKICiCAggKICiAoAgKCIqgAIICCAqQkqAAggKM&#10;HRR3vQfsUABBARJxlQcQFEBQAEERFEBQAEEBBEVQQFAEBRAUQFAAQREUQFAAQQEE&#10;RVBAUAQFEBRAUICUBAUQFGDsoLjrPWCHAggKkIirPICgAIICCIqgAIICCAogKIIC&#10;giIogKAAggIIiqAAggIICiAoggKCIiiAoACCAqQkKICgAGMHxV3vATsUQFCARFzl&#10;AQQFEBRAUAQFEBRAUABBERQQFEEBbhGUy3/LDwiKHQoIiqAAggIICiAoggIICiAo&#10;gKAICgiKoACCAgwVlLC73i+CAnYodiiAoACCAgiKoACCAggKICiCAoIiKICgAIIC&#10;CMqeBd31HgTFDgUQFEBQAEERFEBQAEEBBMXzDIIiKICgAIICCMrmgu56D4JihwII&#10;CiAogKAICiAogKAAgiIoICiCAgxz/AsKCIqgAGMHxV3vQVDsUABBARIFxVUeEBRB&#10;AQQFEBRAUAQFEBRAUABBERQQlKigtIsKCghK+IKiAoJyeUG7FJgnJl1OeWwt2u5U&#10;jDE5p8tmYmvhNizGmHxT3hzz4UGpf9O+vf7EdcfbNehjaqd1z3xPpcNjvvX81jfr&#10;lB1f39HX6G7r7v2ZOfOa9Fj3zGy9/mGnOtqojPIDLyiCIij9glLenOYIP+NrjJlr&#10;ul3ZdaLKmPkGAAAAAACA1H4Br9AsBJlEFdYAAAAASUVORK5CYII=" height="197" preserveAspectRatio="none"/>

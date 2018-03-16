@@ -6,7 +6,6 @@ from freezegun              import freeze_time
 from golem_messages         import load
 from golem_messages         import message
 
-from core.models            import MessageAuth
 from core.models            import PendingResponse
 from core.models            import Subtask
 from core.tests.utils       import ConcentIntegrationTestCase
@@ -74,7 +73,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code, 200)
 
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
@@ -86,7 +85,6 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceGetTaskResult,  # TODO: Remove in final step
                 message.tasks.TaskToCompute,
                 message.tasks.ReportComputedTask,
             ],
@@ -166,9 +164,6 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                 PendingResponse.ResponseType.ForceGetTaskResultUpload,
             ]
         )
-
-        self.assertEqual(MessageAuth.objects.count(), 1)
-
         self._assert_stored_message_counter_not_increased()
 
         # STEP 3: Requestor again forces get task result via Concent with correct key.
@@ -198,8 +193,6 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                 PendingResponse.ResponseType.ForceGetTaskResultUpload,
             ]
         )
-
-        self.assertEqual(MessageAuth.objects.count(), 1)
 
         self._assert_stored_message_counter_not_increased()
         self._assert_client_count_is_equal(2)
@@ -253,7 +246,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        200)
 
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                  = '99',
             subtask_id               = '8',
@@ -265,7 +258,6 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceGetTaskResult,  # TODO: Remove in final step
                 message.tasks.TaskToCompute,
                 message.tasks.ReportComputedTask,
             ],
@@ -488,7 +480,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,      200)
 
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                  = '99',
             subtask_id               = '8',
@@ -500,7 +492,6 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceGetTaskResult,  # TODO: Remove in final step
                 message.tasks.TaskToCompute,
                 message.tasks.ReportComputedTask,
             ],
@@ -528,7 +519,6 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
-        self.assertEqual(MessageAuth.objects.count(), 1)
 
         self._assert_stored_message_counter_not_increased()
 
@@ -725,7 +715,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,      200)
 
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                  = '99',
             subtask_id               = '8',
@@ -737,7 +727,6 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceGetTaskResult,  # TODO: Remove in final step
                 message.tasks.TaskToCompute,
                 message.tasks.ReportComputedTask,
             ],
@@ -965,7 +954,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,      200)
 
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                  = '99',
             subtask_id               = '8',
@@ -977,7 +966,6 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceGetTaskResult,  # TODO: Remove in final step
                 message.tasks.TaskToCompute,
                 message.tasks.ReportComputedTask,
             ],

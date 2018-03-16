@@ -8,7 +8,6 @@ from golem_messages         import message
 from core.models            import StoredMessage
 from core.models            import Subtask
 from core.models            import PendingResponse
-from core.models            import ReceiveStatus
 from core.tests.utils       import ConcentIntegrationTestCase
 from utils.testing_helpers  import generate_ecc_key_pair
 
@@ -78,12 +77,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         assert len(response_1.content)  == 0
         assert response_1.status_code   == 202
 
-        self._test_database_objects(
-            last_object_type         = message.concents.ForceSubtaskResults,
-            task_id                  = '2',
-            receive_delivered_status = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                      = '2',
             subtask_id                   = 'xxyyzz',
@@ -95,7 +89,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.AckReportComputedTask,
             ],
@@ -304,12 +297,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         assert len(response_1.content) == 0
         assert response_1.status_code  == 202
 
-        self._test_database_objects(
-            last_object_type         = message.concents.ForceSubtaskResults,
-            task_id                  = '2',
-            receive_delivered_status = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                      = '2',
             subtask_id                   = 'xxyyzz',
@@ -321,7 +309,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.AckReportComputedTask,
             ],
@@ -406,12 +393,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         assert len(response_1.content) == 0
         assert response_1.status_code  == 202
 
-        self._test_database_objects(
-            last_object_type         = message.concents.ForceSubtaskResults,
-            task_id                  = '2',
-            receive_delivered_status = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                      = '2',
             subtask_id                   = 'xxyyzz',
@@ -423,7 +405,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.AckReportComputedTask,
             ],
@@ -555,7 +536,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         assert len(response_1.content)  == 0
         assert response_1.status_code   == 202
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                      = '2',
             subtask_id                   = 'xxyyzz',
@@ -567,7 +548,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.AckReportComputedTask,
             ],
@@ -633,12 +613,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
                 )
 
-        self._test_database_objects(
-            last_object_type         = message.concents.ForceSubtaskResultsResponse,
-            task_id                  = '2',
-            receive_delivered_status = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by = 1)
         self._test_subtask_state(
             task_id                      = '2',
             subtask_id                   = 'xxyyzz',
@@ -649,7 +624,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceSubtaskResultsResponse,  # TODO: Remove in final step
                 message.tasks.SubtaskResultsAccepted,
             ],
             task_id         = '2',
@@ -686,10 +660,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             }
         )
 
-        self._test_database_objects(
-            last_object_type         = message.concents.ForceSubtaskResultsResponse,
-            task_id                  = '2',
-        )
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(2)
@@ -733,7 +703,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         assert len(response_1.content)  == 0
         assert response_1.status_code   == 202
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                      = '2',
             subtask_id                   = 'xxyyzz',
@@ -745,7 +715,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.AckReportComputedTask,
             ],
@@ -810,12 +779,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
                 )
 
-        self._test_database_objects(
-            last_object_type         = message.concents.ForceSubtaskResultsResponse,
-            task_id                  = '2',
-            receive_delivered_status = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                      = '2',
             subtask_id                   = 'xxyyzz',
@@ -826,7 +790,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceSubtaskResultsResponse,  # TODO: Remove in final step
                 message.tasks.ReportComputedTask,
                 message.tasks.SubtaskResultsRejected,
             ],
@@ -862,11 +825,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'subtask_results_rejected.report_computed_task.timestamp':  self._parse_iso_date_to_timestamp("2018-02-05 10:00:44"),
                 'subtask_results_rejected.report_computed_task.subtask_id': 'xxyyzz'
             }
-        )
-
-        self._test_database_objects(
-            last_object_type         = message.concents.ForceSubtaskResultsResponse,
-            task_id                  = '2',
         )
         self._assert_stored_message_counter_not_increased()
 
@@ -1069,7 +1027,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         assert len(response_1.content)  == 0
         assert response_1.status_code   == 202
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                      = '2',
             subtask_id                   = 'xxyyzz',
@@ -1081,7 +1039,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.AckReportComputedTask,
             ],
@@ -1292,12 +1249,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         assert len(response_1.content) == 0
         assert response_1.status_code  == 202
 
-        self._test_database_objects(
-            last_object_type         = message.concents.ForceSubtaskResults,
-            task_id                  = '2',
-            receive_delivered_status = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                      = '2',
             subtask_id                   = 'xxyyzz',
@@ -1309,7 +1261,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.AckReportComputedTask,
             ],
@@ -1468,12 +1419,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         assert len(response_1.content) == 0
         assert response_1.status_code  == 202
 
-        self._test_database_objects(
-            last_object_type         = message.concents.ForceSubtaskResults,
-            task_id                  = '2',
-            receive_delivered_status = False,
-        )
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
             task_id                      = '2',
             subtask_id                   = 'xxyyzz',
@@ -1485,7 +1431,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceSubtaskResults,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.AckReportComputedTask,
             ],
@@ -1623,10 +1568,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp               = "2018-02-05 10:00:30",
             data                    = deserialized_force_subtask_results,
             task_id                 = deserialized_force_subtask_results.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-            status                  = ReceiveStatus,
-            delivered               = True,
-            provider_public_key     = self.PROVIDER_PUBLIC_KEY,
-            requestor_public_key    = self.REQUESTOR_PUBLIC_KEY,
         )
         self._assert_stored_message_counter_increased()
 
@@ -1652,10 +1593,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp               = "2018-02-05 11:00:01",
             data                    = deserialized_subtask_results_response,
             task_id                 = deserialized_subtask_results_response.subtask_results_accepted.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-            status                  = ReceiveStatus,
-            delivered               = True,
-            provider_public_key     = self.PROVIDER_PUBLIC_KEY,
-            requestor_public_key    = self.REQUESTOR_PUBLIC_KEY,
         )
         self._assert_stored_message_counter_increased()
 
@@ -1745,10 +1682,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp               = "2018-02-05 10:00:30",
             data                    = deserialized_force_subtask_results,
             task_id                 = deserialized_force_subtask_results.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-            status                  = ReceiveStatus,
-            delivered               = True,
-            provider_public_key     = self.PROVIDER_PUBLIC_KEY,
-            requestor_public_key    = self.REQUESTOR_PUBLIC_KEY,
         )
         self._assert_stored_message_counter_increased()
 
@@ -1773,10 +1706,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp               = "2018-02-05 11:00:01",
             data                    = deserialized_subtask_results_response,
             task_id                 = deserialized_subtask_results_response.subtask_results_rejected.report_computed_task.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-            status                  = ReceiveStatus,
-            delivered               = True,
-            provider_public_key     = self.PROVIDER_PUBLIC_KEY,
-            requestor_public_key    = self.REQUESTOR_PUBLIC_KEY,
         )
         self._assert_stored_message_counter_increased()
 
@@ -1867,10 +1796,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp            = "2018-02-05 10:00:30",
             data                 = deserialized_force_subtask_results,
             task_id              = deserialized_force_subtask_results.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-            status               = ReceiveStatus,
-            delivered            = True,
-            provider_public_key  = self.PROVIDER_PUBLIC_KEY,
-            requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
         )
         self._assert_stored_message_counter_increased()
 
@@ -1896,10 +1821,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp            = "2018-02-05 11:00:01",
             data                 = deserialized_subtask_results_response,
             task_id              = deserialized_subtask_results_response.subtask_results_accepted.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-            status               = ReceiveStatus,
-            delivered            = True,
-            provider_public_key  = self.PROVIDER_PUBLIC_KEY,
-            requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
         )
         self._assert_stored_message_counter_increased()
 

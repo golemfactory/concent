@@ -95,7 +95,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
@@ -213,7 +212,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.concents.AckReportComputedTask,  # TODO: Remove in final step
                 message.concents.AckReportComputedTask,
             ],
             task_id         = '1',
@@ -340,7 +338,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
@@ -474,7 +471,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.concents.RejectReportComputedTask,  # TODO: Remove in final step
                 message.concents.RejectReportComputedTask,
             ],
             task_id         = '1',
@@ -604,7 +600,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
@@ -739,7 +734,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.concents.RejectReportComputedTask,  # TODO: Remove in final step
                 message.concents.RejectReportComputedTask,
             ],
             task_id         = '1',
@@ -901,7 +895,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],

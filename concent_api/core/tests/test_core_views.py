@@ -19,7 +19,6 @@ from golem_messages.message         import Message as GolemMessage
 from core.models                    import Client
 from core.models                    import StoredMessage
 from core.models                    import PendingResponse
-from core.models                    import ReceiveStatus
 from core.tests.utils               import ConcentIntegrationTestCase
 from core.models                    import Subtask
 from utils.helpers                  import get_current_utc_timestamp
@@ -86,7 +85,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_accept_valid_message(self):
         assert StoredMessage.objects.count() == 0
-        assert ReceiveStatus.objects.count() == 0
 
         response = self.client.post(
             reverse('core:send'),
@@ -100,12 +98,9 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         )
 
         self.assertEqual(response.status_code,                   202)
-        self.assertEqual(len(ReceiveStatus.objects.all()),       1)
-        self.assertEqual(StoredMessage.objects.first().id,       ReceiveStatus.objects.last().message_id)
-        self._assert_stored_message_counter_increased(increased_by=3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
@@ -117,7 +112,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_200_if_message_timeout(self):
         assert StoredMessage.objects.count() == 0
-        assert ReceiveStatus.objects.count() == 0
 
         task_to_compute = self.task_to_compute
         task_to_compute.compute_task_def['deadline'] = self.message_timestamp - 1   # pylint: disable=no-member
@@ -150,7 +144,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_accept_valid_message_with_non_numeric_task_id(self):
         assert StoredMessage.objects.count() == 0
-        assert ReceiveStatus.objects.count() == 0
 
         compute_task_def = message.ComputeTaskDef()
         compute_task_def['task_id']     = 'ABC00XYZ'
@@ -180,11 +173,9 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         )
 
         self.assertEqual(response.status_code,                   202)
-        self.assertEqual(len(ReceiveStatus.objects.all()),       1)
-        self._assert_stored_message_counter_increased(increased_by=3)
+        self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_last_stored_messages(
             expected_messages = [
-                message.concents.ForceReportComputedTask,  # TODO: Remove in final step
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
@@ -328,7 +319,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
     @freeze_time("2017-11-17 10:00:00")
     def test_send_reject_message_save_as_receive_out_of_band_status(self):
         assert StoredMessage.objects.count() == 0
-        assert ReceiveStatus.objects.count() == 0
 
         force_response = self.client.post(
             reverse('core:send'),
@@ -342,7 +332,15 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         )
 
         self.assertEqual(force_response.status_code,                                202)
-        self.assertEqual(StoredMessage.objects.order_by('timestamp').first().type,  message.ForceReportComputedTask.TYPE)
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.TaskToCompute,
+                message.ReportComputedTask,
+            ],
+            task_id         = '8',
+            subtask_id      = '8',
+            timestamp       = "2017-11-17 10:00:00"
+        )
 
         reject_response = self.client.post(
             reverse('core:send'),
@@ -356,7 +354,14 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         )
 
         self.assertEqual(reject_response.status_code,       202)
-        self.assertEqual(StoredMessage.objects.last().type, message.RejectReportComputedTask.TYPE)
+        self._test_last_stored_messages(
+            expected_messages = [
+                message.RejectReportComputedTask,
+            ],
+            task_id         = '8',
+            subtask_id      = '8',
+            timestamp       = "2017-11-17 10:00:00"
+        )
 
     def test_send_should_reject_message_when_timestamp_too_old(self):
         with freeze_time("2017-11-17 09:40:00"):

@@ -327,6 +327,7 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
     validate_id_value(client_message.report_computed_task.task_to_compute.compute_task_def['task_id'],      'task_id')
     validate_id_value(client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'],   'subtask_id')
 
+    task_deadline = client_message.report_computed_task.task_to_compute.compute_task_def['deadline']
     if Subtask.objects.filter(
         subtask_id = client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'],
         state      = Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name,  # pylint: disable=no-member
@@ -335,11 +336,11 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
             reason = message.concents.ServiceRefused.REASON.DuplicateRequest,
         )
 
-    elif client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.FORCE_ACCEPTANCE_TIME < current_time:
+    elif task_deadline + settings.FORCE_ACCEPTANCE_TIME < current_time:
         logging.log_timeout(
             client_message,
             request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-            client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.FORCE_ACCEPTANCE_TIME,
+            task_deadline + settings.FORCE_ACCEPTANCE_TIME,
         )
         return message.concents.ForceGetTaskResultRejected(
             reason    = message.concents.ForceGetTaskResultRejected.REASON.AcceptanceTimeLimitExceeded,
@@ -352,7 +353,7 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
             provider_public_key         = other_party_public_key,
             requestor_public_key        = client_public_key,
             state                       = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
-            next_deadline               = client_message.report_computed_task.timestamp + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME,
+            next_deadline               = task_deadline + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME,
             set_next_deadline           = True,
             report_computed_task        = client_message.report_computed_task,
             task_to_compute             = client_message.report_computed_task.task_to_compute,

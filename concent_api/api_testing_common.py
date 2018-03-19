@@ -36,18 +36,18 @@ class count_fails(object):
     Decorator that wraps a test functions for intercepting assertions and counting them.
     """
     instances = []
-    number_of_tests = 0
+    number_of_run_tests = 0
 
     def __init__(self, function):
         self._function     = function
         self.__name__ = function.__name__
         self.failed  = False
         count_fails.instances.append(self)
-        count_fails.number_of_tests += 1
 
     def __call__(self, *args, **kwargs):
         try:
             print("Running TC: " + self.__name__)
+            count_fails.number_of_run_tests += 1
             return self._function(*args, **kwargs)
         except TestAssertionException as exception:
             print("{}: FAILED".format(self.__name__))
@@ -60,7 +60,7 @@ class count_fails(object):
 
     @classmethod
     def print_fails(cls):
-        print(f'Total failed tests : {cls.get_fails()} out of {cls.number_of_tests}')
+        print(f'Total failed tests : {cls.get_fails()} out of {cls.number_of_run_tests}')
 
 
 ProtocolConstants = NamedTuple(

@@ -1,7 +1,5 @@
 import importlib
-
 from typing import Dict, Text, Any, List
-
 from golem_messages.message import Message
 
 JsonType = Dict[Text, Any]
@@ -19,7 +17,6 @@ def create_message(message_name: str, message_params: JsonType) -> Message:
     module = module if hasattr(module, convert_message_name(message_name)) else importlib.import_module(
         "golem_messages.message.concents")
     message = getattr(module, convert_message_name(message_name))(**message_params)
-
     return message
 
     # module = importlib.import_module("golem_messages.message")
@@ -64,6 +61,7 @@ class MessageExtractor(object):
 
     def _process_body(self, json: JsonType, name: str) -> Message:
         message_list = [key for key in json.keys() if key in FIELD_NAMES]
+
         if self._contains_valid_message(message_list):
             message_name = message_list[0]
             message = self._process_body(json[message_name], message_name)

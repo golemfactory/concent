@@ -1,6 +1,21 @@
+from golem_messages.shortcuts import dump
+from golem_messages.shortcuts import load
+from utils.testing_helpers import generate_ecc_key_pair
+from api_testing_helpers import print_golem_message
+from concent_api.settings import CONCENT_PUBLIC_KEY
+from message_extractor import MessageExtractor
+from utils.helpers import get_current_utc_timestamp
 from jsonschema import Draft4Validator
+from base64 import b64encode
+import requests
 import argparse
 import json
+import os
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
+
+(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
+(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
 def verify_schema(json_data):
@@ -35,17 +50,40 @@ def get_json_data(args):
         json_data = json.load(open(args.message_file))
     elif args.message:
         json_data = json.loads(args.message)
-    print(json_data)
-    verify_schema(json_data)
+    # verify_schema(json_data)
     return json_data
 
 
-def send_message(args):
-    cluster_url = args.cluster_url
-    json_data = get_json_data(args)
-    print('------------------------\n      Message sent\n------------------------')
+def print_message(message, private_key, public_key, cluster_url, *argv):
+    if str(*argv) != 'response':
+        message_info = ('Message: ' + str((type(message).__name__)) + ' SENT on: ' + str(cluster_url))
+    else:
+        message_info = ('Response: ' + str((type(message).__name__)))
+    message_info_length = len(message_info)
+    print('\n' + '-' * message_info_length + '\n' + str(message_info) + '\n' + '-' * message_info_length + '\n')
+    print_golem_message(message, private_key, public_key, indent=4)
 
-    print(json_data, cluster_url)
+
+def send_message(args):
+    private_key = REQUESTOR_PRIVATE_KEY
+    public_key = REQUESTOR_PUBLIC_KEY
+    json_data = get_json_data(args)
+    STORAGE_CLUSTER_ADDRESS = args.cluster_url
+    message = MessageExtractor().extract_message(json_data)
+    serialized_message = dump(message, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+    headers = {
+        'Content-Type': 'application/octet-stream',
+        'Concent-Client-Public-Key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+        'Concent-Other-Party-Public-Key': b64encode(CONCENT_PUBLIC_KEY).decode('ascii'),
+
+    }
+
+    file_content = serialized_message
+    response = requests.post(STORAGE_CLUSTER_ADDRESS, headers=headers, data=file_content)
+
+    deserialized_response = load(response.content, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time=False)
+    print_message(message, private_key, public_key, STORAGE_CLUSTER_ADDRESS)
+    print_message(deserialized_response, private_key, public_key, STORAGE_CLUSTER_ADDRESS, 'response')
 
 
 def receive_message(args):

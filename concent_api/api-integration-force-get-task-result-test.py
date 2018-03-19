@@ -325,7 +325,6 @@ def main():
     tests_to_execute        = get_tests_list(patterns, list(globals().keys()))
     print("Tests to be executed: \n * " + "\n * ".join(tests_to_execute))
     print()
-    number_of_tests         = len(tests_to_execute)
 
     cluster_consts         = get_protocol_constants(cluster_url)
     print_protocol_constants(cluster_consts)
@@ -337,9 +336,8 @@ def main():
 
     execute_tests(tests_to_execute, cluster_url=cluster_url, current_time=current_time, task_id=task_id)
 
-    total_fails = count_fails.get_fails()
-    if total_fails > 0:
-        print(f'Total failed tests : {total_fails} out of {number_of_tests}')
+    if count_fails.get_fails() > 0:
+        count_fails.print_fails()
     print("END")
 
 

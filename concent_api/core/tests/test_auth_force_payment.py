@@ -5,6 +5,7 @@ from django.urls            import reverse
 from freezegun              import freeze_time
 from golem_messages         import message
 
+from core.models            import PendingResponse
 from core.tests.utils       import ConcentIntegrationTestCase
 from utils.helpers          import get_current_utc_timestamp
 from utils.testing_helpers  import generate_ecc_key_pair
@@ -88,6 +89,10 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
         self._assert_stored_message_counter_not_increased()
 
+        last_pending_message = PendingResponse.objects.filter(delivered = False).order_by('created_at').last()
+        self.assertEqual(last_pending_message.response_type,        PendingResponse.ResponseType.ForcePaymentCommitted.name)  # pylint: disable=no-member
+        self.assertEqual(last_pending_message.client.public_key,    self._get_encoded_requestor_public_key())
+
         with freeze_time("2018-02-05 12:00:21"):
             response_2 = self.client.post(
                 reverse('core:receive_out_of_band'),
@@ -131,3 +136,6 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(1)
+
+        last_pending_message = PendingResponse.objects.filter(delivered = False).last()
+        self.assertIsNone(last_pending_message)

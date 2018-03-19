@@ -2,12 +2,13 @@ from unittest import TestCase, skip
 
 from golem_messages.message import ComputeTaskDef, TaskToCompute, ReportComputedTask
 from golem_messages.message.concents import ForceGetTaskResult
-from message_extractor import MessageExtractor, convert_message_name
+from command_line_tool.message_extractor import MessageExtractor, convert_message_name
 from assertpy import assert_that
 
 
 class TestMessageExtractor(TestCase):
 
+    @skip
     def test_that_exception_is_raised_when_wrong_dict_is_given(self):  # TODO: what exception?
         # assert_that()
         self.fail("not implemented yet")
@@ -48,26 +49,27 @@ class TestMessageExtractor(TestCase):
             }
         }
 
-        task = MessageExtractor().extract_message(input)
-        assert_that(task).is_instance_of(ForceGetTaskResult)
-        assert_that(task.report_computed_task).is_instance_of(ReportComputedTask)
-        assert_that(task.report_computed_task.subtask_id).is_equal_to(subtask_id)
-        assert_that(task.report_computed_task.address).is_equal_to(address)
-        assert_that(task.report_computed_task.size).is_equal_to(size)
-        # assert_that(task.report_computed_task.package_hash).is_equal_to(package_hash)
+        message = MessageExtractor().extract_message(input)
+        assert_that(message).is_instance_of(ForceGetTaskResult)
+        report_computed_task = message.report_computed_task
+        assert_that(report_computed_task).is_instance_of(ReportComputedTask)
+        assert_that(report_computed_task.subtask_id).is_equal_to(subtask_id)
+        assert_that(report_computed_task.address).is_equal_to(address)
+        assert_that(report_computed_task.size).is_equal_to(size)
+        # assert_that(message.report_computed_task.package_hash).is_equal_to(package_hash)
 
-        assert_that(task.report_computed_task.task_to_compute.requestor_public_key).is_equal_to(requestor_public_key)
-        assert_that(task.report_computed_task.task_to_compute.requestor_ethereum_public_key).is_equal_to(
-            requestor_ethereum_public_key)
-        assert_that(task.report_computed_task.task_to_compute.provider_public_key).is_equal_to(provider_public_key)
-        assert_that(task.report_computed_task.task_to_compute.provider_ethereum_public_key).is_equal_to(
-            provider_ethereum_public_key)
-        assert_that(task.report_computed_task.task_to_compute).is_instance_of(TaskToCompute)
+        task_to_compute = report_computed_task.task_to_compute
+        assert_that(task_to_compute.requestor_public_key).is_equal_to(requestor_public_key)
+        assert_that(task_to_compute.requestor_ethereum_public_key).is_equal_to(requestor_ethereum_public_key)
+        assert_that(task_to_compute.provider_public_key).is_equal_to(provider_public_key)
+        assert_that(task_to_compute.provider_ethereum_public_key).is_equal_to(provider_ethereum_public_key)
+        assert_that(task_to_compute).is_instance_of(TaskToCompute)
 
-        assert_that(task.report_computed_task.task_to_compute.compute_task_def).is_instance_of(ComputeTaskDef)
-        assert_that(task.report_computed_task.task_to_compute.compute_task_def["task_id"]).is_equal_to(task_id)
-        assert_that(task.report_computed_task.task_to_compute.compute_task_def["subtask_id"]).is_equal_to(subtask_id)
-        assert_that(task.report_computed_task.task_to_compute.compute_task_def["deadline"]).is_equal_to(deadline)
+        compute_task_def = task_to_compute.compute_task_def
+        assert_that(compute_task_def).is_instance_of(ComputeTaskDef)
+        assert_that(compute_task_def["task_id"]).is_equal_to(task_id)
+        assert_that(compute_task_def["subtask_id"]).is_equal_to(subtask_id)
+        assert_that(compute_task_def["deadline"]).is_equal_to(deadline)
 
     @skip
     def test_that_report_computed_task_message_is_created_when_appropriate_dict_is_given(self):

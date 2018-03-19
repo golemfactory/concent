@@ -3,7 +3,7 @@ from golem_messages.shortcuts import load
 from utils.testing_helpers import generate_ecc_key_pair
 from api_testing_helpers import print_golem_message
 from concent_api.settings import CONCENT_PUBLIC_KEY
-from message_extractor import MessageExtractor
+from .message_extractor import MessageExtractor
 from utils.helpers import get_current_utc_timestamp
 from jsonschema import Draft4Validator
 from base64 import b64encode

@@ -6,6 +6,7 @@ import dateutil.parser
 
 from django.conf            import settings
 from django.test            import TestCase
+from django.shortcuts       import reverse
 from django.utils           import timezone
 
 from freezegun              import freeze_time
@@ -126,7 +127,9 @@ class ConcentIntegrationTestCase(TestCase):
         with freeze_time(timestamp or self._get_timestamp_string()):
             task_to_compute = message.TaskToCompute(
                 compute_task_def                = compute_task_def,
-                requestor_public_key            = requestor_public_key,
+                requestor_public_key            = (
+                    requestor_public_key if requestor_public_key is not None else self.REQUESTOR_PUBLIC_KEY
+                ),
                 requestor_ethereum_public_key   = requestor_ethereum_public_key,
                 provider_public_key             = (
                     provider_public_key if provider_public_key is not None else self.PROVIDER_PUBLIC_KEY
@@ -584,6 +587,25 @@ class ConcentIntegrationTestCase(TestCase):
 
             golem_message.full_clean()
             golem_message.save()
+
+    def _send_force_report_computed_task(self):
+        report_computed_task = message.tasks.ReportComputedTask(
+            task_to_compute = self.task_to_compute  # pylint: disable=no-member
+        )
+        force_report_computed_task = message.ForceReportComputedTask(
+            report_computed_task = report_computed_task,
+        )
+        return self.client.post(
+            reverse('core:send'),
+            data                                = dump(
+                force_report_computed_task,
+                self.PROVIDER_PRIVATE_KEY,
+                settings.CONCENT_PUBLIC_KEY
+            ),
+            content_type                        = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
+        )
 
     def _assert_stored_message_counter_increased(self, increased_by = 1):
         self.assertEqual(StoredMessage.objects.count(), self.stored_message_counter + increased_by)

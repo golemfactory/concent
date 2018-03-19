@@ -18,6 +18,8 @@ from golem_messages                 import shortcuts
 from golem_messages.datastructures  import MessageHeader
 from golem_messages.exceptions      import MessageError
 
+from mypy.types                     import Union
+
 from core                           import exceptions
 from core.payments                  import base
 from gatekeeper.constants           import CLUSTER_DOWNLOAD_PATH
@@ -27,6 +29,7 @@ from utils.api_view                 import Http400
 from utils.helpers                  import decode_key
 from utils.helpers                  import get_current_utc_timestamp
 from utils.helpers                  import parse_timestamp_to_utc_datetime
+from .constants                     import GOLEM_PUBLIC_KEY_LENGTH
 from .constants                     import MESSAGE_TASK_ID_MAX_LENGTH
 from .models                        import Client
 from .models                        import PendingResponse
@@ -438,6 +441,7 @@ def handle_send_force_subtask_results_response(request, client_message):
     client_public_key = decode_client_public_key(request)
 
     if isinstance(client_message.subtask_results_accepted, message.tasks.SubtaskResultsAccepted):
+        validate_golem_message_task_to_compute(client_message.subtask_results_accepted.task_to_compute)
         client_message_subtask_id = client_message.subtask_results_accepted.task_to_compute.compute_task_def['subtask_id']
         report_computed_task      = None
         subtask_results_accepted  = client_message.subtask_results_accepted
@@ -446,6 +450,7 @@ def handle_send_force_subtask_results_response(request, client_message):
         response_type             = PendingResponse.ResponseType.ForceSubtaskResultsResponse
         provider_public_key       = client_message.subtask_results_accepted.task_to_compute.provider_public_key
     else:
+        validate_golem_message_task_to_compute(client_message.subtask_results_rejected.report_computed_task.task_to_compute)
         client_message_subtask_id = client_message.subtask_results_rejected.report_computed_task.task_to_compute.compute_task_def['subtask_id']
         report_computed_task      = client_message.subtask_results_rejected.report_computed_task
         subtask_results_accepted  = None
@@ -611,27 +616,32 @@ def deserialize_message(raw_message_data):
         raise Http400("Unable to deserialize Golem Message: {}.".format(exception))
 
 
-def validate_golem_message_task_to_compute(data):
-    if not isinstance(data, message.TaskToCompute):
+def validate_golem_message_task_to_compute(golem_message: message.base.Message):
+    if not isinstance(golem_message, message.TaskToCompute):
         raise Http400("Expected TaskToCompute.")
 
-    data.compute_task_def['deadline'] = validate_int_value(data.compute_task_def['deadline'])
+    golem_message.compute_task_def['deadline'] = validate_int_value(golem_message.compute_task_def['deadline'])
 
-    validate_id_value(data.compute_task_def['task_id'], 'task_id')
+    validate_id_value(golem_message.compute_task_def['task_id'], 'task_id')
+
+    validate_public_key(golem_message.provider_public_key,  'provider_public_key')
+    validate_public_key(golem_message.requestor_public_key, 'requestor_public_key')
 
 
-def validate_golem_message_reject(data):
-    if not isinstance(data, message.CannotComputeTask) and not isinstance(data, message.TaskFailure) and not isinstance(data, message.TaskToCompute):
+def validate_golem_message_reject(
+    golem_message: Union[message.CannotComputeTask, message.TaskFailure, message.TaskToCompute]
+):
+    if not isinstance(golem_message, (message.CannotComputeTask, message.TaskFailure, message.TaskToCompute)):
         raise Http400("Expected CannotComputeTask, TaskFailure or TaskToCompute.")
 
-    if isinstance(data, message.CannotComputeTask):
-        validate_id_value(data.task_to_compute.compute_task_def['task_id'], 'task_id')
+    if isinstance(golem_message, message.CannotComputeTask):
+        validate_id_value(golem_message.task_to_compute.compute_task_def['task_id'], 'task_id')
 
-    if isinstance(data, (message.TaskToCompute, message.TaskFailure)):
-        if data.compute_task_def['task_id'] == '':
+    if isinstance(golem_message, (message.TaskToCompute, message.TaskFailure)):
+        if golem_message.compute_task_def['task_id'] == '':
             raise Http400("task_id cannot be blank.")
 
-        data.compute_task_def['deadline'] = validate_int_value(data.compute_task_def['deadline'])
+        golem_message.compute_task_def['deadline'] = validate_int_value(golem_message.compute_task_def['deadline'])
 
 
 def validate_int_value(value):
@@ -659,6 +669,16 @@ def validate_id_value(value, field_name):
 
     if len(value) > MESSAGE_TASK_ID_MAX_LENGTH:
         raise Http400("{} cannot be longer than {} chars.".format(field_name, MESSAGE_TASK_ID_MAX_LENGTH))
+
+
+def validate_public_key(value, field_name):
+    assert isinstance(field_name, str)
+
+    if not isinstance(value, bytes):
+        raise Http400("{} must be string.".format(field_name))
+
+    if len(value) != GOLEM_PUBLIC_KEY_LENGTH:
+        raise Http400("The length of {} must be exactly {} characters.".format(field_name, GOLEM_PUBLIC_KEY_LENGTH))
 
 
 def store_subtask(

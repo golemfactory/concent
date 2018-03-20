@@ -1,11 +1,25 @@
 import importlib
+import types
+import re
 from typing import Dict, Text, Any, List
 from golem_messages.message import Message
+from inspect import getmembers, ismodule, isclass
 
 JsonType = Dict[Text, Any]
 
 FIELD_NAMES = ['task_to_compute', 'compute_task_def', 'report_computed_task', 'force_get_task_result']
 
+
+def find_modules():
+    package = importlib.import_module("golem_messages.message.tasks")
+    package2 = importlib.import_module("golem_messages.message.concents")
+    package3 = importlib.import_module("golem_messages.message")
+
+    return list(dict([(name, cls) for name, cls in package.__dict__.items() if isinstance(cls, type)]).keys())
+
+
+# print(find_modules())
+# package = importlib.import_module("golem_messages.message.tasks")
 
 def validate_message_list(message_list: List[Message]) -> None:
     if len(message_list) > 1:
@@ -38,6 +52,10 @@ def substitue_message(json: JsonType, message_name: str, message: Message) -> Js
 
 def convert_message_name(message):
     return ''.join([(word[:1].capitalize() + word[1:]) for word in message.split('_')])
+
+
+def split_uppercase(message):
+    return (''.join([(word[:1].lower() + word[1:]) for word in re.sub(r'([A-Z])', r'_\1', message)]))[1:]
 
 
 class MessageExtractor(object):

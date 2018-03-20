@@ -1,0 +1,21 @@
+{
+    "name": "force_get_task_result",
+    "body": {
+        "report_computed_task": {
+            "subtask_id": "12",
+            "address": "10.10.10.1",
+            "size": 1048576,
+            "task_to_compute": {
+                "requestor_public_key": "reqpubkey",
+                "requestor_ethereum_public_key": "reqethpubkey",
+                "provider_public_key": "provpubkey",
+                "provider_ethereum_public_key": "provethpubkey",
+                "compute_task_def": {
+                    "task_id": "2",
+                    "subtask_id": "12",
+                    "deadline": 2010394400
+                }
+            }
+        }
+    }
+}

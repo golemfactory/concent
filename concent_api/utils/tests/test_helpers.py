@@ -1,10 +1,15 @@
 import datetime
 
+from assertpy               import assert_that
+from django.core.checks     import Error
+from django.test            import override_settings
 from django.test            import TestCase
 from django.utils           import timezone
+from mock                   import patch
 
 from utils.helpers          import parse_datetime_to_timestamp
 from utils.helpers          import parse_timestamp_to_utc_datetime
+from utils.helpers          import storage_cluster_certificate_path_check
 
 
 class HelpersTestCase(TestCase):
@@ -52,3 +57,62 @@ class HelpersTestCase(TestCase):
                 parse_timestamp_to_utc_datetime(timestamp),
                 expected_datetime
             )
+
+
+class TestStorageClusterCertificatePathCheck(TestCase):
+    file_with_wrong_extension = 'certificate.wrong_extension'
+
+    @override_settings(
+            STORAGE_CLUSTER_SSL_CERTIFICATE_PATH = ''
+    )
+    def test_that_empty_string_does_not_produce_any_errors(self):
+        errors = storage_cluster_certificate_path_check()
+
+        assert_that(errors).is_instance_of(list)
+        assert_that(errors).is_empty()
+
+    @override_settings(
+            STORAGE_CLUSTER_SSL_CERTIFICATE_PATH = 'non_existing_path.crt'
+    )
+    def test_that_non_existing_path_produces_an_error(self):
+        expected_error  = Error("File not found")
+        errors          = storage_cluster_certificate_path_check()
+
+        assert_that(errors).is_length(1)
+        assert_that(errors[0]).is_equal_to(expected_error)
+
+    @override_settings(
+            STORAGE_CLUSTER_SSL_CERTIFICATE_PATH = file_with_wrong_extension
+    )
+    @patch('utils.helpers.os.path.exists', return_value = True)
+    def test_that_wrong_file_extension_produces_an_error(self, _):
+        expected_error  = Error(f"{self.file_with_wrong_extension} is not a SSL certificate")
+        errors          = storage_cluster_certificate_path_check()
+
+        assert_that(errors).is_length(1)
+        assert_that(errors[0]).is_equal_to(expected_error)
+
+    @override_settings(
+            STORAGE_CLUSTER_SSL_CERTIFICATE_PATH = 'non_existing.wrong_extension'
+    )
+    @patch('utils.helpers.os.path.exists', return_value = False)
+    @patch('utils.helpers.os.path.splitext', lambda x: (x[:-4], x[-4:]))
+    def test_that_only_one_error_is_returned_and_path_existence_is_checked_first(self, _):
+        expected_error  = Error("File not found")
+        errors          = storage_cluster_certificate_path_check()
+
+        assert_that(errors).is_length(1)
+        assert_that(errors[0]).is_equal_to(expected_error)
+
+    @override_settings(
+            STORAGE_CLUSTER_SSL_CERTIFICATE_PATH = 'existing_file.crt'
+    )
+    @patch('utils.helpers.os.path.exists', return_value = True)
+    @patch('utils.helpers.os.path.splitext', lambda x: (x[:-4], x[-4:]))
+    def test_that_correct_file_path_does_not_produce_any_error(self, _):
+        errors = storage_cluster_certificate_path_check()
+
+        assert_that(errors).is_instance_of(list)
+        assert_that(errors).is_empty()
+
+

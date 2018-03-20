@@ -2,8 +2,11 @@ import calendar
 import base64
 import binascii
 import datetime
+import os
 import time
 
+from django.conf                    import settings
+from django.core.checks             import Error
 from django.utils                   import timezone
 
 from golem_messages                 import message
@@ -11,6 +14,16 @@ from golem_messages.datastructures  import FrozenDict
 from golem_messages.exceptions      import MessageError
 
 from core.exceptions                import Http400
+
+
+def storage_cluster_certificate_path_check(app_configs = None, **kwargs):
+    certificate_path = settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH
+    if certificate_path != '':
+        if not os.path.exists(certificate_path):
+            return [Error("File not found")]
+        if os.path.splitext(certificate_path)[1] != '.crt':
+            return [Error(f"{certificate_path} is not a SSL certificate")]
+    return []
 
 
 def is_base64(data: str) -> bool:

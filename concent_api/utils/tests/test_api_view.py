@@ -130,7 +130,7 @@ class ApiViewTestCase(TestCase):
 
         request = self.request_factory.get(
             "/dummy-url/",
-            content_type = 'application/octet-strea',
+            content_type = 'application/octet-stream',
             data         = '',
         )
         request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'] = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii')

@@ -1,18 +1,28 @@
-import json
 from base64                         import b64encode
+import json
+import mock
 
 from django.conf                    import settings
-from django.test                    import TestCase, RequestFactory, override_settings
+from django.http.response           import HttpResponse
+from django.shortcuts               import reverse
+from django.test                    import override_settings
+from django.test                    import RequestFactory
+from django.test                    import TestCase
+from django.test                    import TransactionTestCase
 from django.views.decorators.http   import require_POST
-
-from golem_messages.message         import WantToComputeTask
+from golem_messages                 import message
 from golem_messages                 import dump, load
 
+from core.models                    import Client
 from utils.api_view                 import api_view
+from utils.api_view                 import Http400
+from utils.helpers                  import get_current_utc_timestamp
 from utils.testing_helpers          import generate_ecc_key_pair
 
 
-(CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
+(CONCENT_PRIVATE_KEY,   CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
+(PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)  = generate_ecc_key_pair()
+(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
 @override_settings(
@@ -22,7 +32,7 @@ from utils.testing_helpers          import generate_ecc_key_pair
 class ApiViewTestCase(TestCase):
     def setUp(self):
         self.request_factory = RequestFactory()
-        self.want_to_compute = WantToComputeTask(
+        self.want_to_compute = message.WantToComputeTask(
             node_name           = 1,
             task_id             = 2,
             perf_index          = 3,
@@ -51,9 +61,9 @@ class ApiViewTestCase(TestCase):
         decoded_message = None
 
         @api_view
-        def dummy_view(request, message):                                       # pylint: disable=unused-argument
+        def dummy_view(request, _message):                                       # pylint: disable=unused-argument
             nonlocal decoded_message
-            decoded_message = message
+            decoded_message = _message
             return None
 
         request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream', data = raw_message)
@@ -62,13 +72,13 @@ class ApiViewTestCase(TestCase):
         dummy_view(request)                                                     # pylint: disable=no-value-for-parameter
 
         message_to_test = message_to_dict(decoded_message)
-        self.assertIsInstance(decoded_message, WantToComputeTask)
+        self.assertIsInstance(decoded_message, message.WantToComputeTask)
         self.assertEqual(message_to_test, self.message_to_view)
 
     def test_api_view_should_encode_golem_message_returned_from_view(self):
 
         @api_view
-        def dummy_view(request, message):                                       # pylint: disable=unused-argument
+        def dummy_view(request, _message):                                      # pylint: disable=unused-argument
             return self.want_to_compute
 
         request = self.request_factory.post("/dummy-url/", content_type = '', data = '')
@@ -90,7 +100,7 @@ class ApiViewTestCase(TestCase):
     def test_api_view_should_return_http_415_when_request_content_type_is_not_supported(self):
 
         @api_view
-        def dummy_view(request, message):                                       # pylint: disable=unused-argument
+        def dummy_view(request, _message):                                      # pylint: disable=unused-argument
             return self.want_to_compute
 
         request = self.request_factory.post("/dummy-url/", content_type = 'application/x-www-form-urlencoded', data = self.want_to_compute)
@@ -106,7 +116,7 @@ class ApiViewTestCase(TestCase):
     def test_api_view_should_return_http_415_when_request_content_type_is_appplication_json(self):
 
         @api_view
-        def dummy_view(request, message):                                       # pylint: disable=unused-argument
+        def dummy_view(request, _message):                                      # pylint: disable=unused-argument
             return self.message_to_view
 
         request = self.request_factory.post("/dummy-url/", content_type = 'application/json', data = json.dumps(self.message_to_view))
@@ -138,6 +148,158 @@ class ApiViewTestCase(TestCase):
         response = dummy_view(request)  # pylint: disable=no-value-for-parameter,assignment-from-no-return
 
         self.assertEqual(response.status_code,  405)
+
+
+def _log_message_received_500_mock(_message, _client_public_key):
+    Client.objects.get_or_create_full_clean(
+        CONCENT_PUBLIC_KEY
+    )
+    raise TypeError
+
+
+def _log_message_received_400_mock(_message, _client_public_key):
+    Client.objects.get_or_create_full_clean(
+        CONCENT_PUBLIC_KEY
+    )
+    raise Http400
+
+
+def _log_message_received_200_mock(_message, _client_public_key):
+    Client.objects.get_or_create_full_clean(
+        CONCENT_PUBLIC_KEY
+    )
+    return HttpResponse()
+
+
+def gatekeeper_access_denied_response_500_mock(_message, _path = None, _subtask_id = None, _client_key = None):
+    Client.objects.get_or_create_full_clean(
+        CONCENT_PUBLIC_KEY
+    )
+    raise TypeError
+
+
+def gatekeeper_access_denied_response_400_mock(_message, _path = None, _subtask_id = None, _client_key = None):
+    Client.objects.get_or_create_full_clean(
+        CONCENT_PUBLIC_KEY
+    )
+    raise Http400
+
+
+def gatekeeper_access_denied_response_200_mock(_message, _path = None, _subtask_id = None, _client_key = None):
+    Client.objects.get_or_create_full_clean(
+        CONCENT_PUBLIC_KEY
+    )
+    return HttpResponse()
+
+
+@override_settings(
+    CONCENT_PRIVATE_KEY = CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY  = CONCENT_PUBLIC_KEY,
+)
+class ApiViewTransactionTestCase(TransactionTestCase):
+
+    def test_api_view_should_rollback_changes_on_500_error(self):
+
+        with mock.patch('utils.logging.log_message_received', _log_message_received_500_mock):
+            try:
+                self.client.post(
+                    reverse('core:send'),
+                    data                                = '',
+                    content_type                        = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii'),
+                )
+            except TypeError:
+                pass
+
+        self.assertEqual(Client.objects.count(), 0)
+
+    def test_api_view_should_rollback_changes_on_400_error(self):
+
+        with mock.patch('utils.logging.log_message_received', _log_message_received_400_mock):
+            self.client.post(
+                reverse('core:send'),
+                data                                = '',
+                content_type                        = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii'),
+            )
+
+        self.assertEqual(Client.objects.count(), 0)
+
+    def test_api_view_should_not_rollback_changes_on_200_response(self):
+
+        message_timestamp              = get_current_utc_timestamp()
+        compute_task_def               = message.ComputeTaskDef()
+        compute_task_def['task_id']    = '8'
+        compute_task_def['subtask_id'] = '8'
+        compute_task_def['deadline']   = message_timestamp
+        task_to_compute                = message.TaskToCompute(
+            compute_task_def     = compute_task_def,
+            requestor_public_key = REQUESTOR_PUBLIC_KEY,
+            provider_public_key  = PROVIDER_PUBLIC_KEY,
+        )
+
+        force_report_computed_task                                      = message.ForceReportComputedTask()
+        force_report_computed_task.report_computed_task                 = message.tasks.ReportComputedTask()
+        force_report_computed_task.report_computed_task.task_to_compute = task_to_compute
+
+        with mock.patch('utils.logging.log_message_received', _log_message_received_200_mock):
+            response = self.client.post(
+                reverse('core:send'),
+                data                                = dump(
+                    force_report_computed_task,
+                    PROVIDER_PRIVATE_KEY,
+                    CONCENT_PUBLIC_KEY
+                ),
+                content_type                        = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            )
+
+        self.assertEqual(response.status_code,   202)
+        self.assertEqual(Client.objects.count(), 3)  # 3 because view itself is creating 2 clients.
+
+    def test_non_api_view_should_rollback_changes_on_500_error(self):
+
+        with mock.patch('gatekeeper.views.gatekeeper_access_denied_response', gatekeeper_access_denied_response_500_mock):
+            try:
+                self.client.post(
+                    reverse('gatekeeper:upload'),
+                    data                                = '',
+                    content_type                        = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii'),
+                )
+            except TypeError:
+                pass
+
+        self.assertEqual(Client.objects.count(), 0)
+
+    def test_non_api_view_should_rollback_changes_on_400_error(self):
+
+        with mock.patch('gatekeeper.views.gatekeeper_access_denied_response', gatekeeper_access_denied_response_400_mock):
+            try:
+                self.client.post(
+                    reverse('gatekeeper:upload'),
+                    data                                = '',
+                    content_type                        = 'application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii'),
+                )
+            except Http400:
+                pass
+
+        self.assertEqual(Client.objects.count(), 0)
+
+    def test_non_api_view_should_not_rollback_changes_on_200_response(self):
+
+        with mock.patch('gatekeeper.views.gatekeeper_access_denied_response', gatekeeper_access_denied_response_200_mock):
+            response = self.client.post(
+                reverse('gatekeeper:upload'),
+                data                                = '',
+                content_type                        = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii'),
+            )
+
+        self.assertEqual(response.status_code,   200)
+        self.assertEqual(Client.objects.count(), 1)
 
 
 def message_to_dict(message_from_view):

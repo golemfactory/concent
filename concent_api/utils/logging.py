@@ -100,6 +100,14 @@ def log_400_error(endpoint: str, message: Message, client_public_key: str):
     ))
 
 
+def log_message_not_allowed(endpoint: str, method: str, client_public_key: str):
+    logger.info('Endpoint {} does not allow HTTP method {} -- CLIENT PUBLIC KEY: {}'.format(
+        endpoint,
+        method,
+        client_public_key,
+    ))
+
+
 def log_subtask_stored(
     task_id:              str,
     subtask_id:           str,

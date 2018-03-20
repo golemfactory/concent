@@ -1,13 +1,15 @@
 import json
-from base64                 import b64encode
+from base64                         import b64encode
 
-from django.test            import TestCase, RequestFactory, override_settings
-from django.conf            import settings
-from golem_messages.message import WantToComputeTask
-from golem_messages         import dump, load
+from django.conf                    import settings
+from django.test                    import TestCase, RequestFactory, override_settings
+from django.views.decorators.http   import require_POST
 
-from utils.api_view         import api_view
-from utils.testing_helpers  import generate_ecc_key_pair
+from golem_messages.message         import WantToComputeTask
+from golem_messages                 import dump, load
+
+from utils.api_view                 import api_view
+from utils.testing_helpers          import generate_ecc_key_pair
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
@@ -114,6 +116,28 @@ class ApiViewTestCase(TestCase):
 
         self.assertEqual(response['content-type'], "application/json")
         self.assertEqual(response.status_code, 415)                             # pylint: disable=no-member
+
+    def test_request_with_not_allowed_http_method_should_return_405_error(self):
+        """
+        Tests if request to Concent with will return HTTP 405 error
+        if not allowed HTTP method by view is used.
+        """
+
+        @api_view
+        @require_POST
+        def dummy_view(_request, _message):
+            self.fail()
+
+        request = self.request_factory.get(
+            "/dummy-url/",
+            content_type = 'application/octet-strea',
+            data         = '',
+        )
+        request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'] = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii')
+
+        response = dummy_view(request)  # pylint: disable=no-value-for-parameter,assignment-from-no-return
+
+        self.assertEqual(response.status_code,  405)
 
 
 def message_to_dict(message_from_view):

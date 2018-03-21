@@ -16,6 +16,7 @@ from django.views.decorators.csrf   import csrf_exempt
 from django.views.decorators.http   import require_POST
 from django.views.decorators.http   import require_safe
 
+from constance                      import config
 from golem_messages.exceptions      import MessageError
 from golem_messages.message         import FileTransferToken
 from golem_messages.message         import Message
@@ -23,6 +24,7 @@ from golem_messages.shortcuts       import load
 
 from gatekeeper.enums               import HashingAlgorithm
 from gatekeeper.utils               import gatekeeper_access_denied_response
+from utils.helpers                  import decode_key
 from utils.helpers                  import get_current_utc_timestamp
 
 
@@ -35,6 +37,13 @@ VALID_SHA1_HASH_REGEX = re.compile(r"^[a-fA-F\d]{40}$")
 @require_POST
 def upload(request):
     logger.debug("Upload request received.")
+
+    if config.SHUTDOWN_MODE is True and not is_request_from_concent_api(request):
+        return JsonResponse(
+            {'error': 'Concent is in shutdown mode.'},
+            status = 401
+        )
+
     if request.content_type != 'application/x-www-form-urlencoded':
         return gatekeeper_access_denied_response('Unsupported content type.')
 
@@ -56,6 +65,13 @@ def upload(request):
 @require_safe
 def download(request):
     logger.debug("Download request received.")
+
+    if config.SHUTDOWN_MODE is True and not is_request_from_concent_api(request):
+        return JsonResponse(
+            {'error': 'Concent is in shutdown mode.'},
+            status = 401
+        )
+
     # The client should not sent Content-Type header with GET requests.
     # FIXME: When running on `manage.py runserver` in development, empty or missing Concent-Type gets replaced
     # with text/plain. gunicorn does not do this. Looks like a bug to me. We'll let it pass for now sice we ignore
@@ -191,3 +207,13 @@ def parse_headers(request: WSGIRequest, path_to_file: str) -> Union[FileTransfer
     else:
         assert len(matching_files) == 0
         return gatekeeper_access_denied_response('Path to specified file is not listed in files variable.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
+
+
+def is_request_from_concent_api(request) -> bool:
+    """
+    Checks if given request is sent from Concent API by checking HTTP_CONCENT_CLIENT_PUBLIC_KEY header.
+    """
+    return (
+        'HTTP_CONCENT_CLIENT_PUBLIC_KEY' in request.META and
+        decode_key(request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']) == settings.CONCENT_PUBLIC_KEY
+    )

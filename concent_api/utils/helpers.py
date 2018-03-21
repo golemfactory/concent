@@ -7,6 +7,7 @@ import time
 
 from django.conf                    import settings
 from django.core.checks             import Error
+from django.core.checks             import register
 from django.utils                   import timezone
 
 from golem_messages                 import message
@@ -16,6 +17,7 @@ from golem_messages.exceptions      import MessageError
 from core.exceptions                import Http400
 
 
+@register
 def storage_cluster_certificate_path_check(app_configs = None, **kwargs):
     certificate_path = settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH
     if certificate_path != '':

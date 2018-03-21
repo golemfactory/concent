@@ -354,6 +354,7 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
             requestor_public_key        = client_public_key,
             state                       = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             next_deadline               = task_deadline + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME,
+            # next_deadline               = client_message.report_computed_task.timestamp + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME,
             set_next_deadline           = True,
             report_computed_task        = client_message.report_computed_task,
             task_to_compute             = client_message.report_computed_task.task_to_compute,
@@ -1327,6 +1328,7 @@ def request_upload_status(file_transfer_token_from_database: message.concents.Fi
         request_http_address,
         headers = headers
     )
+    logging.logger.info(f"RESP in 'request_upload_status': {cluster_storage_response.status_code}")
     if cluster_storage_response.status_code == 200:
         return True
     elif cluster_storage_response.status_code in [401, 404]:

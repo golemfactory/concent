@@ -19,13 +19,14 @@ from core.exceptions                import Http400
 
 @register
 def storage_cluster_certificate_path_check(app_configs = None, **kwargs):
+    errors = []
     certificate_path = settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH
     if certificate_path != '':
         if not os.path.exists(certificate_path):
-            return [Error("File not found")]
-        if os.path.splitext(certificate_path)[1] != '.crt':
-            return [Error(f"{certificate_path} is not a SSL certificate")]
-    return []
+            errors.append(Error("File not found"))
+        elif os.path.splitext(certificate_path)[1] != '.crt':
+            errors.append(Error(f"{certificate_path} is not a SSL certificate"))
+    return errors
 
 
 def is_base64(data: str) -> bool:

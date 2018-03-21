@@ -59,6 +59,7 @@ class HelpersTestCase(TestCase):
             )
 
 
+# pylint: disable=R0201
 class TestStorageClusterCertificatePathCheck(TestCase):
     file_with_wrong_extension = 'certificate.wrong_extension'
 
@@ -114,5 +115,3 @@ class TestStorageClusterCertificatePathCheck(TestCase):
 
         assert_that(errors).is_instance_of(list)
         assert_that(errors).is_empty()
-
-

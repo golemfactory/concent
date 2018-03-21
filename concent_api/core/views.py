@@ -766,6 +766,7 @@ def verify_file_status(
             client_public_key,
             'upload'
         )
+        logging.logger.critical(f"In verify file status, list len = {len(force_get_task_result_list)}")
         if request_upload_status(file_transfer_token):
             subtask               = get_task_result
             subtask.state         = Subtask.SubtaskState.RESULT_UPLOADED.name  # pylint: disable=no-member
@@ -1324,11 +1325,12 @@ def request_upload_status(file_transfer_token_from_database: message.concents.Fi
     }
     request_http_address = settings.STORAGE_CLUSTER_ADDRESS + CLUSTER_DOWNLOAD_PATH + file_transfer_token.files[0]['path']
 
+    logging.logger.critical("before head call  in 'request_upload_status'")
     cluster_storage_response = requests.head(
         request_http_address,
         headers = headers
     )
-    logging.logger.info(f"RESP in 'request_upload_status': {cluster_storage_response.status_code}")
+    logging.logger.critical(f"RESP in 'request_upload_status': {cluster_storage_response.status_code}")
     if cluster_storage_response.status_code == 200:
         return True
     elif cluster_storage_response.status_code in [401, 404]:

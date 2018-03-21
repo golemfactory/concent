@@ -15,6 +15,7 @@ from golem_messages.exceptions      import MessageTooOldError
 from golem_messages.exceptions      import TimestampError
 
 from core.validation                import validate_golem_message_signed_with_key
+from core.exceptions                import ConcentInSoftShutdownMode
 from core.exceptions                import Http400
 
 from utils.helpers                  import get_validated_client_public_key_from_client_message
@@ -112,6 +113,9 @@ def handle_errors_and_responses(view):
             )
             transaction.savepoint_rollback(sid)
             return JsonResponse({'error': str(exception)}, status = 400)
+        except ConcentInSoftShutdownMode:
+            transaction.savepoint_rollback(sid)
+            return JsonResponse({'error': 'Concent is in soft shutdown mode.'}, status = 503)
         if isinstance(response_from_view, message.Message):
             assert response_from_view.sig is None
             logging.log_message_returned(

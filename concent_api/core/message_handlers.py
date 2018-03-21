@@ -7,8 +7,11 @@ from typing import Optional
 from typing import Union
 
 from django.conf import settings
+from django.core.mail import mail_admins
 from django.http import HttpResponse
 from django.utils import timezone
+
+from constance import config
 
 from golem_sci.events import BatchTransferEvent
 from golem_sci.events import ForcedPaymentEvent
@@ -16,6 +19,7 @@ from golem_messages import message
 from golem_messages.message import FileTransferToken
 from golem_messages.message.tasks import SubtaskResultsRejected
 
+from core.exceptions import ConcentInSoftShutdownMode
 from core.exceptions import Http400
 from core.models import Client
 from core.models import PaymentInfo
@@ -574,6 +578,11 @@ def get_clients_eth_accounts(task_to_compute: message.tasks.TaskToCompute):
 
 
 def handle_send_force_payment(client_message: message.concents.ForcePayment) -> message.concents.ForcePaymentCommitted:  # pylint: disable=inconsistent-return-statements
+
+    # Concent should not accept payment requests in soft shutdown mode.
+    if config.SOFT_SHUTDOWN_MODE is True:
+        raise ConcentInSoftShutdownMode
+
     current_time            = get_current_utc_timestamp()
 
     if not verify_message_subtask_results_accepted(client_message.subtask_results_accepted_list):
@@ -1000,6 +1009,17 @@ def update_subtask(
         subtask.requestor.public_key,
         next_deadline,
     )
+
+    # Concent should send e-mail notification when the last active subtask switches to a passive state.
+    if config.SOFT_SHUTDOWN_MODE is True and not Subtask.objects.filter(state__in=Subtask.ACTIVE_STATES).exists():
+        mail_admins(
+            subject = 'Concent soft shutdown complete',
+            message = (
+                "All subtasks tracked by this Concent instance are now in passive states.\n"
+                "It's safe to turn off the control cluster.\n"
+                "Note that there may still be downloads in progress on the storage cluster."
+            )
+        )
 
     return subtask
 

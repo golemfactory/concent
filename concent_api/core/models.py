@@ -13,8 +13,10 @@ from django.db.models       import PositiveSmallIntegerField
 from django.db.models       import Manager
 from django.utils           import timezone
 
+from constance              import config
 from golem_messages         import message
 
+from core.exceptions        import ConcentInSoftShutdownMode
 from utils.fields           import Base64Field
 from utils.fields           import ChoiceEnum
 
@@ -312,6 +314,10 @@ class Subtask(Model):
 
     def clean(self):
         super().clean()
+
+        # Concent should not accept anything that cause a transition to an active state in soft shutdown mode.
+        if config.SOFT_SHUTDOWN_MODE is True and self.state_enum in self.ACTIVE_STATES:
+            raise ConcentInSoftShutdownMode
 
         # next_deadline must be int only for active states
         if not self._state.adding and not isinstance(self.next_deadline, int) and self.state_enum in self.ACTIVE_STATES:

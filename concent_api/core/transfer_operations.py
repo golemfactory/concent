@@ -155,13 +155,25 @@ def request_upload_status(file_transfer_token_from_database: message.concents.Fi
     }
     request_http_address = settings.STORAGE_CLUSTER_ADDRESS + CLUSTER_DOWNLOAD_PATH + file_transfer_token.files[0]['path']
 
-    cluster_storage_response = requests.head(
-        request_http_address,
-        headers = headers
-    )
+    cluster_storage_response = send_request_to_cluster_storage(headers, request_http_address)
+
     if cluster_storage_response.status_code == 200:
         return True
     elif cluster_storage_response.status_code in [401, 404]:
         return False
     else:
         raise exceptions.UnexpectedResponse()
+
+
+def send_request_to_cluster_storage(headers, request_http_address):
+    if settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH != '':
+        return requests.head(
+                request_http_address,
+                headers = headers,
+                cert    = settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH,
+        )
+
+    return requests.head(
+            request_http_address,
+            headers = headers
+    )

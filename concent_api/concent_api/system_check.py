@@ -1,4 +1,5 @@
 import importlib
+import os
 
 from django.core.checks     import Error
 from django.core.checks     import Warning  # pylint: disable=redefined-builtin
@@ -8,6 +9,29 @@ from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 
 from concent_api.constants  import AVAILABLE_CONCENT_FEATURES
+
+
+def create_error_13_ssl_cert_path_is_none():
+    return Error(
+        "None is not a valid value for STORAGE_CLUSTER_SSL_CERTIFICATE_PATH",
+        hint    = "If no SSL certificate should be use for storage cluster STORAGE_CLUSTER_SSL_CERTIFICATE_PATH should be an empty string",
+        id      = "concent.E013",
+    )
+
+
+def create_error_14_cert_path_does_not_exist(path):
+    return Error(
+        f"'{path}' does not exist",
+        id = "concent.E014",
+    )
+
+
+def create_error_15_ssl_cert_path_is_not_a_file(path):
+    return Error(
+        f"{path} is not a file",
+        hint    = "STORAGE_CLUSTER_SSL_CERTIFICATE_PATH should be an OpenSSL certificate file",
+        id      = "concent.E015",
+    )
 
 
 @register()
@@ -91,3 +115,17 @@ def check_payment_backend(app_configs, **kwargs):  # pylint: disable=unused-argu
         )]
 
     return []
+
+
+@register()
+def storage_cluster_certificate_path_check(app_configs = None, **kwargs):
+    errors = []
+    certificate_path = settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH
+    if certificate_path != '':
+        if certificate_path is None:
+            errors.append(create_error_13_ssl_cert_path_is_none())
+        elif not os.path.exists(certificate_path):
+            errors.append(create_error_14_cert_path_does_not_exist(certificate_path))
+        elif not os.path.isfile(certificate_path):
+            errors.append(create_error_15_ssl_cert_path_is_not_a_file(certificate_path))
+    return errors

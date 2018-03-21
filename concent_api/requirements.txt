@@ -11,3 +11,4 @@ mock
 raven
 mypy
 celery
+django-constance[database]

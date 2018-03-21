@@ -53,5 +53,6 @@ APP_LABEL_TO_DATABASE = {
     'contenttypes': 'default',
     'core':         'default',
     'conductor':    'storage',
+    'database':     'default',
     'sessions':     'default',
 }

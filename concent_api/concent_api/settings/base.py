@@ -18,6 +18,8 @@ INSTALLED_APPS = [
 
     # Third-party apps:
     'raven.contrib.django.raven_compat',
+    'constance',
+    'constance.backends.database',
 
     # Our apps:
     'concent_api',
@@ -89,6 +91,9 @@ DATABASES = {
 }
 
 DATABASE_ROUTERS = ['concent_api.database_router.DatabaseRouter']
+
+# Defines database used by Constance app.
+CONSTANCE_DBS = ['default']
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
@@ -215,6 +220,16 @@ LOGGING = {
     },
 }
 
+# Django constance config
+CONSTANCE_BACKEND = 'constance.backends.database.DatabaseBackend'
+CONSTANCE_CONFIG = {
+    # Defines if Concent is in soft shutdown mode.
+    'SOFT_SHUTDOWN_MODE': (False, 'Soft shutdown mode', bool),
+}
+
+CONSTANCE_CONFIG_FIELDSETS = {
+    'Concent Options': ('SOFT_SHUTDOWN_MODE',),
+}
 
 # Private and public keys to be used by Concent to sign and encrypt its own messages.
 # Stored in a 'bytes' array, e.g. b'\xf3\x97\x19\xcdX\xda...'

@@ -36,8 +36,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.compute_task_def['deadline']   = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
         with freeze_time("2017-12-01 10:00:00"):
             self.task_to_compute = message.TaskToCompute(
-                compute_task_def    = self.compute_task_def,
-                provider_public_key = PROVIDER_PUBLIC_KEY,
+                compute_task_def     = self.compute_task_def,
+                provider_public_key  = PROVIDER_PUBLIC_KEY,
+                requestor_public_key = REQUESTOR_PUBLIC_KEY,
             )
 
         # sign task_to_compute message with PROVIDER sig
@@ -295,8 +296,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         compute_task_def['deadline']   = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
         with freeze_time("2017-12-01 10:00:00"):
             task_to_compute = message.TaskToCompute(
-                compute_task_def    = compute_task_def,
-                provider_public_key = PROVIDER_PUBLIC_KEY,
+                compute_task_def     = compute_task_def,
+                provider_public_key  = PROVIDER_PUBLIC_KEY,
+                requestor_public_key = REQUESTOR_PUBLIC_KEY,
             )
 
         # sign task_to_compute message with PROVIDER sig
@@ -557,8 +559,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         compute_task_def['deadline']   = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
         with freeze_time("2017-12-01 10:00:00"):
             task_to_compute = message.TaskToCompute(
-                compute_task_def    = compute_task_def,
-                provider_public_key = PROVIDER_PUBLIC_KEY,
+                compute_task_def     = compute_task_def,
+                provider_public_key  = PROVIDER_PUBLIC_KEY,
+                requestor_public_key = REQUESTOR_PUBLIC_KEY,
             )
 
         # sign task_to_compute message with PROVIDER sig

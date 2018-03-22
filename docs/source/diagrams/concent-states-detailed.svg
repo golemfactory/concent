@@ -214,14 +214,14 @@
       <text x="-17.8242" xml:space="preserve" y="1110.7692" clip-path="url(#clipPath2)" stroke="none">SubtaskResultsVerify</text>
     </g>
     <g text-rendering="geometricPrecision" stroke-miterlimit="1.45" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,449,-390)" stroke-linecap="butt">
-      <path fill="none" d="M32.7629 568.4037 L-123.7684 568.4037 L-123.7684 1156.1581 L29.9665 1156.1581" clip-path="url(#clipPath2)"/>
+      <path fill="none" d="M32.7629 568.4037 L-123.7684 568.4037 L-123.7684 683.6212 M-123.7684 693.6212 L-123.7684 911.8334 M-123.7684 921.8334 L-123.7684 1156.1581 L29.9665 1156.1581" clip-path="url(#clipPath2)"/>
       <path d="M37.9665 1156.1581 L25.9665 1151.1581 L28.9665 1156.1581 L25.9665 1161.1581 Z" clip-path="url(#clipPath2)" stroke="none"/>
     </g>
     <g stroke-linecap="butt" font-size="10px" transform="matrix(1,0,0,1,449,-390)" fill="rgb(255,153,51)" text-rendering="geometricPrecision" font-family="'Arial'" shape-rendering="geometricPrecision" stroke="rgb(255,153,51)" font-weight="bold" stroke-miterlimit="1.45">
       <text x="-102.6528" xml:space="preserve" y="560.2705" clip-path="url(#clipPath2)" stroke="none">SubtaskResultsVerify</text>
     </g>
     <g text-rendering="geometricPrecision" stroke-miterlimit="1.45" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,449,-390)" stroke-linecap="butt">
-      <path fill="none" d="M32.7643 808.8387 L-123.7684 808.8387 L-123.7684 1156.1581 L29.9211 1156.1581" clip-path="url(#clipPath2)"/>
+      <path fill="none" d="M32.7643 808.8387 L-123.7684 808.8387 L-123.7684 911.8334 M-123.7684 921.8334 L-123.7684 1156.1581 L29.9211 1156.1581" clip-path="url(#clipPath2)"/>
       <path d="M37.9211 1156.1581 L25.9211 1151.1581 L28.9211 1156.1581 L25.9211 1161.1581 Z" clip-path="url(#clipPath2)" stroke="none"/>
     </g>
     <g stroke-linecap="butt" font-size="10px" transform="matrix(1,0,0,1,449,-390)" fill="rgb(255,153,51)" text-rendering="geometricPrecision" font-family="'Arial'" shape-rendering="geometricPrecision" stroke="rgb(255,153,51)" font-weight="bold" stroke-miterlimit="1.45">
@@ -246,7 +246,7 @@
       <text x="310.9072" xml:space="preserve" y="428.0515" clip-path="url(#clipPath2)" stroke="none">valid reason</text>
     </g>
     <g stroke-linecap="butt" transform="matrix(1,0,0,1,449,-390)" fill="rgb(204,51,0)" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" stroke="rgb(204,51,0)" stroke-width="2" stroke-miterlimit="1.45">
-      <path fill="none" d="M165.782 688.6212 L586.4017 688.6212 L586.4017 1364.7675" clip-path="url(#clipPath2)"/>
+      <path fill="none" d="M165.782 688.6212 L358.5045 688.6212 M368.5045 688.6212 L586.4017 688.6212 L586.4017 1364.7675" clip-path="url(#clipPath2)"/>
       <path d="M586.4017 1373.7675 L592.0267 1360.2675 L586.4017 1363.6425 L580.7767 1360.2675 Z" clip-path="url(#clipPath2)" stroke="none"/>
     </g>
     <g font-size="10px" stroke-linecap="butt" transform="matrix(1,0,0,1,449,-390)" text-rendering="geometricPrecision" font-family="'Arial'" shape-rendering="geometricPrecision" font-weight="bold" stroke-miterlimit="1.45">
@@ -254,7 +254,7 @@
       <text x="382.15" font-size="8px" y="681.3907" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">t = report + 2MDT + 3MAT + 4MMTT + CMT</text>
     </g>
     <g stroke-linecap="butt" transform="matrix(1,0,0,1,449,-390)" fill="rgb(204,51,0)" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" stroke="rgb(204,51,0)" stroke-width="2" stroke-miterlimit="1.45">
-      <path fill="none" d="M165.7645 1169.4911 L586.4017 1169.4911 L586.4017 1364.7885" clip-path="url(#clipPath2)"/>
+      <path fill="none" d="M165.7645 1169.4911 L338.5045 1169.4911 M348.5045 1169.4911 L378.5045 1169.4911 M388.5045 1169.4911 L586.4017 1169.4911 L586.4017 1364.7885" clip-path="url(#clipPath2)"/>
       <path d="M586.4017 1373.7885 L592.0267 1360.2885 L586.4017 1363.6635 L580.7767 1360.2885 Z" clip-path="url(#clipPath2)" stroke="none"/>
     </g>
     <g font-size="10px" stroke-linecap="butt" transform="matrix(1,0,0,1,449,-390)" text-rendering="geometricPrecision" font-family="'Arial'" shape-rendering="geometricPrecision" font-weight="bold" stroke-miterlimit="1.45">

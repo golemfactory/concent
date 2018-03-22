@@ -89,13 +89,27 @@ def log_empty_queue(endpoint: str, client_public_key: str):
 
 
 def log_400_error(endpoint: str, message: Message, client_public_key: str):
-    task_id = get_task_id_for_logging(message)
-    subtask_id = get_subtask_id_for_logging(message)
-    logger.info('Error 4xx has been returned from `{}()` -- MESSAGE_TYPE: {} -- TASK_ID: {} -- SUBTASK_ID: {} -- CLIENT PUBLIC KEY: {}'.format(
+    if message is not None:
+        task_id      = get_task_id_for_logging(message)
+        subtask_id   = get_subtask_id_for_logging(message)
+        message_type = message.TYPE
+    else:
+        task_id      = 'not available'
+        subtask_id   = 'not available'
+        message_type = 'not available'
+    logger.info("Error 400 has been returned from `{}()` -- MESSAGE_TYPE: {} -- TASK_ID: '{}' -- SUBTASK_ID: '{}' -- CLIENT PUBLIC KEY: {}".format(
         endpoint,
-        message.TYPE,
+        message_type,
         task_id,
         subtask_id,
+        client_public_key,
+    ))
+
+
+def log_message_not_allowed(endpoint: str, method: str, client_public_key: str):
+    logger.info('Endpoint {} does not allow HTTP method {} -- CLIENT PUBLIC KEY: {}'.format(
+        endpoint,
+        method,
         client_public_key,
     ))
 

@@ -547,6 +547,17 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             self._assert_stored_message_counter_not_increased()
             self._assert_client_count_is_equal(0)
 
+    def test_send_with_empty_data_should_return_http_400_error(self):
+        response = self.client.post(
+            reverse('core:send'),
+            data                                = '',
+            content_type                        = 'application/octet-stream',
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+        )
+
+        self.assertEqual(response.status_code, 400)
+
 
 @override_settings(
     CONCENT_PRIVATE_KEY    = CONCENT_PRIVATE_KEY,

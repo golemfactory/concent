@@ -41,10 +41,11 @@ from .models                        import Subtask
 @api_view
 @require_POST
 def send(request, client_message):
-    logging.log_message_received(
-        client_message,
-        request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-    )
+    if client_message is not None:
+        logging.log_message_received(
+            client_message,
+            request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+        )
 
     client_public_key = decode_client_public_key(request)
     update_timed_out_subtasks(

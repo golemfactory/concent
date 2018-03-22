@@ -4,6 +4,7 @@ from base64                         import b64decode
 
 from django.http                    import JsonResponse
 from django.http                    import HttpResponse
+from django.http                    import HttpResponseNotAllowed
 from django.conf                    import settings
 from django.views.decorators.csrf   import csrf_exempt
 
@@ -95,6 +96,13 @@ def api_view(view):
             return HttpResponse(serialized_message, content_type = 'application/octet-stream')
         elif isinstance(response_from_view, dict):
             return JsonResponse(response_from_view, safe = False)
+        elif isinstance(response_from_view, HttpResponseNotAllowed):
+            logging.log_message_not_allowed(
+                view.__name__,
+                request.method,
+                request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+            )
+            return response_from_view
         elif isinstance(response_from_view, HttpResponse):
             logging.log_message_accepted(
                 message,

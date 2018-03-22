@@ -2,6 +2,7 @@ import binascii
 from functools                      import wraps
 from base64                         import b64decode
 
+from django.db                      import transaction
 from django.http                    import JsonResponse
 from django.http                    import HttpResponse
 from django.http                    import HttpResponseNotAllowed
@@ -73,13 +74,16 @@ def api_view(view):
             else:
                 return JsonResponse({'error': "Concent supports only application/octet-stream."}, status = 400)
         try:
+            sid = transaction.savepoint()
             response_from_view = view(request, message, *args, **kwargs)
+            transaction.savepoint_commit(sid)
         except Http400 as exception:
             logging.log_400_error(
                 view.__name__,
                 message,
                 request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
             )
+            transaction.savepoint_rollback(sid)
             return JsonResponse({'error': str(exception)}, status = 400)
         if isinstance(response_from_view, Message):
             assert response_from_view.sig is None

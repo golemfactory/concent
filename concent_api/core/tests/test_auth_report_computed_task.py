@@ -153,8 +153,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,                                                                  200)
         self.assertEqual(force_report_computed_task_from_view.timestamp,                                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
-        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   self.force_report_computed_task.report_computed_task.task_to_compute.timestamp)
-        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             self.force_report_computed_task.report_computed_task.task_to_compute)
+        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   self.force_report_computed_task.report_computed_task.task_to_compute.timestamp)     # pylint: disable=no-member
+        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             self.force_report_computed_task.report_computed_task.task_to_compute)               # pylint: disable=no-member
 
         # STEP 4: Requestor do not accepts computed task via Concent with different or mixed key
 
@@ -396,8 +396,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,                                                                  200)
         self.assertEqual(force_report_computed_task_from_view.timestamp,                                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
-        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   force_report_computed_task.report_computed_task.task_to_compute.timestamp)
-        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             force_report_computed_task.report_computed_task.task_to_compute)
+        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   force_report_computed_task.report_computed_task.task_to_compute.timestamp)  # pylint: disable=no-member
+        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             force_report_computed_task.report_computed_task.task_to_compute)            # pylint: disable=no-member
 
         # STEP 4: Requestor do not rejects computed task due to CannotComputeTask or TaskFailure with different or mixed key
 
@@ -658,8 +658,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,                                                                  200)
         self.assertEqual(force_report_computed_task_from_view.timestamp,                                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
-        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   force_report_computed_task.report_computed_task.task_to_compute.timestamp)
-        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             force_report_computed_task.report_computed_task.task_to_compute)
+        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   force_report_computed_task.report_computed_task.task_to_compute.timestamp)  # pylint: disable=no-member
+        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             force_report_computed_task.report_computed_task.task_to_compute)            # pylint: disable=no-member
 
         # STEP 4: Requestor do not rejects computed task due to CannotComputeTask or TaskFailure with different or mixed key
 
@@ -953,8 +953,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,                                                                  200)
         self.assertEqual(force_report_computed_task_from_view.timestamp,                                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
-        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   self.force_report_computed_task.report_computed_task.task_to_compute.timestamp)
-        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             self.force_report_computed_task.report_computed_task.task_to_compute)
+        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   self.force_report_computed_task.report_computed_task.task_to_compute.timestamp)     # pylint: disable=no-member
+        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             self.force_report_computed_task.report_computed_task.task_to_compute)               # pylint: disable=no-member
 
         # STEP 4: Concent do not accepts computed task due to lack of response from the requestor with different or mixed key
 

@@ -6,6 +6,7 @@ from freezegun              import freeze_time
 from golem_messages         import message
 
 from core.models            import Subtask
+from core.models            import PendingResponse
 from core.tests.utils       import ConcentIntegrationTestCase
 from utils.testing_helpers  import generate_ecc_key_pair
 
@@ -91,6 +92,13 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '2',
             subtask_id      = 'xxyyzz',
             timestamp       = "2018-02-05 10:00:25"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceSubtaskResults,
+            ]
         )
 
         # STEP 2: Different provider forces subtask results via Concent with message with the same task_id with different keys.
@@ -220,6 +228,13 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = 'xxyyzz',
             timestamp       = "2018-02-05 10:00:31"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceSubtaskResults,
+            ]
+        )
 
         # STEP 2: Different requestor or provider does not receive forces subtask results via Concent with different or mixed key.
         with freeze_time("2018-02-05 10:00:29"):
@@ -337,6 +352,13 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '2',
             subtask_id      = 'xxyyzz',
             timestamp       = "2018-02-05 10:00:30"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceSubtaskResults,
+            ]
         )
 
         # STEP 2: Different requestor or provider does not receive forces subtask results via Concent with different or mixed key.
@@ -483,6 +505,13 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = 'xxyyzz',
             timestamp       = "2018-02-05 10:00:44"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceSubtaskResultsResponse,
+            ]
+        )
 
         # STEP 6: Different provider or requestor does not receive forces subtask results via Concent with different or mixed key.
         with freeze_time("2018-02-05 11:00:02"):
@@ -595,6 +624,13 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             task_id         = '2',
             subtask_id      = 'xxyyzz',
             timestamp       = "2018-02-05 10:00:30"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceSubtaskResults,
+            ]
         )
 
         # STEP 2: Different requestor or provider does not receive forces subtask results via Concent with different or mixed key.
@@ -754,6 +790,13 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = 'xxyyzz',
             timestamp       = "2018-02-05 10:00:44"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.SubtaskResultsRejected,
+            ]
+        )
 
         # STEP 6: Different provider or requestor does not receive forces subtask results via Concent with different or mixed key.
         with freeze_time("2018-02-05 11:00:02"):
@@ -866,6 +909,13 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = 'xxyyzz',
             timestamp       = "2018-02-05 10:00:30"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceSubtaskResults,
+            ]
+        )
 
         # STEP 2: Different requestor or provider does not receive forces subtask results via Concent with different or mixed key.
         with freeze_time("2018-02-05 10:00:24"):
@@ -957,6 +1007,14 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_key                 = self._get_encoded_provider_public_key(),
             requestor_key                = self._get_encoded_requestor_public_key(),
             expected_nested_messages      = {'task_to_compute', 'ack_report_computed_task'},
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            client_public_key_out_of_band      = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive_out_of_band = [
+                PendingResponse.ResponseType.SubtaskResultsSettled,
+            ]
         )
 
         # STEP 6: Different provider does not receive subtask result settled via Concent with different key.
@@ -1054,6 +1112,13 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_id      = 'xxyyzz',
             timestamp       = "2018-02-05 10:00:30"
         )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.ForceSubtaskResults,
+            ]
+        )
 
         # STEP 2: Different requestor or provider does not receive forces subtask results via Concent with different or mixed key.
         with freeze_time("2018-02-05 10:00:24"):
@@ -1140,6 +1205,13 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_key                 = self._get_encoded_provider_public_key(),
             requestor_key                = self._get_encoded_requestor_public_key(),
             expected_nested_messages      = {'task_to_compute', 'ack_report_computed_task'},
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id                         = 'xxyyzz',
+            client_public_key                  = self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive = [
+                PendingResponse.ResponseType.SubtaskResultsSettled,
+            ]
         )
 
         # STEP 6: Different requestor does not receive subtask result settled via Concent with different key.

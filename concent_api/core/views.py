@@ -758,6 +758,7 @@ def verify_file_status(
         requestor__public_key  = b64encode(client_public_key),
         state                  = Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name,  # pylint: disable=no-member
     )
+    logging.logger.critical(f"In verify file status, list len = {len(force_get_task_result_list)}")
 
     for get_task_result in force_get_task_result_list:
         report_computed_task    = deserialize_message(get_task_result.report_computed_task.data.tobytes())
@@ -766,7 +767,7 @@ def verify_file_status(
             client_public_key,
             'upload'
         )
-        logging.logger.critical(f"In verify file status, list len = {len(force_get_task_result_list)}")
+
         if request_upload_status(file_transfer_token):
             subtask               = get_task_result
             subtask.state         = Subtask.SubtaskState.RESULT_UPLOADED.name  # pylint: disable=no-member

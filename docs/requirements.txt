@@ -1,2 +1,3 @@
 sphinx
 sphinx_rtd_theme
+-e git://github.com/languitar/drawio-batch.git#egg=drawio-batch

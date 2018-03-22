@@ -24,11 +24,12 @@ def request_upload_status_false_mock(_file_transfer_token_from_database, _report
 
 
 @override_settings(
-    CONCENT_PRIVATE_KEY    = CONCENT_PRIVATE_KEY,
-    CONCENT_PUBLIC_KEY     = CONCENT_PUBLIC_KEY,
-    CONCENT_MESSAGING_TIME = 10,    # seconds
-    FORCE_ACCEPTANCE_TIME  = 10,    # seconds
-    TOKEN_EXPIRATION_TIME  = 1800,  # 30 minutes
+    CONCENT_PRIVATE_KEY         = CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY          = CONCENT_PUBLIC_KEY,
+    CONCENT_MESSAGING_TIME      = 10,    # seconds
+    FORCE_ACCEPTANCE_TIME       = 10,    # seconds
+    MAXIMUM_DOWNLOAD_TIME       = 10,    # seconds
+    SUBTASK_VERIFICATION_TIME   = 1800,  # 30 minutes
 )
 class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
@@ -352,7 +353,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         # Test FileTransferToken message
         self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:02"))
-        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:30:02"))
+        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
         self.assertEqual(message_file_transfer_token.operation,                 'upload')
 
         self._assert_stored_message_counter_not_increased()
@@ -593,7 +594,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         # Test FileTransferToken message
         self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:03"))
-        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:30:03"))
+        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
         self.assertEqual(message_file_transfer_token.operation,                 'upload')
 
         self._assert_stored_message_counter_not_increased()
@@ -826,7 +827,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         # Test FileTransferToken message
         self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:02"))
-        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:30:02"))
+        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
         self.assertEqual(message_file_transfer_token.operation,                 'upload')
 
         self._assert_stored_message_counter_not_increased()
@@ -1059,7 +1060,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         # Test FileTransferToken message
         self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:02"))
-        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:30:02"))
+        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
         self.assertEqual(message_file_transfer_token.operation,                 'upload')
 
         self._assert_stored_message_counter_not_increased()
@@ -1137,7 +1138,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
         self.assertEqual(
             message_from_concent.file_transfer_token.token_expiration_deadline,
-            self._parse_iso_date_to_timestamp("2017-12-01 11:30:08")
+            self._parse_iso_date_to_timestamp("2017-12-01 11:30:00")
         )
         self.assertEqual(message_from_concent.file_transfer_token.operation, 'download')
 

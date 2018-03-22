@@ -24,11 +24,12 @@ def request_upload_status_false_mock(_file_transfer_token_from_database, _reques
 
 
 @override_settings(
-    CONCENT_PRIVATE_KEY    = CONCENT_PRIVATE_KEY,
-    CONCENT_PUBLIC_KEY     = CONCENT_PUBLIC_KEY,
-    CONCENT_MESSAGING_TIME = 10,    # seconds
-    FORCE_ACCEPTANCE_TIME  = 10,    # seconds
-    TOKEN_EXPIRATION_TIME  = 1800,  # 30 minutes
+    CONCENT_PRIVATE_KEY         = CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY          = CONCENT_PUBLIC_KEY,
+    CONCENT_MESSAGING_TIME      = 10,    # seconds
+    FORCE_ACCEPTANCE_TIME       = 10,    # seconds
+    MAXIMUM_DOWNLOAD_TIME       = 10,    # seconds
+    SUBTASK_VERIFICATION_TIME   = 1800,  # 30 minutes
 )
 class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
@@ -56,7 +57,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             timestamp               = "2017-12-01 11:00:11",
         )
 
-        with freeze_time("2017-12-01 11:00:11"):
+        with freeze_time("2017-12-01 11:00:31"):
             response = self.client.post(
                 reverse('core:send'),
                 data                                = serialized_force_get_task_result,
@@ -70,7 +71,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         message_from_concent = load(response.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
         self.assertIsInstance(message_from_concent,         message.concents.ForceGetTaskResultRejected)
-        self.assertEqual(message_from_concent.timestamp,    self._parse_iso_date_to_timestamp("2017-12-01 11:00:11"))
+        self.assertEqual(message_from_concent.timestamp,    self._parse_iso_date_to_timestamp("2017-12-01 11:00:31"))
         self.assertEqual(message_from_concent.reason,       message_from_concent.REASON.AcceptanceTimeLimitExceeded)
         self._assert_stored_message_counter_not_increased()
 
@@ -356,7 +357,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         # Test FileTransferToken message
         self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
         self.assertEqual(message_file_transfer_token.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
-        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:30:12"))
+        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
         self.assertEqual(message_file_transfer_token.operation, 'upload')
 
         # STEP 3: Requestor receives force get task result failed due to lack of provider submit.
@@ -613,7 +614,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         # Test FileTransferToken message
         self.assertIsInstance(message_file_transfer_token,                      message.FileTransferToken)
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:06"))
-        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:30:06"))
+        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
         self.assertEqual(message_file_transfer_token.operation,                 'upload')
 
         # STEP 3: Requestor receives force get task result upload.
@@ -645,7 +646,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_from_concent.force_get_task_result.report_computed_task.task_to_compute,   deserialized_task_to_compute)
         self.assertIsInstance(message_from_concent.file_transfer_token,                                     message.FileTransferToken)
         self.assertEqual(message_from_concent.file_transfer_token.timestamp,                                self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"))
-        self.assertEqual(message_from_concent.file_transfer_token.token_expiration_deadline,                self._parse_iso_date_to_timestamp("2017-12-01 11:30:21"))
+        self.assertEqual(message_from_concent.file_transfer_token.token_expiration_deadline,                self._parse_iso_date_to_timestamp("2017-12-01 11:30:00"))
         self.assertEqual(message_from_concent.file_transfer_token.operation,                                'download')
 
         self._assert_client_count_is_equal(2)
@@ -758,7 +759,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         # Test FileTransferToken message
         self.assertIsInstance(message_file_transfer_token,                      message.FileTransferToken)
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
-        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:30:12"))
+        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
         self.assertEqual(message_file_transfer_token.operation,                 'upload')
 
         # STEP 3: Requestor receives force get task result failed due to lack of provider submit.
@@ -906,7 +907,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         # Test FileTransferToken message
         self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
         self.assertEqual(message_file_transfer_token.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
-        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:30:12"))
+        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
         self.assertEqual(message_file_transfer_token.operation, 'upload')
 
         # STEP 3: Requestor receives force get task result download because Provider uploaded file.
@@ -956,7 +957,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
         self.assertEqual(
             message_from_concent.file_transfer_token.token_expiration_deadline,
-            self._parse_iso_date_to_timestamp("2017-12-01 11:30:21")
+            self._parse_iso_date_to_timestamp("2017-12-01 11:30:00")
         )
         self.assertEqual(message_from_concent.file_transfer_token.operation, 'download')
 

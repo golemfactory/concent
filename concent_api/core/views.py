@@ -63,6 +63,7 @@ def protocol_constants(_request):
         data = {
             'concent_messaging_time':    settings.CONCENT_MESSAGING_TIME,
             'force_acceptance_time':     settings.FORCE_ACCEPTANCE_TIME,
+            'maximum_download_time':     settings.MAXIMUM_DOWNLOAD_TIME,
             'subtask_verification_time': settings.SUBTASK_VERIFICATION_TIME,
             'token_expiration_time':     settings.TOKEN_EXPIRATION_TIME,
         }

@@ -14,6 +14,7 @@ from utils.testing_helpers  import generate_ecc_key_pair
     CONCENT_PUBLIC_KEY        = CONCENT_PUBLIC_KEY,
     CONCENT_MESSAGING_TIME    = 1,  # seconds
     FORCE_ACCEPTANCE_TIME     = 2,  # seconds
+    MAXIMUM_DOWNLOAD_TIME     = 4,  # seconds
     SUBTASK_VERIFICATION_TIME = 3  # seconds
 )
 class ProtocolConstantsTest(ConcentIntegrationTestCase):
@@ -26,6 +27,7 @@ class ProtocolConstantsTest(ConcentIntegrationTestCase):
         protocol_constants_settings = {
             'CONCENT_MESSAGING_TIME':       settings.CONCENT_MESSAGING_TIME,
             'FORCE_ACCEPTANCE_TIME':        settings.FORCE_ACCEPTANCE_TIME,
+            'MAXIMUM_DOWNLOAD_TIME':        settings.MAXIMUM_DOWNLOAD_TIME,
             'SUBTASK_VERIFICATION_TIME':    settings.SUBTASK_VERIFICATION_TIME,
             'TOKEN_EXPIRATION_TIME':        settings.TOKEN_EXPIRATION_TIME,
         }

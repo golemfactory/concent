@@ -18,7 +18,6 @@ from gatekeeper.constants   import CLUSTER_DOWNLOAD_PATH
 from utils                  import logging
 from utils.helpers          import decode_key
 from utils.helpers          import deserialize_message
-from utils.helpers          import get_current_utc_timestamp
 
 
 def verify_file_status(
@@ -109,13 +108,25 @@ def create_file_transfer_token(
     """
     Function to create FileTransferToken from ReportComputedTask message
     """
-    current_time    = get_current_utc_timestamp()
     task_id         = report_computed_task.task_to_compute.compute_task_def['task_id']
     subtask_id      = report_computed_task.task_to_compute.compute_task_def['subtask_id']
     file_path       = 'blender/result/{}/{}.{}.zip'.format(task_id, task_id, subtask_id)
 
+    assert operation in ['upload', 'download']
+    if operation == 'upload':
+        token_expiration_deadline = (
+            report_computed_task.task_to_compute.compute_task_def['deadline'] +
+            3 * settings.CONCENT_MESSAGING_TIME +
+            2 * settings.MAXIMUM_DOWNLOAD_TIME
+        )
+    elif operation == 'download':
+        token_expiration_deadline = (
+            report_computed_task.task_to_compute.compute_task_def['deadline'] +
+            settings.SUBTASK_VERIFICATION_TIME
+        )
+
     file_transfer_token = message.concents.FileTransferToken(
-        token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_TIME,
+        token_expiration_deadline       = token_expiration_deadline,
         storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
         authorized_client_public_key    = encoded_client_public_key,
         operation                       = operation,

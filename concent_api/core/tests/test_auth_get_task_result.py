@@ -139,7 +139,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             requestor_private_key = self.PROVIDER_PRIVATE_KEY,
         )
 
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:08"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -168,7 +168,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 3: Requestor again forces get task result via Concent with correct key.
         # Concent rejects request immediately because message was already sent.
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:08"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -234,7 +234,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             self.REQUESTOR_PUBLIC_KEY,
             check_time = False,
         )
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:01"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -286,7 +286,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
 
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:02"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -310,7 +310,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 3: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via
         # Concent with correct key.
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:02"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -359,7 +359,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 4: Requestor do not receives force get task result failed due to lack of provider submit
         # with different or mixed key.
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:02"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -373,7 +373,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self._assert_stored_message_counter_not_increased()
 
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:05"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -388,7 +388,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         # STEP 5: Requestor receives force get task result failed due to lack of provider submit with correct key.
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:22"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -468,7 +468,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             self.REQUESTOR_PUBLIC_KEY,
             check_time = False,
         )
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:01"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -522,7 +522,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self._assert_stored_message_counter_not_increased()
 
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:02"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -546,7 +546,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 3: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via
         # Concent with correct key.
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:03"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -600,7 +600,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 4: Requestor do not receives force get task result failed due to lack of provider submit
         # with different or mixed key.
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:04"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -614,7 +614,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self._assert_stored_message_counter_not_increased()
 
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:05"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -629,7 +629,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         # STEP 5: Requestor receives force get task result failed due to lack of provider submit with correct key.
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:24"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -703,7 +703,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             self.REQUESTOR_PUBLIC_KEY,
             check_time = False,
         )
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:01"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -744,7 +744,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 2: Provider do not receive force get task result and file transfer token inside
         # ForceGetTaskResultUpload via Concent with with different or mixed key.
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:02"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -758,7 +758,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self._assert_stored_message_counter_not_increased()
 
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:02"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -782,7 +782,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 3: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via
         # Concent with correct key.
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:02"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -833,7 +833,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 4: Requestor do not receives force get task result failed due to lack of provider submit
         # with different or mixed key.
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:21"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -847,7 +847,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self._assert_stored_message_counter_not_increased()
 
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:21"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -862,7 +862,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         # STEP 5: Requestor receives force get task result failed due to lack of provider submit with correct key.
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:21"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -942,7 +942,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             self.REQUESTOR_PUBLIC_KEY,
             check_time = False,
         )
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:01"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -983,7 +983,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 2: Provider do not receive force get task result and file transfer token inside
         # ForceGetTaskResultUpload via Concent with with different or mixed key.
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:02"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -997,7 +997,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self._assert_stored_message_counter_not_increased()
 
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:02"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -1021,7 +1021,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 3: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via
         # Concent with correct key.
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:02"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -1066,7 +1066,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 4: Requestor do not receives force get task result failed due to lack of provider submit
         # with different or mixed key.
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:05"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -1080,7 +1080,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self._assert_stored_message_counter_not_increased()
 
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:05"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -1095,7 +1095,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         # STEP 5: Requestor receives force get task result failed due to lack of provider submit with correct key.
-        with mock.patch('core.views.request_upload_status', request_upload_status_true_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_true_mock):
             with freeze_time("2017-12-01 11:00:08"):
                 response = self.client.post(
                     reverse('core:receive'),

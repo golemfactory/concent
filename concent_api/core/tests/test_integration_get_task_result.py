@@ -141,7 +141,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 2: Requestor again forces get task result via Concent.
         # Concent rejects request immediately because message was already sent.
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:09"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -315,7 +315,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:12"):
                 response_2 = self.client.post(
                     reverse('core:receive'),
@@ -360,7 +360,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_file_transfer_token.operation, 'upload')
 
         # STEP 3: Requestor receives force get task result failed due to lack of provider submit.
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:21"):
                 response_3 = self.client.post(
                     reverse('core:receive'),
@@ -452,7 +452,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:12"):
                 response_2 = self.client.post(
                     reverse('core:receive'),
@@ -474,7 +474,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # STEP 2: Requestor receives force get task result failed due to lack of provider submit.
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:21"):
                 response_3 = self.client.post(
                     reverse('core:receive'),
@@ -572,7 +572,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:06"):
                 response_2 = self.client.post(
                     reverse('core:receive'),
@@ -617,7 +617,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_file_transfer_token.operation,                 'upload')
 
         # STEP 3: Requestor receives force get task result upload.
-        with mock.patch('core.views.request_upload_status', request_upload_status_true_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_true_mock):
             with freeze_time("2017-12-01 11:00:21"):
                 response_3 = self.client.post(
                     reverse('core:receive'),
@@ -717,7 +717,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.
-        with mock.patch('core.views.request_upload_status', request_upload_status_true_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_true_mock):
             with freeze_time("2017-12-01 11:00:12"):
                 response_2 = self.client.post(
                     reverse('core:receive'),
@@ -762,7 +762,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_file_transfer_token.operation,                 'upload')
 
         # STEP 3: Requestor receives force get task result failed due to lack of provider submit.
-        with mock.patch('core.views.request_upload_status', request_upload_status_true_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_true_mock):
             with freeze_time("2017-12-01 11:00:21"):
                 response_3 = self.client.post(
                     reverse('core:receive'),
@@ -871,7 +871,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.
-        with mock.patch('core.views.request_upload_status', request_upload_status_false_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
             with freeze_time("2017-12-01 11:00:12"):
                 response_2 = self.client.post(
                     reverse('core:receive'),
@@ -910,7 +910,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_file_transfer_token.operation, 'upload')
 
         # STEP 3: Requestor receives force get task result download because Provider uploaded file.
-        with mock.patch('core.views.request_upload_status', request_upload_status_true_mock):
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_true_mock):
             with freeze_time("2017-12-01 11:00:21"):
                 response_3 = self.client.post(
                     reverse('core:receive'),

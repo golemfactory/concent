@@ -8,6 +8,9 @@ from django.utils                   import timezone
 
 from golem_messages                 import message
 from golem_messages.datastructures  import FrozenDict
+from golem_messages.exceptions      import MessageError
+
+from core.exceptions                import Http400
 
 
 def is_base64(data: str) -> bool:
@@ -83,3 +86,30 @@ def get_field_from_message(golem_message: message.base.Message, field_name: str)
         return None
 
     return check_task_id(golem_message)
+
+
+def decode_client_public_key(request):
+    assert 'HTTP_CONCENT_CLIENT_PUBLIC_KEY' in request.META
+    return decode_key(request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'])
+
+
+def decode_other_party_public_key(request):
+    if 'HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY' not in request.META:
+        raise Http400('Missing Concent-Other-Party-Public-Key HTTP when expected.')
+    try:
+        return decode_key(request.META['HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY'])
+    except binascii.Error:
+        raise Http400('The value in the Concent-Other-Party-Public-Key HTTP is not a valid base64-encoded value.')
+
+
+def deserialize_message(raw_message_data):
+    try:
+        golem_message = message.Message.deserialize(
+            raw_message_data,
+            None,
+            check_time = False
+        )
+        assert golem_message is not None
+        return golem_message
+    except MessageError as exception:
+        raise Http400("Unable to deserialize Golem Message: {}.".format(exception))

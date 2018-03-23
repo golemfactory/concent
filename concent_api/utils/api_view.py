@@ -9,6 +9,8 @@ from django.http                    import HttpResponseNotAllowed
 from django.conf                    import settings
 from django.views.decorators.csrf   import csrf_exempt
 
+from golem_messages                 import dump
+from golem_messages                 import load
 from golem_messages.exceptions      import FieldError
 from golem_messages.exceptions      import InvalidSignature
 from golem_messages.exceptions      import MessageError
@@ -16,14 +18,9 @@ from golem_messages.exceptions      import MessageFromFutureError
 from golem_messages.exceptions      import MessageTooOldError
 from golem_messages.exceptions      import TimestampError
 from golem_messages.message         import Message
-from golem_messages                 import dump
-from golem_messages                 import load
 
+from core.exceptions                import Http400
 from utils                          import logging
-
-
-class Http400(Exception):
-    pass
 
 
 def api_view(view):

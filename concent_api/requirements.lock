@@ -14,6 +14,7 @@ freezegun==0.3.9
 -e git://github.com/golemfactory/golem-messages.git@5599263aa533bfd8b141b42fe7a745964e0b80a3#egg=Golem_Messages
 idna==2.6
 mock==2.0.0
+mypy==0.570
 pbkdf2==1.3
 pbr==3.1.1
 psycopg2==2.7.3.2

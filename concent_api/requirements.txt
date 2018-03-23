@@ -7,3 +7,4 @@ pyyaml
 requests
 mock
 raven
+mypy

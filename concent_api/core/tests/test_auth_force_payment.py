@@ -68,8 +68,8 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 12:00:20"):
-            with mock.patch('core.views.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
-                with mock.patch('core.views.base.payment_summary', _get_payment_summary_positive):
+            with mock.patch('core.message_handlers.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
+                with mock.patch('core.message_handlers.base.payment_summary', _get_payment_summary_positive):
                     response_1 = self.client.post(
                         reverse('core:send'),
                         data                                = serialized_force_payment,

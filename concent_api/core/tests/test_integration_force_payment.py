@@ -195,7 +195,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 12:00:19"):
-            with mock.patch('core.views.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
+            with mock.patch('core.message_handlers.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
 
                 response = self.client.post(
                     reverse('core:send'),
@@ -252,7 +252,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 12:00:20"):
-            with mock.patch('core.views.base.get_list_of_transactions', _get_requestor_invalid_list_of_transactions):
+            with mock.patch('core.message_handlers.base.get_list_of_transactions', _get_requestor_invalid_list_of_transactions):
 
                 response = self.client.post(
                     reverse('core:send'),
@@ -309,8 +309,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 12:00:20"):
-            with mock.patch('core.views.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
-                with mock.patch('core.views.base.payment_summary', _get_payment_summary_negative):
+            with mock.patch('core.message_handlers.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
+                with mock.patch('core.message_handlers.base.payment_summary', _get_payment_summary_negative):
                     response = self.client.post(
                         reverse('core:send'),
                         data                                = serialized_force_payment,
@@ -367,9 +367,9 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 12:00:20"):
-            with mock.patch('core.views.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
-                with mock.patch('core.views.base.payment_summary', _get_payment_summary_value_100):
-                    with mock.patch('core.views.base.make_payment_to_provider', _make_payment_to_provider):
+            with mock.patch('core.message_handlers.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
+                with mock.patch('core.message_handlers.base.payment_summary', _get_payment_summary_value_100):
+                    with mock.patch('core.message_handlers.base.make_payment_to_provider', _make_payment_to_provider):
                         response_1 = self.client.post(
                             reverse('core:send'),
                             data                                = serialized_force_payment,
@@ -440,8 +440,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 12:00:20"):
-            with mock.patch('core.views.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
-                with mock.patch('core.views.base.payment_summary', _get_payment_summary_value_100):
+            with mock.patch('core.message_handlers.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
+                with mock.patch('core.message_handlers.base.payment_summary', _get_payment_summary_value_100):
                     response = self.client.post(
                         reverse('core:send'),
                         data                                = serialized_force_payment,
@@ -467,8 +467,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 12:00:20"):
-            with mock.patch('core.views.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
-                with mock.patch('core.views.base.payment_summary', _get_payment_summary_value_100):
+            with mock.patch('core.message_handlers.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
+                with mock.patch('core.message_handlers.base.payment_summary', _get_payment_summary_value_100):
                     response = self.client.post(
                         reverse('core:send'),
                         data                                = serialized_force_payment,
@@ -524,8 +524,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 12:00:20"):
-            with mock.patch('core.views.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
-                with mock.patch('core.views.base.payment_summary', _get_payment_summary_value_100):
+            with mock.patch('core.message_handlers.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
+                with mock.patch('core.message_handlers.base.payment_summary', _get_payment_summary_value_100):
                     response = self.client.post(
                         reverse('core:send'),
                         data                                = serialized_force_payment,
@@ -584,8 +584,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 12:00:20"):
-            with mock.patch('core.views.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
-                with mock.patch('core.views.base.payment_summary', _get_payment_summary_value_100):
+            with mock.patch('core.message_handlers.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
+                with mock.patch('core.message_handlers.base.payment_summary', _get_payment_summary_value_100):
                     response = self.client.post(
                         reverse('core:send'),
                         data                                = serialized_force_payment,
@@ -646,9 +646,9 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 12:00:20"):
-            with mock.patch('core.views.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
-                with mock.patch('core.views.base.payment_summary', _get_payment_summary_value_100):
-                    with mock.patch('core.views.base.make_payment_to_provider', _make_payment_to_provider):
+            with mock.patch('core.message_handlers.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
+                with mock.patch('core.message_handlers.base.payment_summary', _get_payment_summary_value_100):
+                    with mock.patch('core.message_handlers.base.make_payment_to_provider', _make_payment_to_provider):
                         response_1 = self.client.post(
                             reverse('core:send'),
                             data                                = serialized_force_payment,
@@ -732,9 +732,9 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 12:00:20"):
-            with mock.patch('core.views.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
-                with mock.patch('core.views.base.payment_summary', _get_payment_summary_value_90):
-                    with mock.patch('core.views.base.make_payment_to_provider', _make_payment_to_provider):
+            with mock.patch('core.message_handlers.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
+                with mock.patch('core.message_handlers.base.payment_summary', _get_payment_summary_value_90):
+                    with mock.patch('core.message_handlers.base.make_payment_to_provider', _make_payment_to_provider):
                         response_1 = self.client.post(
                             reverse('core:send'),
                             data                                = serialized_force_payment,

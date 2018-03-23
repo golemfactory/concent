@@ -1,75 +1,11 @@
-from decimal        import Decimal
-from django.conf    import settings
+
+def get_list_of_payments(current_time = None, requestor_eth_address = None, provider_eth_address = None, payment_ts = None, request = None, transaction_type = None):  # pylint: disable=inconsistent-return-statements, unused-argument
+    return []
 
 
-def sum_payments(list_of_payments):
-    return sum([item.amount for item in list_of_payments])
+def make_force_payment_to_provider(requestor_eth_address = None, provider_eth_address = None, value = None, payment_ts = None):  # pylint: disable=unused-argument
+    pass
 
 
-def get_client_eth_account():
-    return True
-
-
-def get_number_of_eth_block(request = None):  # pylint: disable=inconsistent-return-statements
-    if 'HTTP_TEMPORARY_ETH_BLOCK' in request.META:
-        return int(request.META['HTTP_TEMPORARY_ETH_BLOCK'])
-    return True
-
-
-def payment_summary(request = None, _subtask_results_accepted_list = None, _list_of_transactions = None, _list_of_forced_payments = None):  # pylint: disable=inconsistent-return-statements
-    if 'HTTP_TEMPORARY_V' in request.META:
-        return int(request.META['HTTP_TEMPORARY_V'])
-    return True
-
-
-def get_list_of_transactions(_oldest_payments_ts = None, current_time = None, _to_block = None, _payer_address = None, _payee_address = None, request = None):  # pylint: disable=inconsistent-return-statements
-    """
-    Function which return list of transactions from payment API
-    where timestamp >= T0
-    """
-
-    if 'HTTP_TEMPORARY_LIST_OF_TRANSACTIONS' in request.META:
-        if bool(request.META['HTTP_TEMPORARY_LIST_OF_TRANSACTIONS']):
-            payment_ts = current_time - settings.PAYMENT_DUE_TIME
-            return [{'timestamp': payment_ts - 3700}, {'timestamp': payment_ts - 3800}, {'timestamp': payment_ts - 3900}]
-        else:
-            return [{'timestamp': current_time - 22}, {'timestamp': current_time - 23}, {'timestamp': current_time - 24}]
-    return True
-
-
-def get_forced_payments(_oldest_payments_ts = None, _requestor_address = None, _provider_address = None, _to_block = None, request = None, current_time = None):  # pylint: disable=inconsistent-return-statements
-    """
-    Function which return list of forced paysments from payment API
-    where t0 <= payment_ts + PAYMENT_DUE_TIME
-    """
-
-    if 'HTTP_TEMPORARY_LIST_OF_FORCED_TRANSACTIONS' in request.META:
-        if bool(request.META['HTTP_TEMPORARY_LIST_OF_FORCED_TRANSACTIONS']):
-            return [{'timestamp': current_time - 3700}, {'timestamp': current_time - 3800}, {'timestamp': current_time - 3900}]
-        else:
-            return [{'timestamp': current_time - 22}, {'timestamp': current_time - 23}, {'timestamp': current_time - 24}]
-    return True
-
-
-def make_payment_to_provider(_sum_of_payments = None, _payment_ts = None, _requestor_ethereum_public_key = None, _provider_ethereum_public_key = None):
-    """
-    Concent makes transaction from requestor's deposit to provider's account on amount V.
-    If there is less then V on requestor's deposit, Concent transfers as much as possible.
-    """
-    return Decimal('9.99')
-
-
-def make_forced_payment(_provider = None, _requestor = None):
-
-    return True
-
-
-def is_provider_account_status_positive(request = None):
-    if 'HTTP_TEMPORARY_ACCOUNT_FUNDS' in request.META:
-        return bool(request.META['HTTP_TEMPORARY_ACCOUNT_FUNDS'])
-    else:
-        return False
-
-
-def calculate_amount_pending():
-    return Decimal('0.01')
+def is_account_status_positive(client_eth_address = None, pending_value = None):  # pylint: disable=unused-argument
+    return False

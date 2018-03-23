@@ -757,7 +757,8 @@ def verify_file_status(
     logging.logger.critical(f"Veryfing file status, key = {client_public_key}")
     logging.logger.critical(f"Veryfing file status, base64key = {b64encode(client_public_key)}")
     force_get_task_result_list = Subtask.objects.filter(
-        requestor__public_key  = b64encode(client_public_key),
+        requestor__public_key  = client_public_key,
+        # requestor__public_key  = b64encode(client_public_key),
         state                  = Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name,  # pylint: disable=no-member
     )
     logging.logger.critical(f"In verify file status, list len = {len(force_get_task_result_list)}")

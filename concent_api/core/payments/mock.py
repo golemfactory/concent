@@ -1,4 +1,5 @@
-from django.conf import settings
+from decimal        import Decimal
+from django.conf    import settings
 
 
 def sum_payments(list_of_payments):
@@ -55,7 +56,7 @@ def make_payment_to_provider(_sum_of_payments = None, _payment_ts = None, _reque
     Concent makes transaction from requestor's deposit to provider's account on amount V.
     If there is less then V on requestor's deposit, Concent transfers as much as possible.
     """
-    return True
+    return Decimal('9.99')
 
 
 def make_forced_payment(_provider = None, _requestor = None):
@@ -68,3 +69,7 @@ def is_provider_account_status_positive(request = None):
         return bool(request.META['HTTP_TEMPORARY_ACCOUNT_FUNDS'])
     else:
         return False
+
+
+def calculate_amount_pending():
+    return Decimal('0.01')

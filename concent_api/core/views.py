@@ -1,5 +1,4 @@
 from base64                         import b64encode
-from decimal                        import Decimal
 import binascii
 import copy
 import datetime
@@ -568,13 +567,20 @@ def handle_send_force_payment(request, client_message: message.concents.ForcePay
             reason = message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound
         )
     elif sum_of_payments > 0:
-        base.make_payment_to_provider(sum_of_payments, payment_ts, requestor_ethereum_public_key, client_public_key)
+        amount_paid = base.make_payment_to_provider(
+            sum_of_payments,
+            payment_ts,
+            requestor_ethereum_public_key,
+            client_public_key
+        )
+
+        amount_pending = sum_of_payments - amount_paid
         provider_force_payment_commited = message.concents.ForcePaymentCommitted(
             payment_ts              = payment_ts,
             task_owner_key          = requestor_ethereum_public_key,
             provider_eth_account    = client_public_key,
-            amount_paid             = Decimal('10.99'),
-            amount_pending          = Decimal('0.01'),
+            amount_paid             = amount_paid,
+            amount_pending          = amount_pending,
             recipient_type          = message.concents.ForcePaymentCommitted.Actor.Provider,
         )
 
@@ -582,8 +588,8 @@ def handle_send_force_payment(request, client_message: message.concents.ForcePay
             payment_ts              = payment_ts,
             task_owner_key          = requestor_ethereum_public_key,
             provider_eth_account    = client_public_key,
-            amount_paid             = Decimal('10.99'),
-            amount_pending          = Decimal('0.01'),
+            amount_paid             = amount_paid,
+            amount_pending          = amount_pending,
             recipient_type          = message.concents.ForcePaymentCommitted.Actor.Requestor,
         )
         store_pending_message(

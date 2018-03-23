@@ -59,3 +59,8 @@ def make_forced_payment(backend, _provider = None, _requestor = None):
 @_add_backend
 def is_provider_account_status_positive(backend, request = None):
     return backend.is_provider_account_status_positive(request)
+
+
+@_add_backend
+def calculate_amount_pending(backend):
+    return backend.calculate_amount_pending()

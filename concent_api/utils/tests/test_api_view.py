@@ -10,12 +10,13 @@ from django.test                    import RequestFactory
 from django.test                    import TestCase
 from django.test                    import TransactionTestCase
 from django.views.decorators.http   import require_POST
+from golem_messages                 import dump
+from golem_messages                 import load
 from golem_messages                 import message
-from golem_messages                 import dump, load
 
+from core.exceptions                import Http400
 from core.models                    import Client
 from utils.api_view                 import api_view
-from utils.api_view                 import Http400
 from utils.helpers                  import get_current_utc_timestamp
 from utils.testing_helpers          import generate_ecc_key_pair
 

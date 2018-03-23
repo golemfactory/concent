@@ -29,7 +29,6 @@ class ProtocolConstantsTest(ConcentIntegrationTestCase):
             'FORCE_ACCEPTANCE_TIME':        settings.FORCE_ACCEPTANCE_TIME,
             'MAXIMUM_DOWNLOAD_TIME':        settings.MAXIMUM_DOWNLOAD_TIME,
             'SUBTASK_VERIFICATION_TIME':    settings.SUBTASK_VERIFICATION_TIME,
-            'TOKEN_EXPIRATION_TIME':        settings.TOKEN_EXPIRATION_TIME,
         }
 
         expected_protocol_constants = {name.lower(): value for name, value in protocol_constants_settings.items()}

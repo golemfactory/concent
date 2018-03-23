@@ -15,6 +15,8 @@ from utils.testing_helpers  import generate_ecc_key_pair
 from api_testing_helpers    import api_request
 from api_testing_helpers    import timestamp_to_isoformat
 
+from get_protocol_constants import get_protocol_constants
+
 import requests
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
@@ -49,9 +51,11 @@ def ack_report_computed_task(timestamp = None, subtask_id = None, task_to_comput
         )
 
 
-def task_to_compute(timestamp = None, compute_task_def = None):
+def task_to_compute(timestamp = None, compute_task_def = None, provider_public_key = None, requestor_public_key = None):
     with freeze_time(timestamp):
         return message.tasks.TaskToCompute(
+            provider_public_key = provider_public_key,
+            requestor_public_key = requestor_public_key,
             compute_task_def = compute_task_def,
         )
 
@@ -77,11 +81,11 @@ def force_subtask_results_response(timestamp = None, subtask_results_accepted = 
         )
 
 
-def subtask_results_accepted(timestamp = None, subtask_id = None, payment_ts = None):
+def subtask_results_accepted(timestamp = None, payment_ts = None, task_to_compute = None):
     with freeze_time(timestamp):
         return message.tasks.SubtaskResultsAccepted(
-            subtask_id = subtask_id,
             payment_ts = payment_ts,
+            task_to_compute = task_to_compute,
         )
 
 
@@ -103,27 +107,28 @@ def report_computed_task(timestamp = None, subtask_id = None, task_to_compute = 
 
 def main():
     cluster_url     = parse_command_line(sys.argv)
-    task_id         = str(random.randrange(1, 100000))
     current_time    = get_current_utc_timestamp()
-
+    cluster_consts  = get_protocol_constants(cluster_url)
     #  Test CASE 2A + 2D + 3 - Send ForceSubtaskResults with same task_id as stored by Concent before
     #  Step 1. Send ForceSubtaskResults first time
+    subtask_id = str(random.randrange(1, 100000))
+    task_id = subtask_id + '2A'
     api_request(
         cluster_url,
         'send',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         force_subtask_results(
-            timestamp = timestamp_to_isoformat(current_time),  # current_time
+            timestamp = timestamp_to_isoformat(current_time),
             ack_report_computed_task = ack_report_computed_task(
-                timestamp = timestamp_to_isoformat(current_time - 14401),  # current_time - 4:00:01
-                subtask_id = task_id + '2A',
+                timestamp = timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time * 1.4)),
+                subtask_id = subtask_id,
                 task_to_compute = task_to_compute(
-                    timestamp = timestamp_to_isoformat(current_time - 14405),  # current_time - 4:00:05
+                    timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
                     compute_task_def = compute_task_def(
-                        task_id     = task_id + '2A',
-                        subtask_id  = task_id + '2A',
-                        deadline    = current_time + 3600,  # current_time + 01:00:00
+                        task_id     = task_id,
+                        subtask_id  = subtask_id,
+                        deadline    = current_time - (cluster_consts.subtask_verification_time),
                     )
                 )
             )
@@ -143,16 +148,16 @@ def main():
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         force_subtask_results(
-            timestamp = timestamp_to_isoformat(current_time),  # current_time
+            timestamp = timestamp_to_isoformat(current_time),
             ack_report_computed_task = ack_report_computed_task(
-                timestamp = timestamp_to_isoformat(current_time - 14401),  # current_time - 4:00:01
-                subtask_id = task_id + '2A',
+                timestamp = timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time * 1.4)),
+                subtask_id = subtask_id,
                 task_to_compute = task_to_compute(
-                    timestamp = timestamp_to_isoformat(current_time - 14405),  # current_time - 4:00:05
+                    timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
                     compute_task_def = compute_task_def(
-                        task_id     = task_id + '2A',
-                        subtask_id  = task_id + '2A',
-                        deadline    = current_time + 3600,  # current_time + 01:00:00
+                        task_id     = task_id,
+                        subtask_id  = subtask_id,
+                        deadline    = current_time - (cluster_consts.subtask_verification_time),
                     )
                 )
             )
@@ -178,6 +183,8 @@ def main():
     )
 
     #  Test CASE 2B - Send ForceSubtaskResults with not enough amount of funds on account
+    subtask_id = str(random.randrange(1, 100000))
+    task_id = subtask_id + '2B'
     api_request(
         cluster_url,
         'send',
@@ -186,14 +193,16 @@ def main():
         force_subtask_results(
             timestamp = timestamp_to_isoformat(current_time),  # current_time
             ack_report_computed_task = ack_report_computed_task(
-                timestamp = timestamp_to_isoformat(current_time - 14401),  # current_time - 4:00:01
-                subtask_id = task_id,
+                timestamp = timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time * 1.4)),
+                subtask_id = subtask_id,
                 task_to_compute = task_to_compute(
-                    timestamp = timestamp_to_isoformat(current_time - 15401),  # current_time - 4:00:05
+                    timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
+                    provider_public_key=PROVIDER_PUBLIC_KEY,
+                    requestor_public_key=REQUESTOR_PUBLIC_KEY,
                     compute_task_def = compute_task_def(
                         task_id     = task_id,
-                        subtask_id  = task_id,
-                        deadline    = current_time + 3600,  # current_time + 01:00:00
+                        subtask_id  = subtask_id,
+                        deadline    = current_time - (cluster_consts.subtask_verification_time),
                     )
                 )
             )
@@ -206,7 +215,9 @@ def main():
         }
     )
 
-    #  Test CASE 2C - Send ForceSubtaskResults with wrong timestamps
+    # Test CASE 2C - Send ForceSubtaskResults with wrong timestamps
+    subtask_id = str(random.randrange(1, 100000))
+    task_id = subtask_id + '2C'
     api_request(
         cluster_url,
         'send',
@@ -215,14 +226,16 @@ def main():
         force_subtask_results(
             timestamp = timestamp_to_isoformat(current_time),
             ack_report_computed_task =ack_report_computed_task(
-                timestamp = timestamp_to_isoformat(current_time - 28801),  # current_time - 08:00:01
-                subtask_id = task_id + '2C',
+                timestamp = timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time * 1.4)),
+                subtask_id = subtask_id,
                 task_to_compute = task_to_compute(
-                    timestamp = timestamp_to_isoformat(current_time - 28802),  # current_time - 08:00:02
+                    timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
+                    provider_public_key = PROVIDER_PUBLIC_KEY,
+                    requestor_public_key = REQUESTOR_PUBLIC_KEY,
                     compute_task_def = compute_task_def(
-                        task_id     = task_id + '2C',
-                        subtask_id  = task_id + '2C',
-                        deadline    = current_time,
+                        task_id     = task_id,
+                        subtask_id  = subtask_id,
+                        deadline    = current_time - (cluster_consts.subtask_verification_time * 20),
                     )
                 )
             )
@@ -236,6 +249,40 @@ def main():
     )
 
     # Test CASE 4B + 5. Requestor sends ForceSubtaskResultsResponse with SubtaskResultsAccepted
+    #  Step 1. Send ForceSubtaskResults
+    subtask_id = str(random.randrange(1, 100000))
+    task_id = subtask_id + '4B'
+    api_request(
+        cluster_url,
+        'send',
+        PROVIDER_PRIVATE_KEY,
+        CONCENT_PUBLIC_KEY,
+        force_subtask_results(
+            timestamp = timestamp_to_isoformat(current_time),
+            ack_report_computed_task = ack_report_computed_task(
+                timestamp = timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time * 1.4)),
+                subtask_id = subtask_id,
+                task_to_compute = task_to_compute(
+                    timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
+                    provider_public_key = PROVIDER_PUBLIC_KEY,
+                    requestor_public_key = REQUESTOR_PUBLIC_KEY,
+                    compute_task_def = compute_task_def(
+                        task_id     = task_id,
+                        subtask_id  = subtask_id,
+                        deadline    = current_time - (cluster_consts.subtask_verification_time),
+                    )
+                )
+            )
+        ),
+        headers = {
+            'Content-Type':                     'application/octet-stream',
+            'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+            'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            'temporary-account-funds':          'True'
+        }
+    )
+    time.sleep(1)
+    #  Step 2. Send ForceSubtaskResultsResponse
     api_request(
         cluster_url,
         'send',
@@ -245,8 +292,18 @@ def main():
             timestamp = timestamp_to_isoformat(current_time),
             subtask_results_accepted = subtask_results_accepted(
                 timestamp = timestamp_to_isoformat(current_time),
-                subtask_id = task_id + '2A',
-                payment_ts = current_time + 1,
+                payment_ts = timestamp_to_isoformat(current_time + 1),
+                task_to_compute = task_to_compute(
+                    timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
+                    provider_public_key = PROVIDER_PUBLIC_KEY,
+                    requestor_public_key = REQUESTOR_PUBLIC_KEY,
+                    compute_task_def = compute_task_def(
+                        task_id = task_id,
+                        subtask_id = subtask_id,
+                        deadline = current_time - (cluster_consts.subtask_verification_time),
+
+                    )
+                )
             )
         ),
         headers = {
@@ -268,6 +325,8 @@ def main():
     )
 
     # Test CASE 2D + 3 + 4B + 5. Requestor sends ForceSubtaskResultsResponse with SubtaskResultsRejected
+    subtask_id = str(random.randrange(1, 100000))
+    task_id = subtask_id + '2D'
     api_request(
         cluster_url,
         'send',
@@ -276,14 +335,16 @@ def main():
         force_subtask_results(
             timestamp = timestamp_to_isoformat(current_time),
             ack_report_computed_task = ack_report_computed_task(
-                timestamp = timestamp_to_isoformat(current_time - 14401),  # current_time - 04:00:01
-                subtask_id = task_id + '2D',
+                timestamp = timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time)),
+                subtask_id = subtask_id,
                 task_to_compute = task_to_compute(
-                    timestamp = timestamp_to_isoformat(current_time - 14402),  # current_time - 04:00:02
+                    provider_public_key = PROVIDER_PUBLIC_KEY,
+                    requestor_public_key = REQUESTOR_PUBLIC_KEY,
+                    timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
                     compute_task_def = compute_task_def(
-                        task_id     = task_id + '2D',
-                        subtask_id  = task_id + '2D',
-                        deadline    = current_time + 3600,  # current_time + 01:00:00
+                        task_id     = task_id,
+                        subtask_id  = subtask_id,
+                        deadline    = current_time - (cluster_consts.subtask_verification_time),
                     )
                 )
             )
@@ -317,14 +378,16 @@ def main():
             subtask_results_rejected = subtask_results_rejected(
                 timestamp = timestamp_to_isoformat(current_time),
                 report_computed_task = report_computed_task(
-                    timestamp = timestamp_to_isoformat(current_time - 14401),  # current_time - 04:00:01
-                    subtask_id      = task_id + '2D',
+                    timestamp = timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time)),
+                    subtask_id      = subtask_id,
                     task_to_compute = task_to_compute(
-                        timestamp = timestamp_to_isoformat(current_time - 14402),  # current_time - 04:00:02
+                        timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
+                        provider_public_key = PROVIDER_PUBLIC_KEY,
+                        requestor_public_key = REQUESTOR_PUBLIC_KEY,
                         compute_task_def = compute_task_def(
-                            deadline    = current_time + 3600,  # current_time + 01:00:00
-                            task_id     = task_id + '2D',
-                            subtask_id  = task_id + '2D',
+                            deadline    = current_time - (cluster_consts.subtask_verification_time),
+                            task_id     = task_id,
+                            subtask_id  = subtask_id,
                         )
                     )
                 )

@@ -754,6 +754,8 @@ def verify_file_status(
     Function to verify existence of a file on cluster storage
     """
 
+    logging.logger.critical(f"Veryfing file status, key = {client_public_key}")
+    logging.logger.critical(f"Veryfing file status, base64key = {b64encode(client_public_key)}")
     force_get_task_result_list = Subtask.objects.filter(
         requestor__public_key  = b64encode(client_public_key),
         state                  = Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name,  # pylint: disable=no-member

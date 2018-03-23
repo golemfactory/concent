@@ -756,6 +756,7 @@ def verify_file_status(
         requestor__public_key  = b64encode(client_public_key),
         state                  = Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name,  # pylint: disable=no-member
     )
+    logging.logger.critical(f"In verify file status, list len = {len(force_get_task_result_list)}")
 
     for get_task_result in force_get_task_result_list:
         report_computed_task    = deserialize_message(get_task_result.report_computed_task.data.tobytes())
@@ -764,6 +765,7 @@ def verify_file_status(
             client_public_key,
             'upload'
         )
+
         if request_upload_status(file_transfer_token):
             subtask               = get_task_result
             subtask.state         = Subtask.SubtaskState.RESULT_UPLOADED.name  # pylint: disable=no-member
@@ -1322,16 +1324,27 @@ def request_upload_status(file_transfer_token_from_database: message.concents.Fi
     }
     request_http_address = settings.STORAGE_CLUSTER_ADDRESS + CLUSTER_DOWNLOAD_PATH + file_transfer_token.files[0]['path']
 
-    cluster_storage_response = requests.head(
-        request_http_address,
-        headers = headers
-    )
-    if cluster_storage_response.status_code == 200:
+    storage_cluster_response = send_request_to_storage_cluster(headers, request_http_address)
+    if storage_cluster_response.status_code == 200:
         return True
-    elif cluster_storage_response.status_code in [401, 404]:
+    elif storage_cluster_response.status_code in [401, 404]:
         return False
     else:
         raise exceptions.UnexpectedResponse()
+
+
+def send_request_to_storage_cluster(headers, request_http_address):
+    if settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH != '':
+        return requests.head(
+            request_http_address,
+            headers = headers,
+            cert    = settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH,
+        )
+
+    return requests.head(
+        request_http_address,
+        headers = headers
+    )
 
 
 def decode_client_public_key(request):

@@ -797,7 +797,7 @@ def update_timed_out_subtasks(
     verify_file_status(client_public_key)
 
     clients_subtask_list = Subtask.objects.filter(
-        Q(requestor__public_key = b64encode(client_public_key)) | Q(provider__public_key = b64encode(client_public_key)),
+        Q(requestor__public_key = client_public_key) | Q(provider__public_key = client_public_key),
         state__in               = [state.name for state in Subtask.ACTIVE_STATES],
         next_deadline__lte      = timezone.now()
     )

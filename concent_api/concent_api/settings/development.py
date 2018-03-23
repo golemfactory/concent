@@ -17,4 +17,7 @@ CONCENT_FEATURES = [
     "admin-panel",
 ]
 
+# URL format: 'protocol://<user>:<password>@<hostname>:<port>/<virtual host>'
+CELERY_BROKER_URL = 'amqp://localhost:5672'
+
 STORAGE_CLUSTER_ADDRESS = 'http://devel.concent.golem.network/'

@@ -327,7 +327,6 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
     validate_id_value(client_message.report_computed_task.task_to_compute.compute_task_def['task_id'],      'task_id')
     validate_id_value(client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'],   'subtask_id')
 
-    task_deadline = client_message.report_computed_task.task_to_compute.compute_task_def['deadline']
     if Subtask.objects.filter(
         subtask_id = client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'],
         state      = Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name,  # pylint: disable=no-member
@@ -336,11 +335,11 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
             reason = message.concents.ServiceRefused.REASON.DuplicateRequest,
         )
 
-    elif task_deadline + settings.FORCE_ACCEPTANCE_TIME < current_time:
+    elif client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.FORCE_ACCEPTANCE_TIME < current_time:
         logging.log_timeout(
             client_message,
             request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-            task_deadline + settings.FORCE_ACCEPTANCE_TIME,
+            client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.FORCE_ACCEPTANCE_TIME,
         )
         return message.concents.ForceGetTaskResultRejected(
             reason    = message.concents.ForceGetTaskResultRejected.REASON.AcceptanceTimeLimitExceeded,
@@ -353,8 +352,7 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
             provider_public_key         = other_party_public_key,
             requestor_public_key        = client_public_key,
             state                       = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
-            next_deadline               = task_deadline + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME,
-            # next_deadline               = client_message.report_computed_task.timestamp + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME,
+            next_deadline               = client_message.report_computed_task.timestamp + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME,
             set_next_deadline           = True,
             report_computed_task        = client_message.report_computed_task,
             task_to_compute             = client_message.report_computed_task.task_to_compute,
@@ -754,14 +752,10 @@ def verify_file_status(
     Function to verify existence of a file on cluster storage
     """
 
-    logging.logger.critical(f"Veryfing file status, key = {client_public_key}")
-    logging.logger.critical(f"Veryfing file status, base64key = {b64encode(client_public_key)}")
     force_get_task_result_list = Subtask.objects.filter(
-        requestor__public_key  = client_public_key,
-        # requestor__public_key  = b64encode(client_public_key),
+        requestor__public_key  = b64encode(client_public_key),
         state                  = Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name,  # pylint: disable=no-member
     )
-    logging.logger.critical(f"In verify file status, list len = {len(force_get_task_result_list)}")
 
     for get_task_result in force_get_task_result_list:
         report_computed_task    = deserialize_message(get_task_result.report_computed_task.data.tobytes())
@@ -770,7 +764,6 @@ def verify_file_status(
             client_public_key,
             'upload'
         )
-
         if request_upload_status(file_transfer_token):
             subtask               = get_task_result
             subtask.state         = Subtask.SubtaskState.RESULT_UPLOADED.name  # pylint: disable=no-member
@@ -797,7 +790,7 @@ def update_timed_out_subtasks(
     verify_file_status(client_public_key)
 
     clients_subtask_list = Subtask.objects.filter(
-        Q(requestor__public_key = client_public_key) | Q(provider__public_key = client_public_key),
+        Q(requestor__public_key = b64encode(client_public_key)) | Q(provider__public_key = b64encode(client_public_key)),
         state__in               = [state.name for state in Subtask.ACTIVE_STATES],
         next_deadline__lte      = timezone.now()
     )
@@ -1329,12 +1322,10 @@ def request_upload_status(file_transfer_token_from_database: message.concents.Fi
     }
     request_http_address = settings.STORAGE_CLUSTER_ADDRESS + CLUSTER_DOWNLOAD_PATH + file_transfer_token.files[0]['path']
 
-    logging.logger.critical("before head call  in 'request_upload_status'")
     cluster_storage_response = requests.head(
         request_http_address,
         headers = headers
     )
-    logging.logger.critical(f"RESP in 'request_upload_status': {cluster_storage_response.status_code}")
     if cluster_storage_response.status_code == 200:
         return True
     elif cluster_storage_response.status_code in [401, 404]:

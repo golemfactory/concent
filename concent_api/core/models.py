@@ -14,7 +14,6 @@ from django.db.models       import Manager
 from django.utils           import timezone
 
 from golem_messages         import message
-from utils import logging
 
 from utils.fields           import Base64Field
 from utils.fields           import ChoiceEnum
@@ -49,8 +48,6 @@ class ClientManager(Manager):
             )
             instance.full_clean()
             instance.save()
-
-            logging.logger.critical(f"Creating instance, hey = {public_key}")
         return instance
 
 

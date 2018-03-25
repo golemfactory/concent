@@ -37,12 +37,12 @@ def parse_command_line(command_line):
     return cluster_url
 
 
-def upload_new_file_on_cluster(task_id = '0', part_id = '0', current_time = 0):
+def upload_new_file_on_cluster(task_id, subtask_id):
 
     file_content    = task_id
     file_size       = len(file_content)
     file_check_sum  = 'sha1:' + hashlib.sha1(file_content.encode()).hexdigest()
-    file_path       = '{}/{}/result'.format(task_id, part_id)
+    file_path       = 'blender/result/{}/{}.{}.zip'.format(task_id, task_id, subtask_id)
 
     file_transfer_token = message.FileTransferToken()
     file_transfer_token.token_expiration_deadline       = int(datetime.datetime.now().timestamp()) + 3600
@@ -63,7 +63,7 @@ def upload_new_file_on_cluster(task_id = '0', part_id = '0', current_time = 0):
     headers = {
             'Authorization':                authorized_golem_transfer_token,
             'Concent-Client-Public-Key':    b64encode(CONCENT_PUBLIC_KEY).decode(),
-            'Concent-upload-path':          '{}/{}/result'.format(task_id, part_id),
+            'Concent-upload-path':          'blender/result/{}/{}.{}.zip'.format(task_id, task_id, subtask_id),
             'Content-Type':                 'application/x-www-form-urlencoded'
     }
 
@@ -100,8 +100,7 @@ def main():
 
     (response_status_code, file_size, file_check_sum) = upload_new_file_on_cluster(
         task_id = task_id,
-        part_id = '0',
-        current_time = current_time,
+        subtask_id = '0',
     )
     if response_status_code == 200:
         print('\nCreated file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(task_id, file_check_sum, file_size))

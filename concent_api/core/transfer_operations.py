@@ -111,7 +111,7 @@ def create_file_transfer_token(
     current_time    = get_current_utc_timestamp()
     task_id         = report_computed_task.task_to_compute.compute_task_def['task_id']
     subtask_id      = report_computed_task.task_to_compute.compute_task_def['subtask_id']
-    file_path       = '{}/{}/result'.format(subtask_id, task_id)
+    file_path       = 'blender/result/{}/{}.{}.zip'.format(task_id, task_id, subtask_id)
 
     file_transfer_token = message.concents.FileTransferToken(
         token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_TIME,

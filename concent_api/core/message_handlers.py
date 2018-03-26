@@ -374,6 +374,7 @@ def handle_send_force_subtask_results_response(request, client_message):
         state                     = Subtask.SubtaskState.ACCEPTED
         response_type             = PendingResponse.ResponseType.ForceSubtaskResultsResponse
         provider_public_key       = client_message.subtask_results_accepted.task_to_compute.provider_public_key
+        computation_deadline      = client_message.subtask_results_accepted.task_to_compute.compute_task_def['deadline']
     else:
         validate_golem_message_task_to_compute(client_message.subtask_results_rejected.report_computed_task.task_to_compute)
         client_message_subtask_id = client_message.subtask_results_rejected.report_computed_task.task_to_compute.compute_task_def['subtask_id']
@@ -383,6 +384,7 @@ def handle_send_force_subtask_results_response(request, client_message):
         state                     = Subtask.SubtaskState.REJECTED
         response_type             = PendingResponse.ResponseType.SubtaskResultsRejected
         provider_public_key       = client_message.subtask_results_rejected.report_computed_task.task_to_compute.provider_public_key
+        computation_deadline      = client_message.subtask_results_rejected.report_computed_task.task_to_compute.compute_task_def['deadline']
 
     try:
         subtask = Subtask.objects.get(
@@ -405,10 +407,14 @@ def handle_send_force_subtask_results_response(request, client_message):
     if subtask.subtask_results_accepted_id is not None or subtask.subtask_results_rejected_id is not None:
         raise Http400("This subtask has been resolved already.")
 
-    verification_deadline = subtask.ack_report_computed_task.timestamp.timestamp() + settings.SUBTASK_VERIFICATION_TIME
-    acceptance_deadline = verification_deadline + settings.FORCE_ACCEPTANCE_TIME + settings.CONCENT_MESSAGING_TIME
+    acceptance_deadline = (
+        computation_deadline +
+        settings.SUBTASK_VERIFICATION_TIME +
+        settings.FORCE_ACCEPTANCE_TIME +
+        settings.CONCENT_MESSAGING_TIME
+    )
 
-    if current_time > acceptance_deadline:
+    if acceptance_deadline < current_time:
         logging.log_timeout(
             client_message,
             request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],

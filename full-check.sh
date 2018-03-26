@@ -14,5 +14,5 @@ printf "\n"
 
 printf "========================= UNIT TESTS WITH COVERAGE =================\n"
 # NOTE: 'manage.py test' does not find all tests unless we run it from within the app directory.
-./run_tests.sh $@
+./run_tests.sh "$@"
 printf "\n"

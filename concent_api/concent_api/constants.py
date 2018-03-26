@@ -4,6 +4,7 @@ from django.conf.urls import url, include
 from django.contrib   import admin
 
 import core.urls
+import conductor.urls
 import gatekeeper.urls
 
 AVAILABLE_CONCENT_FEATURES = OrderedDict([
@@ -22,6 +23,15 @@ AVAILABLE_CONCENT_FEATURES = OrderedDict([
         ],
         "url_patterns":         [
             url(r'^api/v1/', include(core.urls, namespace = 'core')),
+        ],
+    }),
+
+    ("conductor", {
+        "required_django_apps": [
+            "conductor",
+        ],
+        "url_patterns":         [
+            url(r'^conductor/', include(conductor.urls, namespace = 'conductor')),
         ],
     }),
 

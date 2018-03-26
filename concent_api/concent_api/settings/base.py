@@ -19,6 +19,7 @@ INSTALLED_APPS = [
 
     # Our apps:
     'concent_api',
+    'conductor',
     'core',
     'gatekeeper',
 ]

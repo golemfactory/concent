@@ -7,6 +7,7 @@ pipdeptree
 flake8
 requests
 coverage
+tblib
 
 # Force the latest version of pylint pyflakes and pep8. There are numerous issues with older versions.
 pylint        >= 1.8.2

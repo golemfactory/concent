@@ -48,13 +48,13 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces subtask results via Concent.
         # Request is processed correctly.
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-            timestamp                   = "2018-02-05 10:00:15",
+            timestamp                   = "2018-02-05 10:00:30",
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
-                timestamp       = "2018-02-05 10:00:15",
+                timestamp       = "2018-02-05 10:00:20",
                 subtask_id      = "xxyyzz",
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp   = "2018-02-05 10:00:00",
-                    deadline    = "2018-02-05 10:00:10",
+                    deadline    = "2018-02-05 10:00:15",
                     task_id     = "2",
                     subtask_id  = "xxyyzz",
                 )
@@ -62,7 +62,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
-            with freeze_time("2018-02-05 10:00:25"):
+            with freeze_time("2018-02-05 10:00:30"):
                 response = self.client.post(
                     reverse('core:send'),
                     data                                = serialized_force_subtask_results,
@@ -91,7 +91,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',
-            timestamp       = "2018-02-05 10:00:25"
+            timestamp       = "2018-02-05 10:00:30"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = 'xxyyzz',
@@ -183,13 +183,13 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces subtask results via Concent.
         # Request is processed correctly.
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-            timestamp                   = "2018-02-05 10:00:20",
+            timestamp                   = "2018-02-05 10:00:30",
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2018-02-05 10:00:20",
                 subtask_id      = "xxyyzz",
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp   = "2018-02-05 10:00:00",
-                    deadline    = "2018-02-05 10:00:10",
+                    deadline    = "2018-02-05 10:00:15",
                     task_id     = "2",
                     subtask_id  = "xxyyzz",
                 )
@@ -217,7 +217,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_key                 = self._get_encoded_provider_public_key(),
             requestor_key                = self._get_encoded_requestor_public_key(),
             expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
-            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:50"),
+            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -269,7 +269,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
 
         deserialized_compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2018-02-05 10:00:10",
+            deadline    = "2018-02-05 10:00:15",
             task_id     = '2',
             subtask_id  = "xxyyzz",
         )
@@ -308,13 +308,13 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces subtask results via Concent.
         # Request is processed correctly.
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-            timestamp                   = "2018-02-05 10:00:15",
+            timestamp                   = "2018-02-05 10:00:30",
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
-                timestamp       = "2018-02-05 10:00:15",
+                timestamp       = "2018-02-05 10:00:20",
                 subtask_id      = "xxyyzz",
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp   = "2018-02-05 10:00:00",
-                    deadline    = "2018-02-05 10:00:10",
+                    deadline    = "2018-02-05 10:00:15",
                     task_id     = "2",
                     subtask_id  = "xxyyzz",
                 )
@@ -400,7 +400,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             message_type    = message.concents.ForceSubtaskResults,
             fields          = {
                 'timestamp':                            self._parse_iso_date_to_timestamp("2018-02-05 10:00:24"),
-                'ack_report_computed_task.timestamp':   self._parse_iso_date_to_timestamp("2018-02-05 10:00:15"),
+                'ack_report_computed_task.timestamp':   self._parse_iso_date_to_timestamp("2018-02-05 10:00:20"),
                 'ack_report_computed_task.subtask_id':  'xxyyzz',
             }
         )
@@ -580,13 +580,13 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces subtask results via Concent.
         # Request is processed correctly.
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-            timestamp                   = "2018-02-05 10:00:15",
+            timestamp                   = "2018-02-05 10:00:30",
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
-                timestamp       = "2018-02-05 10:00:15",
+                timestamp       = "2018-02-05 10:00:20",
                 subtask_id      = "xxyyzz",
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp   = "2018-02-05 10:00:00",
-                    deadline    = "2018-02-05 10:00:10",
+                    deadline    = "2018-02-05 10:00:15",
                     task_id     = "2",
                     subtask_id  = "xxyyzz",
                 )
@@ -672,7 +672,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             message_type    = message.concents.ForceSubtaskResults,
             fields          = {
                 'timestamp':                            self._parse_iso_date_to_timestamp("2018-02-05 10:00:24"),
-                'ack_report_computed_task.timestamp':   self._parse_iso_date_to_timestamp("2018-02-05 10:00:15"),
+                'ack_report_computed_task.timestamp':   self._parse_iso_date_to_timestamp("2018-02-05 10:00:20"),
                 'ack_report_computed_task.subtask_id':  'xxyyzz',
             }
         )
@@ -864,13 +864,13 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces subtask results via Concent.
         # Request is processed correctly.
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-            timestamp                   = "2018-02-05 10:00:20",
+            timestamp                   = "2018-02-05 10:00:30",
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2018-02-05 10:00:20",
                 subtask_id      = "xxyyzz",
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp   = "2018-02-05 10:00:00",
-                    deadline    = "2018-02-05 10:00:10",
+                    deadline    = "2018-02-05 10:00:15",
                     task_id     = '1',
                     subtask_id  = "xxyyzz",
                 )
@@ -898,7 +898,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_key                 = self._get_encoded_provider_public_key(),
             requestor_key                = self._get_encoded_requestor_public_key(),
             expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
-            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:50"),
+            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -949,7 +949,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
         deserialized_compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2018-02-05 10:00:10",
+            deadline    = "2018-02-05 10:00:15",
             task_id     = '1',
             subtask_id  = "xxyyzz",
         )
@@ -1067,13 +1067,13 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces subtask results via Concent.
         # Request is processed correctly.
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-            timestamp                   = "2018-02-05 10:00:20",
+            timestamp                   = "2018-02-05 10:00:30",
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2018-02-05 10:00:20",
                 subtask_id      = "xxyyzz",
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp   = "2018-02-05 10:00:00",
-                    deadline    = "2018-02-05 10:00:10",
+                    deadline    = "2018-02-05 10:00:15",
                     task_id     = '1',
                     subtask_id  = "xxyyzz",
                 )
@@ -1101,7 +1101,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_key                 = self._get_encoded_provider_public_key(),
             requestor_key                = self._get_encoded_requestor_public_key(),
             expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task'},
-            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:50"),
+            next_deadline                = self._parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -1151,7 +1151,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
         deserialized_compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2018-02-05 10:00:10",
+            deadline    = "2018-02-05 10:00:15",
             task_id     = '1',
             subtask_id  = "xxyyzz",
         )

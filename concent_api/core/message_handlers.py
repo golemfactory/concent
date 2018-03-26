@@ -307,8 +307,15 @@ def handle_send_force_subtask_results(request, client_message: message.concents.
             reason      = message.concents.ServiceRefused.REASON.TooSmallProviderDeposit,
         )
 
-    verification_deadline       = client_message.ack_report_computed_task.timestamp + settings.SUBTASK_VERIFICATION_TIME
-    forcing_acceptance_deadline = client_message.ack_report_computed_task.timestamp + settings.SUBTASK_VERIFICATION_TIME + settings.FORCE_ACCEPTANCE_TIME
+    verification_deadline       = (
+        client_message.ack_report_computed_task.task_to_compute.compute_task_def['deadline'] +
+        settings.SUBTASK_VERIFICATION_TIME
+    )
+    forcing_acceptance_deadline = (
+        client_message.ack_report_computed_task.task_to_compute.compute_task_def['deadline'] +
+        settings.SUBTASK_VERIFICATION_TIME +
+        settings.FORCE_ACCEPTANCE_TIME
+    )
     if forcing_acceptance_deadline < current_time:
         logging.log_timeout(
             client_message,

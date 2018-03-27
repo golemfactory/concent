@@ -233,12 +233,20 @@ def parse_command_line(command_line):
     return cluster_url
 
 
-def create_task_to_compute(current_time, task_id, deadline_offset = DEFAULT_DEADLINE_OFFSET):
+def create_task_to_compute(
+    current_time,
+    task_id,
+    deadline_offset         = DEFAULT_DEADLINE_OFFSET,
+    requestor_public_key    = None,
+    provider_public_key     = None,
+):
     compute_task_def                = ComputeTaskDef()
     compute_task_def['task_id']     = task_id
     compute_task_def['subtask_id']  = "sub_" + task_id
     compute_task_def['deadline']    = current_time + deadline_offset
     task_to_compute = TaskToCompute(
-        compute_task_def = compute_task_def
+        compute_task_def = compute_task_def,
+        requestor_public_key = requestor_public_key,
+        provider_public_key = provider_public_key,
     )
     return task_to_compute

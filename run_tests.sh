@@ -1,34 +1,43 @@
-#!/bin/bash
+#!/bin/bash -e
 
-CMD="coverage run --rcfile=../coverage-config --source='.' manage.py test --settings=concent_api.settings.testing"
+COVERAGE_COMMAND="coverage run --rcfile=../coverage-config --source='.' manage.py test --settings=concent_api.settings.testing"
+TEST_RUNNER_EXTRA_ARGUMENTS=""
 
 display_usage(){
-    printf "Usage:\n run_tests [-p || --pattern <tests pattern>] [-n || --multicore <number of cores to use>]\n"
+    printf "Usage:\n"
+    printf " run_tests [-p || --pattern =<tests pattern>] [-n || --multicore =<number of cores to use>]\n"
 }
 
-for i in "$@"
+for argument in "$@"
 do
-    if [[ ( $i == "--help") ||  $i == "-h" ]]
-        then
-            display_usage
-            exit 0
+    if [[ ( $argument == "--help") ||  $argument == "-h" ]]; then
+        display_usage
+        exit 0
     fi
-    case $i in
+    case $argument in
         -p=*|--pattern=*)
-        PATTERN="${i#*=}"
-        CMD+=" --pattern=\"$PATTERN\""
+            PATTERN="${argument#*=}"
+            COVERAGE_COMMAND+=" --pattern=\"$PATTERN\""
+            TEST_RUNNER_EXTRA_ARGUMENTS+=" --pattern=\"$PATTERN\""
         ;;
         -n=*|--multicore=*)
-        NUMBER_OF_CORES="${i#*=}"
-        CMD+=" --parallel $NUMBER_OF_CORES"
+            NUMBER_OF_CORES="${argument#*=}"
+            COVERAGE_COMMAND+=" --parallel=$NUMBER_OF_CORES"
+            TEST_RUNNER_EXTRA_ARGUMENTS+=" --parallel=$NUMBER_OF_CORES"
         ;;
         *)
-              # ignore unknown
+            display_usage
+            exit 1
         ;;
     esac
 done
-cd concent_api/                 || exit 1
-printf "executing: $CMD\n\n"    || exit 1
-eval "$CMD"                     || exit 1
-coverage report --show-missing  || exit 1
+cd concent_api/
+printf "executing: $COVERAGE_COMMAND\n\n"
+coverage run                                    \
+    --rcfile ../coverage-config                 \
+    --source '.'                                \
+    manage.py test                              \
+        --settings concent_api.settings.testing \
+        ${TEST_RUNNER_EXTRA_ARGUMENTS}
+coverage report --show-missing
 cd ..

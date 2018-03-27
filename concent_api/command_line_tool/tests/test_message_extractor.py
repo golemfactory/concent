@@ -71,7 +71,6 @@ class TestMessageExtractor(TestCase):
         assert_that(compute_task_def["subtask_id"]).is_equal_to(subtask_id)
         assert_that(compute_task_def["deadline"]).is_equal_to(deadline)
 
-    @skip
     def test_that_report_computed_task_message_is_created_when_appropriate_dict_is_given(self):
         task_id = "2"
         subtask_id = "12"

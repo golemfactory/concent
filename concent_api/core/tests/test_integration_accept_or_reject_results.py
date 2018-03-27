@@ -5,6 +5,7 @@ from django.urls            import reverse
 from freezegun              import freeze_time
 from golem_messages         import message
 
+from core.constants         import ETHEREUM_ADDRESS_LENGTH
 from core.models            import StoredMessage
 from core.models            import Subtask
 from core.models            import PendingResponse
@@ -15,11 +16,11 @@ from utils.testing_helpers  import generate_ecc_key_pair
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
-def _get_provider_account_status_true_mock(_):
+def _get_provider_account_status_true_mock(client_eth_address, pending_value):  # pylint: disable=unused-argument
     return True
 
 
-def _get_provider_account_status_false_mock(_):
+def _get_provider_account_status_false_mock(client_eth_address, pending_value):  # pylint: disable=unused-argument
     return False
 
 
@@ -33,6 +34,7 @@ def _get_requestor_account_status(_provider, _requestor):
     CONCENT_MESSAGING_TIME    = 10,  # seconds
     FORCE_ACCEPTANCE_TIME     = 10,  # seconds
     SUBTASK_VERIFICATION_TIME = 10,  # seconds
+    CONCENT_ETHEREUM_ADDRESS  = 'x' * ETHEREUM_ADDRESS_LENGTH
 )
 class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
@@ -64,7 +66,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:30"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -104,7 +106,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 2: Provider again forces subtask results via Concent with message with the same task_id.
         # Request is refused.
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:31"):
                 response_2 = self.client.post(
                     reverse('core:send'),
@@ -142,7 +144,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp = "2018-02-05 10:00:30"
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_false_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_false_mock):
             with freeze_time("2018-02-05 10:00:35"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -194,7 +196,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-03-05 10:00:24"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -227,7 +229,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-03-05 10:00:40"):
                 response_2 = self.client.post(
                     reverse('core:send'),
@@ -274,7 +276,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:31"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -367,7 +369,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:31"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -506,7 +508,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:30"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -583,7 +585,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:44"):
                 self.client.post(
                     reverse('core:send'),
@@ -668,7 +670,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:30"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -744,7 +746,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:44"):
                 self.client.post(
                     reverse('core:send'),
@@ -830,7 +832,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 11:00:01"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -871,7 +873,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 11:00:01"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -909,7 +911,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-03-05 10:00:30"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -933,7 +935,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-03-05 10:00:40"):
                 response_2 = self.client.post(
                     reverse('core:send'),
@@ -982,7 +984,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:30"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -1037,7 +1039,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ),
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 11:00:00"):
                 response_2 = self.client.post(
                     reverse('core:send'),
@@ -1066,7 +1068,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ),
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 11:00:00"):
                 response_3 = self.client.post(
                     reverse('core:send'),
@@ -1095,7 +1097,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 11:00:00"):
                 response_4 = self.client.post(
                     reverse('core:send'),
@@ -1124,7 +1126,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 11:00:00"):
                 response_5 = self.client.post(
                     reverse('core:send'),
@@ -1155,7 +1157,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:30"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -1254,7 +1256,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:30"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -1316,13 +1318,14 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
         self._assert_stored_message_counter_not_increased()
 
-        with mock.patch('core.message_handlers.base.make_forced_payment', _get_requestor_account_status):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_requestor_account_status):
             with freeze_time("2018-02-05 10:00:51"):
                 response_3a = self.client.post(
                     reverse('core:receive'),
                     data                            = self._create_provider_auth_message(),
                     content_type                    = 'application/octet-stream',
                 )
+
         self._test_response(
             response_3a,
             status       = 200,
@@ -1352,7 +1355,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ]
         )
 
-        with mock.patch('core.message_handlers.base.make_forced_payment', _get_requestor_account_status):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_requestor_account_status):
             with freeze_time("2018-02-05 10:00:52"):
                 response_3b = self.client.post(
                     reverse('core:receive'),
@@ -1417,7 +1420,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 10:00:30"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -1513,7 +1516,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ]
         )
 
-        with mock.patch('core.message_handlers.base.make_forced_payment', _get_requestor_account_status):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_requestor_account_status):
             with freeze_time("2018-02-05 10:00:51"):
                 response_4 = self.client.post(
                     reverse('core:receive'),
@@ -1614,7 +1617,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 11:00:02"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -1643,7 +1646,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 11:00:02"):
                 response_2 = self.client.post(
                     reverse('core:send'),
@@ -1730,7 +1733,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 11:00:02"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -1758,7 +1761,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 11:00:02"):
                 response_2 = self.client.post(
                     reverse('core:send'),
@@ -1830,7 +1833,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp             = "2018-02-05 11:00:01",
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', _get_provider_account_status_true_mock):
             with freeze_time("2018-02-05 11:00:02"):
                 response_1 = self.client.post(
                     reverse('core:send'),

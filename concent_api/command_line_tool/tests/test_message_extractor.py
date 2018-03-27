@@ -1,4 +1,4 @@
-from unittest import TestCase, skip
+from unittest import TestCase, skip, expectedFailure
 
 from golem_messages.message import ComputeTaskDef, TaskToCompute, ReportComputedTask
 from golem_messages.message.concents import ForceGetTaskResult
@@ -8,7 +8,7 @@ from assertpy import assert_that
 
 class TestMessageExtractor(TestCase):
 
-    @skip
+    @expectedFailure
     def test_that_exception_is_raised_when_wrong_dict_is_given(self):  # TODO: what exception?
         # assert_that()
         self.fail("not implemented yet")

@@ -1,9 +1,12 @@
-from typing             import Union
-from golem_messages     import message
+from typing                         import Union
+from typing                         import List
+from golem_messages                 import message
+from golem_messages.cryptography    import ecdsa_verify
+from golem_messages.exceptions      import MessageError
 
-from core.constants     import GOLEM_PUBLIC_KEY_LENGTH
-from core.constants     import MESSAGE_TASK_ID_MAX_LENGTH
-from core.exceptions    import Http400
+from core.constants                 import GOLEM_PUBLIC_KEY_LENGTH
+from core.constants                 import MESSAGE_TASK_ID_MAX_LENGTH
+from core.exceptions                import Http400
 
 
 def validate_golem_message_reject(
@@ -76,3 +79,55 @@ def validate_report_computed_task_time_window(report_computed_task):
 
     if report_computed_task.timestamp < report_computed_task.task_to_compute.timestamp:
         raise Http400("ReportComputedTask timestamp is older then nested TaskToCompute.")
+
+
+def validate_golem_message_client_authorization(golem_message: message.concents.ClientAuthorization):
+    if not isinstance(golem_message, message.concents.ClientAuthorization):
+        raise Http400('Expected ClientAuthorization.')
+
+    validate_public_key(golem_message.client_public_key, 'client_public_key')
+
+
+def validate_list_of_identical_task_to_compute(list_of_task_to_compute: List[message.TaskToCompute]):
+    assert isinstance(list_of_task_to_compute, list)
+    assert all([isinstance(task_to_compute, message.TaskToCompute) for task_to_compute in list_of_task_to_compute])
+
+    if len(list_of_task_to_compute) <= 1:
+        return True
+
+    base_task_to_compute = list_of_task_to_compute[0]
+
+    for i, task_to_compute in enumerate(list_of_task_to_compute[1:], start = 1):
+        for slot in message.TaskToCompute.__slots__:
+            if getattr(base_task_to_compute, slot) != getattr(task_to_compute, slot):
+                raise Http400(
+                    'TaskToCompute messages are not identical. '
+                    'There is a difference between messages with index 0 on passed list and with index {}'
+                    'The difference is on field {}: {} is not equal {}'.format(
+                        i,
+                        slot,
+                        getattr(base_task_to_compute, slot),
+                        getattr(task_to_compute, slot),
+                    )
+                )
+
+    return True
+
+
+def validate_golem_message_signed_with_key(
+    golem_message: message.base.Message,
+    public_key:    str,
+):
+    assert isinstance(golem_message,    message.base.Message)
+
+    validate_public_key(public_key, 'public_key')
+
+    try:
+        ecdsa_verify(public_key, golem_message.sig, golem_message.get_short_hash())
+    except MessageError:
+        raise Http400(
+            'There was an exception when validating if golem_message {} is signed with public key {}'.format(
+                golem_message.TYPE,
+                public_key
+            )
+        )

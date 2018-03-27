@@ -2,11 +2,12 @@ from django.http.response import HttpResponse
 
 from .models              import UploadReport
 from .models              import UploadRequest
+from .tasks               import verification_order_task
 
 
 def report_upload(_request, file_path):
 
-    # If there's a corresponding UploadRequest, the load it and link it to UploadReport.
+    # If there's a corresponding UploadRequest, then load it and link it to UploadReport.
     try:
         upload_request = UploadRequest.objects.get(
             path = file_path
@@ -28,9 +29,21 @@ def report_upload(_request, file_path):
     if (
         upload_request is not None and
         upload_request.verification_request is not None and
-        all([upload_request.upload_reports.exists()
-             for upload_request in upload_request.verification_request.upload_requests.all()])
+        all([
+            upload_request.upload_reports.exists()
+            for upload_request in upload_request.verification_request.upload_requests.all()
+        ])
     ):
-        pass
+        verification_order_task.delay(
+            subtask_id          = upload_request.verification_request.subtask_id,
+            src_code            = upload_request.verification_request.src_code,
+            extra_data          = upload_request.verification_request.extra_data,
+            short_description   = upload_request.verification_request.short_description,
+            working_directory   = upload_request.verification_request.working_directory,
+            performance         = upload_request.verification_request.performance,
+            docker_images       = upload_request.verification_request.docker_images,
+            source_file         = '??',  # TODO: What should be passed here ?
+            result_file         = '??',  # TODO: What should be passed here ?
+        )
 
     return HttpResponse()

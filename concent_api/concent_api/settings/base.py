@@ -223,9 +223,6 @@ SUBTASK_VERIFICATION_TIME = 4 * 3600  # 4 hours
 # A global constant defining the lenght of the time window within which a requestor must pay
 PAYMENT_DUE_TIME = 12 * 3600  # 12 hours
 
-# A global constant defining the length of the time which a provider must wait before enforcing payment
-PAYMENT_GRACE_PERIOD = 1800   # 30 minutes
-
 # A global constant defining currently used payment backend.
 PAYMENT_BACKEND = 'core.payments.mock'
 

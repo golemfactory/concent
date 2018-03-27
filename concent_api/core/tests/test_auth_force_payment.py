@@ -27,7 +27,6 @@ def _get_payment_summary_positive(request, subtask_results_accepted_list, list_o
     CONCENT_PRIVATE_KEY  = CONCENT_PRIVATE_KEY,
     CONCENT_PUBLIC_KEY   = CONCENT_PUBLIC_KEY,
     PAYMENT_DUE_TIME     = 10,  # seconds
-    PAYMENT_GRACE_PERIOD = 10,  # seconds
 )
 class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
     def test_provider_send_force_payment_and_concent_should_return_it_to_requestor_with_correct_keys(self):

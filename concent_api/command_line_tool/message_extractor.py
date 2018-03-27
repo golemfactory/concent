@@ -1,9 +1,12 @@
 import importlib
 import re
-from typing import Dict, Text, Any, List
+from typing import Dict, Text, Any, List, Union
+
+from golem_messages.datastructures import FrozenDict
 from golem_messages.message import Message
 
 JsonType = Dict[Text, Any]
+Task = FrozenDict
 
 
 # FIELD_NAMES = ['task_to_compute', 'compute_task_def', 'report_computed_task', 'force_get_task_result']
@@ -43,7 +46,7 @@ def validate_message_list(message_list: List[Message]) -> None:
         raise ValueError("Malformed message definition")
 
 
-def create_message(message_name: str, message_params: JsonType) -> Message:
+def create_message(message_name: str, message_params: JsonType) -> Union[Message, Task]:
     module = importlib.import_module("golem_messages.message")
     module = module if hasattr(module, convert_message_name(message_name)) else importlib.import_module(
         "golem_messages.message.concents")

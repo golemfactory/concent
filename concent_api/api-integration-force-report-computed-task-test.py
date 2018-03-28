@@ -18,6 +18,8 @@ from utils.testing_helpers          import generate_ecc_key_pair
 
 from api_testing_helpers            import api_request
 
+from get_protocol_constants import get_protocol_constants
+
 import requests
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
@@ -37,12 +39,15 @@ def parse_command_line(command_line):
     return cluster_url
 
 
-def force_report_computed_task(task_id, provider_private_key, provider_public_key, requestor_private_key, requestor_public_key, current_time):
+def force_report_computed_task(task_id, subtask_id, cluster_consts, provider_private_key, provider_public_key, requestor_private_key, requestor_public_key, current_time):
 
     compute_task_def                = ComputeTaskDef()
     compute_task_def['task_id']     = task_id
-    compute_task_def['deadline']    = current_time + 60
+    compute_task_def['deadline']    = current_time + (cluster_consts.subtask_verification_time * 2)
+    compute_task_def['subtask_id'] = subtask_id
     task_to_compute = TaskToCompute(
+        provider_public_key = provider_public_key,
+        requestor_public_key = requestor_public_key,
         compute_task_def = compute_task_def)
 
     serialized_task_to_compute      = dump(task_to_compute,             requestor_private_key,  provider_public_key)
@@ -57,12 +62,16 @@ def force_report_computed_task(task_id, provider_private_key, provider_public_ke
     return force_report_computed_task
 
 
-def ack_report_computed_task(task_id, provider_private_key, provider_public_key, requestor_private_key, requestor_public_key, current_time):
+def ack_report_computed_task(task_id, subtask_id, cluster_consts, provider_private_key, provider_public_key, requestor_private_key, requestor_public_key, current_time):
 
-    task_to_compute = TaskToCompute()
+    task_to_compute = TaskToCompute(
+        provider_public_key = provider_public_key,
+        requestor_public_key = requestor_public_key,
+    )
     task_to_compute.compute_task_def                = ComputeTaskDef()
     task_to_compute.compute_task_def['task_id']     = task_id
-    task_to_compute.compute_task_def['deadline']    = current_time + 60
+    task_to_compute.compute_task_def['subtask_id'] = subtask_id
+    task_to_compute.compute_task_def['deadline']    = current_time + (cluster_consts.subtask_verification_time)
 
     serialized_task_to_compute      = dump(task_to_compute,             requestor_private_key,  provider_public_key)
     deserialized_task_to_compute    = load(serialized_task_to_compute,  provider_private_key,   requestor_public_key, check_time = False)
@@ -74,9 +83,10 @@ def ack_report_computed_task(task_id, provider_private_key, provider_public_key,
 
 def main():
     cluster_url     = parse_command_line(sys.argv)
-    task_id         = str(random.randrange(1, 100000))
+    subtask_id      = str(random.randrange(1, 100000))
+    task_id         = subtask_id + 'force_report'
     current_time    = get_current_utc_timestamp()
-
+    cluster_consts  = get_protocol_constants(cluster_url)
     api_request(
         cluster_url,
         'send',
@@ -84,6 +94,8 @@ def main():
         CONCENT_PUBLIC_KEY,
         force_report_computed_task(
             task_id,
+            subtask_id,
+            cluster_consts,
             PROVIDER_PRIVATE_KEY,
             PROVIDER_PUBLIC_KEY,
             REQUESTOR_PRIVATE_KEY,
@@ -113,6 +125,8 @@ def main():
         CONCENT_PUBLIC_KEY,
         ack_report_computed_task(
             task_id,
+            subtask_id,
+            cluster_consts,
             PROVIDER_PRIVATE_KEY,
             PROVIDER_PUBLIC_KEY,
             REQUESTOR_PRIVATE_KEY,

@@ -1,6 +1,5 @@
 #!/bin/bash -e
 
-COVERAGE_COMMAND="coverage run --rcfile=../coverage-config --source='.' manage.py test --settings=concent_api.settings.testing"
 TEST_RUNNER_EXTRA_ARGUMENTS=""
 
 display_usage(){
@@ -17,12 +16,10 @@ do
     case $argument in
         -p=*|--pattern=*)
             PATTERN="${argument#*=}"
-            COVERAGE_COMMAND+=" --pattern=\"$PATTERN\""
             TEST_RUNNER_EXTRA_ARGUMENTS+=" --pattern=\"$PATTERN\""
         ;;
         -n=*|--multicore=*)
             NUMBER_OF_CORES="${argument#*=}"
-            COVERAGE_COMMAND+=" --parallel=$NUMBER_OF_CORES"
             TEST_RUNNER_EXTRA_ARGUMENTS+=" --parallel=$NUMBER_OF_CORES"
         ;;
         *)
@@ -32,7 +29,6 @@ do
     esac
 done
 cd concent_api/
-printf "executing: $COVERAGE_COMMAND\n\n"
 coverage run                                    \
     --rcfile ../coverage-config                 \
     --source '.'                                \

@@ -1,6 +1,12 @@
 from celery import shared_task
 from mypy.types         import List
 
+from golem_messages     import message
+
+from .models            import VerificationRequest
+from .models            import UploadReport
+from .models            import UploadRequest
+
 
 @shared_task
 def verification_order_task(
@@ -17,7 +23,7 @@ def verification_order_task(
     pass
 
 
-#@shared_task
+@shared_task
 def verification_request_task(
     compute_task_def:   message.ComputeTaskDef,
     files:              List[str],
@@ -49,7 +55,8 @@ def verification_request_task(
         # If there are already UploadReports corresponding to some files, the app links them together by setting the
         # value of the foreign key in UploadRequest.
         UploadReport.objects.filter(
-            path = file
+            path            = file,
+            upload_request  = None,
         ).update(
             upload_request = upload_request
         )
@@ -57,8 +64,8 @@ def verification_request_task(
     verification_request.refresh_from_db()
 
     # If all expected files have been uploaded, the app sends verification_order task to the work queue.
-    if all([upload_request.upload_reports.exists() for upload_request in verification_request.upload_requests.all()]):
-        verification_order_task(  # TODO: Add .delay() when celery config is added
+    if all([upload_request.upload_reports.exists() for upload_request in UploadRequest.objects.all()]):
+        verification_order_task.delay(
             subtask_id          = verification_request.subtask_id,
             src_code            = verification_request.src_code,
             extra_data          = verification_request.extra_data,
@@ -66,6 +73,6 @@ def verification_request_task(
             working_directory   = verification_request.working_directory,
             performance         = verification_request.performance,
             docker_images       = verification_request.docker_images,
-            source_file         = '??', # TODO: What should be passed here ?
-            result_file         = '??', # TODO: What should be passed here ?
+            source_file         = '??',  # TODO: What should be passed here ?
+            result_file         = '??',  # TODO: What should be passed here ?
         )

@@ -118,7 +118,7 @@ def check_payment_backend(app_configs, **kwargs):  # pylint: disable=unused-argu
 
 
 @register()
-def storage_cluster_certificate_path_check(app_configs = None, **kwargs): # pylint: disable=unused-argument
+def storage_cluster_certificate_path_check(app_configs = None, **kwargs):  # pylint: disable=unused-argument
     errors = []
     certificate_path = settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH
     if certificate_path != '':

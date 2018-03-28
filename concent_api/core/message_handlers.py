@@ -580,8 +580,9 @@ def handle_messages_from_database(
 ):
     assert client_public_key    not in ['', None]
 
+    encoded_client_public_key = b64encode(client_public_key)
     pending_response = PendingResponse.objects.filter(
-        client__public_key = b64encode(client_public_key),
+        client__public_key = encoded_client_public_key,
         queue              = response_type.name,
         delivered          = False,
     ).order_by('created_at').first()
@@ -668,7 +669,7 @@ def handle_messages_from_database(
         report_computed_task    = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
         file_transfer_token     = create_file_transfer_token(
             report_computed_task,
-            client_public_key,
+            encoded_client_public_key,
             'upload',
         )
 
@@ -685,7 +686,7 @@ def handle_messages_from_database(
         report_computed_task    = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
         file_transfer_token     = create_file_transfer_token(
             report_computed_task,
-            client_public_key,
+            encoded_client_public_key,
             'download',
         )
 

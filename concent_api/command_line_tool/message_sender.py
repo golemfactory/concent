@@ -1,13 +1,13 @@
+from base64 import b64encode
+import requests
+import os
 from golem_messages.shortcuts import dump
 from golem_messages.shortcuts import load
 # from concent_request import print_message
 from utils.testing_helpers import generate_ecc_key_pair
 
-from base64 import b64encode
-from utils.helpers import get_current_utc_timestamp
+# from utils.helpers import get_current_utc_timestamp
 from concent_api.settings import CONCENT_PUBLIC_KEY
-import requests
-import os
 
 from api_testing_helpers import print_golem_message
 

@@ -104,5 +104,5 @@ class MessageExtractor(object):
         else:
             return create_message(name, json)
 
-    def _contains_valid_message(self, FIELD_NAMES: List[Text]) -> bool:
-        return len(FIELD_NAMES) == 1
+    def _contains_valid_message(self, messages: List[Text]) -> bool:
+        return len(messages) == 1

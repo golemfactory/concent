@@ -1,8 +1,9 @@
-# from jsonschema import Draft4Validator
-from message_sender import send_message
 import argparse
 import json
-from message_extractor import MessageExtractor
+# from jsonschema import Draft4Validator
+from .message_sender import send_message
+from .message_extractor import MessageExtractor
+
 
 # def verify_schema(json_data):
 #     schema = {
@@ -37,7 +38,6 @@ def get_json_data(message_file, message_str):
     else:
         return json.loads(message_str)
     # verify_schema(json_data)
-
 
 
 def receive_message(args):
@@ -84,8 +84,9 @@ def parse_arguments():
 
     return args.endpoint, args.message_file, args.message, args.cluster_url
 
+
 if __name__ == '__main__':
-    endpoint, message_file, message_str, cluster_url = parse_arguments()
-    json_data = get_json_data(message_file, message_str)
+    endpoint, msg_file, msg_str, cluster_url = parse_arguments()
+    json_data = get_json_data(msg_file, msg_str)
     message = MessageExtractor().extract_message(json_data)
     send_message(cluster_url, message)

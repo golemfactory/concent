@@ -8,7 +8,7 @@ from assertpy import assert_that
 
 class TestMessageExtractor(TestCase):
 
-    @expectedFailure
+
     def test_that_exception_is_raised_when_wrong_dict_is_given(self):  # TODO: what exception?
         # assert_that()
         self.fail("not implemented yet")

@@ -103,7 +103,24 @@ def create_error_25_atomic_requests_not_set_for_database(database_name):
         f"ATOMIC_REQUESTS for database {database_name} is not set to True",
         hint="ATOMIC_REQUESTS must be set to True for all databases because our views rely on the fact that on errors "
              "all database changes are rolled back",
-        id="concent.E019",
+        id="concent.E025",
+    )
+
+
+def create_error_26_storage_server_internal_address_is_not_set():
+    return Error(
+        'STORAGE_SERVER_INTERNAL_ADDRESS setting is not defined',
+        hint='Set STORAGE_SERVER_INTERNAL_ADDRESS in your local_settings.py to the address of a Concent storage cluster that offers the /upload/ and /download/ endpoints.',
+        id='concent.E026',
+    )
+
+
+def create_error_27_storage_server_internal_address_is_not_valid_url(error):
+    return Error(
+        'STORAGE_SERVER_INTERNAL_ADDRESS is not a valid URL',
+        hint='{}'.format(error),
+        id='concent.E027',
+    )
     )
 
 
@@ -162,6 +179,21 @@ def check_settings_storage_cluster_address(app_configs, **kwargs):  # pylint: di
                 hint = '{}'.format(error),
                 id   = 'concent.E011',
             )]
+
+    return []
+
+
+@register()
+def check_settings_storage_server_internal_address(app_configs = None, **kwargs):  # pylint: disable=unused-argument
+    if not hasattr(settings, 'STORAGE_SERVER_INTERNAL_ADDRESS') and 'verifier' in settings.CONCENT_FEATURES:
+        return [create_error_26_storage_server_internal_address_is_not_set()]
+
+    if hasattr(settings, 'STORAGE_SERVER_INTERNAL_ADDRESS'):
+        url_validator = URLValidator(schemes = ['http', 'https'])
+        try:
+            url_validator(settings.STORAGE_SERVER_INTERNAL_ADDRESS)
+        except ValidationError as error:
+            return [create_error_27_storage_server_internal_address_is_not_valid_url(error)]
 
     return []
 

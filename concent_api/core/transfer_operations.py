@@ -28,8 +28,9 @@ def verify_file_status(
     Function to verify existence of a file on cluster storage
     """
 
+    encoded_client_public_key = b64encode(client_public_key)
     force_get_task_result_list = Subtask.objects.filter(
-        requestor__public_key  = b64encode(client_public_key),
+        requestor__public_key  =encoded_client_public_key,
         state                  = Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name,  # pylint: disable=no-member
     )
 
@@ -37,10 +38,10 @@ def verify_file_status(
         report_computed_task    = deserialize_message(get_task_result.report_computed_task.data.tobytes())
         file_transfer_token     = create_file_transfer_token(
             report_computed_task,
-            client_public_key,
+            encoded_client_public_key,
             'upload'
         )
-        if request_upload_status(file_transfer_token):
+        if request_upload_status(file_transfer_token, report_computed_task):
             subtask               = get_task_result
             subtask.state         = Subtask.SubtaskState.RESULT_UPLOADED.name  # pylint: disable=no-member
             subtask.next_deadline = None
@@ -101,9 +102,9 @@ def store_pending_message(
 
 
 def create_file_transfer_token(
-    report_computed_task:   message.tasks.ReportComputedTask,
-    client_public_key:      bytes,
-    operation:              str,
+    report_computed_task:       message.tasks.ReportComputedTask,
+    encoded_client_public_key:  bytes,
+    operation:                  str,
 ) -> message.concents.FileTransferToken:
     """
     Function to create FileTransferToken from ReportComputedTask message
@@ -116,7 +117,7 @@ def create_file_transfer_token(
     file_transfer_token = message.concents.FileTransferToken(
         token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_TIME,
         storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
-        authorized_client_public_key    = b64encode(client_public_key),
+        authorized_client_public_key    = encoded_client_public_key,
         operation                       = operation,
     )
     file_transfer_token.files = [message.concents.FileTransferToken.FileInfo()]
@@ -127,19 +128,16 @@ def create_file_transfer_token(
     return file_transfer_token
 
 
-def request_upload_status(file_transfer_token_from_database: message.concents.FileTransferToken) -> bool:
+def request_upload_status(
+    file_transfer_token_from_database:    message.concents.FileTransferToken,
+    report_computed_task:                 message.ReportComputedTask
+) -> bool:
     slash = '/'
     assert len(file_transfer_token_from_database.files) == 1
     assert not file_transfer_token_from_database.files[0]['path'].startswith(slash)
     assert settings.STORAGE_CLUSTER_ADDRESS.endswith(slash)
 
-    current_time = get_current_utc_timestamp()
-    file_transfer_token = message.concents.FileTransferToken(
-        token_expiration_deadline       = current_time + settings.TOKEN_EXPIRATION_TIME,
-        storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
-        authorized_client_public_key    = settings.CONCENT_PUBLIC_KEY,
-        operation                       = 'upload',
-    )
+    file_transfer_token = create_file_transfer_token(report_computed_task, settings.CONCENT_PUBLIC_KEY, 'download')
 
     assert file_transfer_token.timestamp <= file_transfer_token.token_expiration_deadline  # pylint: disable=no-member
 

@@ -15,11 +15,11 @@ from utils.testing_helpers  import generate_ecc_key_pair
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
-def request_upload_status_true_mock(_):
+def request_upload_status_true_mock(_file_transfer_token_from_database, _request_upload_status_false_mock):
     return True
 
 
-def request_upload_status_false_mock(_):
+def request_upload_status_false_mock(_file_transfer_token_from_database, _request_upload_status_false_mock):
     return False
 
 

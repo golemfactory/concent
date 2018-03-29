@@ -3,14 +3,11 @@ import datetime
 import copy
 from base64                         import b64encode
 from django.conf                    import settings
-from django.core.mail               import mail_admins
 from django.http                    import HttpResponse
 from django.utils                   import timezone
-from constance                      import config
 from golem_messages                 import message
 from golem_messages.datastructures  import MessageHeader
 
-from core.exceptions                import ConcentInShutdownMode
 from core.exceptions                import Http400
 from core.models                    import Client
 from core.models                    import PaymentInfo
@@ -428,11 +425,6 @@ def handle_send_force_subtask_results_response(request, client_message):
 
 
 def handle_send_force_payment(request, client_message: message.concents.ForcePayment) -> message.concents.ForcePaymentCommitted:  # pylint: disable=inconsistent-return-statements
-
-    # Concent should not accept payment requests in shutdown mode.
-    if config.SHUTDOWN_MODE is True:
-        raise ConcentInShutdownMode
-
     client_public_key       = decode_client_public_key(request)
     other_party_public_key  = decode_other_party_public_key(request)
     current_time            = get_current_utc_timestamp()
@@ -821,13 +813,6 @@ def update_subtask(
         subtask.requestor.public_key,
         next_deadline,
     )
-
-    # Concent should send e-mail notification when the last active subtask switches to a passive state.
-    if config.SHUTDOWN_MODE is True and not Subtask.objects.filter(state__in=Subtask.ACTIVE_STATES).exists():
-        mail_admins(
-            subject = 'Concent Shutdown Ready',
-            message = 'All subtasks in Concent instance being in shutdown mode turned into passive states',
-        )
 
     return subtask
 

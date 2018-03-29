@@ -19,7 +19,6 @@ from golem_messages.exceptions      import MessageTooOldError
 from golem_messages.exceptions      import TimestampError
 from golem_messages.message         import Message
 
-from core.exceptions                import ConcentInShutdownMode
 from core.exceptions                import Http400
 from utils                          import logging
 
@@ -83,9 +82,6 @@ def api_view(view):
             )
             transaction.savepoint_rollback(sid)
             return JsonResponse({'error': str(exception)}, status = 400)
-        except ConcentInShutdownMode:
-            transaction.savepoint_rollback(sid)
-            return JsonResponse({'error': 'Concent is in shutdown mode.'}, status = 503)
         if isinstance(response_from_view, Message):
             assert response_from_view.sig is None
             logging.log_message_returned(

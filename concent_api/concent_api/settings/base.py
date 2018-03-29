@@ -16,8 +16,6 @@ INSTALLED_APPS = [
 
     # Third-party apps:
     'raven.contrib.django.raven_compat',
-    'constance',
-    'constance.backends.database',
 
     # Our apps:
     'concent_api',
@@ -202,16 +200,6 @@ LOGGING = {
     },
 }
 
-# Django constance config
-CONSTANCE_BACKEND = 'constance.backends.database.DatabaseBackend'
-CONSTANCE_CONFIG = {
-    # Defines if Concent is in shutdown mode.
-    'SHUTDOWN_MODE': (False, 'Shutdown mode', bool),
-}
-
-CONSTANCE_CONFIG_FIELDSETS = {
-    'Concent Options': ('SHUTDOWN_MODE',),
-}
 
 # Private and public keys to be used by Concent to sign and encrypt its own messages.
 # Stored in a 'bytes' array, e.g. b'\xf3\x97\x19\xcdX\xda...'

@@ -37,4 +37,3 @@ semantic-version==2.6.0
 six==1.11.0
 text-unidecode==1.1
 urllib3==1.22
-django-constance[database]==2.1.0

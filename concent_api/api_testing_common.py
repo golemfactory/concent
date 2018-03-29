@@ -71,12 +71,16 @@ def validate_content_type(actual_content_type, expected_content_type):
         )
 
 
-def api_request(host, endpoint, private_key, public_key,
-                data                    = None,
-                headers                 = None,
-                expected_status         = None,
-                expected_message        = None,
-                expected_content_type   = None
+def api_request(
+    host,
+    endpoint,
+    private_key,
+    public_key,
+    data                    = None,
+    headers                 = None,
+    expected_status         = None,
+    expected_message        = None,
+    expected_content_type   = None
 ):
     def _prepare_data(data):
         if data is None:

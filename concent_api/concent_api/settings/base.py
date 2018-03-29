@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     'conductor',
     'core',
     'gatekeeper',
+    'verifier',
 ]
 
 MIDDLEWARE = [

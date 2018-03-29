@@ -6,6 +6,7 @@ from django.contrib   import admin
 import core.urls
 import conductor.urls
 import gatekeeper.urls
+import verifier.urls
 
 AVAILABLE_CONCENT_FEATURES = OrderedDict([
     ("admin-panel", {
@@ -41,6 +42,15 @@ AVAILABLE_CONCENT_FEATURES = OrderedDict([
         ],
         "url_patterns":         [
             url(r'^gatekeeper/', include(gatekeeper.urls, namespace = 'gatekeeper')),
+        ],
+    }),
+
+    ("verifier", {
+        "required_django_apps": [
+            "verifier",
+        ],
+        "url_patterns": [
+            url(r'^verifier/', include(verifier.urls, namespace='verifier')),
         ],
     }),
 ])

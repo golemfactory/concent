@@ -40,10 +40,11 @@ LOGGING = {
 }
 
 CONCENT_FEATURES = [
+    "admin-panel",
     "concent-api",
     "conductor",
     "gatekeeper",
-    "admin-panel",
+    "verifier",
 ]
 
 STORAGE_CLUSTER_ADDRESS = 'http://localhost/'

@@ -5,7 +5,7 @@ from django.db.models       import BinaryField
 from django.db.models       import BooleanField
 from django.db.models       import CharField
 from django.db.models       import DateTimeField
-from django.db.models       import DecimalField
+from django.db.models       import IntegerField
 from django.db.models       import ForeignKey
 from django.db.models       import Model
 from django.db.models       import OneToOneField
@@ -18,6 +18,8 @@ from golem_messages         import message
 from utils.fields           import Base64Field
 from utils.fields           import ChoiceEnum
 
+from .constants             import CLIENT_DETAILS_LENGTH
+from .constants             import ETHEREUM_ADDRESS_LENGTH
 from .constants             import GOLEM_PUBLIC_KEY_LENGTH
 from .constants             import MESSAGE_TASK_ID_MAX_LENGTH
 
@@ -404,9 +406,40 @@ class PaymentInfo(Model):
         Requestor   = 'requestor'
 
     payment_ts              = DateTimeField()
-    task_owner_key          = Base64Field(max_length = 64)
-    provider_eth_account    = Base64Field(max_length = 64)
-    amount_paid             = DecimalField(max_digits = 10, decimal_places = 2)
+    task_owner_key          = CharField(max_length = CLIENT_DETAILS_LENGTH)
+    provider_eth_account    = CharField(max_length = ETHEREUM_ADDRESS_LENGTH)
+    amount_paid             = IntegerField()
     recipient_type          = CharField(max_length = 32, choices = RecipientType.choices())
-    amount_pending          = DecimalField(max_digits = 10, decimal_places = 2)
+    amount_pending          = IntegerField()
     pending_response        = ForeignKey(PendingResponse, related_name = 'payments')
+
+    def clean(self):
+        if self.task_owner_key == self.provider_eth_account:
+            raise ValidationError({
+                'provider_eth_account': 'Provider ethereum account address must be diffrent than task owner key'
+            })
+
+        if not isinstance(self.amount_pending, int) or self.amount_pending <= 0:
+            raise ValidationError({
+                'amount_pending': 'Amount pending must be an integer and bigger than 0'
+            })
+
+        if not isinstance(self.amount_paid, int) or self.amount_paid < 0:
+            raise ValidationError({
+                'amount_paid': 'Amount paid must be an integer and bigger than or equal 0'
+            })
+
+        if not isinstance(self.task_owner_key, str) or not len(self.task_owner_key) == CLIENT_DETAILS_LENGTH:
+            raise ValidationError({
+                'task_owner_key': f'Task owner key must be a string with {CLIENT_DETAILS_LENGTH} characters'
+            })
+
+        if not isinstance(self.provider_eth_account, str) or not len(self.provider_eth_account) == ETHEREUM_ADDRESS_LENGTH:
+            raise ValidationError({
+                'provider_eth_account': f'Provider ethereum account address must be a string with {ETHEREUM_ADDRESS_LENGTH} characters'
+            })
+
+        if not isinstance(self.pending_response, PendingResponse):
+            raise ValidationError({
+                'pending_response': 'PaymentInfo should be related with Pending Response'
+            })

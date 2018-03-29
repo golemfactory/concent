@@ -26,3 +26,5 @@ CONCENT_FEATURES = [
 CELERY_BROKER_URL = 'amqp://localhost:5672'
 
 STORAGE_CLUSTER_ADDRESS = 'http://devel.concent.golem.network/'
+
+STORAGE_SERVER_INTERNAL_ADDRESS = 'http://devel.concent.golem.network/'

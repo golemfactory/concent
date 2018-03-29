@@ -9,8 +9,6 @@ JsonType = Dict[Text, Any]
 Task = FrozenDict
 
 
-# FIELD_NAMES = ['task_to_compute', 'compute_task_def', 'report_computed_task', 'force_get_task_result']
-
 def split_uppercase(message):
     return (''.join([(word[:1].lower() + word[1:]) for word in re.sub(r'([A-Z])', r'_\1', message)]))[1:]
 
@@ -19,16 +17,10 @@ def find_modules():
     message_tasks = importlib.import_module("golem_messages.message.tasks")
     message_concents = importlib.import_module("golem_messages.message.concents")
     message_modules = [message_tasks, message_concents]
-    message_names = []
+    message_list = []
     for module in message_modules:
-        module_items = module.__dict__.items()
-        message_list = list(
-            dict([(name, cls) for name, cls in module_items if isinstance(cls, type)]).keys())
-        for message in message_list:
-            message_names.append(message)
-            if message not in message_list:
-                message_names.append(message)
-    return message_names
+        (message_list.extend([name for name, cls in module.__dict__.items() if isinstance(cls, type)]))
+    return message_list
 
 
 def get_field_names():

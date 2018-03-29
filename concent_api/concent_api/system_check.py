@@ -94,6 +94,29 @@ def check_settings_storage_cluster_address(app_configs, **kwargs):  # pylint: di
 
 
 @register()
+def check_settings_storage_server_internal_address(app_configs, **kwargs):  # pylint: disable=unused-argument
+    if not hasattr(settings, 'STORAGE_SERVER_INTERNAL_ADDRESS') and 'verifier' in settings.CONCENT_FEATURES:
+        return [Error(
+            'STORAGE_SERVER_INTERNAL_ADDRESS setting is not defined',
+            hint = 'Set STORAGE_SERVER_INTERNAL_ADDRESS in your local_settings.py to the address of a Concent storage cluster that offers the /upload/ and /download/ endpoints.',
+            id   = 'concent.E010',
+        )]
+
+    if hasattr(settings, 'STORAGE_SERVER_INTERNAL_ADDRESS'):
+        url_validator = URLValidator(schemes = ['http', 'https'])
+        try:
+            url_validator(settings.STORAGE_CLUSTER_ADDRESS)
+        except ValidationError as error:
+            return [Error(
+                'STORAGE_SERVER_INTERNAL_ADDRESS is not a valid URL',
+                hint = '{}'.format(error),
+                id   = 'concent.E011',
+            )]
+
+    return []
+
+
+@register()
 def check_payment_backend(app_configs, **kwargs):  # pylint: disable=unused-argument
     if 'concent-api' in settings.CONCENT_FEATURES and (
         not hasattr(settings, 'PAYMENT_BACKEND') or

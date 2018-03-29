@@ -5,24 +5,10 @@ from golem_messages     import message
 
 from utils.helpers      import get_result_file_path
 from utils.helpers      import get_source_file_path
+from verifier.tasks import verification_order_task
 from .models            import VerificationRequest
 from .models            import UploadReport
 from .models            import UploadRequest
-
-
-@shared_task
-def verification_order_task(
-    subtask_id:             str,  # pylint: disable=unused-argument
-    src_code:               str,  # pylint: disable=unused-argument
-    extra_data:             str,  # pylint: disable=unused-argument
-    short_description:      str,  # pylint: disable=unused-argument
-    working_directory:      str,  # pylint: disable=unused-argument
-    performance:            str,  # pylint: disable=unused-argument
-    docker_images:          str,  # pylint: disable=unused-argument
-    source_file:            str,  # pylint: disable=unused-argument
-    result_file:            str,  # pylint: disable=unused-argument
-):
-    pass
 
 
 @shared_task

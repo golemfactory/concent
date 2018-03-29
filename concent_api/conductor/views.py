@@ -2,9 +2,9 @@ from django.http.response import HttpResponse
 
 from utils.helpers        import get_result_file_path
 from utils.helpers        import get_source_file_path
+from verifier.tasks       import verification_order_task
 from .models              import UploadReport
 from .models              import UploadRequest
-from .tasks               import verification_order_task
 
 
 def report_upload(_request, file_path):

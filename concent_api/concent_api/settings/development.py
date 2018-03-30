@@ -1,4 +1,5 @@
 # pylint: disable=unused-wildcard-import
+import os
 from .base import *  # NOQA  # pylint: disable=wildcard-import
 
 SECRET_KEY = 'testkey'
@@ -31,4 +32,4 @@ GETH_ADDRESS = 'http://localhost:8545'
 
 STORAGE_SERVER_INTERNAL_ADDRESS = 'http://localhost:8000'
 
-VERIFIER_STORAGE_PATH = '/tmp/'
+VERIFIER_STORAGE_PATH = os.path.join(BASE_DIR, 'verifier_storage')

@@ -1,6 +1,7 @@
 from base64 import b64encode
 import logging
 import os
+import zipfile
 
 from django.conf                import settings
 
@@ -75,7 +76,7 @@ def verification_order_task(
                 method = 'get',
             )
 
-            with open(os.path.join(settings.VERIFIER_STORAGE_PATH, file), 'wb') as f:
+            with open(os.path.join(settings.VERIFIER_STORAGE_PATH, file_name), 'wb') as f:
                 for chunk in cluster_response.iter_content():
                     f.write(chunk)
 
@@ -87,6 +88,28 @@ def verification_order_task(
                 # TODO: How to determine error_code ?
             )
             return
+
+    # Verifier unpacks the archive with project source.
+    for file_name in (source_file, result_file):
+        try:
+            with zipfile.ZipFile(
+                os.path.join(settings.VERIFIER_STORAGE_PATH, file_name),
+                'r'
+            ) as zf:
+                infos = zf.infolist()
+                for ix in range(max(0, 0), min(50, len(infos))):
+                    zf.extract(infos[ix], settings.VERIFIER_STORAGE_PATH)
+                zf.close()
+        except OSError as e:  # TODO: What other exceptions can happen here ?
+            verification_result_task.delay(
+                subtask_id,
+                VerificationResult.ERROR,
+                str(e),
+                # TODO: How to determine error_code ?
+            )
+            return
+
+    # Verifier runs blender.
 
     verification_result_task.delay(
 

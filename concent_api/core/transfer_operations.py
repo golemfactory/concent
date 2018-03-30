@@ -180,15 +180,21 @@ def request_upload_status(
         raise exceptions.UnexpectedResponse()
 
 
-def send_request_to_cluster_storage(headers, request_http_address):
+def send_request_to_cluster_storage(headers, request_http_address, method = 'head'):
+    assert method in ['get', 'head']
+
+    stream = True if method == 'get' else False
+
     if settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH != '':
-        return requests.head(
+        return getattr(requests, method)(
                 request_http_address,
                 headers=headers,
                 verify=settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH,
+                stream=stream,
         )
 
-    return requests.head(
+    return getattr(requests, method)(
             request_http_address,
-            headers=headers
+            headers=headers,
+            stream=stream,
     )

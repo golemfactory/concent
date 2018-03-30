@@ -117,6 +117,32 @@ def check_settings_storage_server_internal_address(app_configs, **kwargs):  # py
 
 
 @register()
+def check_settings_verifier_storage_path(app_configs, **kwargs):  # pylint: disable=unused-argument
+    if not hasattr(settings, 'VERIFIER_STORAGE_PATH') and 'verifier' in settings.CONCENT_FEATURES:
+        return [Error(
+            'VERIFIER_STORAGE_PATH setting is not defined',
+            hint = 'Set VERIFIER_STORAGE_PATH in your local_settings.py to the path to a directory where verifier can store files downloaded from the storage server, rendering results and any intermediate files.',
+            id   = 'concent.E010',
+        )]
+
+    if hasattr(settings, 'VERIFIER_STORAGE_PATH'):
+        if not os.path.exists(settings.VERIFIER_STORAGE_PATH):
+            return [Error(
+                'VERIFIER_STORAGE_PATH directory does not exists',
+                hint = 'Create directory {} or change VERIFIER_STORAGE_PATH setting'.format(settings.VERIFIER_STORAGE_PATH),
+                id   = 'concent.E016',
+            )]
+        if not os.access(settings.VERIFIER_STORAGE_PATH, os.W_OK):
+            return [Error(
+                'Cannot write to VERIFIER_STORAGE_PATH',
+                hint = 'Current user does not have write permissions to directory {}'.format(settings.VERIFIER_STORAGE_PATH),
+                id   = 'concent.E017',
+            )]
+
+    return []
+
+
+@register()
 def check_payment_backend(app_configs, **kwargs):  # pylint: disable=unused-argument
     if 'concent-api' in settings.CONCENT_FEATURES and (
         not hasattr(settings, 'PAYMENT_BACKEND') or

@@ -1,5 +1,4 @@
 from unittest               import skip
-from decimal                import Decimal
 
 import mock
 from django.test            import override_settings
@@ -9,37 +8,10 @@ from golem_messages         import message
 
 from core.models            import PendingResponse
 from core.tests.utils       import ConcentIntegrationTestCase
-from utils.helpers          import get_current_utc_timestamp
 from utils.testing_helpers  import generate_ecc_key_pair
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
-
-
-def _get_requestor_valid_list_of_transactions(current_time, request):  # pylint: disable=unused-argument
-    current_time = get_current_utc_timestamp()
-    return [{'timestamp': current_time - 3700}, {'timestamp': current_time - 3800}, {'timestamp': current_time - 3900}]
-
-
-def _get_requestor_invalid_list_of_transactions(current_time, request):  # pylint: disable=unused-argument
-    current_time = get_current_utc_timestamp()
-    return [{'timestamp': current_time - 22}, {'timestamp': current_time - 23}, {'timestamp': current_time - 24}]
-
-
-def _get_payment_summary_negative(request, subtask_results_accepted_list, list_of_transactions, list_of_forced_payments):  # pylint: disable=unused-argument
-    return -1
-
-
-def _get_payment_summary_value_100(request, subtask_results_accepted_list, list_of_transactions, list_of_forced_payments):  # pylint: disable=unused-argument
-    return Decimal('100')
-
-
-def _get_payment_summary_value_90(request, subtask_results_accepted_list, list_of_transactions, list_of_forced_payments):  # pylint: disable=unused-argument
-    return Decimal('90')
-
-
-def _make_payment_to_provider(_sum_of_payments, _payment_ts, _requestor_ethereum_public_key, _client_public_key):
-    return Decimal('90')
 
 
 @override_settings(

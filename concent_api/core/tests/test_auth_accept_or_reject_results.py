@@ -14,14 +14,6 @@ from utils.testing_helpers  import generate_ecc_key_pair
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
-def _get_provider_account_status_true_mock(_):
-    return True
-
-
-def _get_requestor_account_status(_provider, _requestor):
-    pass
-
-
 @override_settings(
     CONCENT_PRIVATE_KEY       = CONCENT_PRIVATE_KEY,
     CONCENT_PUBLIC_KEY        = CONCENT_PUBLIC_KEY,

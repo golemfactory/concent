@@ -18,6 +18,7 @@ from core.models            import StoredMessage
 from core.models            import Subtask
 
 from utils.helpers          import sign_message
+from utils.helpers          import get_current_utc_timestamp
 from utils.testing_helpers  import generate_ecc_key_pair
 
 
@@ -119,6 +120,7 @@ class ConcentIntegrationTestCase(TestCase):
         requestor_public_key            = None,
         requestor_ethereum_public_key   = None,
         provider_public_key             = None,
+        provider_ethereum_public_key    = None,
         price                           = 0,
         sign_with_private_key           = None,
     ):
@@ -145,6 +147,7 @@ class ConcentIntegrationTestCase(TestCase):
                     provider_public_key if provider_public_key is not None else self.PROVIDER_PUBLIC_KEY
                 ),
                 price=price,
+                provider_ethereum_public_key    = provider_ethereum_public_key,
             )
             task_to_compute = self._sign_message(
                 task_to_compute,
@@ -709,3 +712,38 @@ class ConcentIntegrationTestCase(TestCase):
         return datetime.datetime.fromtimestamp(self._parse_iso_date_to_timestamp(base_time) + offset).strftime(
             '%Y-%m-%d %H:%M:%S'
         )
+
+    def _create_payment_object(self, amount, closure_time):  # pylint: disable=no-self-use
+        payment_item = mock.Mock()
+        payment_item.amount         = amount
+        payment_item.closure_time   = closure_time
+        return payment_item
+
+    def _get_list_of_batch_transactions(self, concent_rpc = None, requestor_eth_address = None, provider_eth_address = None, payment_ts = None, current_time = None, to_block = None, transaction_type = None):  # pylint: disable=unused-argument
+        current_time = get_current_utc_timestamp()
+        item1 = self._create_payment_object(amount = 1000, closure_time = current_time - 4000)
+        item2 = self._create_payment_object(amount = 2000, closure_time = current_time - 3000)
+        item3 = self._create_payment_object(amount = 3000, closure_time = current_time - 2000)
+        item4 = self._create_payment_object(amount = 4000, closure_time = current_time - 1000)
+        return [item1, item2, item3, item4]
+
+    def _get_list_of_force_transactions(self, concent_rpc = None, requestor_eth_address = None, provider_eth_address = None, payment_ts = None, current_time = None, to_block = None, transaction_type = None):  # pylint: disable=unused-argument
+        current_time = get_current_utc_timestamp()
+        item1 = self._create_payment_object(amount = 1000, closure_time = current_time - 2000)
+        item2 = self._create_payment_object(amount = 2000, closure_time = current_time - 1000)
+        return [item1, item2]
+
+    def _get_empty_list_of_transactions(self, concent_rpc = None, requestor_eth_address = None, provider_eth_address = None, payment_ts = None, current_time = None, to_block = None, transaction_type = None):  # pylint: disable=no-self-use, unused-argument
+        return []
+
+    def _make_force_payment_to_provider(self, concent_rpc, requestor_eth_address, provider_eth_address, value, payment_ts):  # pylint: disable=no-self-use, unused-argument
+        return None
+
+    def _get_number_of_eth_block(self, _concent_rpc):  # pylint: disable=no-self-use
+        return 200000
+
+    def _pass_rpc_synchronization(self, _rpc, _address, _tx_sign):  # pylint: disable=no-self-use
+        return None
+
+    def is_account_status_positive_true_mock(self, concent_rpc, requestor_eth_address, pending_value):  # pylint: disable=unused-argument, no-self-use
+        return True

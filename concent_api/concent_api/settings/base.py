@@ -246,9 +246,12 @@ STORAGE_CLUSTER_SSL_CERTIFICATE_PATH = ''
 # A global constant defining the URL of the storage server
 STORAGE_SERVER_INTERNAL_ADDRESS = ''
 
-# A global constant defining Path to a directory where verifier can store files downloaded from the storage server,
+# A global constant defining path to a directory where verifier can store files downloaded from the storage server,
 # rendering results and any intermediate files.
 VERIFIER_STORAGE_PATH = ''
+
+# A global constant defining the maximum time (in seconds) rendering a Blender project can take.
+BLENDER_MAX_RENDERING_TIME = 60
 
 # Which components of this Django application should be enabled in this particular server instance.
 # The application is basically a bunch of services with totally different responsibilites that share a lot of code.

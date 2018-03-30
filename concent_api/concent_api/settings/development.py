@@ -30,3 +30,5 @@ STORAGE_CLUSTER_ADDRESS = 'http://devel.concent.golem.network/'
 STORAGE_SERVER_INTERNAL_ADDRESS = 'http://devel.concent.golem.network/'
 
 VERIFIER_STORAGE_PATH = '/tmp/'
+
+BLENDER_MAX_RENDERING_TIME = 60

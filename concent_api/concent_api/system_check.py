@@ -143,6 +143,26 @@ def check_settings_verifier_storage_path(app_configs, **kwargs):  # pylint: disa
 
 
 @register()
+def check_settings_blender_max_rendering_time(app_configs, **kwargs):  # pylint: disable=unused-argument
+    if not hasattr(settings, 'BLENDER_MAX_RENDERING_TIME') and 'verifier' in settings.CONCENT_FEATURES:
+        return [Error(
+            'BLENDER_MAX_RENDERING_TIME setting is not defined',
+            hint = 'Set BLENDER_MAX_RENDERING_TIME in your local_settings.py to a positive integer.',
+            id   = 'concent.E010',
+        )]
+
+    if hasattr(settings, 'BLENDER_MAX_RENDERING_TIME'):
+        if not isinstance(settings.BLENDER_MAX_RENDERING_TIME, int) or settings.BLENDER_MAX_RENDERING_TIME <= 0:
+            return [Error(
+                'BLENDER_MAX_RENDERING_TIME is not a positive integer',
+                hint = 'Set BLENDER_MAX_RENDERING_TIME in your local_settings.py to a positive integer.',
+                id   = 'concent.E018',
+            )]
+
+    return []
+
+
+@register()
 def check_payment_backend(app_configs, **kwargs):  # pylint: disable=unused-argument
     if 'concent-api' in settings.CONCENT_FEATURES and (
         not hasattr(settings, 'PAYMENT_BACKEND') or

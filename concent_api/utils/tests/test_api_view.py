@@ -165,11 +165,10 @@ def _log_message_received_400_mock(_message, _client_public_key):
     raise Http400
 
 
-def _log_message_received_200_mock(_message, _client_public_key):
+def _log_message_received_correct_response_mock(_message, _client_public_key):
     Client.objects.get_or_create_full_clean(
         CONCENT_PUBLIC_KEY
     )
-    return HttpResponse()
 
 
 def gatekeeper_access_denied_response_500_mock(_message, _path = None, _subtask_id = None, _client_key = None):
@@ -201,7 +200,7 @@ class ApiViewTransactionTestCase(TransactionTestCase):
 
     def test_api_view_should_rollback_changes_on_500_error(self):
 
-        with mock.patch('utils.logging.log_message_received', _log_message_received_500_mock):
+        with mock.patch('core.views.logging.log_message_received', _log_message_received_500_mock):
             try:
                 self.client.post(
                     reverse('core:send'),
@@ -216,7 +215,7 @@ class ApiViewTransactionTestCase(TransactionTestCase):
 
     def test_api_view_should_rollback_changes_on_400_error(self):
 
-        with mock.patch('utils.logging.log_message_received', _log_message_received_400_mock):
+        with mock.patch('core.views.logging.log_message_received', _log_message_received_400_mock):
             self.client.post(
                 reverse('core:send'),
                 data                                = '',
@@ -226,7 +225,7 @@ class ApiViewTransactionTestCase(TransactionTestCase):
 
         self.assertEqual(Client.objects.count(), 0)
 
-    def test_api_view_should_not_rollback_changes_on_200_response(self):
+    def test_api_view_should_not_rollback_changes_on_correct_response(self):
 
         message_timestamp              = get_current_utc_timestamp()
         compute_task_def               = message.ComputeTaskDef()
@@ -243,7 +242,7 @@ class ApiViewTransactionTestCase(TransactionTestCase):
         force_report_computed_task.report_computed_task                 = message.tasks.ReportComputedTask()
         force_report_computed_task.report_computed_task.task_to_compute = task_to_compute
 
-        with mock.patch('utils.logging.log_message_received', _log_message_received_200_mock):
+        with mock.patch('core.views.logging.log_message_received', _log_message_received_correct_response_mock):
             response = self.client.post(
                 reverse('core:send'),
                 data                                = dump(

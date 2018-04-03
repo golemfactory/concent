@@ -167,11 +167,11 @@ def send_request_to_cluster_storage(headers, request_http_address):
     if settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH != '':
         return requests.head(
                 request_http_address,
-                headers = headers,
-                cert    = settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH,
+                headers=headers,
+                verify=settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH,
         )
 
     return requests.head(
             request_http_address,
-            headers = headers
+            headers=headers
     )

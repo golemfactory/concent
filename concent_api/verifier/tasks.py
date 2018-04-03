@@ -1,6 +1,7 @@
 from base64 import b64encode
 import logging
 import os
+import subprocess
 import zipfile
 
 from django.conf                import settings
@@ -90,6 +91,7 @@ def verification_order_task(
             return
 
     # Verifier unpacks the archive with project source.
+    unpacked_source_files = zipfile.ZipFile.namelist(os.path.join(settings.VERIFIER_STORAGE_PATH, file_name))
     for file_name in (source_file, result_file):
         try:
             with zipfile.ZipFile(
@@ -109,7 +111,40 @@ def verification_order_task(
             )
             return
 
-    # Verifier runs blender.
+    # Verifier starts blender process.
+    try:
+        completed_process = subprocess.run(
+            ["ls", "-l", "/dev/null"],
+            timeout = settings.BLENDER_MAX_RENDERING_TIME,
+            stdout  = subprocess.PIPE,
+            stderr  = subprocess.PIPE,
+        )
+        logger.info('Blender proces std_out: {}'.format(completed_process.stdout))
+        logger.info('Blender proces std_err: {}'.format(completed_process.stderr))
+        if completed_process.returncode != 0:
+            verification_result_task.delay(
+                subtask_id,
+                VerificationResult.ERROR,
+                str(completed_process.stder),
+                # TODO: How to determine error_code ?
+            )
+    except subprocess.SubprocessError as e:
+        verification_result_task.delay(
+            subtask_id,
+            VerificationResult.ERROR,
+            str(e),
+            # TODO: How to determine error_code ?
+        )
+
+    # Verifier deletes source files of the Blender project from its storage.
+    # At this point there must be source files in VERIFIER_STORAGE_PATH otherwise verification should fail before.
+    for file in unpacked_source_files + [source_file]:
+        file_path = os.path.join(settings.VERIFIER_STORAGE_PATH, file)
+        try:
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
+        except OSError:
+            pass
 
     verification_result_task.delay(
 

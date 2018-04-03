@@ -9,6 +9,8 @@ from core.subtask_helpers           import update_timed_out_subtasks
 
 from utils                          import logging
 from utils.api_view                 import api_view
+from utils.client_auth              import client_auth
+from utils.message_handler          import message_handler
 from utils.helpers                  import decode_client_public_key
 from .models                        import PendingResponse
 
@@ -30,28 +32,28 @@ def send(request, client_message):
     return handle_message(client_message, request)
 
 
-@api_view
+@client_auth
+@message_handler
 @require_POST
-def receive(request, _message):
-    client_public_key = decode_client_public_key(request)
+def receive(_request, message):
     update_timed_out_subtasks(
-        client_public_key = client_public_key,
+        client_public_key = message.client_public_key,
     )
     return handle_messages_from_database(
-        client_public_key  = client_public_key,
+        client_public_key  = message.client_public_key,
         response_type      = PendingResponse.Queue.Receive,
     )
 
 
-@api_view
+@client_auth
+@message_handler
 @require_POST
-def receive_out_of_band(request, _message):
-    client_public_key = decode_client_public_key(request)
+def receive_out_of_band(_request, message):
     update_timed_out_subtasks(
-        client_public_key = client_public_key,
+        client_public_key = message.client_public_key,
     )
     return handle_messages_from_database(
-        client_public_key  = client_public_key,
+        client_public_key  = message.client_public_key,
         response_type      = PendingResponse.Queue.ReceiveOutOfBand,
     )
 

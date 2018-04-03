@@ -162,17 +162,11 @@ def log_stored_message_added_to_subtask(
     ))
 
 
-def log_no_changes_in_subtask_states(client_public_key: bytes):
-    logger.info('None of subtask changed state -- CLIENT PUBLIC KEY: {}'.format(
-        client_public_key,
-    ))
-
-
 def log_changes_in_subtask_states(client_public_key: bytes, count: int):
-    assert count >= 1
+    assert isinstance(count, int)
     logger.info('{} {} state -- CLIENT PUBLIC KEY: {}'.format(
         count,
-        "subtasks changed their" if count >= 2 else "subtask changed its",
+        "subtask changed its" if count == 1 else "subtasks changed their",
         client_public_key,
     ))
 

@@ -20,63 +20,58 @@ def update_timed_out_subtasks(
         next_deadline__lte      = timezone.now()
     )
 
-    if clients_subtask_list.exists():
-        for subtask in clients_subtask_list:
-            if subtask.state == Subtask.SubtaskState.FORCING_REPORT.name:  # pylint: disable=no-member
-                update_subtask_state(
-                    subtask                 = subtask,
-                    state                   = Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
-                )
-                store_pending_message(
-                    response_type       = PendingResponse.ResponseType.ForceReportComputedTaskResponse,
-                    client_public_key   = subtask.provider.public_key_bytes,
-                    queue               = PendingResponse.Queue.Receive,
-                    subtask             = subtask,
-                )
-                store_pending_message(
-                    response_type       = PendingResponse.ResponseType.VerdictReportComputedTask,
-                    client_public_key   = subtask.requestor.public_key_bytes,
-                    queue               = PendingResponse.Queue.ReceiveOutOfBand,
-                    subtask             = subtask,
-                )
-            elif subtask.state == Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name:  # pylint: disable=no-member
-                update_subtask_state(
-                    subtask                 = subtask,
-                    state                   = Subtask.SubtaskState.FAILED.name,  # pylint: disable=no-member
-                )
-                store_pending_message(
-                    response_type       = PendingResponse.ResponseType.ForceGetTaskResultFailed,
-                    client_public_key   = subtask.requestor.public_key_bytes,
-                    queue               = PendingResponse.Queue.Receive,
-                    subtask             = subtask,
-                )
-            elif subtask.state == Subtask.SubtaskState.FORCING_ACCEPTANCE.name:  # pylint: disable=no-member
-                update_subtask_state(
-                    subtask                 = subtask,
-                    state                   = Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
-                )
-                store_pending_message(
-                    response_type       = PendingResponse.ResponseType.SubtaskResultsSettled,
-                    client_public_key   = subtask.provider.public_key_bytes,
-                    queue               = PendingResponse.Queue.Receive,
-                    subtask             = subtask,
-                )
-                store_pending_message(
-                    response_type       = PendingResponse.ResponseType.SubtaskResultsSettled,
-                    client_public_key   = subtask.requestor.public_key_bytes,
-                    queue               = PendingResponse.Queue.ReceiveOutOfBand,
-                    subtask             = subtask,
-                )
-            assert subtask.state is not Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name  # pylint: disable=no-member
+    for subtask in clients_subtask_list:
+        if subtask.state == Subtask.SubtaskState.FORCING_REPORT.name:  # pylint: disable=no-member
+            update_subtask_state(
+                subtask                 = subtask,
+                state                   = Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
+            )
+            store_pending_message(
+                response_type       = PendingResponse.ResponseType.ForceReportComputedTaskResponse,
+                client_public_key   = subtask.provider.public_key_bytes,
+                queue               = PendingResponse.Queue.Receive,
+                subtask             = subtask,
+            )
+            store_pending_message(
+                response_type       = PendingResponse.ResponseType.VerdictReportComputedTask,
+                client_public_key   = subtask.requestor.public_key_bytes,
+                queue               = PendingResponse.Queue.ReceiveOutOfBand,
+                subtask             = subtask,
+            )
+        elif subtask.state == Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name:  # pylint: disable=no-member
+            update_subtask_state(
+                subtask                 = subtask,
+                state                   = Subtask.SubtaskState.FAILED.name,  # pylint: disable=no-member
+            )
+            store_pending_message(
+                response_type       = PendingResponse.ResponseType.ForceGetTaskResultFailed,
+                client_public_key   = subtask.requestor.public_key_bytes,
+                queue               = PendingResponse.Queue.Receive,
+                subtask             = subtask,
+            )
+        elif subtask.state == Subtask.SubtaskState.FORCING_ACCEPTANCE.name:  # pylint: disable=no-member
+            update_subtask_state(
+                subtask                 = subtask,
+                state                   = Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
+            )
+            store_pending_message(
+                response_type       = PendingResponse.ResponseType.SubtaskResultsSettled,
+                client_public_key   = subtask.provider.public_key_bytes,
+                queue               = PendingResponse.Queue.Receive,
+                subtask             = subtask,
+            )
+            store_pending_message(
+                response_type       = PendingResponse.ResponseType.SubtaskResultsSettled,
+                client_public_key   = subtask.requestor.public_key_bytes,
+                queue               = PendingResponse.Queue.ReceiveOutOfBand,
+                subtask             = subtask,
+            )
+        assert subtask.state is not Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name  # pylint: disable=no-member
 
-        logging.log_changes_in_subtask_states(
-            b64encode(client_public_key),
-            clients_subtask_list.count(),
-        )
-    else:
-        logging.log_no_changes_in_subtask_states(
-            b64encode(client_public_key)
-        )
+    logging.log_changes_in_subtask_states(
+        b64encode(client_public_key),
+        clients_subtask_list.count(),
+    )
 
 
 def update_subtask_state(

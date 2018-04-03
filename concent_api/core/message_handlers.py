@@ -238,6 +238,11 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
     validate_golem_message_task_to_compute(client_message.report_computed_task.task_to_compute)
     validate_id_value(client_message.report_computed_task.task_to_compute.compute_task_def['task_id'], 'task_id')
     validate_id_value(client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'], 'subtask_id')
+    force_get_task_result_deadline = (
+        client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] +
+        2 * settings.CONCENT_MESSAGING_TIME +
+        settings.MAXIMUM_DOWNLOAD_TIME
+    )
 
     if Subtask.objects.filter(
         subtask_id = client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'],
@@ -247,11 +252,11 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
             reason = message.concents.ServiceRefused.REASON.DuplicateRequest,
         )
 
-    elif client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.FORCE_ACCEPTANCE_TIME < current_time:
+    elif force_get_task_result_deadline < current_time:
         logging.log_timeout(
             client_message,
             request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-            client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.FORCE_ACCEPTANCE_TIME,
+            force_get_task_result_deadline,
         )
         return message.concents.ForceGetTaskResultRejected(
             reason    = message.concents.ForceGetTaskResultRejected.REASON.AcceptanceTimeLimitExceeded,

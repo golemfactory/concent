@@ -215,7 +215,7 @@ CONCENT_MESSAGING_TIME = 3600  # seconds
 FORCE_ACCEPTANCE_TIME = 4 * 3600  # 4 hours
 
 # A global constant defining the length of the time window within which FileTransferToken message is valid.
-TOKEN_EXPIRATION_TIME = 1800  # 30 minutes
+MAXIMUM_DOWNLOAD_TIME = 1800  # 30 minutes
 
 # A global constant defining the length of the time window within which a requestor can verify subtask.
 SUBTASK_VERIFICATION_TIME = 4 * 3600  # 4 hours

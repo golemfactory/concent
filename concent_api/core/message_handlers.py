@@ -18,6 +18,7 @@ from core.payments                  import base
 from core.validation                import validate_golem_message_reject
 from core.validation                import validate_golem_message_task_to_compute
 from core.validation                import validate_id_value
+from core.validation                import validate_report_computed_task_time_window
 from core.subtask_helpers           import verify_message_subtask_results_accepted
 from core.transfer_operations       import store_pending_message
 from core.transfer_operations       import create_file_transfer_token
@@ -34,6 +35,7 @@ def handle_send_force_report_computed_task(request, client_message):
     client_public_key      = decode_client_public_key(request)
     other_party_public_key = decode_other_party_public_key(request)
     validate_golem_message_task_to_compute(client_message.report_computed_task.task_to_compute)
+    validate_report_computed_task_time_window(client_message.report_computed_task)
     validate_id_value(client_message.report_computed_task.task_to_compute.compute_task_def['task_id'], 'task_id')
     validate_id_value(client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'], 'subtask_id')
 

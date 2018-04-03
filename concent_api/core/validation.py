@@ -69,3 +69,10 @@ def validate_golem_message_task_to_compute(golem_message: message.base.Message):
 
     validate_public_key(golem_message.provider_public_key, 'provider_public_key')
     validate_public_key(golem_message.requestor_public_key, 'requestor_public_key')
+
+
+def validate_report_computed_task_time_window(report_computed_task):
+    assert isinstance(report_computed_task, message.ReportComputedTask)
+
+    if report_computed_task.timestamp < report_computed_task.task_to_compute.timestamp:
+        raise Http400("ReportComputedTask timestamp is older then nested TaskToCompute.")

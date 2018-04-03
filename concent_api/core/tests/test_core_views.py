@@ -464,6 +464,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             self.assertEqual(response_400.status_code, 400)
             self.assertIn('error', response_400.json().keys())
 
+    @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_202_if_task_to_compute_deadline_is_correct(self):
         compute_task_def = message.ComputeTaskDef()
 
@@ -480,34 +481,31 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             compute_task_def['task_id']     = str(i)
             compute_task_def['subtask_id']  = str(i)
             compute_task_def['deadline']    = deadline
-            task_to_compute                 = message.TaskToCompute(
+
+            deserialized_task_to_compute = self._get_deserialized_task_to_compute(
                 compute_task_def     = compute_task_def,
-                provider_public_key  = PROVIDER_PUBLIC_KEY,
-                requestor_public_key = REQUESTOR_PUBLIC_KEY,
+                provider_public_key  = self.PROVIDER_PUBLIC_KEY,
+                requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
             )
 
-            serialized_task_to_compute   = dump(task_to_compute,             REQUESTOR_PRIVATE_KEY,   PROVIDER_PUBLIC_KEY)
-            deserialized_task_to_compute = load(serialized_task_to_compute,  PROVIDER_PRIVATE_KEY,  REQUESTOR_PUBLIC_KEY, check_time = False)
-
-            with freeze_time("2017-11-17 10:00:00"):
-                report_computed_task = message.tasks.ReportComputedTask(
+            force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                report_computed_task = self._get_deserialized_report_computed_task(
+                    subtask_id      = str(i),
                     task_to_compute = deserialized_task_to_compute
                 )
-                force_report_computed_task = message.ForceReportComputedTask(
-                    report_computed_task = report_computed_task
-                )
+            )
 
-                response_202 = self.client.post(
-                    reverse('core:send'),
-                    data = dump(
-                        force_report_computed_task,
-                        PROVIDER_PRIVATE_KEY,
-                        CONCENT_PUBLIC_KEY
-                    ),
-                    content_type                        = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-                )
+            response_202 = self.client.post(
+                reverse('core:send'),
+                data = dump(
+                    force_report_computed_task,
+                    self.PROVIDER_PRIVATE_KEY,
+                    CONCENT_PUBLIC_KEY
+                ),
+                content_type                        = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
+            )
 
             self.assertIn(response_202.status_code, [200, 202])
 
@@ -557,6 +555,37 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         )
 
         self.assertEqual(response.status_code, 400)
+
+    def test_send_should_return_http_400_if_task_to_compute_younger_than_report_computed(self):
+
+        deserialized_task_to_compute = self._get_deserialized_task_to_compute(
+            task_id     = '1',
+            subtask_id  = '3',
+            deadline    = get_current_utc_timestamp() + (60 * 37),
+            provider_public_key  = self.PROVIDER_PUBLIC_KEY,
+            requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
+        )
+        with freeze_time("2017-11-17 10:00:00"):
+            force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                report_computed_task = self._get_deserialized_report_computed_task(
+                    subtask_id      = '3',
+                    task_to_compute = deserialized_task_to_compute
+                )
+            )
+
+            response = self.client.post(
+                reverse('core:send'),
+                data = dump(
+                    force_report_computed_task,
+                    self.PROVIDER_PRIVATE_KEY,
+                    CONCENT_PUBLIC_KEY
+                ),
+                content_type                        = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
+            )
+
+        self._test_400_response(response)
 
 
 @override_settings(

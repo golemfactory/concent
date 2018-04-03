@@ -240,4 +240,7 @@ STORAGE_CLUSTER_SSL_CERTIFICATE_PATH = ''
 # - "concent-api": The public API server that allows requrestors and providers to interact with Concent.
 # - "Gatekeeper":  An internal helper that validates file transfer tokens.
 # - "admin-panel": Django admin panel that provides access to database content and service statistics.
-# CONCENT_FEATURES = []
+CONCENT_FEATURES = []  # type: ignore
+
+# URL format: 'protocol://<user>:<password>@<hostname>:<port>/<virtual host>'
+# CELERY_BROKER_URL = ''

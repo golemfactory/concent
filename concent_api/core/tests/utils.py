@@ -1,15 +1,14 @@
-from base64                 import b64encode
+from base64 import b64encode
 
 import datetime
 import functools
+
 import dateutil.parser
-
-from django.conf            import settings
-from django.test            import TestCase
-from django.shortcuts       import reverse
-from django.utils           import timezone
-
-from freezegun              import freeze_time
+from django.conf import settings
+from django.shortcuts import reverse
+from django.test import TestCase
+from django.utils import timezone
+from freezegun import freeze_time
 
 from golem_messages         import dump
 from golem_messages         import load
@@ -588,6 +587,32 @@ class ConcentIntegrationTestCase(TestCase):
             )
         return dump(
             force_payment,
+            provider_private_key or self.PROVIDER_PRIVATE_KEY,
+            settings.CONCENT_PUBLIC_KEY
+        )
+
+    def _get_deserialized_subtask_results_verify(
+        self,
+        timestamp=None,
+        subtask_results_rejected=None,
+    ):
+        """ Return SubtaskResultsVerify deserialized """
+        with freeze_time(timestamp or self._get_timestamp_string()):
+            return message.concents.SubtaskResultsVerify(
+                subtask_results_rejected=(
+                    subtask_results_rejected or
+                    self._get_deserialized_subtask_results_rejected()
+                ),
+            )
+
+    def _get_serialized_subtask_results_verify(
+        self,
+        timestamp=None,
+        subtask_results_verify=None,
+        provider_private_key=None
+    ):
+        return dump(
+            subtask_results_verify or self._get_deserialized_subtask_results_verify(timestamp),
             provider_private_key or self.PROVIDER_PRIVATE_KEY,
             settings.CONCENT_PUBLIC_KEY
         )

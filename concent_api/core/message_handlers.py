@@ -9,6 +9,7 @@ from django.http import HttpResponse
 from django.utils import timezone
 from golem_messages import message
 from golem_messages.datastructures import MessageHeader
+from golem_messages.message.tasks import SubtaskResultsRejected
 from golem_messages.message import FileTransferToken
 
 from core.exceptions import Http400
@@ -1029,6 +1030,35 @@ def store_message(
     return stored_message
 
 
+def handle_send_subtask_results_verify(request, client_message):
+    compute_task_def_subtask_id = client_message.subtask_results_rejected.report_computed_task.task_to_compute.compute_task_def['subtask_id']
+    validate_id_value(
+        compute_task_def_subtask_id,
+        'subtask_id'
+    )
+    # current_time = get_current_utc_timestamp()
+    # client_public_key = decode_client_public_key(request)
+    # other_party_public_key = decode_other_party_public_key(request)
+
+    if Subtask.objects.filter(
+        Q(subtask_id=compute_task_def_subtask_id),
+        Q(state=Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER.name) |
+        Q(state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name),  # pylint: disable=no-member)
+    ).exists():
+        return message.concents.ServiceRefused(
+            reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
+        )
+
+    send_verification_request()
+
+    encoded_client_public_key = b64encode(decode_client_public_key(request))
+    ack_subtask_results_verify = message.concents.AckSubtaskResultsVerify(
+        subtask_results_verify=subtask_results_verify,
+        file_transfer_token=create_file_transfer_token(report_computed_task, encoded_client_public_key, "upload"),
+    )
+    return ack_subtask_results_verify
+
+
 def handle_message(client_message, request):
     if isinstance(client_message, message.ForceReportComputedTask):
         return handle_send_force_report_computed_task(client_message)
@@ -1059,6 +1089,7 @@ def handle_message(client_message, request):
 
     elif isinstance(client_message, message.concents.ForcePayment):
         return handle_send_force_payment(request, client_message)
-
+    elif isinstance(client_message, message.concents.SubtaskResultsVerify):
+        return handle_send_subtask_results_verify(request, client_message)
     else:
         return handle_unsupported_golem_messages_type(client_message)

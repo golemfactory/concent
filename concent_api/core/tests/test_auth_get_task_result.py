@@ -279,7 +279,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:02"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
+                data                           = self._create_client_auth_message(self.DIFFERENT_PROVIDER_PRIVATE_KEY, self.DIFFERENT_PROVIDER_PUBLIC_KEY),
                 content_type                   = 'application/octet-stream',
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_key(self.DIFFERENT_PROVIDER_PUBLIC_KEY)
             )
@@ -291,7 +291,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:02"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           = '',
+                    data                           = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
                     content_type                   = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key()
                 )
@@ -315,7 +315,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:02"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           = '',
+                    data                           = self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
                     content_type                   = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_provider_public_key()
                 )
@@ -365,8 +365,8 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:02"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           = '',
-                    content_type                   = '',
+                    data                           = self._create_client_auth_message(self.DIFFERENT_REQUESTOR_PRIVATE_KEY, self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
+                    content_type                   = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_key(self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
                 )
 
@@ -379,8 +379,8 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:05"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           = '',
-                    content_type                   = '',
+                    data                           = self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
+                    content_type                   = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_provider_public_key(),
                 )
 
@@ -394,8 +394,8 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:22"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           = '',
-                    content_type                   = '',
+                    data                           = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                    content_type                   = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
@@ -514,7 +514,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:02"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
+                data                           = self._create_client_auth_message(self.DIFFERENT_PROVIDER_PRIVATE_KEY, self.DIFFERENT_PROVIDER_PUBLIC_KEY),
                 content_type                   = 'application/octet-stream',
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_key(self.DIFFERENT_PROVIDER_PUBLIC_KEY)
             )
@@ -528,7 +528,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:02"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           = '',
+                    data                           = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
                     content_type                   = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key()
                 )
@@ -552,7 +552,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:03"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           = '',
+                    data                           = self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
                     content_type                   = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_provider_public_key()
                 )
@@ -607,8 +607,8 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:04"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           ='',
-                    content_type                   = '',
+                    data                           = self._create_client_auth_message(self.DIFFERENT_REQUESTOR_PRIVATE_KEY, self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
+                    content_type                   = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_key(self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
                 )
 
@@ -621,8 +621,8 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:05"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           = '',
-                    content_type                   = '',
+                    data                           = self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
+                    content_type                   = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_provider_public_key(),
                 )
 
@@ -636,8 +636,8 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:24"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           = '',
-                    content_type                   = '',
+                    data                           = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                    content_type                   = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
@@ -751,7 +751,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:02"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           = '',
+                    data                           = self._create_client_auth_message(self.DIFFERENT_PROVIDER_PRIVATE_KEY, self.DIFFERENT_PROVIDER_PUBLIC_KEY),
                     content_type                   = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_key(self.DIFFERENT_PROVIDER_PUBLIC_KEY)
                 )
@@ -765,7 +765,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:02"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           = '',
+                    data                           = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
                     content_type                   = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key()
                 )
@@ -789,7 +789,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:02"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           = '',
+                    data                           = self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
                     content_type                   = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_provider_public_key()
                 )
@@ -841,8 +841,8 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:21"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           = '',
-                    content_type                   = '',
+                    data                           = self._create_client_auth_message(self.DIFFERENT_REQUESTOR_PRIVATE_KEY, self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
+                    content_type                   = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_key(self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
                 )
 
@@ -855,8 +855,8 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:21"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           = '',
-                    content_type                   = '',
+                    data                           = self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
+                    content_type                   = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_provider_public_key(),
                 )
 
@@ -870,8 +870,8 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:21"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           = '',
-                    content_type                   = '',
+                    data                           = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                    content_type                   = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
@@ -991,7 +991,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:02"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           = '',
+                    data                           = self._create_client_auth_message(self.DIFFERENT_PROVIDER_PRIVATE_KEY, self.DIFFERENT_PROVIDER_PUBLIC_KEY),
                     content_type                   = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_key(self.DIFFERENT_PROVIDER_PUBLIC_KEY)
                 )
@@ -1005,7 +1005,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:02"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           = '',
+                    data                           = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
                     content_type                   ='application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key()
                 )
@@ -1029,7 +1029,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:02"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           = '',
+                    data                           = self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
                     content_type                   = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_provider_public_key()
                 )
@@ -1075,8 +1075,8 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:05"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           = '',
-                    content_type                   = '',
+                    data                           = self._create_client_auth_message(self.DIFFERENT_REQUESTOR_PRIVATE_KEY, self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
+                    content_type                   = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_key(self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
                 )
 
@@ -1089,8 +1089,8 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:05"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           = '',
-                    content_type                   = '',
+                    data                           = self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
+                    content_type                   = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_provider_public_key(),
                 )
 
@@ -1104,8 +1104,8 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:08"):
                 response = self.client.post(
                     reverse('core:receive'),
-                    data                           = '',
-                    content_type                   = '',
+                    data                           = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                    content_type                   = 'application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 

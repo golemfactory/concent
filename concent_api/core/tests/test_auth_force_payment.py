@@ -95,9 +95,8 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 12:00:21"):
             response_2 = self.client.post(
                 reverse('core:receive_out_of_band'),
-                data                            = '',
+                data                            = self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
             )
 
         self._test_204_response(response_2)
@@ -106,9 +105,8 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 12:00:22"):
             response_3 = self.client.post(
                 reverse('core:receive_out_of_band'),
-                data                            = '',
+                data                            = self._create_client_auth_message(self.DIFFERENT_REQUESTOR_PRIVATE_KEY, self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_different_public_key(),
             )
 
         self._test_204_response(response_3)
@@ -117,9 +115,8 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 12:00:23"):
             response_4 = self.client.post(
                 reverse('core:receive_out_of_band'),
-                data                            = '',
+                data                            = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
         self._test_response(
             response_4,

@@ -612,6 +612,11 @@ class CoreViewReceiveTest(TestCase):
                 )
             )
 
+    def create_client_auth_message(self, client_priv_key, client_public_key):  # pylint: disable=no-self-use
+        client_auth = message.concents.ClientAuthorization()
+        client_auth.client_public_key = client_public_key
+        return dump(client_auth, client_priv_key, CONCENT_PUBLIC_KEY)
+
     @freeze_time("2017-11-17 10:00:00")
     def test_receive_should_accept_valid_message(self):
         message_timestamp = datetime.datetime.now(timezone.utc)
@@ -671,8 +676,7 @@ class CoreViewReceiveTest(TestCase):
         response = self.client.post(
             reverse('core:receive'),
             content_type                   = 'application/octet-stream',
-            data                           = '',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
+            data                           = self.create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY),
         )
         decoded_response = load(
             response.content,
@@ -687,9 +691,8 @@ class CoreViewReceiveTest(TestCase):
     def test_receive_return_http_204_if_no_messages_in_database(self):
         response = self.client.post(
             reverse('core:receive'),
-            data                           = '',
+            data                           = self.create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY),
             content_type                   = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
         )
 
         self.assertEqual(response.status_code, 204)
@@ -797,8 +800,7 @@ class CoreViewReceiveTest(TestCase):
             response = self.client.post(
                 reverse('core:receive'),
                 content_type                   = 'application/octet-stream',
-                data                           = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
+                data                           = self.create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY),
             )
 
         decoded_message = load(
@@ -819,8 +821,7 @@ class CoreViewReceiveTest(TestCase):
             response = self.client.post(
                 reverse('core:receive_out_of_band'),
                 content_type                   = 'application/octet-stream',
-                data                           = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
+                data                           = self.create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY),
             )
 
         decoded_message = load(
@@ -938,14 +939,18 @@ class CoreViewReceiveOutOfBandTest(TestCase):
         new_message_inbox.full_clean()
         new_message_inbox.save()
 
+    def create_client_auth_message(self, client_priv_key, client_public_key):  # pylint: disable=no-self-use
+        client_auth = message.concents.ClientAuthorization()
+        client_auth.client_public_key = client_public_key
+        return dump(client_auth, client_priv_key, CONCENT_PUBLIC_KEY)
+
     @freeze_time("2017-11-17 11:40:00")
     def test_view_receive_out_of_band_should_accept_valid_message(self):
 
         response = self.client.post(
             reverse('core:receive_out_of_band'),
-            data                                = '',
+            data                                = self.create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY),
             content_type                        = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code, 200)
@@ -954,9 +959,8 @@ class CoreViewReceiveOutOfBandTest(TestCase):
     def test_view_receive_out_of_band_return_http_204_if_no_messages_in_database(self):
         response = self.client.post(
             reverse('core:receive_out_of_band'),
-            data                                = '',
+            data                                = self.create_client_auth_message(DIFFERENT_PRIVATE_KEY, DIFFERENT_PUBLIC_KEY),
             content_type                        = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(DIFFERENT_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code, 204)

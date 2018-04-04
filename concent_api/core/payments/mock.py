@@ -30,7 +30,7 @@ def get_list_of_transactions(_oldest_payments_ts = None, current_time = None, _t
 
     if 'HTTP_TEMPORARY_LIST_OF_TRANSACTIONS' in request.META:
         if bool(request.META['HTTP_TEMPORARY_LIST_OF_TRANSACTIONS']):
-            payment_ts = current_time - settings.PAYMENT_DUE_TIME + settings.PAYMENT_GRACE_PERIOD
+            payment_ts = current_time - settings.PAYMENT_DUE_TIME
             return [{'timestamp': payment_ts - 3700}, {'timestamp': payment_ts - 3800}, {'timestamp': payment_ts - 3900}]
         else:
             return [{'timestamp': current_time - 22}, {'timestamp': current_time - 23}, {'timestamp': current_time - 24}]
@@ -40,7 +40,7 @@ def get_list_of_transactions(_oldest_payments_ts = None, current_time = None, _t
 def get_forced_payments(_oldest_payments_ts = None, _requestor_address = None, _provider_address = None, _to_block = None, request = None, current_time = None):  # pylint: disable=inconsistent-return-statements
     """
     Function which return list of forced paysments from payment API
-    where t0 <= payment_ts + PAYMENT_DUE_TIME + PAYMENT_GRACE_PERIOD
+    where t0 <= payment_ts + PAYMENT_DUE_TIME
     """
 
     if 'HTTP_TEMPORARY_LIST_OF_FORCED_TRANSACTIONS' in request.META:

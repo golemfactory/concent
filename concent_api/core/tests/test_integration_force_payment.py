@@ -46,7 +46,6 @@ def _make_payment_to_provider(_sum_of_payments, _payment_ts, _requestor_ethereum
     CONCENT_PRIVATE_KEY  = CONCENT_PRIVATE_KEY,
     CONCENT_PUBLIC_KEY   = CONCENT_PUBLIC_KEY,
     PAYMENT_DUE_TIME     = 10,  # seconds
-    PAYMENT_GRACE_PERIOD = 10,  # seconds
 )
 class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
     def test_provider_send_force_payment_with_subtask_results_accepted_signed_by_different_requestors_concent_should_refuse(self):
@@ -194,7 +193,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             subtask_results_accepted_list = subtask_results_accepted_list
         )
 
-        with freeze_time("2018-02-05 12:00:19"):
+        with freeze_time("2018-02-05 12:00:09"):
             with mock.patch('core.message_handlers.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
 
                 response = self.client.post(
@@ -211,7 +210,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ForcePaymentRejected,
             fields       = {
                 'reason':    message.concents.ForcePaymentRejected.REASON.TimestampError,
-                'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:19"),
+                'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:09"),
             }
         )
         self._assert_stored_message_counter_not_increased()

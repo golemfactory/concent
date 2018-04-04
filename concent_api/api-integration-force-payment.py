@@ -86,7 +86,7 @@ def main():
         subtask_results_accepted_list = [
             subtask_results_accepted(
                 timestamp       = timestamp_to_isoformat(current_time),
-                payment_ts      = current_time - PAYMENT_DUE_TIME - PAYMENT_GRACE_PERIOD - 1,
+                payment_ts      = current_time - PAYMENT_DUE_TIME - 1,
                 task_to_compute = task_to_compute(
                     timestamp                       = timestamp_to_isoformat(current_time),
                     requestor_public_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
@@ -99,7 +99,7 @@ def main():
             ),
             subtask_results_accepted(
                 timestamp       = timestamp_to_isoformat(current_time),
-                payment_ts      = current_time - PAYMENT_DUE_TIME - PAYMENT_GRACE_PERIOD - 1,
+                payment_ts      = current_time - PAYMENT_DUE_TIME - 1,
                 task_to_compute = task_to_compute(
                     timestamp                       = timestamp_to_isoformat(current_time),
                     requestor_public_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
@@ -124,7 +124,7 @@ def main():
             subtask_results_accepted_list = [
                 subtask_results_accepted(
                     timestamp       = timestamp_to_isoformat(current_time),
-                    payment_ts      = current_time - PAYMENT_DUE_TIME - PAYMENT_GRACE_PERIOD - 1,
+                    payment_ts      = current_time - PAYMENT_DUE_TIME - 1,
                     task_to_compute = task_to_compute(
                         timestamp                       = timestamp_to_isoformat(current_time),
                         requestor_public_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
@@ -137,7 +137,7 @@ def main():
                 ),
                 subtask_results_accepted(
                     timestamp       = timestamp_to_isoformat(current_time),
-                    payment_ts      = current_time - PAYMENT_DUE_TIME - PAYMENT_GRACE_PERIOD - 1,
+                    payment_ts      = current_time - PAYMENT_DUE_TIME - 1,
                     task_to_compute = task_to_compute(
                         timestamp                       = timestamp_to_isoformat(current_time),
                         requestor_public_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
@@ -233,7 +233,6 @@ if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
         from concent_api.settings import PAYMENT_DUE_TIME
-        from concent_api.settings import PAYMENT_GRACE_PERIOD
         main()
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file = sys.stderr)

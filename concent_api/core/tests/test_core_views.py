@@ -4,7 +4,6 @@ from base64                         import b64encode
 from freezegun                      import freeze_time
 import dateutil.parser
 from django.test                    import override_settings
-from django.test                    import TestCase
 from django.urls                    import reverse
 from django.http                    import HttpResponse
 from django.http                    import JsonResponse
@@ -593,10 +592,11 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
     CONCENT_PUBLIC_KEY     = CONCENT_PUBLIC_KEY,
     CONCENT_MESSAGING_TIME = 3600,
 )
-class CoreViewReceiveTest(TestCase):
+class CoreViewReceiveTest(ConcentIntegrationTestCase):
 
     def setUp(self):
         with freeze_time("2017-11-17 10:00:00"):
+            super().setUp()
             self.compute_task_def               = message.ComputeTaskDef()
             self.compute_task_def['task_id']    = '1'
             self.compute_task_def['subtask_id'] = '1'
@@ -671,8 +671,7 @@ class CoreViewReceiveTest(TestCase):
         response = self.client.post(
             reverse('core:receive'),
             content_type                   = 'application/octet-stream',
-            data                           = '',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
+            data                           = self._create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY),
         )
         decoded_response = load(
             response.content,
@@ -687,9 +686,8 @@ class CoreViewReceiveTest(TestCase):
     def test_receive_return_http_204_if_no_messages_in_database(self):
         response = self.client.post(
             reverse('core:receive'),
-            data                           = '',
+            data                           = self._create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY),
             content_type                   = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
         )
 
         self.assertEqual(response.status_code, 204)
@@ -797,8 +795,7 @@ class CoreViewReceiveTest(TestCase):
             response = self.client.post(
                 reverse('core:receive'),
                 content_type                   = 'application/octet-stream',
-                data                           = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
+                data                           = self._create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY),
             )
 
         decoded_message = load(
@@ -819,8 +816,7 @@ class CoreViewReceiveTest(TestCase):
             response = self.client.post(
                 reverse('core:receive_out_of_band'),
                 content_type                   = 'application/octet-stream',
-                data                           = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
+                data                           = self._create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY),
             )
 
         decoded_message = load(
@@ -843,9 +839,10 @@ class CoreViewReceiveTest(TestCase):
     CONCENT_PUBLIC_KEY     = CONCENT_PUBLIC_KEY,
     CONCENT_MESSAGING_TIME = 3600,
 )
-class CoreViewReceiveOutOfBandTest(TestCase):
+class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
 
     def setUp(self):
+        super().setUp()
         self.compute_task_def               = message.ComputeTaskDef()
         self.compute_task_def['task_id']    = '1'
         self.compute_task_def['subtask_id'] = '1'
@@ -943,9 +940,8 @@ class CoreViewReceiveOutOfBandTest(TestCase):
 
         response = self.client.post(
             reverse('core:receive_out_of_band'),
-            data                                = '',
+            data                                = self._create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY),
             content_type                        = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code, 200)
@@ -954,9 +950,8 @@ class CoreViewReceiveOutOfBandTest(TestCase):
     def test_view_receive_out_of_band_return_http_204_if_no_messages_in_database(self):
         response = self.client.post(
             reverse('core:receive_out_of_band'),
-            data                                = '',
+            data                                = self._create_client_auth_message(DIFFERENT_PRIVATE_KEY, DIFFERENT_PUBLIC_KEY),
             content_type                        = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(DIFFERENT_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code, 204)

@@ -14,16 +14,12 @@ from core.models            import Subtask
 from utils.testing_helpers  import generate_ecc_key_pair
 
 
-(CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)                         = generate_ecc_key_pair()
-(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY)                       = generate_ecc_key_pair()
-(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY)                     = generate_ecc_key_pair()
-(DIFFERENT_PROVIDER_PRIVATE_KEY, DIFFERENT_PROVIDER_PUBLIC_KEY)   = generate_ecc_key_pair()
-(DIFFERENT_REQUESTOR_PRIVATE_KEY, DIFFERENT_REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
+(CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
 @override_settings(
-    CONCENT_PRIVATE_KEY = CONCENT_PRIVATE_KEY,
-    CONCENT_PUBLIC_KEY  = CONCENT_PUBLIC_KEY,
+    CONCENT_PRIVATE_KEY    = CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY     = CONCENT_PUBLIC_KEY,
     CONCENT_MESSAGING_TIME = 10,  # seconds
 )
 class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
@@ -37,13 +33,13 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 10:00:00"):
             self.task_to_compute = message.TaskToCompute(
                 compute_task_def     = self.compute_task_def,
-                provider_public_key  = PROVIDER_PUBLIC_KEY,
-                requestor_public_key = REQUESTOR_PUBLIC_KEY,
+                provider_public_key  = self.PROVIDER_PUBLIC_KEY,
+                requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
             )
 
         # sign task_to_compute message with PROVIDER sig
-        self.serialized_task_to_compute   = dump(self.task_to_compute, PROVIDER_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY)
-        self.deserialized_task_to_compute = load(self.serialized_task_to_compute, REQUESTOR_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, check_time = False)
+        self.serialized_task_to_compute   = dump(self.task_to_compute, self.PROVIDER_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY)
+        self.deserialized_task_to_compute = load(self.serialized_task_to_compute, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
 
         with freeze_time("2017-12-01 10:59:00"):
             self.report_computed_task = message.tasks.ReportComputedTask(
@@ -53,7 +49,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             self.force_report_computed_task = message.ForceReportComputedTask()
         self.force_report_computed_task.report_computed_task = self.report_computed_task
 
-        self.serialized_force_report_computed_task = dump(self.force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        self.serialized_force_report_computed_task = dump(self.force_report_computed_task, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
     def test_provider_forces_computed_task_report_and_requestor_sends_acknowledgement_should_work_only_with_correct_keys(self):
         """
@@ -78,8 +74,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = self.serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        202)
@@ -89,8 +85,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id                  = '1',
             subtask_id               = '8',
             subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
-            provider_key             = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
@@ -105,7 +101,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',
-            client_public_key                  = self._get_encoded_key(REQUESTOR_PUBLIC_KEY),
+            client_public_key                  = self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTask,
             ]
@@ -116,9 +112,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(DIFFERENT_REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_diff_requestor_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -127,9 +122,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_provider_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -140,14 +134,13 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_requestor_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         force_report_computed_task_from_view = load(
             response.content,
-            REQUESTOR_PRIVATE_KEY,
+            self.REQUESTOR_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY,
             check_time = False,
         )
@@ -163,14 +156,14 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             ack_report_computed_task = message.AckReportComputedTask(
                 task_to_compute = self.deserialized_task_to_compute,
             )
-        serialized_ack_report_computed_task = dump(ack_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_ack_report_computed_task = dump(ack_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(DIFFERENT_REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.DIFFERENT_REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        400)
@@ -180,7 +173,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        400)
@@ -191,14 +184,14 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             ack_report_computed_task = message.AckReportComputedTask(
                 task_to_compute = self.deserialized_task_to_compute,
             )
-        serialized_ack_report_computed_task = dump(ack_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_ack_report_computed_task = dump(ack_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        202)
@@ -207,8 +200,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id                  = '1',
             subtask_id               = '8',
             subtask_state            = Subtask.SubtaskState.REPORTED,
-            provider_key             = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
         )
         self._test_last_stored_messages(
@@ -221,7 +214,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',
-            client_public_key                  = self._get_encoded_key(PROVIDER_PUBLIC_KEY),
+            client_public_key                  = self._get_encoded_key(self.PROVIDER_PUBLIC_KEY),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTaskResponse,
             ]
@@ -232,9 +225,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(DIFFERENT_PROVIDER_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_diff_provider_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -243,9 +235,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_requestor_auth_message(),
+                content_type                   = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        204)
@@ -256,14 +248,13 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_provider_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         ack_report_computed_task_from_view = load(
             response.content,
-            PROVIDER_PRIVATE_KEY,
+            self.PROVIDER_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY,
             check_time = False,
         )
@@ -297,14 +288,14 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 10:00:00"):
             task_to_compute = message.TaskToCompute(
                 compute_task_def     = compute_task_def,
-                provider_public_key  = PROVIDER_PUBLIC_KEY,
-                requestor_public_key = REQUESTOR_PUBLIC_KEY,
+                provider_public_key  = self.PROVIDER_PUBLIC_KEY,
+                requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
             )
 
         # sign task_to_compute message with PROVIDER sig
 
-        serialized_task_to_compute   = dump(task_to_compute,             PROVIDER_PRIVATE_KEY,   REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute = load(serialized_task_to_compute,  REQUESTOR_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY, check_time = False)
+        serialized_task_to_compute   = dump(task_to_compute,             self.PROVIDER_PRIVATE_KEY,   self.REQUESTOR_PUBLIC_KEY)
+        deserialized_task_to_compute = load(serialized_task_to_compute,  self.REQUESTOR_PRIVATE_KEY,  self.PROVIDER_PUBLIC_KEY, check_time = False)
 
         with freeze_time("2017-12-01 10:59:00"):
             report_computed_task = message.tasks.ReportComputedTask(
@@ -315,15 +306,15 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             force_report_computed_task = message.ForceReportComputedTask()
 
         force_report_computed_task.report_computed_task = report_computed_task
-        serialized_force_report_computed_task           = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_force_report_computed_task           = dump(force_report_computed_task, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 10:59:00"):
             response = self.client.post(
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        202)
@@ -333,8 +324,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id                  = '1',
             subtask_id               = '8',
             subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
-            provider_key             = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
@@ -349,7 +340,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',
-            client_public_key                  = self._get_encoded_key(REQUESTOR_PUBLIC_KEY),
+            client_public_key                  = self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTask,
             ]
@@ -360,9 +351,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(DIFFERENT_REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_diff_requestor_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -371,9 +361,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_provider_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -384,14 +373,13 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_requestor_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         force_report_computed_task_from_view = load(
             response.content,
-            REQUESTOR_PRIVATE_KEY,
+            self.REQUESTOR_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY,
             check_time = False,
         )
@@ -406,26 +394,26 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 10:30:00"):
             cannot_compute_task = message.CannotComputeTask()
         cannot_compute_task.task_to_compute                  = message.TaskToCompute(
-            provider_public_key = PROVIDER_PUBLIC_KEY,
+            provider_public_key = self.PROVIDER_PUBLIC_KEY,
         )
         cannot_compute_task.task_to_compute.compute_task_def = compute_task_def
         cannot_compute_task.reason                           = message.CannotComputeTask.REASON.WrongKey
 
-        serialized_cannot_compute_task   = dump(cannot_compute_task,            PROVIDER_PRIVATE_KEY,  REQUESTOR_PUBLIC_KEY)
-        deserialized_cannot_compute_task = load(serialized_cannot_compute_task, REQUESTOR_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, check_time = False)
+        serialized_cannot_compute_task   = dump(cannot_compute_task,            self.PROVIDER_PRIVATE_KEY,  self.REQUESTOR_PUBLIC_KEY)
+        deserialized_cannot_compute_task = load(serialized_cannot_compute_task, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
 
         with freeze_time("2017-12-01 11:00:05"):
             reject_report_computed_task = message.RejectReportComputedTask()
         reject_report_computed_task.cannot_compute_task = deserialized_cannot_compute_task
 
-        serialized_reject_report_computed_task = dump(reject_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(DIFFERENT_REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.DIFFERENT_REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        400)
@@ -435,7 +423,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        400)
@@ -444,8 +432,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id                  = '1',
             subtask_id               = '8',
             subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
-            provider_key             = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
@@ -457,7 +445,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        202)
@@ -467,8 +455,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id                  = '1',
             subtask_id               = '8',
             subtask_state            = Subtask.SubtaskState.FAILED,
-            provider_key             = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task', 'reject_report_computed_task'},
         )
         self._test_last_stored_messages(
@@ -481,7 +469,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',
-            client_public_key                  = self._get_encoded_key(PROVIDER_PUBLIC_KEY),
+            client_public_key                  = self._get_encoded_key(self.PROVIDER_PUBLIC_KEY),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTaskResponse,
             ]
@@ -492,9 +480,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(DIFFERENT_PROVIDER_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_diff_provider_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -502,9 +489,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_requestor_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code, 204)
@@ -514,14 +500,13 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_provider_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         force_report_computed_task_response = load(
             response.content,
-            PROVIDER_PRIVATE_KEY,
+            self.PROVIDER_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY,
             check_time = False,
         )
@@ -560,14 +545,14 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 10:00:00"):
             task_to_compute = message.TaskToCompute(
                 compute_task_def     = compute_task_def,
-                provider_public_key  = PROVIDER_PUBLIC_KEY,
-                requestor_public_key = REQUESTOR_PUBLIC_KEY,
+                provider_public_key  = self.PROVIDER_PUBLIC_KEY,
+                requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
             )
 
         # sign task_to_compute message with PROVIDER sig
 
-        serialized_task_to_compute   = dump(task_to_compute,            PROVIDER_PRIVATE_KEY,  REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute = load(serialized_task_to_compute, REQUESTOR_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, check_time = False)
+        serialized_task_to_compute   = dump(task_to_compute,            self.PROVIDER_PRIVATE_KEY,  self.REQUESTOR_PUBLIC_KEY)
+        deserialized_task_to_compute = load(serialized_task_to_compute, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
 
         with freeze_time("2017-12-01 10:59:00"):
             report_computed_task = message.tasks.ReportComputedTask(
@@ -578,15 +563,15 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             force_report_computed_task = message.ForceReportComputedTask()
 
         force_report_computed_task.report_computed_task = report_computed_task
-        serialized_force_report_computed_task           = dump(force_report_computed_task, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_force_report_computed_task           = dump(force_report_computed_task, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 10:59:00"):
             response = self.client.post(
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        202)
@@ -596,8 +581,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id                  = '1',
             subtask_id               = '8',
             subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
-            provider_key             = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
@@ -612,7 +597,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',
-            client_public_key                  = self._get_encoded_key(REQUESTOR_PUBLIC_KEY),
+            client_public_key                  = self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTask,
             ]
@@ -623,9 +608,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(DIFFERENT_REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_diff_requestor_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -634,9 +618,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_provider_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -647,14 +630,13 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_requestor_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         force_report_computed_task_from_view = load(
             response.content,
-            REQUESTOR_PRIVATE_KEY,
+            self.REQUESTOR_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY,
             check_time = False,
         )
@@ -669,27 +651,27 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 10:00:00"):
             cannot_compute_task = message.CannotComputeTask()
         cannot_compute_task.task_to_compute                  = message.TaskToCompute(
-            provider_public_key = PROVIDER_PUBLIC_KEY,
+            provider_public_key = self.PROVIDER_PUBLIC_KEY,
         )
         cannot_compute_task.task_to_compute.compute_task_def = compute_task_def
         cannot_compute_task.reason                           = message.CannotComputeTask.REASON.WrongCTD
 
-        serialized_cannot_compute_task   = dump(cannot_compute_task,            PROVIDER_PRIVATE_KEY,  REQUESTOR_PUBLIC_KEY)
-        deserialized_cannot_compute_task = load(serialized_cannot_compute_task, REQUESTOR_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, check_time = False)
+        serialized_cannot_compute_task   = dump(cannot_compute_task,            self.PROVIDER_PRIVATE_KEY,  self.REQUESTOR_PUBLIC_KEY)
+        deserialized_cannot_compute_task = load(serialized_cannot_compute_task, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
 
         with freeze_time("2017-12-01 11:00:05"):
             reject_report_computed_task = message.RejectReportComputedTask(
                 cannot_compute_task = deserialized_cannot_compute_task,
                 reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
             )
-        serialized_reject_report_computed_task = dump(reject_report_computed_task, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(DIFFERENT_REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.DIFFERENT_REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        400)
@@ -699,7 +681,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        400)
@@ -708,8 +690,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id                  = '1',
             subtask_id               = '8',
             subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
-            provider_key             = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
@@ -721,7 +703,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        202)
@@ -731,8 +713,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id                  = '1',
             subtask_id               = '8',
             subtask_state            = Subtask.SubtaskState.REPORTED,
-            provider_key             = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task', 'reject_report_computed_task'},
         )
         self._test_last_stored_messages(
@@ -745,8 +727,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_undelivered_pending_responses(
             subtask_id                          = '8',
-            client_public_key                   = self._get_encoded_key(PROVIDER_PUBLIC_KEY),
-            client_public_key_out_of_band       = self._get_encoded_key(REQUESTOR_PUBLIC_KEY),
+            client_public_key                   = self._get_encoded_key(self.PROVIDER_PUBLIC_KEY),
+            client_public_key_out_of_band       = self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTaskResponse,
             ],
@@ -760,9 +742,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(DIFFERENT_PROVIDER_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_diff_provider_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -771,9 +752,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_requestor_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -784,9 +764,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_provider_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        200)
@@ -794,7 +773,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         serialized_message_from_concent_to_provider = response.content
         message_from_concent_to_provider            = load(
             serialized_message_from_concent_to_provider,
-            PROVIDER_PRIVATE_KEY,
+            self.PROVIDER_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY,
             check_time = False
         )
@@ -808,9 +787,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
                 reverse('core:receive_out_of_band'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(DIFFERENT_REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_diff_requestor_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -819,9 +797,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
                 reverse('core:receive_out_of_band'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_provider_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -832,14 +809,13 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
                 reverse('core:receive_out_of_band'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_requestor_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        200)
 
-        message_from_concent_to_requestor = load(response.content, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
+        message_from_concent_to_requestor = load(response.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
         self.assertIsInstance(message_from_concent_to_requestor,                                message.VerdictReportComputedTask)
         self.assertGreaterEqual(message_from_concent_to_requestor.timestamp,                    int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))
@@ -850,8 +826,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id                  = '1',
             subtask_id               = '8',
             subtask_state            = Subtask.SubtaskState.REPORTED,
-            provider_key             = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task', 'reject_report_computed_task'},
         )
 
@@ -880,8 +856,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = self.serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        202)
@@ -891,8 +867,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id                  = '1',
             subtask_id               = '8',
             subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
-            provider_key             = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
@@ -907,7 +883,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',
-            client_public_key                  = self._get_encoded_key(REQUESTOR_PUBLIC_KEY),
+            client_public_key                  = self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTask,
             ]
@@ -918,9 +894,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(DIFFERENT_REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_diff_requestor_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -929,9 +904,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_provider_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -942,14 +916,13 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_requestor_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         force_report_computed_task_from_view = load(
             response.content,
-            REQUESTOR_PRIVATE_KEY,
+            self.REQUESTOR_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY,
             check_time = False,
         )
@@ -964,9 +937,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(DIFFERENT_REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_diff_requestor_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -974,9 +946,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_requestor_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -986,14 +957,13 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_provider_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        200)
 
-        message_from_concent_to_provider = load(response.content, PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time=False)
+        message_from_concent_to_provider = load(response.content, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time=False)
         self.assertIsInstance(message_from_concent_to_provider,                                     message.concents.ForceReportComputedTaskResponse)
         self.assertEqual(message_from_concent_to_provider.timestamp,                                int(dateutil.parser.parse("2017-12-01 11:00:15").timestamp()))
         self.assertEqual(message_from_concent_to_provider.ack_report_computed_task.task_to_compute, self.deserialized_task_to_compute)
@@ -1002,15 +972,15 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id                  = '1',
             subtask_id               = '8',
             subtask_state            = Subtask.SubtaskState.REPORTED,
-            provider_key             = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
             next_deadline            = None,
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',
-            client_public_key                  = self._get_encoded_key(PROVIDER_PUBLIC_KEY),
-            client_public_key_out_of_band      = self._get_encoded_key(REQUESTOR_PUBLIC_KEY),
+            client_public_key                  = self._get_encoded_key(self.PROVIDER_PUBLIC_KEY),
+            client_public_key_out_of_band      = self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY),
             expected_pending_responses_receive_out_of_band = [
                 PendingResponse.ResponseType.VerdictReportComputedTask,
             ]
@@ -1020,9 +990,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
                 reverse('core:receive_out_of_band'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(DIFFERENT_REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_diff_requestor_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -1030,9 +999,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
                 reverse('core:receive_out_of_band'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_provider_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -1042,16 +1010,15 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
                 reverse('core:receive_out_of_band'),
-                data                           = '',
-                content_type                   = '',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                data                           = self._create_requestor_auth_message(),
+                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        200)
 
         message_from_concent_to_requestor = load(
             response.content,
-            REQUESTOR_PRIVATE_KEY,
+            self.REQUESTOR_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY,
             check_time = False
         )
@@ -1065,8 +1032,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_id                  = '1',
             subtask_id               = '8',
             subtask_state            = Subtask.SubtaskState.REPORTED,
-            provider_key             = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
             next_deadline            = None,
         )

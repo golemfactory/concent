@@ -625,3 +625,8 @@ class ConcentIntegrationTestCase(TestCase):
         golem_message = golem_message.serialize(sign_func = signature)
         golem_message = message.Message.deserialize(golem_message, decrypt_func = None, check_time = False)
         return golem_message.sig
+
+    def _create_client_auth_message(self, client_priv_key, client_public_key):  # pylint: disable=no-self-use
+        client_auth = message.concents.ClientAuthorization()
+        client_auth.client_public_key = client_public_key
+        return dump(client_auth, client_priv_key, settings.CONCENT_PUBLIC_KEY)

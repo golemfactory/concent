@@ -5,8 +5,10 @@ from base64 import b64encode
 from typing import Optional
 
 from django.conf import settings
+from django.db.models import Q
 from django.http import HttpResponse
 from django.utils import timezone
+
 from golem_messages import message
 from golem_messages.datastructures import MessageHeader
 from golem_messages.message.tasks import SubtaskResultsRejected
@@ -20,6 +22,7 @@ from core.models import StoredMessage
 from core.models import Subtask
 from core.payments import base
 from core.validation import validate_golem_message_reject
+from core.validation import validate_id_value
 from core.validation import validate_task_to_compute
 from core.validation import validate_report_computed_task_time_window
 from core.validation import validate_list_of_identical_task_to_compute
@@ -1042,21 +1045,18 @@ def handle_send_subtask_results_verify(request, client_message):
 
     if Subtask.objects.filter(
         Q(subtask_id=compute_task_def_subtask_id),
-        Q(state=Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER.name) |
-        Q(state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name),  # pylint: disable=no-member)
+        Q(state=Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER.name) |  # pylint: disable=no-member
+        Q(state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name),  # pylint: disable=no-member
     ).exists():
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
         )
 
-    send_verification_request()
-
-    encoded_client_public_key = b64encode(decode_client_public_key(request))
-    ack_subtask_results_verify = message.concents.AckSubtaskResultsVerify(
-        subtask_results_verify=subtask_results_verify,
-        file_transfer_token=create_file_transfer_token(report_computed_task, encoded_client_public_key, "upload"),
-    )
-    return ack_subtask_results_verify
+    if not base.is_requestor_account_status_positive(request):  # pylint: disable=no-value-for-parameter
+        return message.concents.ServiceRefused(
+            reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
+        )
+    return None
 
 
 def handle_message(client_message, request):

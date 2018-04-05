@@ -56,7 +56,7 @@ def validate_public_key(value, field_name):
     assert isinstance(field_name, str)
 
     if not isinstance(value, bytes):
-        raise Http400("{} must be string.".format(field_name))
+        raise Http400("{} must be bytes.".format(field_name))
 
     if len(value) != GOLEM_PUBLIC_KEY_LENGTH:
         raise Http400("The length of {} must be exactly {} characters.".format(field_name, GOLEM_PUBLIC_KEY_LENGTH))

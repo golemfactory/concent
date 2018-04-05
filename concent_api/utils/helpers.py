@@ -6,6 +6,7 @@ import functools
 import time
 
 from django.utils                   import timezone
+from mypy.types                     import Union
 
 from golem_messages                 import cryptography
 from golem_messages                 import message
@@ -64,7 +65,7 @@ def parse_timestamp_to_utc_datetime(timestamp: int) -> datetime.datetime:
     return datetime.datetime.fromtimestamp(timestamp, timezone.utc)
 
 
-def get_field_from_message(golem_message: message.base.Message, field_name: str) -> str:
+def get_field_from_message(golem_message: message.base.Message, field_name: str) -> Union[str, dict, message.base.Message]:
     """
     Returns field value with given field name nested inside given Golem Message or FrozenDict
     by checking recursively from top to bottom.

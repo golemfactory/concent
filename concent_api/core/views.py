@@ -11,23 +11,22 @@ from utils                          import logging
 from utils.api_view                 import api_view
 from utils.decorators               import require_golem_auth_message
 from utils.decorators               import handle_errors_and_responses
-from utils.helpers                  import decode_client_public_key
 from .models                        import PendingResponse
 
 
 @api_view
 @require_POST
-def send(request, client_message):
+def send(request, client_message, client_public_key):
+    if client_public_key is not None:
+        update_timed_out_subtasks(
+            client_public_key = client_public_key,
+        )
+
     if client_message is not None:
         logging.log_message_received(
             client_message,
-            request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+            client_public_key if client_public_key is not None else 'UNAVAILABLE',
         )
-
-    client_public_key = decode_client_public_key(request)
-    update_timed_out_subtasks(
-        client_public_key = client_public_key,
-    )
 
     return handle_message(client_message, request)
 

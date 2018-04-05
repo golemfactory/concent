@@ -21,6 +21,7 @@ from golem_messages.message         import Message
 
 from core.exceptions                import Http400
 from utils                          import logging
+from utils.helpers                  import get_validated_client_public_key_from_client_message
 
 
 def api_view(view):
@@ -72,7 +73,8 @@ def api_view(view):
                 return JsonResponse({'error': "Concent supports only application/octet-stream."}, status = 400)
         try:
             sid = transaction.savepoint()
-            response_from_view = view(request, message, *args, **kwargs)
+            client_public_key = get_validated_client_public_key_from_client_message(message)
+            response_from_view = view(request, message, client_public_key, *args, **kwargs)
             transaction.savepoint_commit(sid)
         except Http400 as exception:
             logging.log_400_error(

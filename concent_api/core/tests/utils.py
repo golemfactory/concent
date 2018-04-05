@@ -616,3 +616,10 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _assert_client_count_is_equal(self, count):
         self.assertEqual(Client.objects.count(), count)
+
+    # TODO: Merge with '_sign_message' after authentication is merged
+    def _get_signature(self, golem_message, priv_key, pub_key):  # pylint: disable=no-self-use
+        golem_message.sig = None
+        serialized_message = dump(golem_message, priv_key, pub_key)
+        loaded_message = load(serialized_message, priv_key, pub_key, check_time = False)
+        return loaded_message.sig

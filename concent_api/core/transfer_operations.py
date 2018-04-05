@@ -136,6 +136,8 @@ def create_file_transfer_token(
     file_transfer_token.files[0]['checksum']  = report_computed_task.package_hash
     file_transfer_token.files[0]['size']      = report_computed_task.size
 
+    file_transfer_token = sign_message(file_transfer_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+
     return file_transfer_token
 
 
@@ -186,3 +188,14 @@ def send_request_to_cluster_storage(headers, request_http_address):
             request_http_address,
             headers=headers
     )
+
+
+def sign_message(golem_message, priv_key, pub_key):
+    assert isinstance(golem_message, message.Message)
+    assert isinstance(priv_key, bytes) and len(priv_key) == 32
+    assert isinstance(pub_key, bytes) and len(pub_key) == 64
+    assert golem_message.sig is None
+
+    serialized_message = shortcuts.dump(golem_message, priv_key, pub_key)
+    loaded_message = shortcuts.load(serialized_message, priv_key, pub_key)
+    return loaded_message

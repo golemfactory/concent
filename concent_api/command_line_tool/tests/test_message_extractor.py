@@ -1,5 +1,7 @@
+import os
+import sys
 from unittest import TestCase, skip, expectedFailure
-
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from golem_messages.message import ComputeTaskDef, TaskToCompute, ReportComputedTask
 from golem_messages.message.concents import ForceGetTaskResult
 from command_line_tool.message_extractor import MessageExtractor, convert_message_name

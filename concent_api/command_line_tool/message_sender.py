@@ -1,9 +1,13 @@
+
 from base64 import b64encode
 import requests
 import os
+import sys
 from golem_messages.shortcuts import dump
 from golem_messages.shortcuts import load
 # from concent_request import print_message
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils.testing_helpers import generate_ecc_key_pair
 
 # from utils.helpers import get_current_utc_timestamp

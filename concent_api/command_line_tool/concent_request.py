@@ -1,8 +1,8 @@
 import argparse
 import json
 # from jsonschema import Draft4Validator
-from .message_sender import send_message
-from .message_extractor import MessageExtractor
+from message_sender import send_message
+from message_extractor import MessageExtractor
 
 
 # def verify_schema(json_data):

@@ -356,7 +356,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # Test FileTransferToken message
         self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
-        self.assertEqual(message_file_transfer_token.sig,  self._get_signature(message_file_transfer_token, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY))
+        self.assertEqual(message_file_transfer_token.sig,  self._add_signature_to_message(message_file_transfer_token, CONCENT_PRIVATE_KEY))
         self.assertEqual(message_file_transfer_token.subtask_id, deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
@@ -615,7 +615,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # Test FileTransferToken message
         self.assertIsInstance(message_file_transfer_token,                      message.FileTransferToken)
-        self.assertEqual(message_file_transfer_token.sig,                       self._get_signature(message_file_transfer_token, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY))
+        self.assertEqual(message_file_transfer_token.sig,                       self._add_signature_to_message(message_file_transfer_token, CONCENT_PRIVATE_KEY))
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:06"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
@@ -649,7 +649,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_from_concent.timestamp,                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"))
         self.assertEqual(message_from_concent.force_get_task_result.report_computed_task.task_to_compute,   deserialized_task_to_compute)
         self.assertIsInstance(message_from_concent.file_transfer_token,                                     message.FileTransferToken)
-        self.assertEqual(message_from_concent.file_transfer_token.sig,                                      self._get_signature(message_from_concent.file_transfer_token, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY))
+        self.assertEqual(message_from_concent.file_transfer_token.sig,                                      self._add_signature_to_message(message_from_concent.file_transfer_token, CONCENT_PRIVATE_KEY))
         self.assertEqual(message_from_concent.file_transfer_token.subtask_id,                               deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_from_concent.file_transfer_token.timestamp,                                self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"))
         self.assertEqual(message_from_concent.file_transfer_token.token_expiration_deadline,                self._parse_iso_date_to_timestamp("2017-12-01 11:30:00"))
@@ -764,7 +764,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # Test FileTransferToken message
         self.assertIsInstance(message_file_transfer_token,                      message.FileTransferToken)
-        self.assertEqual(message_file_transfer_token.sig,                       self._get_signature(message_file_transfer_token, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY))
+        self.assertEqual(message_file_transfer_token.sig,                       self._add_signature_to_message(message_file_transfer_token, CONCENT_PRIVATE_KEY))
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
@@ -796,7 +796,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertIsInstance(message_from_concent,                                                                         message.concents.ForceGetTaskResultDownload)
         self.assertEqual(message_from_concent.timestamp,                                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"))
-        self.assertEqual(message_from_concent.file_transfer_token.sig,                                                      self._get_signature(message_from_concent.file_transfer_token, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY))
+        self.assertEqual(message_from_concent.file_transfer_token.sig,                                                      self._add_signature_to_message(message_from_concent.file_transfer_token, CONCENT_PRIVATE_KEY))
         self.assertEqual(message_from_concent.force_get_task_result.report_computed_task.task_to_compute,                   deserialized_task_to_compute)
         self.assertEqual(message_from_concent.force_get_task_result.report_computed_task.task_to_compute.compute_task_def,  deserialized_task_to_compute.compute_task_def)   # pylint: disable=no-member
         self.assertEqual(
@@ -915,7 +915,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # Test FileTransferToken message
         self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
-        self.assertEqual(message_file_transfer_token.sig,       self._get_signature(message_file_transfer_token, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY))
+        self.assertEqual(message_file_transfer_token.sig,       self._add_signature_to_message(message_file_transfer_token, CONCENT_PRIVATE_KEY))
         self.assertEqual(message_file_transfer_token.subtask_id, deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
@@ -962,7 +962,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_from_concent.force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'], '99')
 
         self.assertIsInstance(message_from_concent.file_transfer_token, message.FileTransferToken)
-        self.assertEqual(message_from_concent.file_transfer_token.sig,  self._get_signature(message_from_concent.file_transfer_token, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY))
+        self.assertEqual(message_from_concent.file_transfer_token.sig,  self._add_signature_to_message(message_from_concent.file_transfer_token, CONCENT_PRIVATE_KEY))
         self.assertEqual(message_from_concent.file_transfer_token.subtask_id, deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(
             message_from_concent.file_transfer_token.timestamp,

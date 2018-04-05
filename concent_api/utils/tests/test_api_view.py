@@ -62,7 +62,7 @@ class ApiViewTestCase(TestCase):
         decoded_message = None
 
         @api_view
-        def dummy_view(request, _message):                                       # pylint: disable=unused-argument
+        def dummy_view(request, _message, _client_public_key):  # pylint: disable=unused-argument
             nonlocal decoded_message
             decoded_message = _message
             return None
@@ -79,7 +79,7 @@ class ApiViewTestCase(TestCase):
     def test_api_view_should_encode_golem_message_returned_from_view(self):
 
         @api_view
-        def dummy_view(request, _message):                                      # pylint: disable=unused-argument
+        def dummy_view(request, _message, _client_public_key):  # pylint: disable=unused-argument
             return self.want_to_compute
 
         request = self.request_factory.post("/dummy-url/", content_type = '', data = '')
@@ -101,7 +101,7 @@ class ApiViewTestCase(TestCase):
     def test_api_view_should_return_http_415_when_request_content_type_is_not_supported(self):
 
         @api_view
-        def dummy_view(request, _message):                                      # pylint: disable=unused-argument
+        def dummy_view(request, _message, _client_public_key):  # pylint: disable=unused-argument
             return self.want_to_compute
 
         request = self.request_factory.post("/dummy-url/", content_type = 'application/x-www-form-urlencoded', data = self.want_to_compute)
@@ -117,7 +117,7 @@ class ApiViewTestCase(TestCase):
     def test_api_view_should_return_http_415_when_request_content_type_is_appplication_json(self):
 
         @api_view
-        def dummy_view(request, _message):                                      # pylint: disable=unused-argument
+        def dummy_view(request, _message, _client_public_key):  # pylint: disable=unused-argument
             return self.message_to_view
 
         request = self.request_factory.post("/dummy-url/", content_type = 'application/json', data = json.dumps(self.message_to_view))
@@ -136,7 +136,7 @@ class ApiViewTestCase(TestCase):
 
         @api_view
         @require_POST
-        def dummy_view(_request, _message):
+        def dummy_view(_request, _message, _client_public_key):
             self.fail()
 
         request = self.request_factory.get(
@@ -236,6 +236,16 @@ class ApiViewTransactionTestCase(TransactionTestCase):
             compute_task_def     = compute_task_def,
             requestor_public_key = REQUESTOR_PUBLIC_KEY,
             provider_public_key  = PROVIDER_PUBLIC_KEY,
+        )
+        task_to_compute = load(
+            dump(
+                task_to_compute,
+                PROVIDER_PRIVATE_KEY,
+                settings.CONCENT_PUBLIC_KEY,
+            ),
+            settings.CONCENT_PRIVATE_KEY,
+            PROVIDER_PUBLIC_KEY,
+            check_time = False,
         )
 
         force_report_computed_task                                      = message.ForceReportComputedTask()

@@ -64,6 +64,18 @@ class ConcentIntegrationTestCase(TestCase):
         """ Returns requestor ethereum public key encoded. """
         return '0x' + self._get_encoded_key(self.DIFFERENT_REQUESTOR_PUBLIC_KEY)
 
+    def _sign_message(self, golem_message, client_private_key = None, client_public_key = None):
+        return load(
+            dump(
+                golem_message,
+                self.PROVIDER_PRIVATE_KEY if client_private_key is None else client_private_key,
+                settings.CONCENT_PUBLIC_KEY,
+            ),
+            settings.CONCENT_PRIVATE_KEY,
+            self.PROVIDER_PUBLIC_KEY if client_public_key is None else client_public_key,
+            check_time = False,
+        )
+
     def _get_serialized_force_get_task_result(
         self,
         report_computed_task,
@@ -95,7 +107,9 @@ class ConcentIntegrationTestCase(TestCase):
                 subtask_id      = subtask_id,
                 task_to_compute = (
                     task_to_compute or
-                    self._get_deserialized_task_to_compute()
+                    self._sign_message(
+                        self._get_deserialized_task_to_compute()
+                    )
                 ),
                 size            = size,
                 package_hash    = package_hash
@@ -112,6 +126,8 @@ class ConcentIntegrationTestCase(TestCase):
         requestor_public_key            = None,
         requestor_ethereum_public_key   = None,
         provider_public_key             = None,
+        sign_with_private_key           = None,
+        sign_with_public_key            = None,
     ):
         """ Returns TaskToCompute deserialized. """
         if compute_task_def is None:
@@ -136,6 +152,11 @@ class ConcentIntegrationTestCase(TestCase):
                     provider_public_key if provider_public_key is not None else self.PROVIDER_PUBLIC_KEY
                 )
             )
+            task_to_compute = self._sign_message(
+                task_to_compute,
+                sign_with_private_key,
+                sign_with_public_key,
+            )
         return task_to_compute
 
     def _get_deserialized_ack_report_computed_task(
@@ -150,8 +171,7 @@ class ConcentIntegrationTestCase(TestCase):
             ack_report_computed_task = message.AckReportComputedTask(
                 subtask_id      = subtask_id,
                 task_to_compute = (
-                    task_to_compute or
-                    self._get_deserialized_task_to_compute(
+                    task_to_compute or self._get_deserialized_task_to_compute(
                         timestamp = timestamp,
                         deadline  = deadline
                     )
@@ -182,9 +202,11 @@ class ConcentIntegrationTestCase(TestCase):
         self.assertEqual(response.status_code, 204)
         self.assertEqual(len(response.content), 0)
 
-    def _test_400_response(self, response):
+    def _test_400_response(self, response, error_message = None):
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json().keys())
+        if error_message is not None:
+            self.assertEqual(response.json()['error'], error_message)
 
     def _test_response(self, response, status, key, message_type = None, fields = None):
         self.assertEqual(response.status_code, status)
@@ -405,7 +427,9 @@ class ConcentIntegrationTestCase(TestCase):
                     report_computed_task or
                     self._get_deserialized_report_computed_task(
                         subtask_id      = '1',
-                        task_to_compute = self._get_deserialized_task_to_compute()
+                        task_to_compute = self._sign_message(
+                            self._get_deserialized_task_to_compute()
+                        )
                     )
                 ),
             )

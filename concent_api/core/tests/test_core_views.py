@@ -47,10 +47,8 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         self.compute_task_def['task_id']    = '8'
         self.compute_task_def['subtask_id'] = '8'
         self.compute_task_def['deadline']   = self.message_timestamp
-        self.task_to_compute                = message.TaskToCompute(
-            compute_task_def     = self.compute_task_def,
-            provider_public_key  = self.PROVIDER_PUBLIC_KEY,
-            requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
+        self.task_to_compute                = self._get_deserialized_task_to_compute(
+            compute_task_def = self.compute_task_def,
         )
 
         self.correct_golem_data                                         = message.ForceReportComputedTask()
@@ -66,24 +64,17 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             num_cores           = 7,
         )
 
-        self.task_to_compute_for_cannot_compute_message = message.TaskToCompute(
-            provider_public_key  = self.PROVIDER_PUBLIC_KEY,
-            requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
+        compute_task_def = message.ComputeTaskDef()
+        compute_task_def['task_id'] = '8'
+        compute_task_def['subtask_id'] = '8'
+        compute_task_def['deadline'] = self.message_timestamp + 600
+        task_to_compute = self._get_deserialized_task_to_compute(
+            compute_task_def = compute_task_def
         )
-
-        self.cannot_compute_task = message.CannotComputeTask()
-        self.cannot_compute_task.task_to_compute = message.TaskToCompute(
-            provider_public_key  = self.PROVIDER_PUBLIC_KEY,
-            requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
+        self.cannot_compute_task = message.CannotComputeTask(
+            task_to_compute = task_to_compute
         )
-
-        self.cannot_compute_task.task_to_compute.compute_task_def               = message.ComputeTaskDef()
-        self.cannot_compute_task.task_to_compute.compute_task_def['deadline']   = self.message_timestamp + 600
-        self.cannot_compute_task.task_to_compute.compute_task_def['task_id']    = '8'
-        self.cannot_compute_task.task_to_compute.compute_task_def['subtask_id'] = '8'
-
         self.reject_report_computed_task = message.RejectReportComputedTask()
-
         self.reject_report_computed_task.reason                 = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
         self.reject_report_computed_task.cannot_compute_task    = self.cannot_compute_task
 
@@ -120,6 +111,8 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
         task_to_compute = self.task_to_compute
         task_to_compute.compute_task_def['deadline'] = self.message_timestamp - 1   # pylint: disable=no-member
+        task_to_compute.sig = None
+        task_to_compute = self._sign_message(task_to_compute)
         report_computed_task = message.tasks.ReportComputedTask(
             task_to_compute = task_to_compute
         )
@@ -130,18 +123,18 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             reverse('core:send'),
             data = dump(
                 correct_golem_data,
-                PROVIDER_PRIVATE_KEY,
+                self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY
             ),
             content_type                        = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code, 200)
         response_message = load(
             response.content,
-            PROVIDER_PRIVATE_KEY,
+            self.PROVIDER_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY,
         )
         self.assertIsInstance(response_message, GolemMessage)
@@ -154,10 +147,8 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         compute_task_def['task_id']     = 'ABC00XYZ'
         compute_task_def['subtask_id']  = 'ABC00XYZ'
         compute_task_def['deadline']    = self.message_timestamp
-        task_to_compute                 = message.TaskToCompute(
-            compute_task_def     = compute_task_def,
-            provider_public_key  = PROVIDER_PUBLIC_KEY,
-            requestor_public_key = REQUESTOR_PUBLIC_KEY,
+        task_to_compute                 = self._get_deserialized_task_to_compute(
+            compute_task_def=compute_task_def,
         )
 
         report_computed_task = message.tasks.ReportComputedTask(
@@ -172,11 +163,11 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             reverse('core:send'),
             data = dump(
                 correct_golem_data,
-                PROVIDER_PRIVATE_KEY,
+                self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY),
             content_type = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code,                   202)
@@ -331,10 +322,15 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
     def test_send_reject_message_save_as_receive_out_of_band_status(self):
         assert StoredMessage.objects.count() == 0
 
+        correct_golem_data                                         = message.ForceReportComputedTask()
+        correct_golem_data.report_computed_task                    = message.tasks.ReportComputedTask(
+            task_to_compute = self.cannot_compute_task.task_to_compute  # pylint: disable=no-member
+        )
+
         force_response = self.client.post(
             reverse('core:send'),
             data = dump(
-                self.correct_golem_data,
+                correct_golem_data,
                 PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY),
             content_type                        = 'application/octet-stream',
@@ -468,15 +464,14 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
     def test_send_should_return_http_202_if_task_to_compute_deadline_is_correct(self):
         compute_task_def = message.ComputeTaskDef()
 
-        invalid_values = [
+        valid_values = [
             11,
-            '1112',
             True,
             0,
             False,
         ]
 
-        for i, deadline in enumerate(invalid_values):
+        for i, deadline in enumerate(valid_values):
             StoredMessage.objects.all().delete()
             compute_task_def['task_id']     = str(i)
             compute_task_def['subtask_id']  = str(i)
@@ -484,8 +479,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
             deserialized_task_to_compute = self._get_deserialized_task_to_compute(
                 compute_task_def     = compute_task_def,
-                provider_public_key  = self.PROVIDER_PUBLIC_KEY,
-                requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
             )
 
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
@@ -562,8 +555,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             task_id     = '1',
             subtask_id  = '3',
             deadline    = get_current_utc_timestamp() + (60 * 37),
-            provider_public_key  = self.PROVIDER_PUBLIC_KEY,
-            requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
         )
         with freeze_time("2017-11-17 10:00:00"):
             force_report_computed_task = self._get_deserialized_force_report_computed_task(

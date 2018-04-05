@@ -101,71 +101,79 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             ]
         )
 
-        # STEP 2: Requestor again forces get task result via Concent with wrong key or mixed key.
-        # Concent rejects request immediately because message with this subtask_id was already sent.
-        serialized_force_get_task_result = self._get_serialized_force_get_task_result(
-            report_computed_task  = deserialized_report_computed_task,
-            timestamp             = "2017-12-01 11:00:08",
-            requestor_private_key = self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
-        )
+        # STEP 2:
+        # 2.1. TaskToCompute is send signed with different key, request is rejected with proper error message.
+        # 2.2. TaskToCompute is send with different data, request is rejected with proper error message.
 
-        with freeze_time("2017-12-01 11:00:08"):
-            response = self.client.post(
-                reverse('core:send'),
-                data                                = serialized_force_get_task_result,
-                content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_key(self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_provider_public_key(),
-            )
-
-        self.assertEqual(response.status_code,  200)
-
-        message_from_concent = load(response.content, self.DIFFERENT_REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
-
-        self.assertIsInstance(message_from_concent,      message.concents.ServiceRefused)
-        self.assertEqual(message_from_concent.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:08"))
-        self.assertEqual(message_from_concent.reason,    message_from_concent.REASON.DuplicateRequest)
-
-        self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
-            client_public_key                  = self._get_encoded_provider_public_key(),
-            expected_pending_responses_receive = [
-                PendingResponse.ResponseType.ForceGetTaskResultUpload,
-            ]
+        # 2.1.
+        deserialized_task_to_compute.sig = None
+        task_to_compute = self._sign_message(
+            deserialized_task_to_compute,
+            self.DIFFERENT_PROVIDER_PRIVATE_KEY,
+            self.DIFFERENT_PROVIDER_PUBLIC_KEY
         )
 
         serialized_force_get_task_result = self._get_serialized_force_get_task_result(
-            report_computed_task  = deserialized_report_computed_task,
-            timestamp             = "2017-12-01 11:00:08",
-            requestor_private_key = self.PROVIDER_PRIVATE_KEY,
+            report_computed_task=self._get_deserialized_report_computed_task(
+                task_to_compute=task_to_compute,
+                timestamp="2017-12-01 11:00:05",
+            ),
+            timestamp="2017-12-01 11:00:08",
+            requestor_private_key=self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
         )
 
         with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
-            with freeze_time("2017-12-01 11:00:08"):
+            with freeze_time("2017-12-01 11:00:05"):
                 response = self.client.post(
                     reverse('core:send'),
-                    data                                = serialized_force_get_task_result,
-                    content_type                        = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
+                    data=serialized_force_get_task_result,
+                    content_type='application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_requestor_different_public_key(),
+                )
+
+        self._test_400_response(
+            response,
+            error_message='There was an exception when validating if golem_message {} is signed with public key {}'.format(
+                message.TaskToCompute.TYPE,
+                self.PROVIDER_PUBLIC_KEY,
+            )
+        )
+
+        # 2.2.
+        task_to_compute.sig = None
+        task_to_compute.requestor_public_key = self.REQUESTOR_PUBLIC_KEY
+        task_to_compute.provider_id = 'different_id'
+        task_to_compute = self._sign_message(
+            task_to_compute,
+            self.PROVIDER_PRIVATE_KEY,
+            self.PROVIDER_PUBLIC_KEY,
+        )
+
+        serialized_force_get_task_result = self._get_serialized_force_get_task_result(
+            report_computed_task=self._get_deserialized_report_computed_task(
+                task_to_compute=task_to_compute,
+                timestamp="2017-12-01 11:00:05",
+            ),
+            timestamp="2017-12-01 11:00:08",
+            requestor_private_key=self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
+        )
+
+        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
+            with freeze_time("2017-12-01 11:00:05"):
+                response = self.client.post(
+                    reverse('core:send'),
+                    data=serialized_force_get_task_result,
+                    content_type='application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_requestor_different_public_key(),
                 )
 
         self.assertEqual(response.status_code,  200)
 
-        message_from_concent = load(response.content, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
+        message_from_concent = load(response.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
         self.assertIsInstance(message_from_concent,      message.concents.ServiceRefused)
-        self.assertEqual(message_from_concent.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:08"))
+        self.assertEqual(message_from_concent.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
         self.assertEqual(message_from_concent.reason,    message_from_concent.REASON.DuplicateRequest)
-
-        self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
-            client_public_key                  = self._get_encoded_provider_public_key(),
-            expected_pending_responses_receive = [
-                PendingResponse.ResponseType.ForceGetTaskResultUpload,
-            ]
-        )
-        self._assert_stored_message_counter_not_increased()
 
         # STEP 3: Requestor again forces get task result via Concent with correct key.
         # Concent rejects request immediately because message was already sent.

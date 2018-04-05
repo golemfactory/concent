@@ -1033,7 +1033,10 @@ def store_message(
     return stored_message
 
 
-def handle_send_subtask_results_verify(request, client_message):
+def handle_send_subtask_results_verify(
+    request,
+    client_message: message.concents.SubtaskResultsVerify
+):
     compute_task_def_subtask_id = client_message.subtask_results_rejected.report_computed_task.task_to_compute.compute_task_def['subtask_id']
     validate_id_value(
         compute_task_def_subtask_id,
@@ -1051,10 +1054,13 @@ def handle_send_subtask_results_verify(request, client_message):
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
         )
-
     if not base.is_requestor_account_status_positive(request):  # pylint: disable=no-value-for-parameter
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
+        )
+    if client_message.subtask_results_rejected.reason != message.tasks.SubtaskResultsRejected.REASON.VerificationNegative:
+        return message.concents.ServiceRefused(
+            reason=message.concents.ServiceRefused.REASON.InvalidRequest,
         )
     return None
 

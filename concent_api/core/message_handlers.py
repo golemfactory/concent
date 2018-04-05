@@ -21,12 +21,12 @@ from core.validation                import validate_golem_message_reject
 from core.validation                import validate_golem_message_task_to_compute
 from core.validation                import validate_id_value
 from core.validation                import validate_report_computed_task_time_window
+from core.validation                import validate_list_of_identical_task_to_compute
+from core.validation                import validate_golem_message_signed_with_key
 from core.subtask_helpers           import verify_message_subtask_results_accepted
 from core.transfer_operations       import store_pending_message
 from core.transfer_operations       import create_file_transfer_token
 from utils                          import logging
-from utils.helpers                  import decode_client_public_key
-from utils.helpers                  import decode_other_party_public_key
 from utils.helpers                  import deserialize_message
 from utils.helpers                  import get_current_utc_timestamp
 from utils.helpers                  import parse_timestamp_to_utc_datetime
@@ -34,12 +34,14 @@ from utils.helpers                  import parse_timestamp_to_utc_datetime
 
 def handle_send_force_report_computed_task(request, client_message):
     current_time           = get_current_utc_timestamp()
-    client_public_key      = decode_client_public_key(request)
-    other_party_public_key = decode_other_party_public_key(request)
     validate_golem_message_task_to_compute(client_message.report_computed_task.task_to_compute)
     validate_report_computed_task_time_window(client_message.report_computed_task)
     validate_id_value(client_message.report_computed_task.task_to_compute.compute_task_def['task_id'], 'task_id')
     validate_id_value(client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'], 'subtask_id')
+    validate_golem_message_signed_with_key(
+        client_message.report_computed_task.task_to_compute,
+        client_message.report_computed_task.task_to_compute.provider_public_key,
+    )
 
     if Subtask.objects.filter(
         subtask_id = client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'],
@@ -90,10 +92,13 @@ def handle_send_force_report_computed_task(request, client_message):
 
 def handle_send_ack_report_computed_task(request, client_message):
     current_time      = get_current_utc_timestamp()
-    client_public_key = decode_client_public_key(request)
     validate_golem_message_task_to_compute(client_message.report_computed_task.task_to_compute)
     validate_id_value(client_message.report_computed_task.task_to_compute.compute_task_def['task_id'], 'task_id')
     validate_id_value(client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'], 'subtask_id')
+    validate_golem_message_signed_with_key(
+        client_message.report_computed_task.task_to_compute,
+        client_message.report_computed_task.task_to_compute.provider_public_key,
+    )
 
     if current_time <= client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
         try:
@@ -119,6 +124,11 @@ def handle_send_ack_report_computed_task(request, client_message):
                 "Received AckReportComputedTask but RejectReportComputedTask "
                 "or another AckReportComputedTask for this task has already been submitted."
             )
+
+        validate_list_of_identical_task_to_compute([
+            client_message.task_to_compute,
+            deserialize_message(subtask.task_to_compute.data.tobytes()),
+        ])
 
         subtask = update_subtask(
             subtask                     = subtask,
@@ -149,10 +159,13 @@ def handle_send_ack_report_computed_task(request, client_message):
 
 def handle_send_reject_report_computed_task(request, client_message):
     current_time      = get_current_utc_timestamp()
-    client_public_key = decode_client_public_key(request)
     validate_golem_message_reject(client_message.cannot_compute_task)
     validate_id_value(client_message.cannot_compute_task.task_to_compute.compute_task_def['task_id'], 'task_id')
     validate_id_value(client_message.cannot_compute_task.task_to_compute.compute_task_def['subtask_id'], 'subtask_id')
+    validate_golem_message_signed_with_key(
+        client_message.cannot_compute_task.task_to_compute,
+        client_message.cannot_compute_task.task_to_compute.provider_public_key,
+    )
 
     try:
         subtask = Subtask.objects.get(
@@ -171,6 +184,11 @@ def handle_send_reject_report_computed_task(request, client_message):
 
     if subtask.requestor.public_key != request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']:
         raise Http400("Subtask requestor key does not match current client key. Can't accept your 'RejectReportComputedTask'.")
+
+    validate_list_of_identical_task_to_compute([
+        client_message.cannot_compute_task.task_to_compute,
+        deserialize_message(subtask.task_to_compute.data.tobytes()),
+    ])
 
     if client_message.cannot_compute_task.reason == message.CannotComputeTask.REASON.WrongCTD:
         subtask = update_subtask(
@@ -235,11 +253,13 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
     assert client_message.TYPE in message.registered_message_types
 
     current_time           = get_current_utc_timestamp()
-    client_public_key      = decode_client_public_key(request)
-    other_party_public_key = decode_other_party_public_key(request)
     validate_golem_message_task_to_compute(client_message.report_computed_task.task_to_compute)
     validate_id_value(client_message.report_computed_task.task_to_compute.compute_task_def['task_id'], 'task_id')
     validate_id_value(client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'], 'subtask_id')
+    validate_golem_message_signed_with_key(
+        client_message.report_computed_task.task_to_compute,
+        client_message.report_computed_task.task_to_compute.provider_public_key,
+    )
     force_get_task_result_deadline = (
         client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] +
         2 * settings.CONCENT_MESSAGING_TIME +
@@ -291,10 +311,12 @@ def handle_send_force_subtask_results(request, client_message: message.concents.
     assert isinstance(client_message, message.concents.ForceSubtaskResults)
     validate_id_value(client_message.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def['task_id'], 'task_id')
     validate_id_value(client_message.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def['subtask_id'], 'subtask_id')
+    validate_golem_message_signed_with_key(
+        client_message.ack_report_computed_task.report_computed_task.task_to_compute,
+        client_message.ack_report_computed_task.report_computed_task.task_to_compute.provider_public_key,
+    )
 
     current_time           = get_current_utc_timestamp()
-    client_public_key      = decode_client_public_key(request)
-    other_party_public_key = decode_other_party_public_key(request)
 
     if Subtask.objects.filter(
         subtask_id = client_message.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def['subtask_id'],
@@ -368,29 +390,29 @@ def handle_send_force_subtask_results_response(request, client_message):
     client_public_key = decode_client_public_key(request)
 
     if isinstance(client_message.subtask_results_accepted, message.tasks.SubtaskResultsAccepted):
-        validate_golem_message_task_to_compute(client_message.subtask_results_accepted.task_to_compute)
-        client_message_subtask_id = client_message.subtask_results_accepted.task_to_compute.compute_task_def['subtask_id']
+        task_to_compute           = client_message.subtask_results_accepted.task_to_compute
         report_computed_task      = None
         subtask_results_accepted  = client_message.subtask_results_accepted
         subtask_results_rejected  = None
         state                     = Subtask.SubtaskState.ACCEPTED
         response_type             = PendingResponse.ResponseType.ForceSubtaskResultsResponse
-        provider_public_key       = client_message.subtask_results_accepted.task_to_compute.provider_public_key
-        computation_deadline      = client_message.subtask_results_accepted.task_to_compute.compute_task_def['deadline']
     else:
-        validate_golem_message_task_to_compute(client_message.subtask_results_rejected.report_computed_task.task_to_compute)
-        client_message_subtask_id = client_message.subtask_results_rejected.report_computed_task.task_to_compute.compute_task_def['subtask_id']
+        task_to_compute           = client_message.subtask_results_rejected.report_computed_task.task_to_compute
         report_computed_task      = client_message.subtask_results_rejected.report_computed_task
         subtask_results_accepted  = None
         subtask_results_rejected  = client_message.subtask_results_rejected
         state                     = Subtask.SubtaskState.REJECTED
         response_type             = PendingResponse.ResponseType.SubtaskResultsRejected
-        provider_public_key       = client_message.subtask_results_rejected.report_computed_task.task_to_compute.provider_public_key
-        computation_deadline      = client_message.subtask_results_rejected.report_computed_task.task_to_compute.compute_task_def['deadline']
+
+    validate_golem_message_task_to_compute(task_to_compute)
+    validate_golem_message_signed_with_key(
+        task_to_compute,
+        task_to_compute.provider_public_key,
+    )
 
     try:
         subtask = Subtask.objects.get(
-            subtask_id = client_message_subtask_id,
+            subtask_id = task_to_compute.compute_task_def['subtask_id'],
         )
     except Subtask.DoesNotExist:
         raise Http400("'ForceSubtaskResults' for this subtask has not been initiated yet. Can't accept your '{}'.".format(client_message.TYPE))
@@ -409,8 +431,13 @@ def handle_send_force_subtask_results_response(request, client_message):
     if subtask.subtask_results_accepted_id is not None or subtask.subtask_results_rejected_id is not None:
         raise Http400("This subtask has been resolved already.")
 
+    validate_list_of_identical_task_to_compute([
+        task_to_compute,
+        deserialize_message(subtask.task_to_compute.data.tobytes()),
+    ])
+
     acceptance_deadline = (
-        computation_deadline +
+        task_to_compute.compute_task_def['deadline'] +
         settings.SUBTASK_VERIFICATION_TIME +
         settings.FORCE_ACCEPTANCE_TIME +
         settings.CONCENT_MESSAGING_TIME
@@ -455,6 +482,13 @@ def handle_send_force_payment(request, client_message: message.concents.ForcePay
         return message.concents.ServiceRefused(
             reason = message.concents.ServiceRefused.REASON.InvalidRequest
         )
+
+    for subtask_results_accepted in client_message.subtask_results_accepted_list:
+        validate_golem_message_signed_with_key(
+            subtask_results_accepted.task_to_compute,
+            subtask_results_accepted.task_to_compute.provider_public_key,
+        )
+
     requestor_ethereum_public_key = client_message.subtask_results_accepted_list[0].task_to_compute.requestor_ethereum_public_key
 
     # Concent defines time T0 equal to oldest payment_ts from passed SubtaskResultAccepted messages from subtask_results_accepted_list.
@@ -902,6 +936,11 @@ def store_or_update_subtask(
         subtask = None
 
     if subtask is not None:
+        if task_to_compute is not None and subtask.task_to_compute is not None:
+            validate_list_of_identical_task_to_compute([
+                task_to_compute,
+                deserialize_message(subtask.task_to_compute.data.tobytes()),
+            ])
         subtask = update_subtask(
             subtask                         = subtask,
             state                           = state,

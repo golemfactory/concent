@@ -130,6 +130,7 @@ def create_file_transfer_token(
         storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
         authorized_client_public_key    = encoded_client_public_key,
         operation                       = operation,
+        subtask_id                      = report_computed_task.task_to_compute.compute_task_def['subtask_id']
     )
     file_transfer_token.files = [message.concents.FileTransferToken.FileInfo()]
     file_transfer_token.files[0]['path']      = file_path

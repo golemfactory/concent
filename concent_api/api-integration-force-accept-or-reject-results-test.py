@@ -15,7 +15,7 @@ from utils.testing_helpers  import generate_ecc_key_pair
 from api_testing_helpers    import api_request
 from api_testing_helpers    import timestamp_to_isoformat
 
-from get_protocol_constants import get_protocol_constants
+from protocol_constants import get_protocol_constants
 
 import requests
 

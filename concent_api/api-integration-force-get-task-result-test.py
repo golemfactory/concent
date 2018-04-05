@@ -18,7 +18,7 @@ from api_testing_helpers    import timestamp_to_isoformat
 
 from freezegun              import freeze_time
 
-from get_protocol_constants import get_protocol_constants
+from protocol_constants import get_protocol_constants
 
 import requests
 

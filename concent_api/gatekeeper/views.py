@@ -119,6 +119,10 @@ def parse_headers(request: WSGIRequest, path_to_file: str) -> Union[FileTransfer
     )
 
     # Check ConcentFileTransferToken each field:
+    # -SIGNATURE
+    if not isinstance(loaded_golem_message.sig, bytes):
+        logger.info(f'FileTransferToken with subtask_id {loaded_golem_message.subtask_id}, has empty signature -- CLIENT PUBLIC KEY: {client_public_key}')
+        return gatekeeper_access_denied_response('Empty signature field.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
     # -DEADLINE
     if not isinstance(loaded_golem_message.token_expiration_deadline, int):
         return gatekeeper_access_denied_response('Wrong type of token_expiration_deadline variable.', path_to_file, loaded_golem_message.subtask_id, client_public_key)

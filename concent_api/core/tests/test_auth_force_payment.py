@@ -45,7 +45,6 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 10:00:00",
                     deadline                        = "2018-02-05 10:00:10",
                     task_id                         = '2',
-                    requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
                 )
             ),
@@ -56,7 +55,6 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
                     task_id                         = '3',
-                    requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
                 )
             )

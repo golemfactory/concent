@@ -62,7 +62,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 10:00:00",
                     deadline                        = "2018-02-05 10:00:10",
                     task_id                         = '2',
-                    requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
                 )
             ),
@@ -73,7 +72,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
                     task_id                         = '3',
-                    requestor_public_key            = self._get_encoded_requestor_different_public_key(),
+                    requestor_public_key            = self.DIFFERENT_REQUESTOR_PUBLIC_KEY,
                     requestor_ethereum_public_key   = None,
                 )
             )
@@ -117,7 +116,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 10:00:00",
                     deadline                        = "2018-02-05 10:00:10",
                     task_id                         = '2',
-                    requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
                 )
             ),
@@ -128,7 +126,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
                     task_id                         = '3',
-                    requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_different_public_key(),
                 )
             )
@@ -172,7 +169,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 10:00:00",
                     deadline                        = "2018-02-05 10:00:10",
                     task_id                         = '2',
-                    requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
                 )
             ),
@@ -183,7 +179,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
                     task_id                         = '3',
-                    requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
                 )
             )
@@ -229,7 +224,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 10:00:00",
                     deadline                        = "2018-02-05 10:00:10",
                     task_id                         = '2',
-                    requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
                 )
             ),
@@ -240,7 +234,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
                     task_id                         = '3',
-                    requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
                 )
             )
@@ -286,7 +279,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 10:00:00",
                     deadline                        = "2018-02-05 10:00:10",
                     task_id                         = '2',
-                    requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
                 )
             ),
@@ -297,7 +289,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
                     task_id                         = '3',
-                    requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
                 )
             )
@@ -344,7 +335,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 10:00:00",
                     deadline                        = "2018-02-05 10:00:10",
                     task_id                         = '2',
-                    requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
                 )
             ),
@@ -355,7 +345,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
                     task_id                         = '3',
-                    requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
                 )
             )
@@ -428,7 +417,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 timestamp                       = "2018-02-05 10:00:00",
                 deadline                        = "2018-02-05 10:00:10",
                 task_id                         = '2',
-                requestor_public_key            = self._get_encoded_requestor_public_key(),
                 requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
             )
         )
@@ -500,7 +488,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 10:00:00",
                     deadline                        = "2018-02-05 10:00:10",
                     task_id                         = '2',
-                    requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
                 )
             ),
@@ -511,7 +498,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
                     task_id                         = '3',
-                    requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = '',
                 )
             )
@@ -559,7 +545,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     deadline                        = "2018-02-05 10:00:10",
                     task_id                         = '2',
                     subtask_id                      = '4',
-                    requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
                 )
             ),
@@ -571,7 +556,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     deadline                        = "2018-02-05 9:00:10",
                     task_id                         = '3',
                     subtask_id                      = '4',
-                    requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
                 )
             )
@@ -622,7 +606,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 10:00:00",
                     deadline                        = "2018-02-05 10:00:10",
                     task_id                         = '2',
-                    requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
                 )
             ),
@@ -633,7 +616,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
                     task_id                         = '3',
-                    requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
                 )
             )
@@ -707,7 +689,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 10:00:00",
                     deadline                        = "2018-02-05 10:00:10",
                     task_id                         = '2',
-                    requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
                 )
             ),
@@ -718,7 +699,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
                     task_id                         = '3',
-                    requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
                 )
             )

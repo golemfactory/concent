@@ -30,26 +30,22 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.compute_task_def['task_id']    = '1'
         self.compute_task_def['subtask_id'] = '8'
         self.compute_task_def['deadline']   = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
-        with freeze_time("2017-12-01 10:00:00"):
-            self.task_to_compute = message.TaskToCompute(
-                compute_task_def     = self.compute_task_def,
-                provider_public_key  = self.PROVIDER_PUBLIC_KEY,
-                requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
-                price=0,
-            )
 
-        # sign task_to_compute message with PROVIDER sig
-        self.serialized_task_to_compute   = dump(self.task_to_compute, self.PROVIDER_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY)
-        self.deserialized_task_to_compute = load(self.serialized_task_to_compute, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
+        with freeze_time("2017-12-01 10:00:00"):
+            self.deserialized_task_to_compute = self._get_deserialized_task_to_compute(
+                compute_task_def      = self.compute_task_def,
+                provider_public_key   = self.PROVIDER_PUBLIC_KEY,
+                requestor_public_key  = self.REQUESTOR_PUBLIC_KEY,
+                sign_with_private_key = self.PROVIDER_PRIVATE_KEY,
+            )
 
         with freeze_time("2017-12-01 10:59:00"):
             self.report_computed_task = message.tasks.ReportComputedTask(
                 task_to_compute = self.deserialized_task_to_compute
             )
-        with freeze_time("2017-12-01 10:59:00"):
             self.force_report_computed_task = message.ForceReportComputedTask()
-        self.force_report_computed_task.report_computed_task = self.report_computed_task
 
+        self.force_report_computed_task.report_computed_task = self.report_computed_task
         self.serialized_force_report_computed_task = dump(self.force_report_computed_task, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
     def test_provider_forces_computed_task_report_and_requestor_sends_acknowledgement_should_work_only_with_correct_keys(self):
@@ -151,7 +147,17 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   self.force_report_computed_task.report_computed_task.task_to_compute.timestamp)     # pylint: disable=no-member
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             self.force_report_computed_task.report_computed_task.task_to_compute)               # pylint: disable=no-member
 
-        # STEP 4: Requestor do not accepts computed task via Concent with different or mixed key
+        # STEP 4:
+        # 4.1. TaskToCompute is send signed with different key, request is rejected with proper error message.
+        # 4.2. TaskToCompute is send with different requestor public key, request is rejected with proper error message.
+        # 4.3. TaskToCompute is send with different data, request is rejected with proper error message.
+
+        # 4.1.
+        self.deserialized_task_to_compute.sig = None
+        task_to_compute = self._sign_message(
+            self.deserialized_task_to_compute,
+            self.DIFFERENT_PROVIDER_PRIVATE_KEY,
+        )
 
         with freeze_time("2017-12-01 11:00:05"):
             ack_report_computed_task = message.AckReportComputedTask(
@@ -166,22 +172,90 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.DIFFERENT_REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
-        self.assertEqual(response.status_code,        400)
+        self._test_400_response(
+            response,
+            error_message='There was an exception when validating if golem_message {} is signed with public key {}'.format(
+                message.TaskToCompute.TYPE,
+                self.PROVIDER_PUBLIC_KEY,
+            )
+        )
+
+        # 4.2.
+        task_to_compute.sig = None
+        task_to_compute.requestor_public_key = self.DIFFERENT_REQUESTOR_PUBLIC_KEY
+        task_to_compute = self._sign_message(
+            task_to_compute,
+            self.PROVIDER_PRIVATE_KEY,
+        )
+
+        with freeze_time("2017-12-01 11:00:05"):
+            ack_report_computed_task = message.AckReportComputedTask(
+                report_computed_task = message.ReportComputedTask(
+                    task_to_compute = task_to_compute,
+                )
+            )
+        serialized_ack_report_computed_task = dump(ack_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
-        self.assertEqual(response.status_code,        400)
+        self._test_400_response(
+            response,
+            error_message = "Subtask requestor key does not match current client key. Can't accept your 'AckReportComputedTask'."
+        )
+
+        # 4.3.
+        task_to_compute.sig = None
+        task_to_compute.requestor_public_key = self.REQUESTOR_PUBLIC_KEY
+        task_to_compute.provider_id = 'different_id'
+        task_to_compute = self._sign_message(
+            task_to_compute,
+            self.PROVIDER_PRIVATE_KEY,
+        )
+
+        with freeze_time("2017-12-01 11:00:05"):
+            ack_report_computed_task = message.AckReportComputedTask(
+                report_computed_task=message.ReportComputedTask(
+                    task_to_compute=task_to_compute,
+                )
+            )
+        serialized_ack_report_computed_task = dump(ack_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+
+        with freeze_time("2017-12-01 11:00:05"):
+            response = self.client.post(
+                reverse('core:send'),
+                data                           = serialized_ack_report_computed_task,
+                content_type                   = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            )
+
+        self._test_400_response(
+            response,
+            error_message = 'TaskToCompute messages are not identical. '
+                'There is a difference between messages with index 0 on passed list and with index {}'
+                'The difference is on field {}: {} is not equal {}'.format(
+                    1,
+                    'provider_id',
+                    'different_id',
+                    'None'
+                )
+        )
 
         # STEP 5: Requestor accepts computed task via Concent with correct key
+        self.deserialized_task_to_compute.sig = None
+        self.deserialized_task_to_compute.provider_id = None
+        self.deserialized_task_to_compute = self._sign_message(
+            self.deserialized_task_to_compute,
+            self.PROVIDER_PRIVATE_KEY,
+        )
 
         with freeze_time("2017-12-01 11:00:05"):
             ack_report_computed_task = message.AckReportComputedTask(
@@ -395,23 +469,31 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   force_report_computed_task.report_computed_task.task_to_compute.timestamp)  # pylint: disable=no-member
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             force_report_computed_task.report_computed_task.task_to_compute)            # pylint: disable=no-member
 
-        # STEP 4: Requestor do not rejects computed task due to CannotComputeTask or TaskFailure with different or mixed key
+        # STEP 4:
+        # 4.1. TaskToCompute is send signed with different key, request is rejected with proper error message.
+        # 4.2. TaskToCompute is send with different requestor public key, request is rejected with proper error message.
+        # 4.3. TaskToCompute is send with different data, request is rejected with proper error message.
 
-        with freeze_time("2017-12-01 10:30:00"):
-            cannot_compute_task = message.CannotComputeTask()
-        cannot_compute_task.task_to_compute                  = message.TaskToCompute(
-            provider_public_key = self.PROVIDER_PUBLIC_KEY,
-            price=0,
+        # 4.1.
+        self.deserialized_task_to_compute.sig = None
+        task_to_compute = self._sign_message(
+            self.deserialized_task_to_compute,
+            self.DIFFERENT_PROVIDER_PRIVATE_KEY,
         )
-        cannot_compute_task.task_to_compute.compute_task_def = compute_task_def
-        cannot_compute_task.reason                           = message.CannotComputeTask.REASON.WrongKey
+
+        with freeze_time("2017-12-01 10:00:00"):
+            cannot_compute_task = message.CannotComputeTask()
+        cannot_compute_task.task_to_compute = task_to_compute
+        cannot_compute_task.reason = message.CannotComputeTask.REASON.WrongKey
 
         serialized_cannot_compute_task   = dump(cannot_compute_task,            self.PROVIDER_PRIVATE_KEY,  self.REQUESTOR_PUBLIC_KEY)
         deserialized_cannot_compute_task = load(serialized_cannot_compute_task, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
 
         with freeze_time("2017-12-01 11:00:05"):
-            reject_report_computed_task = message.RejectReportComputedTask()
-        reject_report_computed_task.cannot_compute_task = deserialized_cannot_compute_task
+            reject_report_computed_task = message.RejectReportComputedTask(
+                cannot_compute_task = deserialized_cannot_compute_task,
+                reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
+            )
 
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
@@ -420,20 +502,96 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.DIFFERENT_REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
-        self.assertEqual(response.status_code,        400)
+        self._test_400_response(
+            response,
+            error_message='There was an exception when validating if golem_message {} is signed with public key {}'.format(
+                message.TaskToCompute.TYPE,
+                self.PROVIDER_PUBLIC_KEY,
+            )
+        )
+
+        # 4.2.
+        task_to_compute.sig = None
+        task_to_compute.requestor_public_key = self.DIFFERENT_REQUESTOR_PUBLIC_KEY
+        task_to_compute = self._sign_message(
+            task_to_compute,
+            self.PROVIDER_PRIVATE_KEY,
+        )
+
+        with freeze_time("2017-12-01 10:00:00"):
+            cannot_compute_task = message.CannotComputeTask()
+        cannot_compute_task.task_to_compute = task_to_compute
+        cannot_compute_task.reason = message.CannotComputeTask.REASON.WrongKey
+
+        serialized_cannot_compute_task   = dump(cannot_compute_task,            self.PROVIDER_PRIVATE_KEY,  self.REQUESTOR_PUBLIC_KEY)
+        deserialized_cannot_compute_task = load(serialized_cannot_compute_task, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
+
+        with freeze_time("2017-12-01 11:00:05"):
+            reject_report_computed_task = message.RejectReportComputedTask(
+                cannot_compute_task = deserialized_cannot_compute_task,
+                reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
+            )
+        serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
-        self.assertEqual(response.status_code,        400)
+        self._test_400_response(
+            response,
+            error_message = "Subtask requestor key does not match current client key. Can't accept your 'RejectReportComputedTask'."
+        )
+
+        # 4.3.
+        task_to_compute.sig = None
+        task_to_compute.requestor_public_key = self.REQUESTOR_PUBLIC_KEY
+        task_to_compute.provider_id = 'different_id'
+        task_to_compute = self._sign_message(
+            task_to_compute,
+            self.PROVIDER_PRIVATE_KEY,
+        )
+
+        with freeze_time("2017-12-01 10:00:00"):
+            cannot_compute_task = message.CannotComputeTask()
+        cannot_compute_task.task_to_compute = task_to_compute
+        cannot_compute_task.reason = message.CannotComputeTask.REASON.WrongKey
+
+        serialized_cannot_compute_task   = dump(cannot_compute_task,            self.PROVIDER_PRIVATE_KEY,  self.REQUESTOR_PUBLIC_KEY)
+        deserialized_cannot_compute_task = load(serialized_cannot_compute_task, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
+
+        with freeze_time("2017-12-01 11:00:05"):
+            reject_report_computed_task = message.RejectReportComputedTask(
+                cannot_compute_task = deserialized_cannot_compute_task,
+                reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
+            )
+        serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+
+        with freeze_time("2017-12-01 11:00:05"):
+            response = self.client.post(
+                reverse('core:send'),
+                data                           = serialized_reject_report_computed_task,
+                content_type                   = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            )
+
+        self._test_400_response(
+            response,
+            error_message = 'TaskToCompute messages are not identical. '
+                'There is a difference between messages with index 0 on passed list and with index {}'
+                'The difference is on field {}: {} is not equal {}'.format(
+                    1,
+                    'provider_id',
+                    'different_id',
+                    'None'
+                )
+        )
 
         self._test_subtask_state(
             task_id                  = '1',
@@ -446,6 +604,27 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # STEP 5: Requestor rejects computed task due to CannotComputeTask or TaskFailure with correct key
+        self.deserialized_task_to_compute.sig = None
+        self.deserialized_task_to_compute.provider_id = None
+        self.deserialized_task_to_compute = self._sign_message(
+            self.deserialized_task_to_compute,
+            self.PROVIDER_PRIVATE_KEY,
+        )
+
+        with freeze_time("2017-12-01 10:00:00"):
+            cannot_compute_task = message.CannotComputeTask()
+        cannot_compute_task.task_to_compute = self.deserialized_task_to_compute
+        cannot_compute_task.reason = message.CannotComputeTask.REASON.WrongKey
+
+        serialized_cannot_compute_task   = dump(cannot_compute_task,            self.PROVIDER_PRIVATE_KEY,  self.REQUESTOR_PUBLIC_KEY)
+        deserialized_cannot_compute_task = load(serialized_cannot_compute_task, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
+
+        with freeze_time("2017-12-01 11:00:05"):
+            reject_report_computed_task = message.RejectReportComputedTask(
+                cannot_compute_task = deserialized_cannot_compute_task,
+                reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
+            )
+        serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
@@ -654,16 +833,22 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   force_report_computed_task.report_computed_task.task_to_compute.timestamp)  # pylint: disable=no-member
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             force_report_computed_task.report_computed_task.task_to_compute)            # pylint: disable=no-member
 
-        # STEP 4: Requestor do not rejects computed task due to CannotComputeTask or TaskFailure with different or mixed key
+        # STEP 4:
+        # 4.1. TaskToCompute is send signed with different key, request is rejected with proper error message.
+        # 4.2. TaskToCompute is send with different requestor public key, request is rejected with proper error message.
+        # 4.3. TaskToCompute is send with different data, request is rejected with proper error message.
+
+        # 4.1.
+        self.deserialized_task_to_compute.sig = None
+        task_to_compute = self._sign_message(
+            self.deserialized_task_to_compute,
+            self.DIFFERENT_PROVIDER_PRIVATE_KEY,
+        )
 
         with freeze_time("2017-12-01 10:00:00"):
             cannot_compute_task = message.CannotComputeTask()
-        cannot_compute_task.task_to_compute                  = message.TaskToCompute(
-            provider_public_key = self.PROVIDER_PUBLIC_KEY,
-            price=0,
-        )
-        cannot_compute_task.task_to_compute.compute_task_def = compute_task_def
-        cannot_compute_task.reason                           = message.CannotComputeTask.REASON.WrongCTD
+        cannot_compute_task.task_to_compute = task_to_compute
+        cannot_compute_task.reason = message.CannotComputeTask.REASON.WrongCTD
 
         serialized_cannot_compute_task   = dump(cannot_compute_task,            self.PROVIDER_PRIVATE_KEY,  self.REQUESTOR_PUBLIC_KEY)
         deserialized_cannot_compute_task = load(serialized_cannot_compute_task, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
@@ -680,20 +865,96 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.DIFFERENT_REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
-        self.assertEqual(response.status_code,        400)
+        self._test_400_response(
+            response,
+            error_message='There was an exception when validating if golem_message {} is signed with public key {}'.format(
+                message.TaskToCompute.TYPE,
+                self.PROVIDER_PUBLIC_KEY,
+            )
+        )
+
+        # 4.2.
+        task_to_compute.sig = None
+        task_to_compute.requestor_public_key = self.DIFFERENT_REQUESTOR_PUBLIC_KEY
+        task_to_compute = self._sign_message(
+            task_to_compute,
+            self.PROVIDER_PRIVATE_KEY,
+        )
+
+        with freeze_time("2017-12-01 10:00:00"):
+            cannot_compute_task = message.CannotComputeTask()
+        cannot_compute_task.task_to_compute = task_to_compute
+        cannot_compute_task.reason = message.CannotComputeTask.REASON.WrongCTD
+
+        serialized_cannot_compute_task   = dump(cannot_compute_task,            self.PROVIDER_PRIVATE_KEY,  self.REQUESTOR_PUBLIC_KEY)
+        deserialized_cannot_compute_task = load(serialized_cannot_compute_task, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
+
+        with freeze_time("2017-12-01 11:00:05"):
+            reject_report_computed_task = message.RejectReportComputedTask(
+                cannot_compute_task = deserialized_cannot_compute_task,
+                reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
+            )
+        serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
-        self.assertEqual(response.status_code,        400)
+        self._test_400_response(
+            response,
+            error_message = "Subtask requestor key does not match current client key. Can't accept your 'RejectReportComputedTask'."
+        )
+
+        # 4.3.
+        task_to_compute.sig = None
+        task_to_compute.requestor_public_key = self.REQUESTOR_PUBLIC_KEY
+        task_to_compute.provider_id = 'different_id'
+        task_to_compute = self._sign_message(
+            task_to_compute,
+            self.PROVIDER_PRIVATE_KEY,
+        )
+
+        with freeze_time("2017-12-01 10:00:00"):
+            cannot_compute_task = message.CannotComputeTask()
+        cannot_compute_task.task_to_compute = task_to_compute
+        cannot_compute_task.reason = message.CannotComputeTask.REASON.WrongCTD
+
+        serialized_cannot_compute_task   = dump(cannot_compute_task,            self.PROVIDER_PRIVATE_KEY,  self.REQUESTOR_PUBLIC_KEY)
+        deserialized_cannot_compute_task = load(serialized_cannot_compute_task, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
+
+        with freeze_time("2017-12-01 11:00:05"):
+            reject_report_computed_task = message.RejectReportComputedTask(
+                cannot_compute_task = deserialized_cannot_compute_task,
+                reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
+            )
+        serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+
+        with freeze_time("2017-12-01 11:00:05"):
+            response = self.client.post(
+                reverse('core:send'),
+                data                           = serialized_reject_report_computed_task,
+                content_type                   = 'application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            )
+
+        self._test_400_response(
+            response,
+            error_message = 'TaskToCompute messages are not identical. '
+                'There is a difference between messages with index 0 on passed list and with index {}'
+                'The difference is on field {}: {} is not equal {}'.format(
+                    1,
+                    'provider_id',
+                    'different_id',
+                    'None'
+                )
+        )
 
         self._test_subtask_state(
             task_id                  = '1',
@@ -706,6 +967,27 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # STEP 5: Requestor rejects computed task due to CannotComputeTask or TaskFailure with correct key
+        self.deserialized_task_to_compute.sig = None
+        self.deserialized_task_to_compute.provider_id = None
+        self.deserialized_task_to_compute = self._sign_message(
+            self.deserialized_task_to_compute,
+            self.PROVIDER_PRIVATE_KEY,
+        )
+
+        with freeze_time("2017-12-01 10:00:00"):
+            cannot_compute_task = message.CannotComputeTask()
+        cannot_compute_task.task_to_compute = self.deserialized_task_to_compute
+        cannot_compute_task.reason = message.CannotComputeTask.REASON.WrongCTD
+
+        serialized_cannot_compute_task   = dump(cannot_compute_task,            self.PROVIDER_PRIVATE_KEY,  self.REQUESTOR_PUBLIC_KEY)
+        deserialized_cannot_compute_task = load(serialized_cannot_compute_task, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
+
+        with freeze_time("2017-12-01 11:00:05"):
+            reject_report_computed_task = message.RejectReportComputedTask(
+                cannot_compute_task = deserialized_cannot_compute_task,
+                reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
+            )
+        serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(

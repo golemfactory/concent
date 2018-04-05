@@ -20,25 +20,3 @@ class AddSignatureToMessage(TestCase):
 
         self.assertIsNot(ping_message.sig, None)
         self.assertIsInstance(ping_message.sig, bytes)
-
-    def test_empty_arguments_to_add_signature(self):
-
-        with self.assertRaises(AssertionError):
-            sign_message(self.ping_message, CONCENT_PRIVATE_KEY, None)
-
-        with self.assertRaises(AssertionError):
-            sign_message(self.ping_message, CONCENT_PUBLIC_KEY, None)
-
-        with self.assertRaises(AssertionError):
-            sign_message(CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY, None)
-
-        with self.assertRaises(AssertionError):
-            sign_message(None, None, None)
-
-    def test_wrong_keys_to_add_signature(self):
-
-        with self.assertRaises(AssertionError):
-            sign_message(self.ping_message, CONCENT_PRIVATE_KEY, CONCENT_PRIVATE_KEY)
-
-        with self.assertRaises(AssertionError):
-            sign_message(self.ping_message, CONCENT_PUBLIC_KEY, CONCENT_PUBLIC_KEY)

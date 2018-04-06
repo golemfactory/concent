@@ -320,7 +320,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:12"):
                 response_2 = self.client.post(
                     reverse('core:receive'),
-                    data                           = self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
+                    data                           = self._create_provider_auth_message(),
                     content_type                   = 'application/octet-stream',
                 )
 
@@ -366,7 +366,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:21"):
                 response_3 = self.client.post(
                     reverse('core:receive'),
-                    data                           = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                    data                           = self._create_requestor_auth_message(),
                     content_type                   = 'application/octet-stream',
                 )
 
@@ -457,7 +457,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:12"):
                 response_2 = self.client.post(
                     reverse('core:receive'),
-                    data                           = self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
+                    data                           = self._create_provider_auth_message(),
                     content_type                   = 'application/octet-stream',
                 )
 
@@ -478,7 +478,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:21"):
                 response_3 = self.client.post(
                     reverse('core:receive'),
-                    data                           = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                    data                           = self._create_requestor_auth_message(),
                     content_type                   = 'application/octet-stream',
                 )
 
@@ -575,7 +575,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:06"):
                 response_2 = self.client.post(
                     reverse('core:receive'),
-                    data                           = self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
+                    data                           = self._create_provider_auth_message(),
                     content_type                   = 'application/octet-stream',
                 )
 
@@ -621,7 +621,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:21"):
                 response_3 = self.client.post(
                     reverse('core:receive'),
-                    data                           = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                    data                           = self._create_requestor_auth_message(),
                     content_type                   = 'application/octet-stream',
                 )
 
@@ -722,7 +722,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:12"):
                 response_2 = self.client.post(
                     reverse('core:receive'),
-                    data                           = self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
+                    data                           = self._create_provider_auth_message(),
                     content_type                   = 'application/octet-stream',
                 )
 
@@ -768,7 +768,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:21"):
                 response_3 = self.client.post(
                     reverse('core:receive'),
-                    data         = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                    data         = self._create_requestor_auth_message(),
                     content_type = 'application/octet-stream',
                 )
 
@@ -877,7 +877,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:12"):
                 response_2 = self.client.post(
                     reverse('core:receive'),
-                    data                           = self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
+                    data                           = self._create_provider_auth_message(),
                     content_type                   = 'application/octet-stream',
                 )
 
@@ -917,7 +917,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2017-12-01 11:00:21"):
                 response_3 = self.client.post(
                     reverse('core:receive'),
-                    data                           = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                    data                           = self._create_requestor_auth_message(),
                     content_type                   = 'application/octet-stream',
                 )
 

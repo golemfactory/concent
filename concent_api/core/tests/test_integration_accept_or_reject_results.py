@@ -327,7 +327,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 10:00:29"):
             response_2 = self.client.post(
                 reverse('core:receive'),
-                data                            = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
 
@@ -422,7 +422,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 11:00:00"):
             response_2 = self.client.post(
                 reverse('core:receive'),
-                data                            = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
         deserialized_compute_task_def = self._get_deserialized_compute_task_def(
@@ -458,7 +458,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 11:00:01"):
             response = self.client.post(
                 reverse('core:receive'),
-                data                            = self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
+                data                            = self._create_provider_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
         self._test_response(
@@ -476,7 +476,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 11:00:01"):
             response = self.client.post(
                 reverse('core:receive_out_of_band'),
-                data                            = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
         self._test_response(
@@ -563,7 +563,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 10:00:44"):
             response_2 = self.client.post(
                 reverse('core:receive'),
-                data                            = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
 
@@ -636,7 +636,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 11:00:02"):
             response_3 = self.client.post(
                 reverse('core:receive'),
-                data                            = self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
+                data                            = self._create_provider_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
 
@@ -727,7 +727,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 10:00:44"):
             response_2 = self.client.post(
                 reverse('core:receive'),
-                data                            = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
 
@@ -801,7 +801,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 11:00:02"):
             response_3 = self.client.post(
                 reverse('core:receive'),
-                data                            = self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
+                data                            = self._create_provider_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
 
@@ -1271,7 +1271,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 10:00:31"):
             response_2 = self.client.post(
                 reverse('core:receive'),
-                data                            = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
         deserialized_compute_task_def = self._get_deserialized_compute_task_def(
@@ -1296,7 +1296,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2018-02-05 10:00:51"):
                 response_3a = self.client.post(
                     reverse('core:receive'),
-                    data                            = self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
+                    data                            = self._create_provider_auth_message(),
                     content_type                    = 'application/octet-stream',
                 )
         self._test_response(
@@ -1332,7 +1332,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2018-02-05 10:00:52"):
                 response_3b = self.client.post(
                     reverse('core:receive'),
-                    data                            = self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
+                    data                            = self._create_provider_auth_message(),
                     content_type                    = 'application/octet-stream',
                 )
         self._test_204_response(response_3b)
@@ -1341,7 +1341,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 10:00:51"):
             response_4a = self.client.post(
                 reverse('core:receive_out_of_band'),
-                data                            = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
         self._test_response(
@@ -1359,7 +1359,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 10:00:52"):
             response_4b = self.client.post(
                 reverse('core:receive_out_of_band'),
-                data                            = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
         self._test_204_response(response_4b)
@@ -1436,7 +1436,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 10:00:31"):
             response_2 = self.client.post(
                 reverse('core:receive'),
-                data                            = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
         deserialized_compute_task_def = self._get_deserialized_compute_task_def(
@@ -1460,7 +1460,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 10:00:51"):
             response_3 = self.client.post(
                 reverse('core:receive_out_of_band'),
-                data                            = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
         self._test_response(
@@ -1495,7 +1495,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2018-02-05 10:00:51"):
                 response_4 = self.client.post(
                     reverse('core:receive'),
-                    data                            = self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
+                    data                            = self._create_provider_auth_message(),
                     content_type                    = 'application/octet-stream',
                 )
         self._test_response(
@@ -1513,7 +1513,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 10:00:52"):
             response_5 = self.client.post(
                 reverse('core:receive_out_of_band'),
-                data                            = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
         self._test_204_response(response_5)

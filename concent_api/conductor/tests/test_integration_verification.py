@@ -22,24 +22,25 @@ class ConductorVerificationIntegrationTest(TestCase):
         self.compute_task_def = message.ComputeTaskDef()
         self.compute_task_def['subtask_id'] = 'abc'
 
-        self.verification_request = None
-        self.upload_request = None
-
-    def _prepare_verification_request(self):
-        self.verification_request = VerificationRequest(
+    @staticmethod
+    def _prepare_verification_request():
+        verification_request = VerificationRequest(
             subtask_id='1'
         )
-        self.verification_request.full_clean()
-        self.verification_request.save()
+        verification_request.full_clean()
+        verification_request.save()
+        return verification_request
 
-    def _prepare_upload_request(self):
-        self.upload_request = UploadRequest(
-            path=self.file_path,
+    @staticmethod
+    def _prepare_upload_request(path, verification_request=None):
+        upload_request = UploadRequest(
+            path=path,
         )
-        if self.verification_request is not None:
-            self.upload_request.verification_request = self.verification_request
-        self.upload_request.full_clean()
-        self.upload_request.save()
+        if verification_request is not None:
+            upload_request.verification_request = verification_request
+        upload_request.full_clean()
+        upload_request.save()
+        return upload_request
 
     def test_conductor_should_return_404_when_file_path_parameter_not_matching_url_pattern_is_used(self):
         response = self.client.get(
@@ -68,16 +69,11 @@ class ConductorVerificationIntegrationTest(TestCase):
         self.assertEqual(upload_report.upload_request, None)
 
     def test_conductor_should_create_upload_report_and_link_to_related_upload_request(self):
-        self._prepare_verification_request()
-        self._prepare_upload_request()
+        verification_request = self._prepare_verification_request()
+        upload_request_first = self._prepare_upload_request(self.file_path, verification_request)
 
         # Create second UploadRequest so view doesn't call verification_order_task.
-        upload_request_second = UploadRequest(
-            path                    =  'blender/result/ef0dc1/ef0dc1.aaa523.zip',
-            verification_request    = self.verification_request,
-        )
-        upload_request_second.full_clean()
-        upload_request_second.save()
+        self._prepare_upload_request('blender/result/ef0dc1/ef0dc1.aaa523.zip', verification_request)
 
         response = self.client.get(
             reverse(
@@ -94,17 +90,11 @@ class ConductorVerificationIntegrationTest(TestCase):
 
         upload_report = UploadReport.objects.first()
         self.assertEqual(upload_report.path,           self.file_path)
-        self.assertEqual(upload_report.upload_request, self.upload_request)
+        self.assertEqual(upload_report.upload_request, upload_request_first)
 
     def test_conductor_should_create_upload_report_and_do_not_link_to_unrelated_upload_request(self):
-        self._prepare_verification_request()
-
-        upload_request = UploadRequest(
-            path                    = 'blender/result/ef0dc1/ef0dc1.zzz523.arj',
-            verification_request    = self.verification_request,
-        )
-        upload_request.full_clean()
-        upload_request.save()
+        verification_request = self._prepare_verification_request()
+        self._prepare_upload_request('blender/result/ef0dc1/ef0dc1.zzz523.arj', verification_request)
 
         response = self.client.get(
             reverse(
@@ -124,8 +114,8 @@ class ConductorVerificationIntegrationTest(TestCase):
         self.assertEqual(upload_report.upload_request, None)
 
     def test_conductor_should_schedule_verification_order_task_if_all_related_upload_requests_have_reports(self):
-        self._prepare_verification_request()
-        self._prepare_upload_request()
+        verification_request = self._prepare_verification_request()
+        upload_request = self._prepare_upload_request(self.file_path, verification_request)
 
         with mock.patch('conductor.views.verification_order_task.delay') as mock_task:
             response = self.client.get(
@@ -143,7 +133,7 @@ class ConductorVerificationIntegrationTest(TestCase):
 
         upload_report = UploadReport.objects.first()
         self.assertEqual(upload_report.path,           self.file_path)
-        self.assertEqual(upload_report.upload_request, self.upload_request)
+        self.assertEqual(upload_report.upload_request, upload_request)
 
         mock_task.assert_called()
 

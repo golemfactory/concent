@@ -11,6 +11,7 @@ from django.utils           import timezone
 
 from freezegun              import freeze_time
 
+from golem_messages         import cryptography
 from golem_messages         import dump
 from golem_messages         import load
 from golem_messages         import message
@@ -618,8 +619,9 @@ class ConcentIntegrationTestCase(TestCase):
         self.assertEqual(Client.objects.count(), count)
 
     # TODO: Merge with '_sign_message' after authentication is merged
-    def _get_signature(self, golem_message, priv_key, pub_key):  # pylint: disable=no-self-use
+    def _add_signature_to_message(self, golem_message, priv_key):  # pylint: disable=no-self-use
         golem_message.sig = None
-        serialized_message = dump(golem_message, priv_key, pub_key)
-        loaded_message = load(serialized_message, priv_key, pub_key, check_time = False)
-        return loaded_message.sig
+        signature = functools.partial(cryptography.ecdsa_sign, priv_key)
+        golem_message = golem_message.serialize(sign_func = signature)
+        golem_message = message.Message.deserialize(golem_message, decrypt_func = None, check_time = False)
+        return golem_message.sig

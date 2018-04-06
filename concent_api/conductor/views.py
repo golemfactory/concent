@@ -1,5 +1,7 @@
 from django.http.response import HttpResponse
 
+from utils.helpers        import get_result_file_path
+from utils.helpers        import get_source_file_path
 from .models              import UploadReport
 from .models              import UploadRequest
 from .tasks               import verification_order_task
@@ -42,8 +44,14 @@ def report_upload(_request, file_path):
             working_directory   = upload_request.verification_request.working_directory,
             performance         = upload_request.verification_request.performance,
             docker_images       = upload_request.verification_request.docker_images,
-            source_file         = '??',  # TODO: What should be passed here ?
-            result_file         = '??',  # TODO: What should be passed here ?
+            source_file         = get_result_file_path(
+                upload_request.verification_request.task_id,
+                upload_request.verification_request.subtask_id,
+            ),
+            result_file         = get_source_file_path(
+                upload_request.verification_request.task_id,
+                upload_request.verification_request.subtask_id,
+            ),
         )
 
     return HttpResponse()

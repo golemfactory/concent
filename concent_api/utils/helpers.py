@@ -12,6 +12,7 @@ from golem_messages                 import message
 from golem_messages.datastructures  import FrozenDict
 from golem_messages.exceptions      import MessageError
 
+from core.constants                 import MESSAGE_TASK_ID_MAX_LENGTH
 from core.exceptions                import Http400
 
 
@@ -126,3 +127,21 @@ def sign_message(golem_message, priv_key):
     golem_message = golem_message.serialize(sign_func = signature)
     golem_message = deserialize_message(golem_message)
     return golem_message
+
+
+def get_result_file_path(task_id, subtask_id):
+    assert isinstance(task_id, str)
+    assert isinstance(subtask_id, str)
+    assert len(task_id) <= MESSAGE_TASK_ID_MAX_LENGTH
+    assert len(subtask_id) <= MESSAGE_TASK_ID_MAX_LENGTH
+
+    return 'blender/result/{}/{}.{}.zip'.format(task_id, task_id, subtask_id)
+
+
+def get_source_file_path(task_id, subtask_id):
+    assert isinstance(task_id, str)
+    assert isinstance(subtask_id, str)
+    assert len(task_id) <= MESSAGE_TASK_ID_MAX_LENGTH
+    assert len(subtask_id) <= MESSAGE_TASK_ID_MAX_LENGTH
+
+    return 'blender/source/{}/{}.{}.zip'.format(task_id, task_id, subtask_id)

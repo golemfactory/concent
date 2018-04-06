@@ -3,6 +3,8 @@ from mypy.types         import List
 
 from golem_messages     import message
 
+from utils.helpers      import get_result_file_path
+from utils.helpers      import get_source_file_path
 from .models            import VerificationRequest
 from .models            import UploadReport
 from .models            import UploadRequest
@@ -32,6 +34,7 @@ def verification_request_task(
 
     # The app creates a new instance of VerificationRequest.
     verification_request = VerificationRequest(
+        task_id             = compute_task_def['task_id'],
         subtask_id          = compute_task_def['subtask_id'],
         src_code            = compute_task_def['src_code'],
         extra_data          = compute_task_def['extra_data'],
@@ -73,6 +76,12 @@ def verification_request_task(
             working_directory   = verification_request.working_directory,
             performance         = verification_request.performance,
             docker_images       = verification_request.docker_images,
-            source_file         = '??',  # TODO: What should be passed here ?
-            result_file         = '??',  # TODO: What should be passed here ?
+            source_file         = get_result_file_path(
+                verification_request.task_id,
+                verification_request.subtask_id,
+            ),
+            result_file         = get_source_file_path(
+                verification_request.task_id,
+                verification_request.subtask_id,
+            ),
         )

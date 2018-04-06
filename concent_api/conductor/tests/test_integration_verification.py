@@ -6,6 +6,7 @@ from django.urls    import reverse
 
 from golem_messages import message
 
+from utils.helpers import get_result_file_path
 from ..models       import UploadReport
 from ..models       import UploadRequest
 from ..models       import VerificationRequest
@@ -17,15 +18,17 @@ class ConductorVerificationIntegrationTest(TestCase):
     multi_db = True
 
     def setUp(self):
-        self.file_path = 'blender/result/ef0dc1/ef0dc1.zzz523.zip'
+        self.file_path = get_result_file_path('ef0dc1', 'zzz523')
 
         self.compute_task_def = message.ComputeTaskDef()
-        self.compute_task_def['subtask_id'] = 'abc'
+        self.compute_task_def['task_id'] = 'ef0dc1'
+        self.compute_task_def['subtask_id'] = 'zzz523'
 
     @staticmethod
     def _prepare_verification_request():
         verification_request = VerificationRequest(
-            subtask_id='1'
+            task_id='1',
+            subtask_id='1',
         )
         verification_request.full_clean()
         verification_request.save()
@@ -139,8 +142,8 @@ class ConductorVerificationIntegrationTest(TestCase):
 
     def test_verification_request_task_should_create_verification_request_and_upload_requests(self):
         files = [
-            'blender/result/ef0dc1/ef0dc1.zzz523.zip',
-            'blender/result/ef0dc1/ef0dc1.aaa523.zip',
+            self.file_path,
+            get_result_file_path('ef0dc1', 'aaa523'),
         ]
 
         verification_request_task(
@@ -161,11 +164,11 @@ class ConductorVerificationIntegrationTest(TestCase):
 
     def test_verification_request_task_should_not_link_upload_requests_to_unrelated_upload_reports(self):
         files = [
-            'blender/result/ef0dc1/ef0dc1.zzz523.zip',
+            self.file_path
         ]
 
         upload_report = UploadReport(
-            path='blender/result/ef0dc1/ef0dc1.aaa523.zip',
+            path=get_result_file_path('ef0dc1', 'aaa523'),
         )
         upload_report.full_clean()
         upload_report.save()
@@ -192,7 +195,7 @@ class ConductorVerificationIntegrationTest(TestCase):
     @override_settings(CELERY_TASK_ALWAYS_EAGER = True)
     def test_verification_request_task_should_schedule_verification_order_task_if_all_related_upload_requests_have_reports(self):
         files = [
-            'blender/result/ef0dc1/ef0dc1.zzz523.zip',
+            self.file_path
         ]
 
         upload_report = UploadReport(

@@ -1,5 +1,4 @@
 from base64 import b64encode
-from datetime import datetime
 
 import mock
 from django.conf import settings
@@ -31,6 +30,10 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self.report_computed_task = self._create_report_computed_task()
 
     def test_that_concent_responds_with_service_refused_when_verification_for_this_subtask_done_before(self):
+        """
+        Provider -> Concent: SubtaskResultsVerify
+        Concent -> Provider: ServiceRefused (DuplicateRequest)
+        """
         # given
         (serialized_subtask_results_verify,
          subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify()
@@ -67,7 +70,11 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         )
         self._assert_stored_message_counter_not_increased()
 
-    def test_that_concent_reponds_with_insufficient_funds_when_requestor_doesnt_have_funds(self):
+    def test_that_concent_reponds_with_too_small_requestor_deposit_when_requestor_doesnt_have_funds(self):
+        """
+        Provider -> Concent: SubtaskResultsVerify
+        Concent -> Provider: ServiceRefused (TooSmallRequestorDeposit)
+        """
         # given
         (serialized_subtask_results_verify,
          subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify()
@@ -96,6 +103,10 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
     def test_that_concent_responds_with_service_refused_when_requestor_does_not_complain_about_verification(self):
+        """
+        Provider -> Concent: SubtaskResultsVerify
+        Concent -> Provider: ServiceRefused (InvalidRequest)
+        """
         # given
         (serialized_subtask_results_verify,
          subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify(
@@ -125,6 +136,10 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
     def test_that_concent_accepts_valid_request_and_sends_verification_order_to_work_queue(self):
+        """
+        Provider -> Concent: SubtaskResultsVerify
+        Concent -> Provider: AckSubtaskResultsVerify
+        """
         # given
         (serialized_subtask_results_verify,
          subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify()
@@ -179,17 +194,6 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self,
         reason_of_rejection=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative
     ):
-        subtask_results_verify, subtask_results_verify_time_str = self._create_subtask_results_verify(
-            reason_of_rejection)
-        serialized_subtask_results_verify = self._get_serialized_subtask_results_verify(
-            subtask_results_verify=subtask_results_verify
-        )
-        return serialized_subtask_results_verify, subtask_results_verify_time_str
-
-    def _create_subtask_results_verify(
-        self,
-        reason_of_rejection=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative
-    ):
         subtask_result_rejected_time_str = "2018-04-01 10:30:00"
         subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
             reason=reason_of_rejection,
@@ -200,7 +204,11 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         subtask_results_verify = self._get_deserialized_subtask_results_verify(
             timestamp=subtask_results_verify_time_str,
             subtask_results_rejected=subtask_results_rejected)
-        return subtask_results_verify, subtask_results_verify_time_str
+
+        serialized_subtask_results_verify = self._get_serialized_subtask_results_verify(
+            subtask_results_verify=subtask_results_verify
+        )
+        return serialized_subtask_results_verify, subtask_results_verify_time_str
 
     def _create_report_computed_task(self):
         time_str = "2018-04-01 10:00:00"
@@ -216,13 +224,3 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             task_to_compute=task_to_compute
         )
         return report_computed_task
-
-    def _add_time_offset_to_date(self, base_time, offset):
-        """
-        :param base_time: string format
-        :param offset: timestamp format
-        :return: new time in a string format
-        """
-        return datetime.fromtimestamp(self._parse_iso_date_to_timestamp(base_time) + offset).strftime(
-            '%Y-%m-%d %H:%M:%S'
-        )

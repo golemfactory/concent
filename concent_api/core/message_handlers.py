@@ -1050,13 +1050,17 @@ def handle_send_subtask_results_verify(
         compute_task_def['subtask_id'],
         'subtask_id'
     )
+    validate_golem_message_task_to_compute(report_computed_task.task_to_compute)
+
     client_public_key = decode_client_public_key(request)
     other_party_public_key = decode_other_party_public_key(request)
 
     if Subtask.objects.filter(
-        Q(subtask_id=compute_task_def['subtask_id']),
-        Q(state=Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER.name) |  # pylint: disable=no-member
-        Q(state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name),  # pylint: disable=no-member
+        subtask_id=compute_task_def['subtask_id'],
+        state__in=[
+            Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER.name,
+            Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name
+        ]
     ).exists():
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.DuplicateRequest,

@@ -9,8 +9,8 @@ from core.subtask_helpers           import update_timed_out_subtasks
 
 from utils                          import logging
 from utils.api_view                 import api_view
-from utils.client_auth              import client_auth
-from utils.message_handler          import message_handler
+from utils.decorators               import require_golem_auth_message
+from utils.decorators               import handle_errors_and_responses
 from utils.helpers                  import decode_client_public_key
 from .models                        import PendingResponse
 
@@ -32,8 +32,8 @@ def send(request, client_message):
     return handle_message(client_message, request)
 
 
-@client_auth
-@message_handler
+@require_golem_auth_message
+@handle_errors_and_responses
 @require_POST
 def receive(_request, message):
     update_timed_out_subtasks(
@@ -45,8 +45,8 @@ def receive(_request, message):
     )
 
 
-@client_auth
-@message_handler
+@require_golem_auth_message
+@handle_errors_and_responses
 @require_POST
 def receive_out_of_band(_request, message):
     update_timed_out_subtasks(

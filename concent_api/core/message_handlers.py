@@ -21,8 +21,15 @@ from core.models import PendingResponse
 from core.models import StoredMessage
 from core.models import Subtask
 from core.payments import base
+from core.queue_operations import send_verification_request
+from core.queue_operations import send_blender_verification_request
+from core.subtask_helpers import verify_message_subtask_results_accepted
+from core.transfer_operations import create_file_transfer_token
+from core.transfer_operations import store_pending_message
+from core.validation import validate_report_computed_task_time_window, validate_golem_message_subtask_results_rejected
 from core.validation import validate_golem_message_reject
 from core.validation import validate_id_value
+from golem_messages.message.tasks import SubtaskResultsRejected
 from core.validation import validate_task_to_compute
 from core.validation import validate_report_computed_task_time_window
 from core.validation import validate_list_of_identical_task_to_compute
@@ -1035,19 +1042,19 @@ def store_message(
 
 def handle_send_subtask_results_verify(
     request,
-    client_message: message.concents.SubtaskResultsVerify
+    subtask_results_verify: message.concents.SubtaskResultsVerify
 ):
-    compute_task_def_subtask_id = client_message.subtask_results_rejected.report_computed_task.task_to_compute.compute_task_def['subtask_id']
+    report_computed_task = subtask_results_verify.subtask_results_rejected.report_computed_task
+    compute_task_def = report_computed_task.task_to_compute.compute_task_def
     validate_id_value(
-        compute_task_def_subtask_id,
+        compute_task_def['subtask_id'],
         'subtask_id'
     )
-    # current_time = get_current_utc_timestamp()
-    # client_public_key = decode_client_public_key(request)
-    # other_party_public_key = decode_other_party_public_key(request)
+    client_public_key = decode_client_public_key(request)
+    other_party_public_key = decode_other_party_public_key(request)
 
     if Subtask.objects.filter(
-        Q(subtask_id=compute_task_def_subtask_id),
+        Q(subtask_id=compute_task_def['subtask_id']),
         Q(state=Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER.name) |  # pylint: disable=no-member
         Q(state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name),  # pylint: disable=no-member
     ).exists():
@@ -1058,11 +1065,31 @@ def handle_send_subtask_results_verify(
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
         )
-    if client_message.subtask_results_rejected.reason != message.tasks.SubtaskResultsRejected.REASON.VerificationNegative:
+    if subtask_results_verify.subtask_results_rejected.reason != SubtaskResultsRejected.REASON.VerificationNegative:
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.InvalidRequest,
         )
-    return None
+
+    store_or_update_subtask(
+        task_id=compute_task_def['task_id'],
+        subtask_id=compute_task_def['subtask_id'],
+        provider_public_key=other_party_public_key,
+        requestor_public_key=client_public_key,
+        state=Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
+        next_deadline=subtask_results_verify.subtask_results_rejected.timestamp + settings.ADDITIONAL_VERIFICATION_CALL_TIME,
+        set_next_deadline=True,
+        task_to_compute=report_computed_task.task_to_compute,
+        subtask_results_rejected=subtask_results_verify.subtask_results_rejected
+    )
+
+    send_blender_verification_request()
+
+    encoded_client_public_key = b64encode(decode_client_public_key(request))
+    ack_subtask_results_verify = message.concents.AckSubtaskResultsVerify(
+        subtask_results_verify=subtask_results_verify,
+        file_transfer_token=create_file_transfer_token(report_computed_task, encoded_client_public_key, "upload"),
+    )
+    return ack_subtask_results_verify
 
 
 def handle_message(client_message, request):

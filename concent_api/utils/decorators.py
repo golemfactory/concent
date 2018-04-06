@@ -21,14 +21,15 @@ from utils.shortcuts                import load_without_public_key
 
 from utils                          import logging
 
-"""
-Decorator for authenticating golem clients
-Unpacks authorization message signed with the key it contains
-proof that the client indeed has the private part of that key
-"""
+
 def require_golem_auth_message(view):
     @wraps(view)
     def wrapper(request, *args, **kwargs):
+    """
+    Decorator for authenticating golem clients
+    Unpacks authorization message signed with the key it contains
+    proof that the client indeed has the private part of that key
+    """
         if request.content_type == '':
             return JsonResponse({'error': 'Content-Type is missing.'}, status = 400)
         elif request.content_type == 'application/octet-stream':
@@ -60,6 +61,10 @@ def require_golem_auth_message(view):
 def handle_errors_and_responses(view):
     @wraps(view)
     def wrapper(request, client_message, *args, **kwargs):
+        """
+        Decorator for handling responses from Concent
+        for golem clients
+        """
         try:
             sid = transaction.savepoint()
             response_from_view = view(request, client_message, *args, **kwargs)

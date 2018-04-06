@@ -161,6 +161,7 @@ def request_upload_status(
     file_transfer_token.files[0]['checksum']  = file_transfer_token_from_database.files[0]['checksum']
     file_transfer_token.files[0]['size']      = file_transfer_token_from_database.files[0]['size']
 
+    file_transfer_token.sig = None
     dumped_file_transfer_token = shortcuts.dump(file_transfer_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
     headers = {
         'Authorization':                'Golem ' + b64encode(dumped_file_transfer_token).decode(),

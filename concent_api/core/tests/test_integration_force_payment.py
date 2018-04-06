@@ -395,7 +395,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 12:00:21"):
             response_2 = self.client.post(
                 reverse('core:receive_out_of_band'),
-                data                            = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
         self._test_response(
@@ -671,7 +671,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 12:00:21"):
             response_2 = self.client.post(
                 reverse('core:receive_out_of_band'),
-                data                            = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
         self._test_response(
@@ -756,7 +756,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 12:00:21"):
             response_2 = self.client.post(
                 reverse('core:receive_out_of_band'),
-                data                            = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
         self._test_response(

@@ -54,8 +54,8 @@ def ack_report_computed_task(timestamp = None, subtask_id = None, task_to_comput
 def task_to_compute(timestamp = None, compute_task_def = None, provider_public_key = None, requestor_public_key = None):
     with freeze_time(timestamp):
         return message.tasks.TaskToCompute(
-            provider_public_key = provider_public_key,
-            requestor_public_key = requestor_public_key,
+            provider_public_key = provider_public_key if provider_public_key is not None else PROVIDER_PUBLIC_KEY,
+            requestor_public_key = requestor_public_key if requestor_public_key is not None else REQUESTOR_PUBLIC_KEY,
             compute_task_def = compute_task_def,
         )
 
@@ -197,8 +197,6 @@ def main():
                 subtask_id = subtask_id,
                 task_to_compute = task_to_compute(
                     timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
-                    provider_public_key=PROVIDER_PUBLIC_KEY,
-                    requestor_public_key=REQUESTOR_PUBLIC_KEY,
                     compute_task_def = compute_task_def(
                         task_id     = task_id,
                         subtask_id  = subtask_id,
@@ -230,8 +228,6 @@ def main():
                 subtask_id = subtask_id,
                 task_to_compute = task_to_compute(
                     timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
-                    provider_public_key = PROVIDER_PUBLIC_KEY,
-                    requestor_public_key = REQUESTOR_PUBLIC_KEY,
                     compute_task_def = compute_task_def(
                         task_id     = task_id,
                         subtask_id  = subtask_id,
@@ -264,8 +260,6 @@ def main():
                 subtask_id = subtask_id,
                 task_to_compute = task_to_compute(
                     timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
-                    provider_public_key = PROVIDER_PUBLIC_KEY,
-                    requestor_public_key = REQUESTOR_PUBLIC_KEY,
                     compute_task_def = compute_task_def(
                         task_id     = task_id,
                         subtask_id  = subtask_id,
@@ -295,8 +289,6 @@ def main():
                 payment_ts = timestamp_to_isoformat(current_time + 1),
                 task_to_compute = task_to_compute(
                     timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
-                    provider_public_key = PROVIDER_PUBLIC_KEY,
-                    requestor_public_key = REQUESTOR_PUBLIC_KEY,
                     compute_task_def = compute_task_def(
                         task_id = task_id,
                         subtask_id = subtask_id,
@@ -338,8 +330,6 @@ def main():
                 timestamp = timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time)),
                 subtask_id = subtask_id,
                 task_to_compute = task_to_compute(
-                    provider_public_key = PROVIDER_PUBLIC_KEY,
-                    requestor_public_key = REQUESTOR_PUBLIC_KEY,
                     timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
                     compute_task_def = compute_task_def(
                         task_id     = task_id,
@@ -382,8 +372,6 @@ def main():
                     subtask_id      = subtask_id,
                     task_to_compute = task_to_compute(
                         timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
-                        provider_public_key = PROVIDER_PUBLIC_KEY,
-                        requestor_public_key = REQUESTOR_PUBLIC_KEY,
                         compute_task_def = compute_task_def(
                             deadline    = current_time - (cluster_consts.subtask_verification_time),
                             task_id     = task_id,

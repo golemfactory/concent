@@ -73,19 +73,19 @@ def upload_new_file_on_cluster(task_id, subtask_id, cluster_consts, current_time
             'Content-Type':                 'application/x-www-form-urlencoded'
     }
 
-    response = requests.post("{}".format(STORAGE_CLUSTER_ADDRESS + 'upload/'), headers = headers, data = file_content)
+    response = requests.post("{}".format(STORAGE_CLUSTER_ADDRESS + 'upload/'), headers = headers, data = file_content, verify = False)
     return (response.status_code, file_size, file_check_sum)
 
 
-def get_force_get_task_result(task_id, subtask_id, current_time, cluster_consts, size, package_hash):
+def get_force_get_task_result(task_id, subtask_id, current_time, cluster_consts, size, package_hash, provider_public_key = None, requestor_public_key = None):
 
     compute_task_def = message.ComputeTaskDef()
     compute_task_def['task_id'] = task_id
     compute_task_def['subtask_id'] = subtask_id
     compute_task_def['deadline'] = current_time + cluster_consts.subtask_verification_time
     task_to_compute = message.TaskToCompute(
-        provider_public_key=PROVIDER_PUBLIC_KEY,
-        requestor_public_key=REQUESTOR_PUBLIC_KEY,
+        provider_public_key=provider_public_key if provider_public_key is not None else PROVIDER_PUBLIC_KEY,
+        requestor_public_key=requestor_public_key if requestor_public_key is not None else REQUESTOR_PUBLIC_KEY,
         compute_task_def = compute_task_def
     )
     report_computed_task = message.ReportComputedTask(

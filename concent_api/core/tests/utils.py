@@ -642,3 +642,7 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _create_diff_requestor_auth_message(self):
         return self._create_client_auth_message(self.DIFFERENT_REQUESTOR_PRIVATE_KEY, self.DIFFERENT_REQUESTOR_PUBLIC_KEY)
+
+    def _create_test_ping_message(self):  # pylint: disable=no-self-use
+        ping_message = message.Ping()
+        return ping_message

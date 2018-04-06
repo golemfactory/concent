@@ -630,3 +630,15 @@ class ConcentIntegrationTestCase(TestCase):
         client_auth = message.concents.ClientAuthorization()
         client_auth.client_public_key = client_public_key
         return dump(client_auth, client_priv_key, settings.CONCENT_PUBLIC_KEY)
+
+    def _create_provider_auth_message(self):
+        return self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY)
+
+    def _create_diff_provider_auth_message(self):
+        return self._create_client_auth_message(self.DIFFERENT_PROVIDER_PRIVATE_KEY, self.DIFFERENT_PROVIDER_PUBLIC_KEY)
+
+    def _create_requestor_auth_message(self):
+        return self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY)
+
+    def _create_diff_requestor_auth_message(self):
+        return self._create_client_auth_message(self.DIFFERENT_REQUESTOR_PRIVATE_KEY, self.DIFFERENT_REQUESTOR_PUBLIC_KEY)

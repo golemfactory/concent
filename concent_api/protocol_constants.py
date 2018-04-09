@@ -9,6 +9,7 @@ ProtocolConstants = NamedTuple(
         ("subtask_verification_time", int),
         ("force_acceptance_time", int),
         ("maximum_download_time", int),
+        ("payment_due_time", int),
     ]
 )
 

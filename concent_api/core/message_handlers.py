@@ -5,13 +5,11 @@ from base64 import b64encode
 from typing import Optional
 
 from django.conf import settings
-from django.db.models import Q
 from django.http import HttpResponse
 from django.utils import timezone
 
 from golem_messages import message
 from golem_messages.datastructures import MessageHeader
-from golem_messages.message.tasks import SubtaskResultsRejected
 from golem_messages.message import FileTransferToken
 
 from core.exceptions import Http400
@@ -1044,13 +1042,15 @@ def handle_send_subtask_results_verify(
     request,
     subtask_results_verify: message.concents.SubtaskResultsVerify
 ):
-    report_computed_task = subtask_results_verify.subtask_results_rejected.report_computed_task
+    subtask_results_rejected = subtask_results_verify.subtask_results_rejected
+    report_computed_task = subtask_results_rejected.report_computed_task
     compute_task_def = report_computed_task.task_to_compute.compute_task_def
     validate_id_value(
         compute_task_def['subtask_id'],
         'subtask_id'
     )
-    validate_golem_message_task_to_compute(report_computed_task.task_to_compute)
+    validate_task_to_compute(report_computed_task.task_to_compute)
+    validate_golem_message_subtask_results_rejected(subtask_results_rejected)
 
     client_public_key = decode_client_public_key(request)
     other_party_public_key = decode_other_party_public_key(request)
@@ -1058,8 +1058,8 @@ def handle_send_subtask_results_verify(
     if Subtask.objects.filter(
         subtask_id=compute_task_def['subtask_id'],
         state__in=[
-            Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER.name,
-            Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name
+            Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER.name,  # pylint: disable=no-member
+            Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name,     # pylint: disable=no-member
         ]
     ).exists():
         return message.concents.ServiceRefused(
@@ -1069,7 +1069,7 @@ def handle_send_subtask_results_verify(
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
         )
-    if subtask_results_verify.subtask_results_rejected.reason != SubtaskResultsRejected.REASON.VerificationNegative:
+    if subtask_results_rejected.reason != SubtaskResultsRejected.REASON.VerificationNegative:
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.InvalidRequest,
         )
@@ -1080,10 +1080,10 @@ def handle_send_subtask_results_verify(
         provider_public_key=other_party_public_key,
         requestor_public_key=client_public_key,
         state=Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
-        next_deadline=subtask_results_verify.subtask_results_rejected.timestamp + settings.ADDITIONAL_VERIFICATION_CALL_TIME,
+        next_deadline=subtask_results_rejected.timestamp + settings.ADDITIONAL_VERIFICATION_CALL_TIME,
         set_next_deadline=True,
         task_to_compute=report_computed_task.task_to_compute,
-        subtask_results_rejected=subtask_results_verify.subtask_results_rejected
+        subtask_results_rejected=subtask_results_rejected
     )
 
     send_blender_verification_request()

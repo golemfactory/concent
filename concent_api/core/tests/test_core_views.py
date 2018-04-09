@@ -1,5 +1,4 @@
 import datetime
-from base64                         import b64encode
 
 from freezegun                      import freeze_time
 import dateutil.parser
@@ -88,8 +87,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY),
             content_type                        = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code,                   202)
@@ -126,8 +123,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 CONCENT_PUBLIC_KEY
             ),
             content_type                        = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
-            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code, 200)
@@ -165,8 +160,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY),
             content_type = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
-            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code,                   202)
@@ -206,8 +199,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 CONCENT_PUBLIC_KEY,
             ),
             content_type                        = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json().keys())
@@ -225,8 +216,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 CONCENT_PUBLIC_KEY,
             ),
             content_type                        = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json().keys())
@@ -242,8 +231,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 CONCENT_PUBLIC_KEY,
             ),
             content_type                        = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertIsInstance(response_202, HttpResponse)
@@ -258,8 +245,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 CONCENT_PUBLIC_KEY,
             ),
             content_type                        = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertIsInstance(response_400, JsonResponse)
@@ -279,7 +264,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 CONCENT_PUBLIC_KEY
             ),
             content_type                   = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response_400.status_code, 400)
@@ -315,7 +299,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 CONCENT_PUBLIC_KEY
             ),
             content_type                    = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY  = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response_400.status_code, 400)
@@ -337,8 +320,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY),
             content_type                        = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(force_response.status_code,                                202)
@@ -360,7 +341,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 CONCENT_PUBLIC_KEY
             ),
             content_type                   = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(reject_response.status_code,       202)
@@ -388,7 +368,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                     CONCENT_PUBLIC_KEY
                 ),
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
             )
 
         self.assertEqual(response.status_code, 400)
@@ -409,7 +388,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                     CONCENT_PUBLIC_KEY
                 ),
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
             )
 
         self.assertEqual(response.status_code, 400)
@@ -458,7 +436,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                         CONCENT_PUBLIC_KEY
                     ),
                     content_type = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
                 )
 
             self.assertEqual(response_400.status_code, 400)
@@ -500,8 +477,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                     CONCENT_PUBLIC_KEY
                 ),
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
             self.assertIn(response_202.status_code, [200, 202])
@@ -547,8 +522,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             reverse('core:send'),
             data                                = '',
             content_type                        = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertEqual(response.status_code, 400)
@@ -576,8 +549,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                     CONCENT_PUBLIC_KEY
                 ),
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self._test_400_response(response)

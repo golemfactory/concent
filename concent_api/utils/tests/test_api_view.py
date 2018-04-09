@@ -1,4 +1,3 @@
-from base64                         import b64encode
 import json
 import mock
 
@@ -68,7 +67,6 @@ class ApiViewTestCase(TestCase):
             return None
 
         request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream', data = raw_message)
-        request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'] = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii')
 
         dummy_view(request)                                                     # pylint: disable=no-value-for-parameter
 
@@ -83,7 +81,6 @@ class ApiViewTestCase(TestCase):
             return self.want_to_compute
 
         request = self.request_factory.post("/dummy-url/", content_type = '', data = '')
-        request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'] = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii')
 
         response = dummy_view(request)                                          # pylint: disable=no-value-for-parameter
 
@@ -105,7 +102,6 @@ class ApiViewTestCase(TestCase):
             return self.want_to_compute
 
         request = self.request_factory.post("/dummy-url/", content_type = 'application/x-www-form-urlencoded', data = self.want_to_compute)
-        request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'] = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii')
 
         response = dummy_view(request)                                          # pylint: disable=no-value-for-parameter
 
@@ -121,7 +117,6 @@ class ApiViewTestCase(TestCase):
             return self.message_to_view
 
         request = self.request_factory.post("/dummy-url/", content_type = 'application/json', data = json.dumps(self.message_to_view))
-        request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'] = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii')
 
         response = dummy_view(request)                                          # pylint: disable=no-value-for-parameter
 
@@ -144,7 +139,6 @@ class ApiViewTestCase(TestCase):
             content_type = 'application/octet-stream',
             data         = '',
         )
-        request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'] = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii')
 
         response = dummy_view(request)  # pylint: disable=no-value-for-parameter,assignment-from-no-return
 
@@ -206,7 +200,6 @@ class ApiViewTransactionTestCase(TransactionTestCase):
                     reverse('core:send'),
                     data                                = '',
                     content_type                        = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii'),
                 )
             except TypeError:
                 pass
@@ -220,7 +213,6 @@ class ApiViewTransactionTestCase(TransactionTestCase):
                 reverse('core:send'),
                 data                                = '',
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(Client.objects.count(), 0)
@@ -262,8 +254,6 @@ class ApiViewTransactionTestCase(TransactionTestCase):
                     CONCENT_PUBLIC_KEY
                 ),
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,   202)
@@ -277,7 +267,6 @@ class ApiViewTransactionTestCase(TransactionTestCase):
                     reverse('gatekeeper:upload'),
                     data                                = '',
                     content_type                        = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii'),
                 )
             except TypeError:
                 pass
@@ -292,7 +281,6 @@ class ApiViewTransactionTestCase(TransactionTestCase):
                     reverse('gatekeeper:upload'),
                     data                                = '',
                     content_type                        = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii'),
                 )
             except Http400:
                 pass
@@ -306,7 +294,6 @@ class ApiViewTransactionTestCase(TransactionTestCase):
                 reverse('gatekeeper:upload'),
                 data                                = '',
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,   200)

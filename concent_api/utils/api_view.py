@@ -1,6 +1,4 @@
-import binascii
 from functools                      import wraps
-from base64                         import b64decode
 
 from django.db                      import transaction
 from django.http                    import JsonResponse
@@ -10,7 +8,6 @@ from django.conf                    import settings
 from django.views.decorators.csrf   import csrf_exempt
 
 from golem_messages                 import dump
-from golem_messages                 import load
 from golem_messages.exceptions      import FieldError
 from golem_messages.exceptions      import InvalidSignature
 from golem_messages.exceptions      import MessageError
@@ -22,25 +19,13 @@ from golem_messages.message         import Message
 from core.exceptions                import Http400
 from utils                          import logging
 from utils.helpers                  import get_validated_client_public_key_from_client_message
+from utils.shortcuts                import load_without_public_key
 
 
 def api_view(view):
     @wraps(view)
     @csrf_exempt
     def wrapper(request, *args, **kwargs):
-        if 'HTTP_CONCENT_CLIENT_PUBLIC_KEY' not in request.META or request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'] == '':
-            return JsonResponse({'error': 'Concent-Client-Public-Key HTTP header is missing on the request.'}, status = 400)
-        try:
-            client_public_key = b64decode(request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'].encode('ascii'), validate=True)
-        except binascii.Error:
-            return JsonResponse({'error': 'The value in the Concent-Client-Public-Key HTTP is not a valid base64-encoded value.'}, status = 400)
-
-        if len(client_public_key) != 64:
-            return JsonResponse(
-                {'error': 'The length in the Concent-Client-Public-Key HTTP is wrong.'},
-                status = 400
-            )
-
         if request.content_type not in ['application/octet-stream', '']:
             return JsonResponse({'error': 'Concent supports only application/octet-stream.'}, status = 415)
 
@@ -51,11 +36,7 @@ def api_view(view):
                 return JsonResponse({'error': 'Content-Type is missing.'}, status = 400)
             elif request.content_type == 'application/octet-stream':
                 try:
-                    message = load(
-                        request.body,
-                        settings.CONCENT_PRIVATE_KEY,
-                        client_public_key,
-                    )
+                    message = load_without_public_key(request.body)
                     assert message is not None
                 except InvalidSignature as exception:
                     return JsonResponse({'error': "Failed to decode a Golem Message. {}".format(exception)}, status = 400)
@@ -71,6 +52,7 @@ def api_view(view):
                     return JsonResponse({'error': "Error in Golem Message. {}".format(exception)}, status = 400)
             else:
                 return JsonResponse({'error': "Concent supports only application/octet-stream."}, status = 400)
+        client_public_key = None
         try:
             sid = transaction.savepoint()
             client_public_key = get_validated_client_public_key_from_client_message(message)
@@ -80,7 +62,7 @@ def api_view(view):
             logging.log_400_error(
                 view.__name__,
                 message,
-                request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+                client_public_key if client_public_key is not None else 'UNAVAILABLE',
             )
             transaction.savepoint_rollback(sid)
             return JsonResponse({'error': str(exception)}, status = 400)
@@ -88,7 +70,7 @@ def api_view(view):
             assert response_from_view.sig is None
             logging.log_message_returned(
                 response_from_view,
-                request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+                client_public_key,
             )
             serialized_message = dump(
                 response_from_view,
@@ -103,19 +85,19 @@ def api_view(view):
             logging.log_message_not_allowed(
                 view.__name__,
                 request.method,
-                request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+                client_public_key,
             )
             return response_from_view
         elif isinstance(response_from_view, HttpResponse):
             logging.log_message_accepted(
                 message,
-                request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+                client_public_key,
             )
             return response_from_view
         elif response_from_view is None:
             logging.log_empty_queue(
                 view.__name__,
-                request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
+                client_public_key,
             )
             return HttpResponse("", status = 204)
         elif isinstance(response_from_view, bytes):

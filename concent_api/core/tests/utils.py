@@ -626,8 +626,6 @@ class ConcentIntegrationTestCase(TestCase):
                 settings.CONCENT_PUBLIC_KEY
             ),
             content_type                        = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
         )
 
     def _assert_stored_message_counter_increased(self, increased_by = 1):

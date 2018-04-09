@@ -1054,6 +1054,7 @@ def handle_send_subtask_results_verify(
 
     client_public_key = decode_client_public_key(request)
     other_party_public_key = decode_other_party_public_key(request)
+    current_time = get_current_utc_timestamp()
 
     if Subtask.objects.filter(
         subtask_id=compute_task_def['subtask_id'],
@@ -1064,6 +1065,10 @@ def handle_send_subtask_results_verify(
     ).exists():
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
+        )
+    if not current_time <= subtask_results_rejected.timestamp + settings.ADDITIONAL_VERIFICATION_CALL_TIME:
+        return message.concents.ServiceRefused(
+            reason=message.concents.ServiceRefused.REASON.InvalidRequest,
         )
     if not base.is_requestor_account_status_positive(request):  # pylint: disable=no-value-for-parameter
         return message.concents.ServiceRefused(

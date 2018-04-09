@@ -182,6 +182,7 @@ def main():
     )
 
     #  Test CASE 2C - Send ForcePayment with no value to be paid
+    correct_force_payment.sig = None
     api_request(
         cluster_url,
         'send',
@@ -200,6 +201,7 @@ def main():
     )
 
     # Test CASE 2D - Send correct ForcePayment
+    correct_force_payment.sig = None
     api_request(
         cluster_url,
         'send',

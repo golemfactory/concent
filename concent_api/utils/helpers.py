@@ -13,6 +13,7 @@ from golem_messages.datastructures  import FrozenDict
 from golem_messages.exceptions      import MessageError
 
 from core.exceptions                import Http400
+from core.validation                import validate_public_key
 
 
 def is_base64(data: str) -> bool:
@@ -90,20 +91,6 @@ def get_field_from_message(golem_message: message.base.Message, field_name: str)
     return check_task_id(golem_message)
 
 
-def decode_client_public_key(request):
-    assert 'HTTP_CONCENT_CLIENT_PUBLIC_KEY' in request.META
-    return decode_key(request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'])
-
-
-def decode_other_party_public_key(request):
-    if 'HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY' not in request.META:
-        raise Http400('Missing Concent-Other-Party-Public-Key HTTP when expected.')
-    try:
-        return decode_key(request.META['HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY'])
-    except binascii.Error:
-        raise Http400('The value in the Concent-Other-Party-Public-Key HTTP is not a valid base64-encoded value.')
-
-
 def deserialize_message(raw_message_data):
     try:
         golem_message = message.Message.deserialize(
@@ -126,3 +113,37 @@ def sign_message(golem_message, priv_key):
     golem_message = golem_message.serialize(sign_func = signature)
     golem_message = deserialize_message(golem_message)
     return golem_message
+
+
+def get_validated_client_public_key_from_client_message(golem_message: message.base.Message):
+    if (
+        isinstance(golem_message, message.concents.ForcePayment) and
+        isinstance(golem_message.subtask_results_accepted_list, list) and
+        len(golem_message.subtask_results_accepted_list) > 0
+    ):
+        task_to_compute = get_field_from_message(golem_message.subtask_results_accepted_list[0], 'task_to_compute')
+    elif isinstance(golem_message, message.base.Message):
+        task_to_compute = get_field_from_message(golem_message, 'task_to_compute')
+    else:
+        return None
+
+    if task_to_compute is not None:
+        if isinstance(golem_message, (
+            message.ForceReportComputedTask,
+            message.concents.ForceSubtaskResults,
+            message.concents.ForcePayment,
+        )):
+            client_public_key = task_to_compute.provider_public_key
+            validate_public_key(client_public_key, 'provider_public_key')
+        elif isinstance(golem_message, (
+            message.AckReportComputedTask,
+            message.RejectReportComputedTask,
+            message.concents.ForceGetTaskResult,
+            message.concents.ForceSubtaskResultsResponse,
+        )):
+            client_public_key = task_to_compute.requestor_public_key
+            validate_public_key(client_public_key, 'requestor_public_key')
+
+        return client_public_key
+
+    return None

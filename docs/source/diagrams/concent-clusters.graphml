@@ -427,6 +427,23 @@ server<y:LabelModel>
             </y:ShapeNode>
           </data>
         </node>
+        <node id="n1::n13">
+          <data key="d6">
+            <y:ShapeNode>
+              <y:Geometry height="20.473170731707313" width="50.30967939868077" x="-101.35159038818769" y="170.68665991716517"/>
+              <y:Fill color="#00CCFF" transparent="false"/>
+              <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
+              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="50.951171875" x="-0.32074623815961445" y="1.2522103658536707">Storage<y:LabelModel>
+                  <y:SmartNodeLabelModel distance="4.0"/>
+                </y:LabelModel>
+                <y:ModelParameter>
+                  <y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/>
+                </y:ModelParameter>
+              </y:NodeLabel>
+              <y:Shape type="rectangle"/>
+            </y:ShapeNode>
+          </data>
+        </node>
       </graph>
     </node>
     <node id="n2">
@@ -719,6 +736,23 @@ server<y:LabelModel>
             </y:ShapeNode>
           </data>
         </node>
+        <node id="n3::n13">
+          <data key="d6">
+            <y:ShapeNode>
+              <y:Geometry height="20.473170731707313" width="50.30967939868077" x="506.3867743916866" y="170.6866599171652"/>
+              <y:Fill color="#00CCFF" transparent="false"/>
+              <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
+              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="50.951171875" x="-0.32074623815958603" y="1.2522103658536707">Storage<y:LabelModel>
+                  <y:SmartNodeLabelModel distance="4.0"/>
+                </y:LabelModel>
+                <y:ModelParameter>
+                  <y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/>
+                </y:ModelParameter>
+              </y:NodeLabel>
+              <y:Shape type="rectangle"/>
+            </y:ShapeNode>
+          </data>
+        </node>
       </graph>
     </node>
     <node id="n4" yfiles.foldertype="group">
@@ -794,7 +828,7 @@ server<y:LabelModel>
               <y:Geometry height="52.0" width="106.0" x="826.0722909217378" y="291.49999999999994"/>
               <y:Fill color="#FFCC00" transparent="false"/>
               <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
-              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="92.751953125" x="6.624023437499886" y="17.015625">Storage server<y:LabelModel>
+              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="92.751953125" x="6.6240234375" y="17.015625">Storage server<y:LabelModel>
                   <y:SmartNodeLabelModel distance="4.0"/>
                 </y:LabelModel>
                 <y:ModelParameter>
@@ -930,7 +964,7 @@ server<y:LabelModel>
               <y:Geometry height="52.0" width="106.0" x="826.0722909217378" y="460.0"/>
               <y:Fill color="#FFCC00" transparent="false"/>
               <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
-              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="61.2578125" x="22.371093749999886" y="17.015624999999943">Database<y:LabelModel>
+              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="61.2578125" x="22.37109375" y="17.015625">Database<y:LabelModel>
                   <y:SmartNodeLabelModel distance="4.0"/>
                 </y:LabelModel>
                 <y:ModelParameter>
@@ -984,6 +1018,23 @@ server<y:LabelModel>
               <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="31.9375" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="66.126953125" x="19.9365234375" y="10.03125">Conductor
 (worker)<y:LabelModel>
+                  <y:SmartNodeLabelModel distance="4.0"/>
+                </y:LabelModel>
+                <y:ModelParameter>
+                  <y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/>
+                </y:ModelParameter>
+              </y:NodeLabel>
+              <y:Shape type="rectangle"/>
+            </y:ShapeNode>
+          </data>
+        </node>
+        <node id="n4::n13">
+          <data key="d6">
+            <y:ShapeNode>
+              <y:Geometry height="20.473170731707313" width="50.30967939868077" x="1118.3226234482902" y="170.68665991716517"/>
+              <y:Fill color="#00CCFF" transparent="false"/>
+              <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
+              <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="50.951171875" x="-0.3207462381596997" y="1.2522103658536707">Storage<y:LabelModel>
                   <y:SmartNodeLabelModel distance="4.0"/>
                 </y:LabelModel>
                 <y:ModelParameter>
@@ -1204,7 +1255,6 @@ server<y:LabelModel>
       </data>
     </edge>
     <edge id="n1::e13" source="n1::n12" target="n1::n2">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="24.846490566037744" sy="0.0" tx="35.964815996501244" ty="0.0">
@@ -1217,7 +1267,6 @@ server<y:LabelModel>
       </data>
     </edge>
     <edge id="n1::e14" source="n1::n12" target="n1::n9">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="-29.793962264150935" sy="0.0" tx="29.706037735849065" ty="0.0"/>
@@ -1228,7 +1277,6 @@ server<y:LabelModel>
       </data>
     </edge>
     <edge id="e3" source="n0::n3" target="n1::n2">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="0.0" sy="0.0" tx="37.83547169811317" ty="0.0">
@@ -1388,7 +1436,6 @@ server<y:LabelModel>
       </data>
     </edge>
     <edge id="n3::e13" source="n3::n12" target="n3::n2">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="24.846490566037744" sy="0.0" tx="35.964815996501244" ty="0.0">
@@ -1401,7 +1448,6 @@ server<y:LabelModel>
       </data>
     </edge>
     <edge id="n3::e14" source="n3::n12" target="n3::n9">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="-29.793962264150935" sy="0.0" tx="29.706037735849065" ty="-4.131169811320831"/>
@@ -1554,7 +1600,6 @@ server<y:LabelModel>
       </data>
     </edge>
     <edge id="n4::e13" source="n4::n12" target="n4::n2">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="24.846490566037744" sy="0.0" tx="35.964815996501244" ty="0.0">
@@ -1567,7 +1612,6 @@ server<y:LabelModel>
       </data>
     </edge>
     <edge id="n4::e14" source="n4::n12" target="n4::n9">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="-29.793962264150935" sy="0.0" tx="29.70603773584901" ty="-5.6843418860808015E-14"/>
@@ -1578,7 +1622,6 @@ server<y:LabelModel>
       </data>
     </edge>
     <edge id="e4" source="n0::n4" target="n3::n2">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0">
@@ -1592,7 +1635,6 @@ server<y:LabelModel>
       </data>
     </edge>
     <edge id="e5" source="n0::n3" target="n3::n2">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="0.0" sy="-1.4210854715202004E-14" tx="35.63739667749587" ty="1.3597232704400994">
@@ -1605,7 +1647,6 @@ server<y:LabelModel>
       </data>
     </edge>
     <edge id="e6" source="n0::n3" target="n4::n2">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="32.30043773584907" sy="0.0" tx="35.503305660377464" ty="0.0">
@@ -1620,7 +1661,6 @@ server<y:LabelModel>
       </data>
     </edge>
     <edge id="e7" source="n0::n4" target="n4::n2">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0">
@@ -1634,6 +1674,38 @@ server<y:LabelModel>
       </data>
     </edge>
     <edge id="n0::e3" source="n0::n3" target="n0::n2">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="n1::e15" source="n1::n2" target="n1::n13">
+      <data key="d9"/>
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="n4::e15" source="n4::n2" target="n4::n13">
+      <data key="d9"/>
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="n3::e15" source="n3::n2" target="n3::n13">
       <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>

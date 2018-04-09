@@ -182,6 +182,13 @@
       <text x="-201.3704" xml:space="preserve" y="482.1699" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">Conductor</text>
       <text x="-195.6663" xml:space="preserve" y="496.1387" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">(worker)</text>
     </g>
+    <g fill="rgb(0,204,255)" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,586,182)" stroke="rgb(0,204,255)">
+      <rect x="-101.3516" width="50.3097" height="20.4732" y="170.6867" clip-path="url(#clipPath2)" stroke="none"/>
+    </g>
+    <g text-rendering="geometricPrecision" stroke-miterlimit="1.45" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,586,182)" stroke-linecap="butt">
+      <rect fill="none" x="-101.3516" width="50.3097" height="20.4732" y="170.6867" clip-path="url(#clipPath2)"/>
+      <text x="-99.6723" xml:space="preserve" y="185.0775" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">Storage</text>
+    </g>
     <g fill="yellow" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,586,182)" stroke="yellow">
       <rect x="-570.9686" width="106" height="52" y="-61.0409" clip-path="url(#clipPath2)" stroke="none"/>
     </g>
@@ -222,6 +229,8 @@
       <path fill="red" d="M81.7987 206.9435 L76.7987 218.9435 L81.7987 215.9435 L86.7987 218.9435 Z" clip-path="url(#clipPath2)" stroke="none"/>
       <path fill="none" d="M-223.2824 485 L-279.5808 485" clip-path="url(#clipPath2)"/>
       <path d="M-287.5808 485 L-275.5808 490 L-278.5808 485 L-275.5808 480 Z" clip-path="url(#clipPath2)" stroke="none"/>
+      <path fill="none" d="M-7.1661 180.9232 L-43.0419 180.9232" clip-path="url(#clipPath2)"/>
+      <path d="M-51.0419 180.9232 L-39.0419 185.9232 L-42.0419 180.9232 L-39.0419 175.9232 Z" clip-path="url(#clipPath2)" stroke="none"/>
       <path fill="none" d="M-464.9686 -35.0409 L223.3868 -35.0409" clip-path="url(#clipPath2)" stroke="blue"/>
       <path fill="blue" d="M231.3868 -35.0409 L219.3868 -40.0409 L222.3868 -35.0409 L219.3868 -30.0409 Z" clip-path="url(#clipPath2)" stroke="none"/>
       <path fill="none" d="M-517.9686 -9.0409 L-517.9686 316.5 L-401.6019 316.5" clip-path="url(#clipPath2)" stroke="blue"/>
@@ -328,6 +337,13 @@
       <rect fill="none" x="384.4314" width="106" height="52" y="454.8688" clip-path="url(#clipPath2)"/>
       <text x="406.3679" xml:space="preserve" y="478.0388" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">Conductor</text>
       <text x="412.072" xml:space="preserve" y="492.0075" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">(worker)</text>
+    </g>
+    <g fill="rgb(0,204,255)" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,586,182)" stroke="rgb(0,204,255)">
+      <rect x="506.3868" width="50.3097" height="20.4732" y="170.6867" clip-path="url(#clipPath2)" stroke="none"/>
+    </g>
+    <g text-rendering="geometricPrecision" stroke-miterlimit="1.45" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,586,182)" stroke-linecap="butt">
+      <rect fill="none" x="506.3868" width="50.3097" height="20.4732" y="170.6867" clip-path="url(#clipPath2)"/>
+      <text x="508.066" xml:space="preserve" y="185.0775" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">Storage</text>
       <path fill="none" d="M295.2829 290.5146 L295.2829 268.5107" clip-path="url(#clipPath2)" stroke="blue"/>
       <path fill="blue" d="M295.2829 260.5107 L290.2829 272.5107 L295.2829 269.5107 L300.2829 272.5107 Z" clip-path="url(#clipPath2)" stroke="none"/>
       <path fill="none" d="M423.3868 -9.0409 L423.3868 37.488 L653.5723 37.488 L653.5723 87.6711 M653.5723 97.6711 L653.5723 146.9232" clip-path="url(#clipPath2)" stroke="red"/>
@@ -362,6 +378,8 @@
       <path fill="red" d="M689.5371 206.9561 L684.5371 218.9561 L689.5371 215.9561 L694.5371 218.9561 Z" clip-path="url(#clipPath2)" stroke="none"/>
       <path fill="none" d="M384.456 480.8688 L328.1576 480.8688" clip-path="url(#clipPath2)"/>
       <path d="M320.1576 480.8688 L332.1576 485.8688 L329.1576 480.8688 L332.1576 475.8688 Z" clip-path="url(#clipPath2)" stroke="none"/>
+      <path fill="none" d="M600.5723 180.9232 L564.6965 180.9232" clip-path="url(#clipPath2)"/>
+      <path d="M556.6965 180.9232 L568.6965 185.9232 L565.6965 180.9232 L568.6965 175.9232 Z" clip-path="url(#clipPath2)" stroke="none"/>
     </g>
     <g text-rendering="geometricPrecision" shape-rendering="geometricPrecision" transform="matrix(2.2734,0,0,2.2734,1316.8379,289.7656)" image-rendering="optimizeQuality">
       <image x="0" y="0" clip-path="url(#clipPath6)" width="276" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARQAAADFCAYAAACVZQ1HAAADTUlEQVR42u3c7UrD&#10;MBSA4a2J93/LMlAIpYN+nGzpyfPA+aHMqJt9ia328QAAAAAAAACAw57GmCnmIxFZ&#10;jDGpp2tc2ogUY8w00wYmNCavxetq2k9cO31Ddef7Rl633HzdM4+pnb6+b6679TH1&#10;RuteDcvzUzExxuSc9nhfooLyWvBnFRK/ZxqTe8J3KW1Q1qVyBtyY3LOsdiphQSkb&#10;MQHy/2nI+vgPC4qYwHxRCT3+BQUERVAAQQEEBRAUQQEEBRAUQFAEBQRFUABBAYYh&#10;KICgAGMHxT8HAnYogKAAibjKA4wblP8tzyIoICiCAviVBxAUQFAEBRAUQFAAQREU&#10;EBRBAQQFEBRAUAQFEBRAUABBERQQFEEBjhMUQFCAsYPirveAHQogKEAirvIAggII&#10;CiAoggIICiAogKAICgiKoACCAggKICiCAggKICiAoAgKCIqgAIICCAqQkqAAggKM&#10;HRR3vQfsUABBARJxlQcQFEBQAEERFEBQAEEBBEVQQFAEBRAUQFAAQREUQFAAQQEE&#10;RVBAUAQFEBRAUICUBAUQFGDsoLjrPWCHAggKkIirPICgAIICCIqgAIICCAogKIIC&#10;giIogKAAggIIiqAAggIICiAoggKCIiiAoACCAqQkKICgAGMHxV3vATsUQFCARFzl&#10;AQQFEBRAUAQFEBRAUABBERQQFEEBbhGUy3/LDwiKHQoIiqAAggIICiAoggIICiAo&#10;gKAICgiKoACCAgwVlLC73i+CAnYodiiAoACCAgiKoACCAggKICiCAoIiKICgAIIC&#10;CMqeBd31HgTFDgUQFEBQAEERFEBQAEEBBMXzDIIiKICgAIICCMrmgu56D4JihwII&#10;CiAogKAICiAogKAAgiIoICiCAgxz/AsKCIqgAGMHxV3vQVDsUABBARIFxVUeEBRB&#10;AQQFEBRAUAQFEBRAUABBERQQlKigtIsKCghK+IKiAoJyeUG7FJgnJl1OeWwt2u5U&#10;jDE5p8tmYmvhNizGmHxT3hzz4UGpf9O+vf7EdcfbNehjaqd1z3xPpcNjvvX81jfr&#10;lB1f39HX6G7r7v2ZOfOa9Fj3zGy9/mGnOtqojPIDLyiCIij9glLenOYIP+NrjJlr&#10;ul3ZdaLKmPkGAAAAAACA1H4Br9AsBJlEFdYAAAAASUVORK5CYII=" height="197" preserveAspectRatio="none"/>
@@ -464,6 +482,13 @@
       <rect fill="none" x="996.3673" width="106" height="52" y="460" clip-path="url(#clipPath2)"/>
       <text x="1018.3038" xml:space="preserve" y="483.1699" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">Conductor</text>
       <text x="1024.0079" xml:space="preserve" y="497.1387" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">(worker)</text>
+    </g>
+    <g fill="rgb(0,204,255)" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,586,182)" stroke="rgb(0,204,255)">
+      <rect x="1118.3226" width="50.3097" height="20.4732" y="170.6867" clip-path="url(#clipPath2)" stroke="none"/>
+    </g>
+    <g text-rendering="geometricPrecision" stroke-miterlimit="1.45" shape-rendering="geometricPrecision" transform="matrix(1,0,0,1,586,182)" stroke-linecap="butt">
+      <rect fill="none" x="1118.3226" width="50.3097" height="20.4732" y="170.6867" clip-path="url(#clipPath2)"/>
+      <text x="1120.0018" xml:space="preserve" y="185.0775" clip-path="url(#clipPath2)" font-family="sans-serif" stroke="none">Storage</text>
       <path fill="none" d="M907.2187 291.5146 L907.2187 269.5107" clip-path="url(#clipPath2)" stroke="blue"/>
       <path fill="blue" d="M907.2187 261.5107 L902.2187 273.5107 L907.2187 270.5107 L912.2187 273.5107 Z" clip-path="url(#clipPath2)" stroke="none"/>
       <path fill="none" d="M612.4012 -125.5409 L689.2097 -125.5409 L689.2097 92.6711 L1301.0115 92.6711 L1301.0115 146.9388" clip-path="url(#clipPath2)" stroke="red"/>
@@ -498,6 +523,8 @@
       <path fill="red" d="M1301.4729 206.9546 L1296.4729 218.9546 L1301.4729 215.9546 L1306.4729 218.9546 Z" clip-path="url(#clipPath2)" stroke="none"/>
       <path fill="none" d="M996.3918 486 L940.0934 486" clip-path="url(#clipPath2)"/>
       <path d="M932.0934 486 L944.0934 491 L941.0934 486 L944.0934 481 Z" clip-path="url(#clipPath2)" stroke="none"/>
+      <path fill="none" d="M1212.5082 180.9232 L1176.6323 180.9232" clip-path="url(#clipPath2)"/>
+      <path d="M1168.6323 180.9232 L1180.6323 185.9232 L1177.6323 180.9232 L1180.6323 175.9232 Z" clip-path="url(#clipPath2)" stroke="none"/>
     </g>
   </g>
 </svg>

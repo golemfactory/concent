@@ -35,7 +35,7 @@ def verification_order_task(
     file_transfer_tokens = {}
     for file_name in (source_file, result_file):
         file_transfer_token = message.concents.FileTransferToken(
-            token_expiration_deadline       = get_current_utc_timestamp() + settings.TOKEN_EXPIRATION_TIME,
+            token_expiration_deadline       = get_current_utc_timestamp() + settings.SUBTASK_VERIFICATION_TIME,
             storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
             authorized_client_public_key    = b64encode(settings.CONCENT_PUBLIC_KEY),
             operation                       = 'download',
@@ -68,8 +68,11 @@ def verification_order_task(
             'Authorization':                'Golem ' + b64encode(dumped_file_transfer_token).decode(),
             'Concent-Client-Public-Key':    b64encode(settings.CONCENT_PUBLIC_KEY).decode(),
         }
-        request_http_address = settings.STORAGE_CLUSTER_ADDRESS + CLUSTER_DOWNLOAD_PATH + file_transfer_token.files[0]['path']
-
+        request_http_address = (
+            settings.STORAGE_CLUSTER_ADDRESS +
+            CLUSTER_DOWNLOAD_PATH +
+            file_transfer_token.files[0]['path'].split(settings.STORAGE_CLUSTER_ADDRESS)[1]
+        )
         try:
             cluster_response = send_request_to_cluster_storage(
                 headers,

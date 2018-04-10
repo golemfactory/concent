@@ -651,6 +651,14 @@ class ConcentIntegrationTestCase(TestCase):
         client_auth.client_public_key = client_public_key
         return dump(client_auth, client_priv_key, settings.CONCENT_PUBLIC_KEY)
 
+    def _create_client_auth_message_as_header(self, client_priv_key, client_public_key):  # pylint: disable=no-self-use
+        return b64encode(
+            self._create_client_auth_message(
+                client_priv_key,
+                client_public_key,
+            )
+        ).decode()
+
     def _create_provider_auth_message(self):
         return self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY)
 

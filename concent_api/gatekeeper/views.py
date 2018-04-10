@@ -105,10 +105,24 @@ def parse_headers(request: WSGIRequest, path_to_file: str) -> Union[FileTransfer
         return gatekeeper_access_denied_response('Undefined golem message.', path_to_file)
     assert isinstance(loaded_golem_message, Message)
 
-    # Check if request header contains Concent-Client-Public-Key:
-    if 'HTTP_CONCENT_CLIENT_PUBLIC_KEY' not in request.META:
-        return gatekeeper_access_denied_response('Missing Concent-Client-Public-Key header.', path_to_file, loaded_golem_message.subtask_id)
-    client_public_key = request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']
+    # Check if request header contains Concent-Auth:
+    if 'HTTP_CONCENT_AUTH' not in request.META:
+        return gatekeeper_access_denied_response('Missing Concent-Auth header.', path_to_file, loaded_golem_message.subtask_id)
+
+    # Try to load in ClientAuthorization message from Concent-Auth header
+    try:
+        client_authorization = load(
+            b64decode(request.META['HTTP_CONCENT_AUTH'], validate=True),
+            settings.CONCENT_PRIVATE_KEY,
+            settings.CONCENT_PUBLIC_KEY,
+        )
+        client_public_key = b64encode(client_authorization.client_public_key).decode('ascii')
+    except (MessageError, TypeError):
+        return gatekeeper_access_denied_response(
+            'Cannot load ClientAuthorization message from Concent-Auth header.',
+            path_to_file,
+            loaded_golem_message.subtask_id
+        )
 
     logger.debug(
         "Client wants to {} file '{}', with subtask_id '{}'. Client public key: '{}'.".format(

@@ -38,7 +38,7 @@ def verify_file_status(
         report_computed_task    = deserialize_message(get_task_result.report_computed_task.data.tobytes())
         file_transfer_token     = create_file_transfer_token(
             report_computed_task,
-            encoded_client_public_key,
+            client_public_key,
             'upload'
         )
         if request_upload_status(file_transfer_token, report_computed_task):
@@ -113,6 +113,7 @@ def create_file_transfer_token(
     subtask_id      = report_computed_task.task_to_compute.compute_task_def['subtask_id']
     file_path       = 'blender/result/{}/{}.{}.zip'.format(task_id, task_id, subtask_id)
 
+    assert isinstance(encoded_client_public_key, bytes)
     assert operation in ['upload', 'download']
     if operation == 'upload':
         token_expiration_deadline = (
@@ -125,7 +126,6 @@ def create_file_transfer_token(
             report_computed_task.task_to_compute.compute_task_def['deadline'] +
             settings.SUBTASK_VERIFICATION_TIME
         )
-
     file_transfer_token = message.concents.FileTransferToken(
         token_expiration_deadline       = token_expiration_deadline,
         storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,

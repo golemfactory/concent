@@ -15,6 +15,8 @@ from utils.testing_helpers  import generate_ecc_key_pair
 from api_testing_helpers    import api_request
 from api_testing_helpers    import timestamp_to_isoformat
 
+from protocol_constants import get_protocol_constants
+
 import requests
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
@@ -80,13 +82,13 @@ def main():
     cluster_url     = parse_command_line(sys.argv)
     task_id         = str(random.randrange(1, 100000))
     current_time    = get_current_utc_timestamp()
-
+    cluster_consts = get_protocol_constants(cluster_url)
     correct_force_payment = force_payment(
         timestamp = timestamp_to_isoformat(current_time),
         subtask_results_accepted_list = [
             subtask_results_accepted(
                 timestamp       = timestamp_to_isoformat(current_time),
-                payment_ts      = current_time - PAYMENT_DUE_TIME - 1,
+                payment_ts      = current_time - cluster_consts.payment_due_time - 1,
                 task_to_compute = task_to_compute(
                     timestamp                       = timestamp_to_isoformat(current_time),
                     requestor_public_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
@@ -99,7 +101,7 @@ def main():
             ),
             subtask_results_accepted(
                 timestamp       = timestamp_to_isoformat(current_time),
-                payment_ts      = current_time - PAYMENT_DUE_TIME - 1,
+                payment_ts      = current_time - cluster_consts.payment_due_time - 1,
                 task_to_compute = task_to_compute(
                     timestamp                       = timestamp_to_isoformat(current_time),
                     requestor_public_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
@@ -124,7 +126,7 @@ def main():
             subtask_results_accepted_list = [
                 subtask_results_accepted(
                     timestamp       = timestamp_to_isoformat(current_time),
-                    payment_ts      = current_time - PAYMENT_DUE_TIME - 1,
+                    payment_ts      = current_time - cluster_consts.payment_due_time - 1,
                     task_to_compute = task_to_compute(
                         timestamp                       = timestamp_to_isoformat(current_time),
                         requestor_public_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
@@ -137,7 +139,7 @@ def main():
                 ),
                 subtask_results_accepted(
                     timestamp       = timestamp_to_isoformat(current_time),
-                    payment_ts      = current_time - PAYMENT_DUE_TIME - 1,
+                    payment_ts      = current_time - cluster_consts.payment_due_time - 1,
                     task_to_compute = task_to_compute(
                         timestamp                       = timestamp_to_isoformat(current_time),
                         requestor_public_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
@@ -180,6 +182,7 @@ def main():
     )
 
     #  Test CASE 2C - Send ForcePayment with no value to be paid
+    correct_force_payment.sig = None
     api_request(
         cluster_url,
         'send',
@@ -198,6 +201,7 @@ def main():
     )
 
     # Test CASE 2D - Send correct ForcePayment
+    correct_force_payment.sig = None
     api_request(
         cluster_url,
         'send',
@@ -232,7 +236,6 @@ def main():
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
-        from concent_api.settings import PAYMENT_DUE_TIME
         main()
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file = sys.stderr)

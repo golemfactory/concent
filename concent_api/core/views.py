@@ -65,5 +65,6 @@ def protocol_constants(_request):
             'force_acceptance_time':     settings.FORCE_ACCEPTANCE_TIME,
             'maximum_download_time':     settings.MAXIMUM_DOWNLOAD_TIME,
             'subtask_verification_time': settings.SUBTASK_VERIFICATION_TIME,
+            'payment_due_time':          settings.PAYMENT_DUE_TIME,
         }
     )

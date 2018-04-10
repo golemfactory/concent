@@ -11,6 +11,7 @@ from golem_messages         import message
 from golem_messages         import shortcuts
 
 from utils.helpers          import get_current_utc_timestamp
+from utils.helpers          import get_result_file_path
 from utils.testing_helpers  import generate_ecc_key_pair
 
 from api_testing_helpers    import api_request
@@ -44,7 +45,7 @@ def upload_new_file_on_cluster(task_id, subtask_id, cluster_consts, current_time
     file_content    = task_id
     file_size       = len(file_content)
     file_check_sum  = 'sha1:' + hashlib.sha1(file_content.encode()).hexdigest()
-    file_path       = 'blender/result/{}/{}.{}.zip'.format(task_id, task_id, subtask_id)
+    file_path       = get_result_file_path(task_id, subtask_id)
 
     file_transfer_token = message.FileTransferToken()
     file_transfer_token.token_expiration_deadline = int(
@@ -69,7 +70,7 @@ def upload_new_file_on_cluster(task_id, subtask_id, cluster_consts, current_time
     headers = {
             'Authorization':                authorized_golem_transfer_token,
             'Concent-Client-Public-Key':    b64encode(CONCENT_PUBLIC_KEY).decode(),
-            'Concent-upload-path':          'blender/result/{}/{}.{}.zip'.format(task_id, task_id, subtask_id),
+            'Concent-upload-path':          get_result_file_path(task_id, subtask_id),
             'Content-Type':                 'application/x-www-form-urlencoded'
     }
 

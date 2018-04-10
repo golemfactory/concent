@@ -4,7 +4,9 @@ from django.conf.urls import url, include
 from django.contrib   import admin
 
 import core.urls
+import conductor.urls
 import gatekeeper.urls
+import verifier.urls
 
 AVAILABLE_CONCENT_FEATURES = OrderedDict([
     ("admin-panel", {
@@ -25,6 +27,15 @@ AVAILABLE_CONCENT_FEATURES = OrderedDict([
         ],
     }),
 
+    ("conductor", {
+        "required_django_apps": [
+            "conductor",
+        ],
+        "url_patterns":         [
+            url(r'^conductor/', include(conductor.urls, namespace = 'conductor')),
+        ],
+    }),
+
     ("gatekeeper", {
         "required_django_apps": [
             "gatekeeper",
@@ -33,4 +44,24 @@ AVAILABLE_CONCENT_FEATURES = OrderedDict([
             url(r'^gatekeeper/', include(gatekeeper.urls, namespace = 'gatekeeper')),
         ],
     }),
+
+    ("verifier", {
+        "required_django_apps": [
+            "verifier",
+        ],
+        "url_patterns": [
+            url(r'^verifier/', include(verifier.urls, namespace='verifier')),
+        ],
+    }),
 ])
+
+
+# Defines which database should be used for which app label
+APP_LABEL_TO_DATABASE = {
+    'auth':         'default',
+    'admin':        'default',
+    'contenttypes': 'default',
+    'core':         'default',
+    'conductor':    'storage',
+    'sessions':     'default',
+}

@@ -94,6 +94,75 @@ def check_settings_storage_cluster_address(app_configs, **kwargs):  # pylint: di
 
 
 @register()
+def check_settings_storage_server_internal_address(app_configs, **kwargs):  # pylint: disable=unused-argument
+    if not hasattr(settings, 'STORAGE_SERVER_INTERNAL_ADDRESS') and 'verifier' in settings.CONCENT_FEATURES:
+        return [Error(
+            'STORAGE_SERVER_INTERNAL_ADDRESS setting is not defined',
+            hint = 'Set STORAGE_SERVER_INTERNAL_ADDRESS in your local_settings.py to the address of a Concent storage cluster that offers the /upload/ and /download/ endpoints.',
+            id   = 'concent.E010',
+        )]
+
+    if hasattr(settings, 'STORAGE_SERVER_INTERNAL_ADDRESS'):
+        url_validator = URLValidator(schemes = ['http', 'https'])
+        try:
+            url_validator(settings.STORAGE_CLUSTER_ADDRESS)
+        except ValidationError as error:
+            return [Error(
+                'STORAGE_SERVER_INTERNAL_ADDRESS is not a valid URL',
+                hint = '{}'.format(error),
+                id   = 'concent.E011',
+            )]
+
+    return []
+
+
+@register()
+def check_settings_verifier_storage_path(app_configs, **kwargs):  # pylint: disable=unused-argument
+    if not hasattr(settings, 'VERIFIER_STORAGE_PATH') and 'verifier' in settings.CONCENT_FEATURES:
+        return [Error(
+            'VERIFIER_STORAGE_PATH setting is not defined',
+            hint = 'Set VERIFIER_STORAGE_PATH in your local_settings.py to the path to a directory where verifier can store files downloaded from the storage server, rendering results and any intermediate files.',
+            id   = 'concent.E010',
+        )]
+
+    if hasattr(settings, 'VERIFIER_STORAGE_PATH'):
+        if not os.path.exists(settings.VERIFIER_STORAGE_PATH):
+            return [Error(
+                'VERIFIER_STORAGE_PATH directory does not exists',
+                hint = 'Create directory {} or change VERIFIER_STORAGE_PATH setting'.format(settings.VERIFIER_STORAGE_PATH),
+                id   = 'concent.E016',
+            )]
+        if not os.access(settings.VERIFIER_STORAGE_PATH, os.W_OK):
+            return [Error(
+                'Cannot write to VERIFIER_STORAGE_PATH',
+                hint = 'Current user does not have write permissions to directory {}'.format(settings.VERIFIER_STORAGE_PATH),
+                id   = 'concent.E017',
+            )]
+
+    return []
+
+
+@register()
+def check_settings_blender_max_rendering_time(app_configs, **kwargs):  # pylint: disable=unused-argument
+    if not hasattr(settings, 'BLENDER_MAX_RENDERING_TIME') and 'verifier' in settings.CONCENT_FEATURES:
+        return [Error(
+            'BLENDER_MAX_RENDERING_TIME setting is not defined',
+            hint = 'Set BLENDER_MAX_RENDERING_TIME in your local_settings.py to a positive integer.',
+            id   = 'concent.E010',
+        )]
+
+    if hasattr(settings, 'BLENDER_MAX_RENDERING_TIME'):
+        if not isinstance(settings.BLENDER_MAX_RENDERING_TIME, int) or settings.BLENDER_MAX_RENDERING_TIME <= 0:
+            return [Error(
+                'BLENDER_MAX_RENDERING_TIME is not a positive integer',
+                hint = 'Set BLENDER_MAX_RENDERING_TIME in your local_settings.py to a positive integer.',
+                id   = 'concent.E018',
+            )]
+
+    return []
+
+
+@register()
 def check_payment_backend(app_configs, **kwargs):  # pylint: disable=unused-argument
     if 'concent-api' in settings.CONCENT_FEATURES and (
         not hasattr(settings, 'PAYMENT_BACKEND') or

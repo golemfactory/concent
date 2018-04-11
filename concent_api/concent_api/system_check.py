@@ -34,6 +34,30 @@ def create_error_15_ssl_cert_path_is_not_a_file(path):
     )
 
 
+def create_error_15_if_new_chain_segment_time_not_integer():
+    return Error(
+        "CREATION_NEW_CHAIN_SEGMENT_TIME should be integer",
+        hint    = "Set correct value for CREATION_NEW_CHAIN_SEGMENT_TIME in your local_settings.py",
+        id      = "concent.E015",
+    )
+
+
+def create_error_16_if_new_chain_segment_time_is_not_bigger_than_0():
+    return Error(
+        "CREATION_NEW_CHAIN_SEGMENT_TIME should be bigger than 0",
+        hint    = "Set correct value for CREATION_NEW_CHAIN_SEGMENT_TIME in your local_settings.py",
+        id      = "concent.E016",
+    )
+
+
+def create_error_17_if_geth_container_address_has_wrong_value():
+    return Error(
+        "GETH_CONTAINER_ADDRESS should be a valid url address",
+        hint    = "Set correct value for GETH_CONTAINER_ADDRESS in your local_settings.py",
+        id      = "concent.E017",
+    )
+
+
 @register()
 def check_settings_concent_features(app_configs, **kwargs):  # pylint: disable=unused-argument
 
@@ -129,3 +153,38 @@ def storage_cluster_certificate_path_check(app_configs = None, **kwargs):  # pyl
         elif not os.path.isfile(certificate_path):
             errors.append(create_error_15_ssl_cert_path_is_not_a_file(certificate_path))
     return errors
+
+
+@register()
+def creation_new_chain_segment_time_check(app_configs, **kwargs):  # pylint: disable=unused-argument
+    errors = []
+    if (
+        hasattr(settings, 'PAYMENT_BACKEND') and
+        settings.PAYMENT_BACKEND == 'core.payments.sci_backend'
+    ):
+        if (
+            hasattr(settings, 'CREATION_NEW_CHAIN_SEGMENT_TIME')
+        ):
+            creation_new_chain_segment_time = settings.CREATION_NEW_CHAIN_SEGMENT_TIME
+            if not isinstance(creation_new_chain_segment_time, int):
+                errors.append(create_error_15_if_new_chain_segment_time_not_integer())
+            elif not creation_new_chain_segment_time > 0:
+                errors.append(create_error_16_if_new_chain_segment_time_is_not_bigger_than_0())
+    return errors
+
+
+@register
+def geth_container_address_check(app_configs, **kwargs):  # pylint: disable=unused-argument
+    if (
+        hasattr(settings, 'PAYMENT_BACKEND') and
+        settings.PAYMENT_BACKEND == 'core.payments.sci_backend'
+    ):
+        if hasattr(settings, 'GETH_CONTAINER_ADDRESS'):
+            url_validator = URLValidator(schemes = ['http', 'https'])
+            try:
+                url_validator(settings.GETH_CONTAINER_ADDRESS)
+            except ValidationError:
+                return [create_error_17_if_geth_container_address_has_wrong_value()]
+        else:
+            return [create_error_17_if_geth_container_address_has_wrong_value()]
+    return []

@@ -202,7 +202,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.concents.AckReportComputedTask,
+                message.AckReportComputedTask,
             ],
             task_id         = '1',
             subtask_id      = '8',
@@ -374,7 +374,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.concents.RejectReportComputedTask,
+                message.RejectReportComputedTask,
             ],
             task_id         = '1',
             subtask_id      = '8',
@@ -526,7 +526,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
             timestamp           = "2017-12-01 11:00:05",
             cannot_compute_task = cannot_compute_task,
-            reason              = message.concents.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
+            reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
         )
 
         serialized_reject_report_computed_task = self._get_serialized_reject_report_computed_task(
@@ -556,7 +556,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.concents.RejectReportComputedTask,
+                message.RejectReportComputedTask,
             ],
             task_id         = '1',
             subtask_id      = '8',
@@ -935,7 +935,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
             timestamp           = "2017-12-01 11:00:05",
             cannot_compute_task = cannot_compute_task,
-            reason              = message.concents.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
+            reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
         )
 
         serialized_reject_report_computed_task = self._get_serialized_reject_report_computed_task(
@@ -1088,7 +1088,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.concents.AckReportComputedTask,
+                message.AckReportComputedTask,
             ],
             task_id         = '1',
             subtask_id      = '8',
@@ -1243,7 +1243,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
             timestamp           = "2017-12-01 11:00:05",
             cannot_compute_task = cannot_compute_task,
-            reason              = message.concents.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
+            reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
         )
 
         serialized_reject_report_computed_task = self._get_serialized_reject_report_computed_task(
@@ -1272,7 +1272,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.concents.RejectReportComputedTask,
+                message.RejectReportComputedTask,
             ],
             task_id         = '1',
             subtask_id      = '8',
@@ -1545,7 +1545,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
             timestamp           = "2017-12-01 11:00:15",
             cannot_compute_task = cannot_compute_task,
-            reason              = message.concents.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
+            reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
         )
 
         serialized_reject_report_computed_task = self._get_serialized_reject_report_computed_task(
@@ -1830,7 +1830,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
             timestamp           = "2017-12-01 11:00:05",
             task_to_compute     = task_to_compute,
-            reason              = message.concents.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
+            reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
         )
 
         serialized_reject_report_computed_task = self._get_serialized_reject_report_computed_task(
@@ -2084,7 +2084,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.concents.AckReportComputedTask,
+                message.AckReportComputedTask,
             ],
             task_id         = '1',
             subtask_id      = '8',
@@ -2256,7 +2256,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.concents.AckReportComputedTask,
+                message.AckReportComputedTask,
             ],
             task_id         = '1',
             subtask_id      = '8',

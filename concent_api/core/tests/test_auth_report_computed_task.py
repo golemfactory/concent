@@ -206,7 +206,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.concents.AckReportComputedTask,
+                message.AckReportComputedTask,
             ],
             task_id         = '1',
             subtask_id      = '8',
@@ -461,7 +461,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.concents.RejectReportComputedTask,
+                message.RejectReportComputedTask,
             ],
             task_id         = '1',
             subtask_id      = '8',
@@ -719,7 +719,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.concents.RejectReportComputedTask,
+                message.RejectReportComputedTask,
             ],
             task_id         = '1',
             subtask_id      = '8',

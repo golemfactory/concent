@@ -636,28 +636,28 @@ def handle_messages_from_database(
             response_to_client          = message.concents.ForceReportComputedTaskResponse(
                 reject_report_computed_task = reject_report_computed_task,
             )
-            if reject_report_computed_task.reason == message.concents.RejectReportComputedTask.REASON.TaskTimeLimitExceeded:
-                ack_report_computed_task = message.concents.AckReportComputedTask(
                     task_to_compute = deserialize_message(pending_response.subtask.task_to_compute.data.tobytes()),
                     subtask_id      = pending_response.subtask.subtask_id,
+            if reject_report_computed_task.reason == message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded:
+                ack_report_computed_task = message.AckReportComputedTask(
                 )
                 response_to_client.ack_report_computed_task = ack_report_computed_task
             mark_message_as_delivered_and_log(pending_response, response_to_client)
             return response_to_client
         else:
             response_to_client = message.concents.ForceReportComputedTaskResponse(
-                ack_report_computed_task = message.concents.AckReportComputedTask(
                     task_to_compute = deserialize_message(pending_response.subtask.task_to_compute.data.tobytes()),
                     subtask_id      = pending_response.subtask.subtask_id,
+                ack_report_computed_task = message.AckReportComputedTask(
                 ),
             )
             mark_message_as_delivered_and_log(pending_response, response_to_client)
             return response_to_client
 
     elif pending_response.response_type == PendingResponse.ResponseType.VerdictReportComputedTask.name:  # pylint: disable=no-member
-        ack_report_computed_task = message.concents.AckReportComputedTask(
             task_to_compute = deserialize_message(pending_response.subtask.task_to_compute.data.tobytes()),
             subtask_id      = pending_response.subtask.subtask_id,
+        ack_report_computed_task = message.AckReportComputedTask(
         )
         report_computed_task     = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
         response_to_client = message.concents.VerdictReportComputedTask(
@@ -844,8 +844,8 @@ def set_subtask_messages(
     subtask:                        Subtask,
     task_to_compute:                message.TaskToCompute                       = None,
     report_computed_task:           message.ReportComputedTask                  = None,
-    ack_report_computed_task:       message.concents.AckReportComputedTask      = None,
-    reject_report_computed_task:    message.concents.RejectReportComputedTask   = None,
+    ack_report_computed_task:       message.AckReportComputedTask      = None,
+    reject_report_computed_task:    message.RejectReportComputedTask   = None,
     subtask_results_accepted:       message.tasks.SubtaskResultsAccepted        = None,
     subtask_results_rejected:       message.tasks.SubtaskResultsRejected        = None,
 ):

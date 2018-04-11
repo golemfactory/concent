@@ -523,7 +523,7 @@ class ConcentIntegrationTestCase(TestCase):
         reason              = None,
     ):
         with freeze_time(timestamp or self._get_timestamp_string()):
-            return message.concents.RejectReportComputedTask(
+            return message.RejectReportComputedTask(
                 cannot_compute_task = cannot_compute_task,
                 task_to_compute     = task_to_compute,
                 reason              = reason,

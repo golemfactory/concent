@@ -733,9 +733,9 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         task_to_compute_message.full_clean()
         task_to_compute_message.save()
 
-        ack_report_computed_task = message.concents.AckReportComputedTask(
             task_to_compute = self.task_to_compute,
             subtask_id      = self.task_to_compute.compute_task_def['subtask_id']  # pylint: disable=no-member
+        ack_report_computed_task = message.AckReportComputedTask(
         )
 
         stored_ack_report_computed_task = StoredMessage(
@@ -886,9 +886,9 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
         task_to_compute_message.full_clean()
         task_to_compute_message.save()
 
-        ack_report_computed_task = message.concents.AckReportComputedTask(
             task_to_compute = self.task_to_compute,
             subtask_id      = self.task_to_compute.compute_task_def['subtask_id']  # pylint: disable=no-member
+        ack_report_computed_task = message.AckReportComputedTask(
         )
 
         stored_ack_report_computed_task = StoredMessage(

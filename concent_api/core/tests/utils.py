@@ -625,3 +625,24 @@ class ConcentIntegrationTestCase(TestCase):
         golem_message = golem_message.serialize(sign_func = signature)
         golem_message = message.Message.deserialize(golem_message, decrypt_func = None, check_time = False)
         return golem_message.sig
+
+    def _create_client_auth_message(self, client_priv_key, client_public_key):  # pylint: disable=no-self-use
+        client_auth = message.concents.ClientAuthorization()
+        client_auth.client_public_key = client_public_key
+        return dump(client_auth, client_priv_key, settings.CONCENT_PUBLIC_KEY)
+
+    def _create_provider_auth_message(self):
+        return self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY)
+
+    def _create_diff_provider_auth_message(self):
+        return self._create_client_auth_message(self.DIFFERENT_PROVIDER_PRIVATE_KEY, self.DIFFERENT_PROVIDER_PUBLIC_KEY)
+
+    def _create_requestor_auth_message(self):
+        return self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY)
+
+    def _create_diff_requestor_auth_message(self):
+        return self._create_client_auth_message(self.DIFFERENT_REQUESTOR_PRIVATE_KEY, self.DIFFERENT_REQUESTOR_PUBLIC_KEY)
+
+    def _create_test_ping_message(self):  # pylint: disable=no-self-use
+        ping_message = message.Ping()
+        return ping_message

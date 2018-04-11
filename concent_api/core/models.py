@@ -275,16 +275,16 @@ class Subtask(Model):
     def clean(self):
         super().clean()
 
-        # next_deadline can be None only for passive states
-        if not self._state.adding and self.next_deadline is None and self.state_enum not in self.PASSIVE_STATES:
+        # next_deadline must be int only for active states
+        if not self._state.adding and not isinstance(self.next_deadline, int) and self.state_enum in self.ACTIVE_STATES:
             raise ValidationError({
-                'next_deadline': 'next_deadline is None for active state.'
+                'next_deadline': 'next_deadline must be int for active state.'
             })
 
         # next_deadline must be None in passive states
         if not self._state.adding and self.next_deadline is not None and self.state_enum in self.PASSIVE_STATES:
             raise ValidationError({
-                'next_deadline': 'next_deadline is not None for passive state.'
+                'next_deadline': 'next_deadline must be None for passive state.'
             })
 
         # State transition can happen only by defined rule

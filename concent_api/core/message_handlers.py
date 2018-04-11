@@ -2,6 +2,8 @@ import datetime
 
 import copy
 from base64                         import b64encode
+from typing import Optional
+
 from django.conf                    import settings
 from django.http                    import HttpResponse
 from django.utils                   import timezone
@@ -537,7 +539,7 @@ def store_subtask(
     provider_public_key:            bytes,
     requestor_public_key:           bytes,
     state:                          Subtask.SubtaskState,
-    next_deadline:                  int,
+    next_deadline:                  Optional[int],
     task_to_compute:                message.TaskToCompute                = None,
     report_computed_task:           message.ReportComputedTask           = None,
     ack_report_computed_task:       message.AckReportComputedTask        = None,
@@ -554,7 +556,7 @@ def store_subtask(
     assert isinstance(provider_public_key,  bytes)
     assert isinstance(requestor_public_key, bytes)
     assert state in Subtask.SubtaskState
-    assert (state in Subtask.ACTIVE_STATES)  == (next_deadline is not None)
+    assert (state in Subtask.ACTIVE_STATES)  == (isinstance(next_deadline, int))
     assert (state in Subtask.PASSIVE_STATES) == (next_deadline is None)
 
     provider  = Client.objects.get_or_create_full_clean(provider_public_key)
@@ -566,7 +568,7 @@ def store_subtask(
         provider        = provider,
         requestor       = requestor,
         state           = state.name,
-        next_deadline   = parse_timestamp_to_utc_datetime(next_deadline),
+        next_deadline   = parse_timestamp_to_utc_datetime(next_deadline) if next_deadline is not None else None,
     )
 
     set_subtask_messages(

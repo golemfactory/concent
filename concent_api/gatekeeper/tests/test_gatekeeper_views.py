@@ -45,7 +45,7 @@ class GatekeeperViewUploadTest(TestCase):
                 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
             ),
             HTTP_AUTHORIZATION = 'Golem ' + encrypted_token,
-            content_type = 'application/x-www-form-urlencoded',
+            content_type = 'application/octet-stream',
             HTTP_CONCENT_CLIENT_PUBLIC_KEY = self.public_key
         )
 

@@ -36,6 +36,7 @@ VALID_SHA1_HASH_REGEX = re.compile(r"^[a-fA-F\d]{40}$")
 def upload(request):
     logger.debug("Upload request received.")
     if request.content_type != 'application/x-www-form-urlencoded':
+        logger.info(f'Unsupported content type: {request.content_type}')
         return gatekeeper_access_denied_response('Unsupported content type.')
 
     path_to_file = request.get_full_path().partition(reverse('gatekeeper:upload'))[2]

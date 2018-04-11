@@ -1,15 +1,22 @@
 import os
 import sys
+from base64 import b64decode
 from unittest import TestCase, skip, expectedFailure
+
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from golem_messages.message import ComputeTaskDef, TaskToCompute, ReportComputedTask
 from golem_messages.message.concents import ForceGetTaskResult
-from command_line_tool.message_extractor import MessageExtractor, convert_message_name
+from command_line_tool.message_extractor import MessageExtractor, convert_message_name, split_uppercase
 from assertpy import assert_that
 
 
 class TestMessageExtractor(TestCase):
 
+    def test_that_message_is_reconverted_when_source_format_is_given(self):
+        input = 'ForceComputedTask'
+        task = split_uppercase(input)
+        assert_that(task).is_equal_to('force_computed_task')
 
     def test_that_exception_is_raised_when_wrong_dict_is_given(self):  # TODO: what exception?
         # assert_that()
@@ -20,10 +27,10 @@ class TestMessageExtractor(TestCase):
         subtask_id = "12"
         deadline = 1510394400
 
-        requestor_public_key = "reqpubkey"
-        requestor_ethereum_public_key = "reqethpubkey"
-        provider_public_key = "provpubkey"
-        provider_ethereum_public_key = "provethpubkey"
+        requestor_public_key = "mrdOXP6Owe3i48G29RHPVU6wewvuUNuNxFB+kPTDnmI21+p5ShttCSUAbHOVm8OIUF9hEluc1+lICJZGkFSSOA=="
+        requestor_ethereum_public_key = "b'T8ER1hrI9hH0Zyu/m6u9H2K4rc1mC/dlCqK0PSzBSwvKBdHfysmrIIsQMyvecDU+TIkhDmq93Olfo5h2FSGRjw=='"
+        provider_public_key = "PKn3TUiXdfeoHjoeu6PEDMD5JqrdmyeKlbG5rWUpgAs6qbKj7k9bm8vvkmhn40RkMykho6uAHsYVy72ZBYUelQ=="
+        provider_ethereum_public_key = "b'A9LjJQJDc9ugt+kxA/r58chrekDr3VFZpfjU6Pv9dTP1gGLOvKEUxGwlB1ffDAbdWY8P0Pa37Mt6muFpJKC1mA=='=="
 
         address = "10.10.10.1"
         size = 1048576  # bytes
@@ -61,10 +68,10 @@ class TestMessageExtractor(TestCase):
         # assert_that(message.report_computed_task.package_hash).is_equal_to(package_hash)
 
         task_to_compute = report_computed_task.task_to_compute
-        assert_that(task_to_compute.requestor_public_key).is_equal_to(requestor_public_key)
-        assert_that(task_to_compute.requestor_ethereum_public_key).is_equal_to(requestor_ethereum_public_key)
-        assert_that(task_to_compute.provider_public_key).is_equal_to(provider_public_key)
-        assert_that(task_to_compute.provider_ethereum_public_key).is_equal_to(provider_ethereum_public_key)
+        assert_that(task_to_compute.requestor_public_key).is_equal_to(b64decode(requestor_public_key))
+        assert_that(task_to_compute.requestor_ethereum_public_key).is_equal_to(b64decode(requestor_ethereum_public_key))
+        assert_that(task_to_compute.provider_public_key).is_equal_to(b64decode(provider_public_key))
+        assert_that(task_to_compute.provider_ethereum_public_key).is_equal_to(b64decode(provider_ethereum_public_key))
         assert_that(task_to_compute).is_instance_of(TaskToCompute)
 
         compute_task_def = task_to_compute.compute_task_def
@@ -78,10 +85,10 @@ class TestMessageExtractor(TestCase):
         subtask_id = "12"
         deadline = 1510394400
 
-        requestor_public_key = "reqpubkey"
-        requestor_ethereum_public_key = "reqethpubkey"
-        provider_public_key = "provpubkey"
-        provider_ethereum_public_key = "provethpubkey"
+        requestor_public_key = "mrdOXP6Owe3i48G29RHPVU6wewvuUNuNxFB+kPTDnmI21+p5ShttCSUAbHOVm8OIUF9hEluc1+lICJZGkFSSOA=="
+        requestor_ethereum_public_key = "b'T8ER1hrI9hH0Zyu/m6u9H2K4rc1mC/dlCqK0PSzBSwvKBdHfysmrIIsQMyvecDU+TIkhDmq93Olfo5h2FSGRjw=='"
+        provider_public_key = "PKn3TUiXdfeoHjoeu6PEDMD5JqrdmyeKlbG5rWUpgAs6qbKj7k9bm8vvkmhn40RkMykho6uAHsYVy72ZBYUelQ=="
+        provider_ethereum_public_key = "b'A9LjJQJDc9ugt+kxA/r58chrekDr3VFZpfjU6Pv9dTP1gGLOvKEUxGwlB1ffDAbdWY8P0Pa37Mt6muFpJKC1mA=='=="
 
         address = "10.10.10.1"
         size = 1048576  # bytes
@@ -114,10 +121,10 @@ class TestMessageExtractor(TestCase):
         assert_that(task.size).is_equal_to(size)
         # assert_that(task.package_hash).is_equal_to(package_hash)
 
-        assert_that(task.task_to_compute.requestor_public_key).is_equal_to(requestor_public_key)
-        assert_that(task.task_to_compute.requestor_ethereum_public_key).is_equal_to(requestor_ethereum_public_key)
-        assert_that(task.task_to_compute.provider_public_key).is_equal_to(provider_public_key)
-        assert_that(task.task_to_compute.provider_ethereum_public_key).is_equal_to(provider_ethereum_public_key)
+        assert_that(task.task_to_compute.requestor_public_key).is_equal_to(b64decode(requestor_public_key))
+        assert_that(task.task_to_compute.requestor_ethereum_public_key).is_equal_to(b64decode(requestor_ethereum_public_key))
+        assert_that(task.task_to_compute.provider_public_key).is_equal_to(b64decode(provider_public_key))
+        assert_that(task.task_to_compute.provider_ethereum_public_key).is_equal_to(b64decode(provider_ethereum_public_key))
         assert_that(task.task_to_compute).is_instance_of(TaskToCompute)
 
         assert_that(task.task_to_compute.compute_task_def).is_instance_of(ComputeTaskDef)
@@ -130,10 +137,10 @@ class TestMessageExtractor(TestCase):
         subtask_id = "12"
         deadline = 1510394400
 
-        requestor_public_key = "reqpubkey"
-        requestor_ethereum_public_key = "reqethpubkey"
-        provider_public_key = "provpubkey"
-        provider_ethereum_public_key = "provethpubkey"
+        requestor_public_key = "mrdOXP6Owe3i48G29RHPVU6wewvuUNuNxFB+kPTDnmI21+p5ShttCSUAbHOVm8OIUF9hEluc1+lICJZGkFSSOA=="
+        requestor_ethereum_public_key = "b'T8ER1hrI9hH0Zyu/m6u9H2K4rc1mC/dlCqK0PSzBSwvKBdHfysmrIIsQMyvecDU+TIkhDmq93Olfo5h2FSGRjw=='"
+        provider_public_key = "PKn3TUiXdfeoHjoeu6PEDMD5JqrdmyeKlbG5rWUpgAs6qbKj7k9bm8vvkmhn40RkMykho6uAHsYVy72ZBYUelQ=="
+        provider_ethereum_public_key = "b'A9LjJQJDc9ugt+kxA/r58chrekDr3VFZpfjU6Pv9dTP1gGLOvKEUxGwlB1ffDAbdWY8P0Pa37Mt6muFpJKC1mA=='=="
 
         input = {
             "name": "task_to_compute",
@@ -152,10 +159,10 @@ class TestMessageExtractor(TestCase):
 
         task = MessageExtractor().extract_message(input)
         assert_that(task).is_instance_of(TaskToCompute)
-        assert_that(task.requestor_public_key).is_equal_to(requestor_public_key)
-        assert_that(task.requestor_ethereum_public_key).is_equal_to(requestor_ethereum_public_key)
-        assert_that(task.provider_public_key).is_equal_to(provider_public_key)
-        assert_that(task.provider_ethereum_public_key).is_equal_to(provider_ethereum_public_key)
+        assert_that(task.requestor_public_key).is_equal_to(b64decode(requestor_public_key))
+        assert_that(task.requestor_ethereum_public_key).is_equal_to(b64decode(requestor_ethereum_public_key))
+        assert_that(task.provider_public_key).is_equal_to(b64decode(provider_public_key))
+        assert_that(task.provider_ethereum_public_key).is_equal_to(b64decode(provider_ethereum_public_key))
         assert_that(task.compute_task_def).is_instance_of(ComputeTaskDef)
         assert_that(task.compute_task_def["task_id"]).is_equal_to(task_id)
         assert_that(task.compute_task_def["subtask_id"]).is_equal_to(subtask_id)

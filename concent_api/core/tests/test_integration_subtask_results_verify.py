@@ -29,7 +29,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self.subtask_id = "subtask_1"
         self.report_computed_task = self._create_report_computed_task()
 
-    def test_that_concent_responds_with_service_refused_when_verification_for_this_subtask_done_before(self):
+    def test_that_concent_responds_with_service_refused_when_verification_for_this_subtask_is_duplicated(self):
         """
         Provider -> Concent: SubtaskResultsVerify
         Concent -> Provider: ServiceRefused (DuplicateRequest)
@@ -68,6 +68,73 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 'reason': message.concents.ServiceRefused.REASON.DuplicateRequest,
             }
         )
+        self._assert_stored_message_counter_not_increased()
+
+    def test_that_concent_responds_with_http_400_when_verification_received_in_accepted_state(self):
+        """
+        Provider -> Concent: SubtaskResultsVerify
+        Concent -> Provider: HTTP400
+        """
+        # given
+        (serialized_subtask_results_verify,
+         subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify()
+
+        store_or_update_subtask(
+            task_id=self.task_id,
+            subtask_id=self.subtask_id,
+            provider_public_key=self.PROVIDER_PUBLIC_KEY,
+            requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
+            state=Subtask.SubtaskState.ACCEPTED,
+            task_to_compute=self.report_computed_task.task_to_compute,
+        )
+        self._assert_stored_message_counter_increased(increased_by=1)
+
+        # when
+        with freeze_time(subtask_results_verify_time_str):
+            response = self.client.post(
+                reverse('core:send'),
+                data=serialized_subtask_results_verify,
+                content_type='application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
+            )
+
+        # then
+        self._test_400_response(response)
+        self._assert_stored_message_counter_not_increased()
+
+    def test_that_concent_responds_with_http_400_when_verification_received_in_failed_state(self):
+        """
+        Provider -> Concent: SubtaskResultsVerify
+        Concent -> Provider: HTTP400
+        """
+        # given
+        (serialized_subtask_results_verify,
+         subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify()
+
+        store_or_update_subtask(
+            task_id=self.task_id,
+            subtask_id=self.subtask_id,
+            provider_public_key=self.PROVIDER_PUBLIC_KEY,
+            requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
+            state=Subtask.SubtaskState.FAILED,
+            task_to_compute=self.report_computed_task.task_to_compute,
+            report_computed_task=self.report_computed_task,
+        )
+        self._assert_stored_message_counter_increased(increased_by=2)
+
+        # when
+        with freeze_time(subtask_results_verify_time_str):
+            response = self.client.post(
+                reverse('core:send'),
+                data=serialized_subtask_results_verify,
+                content_type='application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
+            )
+
+        # then
+        self._test_400_response(response)
         self._assert_stored_message_counter_not_increased()
 
     def test_that_concent_responds_with_service_refused_when_request_arrives_too_late(self):

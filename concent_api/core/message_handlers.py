@@ -1066,6 +1066,14 @@ def handle_send_subtask_results_verify(
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
         )
+    if is_message_recieved_in_wrong_state(
+        compute_task_def['subtask_id'],
+        [
+            Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
+            Subtask.SubtaskState.FAILED.name,  # pylint: disable=no-member
+        ]
+    ):
+        raise Http400("SubtaskResultsVerify is not allowed in current state")
     if not current_time <= subtask_results_rejected.timestamp + settings.ADDITIONAL_VERIFICATION_CALL_TIME:
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.InvalidRequest,
@@ -1135,3 +1143,24 @@ def handle_message(client_message, request):
         return handle_send_subtask_results_verify(request, client_message)
     else:
         return handle_unsupported_golem_messages_type(client_message)
+
+
+def is_signed_by_right_party(
+    subtask_results_rejected: message.tasks.SubtaskResultsRejected,
+    other_party_public_key: bytes
+) -> bool:
+    try:
+        validate_golem_message_signed_with_key(
+            subtask_results_rejected,
+            other_party_public_key,
+        )
+        return True
+    except Http400:
+        return False
+
+
+def is_message_recieved_in_wrong_state(subtask_id, forbidden_states):
+    return Subtask.objects.filter(
+        subtask_id=subtask_id,
+        state__in=forbidden_states
+    ).exists()

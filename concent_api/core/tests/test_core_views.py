@@ -50,6 +50,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             compute_task_def     = self.compute_task_def,
             provider_public_key  = self.PROVIDER_PUBLIC_KEY,
             requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
+            price=0,
         )
 
         self.correct_golem_data                                         = message.ForceReportComputedTask()
@@ -68,12 +69,14 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         self.task_to_compute_for_cannot_compute_message = message.TaskToCompute(
             provider_public_key  = self.PROVIDER_PUBLIC_KEY,
             requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
+            price=0,
         )
 
         self.cannot_compute_task = message.CannotComputeTask()
         self.cannot_compute_task.task_to_compute = message.TaskToCompute(
             provider_public_key  = self.PROVIDER_PUBLIC_KEY,
             requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
+            price=0,
         )
 
         self.cannot_compute_task.task_to_compute.compute_task_def               = message.ComputeTaskDef()
@@ -157,6 +160,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             compute_task_def     = compute_task_def,
             provider_public_key  = PROVIDER_PUBLIC_KEY,
             requestor_public_key = REQUESTOR_PUBLIC_KEY,
+            price=0,
         )
 
         report_computed_task = message.tasks.ReportComputedTask(
@@ -197,6 +201,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             compute_task_def     = compute_task_def,
             provider_public_key  = PROVIDER_PUBLIC_KEY,
             requestor_public_key = REQUESTOR_PUBLIC_KEY,
+            price=0,
         )
         report_computed_task = message.tasks.ReportComputedTask(
             task_to_compute = task_to_compute
@@ -304,6 +309,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 compute_task_def     = self.compute_task_def,
                 provider_public_key  = PROVIDER_PUBLIC_KEY,
                 requestor_public_key = REQUESTOR_PUBLIC_KEY,
+                price=0,
             )
 
         serialized_task_to_compute      = dump(task_to_compute,             REQUESTOR_PRIVATE_KEY,   PROVIDER_PUBLIC_KEY)
@@ -439,6 +445,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 compute_task_def     = compute_task_def,
                 provider_public_key  = PROVIDER_PUBLIC_KEY,
                 requestor_public_key = REQUESTOR_PUBLIC_KEY,
+                price=0,
             )
 
             serialized_task_to_compute   = dump(task_to_compute,             REQUESTOR_PRIVATE_KEY,   PROVIDER_PUBLIC_KEY)
@@ -607,6 +614,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
                 compute_task_def     = self.compute_task_def,
                 provider_public_key  = PROVIDER_PUBLIC_KEY,
                 requestor_public_key = REQUESTOR_PUBLIC_KEY,
+                price=0,
             )
             self.force_golem_data = message.ForceReportComputedTask(
                 report_computed_task = message.tasks.ReportComputedTask(
@@ -706,6 +714,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
                 compute_task_def     = self.compute_task_def,
                 provider_public_key  = PROVIDER_PUBLIC_KEY,
                 requestor_public_key = REQUESTOR_PUBLIC_KEY,
+                price=0,
             )
             self.force_golem_data = message.ForceReportComputedTask(
                 report_computed_task = message.tasks.ReportComputedTask(
@@ -852,6 +861,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             compute_task_def     = self.compute_task_def,
             provider_public_key  = PROVIDER_PUBLIC_KEY,
             requestor_public_key = REQUESTOR_PUBLIC_KEY,
+            price=0,
         )
 
         self.force_golem_data = message.ForceReportComputedTask(

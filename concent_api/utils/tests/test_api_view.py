@@ -236,6 +236,7 @@ class ApiViewTransactionTestCase(TransactionTestCase):
             compute_task_def     = compute_task_def,
             requestor_public_key = REQUESTOR_PUBLIC_KEY,
             provider_public_key  = PROVIDER_PUBLIC_KEY,
+            price=0,
         )
 
         force_report_computed_task                                      = message.ForceReportComputedTask()

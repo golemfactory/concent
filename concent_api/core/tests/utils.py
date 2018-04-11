@@ -113,6 +113,7 @@ class ConcentIntegrationTestCase(TestCase):
         requestor_public_key            = None,
         requestor_ethereum_public_key   = None,
         provider_public_key             = None,
+        price                           = 0,
     ):
         """ Returns TaskToCompute deserialized. """
         if compute_task_def is None:
@@ -135,7 +136,8 @@ class ConcentIntegrationTestCase(TestCase):
                 requestor_ethereum_public_key   = requestor_ethereum_public_key,
                 provider_public_key             = (
                     provider_public_key if provider_public_key is not None else self.PROVIDER_PUBLIC_KEY
-                )
+                ),
+                price=price,
             )
         return task_to_compute
 

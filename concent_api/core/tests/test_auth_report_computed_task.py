@@ -35,6 +35,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 compute_task_def     = self.compute_task_def,
                 provider_public_key  = self.PROVIDER_PUBLIC_KEY,
                 requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
+                price=0,
             )
 
         # sign task_to_compute message with PROVIDER sig
@@ -294,6 +295,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 compute_task_def     = compute_task_def,
                 provider_public_key  = self.PROVIDER_PUBLIC_KEY,
                 requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
+                price=0,
             )
 
         # sign task_to_compute message with PROVIDER sig
@@ -399,6 +401,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             cannot_compute_task = message.CannotComputeTask()
         cannot_compute_task.task_to_compute                  = message.TaskToCompute(
             provider_public_key = self.PROVIDER_PUBLIC_KEY,
+            price=0,
         )
         cannot_compute_task.task_to_compute.compute_task_def = compute_task_def
         cannot_compute_task.reason                           = message.CannotComputeTask.REASON.WrongKey
@@ -551,6 +554,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 compute_task_def     = compute_task_def,
                 provider_public_key  = self.PROVIDER_PUBLIC_KEY,
                 requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
+                price=0,
             )
 
         # sign task_to_compute message with PROVIDER sig
@@ -656,6 +660,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             cannot_compute_task = message.CannotComputeTask()
         cannot_compute_task.task_to_compute                  = message.TaskToCompute(
             provider_public_key = self.PROVIDER_PUBLIC_KEY,
+            price=0,
         )
         cannot_compute_task.task_to_compute.compute_task_def = compute_task_def
         cannot_compute_task.reason                           = message.CannotComputeTask.REASON.WrongCTD

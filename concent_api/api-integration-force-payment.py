@@ -12,8 +12,8 @@ from golem_messages         import message
 from utils.helpers          import get_current_utc_timestamp
 from utils.testing_helpers  import generate_ecc_key_pair
 
-from api_testing_helpers    import api_request
-from api_testing_helpers    import timestamp_to_isoformat
+from api_testing_common import api_request
+from api_testing_common import timestamp_to_isoformat
 
 from protocol_constants import get_protocol_constants
 
@@ -160,7 +160,10 @@ def main():
             'temporary-list-of-transactions':   'True',
             'temporary-v':                      '1',
             'temporary-eth-block':              '1'
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ServiceRefused.TYPE,
+        expected_content_type='application/octet-stream',
     )
 
     #  Test CASE 2B - Send ForcePayment beyond payment time
@@ -178,7 +181,10 @@ def main():
             'temporary-list-of-transactions':   '',
             'temporary-v':                      '-1',
             'temporary-eth-block':              '-1'
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForcePaymentRejected.TYPE,
+        expected_content_type='application/octet-stream',
     )
 
     #  Test CASE 2C - Send ForcePayment with no value to be paid
@@ -197,7 +203,10 @@ def main():
             'temporary-list-of-transactions':   'True',
             'temporary-v':                      '-1',
             'temporary-eth-block':              '-1'
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForcePaymentRejected.TYPE,
+        expected_content_type='application/octet-stream',
     )
 
     # Test CASE 2D - Send correct ForcePayment
@@ -216,7 +225,10 @@ def main():
             'temporary-list-of-transactions':   'True',
             'temporary-v':                      '1',
             'temporary-eth-block':              '1'
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForcePaymentCommitted.TYPE,
+        expected_content_type='application/octet-stream',
     )
 
     time.sleep(5)
@@ -229,7 +241,10 @@ def main():
         headers = {
             'Content-Type': 'application/octet-stream',
             'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForcePaymentCommitted.TYPE,
+        expected_content_type='application/octet-stream',
     )
 
 

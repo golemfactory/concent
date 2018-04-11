@@ -12,8 +12,8 @@ from golem_messages         import message
 from utils.helpers          import get_current_utc_timestamp
 from utils.testing_helpers  import generate_ecc_key_pair
 
-from api_testing_helpers    import api_request
-from api_testing_helpers    import timestamp_to_isoformat
+from api_testing_common import api_request
+from api_testing_common import timestamp_to_isoformat
 
 from protocol_constants import get_protocol_constants
 
@@ -138,7 +138,8 @@ def main():
             'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':          'True'
-        }
+        },
+        expected_status=202,
     )
     time.sleep(1)
     #  Step 2. Send ForceSubtaskResults second time with same task_id
@@ -167,7 +168,10 @@ def main():
             'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':          'True'
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ServiceRefused.TYPE,
+        expected_content_type='application/octet-stream',
     )
 
     #  Step 3. Requestor wants to receive ForceSubtaskResults from Concent
@@ -179,7 +183,10 @@ def main():
         headers = {
             'Content-Type': 'application/octet-stream',
             'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForceSubtaskResults.TYPE,
+        expected_content_type='application/octet-stream',
     )
 
     #  Test CASE 2B - Send ForceSubtaskResults with not enough amount of funds on account
@@ -210,7 +217,10 @@ def main():
             'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':          ''
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ServiceRefused.TYPE,
+        expected_content_type='application/octet-stream',
     )
 
     # Test CASE 2C - Send ForceSubtaskResults with wrong timestamps
@@ -241,7 +251,10 @@ def main():
             'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':          'True'
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForceSubtaskResultsRejected.TYPE,
+        expected_content_type='application/octet-stream',
     )
 
     # Test CASE 4B + 5. Requestor sends ForceSubtaskResultsResponse with SubtaskResultsAccepted
@@ -273,7 +286,8 @@ def main():
             'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':          'True'
-        }
+        },
+        expected_status=202,
     )
     time.sleep(1)
     #  Step 2. Send ForceSubtaskResultsResponse
@@ -302,7 +316,8 @@ def main():
             'Content-Type':                 'application/octet-stream',
             'concent-client-public-key':    b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':      'True'
-        }
+        },
+        expected_status=202,
     )
 
     api_request(
@@ -313,7 +328,10 @@ def main():
         headers = {
             'Content-Type': 'application/octet-stream',
             'concent-client-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForceSubtaskResultsResponse.TYPE,
+        expected_content_type='application/octet-stream',
     )
 
     # Test CASE 2D + 3 + 4B + 5. Requestor sends ForceSubtaskResultsResponse with SubtaskResultsRejected
@@ -344,7 +362,8 @@ def main():
             'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':          'True'
-        }
+        },
+        expected_status=202,
     )
 
     api_request(
@@ -355,7 +374,10 @@ def main():
         headers = {
             'Content-Type': 'application/octet-stream',
             'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForceSubtaskResults.TYPE,
+        expected_content_type='application/octet-stream',
     )
 
     api_request(
@@ -385,7 +407,8 @@ def main():
             'Content-Type':                 'application/octet-stream',
             'concent-client-public-key':    b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':      'True'
-        }
+        },
+        expected_status=202,
     )
 
     api_request(
@@ -397,7 +420,10 @@ def main():
             'Content-Type':                     'application/octet-stream',
             'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForceSubtaskResultsResponse.TYPE,
+        expected_content_type='application/octet-stream',
     )
 
 

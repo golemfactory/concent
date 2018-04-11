@@ -13,8 +13,8 @@ from golem_messages         import shortcuts
 from utils.helpers          import get_current_utc_timestamp
 from utils.testing_helpers  import generate_ecc_key_pair
 
-from api_testing_helpers    import api_request
-from api_testing_helpers    import timestamp_to_isoformat
+from api_testing_common import api_request
+from api_testing_common import timestamp_to_isoformat
 
 from freezegun              import freeze_time
 
@@ -138,7 +138,10 @@ def main():
             'Content-Type':                     'application/octet-stream',
             'concent-client-public-key':        b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'concent-other-party-public-key':   b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.AckForceGetTaskResult.TYPE,
+        expected_content_type='application/octet-stream',
     )
     time.sleep(10)
 
@@ -150,7 +153,10 @@ def main():
         headers = {
             'Content-Type': 'application/octet-stream',
             'concent-client-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForceGetTaskResultUpload.TYPE,
+        expected_content_type='application/octet-stream',
     )
     time.sleep(10)
 
@@ -162,7 +168,10 @@ def main():
         headers = {
             'Content-Type': 'application/octet-stream',
             'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForceGetTaskResultDownload.TYPE,
+        expected_content_type='application/octet-stream',
     )
 
     # Case 2 - test for non existing file
@@ -185,7 +194,10 @@ def main():
             'Content-Type':                     'application/octet-stream',
             'concent-client-public-key':        b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'concent-other-party-public-key':   b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.AckForceGetTaskResult.TYPE,
+        expected_content_type='application/octet-stream',
     )
     time.sleep(10)
 
@@ -197,7 +209,10 @@ def main():
         headers = {
             'Content-Type':                 'application/octet-stream',
             'concent-client-public-key':    b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForceGetTaskResultUpload.TYPE,
+        expected_content_type='application/octet-stream',
     )
     time.sleep(10)
 
@@ -209,7 +224,8 @@ def main():
         headers = {
             'Content-Type':                 'application/octet-stream',
             'concent-client-public-key':    b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
-        }
+        },
+        expected_status=204,
     )
 
 

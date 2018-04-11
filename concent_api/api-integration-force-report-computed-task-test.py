@@ -11,12 +11,13 @@ from golem_messages.message         import AckReportComputedTask
 from golem_messages.message         import ComputeTaskDef
 from golem_messages.message         import ForceReportComputedTask
 from golem_messages.message         import TaskToCompute
+from golem_messages.message.concents import ForceReportComputedTaskResponse
 from golem_messages.message.tasks   import ReportComputedTask
 
 from utils.helpers                  import get_current_utc_timestamp
 from utils.testing_helpers          import generate_ecc_key_pair
 
-from api_testing_helpers            import api_request
+from api_testing_common import api_request
 
 from protocol_constants import get_protocol_constants
 
@@ -109,11 +110,13 @@ def main():
             subtask_id,
             cluster_consts,
             current_time,
-        ), headers = {
+        ),
+        headers = {
             'Content-Type':                     'application/octet-stream',
             'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
-        }
+        },
+        expected_status=202,
     )
 
     api_request(
@@ -124,7 +127,10 @@ def main():
         headers = {
             'Content-Type':                     'application/octet-stream',
             'concent-client-public-key':        b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-        }
+        },
+        expected_status=200,
+        expected_message_type=ForceReportComputedTask.TYPE,
+        expected_content_type='application/octet-stream',
     )
 
     api_request(cluster_url,
@@ -136,10 +142,12 @@ def main():
             subtask_id,
             cluster_consts,
             current_time,
-        ), headers = {
+        ),
+        headers = {
             'Content-Type':             'application/octet-stream',
             'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
-        }
+        },
+        expected_status=202,
     )
 
     api_request(
@@ -150,7 +158,10 @@ def main():
         headers = {
             'Content-Type':             'application/octet-stream',
             'concent-client-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
-        }
+        },
+        expected_status=200,
+        expected_message_type=ForceReportComputedTaskResponse.TYPE,
+        expected_content_type='application/octet-stream',
     )
 
 

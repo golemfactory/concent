@@ -310,7 +310,9 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         deserialized_task_to_compute    = load(serialized_task_to_compute,  PROVIDER_PRIVATE_KEY,  REQUESTOR_PUBLIC_KEY, check_time = False)
 
         ack_report_computed_task = message.AckReportComputedTask()
-        ack_report_computed_task.task_to_compute = deserialized_task_to_compute
+        ack_report_computed_task.report_computed_task = message.ReportComputedTask(
+            task_to_compute = deserialized_task_to_compute
+        )
 
         response_400 = self.client.post(
             reverse('core:send'),
@@ -733,9 +735,10 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         task_to_compute_message.full_clean()
         task_to_compute_message.save()
 
-            task_to_compute = self.task_to_compute,
-            subtask_id      = self.task_to_compute.compute_task_def['subtask_id']  # pylint: disable=no-member
         ack_report_computed_task = message.AckReportComputedTask(
+            report_computed_task=message.ReportComputedTask(
+                task_to_compute=self.task_to_compute,
+            )
         )
 
         stored_ack_report_computed_task = StoredMessage(
@@ -810,7 +813,6 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         self.assertEqual(decoded_message.timestamp,                                             int(dateutil.parser.parse("2017-11-17 12:00:00").timestamp()))
         self.assertEqual(decoded_message.report_computed_task.task_to_compute.compute_task_def, self.task_to_compute.compute_task_def)  # pylint: disable=no-member
         self.assertEqual(decoded_message.report_computed_task.task_to_compute.sig,              self.task_to_compute.sig)
-        self.assertEqual(decoded_message.report_computed_task.subtask_id,                       None)
 
         with freeze_time("2017-11-17 12:00:00"):
             response = self.client.post(
@@ -829,9 +831,8 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         self.assertIsInstance(decoded_message,                                                      message.concents.VerdictReportComputedTask)
         self.assertEqual(response.status_code,                                                      200)
         self.assertEqual(decoded_message.timestamp,                                                 int(dateutil.parser.parse("2017-11-17 12:00:00").timestamp()))
-        self.assertEqual(decoded_message.ack_report_computed_task.task_to_compute.compute_task_def, self.task_to_compute.compute_task_def)  # pylint: disable=no-member
-        self.assertEqual(decoded_message.ack_report_computed_task.task_to_compute.sig,              self.task_to_compute.sig)
-        self.assertEqual(decoded_message.ack_report_computed_task.subtask_id,                       '1')
+        self.assertEqual(decoded_message.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def, self.task_to_compute.compute_task_def)  # pylint: disable=no-member
+        self.assertEqual(decoded_message.ack_report_computed_task.report_computed_task.task_to_compute.sig,              self.task_to_compute.sig)
 
 
 @override_settings(
@@ -886,9 +887,10 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
         task_to_compute_message.full_clean()
         task_to_compute_message.save()
 
-            task_to_compute = self.task_to_compute,
-            subtask_id      = self.task_to_compute.compute_task_def['subtask_id']  # pylint: disable=no-member
         ack_report_computed_task = message.AckReportComputedTask(
+            report_computed_task=message.tasks.ReportComputedTask(
+                task_to_compute=self.task_to_compute,
+            )
         )
 
         stored_ack_report_computed_task = StoredMessage(

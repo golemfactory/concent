@@ -233,7 +233,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             fields          = {
                 'timestamp':                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
                 'ack_report_computed_task.timestamp':                           self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
-                'ack_report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
+                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -591,8 +591,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             fields          = {
                 'timestamp':                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
                 'ack_report_computed_task.timestamp':                           self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
-                'ack_report_computed_task.task_to_compute.timestamp':           self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
-                'ack_report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
+                'ack_report_computed_task.report_computed_task.task_to_compute.timestamp':           self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -614,8 +614,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             fields          = {
                 'timestamp':                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
                 'ack_report_computed_task.timestamp':                           self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
-                'ack_report_computed_task.task_to_compute.timestamp':           self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
-                'ack_report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
+                'ack_report_computed_task.report_computed_task.task_to_compute.timestamp':           self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -734,8 +734,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             fields          = {
                 'timestamp':                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
                 'ack_report_computed_task.timestamp':                           self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
-                'ack_report_computed_task.task_to_compute.timestamp':           self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
-                'ack_report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
+                'ack_report_computed_task.report_computed_task.task_to_compute.timestamp':           self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -766,8 +766,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             fields          = {
                 'timestamp':                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:11"),
                 'ack_report_computed_task.timestamp':                           self._parse_iso_date_to_timestamp("2017-12-01 11:00:11"),
-                'ack_report_computed_task.task_to_compute.timestamp':           self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
-                'ack_report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
+                'ack_report_computed_task.report_computed_task.task_to_compute.timestamp':           self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -2115,8 +2115,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             fields = {
                 'timestamp':                                                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:30"),
                 'ack_report_computed_task.timestamp':                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
-                'ack_report_computed_task.task_to_compute.timestamp':        self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
-                'ack_report_computed_task.task_to_compute.compute_task_def': compute_task_def,
+                'ack_report_computed_task.report_computed_task.task_to_compute.timestamp':        self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -2287,8 +2287,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             fields          = {
                 'timestamp':                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
                 'ack_report_computed_task.timestamp':                           self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
-                'ack_report_computed_task.task_to_compute.timestamp':           self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
-                'ack_report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
+                'ack_report_computed_task.report_computed_task.task_to_compute.timestamp':           self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()

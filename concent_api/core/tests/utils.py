@@ -92,10 +92,11 @@ class ConcentIntegrationTestCase(TestCase):
         """ Returns ReportComputedTask deserialized. """
         with freeze_time(timestamp or self._get_timestamp_string()):
             report_computed_task = message.ReportComputedTask(
-                subtask_id      = subtask_id,
                 task_to_compute = (
                     task_to_compute or
-                    self._get_deserialized_task_to_compute()
+                    self._get_deserialized_task_to_compute(
+                        subtask_id = subtask_id
+                    )
                 ),
                 size            = size,
                 package_hash    = package_hash
@@ -148,14 +149,16 @@ class ConcentIntegrationTestCase(TestCase):
         """ Returns AckReportComputedTask deserialized. """
         with freeze_time(timestamp or self._get_timestamp_string()):
             ack_report_computed_task = message.AckReportComputedTask(
-                subtask_id      = subtask_id,
-                task_to_compute = (
-                    task_to_compute or
-                    self._get_deserialized_task_to_compute(
-                        timestamp = timestamp,
-                        deadline  = deadline
-                    )
-                ),
+                report_computed_task = message.ReportComputedTask(
+                    task_to_compute = (
+                        task_to_compute or
+                        self._get_deserialized_task_to_compute(
+                            timestamp = timestamp,
+                            deadline  = deadline,
+                            subtask_id=subtask_id
+                        )
+                    ),
+                )
             )
         return ack_report_computed_task
 

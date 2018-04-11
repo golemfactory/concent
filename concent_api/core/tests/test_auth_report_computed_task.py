@@ -154,7 +154,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 11:00:05"):
             ack_report_computed_task = message.AckReportComputedTask(
-                task_to_compute = self.deserialized_task_to_compute,
+                report_computed_task = message.ReportComputedTask(
+                    task_to_compute=self.deserialized_task_to_compute,
+                )
             )
         serialized_ack_report_computed_task = dump(ack_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
@@ -182,7 +184,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 11:00:05"):
             ack_report_computed_task = message.AckReportComputedTask(
-                task_to_compute = self.deserialized_task_to_compute,
+                report_computed_task = message.ReportComputedTask(
+                    task_to_compute = self.deserialized_task_to_compute,
+                )
             )
         serialized_ack_report_computed_task = dump(ack_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
@@ -780,7 +784,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertIsInstance(message_from_concent_to_provider,                                     message.concents.ForceReportComputedTaskResponse)
         self.assertEqual(message_from_concent_to_provider.timestamp,                                self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"))
-        self.assertEqual(message_from_concent_to_provider.ack_report_computed_task.task_to_compute, deserialized_task_to_compute)
+        self.assertEqual(message_from_concent_to_provider.ack_report_computed_task.report_computed_task.task_to_compute, deserialized_task_to_compute)
 
         # STEP 8: Requestor do not receives computed task report verdict out of band due to an overridden decision with different or mixed key
 
@@ -966,7 +970,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         message_from_concent_to_provider = load(response.content, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time=False)
         self.assertIsInstance(message_from_concent_to_provider,                                     message.concents.ForceReportComputedTaskResponse)
         self.assertEqual(message_from_concent_to_provider.timestamp,                                int(dateutil.parser.parse("2017-12-01 11:00:15").timestamp()))
-        self.assertEqual(message_from_concent_to_provider.ack_report_computed_task.task_to_compute, self.deserialized_task_to_compute)
+        self.assertEqual(message_from_concent_to_provider.ack_report_computed_task.report_computed_task.task_to_compute, self.deserialized_task_to_compute)
 
         self._test_subtask_state(
             task_id                  = '1',

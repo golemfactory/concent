@@ -91,14 +91,14 @@ def handle_send_force_report_computed_task(request, client_message):
 def handle_send_ack_report_computed_task(request, client_message):
     current_time      = get_current_utc_timestamp()
     client_public_key = decode_client_public_key(request)
-    validate_golem_message_task_to_compute(client_message.task_to_compute)
-    validate_id_value(client_message.task_to_compute.compute_task_def['task_id'], 'task_id')
-    validate_id_value(client_message.task_to_compute.compute_task_def['subtask_id'], 'subtask_id')
+    validate_golem_message_task_to_compute(client_message.report_computed_task.task_to_compute)
+    validate_id_value(client_message.report_computed_task.task_to_compute.compute_task_def['task_id'], 'task_id')
+    validate_id_value(client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'], 'subtask_id')
 
-    if current_time <= client_message.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
+    if current_time <= client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
         try:
             subtask = Subtask.objects.get(
-                subtask_id = client_message.task_to_compute.compute_task_def['subtask_id'],
+                subtask_id = client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'],
             )
         except Subtask.DoesNotExist:
             raise Http400("'ForceReportComputedTask' for this subtask_id has not been initiated yet. Can't accept your 'AckReportComputedTask'.")
@@ -108,7 +108,7 @@ def handle_send_ack_report_computed_task(request, client_message):
                 subtask.state
             ))
 
-        if subtask.report_computed_task.subtask_id != client_message.task_to_compute.compute_task_def['subtask_id']:
+        if subtask.report_computed_task.subtask_id != client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id']:
             raise Http400("Received subtask_id does not match one in related ReportComputedTask. Can't accept your 'AckReportComputedTask'.")
 
         if subtask.requestor.public_key != request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY']:
@@ -129,7 +129,7 @@ def handle_send_ack_report_computed_task(request, client_message):
         )
         store_pending_message(
             response_type       = PendingResponse.ResponseType.ForceReportComputedTaskResponse,
-            client_public_key   = client_message.task_to_compute.provider_public_key,
+            client_public_key   = client_message.report_computed_task.task_to_compute.provider_public_key,
             queue               = PendingResponse.Queue.Receive,
             subtask             = subtask,
         )
@@ -142,7 +142,7 @@ def handle_send_ack_report_computed_task(request, client_message):
         logging.log_timeout(
             client_message,
             request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'],
-            client_message.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
+            client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
         )
         raise Http400("Time to acknowledge this task is already over.")
 
@@ -289,15 +289,15 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
 
 def handle_send_force_subtask_results(request, client_message: message.concents.ForceSubtaskResults):
     assert isinstance(client_message, message.concents.ForceSubtaskResults)
-    validate_id_value(client_message.ack_report_computed_task.task_to_compute.compute_task_def['task_id'], 'task_id')
-    validate_id_value(client_message.ack_report_computed_task.task_to_compute.compute_task_def['subtask_id'], 'subtask_id')
+    validate_id_value(client_message.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def['task_id'], 'task_id')
+    validate_id_value(client_message.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def['subtask_id'], 'subtask_id')
 
     current_time           = get_current_utc_timestamp()
     client_public_key      = decode_client_public_key(request)
     other_party_public_key = decode_other_party_public_key(request)
 
     if Subtask.objects.filter(
-        subtask_id = client_message.ack_report_computed_task.task_to_compute.compute_task_def['subtask_id'],
+        subtask_id = client_message.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def['subtask_id'],
         state      = Subtask.SubtaskState.FORCING_ACCEPTANCE.name,  # pylint: disable=no-member
     ).exists():
         return message.concents.ServiceRefused(
@@ -310,11 +310,11 @@ def handle_send_force_subtask_results(request, client_message: message.concents.
         )
 
     verification_deadline       = (
-        client_message.ack_report_computed_task.task_to_compute.compute_task_def['deadline'] +
+        client_message.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def['deadline'] +
         settings.SUBTASK_VERIFICATION_TIME
     )
     forcing_acceptance_deadline = (
-        client_message.ack_report_computed_task.task_to_compute.compute_task_def['deadline'] +
+        client_message.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def['deadline'] +
         settings.SUBTASK_VERIFICATION_TIME +
         settings.FORCE_ACCEPTANCE_TIME
     )
@@ -338,15 +338,15 @@ def handle_send_force_subtask_results(request, client_message: message.concents.
         )
     else:
         subtask = store_or_update_subtask(
-            task_id                     = client_message.ack_report_computed_task.task_to_compute.compute_task_def['task_id'],
-            subtask_id                  = client_message.ack_report_computed_task.task_to_compute.compute_task_def['subtask_id'],
+            task_id                     = client_message.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def['task_id'],
+            subtask_id                  = client_message.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def['subtask_id'],
             provider_public_key         = client_public_key,
             requestor_public_key        = other_party_public_key,
             state                       = Subtask.SubtaskState.FORCING_ACCEPTANCE,
             next_deadline               = forcing_acceptance_deadline + settings.CONCENT_MESSAGING_TIME,
             set_next_deadline           = True,
             ack_report_computed_task    = client_message.ack_report_computed_task,
-            task_to_compute             = client_message.ack_report_computed_task.task_to_compute,
+            task_to_compute             = client_message.ack_report_computed_task.report_computed_task.task_to_compute,
         )
         store_pending_message(
             response_type       = PendingResponse.ResponseType.ForceSubtaskResults,
@@ -636,28 +636,25 @@ def handle_messages_from_database(
             response_to_client          = message.concents.ForceReportComputedTaskResponse(
                 reject_report_computed_task = reject_report_computed_task,
             )
-                    task_to_compute = deserialize_message(pending_response.subtask.task_to_compute.data.tobytes()),
-                    subtask_id      = pending_response.subtask.subtask_id,
             if reject_report_computed_task.reason == message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded:
                 ack_report_computed_task = message.AckReportComputedTask(
+                    report_computed_task = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes()),
                 )
                 response_to_client.ack_report_computed_task = ack_report_computed_task
             mark_message_as_delivered_and_log(pending_response, response_to_client)
             return response_to_client
         else:
             response_to_client = message.concents.ForceReportComputedTaskResponse(
-                    task_to_compute = deserialize_message(pending_response.subtask.task_to_compute.data.tobytes()),
-                    subtask_id      = pending_response.subtask.subtask_id,
                 ack_report_computed_task = message.AckReportComputedTask(
+                    report_computed_task=deserialize_message(pending_response.subtask.report_computed_task.data.tobytes()),
                 ),
             )
             mark_message_as_delivered_and_log(pending_response, response_to_client)
             return response_to_client
 
     elif pending_response.response_type == PendingResponse.ResponseType.VerdictReportComputedTask.name:  # pylint: disable=no-member
-            task_to_compute = deserialize_message(pending_response.subtask.task_to_compute.data.tobytes()),
-            subtask_id      = pending_response.subtask.subtask_id,
         ack_report_computed_task = message.AckReportComputedTask(
+            report_computed_task=deserialize_message(pending_response.subtask.report_computed_task.data.tobytes()),
         )
         report_computed_task     = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
         response_to_client = message.concents.VerdictReportComputedTask(

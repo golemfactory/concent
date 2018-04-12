@@ -16,7 +16,7 @@ from golem_messages.message.tasks   import ReportComputedTask
 from utils.helpers                  import get_current_utc_timestamp
 from utils.testing_helpers          import generate_ecc_key_pair
 
-from api_testing_helpers            import api_request
+from api_testing_common             import api_request
 
 from protocol_constants import get_protocol_constants
 

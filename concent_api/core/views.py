@@ -1,5 +1,6 @@
 from django.conf                    import settings
 from django.http                    import JsonResponse
+from django.views.decorators.csrf   import csrf_exempt
 from django.views.decorators.http   import require_POST
 from django.views.decorators.http   import require_GET
 
@@ -32,6 +33,7 @@ def send(request, client_message):
     return handle_message(client_message, request)
 
 
+@csrf_exempt
 @require_golem_auth_message
 @handle_errors_and_responses
 @require_POST
@@ -45,6 +47,7 @@ def receive(_request, message):
     )
 
 
+@csrf_exempt
 @require_golem_auth_message
 @handle_errors_and_responses
 @require_POST

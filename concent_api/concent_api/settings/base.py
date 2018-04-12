@@ -19,6 +19,7 @@ INSTALLED_APPS = [
 
     # Our apps:
     'concent_api',
+    'conductor',
     'core',
     'gatekeeper',
 ]
@@ -71,9 +72,21 @@ DATABASES = {
 
         # Wrap each request in a transactions and rolled back on failure by default
         'ATOMIC_REQUESTS': True,
+    },
+    'storage': {
+        'ENGINE':     'django.db.backends.postgresql_psycopg2',
+        'NAME':       'storage',
+        # 'USER':     'postgres',
+        # 'PASSWORD': '',
+        # 'HOST':     '',
+        # 'PORT':     '',
+
+        # Wrap each request in a transactions and rolled back on failure by default
+        'ATOMIC_REQUESTS': True,
     }
 }
 
+DATABASE_ROUTERS = ['concent_api.database_router.DatabaseRouter']
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators

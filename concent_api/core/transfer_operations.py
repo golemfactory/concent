@@ -18,6 +18,7 @@ from gatekeeper.constants   import CLUSTER_DOWNLOAD_PATH
 from utils                  import logging
 from utils.helpers          import decode_key
 from utils.helpers          import deserialize_message
+from utils.helpers          import get_result_file_path
 from utils.helpers          import sign_message
 
 
@@ -111,7 +112,7 @@ def create_file_transfer_token(
     """
     task_id         = report_computed_task.task_to_compute.compute_task_def['task_id']
     subtask_id      = report_computed_task.task_to_compute.compute_task_def['subtask_id']
-    file_path       = 'blender/result/{}/{}.{}.zip'.format(task_id, task_id, subtask_id)
+    file_path       = get_result_file_path(task_id, subtask_id)
 
     assert isinstance(encoded_client_public_key, bytes)
     assert operation in ['upload', 'download']

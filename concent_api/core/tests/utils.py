@@ -11,7 +11,6 @@ from django.utils           import timezone
 
 from freezegun              import freeze_time
 
-from golem_messages         import cryptography
 from golem_messages         import dump
 from golem_messages         import load
 from golem_messages         import message
@@ -20,6 +19,7 @@ from core.models            import PendingResponse
 from core.models            import StoredMessage
 from core.models            import Subtask
 
+from utils.helpers          import sign_message
 from utils.testing_helpers  import generate_ecc_key_pair
 
 
@@ -64,6 +64,12 @@ class ConcentIntegrationTestCase(TestCase):
         """ Returns requestor ethereum public key encoded. """
         return '0x' + self._get_encoded_key(self.DIFFERENT_REQUESTOR_PUBLIC_KEY)
 
+    def _sign_message(self, golem_message, client_private_key = None):
+        return sign_message(
+            golem_message,
+            self.PROVIDER_PRIVATE_KEY if client_private_key is None else client_private_key,
+        )
+
     def _get_serialized_force_get_task_result(
         self,
         report_computed_task,
@@ -94,8 +100,10 @@ class ConcentIntegrationTestCase(TestCase):
             report_computed_task = message.ReportComputedTask(
                 task_to_compute = (
                     task_to_compute or
-                    self._get_deserialized_task_to_compute(
-                        subtask_id = subtask_id
+                    self._sign_message(
+                        self._get_deserialized_task_to_compute(
+                            subtask_id=subtask_id
+                        )
                     )
                 ),
                 size            = size,
@@ -114,6 +122,7 @@ class ConcentIntegrationTestCase(TestCase):
         requestor_ethereum_public_key   = None,
         provider_public_key             = None,
         price                           = 0,
+        sign_with_private_key           = None,
     ):
         """ Returns TaskToCompute deserialized. """
         if compute_task_def is None:
@@ -138,6 +147,10 @@ class ConcentIntegrationTestCase(TestCase):
                     provider_public_key if provider_public_key is not None else self.PROVIDER_PUBLIC_KEY
                 ),
                 price=price,
+            )
+            task_to_compute = self._sign_message(
+                task_to_compute,
+                sign_with_private_key,
             )
         return task_to_compute
 
@@ -187,9 +200,11 @@ class ConcentIntegrationTestCase(TestCase):
         self.assertEqual(response.status_code, 204)
         self.assertEqual(len(response.content), 0)
 
-    def _test_400_response(self, response):
+    def _test_400_response(self, response, error_message = None):
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json().keys())
+        if error_message is not None:
+            self.assertEqual(response.json()['error'], error_message)
 
     def _test_response(self, response, status, key, message_type = None, fields = None):
         self.assertEqual(response.status_code, status)
@@ -410,7 +425,9 @@ class ConcentIntegrationTestCase(TestCase):
                     report_computed_task or
                     self._get_deserialized_report_computed_task(
                         subtask_id      = '1',
-                        task_to_compute = self._get_deserialized_task_to_compute()
+                        task_to_compute = self._sign_message(
+                            self._get_deserialized_task_to_compute()
+                        )
                     )
                 ),
             )
@@ -623,12 +640,12 @@ class ConcentIntegrationTestCase(TestCase):
     def _assert_client_count_is_equal(self, count):
         self.assertEqual(Client.objects.count(), count)
 
-    # TODO: Merge with '_sign_message' after authentication is merged
-    def _add_signature_to_message(self, golem_message, priv_key):  # pylint: disable=no-self-use
+    def _add_signature_to_message(self, golem_message, priv_key):
         golem_message.sig = None
-        signature = functools.partial(cryptography.ecdsa_sign, priv_key)
-        golem_message = golem_message.serialize(sign_func = signature)
-        golem_message = message.Message.deserialize(golem_message, decrypt_func = None, check_time = False)
+        golem_message = self._sign_message(
+            golem_message,
+            priv_key,
+        )
         return golem_message.sig
 
     def _create_client_auth_message(self, client_priv_key, client_public_key):  # pylint: disable=no-self-use

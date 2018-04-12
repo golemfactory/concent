@@ -62,16 +62,17 @@ def validate_public_key(value, field_name):
         raise Http400("The length of {} must be exactly {} characters.".format(field_name, GOLEM_PUBLIC_KEY_LENGTH))
 
 
-def validate_golem_message_task_to_compute(golem_message: message.base.Message):
-    if not isinstance(golem_message, message.TaskToCompute):
+def validate_task_to_compute(task_to_compute: message.TaskToCompute):
+    if not isinstance(task_to_compute, message.TaskToCompute):
         raise Http400("Expected TaskToCompute.")
 
-    golem_message.compute_task_def['deadline'] = validate_int_value(golem_message.compute_task_def['deadline'])
+    task_to_compute.compute_task_def['deadline'] = validate_int_value(task_to_compute.compute_task_def['deadline'])
 
-    validate_id_value(golem_message.compute_task_def['task_id'], 'task_id')
+    validate_id_value(task_to_compute.compute_task_def['task_id'], 'task_id')
+    validate_id_value(task_to_compute.compute_task_def['subtask_id'], 'subtask_id')
 
-    validate_public_key(golem_message.provider_public_key, 'provider_public_key')
-    validate_public_key(golem_message.requestor_public_key, 'requestor_public_key')
+    validate_public_key(task_to_compute.provider_public_key, 'provider_public_key')
+    validate_public_key(task_to_compute.requestor_public_key, 'requestor_public_key')
 
 
 def validate_report_computed_task_time_window(report_computed_task):

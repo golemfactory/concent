@@ -44,11 +44,10 @@ def force_subtask_results(timestamp = None, ack_report_computed_task = None):
         )
 
 
-def ack_report_computed_task(timestamp = None, subtask_id = None, task_to_compute = None):
+def ack_report_computed_task(timestamp = None, report_computed_task = None):
     with freeze_time(timestamp):
         return message.AckReportComputedTask(
-            task_to_compute = task_to_compute,
-            subtask_id      = subtask_id,
+            report_computed_task=report_computed_task,
         )
 
 
@@ -58,6 +57,7 @@ def task_to_compute(timestamp = None, compute_task_def = None, provider_public_k
             provider_public_key = provider_public_key if provider_public_key is not None else PROVIDER_PUBLIC_KEY,
             requestor_public_key = requestor_public_key if requestor_public_key is not None else REQUESTOR_PUBLIC_KEY,
             compute_task_def = compute_task_def,
+            price=0,
         )
 
 
@@ -98,10 +98,9 @@ def subtask_results_rejected(timestamp = None, reason = None, report_computed_ta
         )
 
 
-def report_computed_task(timestamp = None, subtask_id = None, task_to_compute = None):
+def report_computed_task(timestamp = None, task_to_compute = None):
     with freeze_time(timestamp):
         return message.tasks.ReportComputedTask(
-            subtask_id      = subtask_id,
             task_to_compute = task_to_compute
         )
 
@@ -123,13 +122,14 @@ def main():
             timestamp = timestamp_to_isoformat(current_time),
             ack_report_computed_task = ack_report_computed_task(
                 timestamp = timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time * 1.4)),
-                subtask_id = subtask_id,
-                task_to_compute = task_to_compute(
-                    timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
-                    compute_task_def = compute_task_def(
-                        task_id     = task_id,
-                        subtask_id  = subtask_id,
-                        deadline    = current_time - (cluster_consts.subtask_verification_time),
+                report_computed_task = report_computed_task(
+                    task_to_compute = task_to_compute(
+                        timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
+                        compute_task_def = compute_task_def(
+                            task_id     = task_id,
+                            subtask_id  = subtask_id,
+                            deadline    = current_time - (cluster_consts.subtask_verification_time),
+                        )
                     )
                 )
             )
@@ -153,13 +153,14 @@ def main():
             timestamp = timestamp_to_isoformat(current_time),
             ack_report_computed_task = ack_report_computed_task(
                 timestamp = timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time * 1.4)),
-                subtask_id = subtask_id,
-                task_to_compute = task_to_compute(
-                    timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
-                    compute_task_def = compute_task_def(
-                        task_id     = task_id,
-                        subtask_id  = subtask_id,
-                        deadline    = current_time - (cluster_consts.subtask_verification_time),
+                report_computed_task = report_computed_task(
+                    task_to_compute = task_to_compute(
+                        timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
+                        compute_task_def = compute_task_def(
+                            task_id     = task_id,
+                            subtask_id  = subtask_id,
+                            deadline    = current_time - (cluster_consts.subtask_verification_time),
+                        )
                     )
                 )
             )
@@ -202,13 +203,14 @@ def main():
             timestamp = timestamp_to_isoformat(current_time),  # current_time
             ack_report_computed_task = ack_report_computed_task(
                 timestamp = timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time * 1.4)),
-                subtask_id = subtask_id,
-                task_to_compute = task_to_compute(
-                    timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
-                    compute_task_def = compute_task_def(
-                        task_id     = task_id,
-                        subtask_id  = subtask_id,
-                        deadline    = current_time - (cluster_consts.subtask_verification_time),
+                report_computed_task = report_computed_task(
+                    task_to_compute = task_to_compute(
+                        timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
+                        compute_task_def = compute_task_def(
+                            task_id     = task_id,
+                            subtask_id  = subtask_id,
+                            deadline    = current_time - (cluster_consts.subtask_verification_time),
+                        )
                     )
                 )
             )
@@ -236,13 +238,14 @@ def main():
             timestamp = timestamp_to_isoformat(current_time),
             ack_report_computed_task =ack_report_computed_task(
                 timestamp = timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time * 1.4)),
-                subtask_id = subtask_id,
-                task_to_compute = task_to_compute(
-                    timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
-                    compute_task_def = compute_task_def(
-                        task_id     = task_id,
-                        subtask_id  = subtask_id,
-                        deadline    = current_time - (cluster_consts.subtask_verification_time * 20),
+                report_computed_task = report_computed_task(
+                    task_to_compute = task_to_compute(
+                        timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
+                        compute_task_def = compute_task_def(
+                            task_id     = task_id,
+                            subtask_id  = subtask_id,
+                            deadline    = current_time - (cluster_consts.subtask_verification_time * 20),
+                        )
                     )
                 )
             )
@@ -271,13 +274,14 @@ def main():
             timestamp = timestamp_to_isoformat(current_time),
             ack_report_computed_task = ack_report_computed_task(
                 timestamp = timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time * 1.4)),
-                subtask_id = subtask_id,
-                task_to_compute = task_to_compute(
-                    timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
-                    compute_task_def = compute_task_def(
-                        task_id     = task_id,
-                        subtask_id  = subtask_id,
-                        deadline    = current_time - (cluster_consts.subtask_verification_time),
+                report_computed_task = report_computed_task(
+                    task_to_compute = task_to_compute(
+                        timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
+                        compute_task_def = compute_task_def(
+                            task_id     = task_id,
+                            subtask_id  = subtask_id,
+                            deadline    = current_time - (cluster_consts.subtask_verification_time),
+                        )
                     )
                 )
             )
@@ -347,13 +351,14 @@ def main():
             timestamp = timestamp_to_isoformat(current_time),
             ack_report_computed_task = ack_report_computed_task(
                 timestamp = timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time)),
-                subtask_id = subtask_id,
-                task_to_compute = task_to_compute(
-                    timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
-                    compute_task_def = compute_task_def(
-                        task_id     = task_id,
-                        subtask_id  = subtask_id,
-                        deadline    = current_time - (cluster_consts.subtask_verification_time),
+                report_computed_task = report_computed_task(
+                    task_to_compute = task_to_compute(
+                        timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
+                        compute_task_def = compute_task_def(
+                            task_id     = task_id,
+                            subtask_id  = subtask_id,
+                            deadline    = current_time - (cluster_consts.subtask_verification_time),
+                        )
                     )
                 )
             )
@@ -392,7 +397,6 @@ def main():
                 timestamp = timestamp_to_isoformat(current_time),
                 report_computed_task = report_computed_task(
                     timestamp = timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time)),
-                    subtask_id      = subtask_id,
                     task_to_compute = task_to_compute(
                         timestamp = timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
                         compute_task_def = compute_task_def(

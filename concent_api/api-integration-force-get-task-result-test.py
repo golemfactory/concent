@@ -87,7 +87,8 @@ def get_force_get_task_result(task_id, subtask_id, current_time, cluster_consts,
     task_to_compute = message.TaskToCompute(
         provider_public_key=provider_public_key if provider_public_key is not None else PROVIDER_PUBLIC_KEY,
         requestor_public_key=requestor_public_key if requestor_public_key is not None else REQUESTOR_PUBLIC_KEY,
-        compute_task_def = compute_task_def
+        compute_task_def = compute_task_def,
+        price=0,
     )
     report_computed_task = message.ReportComputedTask(
         task_to_compute = task_to_compute,

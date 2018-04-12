@@ -64,7 +64,8 @@ def task_to_compute(
         return message.tasks.TaskToCompute(
             compute_task_def = compute_task_def,
             requestor_public_key = requestor_public_key,
-            requestor_ethereum_public_key = requestor_ethereum_public_key
+            requestor_ethereum_public_key = requestor_ethereum_public_key,
+            price=0,
         )
 
 

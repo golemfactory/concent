@@ -281,7 +281,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             fields       = {
                 'timestamp':                                                    self._parse_iso_date_to_timestamp("2018-02-05 10:00:29"),
                 'ack_report_computed_task.subtask_id':                          'xxyyzz',
-                "ack_report_computed_task.task_to_compute.compute_task_def":    deserialized_compute_task_def,
+                "ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def":    deserialized_compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -961,7 +961,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             fields       = {
                 'timestamp':                                                 self._parse_iso_date_to_timestamp("2018-02-05 10:00:24"),
                 'ack_report_computed_task.subtask_id':                       'xxyyzz',
-                'ack_report_computed_task.task_to_compute.compute_task_def': deserialized_compute_task_def,
+                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': deserialized_compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -1163,7 +1163,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             fields       = {
                 'timestamp':                                                 self._parse_iso_date_to_timestamp("2018-02-05 10:00:24"),
                 'ack_report_computed_task.subtask_id':                       'xxyyzz',
-                'ack_report_computed_task.task_to_compute.compute_task_def': deserialized_compute_task_def,
+                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': deserialized_compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()

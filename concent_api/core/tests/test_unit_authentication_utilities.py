@@ -36,7 +36,10 @@ class LoadWithoutPublicKeyUnitTest(TestCase):
         compute_task_def['deadline']    = 1510912800
 
         # Create TaskToCompute
-        task_to_compute = message.TaskToCompute(compute_task_def = compute_task_def)
+        task_to_compute = message.TaskToCompute(
+            compute_task_def = compute_task_def,
+            price=0,
+        )
 
         # Dump TaskToCompute to make it signed
         dumped_task_to_compute = dump(task_to_compute, REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)

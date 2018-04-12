@@ -45,7 +45,7 @@ def force_subtask_results(timestamp = None, ack_report_computed_task = None):
 
 def ack_report_computed_task(timestamp = None, subtask_id = None, task_to_compute = None):
     with freeze_time(timestamp):
-        return message.concents.AckReportComputedTask(
+        return message.AckReportComputedTask(
             task_to_compute = task_to_compute,
             subtask_id      = subtask_id,
         )

@@ -92,10 +92,11 @@ class ConcentIntegrationTestCase(TestCase):
         """ Returns ReportComputedTask deserialized. """
         with freeze_time(timestamp or self._get_timestamp_string()):
             report_computed_task = message.ReportComputedTask(
-                subtask_id      = subtask_id,
                 task_to_compute = (
                     task_to_compute or
-                    self._get_deserialized_task_to_compute()
+                    self._get_deserialized_task_to_compute(
+                        subtask_id = subtask_id
+                    )
                 ),
                 size            = size,
                 package_hash    = package_hash
@@ -112,6 +113,7 @@ class ConcentIntegrationTestCase(TestCase):
         requestor_public_key            = None,
         requestor_ethereum_public_key   = None,
         provider_public_key             = None,
+        price                           = 0,
     ):
         """ Returns TaskToCompute deserialized. """
         if compute_task_def is None:
@@ -134,7 +136,8 @@ class ConcentIntegrationTestCase(TestCase):
                 requestor_ethereum_public_key   = requestor_ethereum_public_key,
                 provider_public_key             = (
                     provider_public_key if provider_public_key is not None else self.PROVIDER_PUBLIC_KEY
-                )
+                ),
+                price=price,
             )
         return task_to_compute
 
@@ -148,14 +151,16 @@ class ConcentIntegrationTestCase(TestCase):
         """ Returns AckReportComputedTask deserialized. """
         with freeze_time(timestamp or self._get_timestamp_string()):
             ack_report_computed_task = message.AckReportComputedTask(
-                subtask_id      = subtask_id,
-                task_to_compute = (
-                    task_to_compute or
-                    self._get_deserialized_task_to_compute(
-                        timestamp = timestamp,
-                        deadline  = deadline
-                    )
-                ),
+                report_computed_task = message.ReportComputedTask(
+                    task_to_compute = (
+                        task_to_compute or
+                        self._get_deserialized_task_to_compute(
+                            timestamp = timestamp,
+                            deadline  = deadline,
+                            subtask_id=subtask_id
+                        )
+                    ),
+                )
             )
         return ack_report_computed_task
 
@@ -523,7 +528,7 @@ class ConcentIntegrationTestCase(TestCase):
         reason              = None,
     ):
         with freeze_time(timestamp or self._get_timestamp_string()):
-            return message.concents.RejectReportComputedTask(
+            return message.RejectReportComputedTask(
                 cannot_compute_task = cannot_compute_task,
                 task_to_compute     = task_to_compute,
                 reason              = reason,

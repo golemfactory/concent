@@ -1,13 +1,23 @@
 from base64 import b64decode
 import importlib
 import re
+import random
+import string
 from typing import Dict, Text, Any, List, Union
 
 from golem_messages.datastructures import FrozenDict
 from golem_messages.message import Message
+from utils.testing_helpers import generate_ecc_key_pair
 
 JsonType = Dict[Text, Any]
 Task = FrozenDict
+
+
+def make_random_string(length=None, chars=None):
+    length = length if length is not None else 36
+    chars = chars if chars is not None else (string.ascii_letters + string.digits)
+
+    return ''.join(random.choice(chars) for _ in range(length))
 
 
 def split_uppercase(message):
@@ -46,18 +56,8 @@ def create_message(message_name: str, message_params: JsonType) -> Union[Message
     message = getattr(module, convert_message_name(message_name))(**message_params)
     return message
 
-    # module = importlib.import_module("golem_messages.message")
-    #
-    # if hasattr(module, convert_message_name(message_name)):
-    #     msg_class = getattr(module, convert_message_name(message_name))
-    # else:
-    #     module = importlib.import_module("golem_messages.message.concents")
-    #     msg_class = getattr(module, convert_message_name(message_name))
-    #
-    # message = msg_class(**message_params)
 
-
-def substitue_message(json: JsonType, message_name: str, message: Message) -> JsonType:
+def substitute_message(json: JsonType, message_name: str, message: Message) -> JsonType:
     params = {k: v for k, v in json.items()}
     params[message_name] = message
     return params
@@ -65,6 +65,25 @@ def substitue_message(json: JsonType, message_name: str, message: Message) -> Js
 
 def convert_message_name(message):
     return ''.join([(word[:1].capitalize() + word[1:]) for word in message.split('_')])
+
+
+task_id = make_random_string(8)
+subtask_id = task_id + '_' + str(random.randrange(1, 100))
+(provider_private_key, provider_public_key) = generate_ecc_key_pair()
+(requestor_private_key, requestor_public_key) = generate_ecc_key_pair()
+
+requestor_id = make_random_string()
+
+data_replacement = {'provider_private_key': provider_private_key,
+                    'provider_public_key': provider_public_key,
+                    'requestor_private_key': requestor_private_key,
+                    'requestor_public_key': requestor_public_key,
+                    'task_id': task_id,
+                    'subtask_id': subtask_id,
+                    'requestor_id': requestor_id,
+                    }
+keys_list = ['requestor_public_key', 'provider_public_key', 'requestor_ethereum_public_key',
+             'provider_ethereum_public_key']
 
 
 class MessageExtractor(object):
@@ -87,17 +106,27 @@ class MessageExtractor(object):
         return self.extract_message(body, name)
 
     def _process_body(self, json: JsonType, name: str) -> Message:
+
         message_list = [key for key in json.keys() if key in FIELD_NAMES]
-        keys_list = ['requestor_public_key', 'provider_public_key', 'requestor_ethereum_public_key',
-                     'provider_ethereum_public_key']
 
         if self._contains_valid_message(message_list):
             message_name = message_list[0]
             message = self._process_body(json[message_name], message_name)
-            params = substitue_message(json, message_name, message)
-            decoded_keys = {key: b64decode(params[key]) for key in params if key in keys_list}
-            params.update(decoded_keys)
-            return create_message(name, params)
+            parameters = substitute_message(json, message_name, message)
+
+            def supplement_data(params, supplement, keys):
+                for k, v in params.items():
+                    if isinstance(v, dict):
+                        supplement_data(v, supplement, keys)
+                    elif v == '' and k in supplement:
+                        params[k] = supplement[k]
+                    elif k in keys:
+                        params[k] = b64decode(params[k])
+                return params
+
+            parameters = supplement_data(parameters, data_replacement, keys_list)
+
+            return create_message(name, parameters)
         else:
             return create_message(name, json)
 

@@ -1,35 +1,11 @@
+import os
+import sys
 import argparse
 import json
-# from jsonschema import Draft4Validator
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from message_sender import send_message
 from message_extractor import MessageExtractor
 
-
-# def verify_schema(json_data):
-#     schema = {
-#         "type": "object",
-#         "properties": {
-#             "timestamp": {"type": "string"},
-#             "inner_golem_message": {
-#                 "type": "object",
-#                 "properties": {
-#                     "timestamp": {"type": "string"},
-#                     "deadline": {"type": "string"}
-#                 }
-#             }
-#         },
-#     }
-#     v = Draft4Validator(schema)
-#     errors = sorted(v.iter_errors(json_data), key=lambda e: e.path)
-#
-#     if errors:
-#         error_number = 0
-#         print('\nUploaded schema has following errors:\n')
-#         for error in errors:
-#             error_number += 1
-#             print(str(error_number) + '->', list(error.path), ':', error.message)
-#         print('\nEND')
-#         exit()
 
 
 def get_json_data(message_file, message_str):
@@ -40,10 +16,6 @@ def get_json_data(message_file, message_str):
     # verify_schema(json_data)
 
 
-def receive_message(args):
-    print('------------------------\n    Message recieved\n------------------------')
-    print('cluster_url:', args.cluster_url)
-    print('subtask_id:', args.subtask_id)
 
 
 def receive_out_of_band_message(args):

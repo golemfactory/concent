@@ -3,10 +3,9 @@ import sys
 from base64 import b64decode
 from unittest import TestCase, skip, expectedFailure
 
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from golem_messages.message import ComputeTaskDef, TaskToCompute, ReportComputedTask
 from golem_messages.message.concents import ForceGetTaskResult
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from command_line_tool.message_extractor import MessageExtractor, convert_message_name, split_uppercase
 from assertpy import assert_that
 
@@ -122,9 +121,11 @@ class TestMessageExtractor(TestCase):
         # assert_that(task.package_hash).is_equal_to(package_hash)
 
         assert_that(task.task_to_compute.requestor_public_key).is_equal_to(b64decode(requestor_public_key))
-        assert_that(task.task_to_compute.requestor_ethereum_public_key).is_equal_to(b64decode(requestor_ethereum_public_key))
+        assert_that(task.task_to_compute.requestor_ethereum_public_key).is_equal_to(
+            b64decode(requestor_ethereum_public_key))
         assert_that(task.task_to_compute.provider_public_key).is_equal_to(b64decode(provider_public_key))
-        assert_that(task.task_to_compute.provider_ethereum_public_key).is_equal_to(b64decode(provider_ethereum_public_key))
+        assert_that(task.task_to_compute.provider_ethereum_public_key).is_equal_to(
+            b64decode(provider_ethereum_public_key))
         assert_that(task.task_to_compute).is_instance_of(TaskToCompute)
 
         assert_that(task.task_to_compute.compute_task_def).is_instance_of(ComputeTaskDef)

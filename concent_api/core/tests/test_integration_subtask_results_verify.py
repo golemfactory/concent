@@ -13,6 +13,7 @@ from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
 from core.transfer_operations import create_file_transfer_token
 from utils.helpers import decode_key
+from utils.helpers import sign_message
 from utils.testing_helpers import generate_ecc_key_pair
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
@@ -145,8 +146,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         # given
         (serialized_subtask_results_verify,
          subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify(
-            time_offset=settings.ADDITIONAL_VERIFICATION_CALL_TIME + 1
-        )
+            time_offset=settings.ADDITIONAL_VERIFICATION_CALL_TIME + 1)
 
         # when
         with freeze_time(subtask_results_verify_time_str):
@@ -235,6 +235,40 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         )
         self._assert_stored_message_counter_not_increased()
 
+    def test_that_concent_responds_with_service_refused_when_subtask_results_rejected_not_issued_by_requestor(self):
+        """
+        Provider -> Concent: SubtaskResultsVerify
+        Concent -> Provider: ServiceRefused (InvalidRequest)
+        """
+        # given
+        (serialized_subtask_results_verify,
+         subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify(
+            key=self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
+        )
+
+        # when
+        with mock.patch("core.message_handlers.base.is_requestor_account_status_positive", return_value=True):
+            with freeze_time(subtask_results_verify_time_str):
+                response = self.client.post(
+                    reverse('core:send'),
+                    data=serialized_subtask_results_verify,
+                    content_type='application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
+                )
+
+        # then
+        self._test_response(
+            response,
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ServiceRefused,
+            fields={
+                'reason': message.concents.ServiceRefused.REASON.InvalidRequest,
+            }
+        )
+        self._assert_stored_message_counter_not_increased()
+
     def test_that_concent_accepts_valid_request_and_sends_verification_order_to_work_queue(self):
         """
         Provider -> Concent: SubtaskResultsVerify
@@ -293,15 +327,21 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
     def _create_serialized_subtask_results_verify(
         self,
         reason_of_rejection=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-        time_offset=settings.ADDITIONAL_VERIFICATION_CALL_TIME / 2
+        time_offset=settings.ADDITIONAL_VERIFICATION_CALL_TIME / 2,
+        key=None,
     ):
         subtask_result_rejected_time_str = "2018-04-01 10:30:00"
         subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
             reason=reason_of_rejection,
             timestamp=subtask_result_rejected_time_str,
-            report_computed_task=self.report_computed_task)
-        subtask_results_verify_time_str = self._add_time_offset_to_date(subtask_result_rejected_time_str,
-                                                                        time_offset)
+            report_computed_task=self.report_computed_task,
+        )
+        subtask_results_verify_time_str = self._add_time_offset_to_date(
+            subtask_result_rejected_time_str,
+            time_offset
+        )
+        sign_message(subtask_results_rejected, key or self.REQUESTOR_PRIVATE_KEY)
+
         subtask_results_verify = self._get_deserialized_subtask_results_verify(
             timestamp=subtask_results_verify_time_str,
             subtask_results_rejected=subtask_results_rejected)

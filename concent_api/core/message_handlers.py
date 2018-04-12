@@ -24,8 +24,10 @@ from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import verify_message_subtask_results_accepted
 from core.transfer_operations import create_file_transfer_token
 from core.transfer_operations import store_pending_message
-from core.validation import validate_report_computed_task_time_window, validate_golem_message_subtask_results_rejected
 from core.validation import validate_golem_message_reject
+from core.validation import validate_golem_message_subtask_results_rejected
+from core.validation import validate_golem_message_signed_with_key
+from core.validation import validate_golem_message_task_to_compute
 from core.validation import validate_id_value
 from golem_messages.message.tasks import SubtaskResultsRejected
 from core.validation import validate_task_to_compute
@@ -35,6 +37,7 @@ from core.validation import validate_golem_message_signed_with_key
 from core.subtask_helpers import verify_message_subtask_results_accepted
 from core.transfer_operations import store_pending_message
 from core.transfer_operations import create_file_transfer_token
+from core.validation import validate_report_computed_task_time_window
 from utils import logging
 from utils.helpers import deserialize_message
 from utils.helpers import get_current_utc_timestamp
@@ -1075,6 +1078,13 @@ def handle_send_subtask_results_verify(
     ):
         raise Http400("SubtaskResultsVerify is not allowed in current state")
     if not current_time <= subtask_results_rejected.timestamp + settings.ADDITIONAL_VERIFICATION_CALL_TIME:
+        return message.concents.ServiceRefused(
+            reason=message.concents.ServiceRefused.REASON.InvalidRequest,
+        )
+    if not is_signed_by_right_party(
+        subtask_results_rejected,
+        other_party_public_key,
+    ):
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.InvalidRequest,
         )

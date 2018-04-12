@@ -13,6 +13,7 @@ from utils.helpers          import get_current_utc_timestamp
 from utils.testing_helpers  import generate_ecc_key_pair
 
 from api_testing_common import api_request
+from api_testing_common import create_client_auth_message
 from api_testing_common import timestamp_to_isoformat
 
 from protocol_constants import get_protocol_constants
@@ -238,9 +239,9 @@ def main():
         'receive-out-of-band',
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
+        create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
         headers = {
             'Content-Type': 'application/octet-stream',
-            'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
         },
         expected_status=200,
         expected_message_type=message.concents.ForcePaymentCommitted.TYPE,

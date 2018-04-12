@@ -1,5 +1,6 @@
 from golem_messages.exceptions      import MessageError
 from golem_messages.message         import Message
+from golem_messages.message.concents import ClientAuthorization
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 
@@ -95,11 +96,14 @@ def api_request(
             print_golem_message(data)
 
     assert all(value not in ['', None] for value in [endpoint, host, headers])
-    url         = "{}/api/v1/{}/".format(host, endpoint)
+    url = "{}/api/v1/{}/".format(host, endpoint)
 
-    _print_data(data, url)
-
-    response = requests.post("{}".format(url), headers=headers, data=_prepare_data(data), verify=False)
+    if endpoint == 'send':
+        _print_data(data, url)
+        response = requests.post("{}".format(url), headers=headers, data=_prepare_data(data), verify=False)
+    else:
+        print('RECEIVE ({})'.format(url))
+        response = requests.post("{}".format(url), headers=headers, data=data, verify=False)
     _print_response(private_key, public_key, response)
     validate_response_status(response.status_code, expected_status)
     validate_content_type(response.headers['Content-Type'], expected_content_type)
@@ -158,6 +162,12 @@ def try_to_decode_golem_message(private_key, public_key, content):
 
 def timestamp_to_isoformat(timestamp):
     return datetime.datetime.fromtimestamp(timestamp).isoformat(' ')
+
+
+def create_client_auth_message(client_priv_key, client_public_key, concent_public_key):  # pylint: disable=no-self-use
+        client_auth = ClientAuthorization()
+        client_auth.client_public_key = client_public_key
+        return dump(client_auth, client_priv_key, concent_public_key)
 
 
 if __name__ == '__main__':

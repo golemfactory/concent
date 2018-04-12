@@ -116,7 +116,7 @@ def validate_list_of_identical_task_to_compute(list_of_task_to_compute: List[mes
 
 def validate_golem_message_signed_with_key(
     golem_message: message.base.Message,
-    public_key:    str,
+    public_key: bytes,
 ):
     assert isinstance(golem_message,    message.base.Message)
 

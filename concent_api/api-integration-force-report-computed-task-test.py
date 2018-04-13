@@ -3,7 +3,8 @@
 import os
 import sys
 import random
-from base64                         import b64encode
+from base64 import b64encode
+from freezegun import freeze_time
 
 from golem_messages.message.tasks import AckReportComputedTask
 from golem_messages.message         import ComputeTaskDef
@@ -18,6 +19,7 @@ from utils.testing_helpers import generate_ecc_key_pair
 
 from api_testing_common import api_request
 from api_testing_common import create_client_auth_message
+from api_testing_common import timestamp_to_isoformat
 
 from protocol_constants import get_protocol_constants
 
@@ -40,54 +42,38 @@ def parse_command_line(command_line):
     return cluster_url
 
 
-def force_report_computed_task(task_id, subtask_id, cluster_consts, current_time, provider_private_key = None, provider_public_key = None, requestor_private_key = None, requestor_public_key = None):
-
-    provider_public_key = provider_public_key if provider_public_key is not None else PROVIDER_PUBLIC_KEY
-    provider_private_key = provider_private_key if provider_private_key is not None else PROVIDER_PRIVATE_KEY
-    requestor_public_key = requestor_public_key if requestor_public_key is not None else REQUESTOR_PUBLIC_KEY
-    requestor_private_key = requestor_private_key if requestor_private_key is not None else REQUESTOR_PRIVATE_KEY
-
-    compute_task_def                = ComputeTaskDef()
-    compute_task_def['task_id']     = task_id
-    compute_task_def['deadline']    = current_time + (cluster_consts.subtask_verification_time * 2)
+def create_signed_task_to_compute(
+    task_id=None,
+    subtask_id=None,
+    deadline=None,
+    provider_public_key=None,
+    requestor_public_key=None
+):
+    compute_task_def = ComputeTaskDef()
+    compute_task_def['task_id'] = task_id
     compute_task_def['subtask_id'] = subtask_id
+    compute_task_def['deadline'] = deadline
     task_to_compute = TaskToCompute(
-        provider_public_key = provider_public_key,
-        requestor_public_key = requestor_public_key,
-        compute_task_def = compute_task_def,
+        provider_public_key=provider_public_key if provider_public_key is not None else PROVIDER_PUBLIC_KEY,
+        requestor_public_key=requestor_public_key if requestor_public_key is not None else REQUESTOR_PUBLIC_KEY,
+        compute_task_def=compute_task_def,
         price=0,
     )
-    sign_message(task_to_compute, requestor_private_key)
+    sign_message(task_to_compute, REQUESTOR_PRIVATE_KEY)
+    return task_to_compute
 
+
+def force_report_computed_task(task_to_compute):
     report_computed_task = ReportComputedTask()
     report_computed_task.task_to_compute = task_to_compute
-    sign_message(report_computed_task, provider_private_key)
+    sign_message(report_computed_task, PROVIDER_PRIVATE_KEY)
 
     force_report_computed_task  = ForceReportComputedTask()
     force_report_computed_task.report_computed_task = report_computed_task
-
     return force_report_computed_task
 
 
-def ack_report_computed_task(task_id, subtask_id, cluster_consts, current_time, provider_private_key = None, provider_public_key = None, requestor_private_key = None, requestor_public_key = None):
-
-    provider_public_key = provider_public_key if provider_public_key is not None else PROVIDER_PUBLIC_KEY
-    provider_private_key = provider_private_key if provider_private_key is not None else PROVIDER_PRIVATE_KEY
-    requestor_public_key = requestor_public_key if requestor_public_key is not None else REQUESTOR_PUBLIC_KEY
-    requestor_private_key = requestor_private_key if requestor_private_key is not None else REQUESTOR_PRIVATE_KEY
-
-    task_to_compute = TaskToCompute(
-        provider_public_key = provider_public_key,
-        requestor_public_key = requestor_public_key,
-        price=0,
-    )
-
-    task_to_compute.compute_task_def                = ComputeTaskDef()
-    task_to_compute.compute_task_def['task_id']     = task_id
-    task_to_compute.compute_task_def['subtask_id']  = subtask_id
-    task_to_compute.compute_task_def['deadline']    = current_time + (cluster_consts.subtask_verification_time * 2)
-    sign_message(task_to_compute, requestor_private_key)
-
+def ack_report_computed_task(task_to_compute):
     ack_report_computed_task = AckReportComputedTask()
     ack_report_computed_task.report_computed_task = ReportComputedTask()
     ack_report_computed_task.report_computed_task.task_to_compute = task_to_compute
@@ -100,16 +86,18 @@ def main():
     task_id         = subtask_id + 'force_report'
     current_time    = get_current_utc_timestamp()
     cluster_consts  = get_protocol_constants(cluster_url)
+    task_to_compute = create_signed_task_to_compute(
+        task_id=task_id,
+        subtask_id=subtask_id,
+        deadline=current_time + (cluster_consts.subtask_verification_time * 2)
+    )
     api_request(
         cluster_url,
         'send',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         force_report_computed_task(
-            task_id,
-            subtask_id,
-            cluster_consts,
-            current_time,
+            task_to_compute=task_to_compute
         ),
         headers = {
             'Content-Type':                     'application/octet-stream',
@@ -138,10 +126,7 @@ def main():
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         ack_report_computed_task(
-            task_id,
-            subtask_id,
-            cluster_consts,
-            current_time,
+            task_to_compute=task_to_compute
         ),
         headers = {
             'Content-Type':             'application/octet-stream',

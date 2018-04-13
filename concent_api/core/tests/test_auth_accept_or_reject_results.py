@@ -417,7 +417,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute.sig = None
         task_to_compute = self._sign_message(
             task_to_compute,
-            self.DIFFERENT_PROVIDER_PRIVATE_KEY,
+            self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
         )
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
@@ -443,7 +443,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             response,
             error_message = 'There was an exception when validating if golem_message {} is signed with public key {}'.format(
                 message.TaskToCompute.TYPE,
-                self.PROVIDER_PUBLIC_KEY,
+                self.REQUESTOR_PUBLIC_KEY,
             )
         )
         self._assert_stored_message_counter_not_increased()
@@ -453,7 +453,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute.requestor_public_key = self.DIFFERENT_REQUESTOR_PUBLIC_KEY
         task_to_compute = self._sign_message(
             task_to_compute,
-            self.PROVIDER_PRIVATE_KEY,
+            self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
         )
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.PROVIDER_PRIVATE_KEY,
@@ -488,7 +488,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute.provider_id = 'different_id'
         task_to_compute = self._sign_message(
             task_to_compute,
-            self.PROVIDER_PRIVATE_KEY,
+            self.REQUESTOR_PRIVATE_KEY,
         )
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.PROVIDER_PRIVATE_KEY,
@@ -528,7 +528,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute.provider_id = None
         task_to_compute = self._sign_message(
             task_to_compute,
-            self.PROVIDER_PRIVATE_KEY,
+            self.REQUESTOR_PRIVATE_KEY,
         )
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
@@ -751,7 +751,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute.sig = None
         task_to_compute = self._sign_message(
             task_to_compute,
-            self.DIFFERENT_PROVIDER_PRIVATE_KEY,
+            self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
         )
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
@@ -777,7 +777,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             response,
             error_message = 'There was an exception when validating if golem_message {} is signed with public key {}'.format(
                 message.TaskToCompute.TYPE,
-                self.PROVIDER_PUBLIC_KEY,
+                self.REQUESTOR_PUBLIC_KEY,
             )
         )
         self._assert_stored_message_counter_not_increased()
@@ -787,7 +787,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute.requestor_public_key = self.DIFFERENT_REQUESTOR_PUBLIC_KEY
         task_to_compute = self._sign_message(
             task_to_compute,
-            self.PROVIDER_PRIVATE_KEY,
+            self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
         )
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.PROVIDER_PRIVATE_KEY,
@@ -822,7 +822,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute.provider_id = 'different_id'
         task_to_compute = self._sign_message(
             task_to_compute,
-            self.PROVIDER_PRIVATE_KEY,
+            self.REQUESTOR_PRIVATE_KEY,
         )
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.PROVIDER_PRIVATE_KEY,
@@ -862,7 +862,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute.provider_id = None
         task_to_compute = self._sign_message(
             task_to_compute,
-            self.PROVIDER_PRIVATE_KEY,
+            self.REQUESTOR_PRIVATE_KEY,
         )
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(

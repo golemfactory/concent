@@ -40,7 +40,7 @@ def handle_send_force_report_computed_task(client_message):
     validate_report_computed_task_time_window(client_message.report_computed_task)
     validate_golem_message_signed_with_key(
         task_to_compute,
-        provider_public_key,
+        requestor_public_key,
     )
 
     if Subtask.objects.filter(
@@ -97,8 +97,8 @@ def handle_send_ack_report_computed_task(client_message):
 
     validate_task_to_compute(task_to_compute)
     validate_golem_message_signed_with_key(
-        client_message.report_computed_task.task_to_compute,
-        client_message.report_computed_task.task_to_compute.provider_public_key,
+        task_to_compute,
+        requestor_public_key,
     )
 
     if get_current_utc_timestamp() <= task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
@@ -168,7 +168,7 @@ def handle_send_reject_report_computed_task(client_message):
     validate_task_to_compute(task_to_compute)
     validate_golem_message_signed_with_key(
         task_to_compute,
-        provider_public_key,
+        requestor_public_key,
     )
 
     try:
@@ -261,7 +261,7 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
     validate_task_to_compute(task_to_compute)
     validate_golem_message_signed_with_key(
         task_to_compute,
-        provider_public_key,
+        requestor_public_key,
     )
     force_get_task_result_deadline = (
         client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] +
@@ -318,7 +318,7 @@ def handle_send_force_subtask_results(request, client_message: message.concents.
     validate_task_to_compute(task_to_compute)
     validate_golem_message_signed_with_key(
         task_to_compute,
-        provider_public_key,
+        requestor_public_key,
     )
 
     current_time = get_current_utc_timestamp()
@@ -410,7 +410,7 @@ def handle_send_force_subtask_results_response(client_message):
     validate_task_to_compute(task_to_compute)
     validate_golem_message_signed_with_key(
         task_to_compute,
-        provider_public_key,
+        requestor_public_key,
     )
 
     try:
@@ -487,7 +487,7 @@ def handle_send_force_payment(request, client_message: message.concents.ForcePay
     for subtask_results_accepted in client_message.subtask_results_accepted_list:
         validate_golem_message_signed_with_key(
             subtask_results_accepted.task_to_compute,
-            subtask_results_accepted.task_to_compute.provider_public_key,
+            subtask_results_accepted.task_to_compute.requestor_public_key,
         )
 
     task_to_compute = client_message.subtask_results_accepted_list[0].task_to_compute

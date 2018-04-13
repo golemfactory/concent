@@ -36,7 +36,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 compute_task_def      = self.compute_task_def,
                 provider_public_key   = self.PROVIDER_PUBLIC_KEY,
                 requestor_public_key  = self.REQUESTOR_PUBLIC_KEY,
-                sign_with_private_key = self.PROVIDER_PRIVATE_KEY,
+                sign_with_private_key = self.REQUESTOR_PRIVATE_KEY,
             )
 
         with freeze_time("2017-12-01 10:59:00"):
@@ -156,7 +156,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.deserialized_task_to_compute.sig = None
         task_to_compute = self._sign_message(
             self.deserialized_task_to_compute,
-            self.DIFFERENT_PROVIDER_PRIVATE_KEY,
+            self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
         )
 
         with freeze_time("2017-12-01 11:00:05"):
@@ -179,7 +179,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             response,
             error_message='There was an exception when validating if golem_message {} is signed with public key {}'.format(
                 message.TaskToCompute.TYPE,
-                self.PROVIDER_PUBLIC_KEY,
+                self.REQUESTOR_PUBLIC_KEY,
             )
         )
 
@@ -188,7 +188,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute.requestor_public_key = self.DIFFERENT_REQUESTOR_PUBLIC_KEY
         task_to_compute = self._sign_message(
             task_to_compute,
-            self.PROVIDER_PRIVATE_KEY,
+            self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
         )
 
         with freeze_time("2017-12-01 11:00:05"):
@@ -218,7 +218,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute.provider_id = 'different_id'
         task_to_compute = self._sign_message(
             task_to_compute,
-            self.PROVIDER_PRIVATE_KEY,
+            self.REQUESTOR_PRIVATE_KEY,
         )
 
         with freeze_time("2017-12-01 11:00:05"):
@@ -254,7 +254,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.deserialized_task_to_compute.provider_id = None
         self.deserialized_task_to_compute = self._sign_message(
             self.deserialized_task_to_compute,
-            self.PROVIDER_PRIVATE_KEY,
+            self.REQUESTOR_PRIVATE_KEY,
         )
 
         with freeze_time("2017-12-01 11:00:05"):
@@ -374,8 +374,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # sign task_to_compute message with PROVIDER sig
 
-        serialized_task_to_compute   = dump(task_to_compute,             self.PROVIDER_PRIVATE_KEY,   self.REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute = load(serialized_task_to_compute,  self.REQUESTOR_PRIVATE_KEY,  self.PROVIDER_PUBLIC_KEY, check_time = False)
+        serialized_task_to_compute   = dump(task_to_compute,             self.REQUESTOR_PRIVATE_KEY,   self.PROVIDER_PUBLIC_KEY)
+        deserialized_task_to_compute = load(serialized_task_to_compute,  self.PROVIDER_PRIVATE_KEY,  self.REQUESTOR_PUBLIC_KEY, check_time = False)
 
         with freeze_time("2017-12-01 10:59:00"):
             report_computed_task = message.tasks.ReportComputedTask(
@@ -478,7 +478,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.deserialized_task_to_compute.sig = None
         task_to_compute = self._sign_message(
             self.deserialized_task_to_compute,
-            self.DIFFERENT_PROVIDER_PRIVATE_KEY,
+            self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
         )
 
         with freeze_time("2017-12-01 10:00:00"):
@@ -509,7 +509,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             response,
             error_message='There was an exception when validating if golem_message {} is signed with public key {}'.format(
                 message.TaskToCompute.TYPE,
-                self.PROVIDER_PUBLIC_KEY,
+                self.REQUESTOR_PUBLIC_KEY,
             )
         )
 
@@ -518,7 +518,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute.requestor_public_key = self.DIFFERENT_REQUESTOR_PUBLIC_KEY
         task_to_compute = self._sign_message(
             task_to_compute,
-            self.PROVIDER_PRIVATE_KEY,
+            self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
         )
 
         with freeze_time("2017-12-01 10:00:00"):
@@ -555,7 +555,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute.provider_id = 'different_id'
         task_to_compute = self._sign_message(
             task_to_compute,
-            self.PROVIDER_PRIVATE_KEY,
+            self.REQUESTOR_PRIVATE_KEY,
         )
 
         with freeze_time("2017-12-01 10:00:00"):
@@ -608,7 +608,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.deserialized_task_to_compute.provider_id = None
         self.deserialized_task_to_compute = self._sign_message(
             self.deserialized_task_to_compute,
-            self.PROVIDER_PRIVATE_KEY,
+            self.REQUESTOR_PRIVATE_KEY,
         )
 
         with freeze_time("2017-12-01 10:00:00"):
@@ -738,8 +738,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # sign task_to_compute message with PROVIDER sig
 
-        serialized_task_to_compute   = dump(task_to_compute,            self.PROVIDER_PRIVATE_KEY,  self.REQUESTOR_PUBLIC_KEY)
-        deserialized_task_to_compute = load(serialized_task_to_compute, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
+        serialized_task_to_compute   = dump(task_to_compute,            self.REQUESTOR_PRIVATE_KEY,  self.PROVIDER_PUBLIC_KEY)
+        deserialized_task_to_compute = load(serialized_task_to_compute, self.PROVIDER_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY, check_time = False)
 
         with freeze_time("2017-12-01 10:59:00"):
             report_computed_task = message.tasks.ReportComputedTask(
@@ -842,7 +842,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.deserialized_task_to_compute.sig = None
         task_to_compute = self._sign_message(
             self.deserialized_task_to_compute,
-            self.DIFFERENT_PROVIDER_PRIVATE_KEY,
+            self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
         )
 
         with freeze_time("2017-12-01 10:00:00"):
@@ -872,7 +872,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             response,
             error_message='There was an exception when validating if golem_message {} is signed with public key {}'.format(
                 message.TaskToCompute.TYPE,
-                self.PROVIDER_PUBLIC_KEY,
+                self.REQUESTOR_PUBLIC_KEY,
             )
         )
 
@@ -881,7 +881,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute.requestor_public_key = self.DIFFERENT_REQUESTOR_PUBLIC_KEY
         task_to_compute = self._sign_message(
             task_to_compute,
-            self.PROVIDER_PRIVATE_KEY,
+            self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
         )
 
         with freeze_time("2017-12-01 10:00:00"):
@@ -918,7 +918,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute.provider_id = 'different_id'
         task_to_compute = self._sign_message(
             task_to_compute,
-            self.PROVIDER_PRIVATE_KEY,
+            self.REQUESTOR_PRIVATE_KEY,
         )
 
         with freeze_time("2017-12-01 10:00:00"):
@@ -971,7 +971,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.deserialized_task_to_compute.provider_id = None
         self.deserialized_task_to_compute = self._sign_message(
             self.deserialized_task_to_compute,
-            self.PROVIDER_PRIVATE_KEY,
+            self.REQUESTOR_PRIVATE_KEY,
         )
 
         with freeze_time("2017-12-01 10:00:00"):

@@ -67,7 +67,7 @@ class ConcentIntegrationTestCase(TestCase):
     def _sign_message(self, golem_message, client_private_key = None):
         return sign_message(
             golem_message,
-            self.PROVIDER_PRIVATE_KEY if client_private_key is None else client_private_key,
+            self.REQUESTOR_PRIVATE_KEY if client_private_key is None else client_private_key,
         )
 
     def _get_serialized_force_get_task_result(

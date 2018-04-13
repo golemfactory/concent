@@ -241,11 +241,11 @@ class ApiViewTransactionTestCase(TransactionTestCase):
         task_to_compute = load(
             dump(
                 task_to_compute,
-                PROVIDER_PRIVATE_KEY,
+                REQUESTOR_PRIVATE_KEY,
                 settings.CONCENT_PUBLIC_KEY,
             ),
             settings.CONCENT_PRIVATE_KEY,
-            PROVIDER_PUBLIC_KEY,
+            REQUESTOR_PUBLIC_KEY,
             check_time = False,
         )
 

@@ -109,7 +109,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         deserialized_task_to_compute.sig = None
         task_to_compute = self._sign_message(
             deserialized_task_to_compute,
-            self.DIFFERENT_PROVIDER_PRIVATE_KEY,
+            self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
         )
 
         serialized_force_get_task_result = self._get_serialized_force_get_task_result(
@@ -134,7 +134,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             response,
             error_message='There was an exception when validating if golem_message {} is signed with public key {}'.format(
                 message.TaskToCompute.TYPE,
-                self.PROVIDER_PUBLIC_KEY,
+                self.REQUESTOR_PUBLIC_KEY,
             )
         )
 
@@ -144,7 +144,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute.provider_id = 'different_id'
         task_to_compute = self._sign_message(
             task_to_compute,
-            self.PROVIDER_PRIVATE_KEY,
+            self.REQUESTOR_PRIVATE_KEY,
         )
 
         serialized_force_get_task_result = self._get_serialized_force_get_task_result(

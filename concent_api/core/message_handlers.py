@@ -1054,9 +1054,14 @@ def handle_send_subtask_results_verify(
     )
     validate_task_to_compute(report_computed_task.task_to_compute)
     validate_golem_message_subtask_results_rejected(subtask_results_rejected)
+    validate_golem_message_signed_with_key(
+        report_computed_task.task_to_compute,
+        report_computed_task.task_to_compute.requestor_public_key,
 
-    client_public_key = decode_client_public_key(request)
-    other_party_public_key = decode_other_party_public_key(request)
+    )
+
+    requestor_public_key = decode_client_public_key(request)
+    provider_public_key = decode_other_party_public_key(request)
     current_time = get_current_utc_timestamp()
 
     if Subtask.objects.filter(
@@ -1083,7 +1088,7 @@ def handle_send_subtask_results_verify(
         )
     if not is_signed_by_right_party(
         subtask_results_rejected,
-        other_party_public_key,
+        provider_public_key,
     ):
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.InvalidRequest,
@@ -1100,8 +1105,8 @@ def handle_send_subtask_results_verify(
     store_or_update_subtask(
         task_id=compute_task_def['task_id'],
         subtask_id=compute_task_def['subtask_id'],
-        provider_public_key=other_party_public_key,
-        requestor_public_key=client_public_key,
+        provider_public_key=provider_public_key,
+        requestor_public_key=requestor_public_key,
         state=Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
         next_deadline=subtask_results_rejected.timestamp + settings.ADDITIONAL_VERIFICATION_CALL_TIME,
         set_next_deadline=True,

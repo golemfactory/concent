@@ -359,6 +359,8 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             task_id=self.task_id,
             subtask_id=self.subtask_id
         )
+        sign_message(task_to_compute, self.REQUESTOR_PRIVATE_KEY)
+
         report_computed_task = self._get_deserialized_report_computed_task(
             timestamp="2018-04-01 10:01:00",
             subtask_id=self.subtask_id,

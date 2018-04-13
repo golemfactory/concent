@@ -213,15 +213,14 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             reason_of_rejection=message.tasks.SubtaskResultsRejected.REASON.ResourcesFailure)
 
         # when
-        with mock.patch("core.message_handlers.base.is_requestor_account_status_positive", return_value=True):
-            with freeze_time(subtask_results_verify_time_str):
-                response = self.client.post(
-                    reverse('core:send'),
-                    data=serialized_subtask_results_verify,
-                    content_type='application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
-                )
+        with freeze_time(subtask_results_verify_time_str):
+            response = self.client.post(
+                reverse('core:send'),
+                data=serialized_subtask_results_verify,
+                content_type='application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
+            )
 
         # then
         self._test_response(
@@ -247,15 +246,14 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # when
-        with mock.patch("core.message_handlers.base.is_requestor_account_status_positive", return_value=True):
-            with freeze_time(subtask_results_verify_time_str):
-                response = self.client.post(
-                    reverse('core:send'),
-                    data=serialized_subtask_results_verify,
-                    content_type='application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
-                )
+        with freeze_time(subtask_results_verify_time_str):
+            response = self.client.post(
+                reverse('core:send'),
+                data=serialized_subtask_results_verify,
+                content_type='application/octet-stream',
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
+            )
 
         # then
         self._test_response(
@@ -359,7 +357,6 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             task_id=self.task_id,
             subtask_id=self.subtask_id
         )
-        sign_message(task_to_compute, self.REQUESTOR_PRIVATE_KEY)
 
         report_computed_task = self._get_deserialized_report_computed_task(
             timestamp="2018-04-01 10:01:00",

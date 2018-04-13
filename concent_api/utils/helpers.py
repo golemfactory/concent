@@ -133,6 +133,7 @@ def get_validated_client_public_key_from_client_message(golem_message: message.b
             message.ForceReportComputedTask,
             message.concents.ForceSubtaskResults,
             message.concents.ForcePayment,
+            message.concents.SubtaskResultsVerify,
         )):
             client_public_key = task_to_compute.provider_public_key
             validate_public_key(client_public_key, 'provider_public_key')

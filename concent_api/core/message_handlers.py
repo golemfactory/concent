@@ -37,7 +37,9 @@ from core.validation import validate_golem_message_signed_with_key
 from core.subtask_helpers import verify_message_subtask_results_accepted
 from core.transfer_operations import store_pending_message
 from core.transfer_operations import create_file_transfer_token
+from core.validation import validate_list_of_identical_task_to_compute
 from core.validation import validate_report_computed_task_time_window
+from core.validation import validate_task_to_compute
 from utils import logging
 from utils.helpers import deserialize_message
 from utils.helpers import get_current_utc_timestamp
@@ -1046,24 +1048,33 @@ def handle_send_subtask_results_verify(
     subtask_results_verify: message.concents.SubtaskResultsVerify
 ):
     subtask_results_rejected = subtask_results_verify.subtask_results_rejected
-    report_computed_task = subtask_results_rejected.report_computed_task
-    compute_task_def = report_computed_task.task_to_compute.compute_task_def
-    validate_id_value(
-        compute_task_def['subtask_id'],
-        'subtask_id'
-    )
-    validate_task_to_compute(report_computed_task.task_to_compute)
-    validate_golem_message_subtask_results_rejected(subtask_results_rejected)
-    validate_golem_message_signed_with_key(
-        report_computed_task.task_to_compute,
-        report_computed_task.task_to_compute.requestor_public_key,
+    task_to_compute = subtask_results_rejected.report_computed_task.task_to_compute
+    compute_task_def = task_to_compute.compute_task_def
 
-    )
-
-    requestor_public_key = decode_client_public_key(request)
-    provider_public_key = decode_other_party_public_key(request)
+    requestor_public_key = task_to_compute.requestor_public_key
+    provider_public_key = task_to_compute.provider_public_key
     current_time = get_current_utc_timestamp()
 
+    validate_golem_message_subtask_results_rejected(subtask_results_rejected)
+    validate_golem_message_signed_with_key(
+        task_to_compute,
+        requestor_public_key,
+    )
+    if subtask_results_rejected.reason != SubtaskResultsRejected.REASON.VerificationNegative:
+        return message.concents.ServiceRefused(
+            reason=message.concents.ServiceRefused.REASON.InvalidRequest,
+        )
+    if not current_time <= subtask_results_rejected.timestamp + settings.ADDITIONAL_VERIFICATION_CALL_TIME:
+        return message.concents.ServiceRefused(
+            reason=message.concents.ServiceRefused.REASON.InvalidRequest,
+        )
+    if not is_signed_by_right_party(
+        subtask_results_rejected,
+        requestor_public_key,
+    ):
+        return message.concents.ServiceRefused(
+            reason=message.concents.ServiceRefused.REASON.InvalidRequest,
+        )
     if Subtask.objects.filter(
         subtask_id=compute_task_def['subtask_id'],
         state__in=[
@@ -1082,24 +1093,9 @@ def handle_send_subtask_results_verify(
         ]
     ):
         raise Http400("SubtaskResultsVerify is not allowed in current state")
-    if not current_time <= subtask_results_rejected.timestamp + settings.ADDITIONAL_VERIFICATION_CALL_TIME:
-        return message.concents.ServiceRefused(
-            reason=message.concents.ServiceRefused.REASON.InvalidRequest,
-        )
-    if not is_signed_by_right_party(
-        subtask_results_rejected,
-        provider_public_key,
-    ):
-        return message.concents.ServiceRefused(
-            reason=message.concents.ServiceRefused.REASON.InvalidRequest,
-        )
     if not base.is_requestor_account_status_positive(request):  # pylint: disable=no-value-for-parameter
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
-        )
-    if subtask_results_rejected.reason != SubtaskResultsRejected.REASON.VerificationNegative:
-        return message.concents.ServiceRefused(
-            reason=message.concents.ServiceRefused.REASON.InvalidRequest,
         )
 
     store_or_update_subtask(
@@ -1110,16 +1106,20 @@ def handle_send_subtask_results_verify(
         state=Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
         next_deadline=subtask_results_rejected.timestamp + settings.ADDITIONAL_VERIFICATION_CALL_TIME,
         set_next_deadline=True,
-        task_to_compute=report_computed_task.task_to_compute,
+        task_to_compute=task_to_compute,
         subtask_results_rejected=subtask_results_rejected
     )
 
     send_blender_verification_request()
 
-    encoded_client_public_key = b64encode(decode_client_public_key(request))
+    encoded_client_public_key = b64encode(provider_public_key)
     ack_subtask_results_verify = message.concents.AckSubtaskResultsVerify(
         subtask_results_verify=subtask_results_verify,
-        file_transfer_token=create_file_transfer_token(report_computed_task, encoded_client_public_key, "upload"),
+        file_transfer_token=create_file_transfer_token(
+            subtask_results_rejected.report_computed_task,
+            encoded_client_public_key,
+            "upload"
+        ),
     )
     return ack_subtask_results_verify
 

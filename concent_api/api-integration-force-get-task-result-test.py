@@ -10,11 +10,13 @@ from base64                 import b64encode
 from golem_messages         import message
 from golem_messages         import shortcuts
 
-from utils.helpers          import get_current_utc_timestamp
-from utils.testing_helpers  import generate_ecc_key_pair
+from utils.helpers import get_current_utc_timestamp
+from utils.helpers import sign_message
+from utils.testing_helpers import generate_ecc_key_pair
 
-from api_testing_helpers    import api_request
-from api_testing_helpers    import timestamp_to_isoformat
+from api_testing_common import api_request
+from api_testing_common import create_client_auth_message
+from api_testing_common import timestamp_to_isoformat
 
 from freezegun              import freeze_time
 
@@ -70,7 +72,7 @@ def upload_new_file_on_cluster(task_id, subtask_id, cluster_consts, current_time
             'Authorization':                authorized_golem_transfer_token,
             'Concent-Client-Public-Key':    b64encode(CONCENT_PUBLIC_KEY).decode(),
             'Concent-upload-path':          'blender/result/{}/{}.{}.zip'.format(task_id, task_id, subtask_id),
-            'Content-Type':                 'application/x-www-form-urlencoded'
+            'Content-Type':                 'application/octet-stream'
     }
 
     response = requests.post("{}".format(STORAGE_CLUSTER_ADDRESS + 'upload/'), headers = headers, data = file_content, verify = False)
@@ -86,8 +88,11 @@ def get_force_get_task_result(task_id, subtask_id, current_time, cluster_consts,
     task_to_compute = message.TaskToCompute(
         provider_public_key=provider_public_key if provider_public_key is not None else PROVIDER_PUBLIC_KEY,
         requestor_public_key=requestor_public_key if requestor_public_key is not None else REQUESTOR_PUBLIC_KEY,
-        compute_task_def = compute_task_def
+        compute_task_def = compute_task_def,
+        price=0,
     )
+    sign_message(task_to_compute, REQUESTOR_PRIVATE_KEY)
+
     report_computed_task = message.ReportComputedTask(
         task_to_compute = task_to_compute,
         size            = size,
@@ -138,7 +143,10 @@ def main():
             'Content-Type':                     'application/octet-stream',
             'concent-client-public-key':        b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'concent-other-party-public-key':   b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.AckForceGetTaskResult.TYPE,
+        expected_content_type='application/octet-stream',
     )
     time.sleep(10)
 
@@ -147,10 +155,13 @@ def main():
         'receive',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
+        create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
         headers = {
             'Content-Type': 'application/octet-stream',
-            'concent-client-public-key': b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForceGetTaskResultUpload.TYPE,
+        expected_content_type='application/octet-stream',
     )
     time.sleep(10)
 
@@ -159,10 +170,13 @@ def main():
         'receive',
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
+        create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
         headers = {
             'Content-Type': 'application/octet-stream',
-            'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForceGetTaskResultDownload.TYPE,
+        expected_content_type='application/octet-stream',
     )
 
     # Case 2 - test for non existing file
@@ -185,7 +199,10 @@ def main():
             'Content-Type':                     'application/octet-stream',
             'concent-client-public-key':        b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'concent-other-party-public-key':   b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.AckForceGetTaskResult.TYPE,
+        expected_content_type='application/octet-stream',
     )
     time.sleep(10)
 
@@ -194,10 +211,13 @@ def main():
         'receive',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
+        create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
         headers = {
-            'Content-Type':                 'application/octet-stream',
-            'concent-client-public-key':    b64encode(PROVIDER_PUBLIC_KEY).decode('ascii')
-        }
+            'Content-Type': 'application/octet-stream',
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForceGetTaskResultUpload.TYPE,
+        expected_content_type='application/octet-stream',
     )
     time.sleep(10)
 
@@ -206,10 +226,12 @@ def main():
         'receive',
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
+        create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
         headers = {
-            'Content-Type':                 'application/octet-stream',
+            'Content-Type': 'application/octet-stream',
             'concent-client-public-key':    b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
-        }
+        },
+        expected_status=204,
     )
 
 

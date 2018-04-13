@@ -9,11 +9,13 @@ from freezegun              import freeze_time
 
 from golem_messages         import message
 
-from utils.helpers          import get_current_utc_timestamp
-from utils.testing_helpers  import generate_ecc_key_pair
+from utils.helpers import get_current_utc_timestamp
+from utils.helpers import sign_message
+from utils.testing_helpers import generate_ecc_key_pair
 
-from api_testing_helpers    import api_request
-from api_testing_helpers    import timestamp_to_isoformat
+from api_testing_common import api_request
+from api_testing_common import create_client_auth_message
+from api_testing_common import timestamp_to_isoformat
 
 from protocol_constants import get_protocol_constants
 
@@ -56,15 +58,20 @@ def subtask_results_accepted(timestamp = None, payment_ts = None, task_to_comput
 def task_to_compute(
     timestamp                       = None,
     compute_task_def                = None,
+    provider_public_key             = None,
     requestor_public_key            = None,
     requestor_ethereum_public_key   = None
 ):
     with freeze_time(timestamp):
-        return message.tasks.TaskToCompute(
+        task_to_compute = message.tasks.TaskToCompute(
+            provider_public_key=provider_public_key if provider_public_key is not None else PROVIDER_PUBLIC_KEY,
+            requestor_public_key=requestor_public_key if requestor_public_key is not None else REQUESTOR_PUBLIC_KEY,
             compute_task_def = compute_task_def,
-            requestor_public_key = requestor_public_key,
-            requestor_ethereum_public_key = requestor_ethereum_public_key
+            requestor_ethereum_public_key = requestor_ethereum_public_key,
+            price=0,
         )
+        sign_message(task_to_compute, REQUESTOR_PRIVATE_KEY)
+        return task_to_compute
 
 
 def compute_task_def(
@@ -91,7 +98,6 @@ def main():
                 payment_ts      = current_time - cluster_consts.payment_due_time - 1,
                 task_to_compute = task_to_compute(
                     timestamp                       = timestamp_to_isoformat(current_time),
-                    requestor_public_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
                     requestor_ethereum_public_key   = "0x" + b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
                     compute_task_def                = compute_task_def(
                         deadline = current_time,
@@ -104,7 +110,6 @@ def main():
                 payment_ts      = current_time - cluster_consts.payment_due_time - 1,
                 task_to_compute = task_to_compute(
                     timestamp                       = timestamp_to_isoformat(current_time),
-                    requestor_public_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
                     requestor_ethereum_public_key   = "0x" + b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
                     compute_task_def                = compute_task_def(
                         deadline = current_time,
@@ -129,7 +134,6 @@ def main():
                     payment_ts      = current_time - cluster_consts.payment_due_time - 1,
                     task_to_compute = task_to_compute(
                         timestamp                       = timestamp_to_isoformat(current_time),
-                        requestor_public_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
                         requestor_ethereum_public_key   = "0x" + b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
                         compute_task_def                = compute_task_def(
                             deadline = current_time,
@@ -142,7 +146,6 @@ def main():
                     payment_ts      = current_time - cluster_consts.payment_due_time - 1,
                     task_to_compute = task_to_compute(
                         timestamp                       = timestamp_to_isoformat(current_time),
-                        requestor_public_key            = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
                         requestor_ethereum_public_key   = "0x" + b64encode(DIFFERENT_REQUESTOR_PUBLIC_KEY).decode('ascii'),
                         compute_task_def                = compute_task_def(
                             deadline = current_time,
@@ -160,7 +163,10 @@ def main():
             'temporary-list-of-transactions':   'True',
             'temporary-v':                      '1',
             'temporary-eth-block':              '1'
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ServiceRefused.TYPE,
+        expected_content_type='application/octet-stream',
     )
 
     #  Test CASE 2B - Send ForcePayment beyond payment time
@@ -178,7 +184,10 @@ def main():
             'temporary-list-of-transactions':   '',
             'temporary-v':                      '-1',
             'temporary-eth-block':              '-1'
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForcePaymentRejected.TYPE,
+        expected_content_type='application/octet-stream',
     )
 
     #  Test CASE 2C - Send ForcePayment with no value to be paid
@@ -197,7 +206,10 @@ def main():
             'temporary-list-of-transactions':   'True',
             'temporary-v':                      '-1',
             'temporary-eth-block':              '-1'
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForcePaymentRejected.TYPE,
+        expected_content_type='application/octet-stream',
     )
 
     # Test CASE 2D - Send correct ForcePayment
@@ -216,7 +228,10 @@ def main():
             'temporary-list-of-transactions':   'True',
             'temporary-v':                      '1',
             'temporary-eth-block':              '1'
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForcePaymentCommitted.TYPE,
+        expected_content_type='application/octet-stream',
     )
 
     time.sleep(5)
@@ -226,10 +241,13 @@ def main():
         'receive-out-of-band',
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
+        create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
         headers = {
             'Content-Type': 'application/octet-stream',
-            'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-        }
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForcePaymentCommitted.TYPE,
+        expected_content_type='application/octet-stream',
     )
 
 

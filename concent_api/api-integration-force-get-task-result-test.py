@@ -10,8 +10,9 @@ from base64                 import b64encode
 from golem_messages         import message
 from golem_messages         import shortcuts
 
-from utils.helpers          import get_current_utc_timestamp
-from utils.testing_helpers  import generate_ecc_key_pair
+from utils.helpers import get_current_utc_timestamp
+from utils.helpers import sign_message
+from utils.testing_helpers import generate_ecc_key_pair
 
 from api_testing_common import api_request
 from api_testing_common import create_client_auth_message
@@ -90,6 +91,8 @@ def get_force_get_task_result(task_id, subtask_id, current_time, cluster_consts,
         compute_task_def = compute_task_def,
         price=0,
     )
+    sign_message(task_to_compute, REQUESTOR_PRIVATE_KEY)
+
     report_computed_task = message.ReportComputedTask(
         task_to_compute = task_to_compute,
         size            = size,

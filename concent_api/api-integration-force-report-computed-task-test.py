@@ -5,8 +5,6 @@ import sys
 import random
 from base64                         import b64encode
 
-from golem_messages                 import dump
-from golem_messages                 import load
 from golem_messages.message.tasks import AckReportComputedTask
 from golem_messages.message         import ComputeTaskDef
 from golem_messages.message         import ForceReportComputedTask
@@ -14,8 +12,9 @@ from golem_messages.message         import TaskToCompute
 from golem_messages.message.concents import ForceReportComputedTaskResponse
 from golem_messages.message.tasks   import ReportComputedTask
 
-from utils.helpers                  import get_current_utc_timestamp
-from utils.testing_helpers          import generate_ecc_key_pair
+from utils.helpers import get_current_utc_timestamp
+from utils.helpers import sign_message
+from utils.testing_helpers import generate_ecc_key_pair
 
 from api_testing_common import api_request
 from api_testing_common import create_client_auth_message
@@ -58,12 +57,11 @@ def force_report_computed_task(task_id, subtask_id, cluster_consts, current_time
         compute_task_def = compute_task_def,
         price=0,
     )
-
-    serialized_task_to_compute      = dump(task_to_compute,             requestor_private_key,  provider_public_key)
-    deserialized_task_to_compute    = load(serialized_task_to_compute,  provider_private_key,   requestor_public_key, check_time = False)
+    sign_message(task_to_compute, requestor_private_key)
 
     report_computed_task = ReportComputedTask()
-    report_computed_task.task_to_compute = deserialized_task_to_compute
+    report_computed_task.task_to_compute = task_to_compute
+    sign_message(report_computed_task, provider_private_key)
 
     force_report_computed_task  = ForceReportComputedTask()
     force_report_computed_task.report_computed_task = report_computed_task
@@ -87,14 +85,12 @@ def ack_report_computed_task(task_id, subtask_id, cluster_consts, current_time, 
     task_to_compute.compute_task_def                = ComputeTaskDef()
     task_to_compute.compute_task_def['task_id']     = task_id
     task_to_compute.compute_task_def['subtask_id']  = subtask_id
-    task_to_compute.compute_task_def['deadline']    = current_time + (cluster_consts.subtask_verification_time)
-
-    serialized_task_to_compute      = dump(task_to_compute,             requestor_private_key,  provider_public_key)
-    deserialized_task_to_compute    = load(serialized_task_to_compute,  provider_private_key,   requestor_public_key, check_time = False)
+    task_to_compute.compute_task_def['deadline']    = current_time + (cluster_consts.subtask_verification_time * 2)
+    sign_message(task_to_compute, requestor_private_key)
 
     ack_report_computed_task = AckReportComputedTask()
     ack_report_computed_task.report_computed_task = ReportComputedTask()
-    ack_report_computed_task.report_computed_task.task_to_compute = deserialized_task_to_compute
+    ack_report_computed_task.report_computed_task.task_to_compute = task_to_compute
     return ack_report_computed_task
 
 

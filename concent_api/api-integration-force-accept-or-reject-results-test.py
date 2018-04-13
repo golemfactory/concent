@@ -9,8 +9,9 @@ from freezegun              import freeze_time
 
 from golem_messages         import message
 
-from utils.helpers          import get_current_utc_timestamp
-from utils.testing_helpers  import generate_ecc_key_pair
+from utils.helpers import get_current_utc_timestamp
+from utils.helpers import sign_message
+from utils.testing_helpers import generate_ecc_key_pair
 
 from api_testing_common import api_request
 from api_testing_common import create_client_auth_message
@@ -53,12 +54,14 @@ def ack_report_computed_task(timestamp = None, report_computed_task = None):
 
 def task_to_compute(timestamp = None, compute_task_def = None, provider_public_key = None, requestor_public_key = None):
     with freeze_time(timestamp):
-        return message.tasks.TaskToCompute(
+        task_to_compute = message.tasks.TaskToCompute(
             provider_public_key = provider_public_key if provider_public_key is not None else PROVIDER_PUBLIC_KEY,
             requestor_public_key = requestor_public_key if requestor_public_key is not None else REQUESTOR_PUBLIC_KEY,
             compute_task_def = compute_task_def,
             price=0,
         )
+        sign_message(task_to_compute, REQUESTOR_PRIVATE_KEY)
+        return task_to_compute
 
 
 def compute_task_def(

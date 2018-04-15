@@ -1,5 +1,6 @@
 import mock
 
+from django.test    import override_settings
 from django.test    import TestCase
 from django.urls    import reverse
 
@@ -8,6 +9,7 @@ from golem_messages import message
 from ..models       import BlenderSubtaskDefinition
 from ..models       import UploadReport
 from ..models       import VerificationRequest
+from ..tasks        import blender_verification_order
 
 
 class ConductorVerificationIntegrationTest(TestCase):
@@ -15,7 +17,9 @@ class ConductorVerificationIntegrationTest(TestCase):
     multi_db = True
 
     def setUp(self):
-        self.file_path = 'blender/source/ef0dc1/ef0dc1.zzz523.zip'
+        self.source_package_path = 'blender/source/ef0dc1/ef0dc1.zzz523.zip'
+        self.result_package_path = 'blender/result/ef0dc1/ef0dc1.zzz523.zip'
+        self.scene_file = 'blender/scene/ef0dc1/ef0dc1.zzz523.zip'
 
         self.compute_task_def = message.ComputeTaskDef()
         self.compute_task_def['task_id'] = 'ef0dc1'
@@ -24,8 +28,8 @@ class ConductorVerificationIntegrationTest(TestCase):
     def _prepare_verification_request_with_blender_subtask_definition(self):
         verification_request = VerificationRequest(
             subtask_id='1',
-            source_package_path=self.file_path,
-            result_package_path='blender/result/ef0dc1/ef0dc1.zzz523.zip'
+            source_package_path=self.source_package_path,
+            result_package_path=self.result_package_path,
         )
         verification_request.full_clean()
         verification_request.save()
@@ -33,7 +37,7 @@ class ConductorVerificationIntegrationTest(TestCase):
         blender_subtask_definition = BlenderSubtaskDefinition(
             verification_request=verification_request,
             output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
-            scene_file='blender/scene/ef0dc1/ef0dc1.zzz523.zip',
+            scene_file=self.scene_file,
         )
         blender_subtask_definition.full_clean()
         blender_subtask_definition.save()
@@ -52,18 +56,18 @@ class ConductorVerificationIntegrationTest(TestCase):
         response = self.client.get(
             reverse(
                 'conductor:upload_report',
-                kwargs = {
-                    'file_path': self.file_path
+                kwargs={
+                    'file_path': self.source_package_path
                 }
             ),
             content_type = 'application/octet-stream',
         )
 
-        self.assertEqual(response.status_code,         200)
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(UploadReport.objects.count(), 1)
 
         upload_report = UploadReport.objects.first()
-        self.assertEqual(upload_report.path,           self.file_path)
+        self.assertEqual(upload_report.path, self.source_package_path)
         self.assertEqual(upload_report.verification_request, None)
 
     def test_conductor_should_create_upload_report_and_link_to_related_verification_request(self):
@@ -72,25 +76,25 @@ class ConductorVerificationIntegrationTest(TestCase):
         response = self.client.get(
             reverse(
                 'conductor:upload_report',
-                kwargs = {
-                    'file_path': self.file_path
+                kwargs={
+                    'file_path': self.source_package_path
                 }
             ),
-            content_type = 'application/octet-stream',
+            content_type='application/octet-stream',
         )
 
-        self.assertEqual(response.status_code,         200)
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(UploadReport.objects.count(), 1)
 
         upload_report = UploadReport.objects.first()
-        self.assertEqual(upload_report.path,           self.file_path)
+        self.assertEqual(upload_report.path, self.source_package_path)
         self.assertEqual(upload_report.verification_request, verification_request)
 
     def test_conductor_should_create_upload_report_and_do_not_link_to_unrelated_verification_request(self):
         verification_request = VerificationRequest(
             subtask_id='1',
-            source_package_path='blender/source/ef0dc1/ef0dc1.aaa523.zip',
-            result_package_path='blender/result/ef0dc1/ef0dc1.zzz523.zip'
+            source_package_path='blender/source/bad/bad.bad.zip',
+            result_package_path='blender/result/bad/bad.bad.zip'
         )
         verification_request.full_clean()
         verification_request.save()
@@ -98,18 +102,18 @@ class ConductorVerificationIntegrationTest(TestCase):
         response = self.client.get(
             reverse(
                 'conductor:upload_report',
-                kwargs = {
-                    'file_path': self.file_path
+                kwargs={
+                    'file_path': self.source_package_path
                 }
             ),
-            content_type = 'application/octet-stream',
+            content_type='application/octet-stream',
         )
 
-        self.assertEqual(response.status_code,         200)
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(UploadReport.objects.count(), 1)
 
         upload_report = UploadReport.objects.first()
-        self.assertEqual(upload_report.path,           self.file_path)
+        self.assertEqual(upload_report.path, self.source_package_path)
         self.assertEqual(upload_report.verification_request, None)
 
     def test_conductor_should_schedule_verification_order_task_if_all_related_upload_requests_have_reports(self):
@@ -126,17 +130,81 @@ class ConductorVerificationIntegrationTest(TestCase):
             response = self.client.get(
                 reverse(
                     'conductor:upload_report',
-                    kwargs = {
-                        'file_path': self.file_path
+                    kwargs={
+                        'file_path': self.source_package_path
                     }
                 ),
-                content_type = 'application/octet-stream',
+                content_type='application/octet-stream',
             )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(UploadReport.objects.count(), 2)
 
         upload_report = UploadReport.objects.last()
-        self.assertEqual(upload_report.path, self.file_path)
+        self.assertEqual(upload_report.path, self.source_package_path)
+
+        mock_task.assert_called()
+
+    def test_blender_verification_order_task_should_create_verification_request_and_blender_subtask_definition(self):
+        blender_verification_order(
+            subtask_id=self.compute_task_def['subtask_id'],
+            source_package_path=self.source_package_path,
+            result_package_path=self.result_package_path,
+            output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,
+            scene_file=self.scene_file,
+        )
+
+        self.assertEqual(VerificationRequest.objects.count(), 1)
+
+        verification_request = VerificationRequest.objects.first()
+        self.assertEqual(verification_request.subtask_id,  self.compute_task_def['subtask_id'])
+        self.assertEqual(verification_request.source_package_path, self.source_package_path)
+        self.assertEqual(verification_request.result_package_path, self.result_package_path)
+        self.assertEqual(verification_request.blender_subtask_definition.output_format, BlenderSubtaskDefinition.OutputFormat.JPG.name)
+        self.assertEqual(verification_request.blender_subtask_definition.scene_file, self.scene_file)
+
+    def test_blender_verification_order_task_should_not_link_upload_requests_to_unrelated_upload_reports(self):
+        upload_report = UploadReport(
+            path='blender/scene/bad/bad.bad.zip',
+        )
+        upload_report.full_clean()
+        upload_report.save()
+
+        blender_verification_order(
+            subtask_id=self.compute_task_def['subtask_id'],
+            source_package_path=self.source_package_path,
+            result_package_path=self.result_package_path,
+            output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,
+            scene_file=self.scene_file,
+        )
+
+        self.assertEqual(VerificationRequest.objects.count(), 1)
+
+        verification_request = VerificationRequest.objects.first()
+        self.assertEqual(verification_request.upload_reports.count(), 0)
+        self.assertFalse(verification_request.upload_reports.filter(path=self.source_package_path).exists())
+
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=True)
+    def test_blender_verification_order_task_should_schedule_verification_order_task_if_all_related_upload_requests_have_reports(self):
+        upload_report = UploadReport(
+            path=self.source_package_path,
+        )
+        upload_report.full_clean()
+        upload_report.save()
+
+        upload_report = UploadReport(
+            path=self.result_package_path,
+        )
+        upload_report.full_clean()
+        upload_report.save()
+
+        with mock.patch('conductor.tasks.blender_verification_order.delay') as mock_task:
+            blender_verification_order(
+                subtask_id=self.compute_task_def['subtask_id'],
+                source_package_path=self.source_package_path,
+                result_package_path=self.result_package_path,
+                output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,
+                scene_file=self.scene_file,
+            )
 
         mock_task.assert_called()

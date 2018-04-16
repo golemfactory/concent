@@ -398,6 +398,7 @@ def handle_send_force_subtask_results(request, client_message: message.concents.
 
 def handle_send_force_subtask_results_response(client_message):
     if isinstance(client_message.subtask_results_accepted, message.tasks.SubtaskResultsAccepted):
+        validate_task_to_compute(client_message.subtask_results_accepted.task_to_compute)
         task_to_compute           = client_message.subtask_results_accepted.task_to_compute
         report_computed_task      = None
         subtask_results_accepted  = client_message.subtask_results_accepted
@@ -405,6 +406,7 @@ def handle_send_force_subtask_results_response(client_message):
         state                     = Subtask.SubtaskState.ACCEPTED
         response_type             = PendingResponse.ResponseType.ForceSubtaskResultsResponse
     else:
+        validate_task_to_compute(client_message.subtask_results_rejected.report_computed_task.task_to_compute)
         task_to_compute           = client_message.subtask_results_rejected.report_computed_task.task_to_compute
         report_computed_task      = client_message.subtask_results_rejected.report_computed_task
         subtask_results_accepted  = None

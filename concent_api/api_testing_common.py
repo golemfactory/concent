@@ -214,3 +214,9 @@ def parse_command_line(command_line):
 
 if __name__ == '__main__':
     pass
+
+
+def get_task_id_and_subtask_id(test_id, case_name):
+    task_id = f'task_{case_name}_{test_id}'
+    subtask_id = 'sub_' + task_id
+    return (subtask_id, task_id)

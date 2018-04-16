@@ -10,7 +10,8 @@ from django.urls    import reverse
 from golem_messages.shortcuts       import dump
 from golem_messages.message         import FileTransferToken
 
-from utils.helpers                  import get_current_utc_timestamp
+from utils.helpers import get_current_utc_timestamp
+from utils.helpers import get_storage_file_path
 
 
 @override_settings(
@@ -33,7 +34,7 @@ class GatekeeperViewUploadTest(TestCase):
         self.upload_token.files[0]['path']      = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
         self.upload_token.files[0]['checksum']  = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89'
         self.upload_token.files[0]['size']      = 1024
-        self.upload_token.operation             = 'upload'
+        self.upload_token.operation             = FileTransferToken.Operation.upload
 
     @freeze_time("2018-12-30 11:00:00")
     def test_upload_should_accept_valid_message(self):
@@ -287,7 +288,10 @@ class GatekeeperViewUploadTest(TestCase):
         response = self.client.post(
             '{}{}'.format(
                 reverse('gatekeeper:upload'),
-                'blender/result/1/1.2.zip',
+                get_storage_file_path(
+                    task_id=1,
+                    subtask_id=2,
+                ),
             ),
             HTTP_AUTHORIZATION             = 'Golem D6UAAAAAWoG9YgGsJib/zgj2cAHGXunyxI7t2NYnHKPvrdzVkdT/B58TpQHpdfonuWy8sWq9nrpc9+/1nUTm8O9szLOrFrCPKL7hAQRWLO4JCR6cVGILFbqRKX6abR1AKMLqRUa/ucH5t0YrLe/OPEp6+2swgbRgcnu0dlvfaupn9bwRPZhjVc2hJlDlkz+7aRx+NDEFWQeRHt3q7b8vA0xd/UUvPGudSnzGR6DaM1+Ji4PifQ7AUdYkQHmRNP4yZH+xjCq706J8mftrySj2geoP+TLKZFgpqHhng5I9v0xKpjOnZk9MRTWkzPyxIMwl535ZVLte0J5VRIIaZFEyYFRXgZGVyGinnEIfXZKZdUdRpRELUBK086A/w4aG3shpEPXEzfo42hjdrDEfyx5bZTANyrGwj1hTLKPoVaPMN9wb3MdQ1D1B5Os3+5YdfASnQRZfZmaEJqNAHNlZveLHpA2DcPFNvltcwUy3Jj1gTI43IbbuXNsIXhMKgNaZrNgJKKpQpc+qF9D7CwfugtiD6y/g71UrrUgvVIcZ9UXVTu5OJg2agGiaIvRWrGxfhyzv/HyHR530p7fNTt/dJBCDO55Mx3uhxA/XGYxmz2uk/xIQMR8QU7Cc/tOdvzdHJ+WHhNBo2fe5oLk03AXIhpqOOgJb8nnM',
             content_type                   = 'application/x-www-form-urlencoded',
@@ -301,7 +305,10 @@ class GatekeeperViewUploadTest(TestCase):
 
     def test_upload_should_return_401_if_specific_file_info_data(self):
         file = FileTransferToken.FileInfo(
-            path     = 'blender/result/1/1.2.zip',
+            path     = get_storage_file_path(
+                task_id=1,
+                subtask_id=2
+            ),
             size     = 1,
             checksum = 'sha1:356a192b7913b04c54574d18c28d46e6395428ab\n',
         )
@@ -313,7 +320,10 @@ class GatekeeperViewUploadTest(TestCase):
         response = self.client.post(
             '{}{}'.format(
                 reverse('gatekeeper:upload'),
-                'blender/result/1/1.2.zip',
+                get_storage_file_path(
+                    task_id=1,
+                    subtask_id=2,
+                ),
             ),
             HTTP_AUTHORIZATION             = 'Golem ' + encrypted_token,
             content_type                   = 'application/x-www-form-urlencoded',
@@ -337,20 +347,20 @@ class GatekeeperViewDownloadTest(TestCase):
     def setUp(self):
         self.message_timestamp  = get_current_utc_timestamp()
         self.public_key         = '85cZzVjahnRpUBwm0zlNnqTdYom1LF1P1WNShLg17cmhN2UssnPrCjHKTi5susO3wrr/q07eswumbL82b4HgOw=='
-        self.upload_token                                 = FileTransferToken()
-        self.upload_token.token_expiration_deadline       = self.message_timestamp + 3600
-        self.upload_token.storage_cluster_address         = 'http://devel.concent.golem.network/'
-        self.upload_token.authorized_client_public_key    = b'\xf3\x97\x19\xcdX\xda\x86tiP\x1c&\xd39M\x9e\xa4\xddb\x89\xb5,]O\xd5cR\x84\xb85\xed\xc9\xa17e,\xb2s\xeb\n1\xcaN.l\xba\xc3\xb7\xc2\xba\xff\xabN\xde\xb3\x0b\xa6l\xbf6o\x81\xe0;'
+        self.download_token                                 = FileTransferToken()
+        self.download_token.token_expiration_deadline       = self.message_timestamp + 3600
+        self.download_token.storage_cluster_address         = 'http://devel.concent.golem.network/'
+        self.download_token.authorized_client_public_key    = b'\xf3\x97\x19\xcdX\xda\x86tiP\x1c&\xd39M\x9e\xa4\xddb\x89\xb5,]O\xd5cR\x84\xb85\xed\xc9\xa17e,\xb2s\xeb\n1\xcaN.l\xba\xc3\xb7\xc2\xba\xff\xabN\xde\xb3\x0b\xa6l\xbf6o\x81\xe0;'
 
-        self.upload_token.files                 = [FileTransferToken.FileInfo()]
-        self.upload_token.files[0]['path']      = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
-        self.upload_token.files[0]['checksum']  = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89'
-        self.upload_token.files[0]['size']      = 1024
-        self.upload_token.operation             = 'download'
+        self.download_token.files                 = [FileTransferToken.FileInfo()]
+        self.download_token.files[0]['path']      = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
+        self.download_token.files[0]['checksum']  = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89'
+        self.download_token.files[0]['size']      = 1024
+        self.download_token.operation             = FileTransferToken.Operation.download
 
     @freeze_time("2018-12-30 11:00:00")
     def test_download_should_accept_valid_message(self):
-        golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+        golem_upload_token = dump(self.download_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
         encrypted_token = b64encode(golem_upload_token).decode()
         response = self.client.get(
             '{}{}'.format(
@@ -369,7 +379,7 @@ class GatekeeperViewDownloadTest(TestCase):
 
     @freeze_time("2018-12-30 11:00:00")
     def test_download_should_return_401_if_wrong_authorization_header(self):
-        golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+        golem_upload_token = dump(self.download_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
         encrypted_token = b64encode(golem_upload_token).decode()
         wrong_test_headers = [
             {'HTTP_AUTHORIZATION':      'GolemGolem '+ encrypted_token},
@@ -393,7 +403,7 @@ class GatekeeperViewDownloadTest(TestCase):
 
     @freeze_time("2018-12-30 11:00:00")
     def test_download_should_return_401_if_wrong_token_cluster_address(self):
-        upload_token = self.upload_token
+        upload_token = self.download_token
         upload_token.storage_cluster_address = 'www://storage.concent.golem.network/'
         golem_upload_token = dump(upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
         encrypted_token = b64encode(golem_upload_token).decode()
@@ -424,10 +434,10 @@ class GatekeeperViewDownloadTest(TestCase):
             size     = 1024,
         )
 
-        self.upload_token.files = [file1, file2]
+        self.download_token.files = [file1, file2]
         assert file1 == file2
 
-        golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+        golem_upload_token = dump(self.download_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
         encoded_token = b64encode(golem_upload_token).decode()
         response = self.client.get(
             '{}{}'.format(
@@ -467,10 +477,10 @@ class GatekeeperViewDownloadTest(TestCase):
                 size     = 1024,
             )
 
-            self.upload_token.files = [file1, file2]
-            self.upload_token.sig   = None
+            self.download_token.files = [file1, file2]
+            self.download_token.sig   = None
 
-            golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+            golem_upload_token = dump(self.download_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
             encrypted_token = b64encode(golem_upload_token).decode()
             response = self.client.get(
                 '{}{}'.format(
@@ -508,10 +518,10 @@ class GatekeeperViewDownloadTest(TestCase):
                 size     = invalid_value,
             )
 
-            self.upload_token.files = [file1, file2]
-            self.upload_token.sig   = None
+            self.download_token.files = [file1, file2]
+            self.download_token.sig   = None
 
-            golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+            golem_upload_token = dump(self.download_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
             encrypted_token = b64encode(golem_upload_token).decode()
             response = self.client.get(
                 '{}{}'.format(
@@ -542,10 +552,10 @@ class GatekeeperViewDownloadTest(TestCase):
                 size     = 1024,
             )
 
-            self.upload_token.files = [file]
-            self.upload_token.sig   = None
+            self.download_token.files = [file]
+            self.download_token.sig   = None
 
-            golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+            golem_upload_token = dump(self.download_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
             encrypted_token = b64encode(golem_upload_token).decode()
             response = self.client.get(
                 '{}{}'.format(
@@ -576,10 +586,10 @@ class GatekeeperViewDownloadTest(TestCase):
                 size     = 1024,
             )
 
-            self.upload_token.files = [file]
-            self.upload_token.sig   = None
+            self.download_token.files = [file]
+            self.download_token.sig   = None
 
-            golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+            golem_upload_token = dump(self.download_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
             encrypted_token = b64encode(golem_upload_token).decode()
             response = self.client.get(
                 '{}{}'.format(

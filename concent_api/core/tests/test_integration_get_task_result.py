@@ -5,6 +5,7 @@ from django.urls            import reverse
 from freezegun              import freeze_time
 from golem_messages         import load
 from golem_messages         import message
+from golem_messages.message import FileTransferToken
 
 from core.tests.utils       import ConcentIntegrationTestCase
 from core.models            import PendingResponse
@@ -349,7 +350,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_file_transfer_token.subtask_id, deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
-        self.assertEqual(message_file_transfer_token.operation, 'upload')
+        self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
 
         # STEP 3: Requestor receives force get task result failed due to lack of provider submit.
         with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
@@ -600,7 +601,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:06"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
-        self.assertEqual(message_file_transfer_token.operation,                 'upload')
+        self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
 
         # STEP 3: Requestor receives force get task result upload.
         with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_true_mock):
@@ -633,7 +634,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_from_concent.file_transfer_token.subtask_id,                               deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_from_concent.file_transfer_token.timestamp,                                self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"))
         self.assertEqual(message_from_concent.file_transfer_token.token_expiration_deadline,                self._parse_iso_date_to_timestamp("2017-12-01 11:30:00"))
-        self.assertEqual(message_from_concent.file_transfer_token.operation,                                'download')
+        self.assertEqual(message_from_concent.file_transfer_token.operation, FileTransferToken.Operation.download)
 
         self._assert_client_count_is_equal(2)
 
@@ -745,7 +746,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
-        self.assertEqual(message_file_transfer_token.operation,                 'upload')
+        self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
 
         # STEP 3: Requestor receives force get task result failed due to lack of provider submit.
         with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_true_mock):
@@ -892,7 +893,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_file_transfer_token.subtask_id, deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
-        self.assertEqual(message_file_transfer_token.operation, 'upload')
+        self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
 
         # STEP 3: Requestor receives force get task result download because Provider uploaded file.
         with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_true_mock):
@@ -944,6 +945,6 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             message_from_concent.file_transfer_token.token_expiration_deadline,
             self._parse_iso_date_to_timestamp("2017-12-01 11:30:00")
         )
-        self.assertEqual(message_from_concent.file_transfer_token.operation, 'download')
+        self.assertEqual(message_from_concent.file_transfer_token.operation, FileTransferToken.Operation.download)
 
         self._assert_client_count_is_equal(2)

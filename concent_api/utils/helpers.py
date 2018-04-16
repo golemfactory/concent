@@ -148,3 +148,7 @@ def get_validated_client_public_key_from_client_message(golem_message: message.b
         return client_public_key
 
     return None
+
+
+def get_storage_file_path(subtask_id, task_id):
+    return f'blender/result/{task_id}/{task_id}.{subtask_id}.zip'

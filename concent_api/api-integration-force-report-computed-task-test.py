@@ -3,7 +3,6 @@
 import os
 import sys
 import random
-from base64 import b64encode
 
 from golem_messages.message.tasks import AckReportComputedTask
 from golem_messages.message         import ComputeTaskDef

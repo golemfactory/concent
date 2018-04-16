@@ -149,9 +149,9 @@ def parse_headers(request: WSGIRequest, path_to_file: str) -> Union[FileTransfer
         return gatekeeper_access_denied_response('authorized_client_public_key is different then Concent-Client-Public-Key header.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
 
     # -OPERATION
-    if request.method == 'POST' and loaded_golem_message.operation != 'upload':
+    if request.method == 'POST' and loaded_golem_message.operation != FileTransferToken.Operation.upload:
         return gatekeeper_access_denied_response('Wrong operation variable for this request method.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
-    if request.method in ['GET', 'HEAD'] and loaded_golem_message.operation != 'download':
+    if request.method in ['GET', 'HEAD'] and loaded_golem_message.operation != FileTransferToken.Operation.download:
         return gatekeeper_access_denied_response('Wrong operation variable for this request method.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
 
     # -FILES

@@ -5,6 +5,7 @@ from django.urls            import reverse
 from freezegun              import freeze_time
 from golem_messages         import load
 from golem_messages         import message
+from golem_messages.message import FileTransferToken
 
 from core.models            import PendingResponse
 from core.models            import Subtask
@@ -350,7 +351,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:02"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
-        self.assertEqual(message_file_transfer_token.operation,                 'upload')
+        self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
 
         self._assert_stored_message_counter_not_increased()
 
@@ -584,7 +585,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:03"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
-        self.assertEqual(message_file_transfer_token.operation,                 'upload')
+        self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
 
         self._assert_stored_message_counter_not_increased()
 
@@ -810,7 +811,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:02"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
-        self.assertEqual(message_file_transfer_token.operation,                 'upload')
+        self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
 
         self._assert_stored_message_counter_not_increased()
 
@@ -1036,7 +1037,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:02"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
-        self.assertEqual(message_file_transfer_token.operation,                 'upload')
+        self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
 
         self._assert_stored_message_counter_not_increased()
 
@@ -1112,7 +1113,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             message_from_concent.file_transfer_token.token_expiration_deadline,
             self._parse_iso_date_to_timestamp("2017-12-01 11:30:00")
         )
-        self.assertEqual(message_from_concent.file_transfer_token.operation, 'download')
+        self.assertEqual(message_from_concent.file_transfer_token.operation, FileTransferToken.Operation.download)
 
         self._assert_stored_message_counter_not_increased()
         self._test_subtask_state(

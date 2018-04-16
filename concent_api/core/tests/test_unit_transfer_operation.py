@@ -1,13 +1,15 @@
-from django.test                    import override_settings
+from django.test import override_settings
 import mock
 
-from core.tests.utils               import ConcentIntegrationTestCase
-from core.exceptions                import UnexpectedResponse
+from golem_messages.message import FileTransferToken
 
-from core.transfer_operations       import create_file_transfer_token
-from core.transfer_operations       import request_upload_status
+from core.tests.utils import ConcentIntegrationTestCase
+from core.exceptions import UnexpectedResponse
 
-from utils.testing_helpers          import generate_ecc_key_pair
+from core.transfer_operations import create_file_transfer_token
+from core.transfer_operations import request_upload_status
+
+from utils.testing_helpers import generate_ecc_key_pair
 
 
 def mock_send_request_to_cluster_correct_response(_headers, _request_http):
@@ -48,7 +50,7 @@ class RequestUploadStatusTest(ConcentIntegrationTestCase):
         file_transfer_token = create_file_transfer_token(
             report_computed_task,
             self.REQUESTOR_PUBLIC_KEY,
-            'upload',
+            FileTransferToken.Operation.upload,
         )
 
         with mock.patch('core.transfer_operations.send_request_to_cluster_storage', mock_send_request_to_cluster_correct_response):

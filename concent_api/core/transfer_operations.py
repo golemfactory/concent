@@ -8,6 +8,7 @@ from django.conf import settings
 from django.utils import timezone
 from golem_messages import message
 from golem_messages import shortcuts
+from golem_messages.message import FileTransferToken
 
 from core import exceptions
 from core.models import Client
@@ -40,7 +41,7 @@ def verify_file_status(
         file_transfer_token     = create_file_transfer_token(
             report_computed_task,
             client_public_key,
-            'upload'
+            FileTransferToken.Operation.upload
         )
         if request_upload_status(file_transfer_token, report_computed_task):
             subtask               = get_task_result
@@ -105,8 +106,8 @@ def store_pending_message(
 def create_file_transfer_token(
     report_computed_task:       message.tasks.ReportComputedTask,
     encoded_client_public_key:  bytes,
-    operation:                  str,
-) -> message.concents.FileTransferToken:
+    operation:                  FileTransferToken.Operation,
+) -> FileTransferToken:
     """
     Function to create FileTransferToken from ReportComputedTask message
     """
@@ -115,26 +116,26 @@ def create_file_transfer_token(
     file_path       = get_storage_file_path(subtask_id, task_id)
 
     assert isinstance(encoded_client_public_key, bytes)
-    assert operation in ['upload', 'download']
-    if operation == 'upload':
+    assert operation in [FileTransferToken.Operation.download, FileTransferToken.Operation.upload]
+    if operation == FileTransferToken.Operation.upload:
         token_expiration_deadline = (
             report_computed_task.task_to_compute.compute_task_def['deadline'] +
             3 * settings.CONCENT_MESSAGING_TIME +
             2 * settings.MAXIMUM_DOWNLOAD_TIME
         )
-    elif operation == 'download':
+    elif operation == FileTransferToken.Operation.download:
         token_expiration_deadline = (
             report_computed_task.task_to_compute.compute_task_def['deadline'] +
             settings.SUBTASK_VERIFICATION_TIME
         )
-    file_transfer_token = message.concents.FileTransferToken(
+    file_transfer_token = FileTransferToken(
         token_expiration_deadline       = token_expiration_deadline,
         storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
         authorized_client_public_key    = encoded_client_public_key,
         operation                       = operation,
         subtask_id                      = report_computed_task.task_to_compute.compute_task_def['subtask_id']
     )
-    file_transfer_token.files = [message.concents.FileTransferToken.FileInfo()]
+    file_transfer_token.files = [FileTransferToken.FileInfo()]
     file_transfer_token.files[0]['path']      = file_path
     file_transfer_token.files[0]['checksum']  = report_computed_task.package_hash
     file_transfer_token.files[0]['size']      = report_computed_task.size
@@ -145,7 +146,7 @@ def create_file_transfer_token(
 
 
 def request_upload_status(
-    file_transfer_token_from_database:    message.concents.FileTransferToken,
+    file_transfer_token_from_database:    FileTransferToken,
     report_computed_task:                 message.ReportComputedTask
 ) -> bool:
     slash = '/'
@@ -153,11 +154,15 @@ def request_upload_status(
     assert not file_transfer_token_from_database.files[0]['path'].startswith(slash)
     assert settings.STORAGE_CLUSTER_ADDRESS.endswith(slash)
 
-    file_transfer_token = create_file_transfer_token(report_computed_task, settings.CONCENT_PUBLIC_KEY, 'download')
+    file_transfer_token = create_file_transfer_token(
+        report_computed_task,
+        settings.CONCENT_PUBLIC_KEY,
+        FileTransferToken.Operation.download
+    )
 
     assert file_transfer_token.timestamp <= file_transfer_token.token_expiration_deadline  # pylint: disable=no-member
 
-    file_transfer_token.files                 = [message.concents.FileTransferToken.FileInfo()]
+    file_transfer_token.files                 = [FileTransferToken.FileInfo()]
     file_transfer_token.files[0]['path']      = file_transfer_token_from_database.files[0]['path']
     file_transfer_token.files[0]['checksum']  = file_transfer_token_from_database.files[0]['checksum']
     file_transfer_token.files[0]['size']      = file_transfer_token_from_database.files[0]['size']

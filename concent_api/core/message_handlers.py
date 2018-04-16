@@ -1,34 +1,35 @@
 import datetime
 
 import copy
-from base64                         import b64encode
+from base64 import b64encode
 from typing import Optional
 
-from django.conf                    import settings
-from django.http                    import HttpResponse
-from django.utils                   import timezone
-from golem_messages                 import message
-from golem_messages.datastructures  import MessageHeader
+from django.conf import settings
+from django.http import HttpResponse
+from django.utils import timezone
+from golem_messages import message
+from golem_messages.datastructures import MessageHeader
+from golem_messages.message import FileTransferToken
 
-from core.exceptions                import Http400
-from core.models                    import Client
-from core.models                    import PaymentInfo
-from core.models                    import PendingResponse
-from core.models                    import StoredMessage
-from core.models                    import Subtask
-from core.payments                  import base
-from core.validation                import validate_golem_message_reject
-from core.validation                import validate_task_to_compute
-from core.validation                import validate_report_computed_task_time_window
-from core.validation                import validate_list_of_identical_task_to_compute
-from core.validation                import validate_golem_message_signed_with_key
-from core.subtask_helpers           import verify_message_subtask_results_accepted
-from core.transfer_operations       import store_pending_message
-from core.transfer_operations       import create_file_transfer_token
-from utils                          import logging
-from utils.helpers                  import deserialize_message
-from utils.helpers                  import get_current_utc_timestamp
-from utils.helpers                  import parse_timestamp_to_utc_datetime
+from core.exceptions import Http400
+from core.models import Client
+from core.models import PaymentInfo
+from core.models import PendingResponse
+from core.models import StoredMessage
+from core.models import Subtask
+from core.payments import base
+from core.validation import validate_golem_message_reject
+from core.validation import validate_task_to_compute
+from core.validation import validate_report_computed_task_time_window
+from core.validation import validate_list_of_identical_task_to_compute
+from core.validation import validate_golem_message_signed_with_key
+from core.subtask_helpers import verify_message_subtask_results_accepted
+from core.transfer_operations import store_pending_message
+from core.transfer_operations import create_file_transfer_token
+from utils import logging
+from utils.helpers import deserialize_message
+from utils.helpers import get_current_utc_timestamp
+from utils.helpers import parse_timestamp_to_utc_datetime
 
 
 def handle_send_force_report_computed_task(client_message):
@@ -750,7 +751,7 @@ def handle_messages_from_database(
         file_transfer_token     = create_file_transfer_token(
             report_computed_task,
             encoded_client_public_key,
-            'upload',
+            FileTransferToken.Operation.upload,
         )
 
         response_to_client = message.concents.ForceGetTaskResultUpload(
@@ -767,7 +768,7 @@ def handle_messages_from_database(
         file_transfer_token     = create_file_transfer_token(
             report_computed_task,
             encoded_client_public_key,
-            'download',
+            FileTransferToken.Operation.download,
         )
 
         response_to_client = message.concents.ForceGetTaskResultDownload(

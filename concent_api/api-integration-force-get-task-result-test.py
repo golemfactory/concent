@@ -57,7 +57,7 @@ def upload_new_file_on_cluster(task_id, subtask_id, cluster_consts, current_time
     )
     file_transfer_token.storage_cluster_address         = STORAGE_CLUSTER_ADDRESS
     file_transfer_token.authorized_client_public_key    = CONCENT_PUBLIC_KEY
-    file_transfer_token.operation                       = 'upload'
+    file_transfer_token.operation                       = message.FileTransferToken.Operation.upload
 
     file_transfer_token.files                   = [message.FileTransferToken.FileInfo()]
     file_transfer_token.files[0]['path']        = file_path

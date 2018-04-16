@@ -1,24 +1,25 @@
 import datetime
 
-from base64                 import b64encode
+from base64 import b64encode
 
 import requests
 
-from django.conf            import settings
-from django.utils           import timezone
-from golem_messages         import message
-from golem_messages         import shortcuts
+from django.conf import settings
+from django.utils import timezone
+from golem_messages import message
+from golem_messages import shortcuts
 
-from core                   import exceptions
-from core.models            import Client
-from core.models            import PaymentInfo
-from core.models            import PendingResponse
-from core.models            import Subtask
-from gatekeeper.constants   import CLUSTER_DOWNLOAD_PATH
-from utils                  import logging
-from utils.helpers          import decode_key
-from utils.helpers          import deserialize_message
-from utils.helpers          import sign_message
+from core import exceptions
+from core.models import Client
+from core.models import PaymentInfo
+from core.models import PendingResponse
+from core.models import Subtask
+from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
+from utils import logging
+from utils.helpers import decode_key
+from utils.helpers import deserialize_message
+from utils.helpers import get_storage_file_path
+from utils.helpers import sign_message
 
 
 def verify_file_status(
@@ -111,7 +112,7 @@ def create_file_transfer_token(
     """
     task_id         = report_computed_task.task_to_compute.compute_task_def['task_id']
     subtask_id      = report_computed_task.task_to_compute.compute_task_def['subtask_id']
-    file_path       = 'blender/result/{}/{}.{}.zip'.format(task_id, task_id, subtask_id)
+    file_path       = get_storage_file_path(subtask_id, task_id)
 
     assert isinstance(encoded_client_public_key, bytes)
     assert operation in ['upload', 'download']

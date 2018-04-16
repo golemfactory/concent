@@ -5,12 +5,13 @@ import sys
 import hashlib
 import time
 import random
-from base64                 import b64encode
+from base64 import b64encode
 
-from golem_messages         import message
-from golem_messages         import shortcuts
+from golem_messages import message
+from golem_messages import shortcuts
 
 from utils.helpers import get_current_utc_timestamp
+from utils.helpers import get_storage_file_path
 from utils.helpers import sign_message
 from utils.testing_helpers import generate_ecc_key_pair
 
@@ -18,7 +19,7 @@ from api_testing_common import api_request
 from api_testing_common import create_client_auth_message
 from api_testing_common import timestamp_to_isoformat
 
-from freezegun              import freeze_time
+from freezegun import freeze_time
 
 from protocol_constants import get_protocol_constants
 
@@ -46,7 +47,7 @@ def upload_new_file_on_cluster(task_id, subtask_id, cluster_consts, current_time
     file_content    = task_id
     file_size       = len(file_content)
     file_check_sum  = 'sha1:' + hashlib.sha1(file_content.encode()).hexdigest()
-    file_path       = 'blender/result/{}/{}.{}.zip'.format(task_id, task_id, subtask_id)
+    file_path       = get_storage_file_path(task_id, subtask_id)
 
     file_transfer_token = message.FileTransferToken()
     file_transfer_token.token_expiration_deadline = int(
@@ -69,10 +70,10 @@ def upload_new_file_on_cluster(task_id, subtask_id, cluster_consts, current_time
     authorized_golem_transfer_token = 'Golem ' + encrypted_token
 
     headers = {
-        'Authorization': authorized_golem_transfer_token,
-        'Concent-Client-Public-Key': b64encode(CONCENT_PUBLIC_KEY).decode(),
-        'Concent-upload-path': 'blender/result/{}/{}.{}.zip'.format(task_id, task_id, subtask_id),
-        'Content-Type': 'application/octet-stream'
+            'Authorization': authorized_golem_transfer_token,
+            'Concent-Client-Public-Key': b64encode(CONCENT_PUBLIC_KEY).decode(),
+            'Concent-upload-path': file_path,
+            'Content-Type': 'application/octet-stream'
     }
 
     response = requests.post("{}".format(STORAGE_CLUSTER_ADDRESS + 'upload/'), headers = headers, data = file_content, verify = False)

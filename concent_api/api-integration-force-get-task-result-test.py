@@ -69,9 +69,10 @@ def upload_new_file_on_cluster(task_id, subtask_id, cluster_consts, current_time
     authorized_golem_transfer_token = 'Golem ' + encrypted_token
 
     headers = {
-            'Authorization':                authorized_golem_transfer_token,
-            'Concent-upload-path':          'blender/result/{}/{}.{}.zip'.format(task_id, task_id, subtask_id),
-            'Content-Type':                 'application/octet-stream'
+        'Authorization': authorized_golem_transfer_token,
+        'Concent-Client-Public-Key': b64encode(CONCENT_PUBLIC_KEY).decode(),
+        'Concent-upload-path': 'blender/result/{}/{}.{}.zip'.format(task_id, task_id, subtask_id),
+        'Content-Type': 'application/octet-stream'
     }
 
     response = requests.post("{}".format(STORAGE_CLUSTER_ADDRESS + 'upload/'), headers = headers, data = file_content, verify = False)

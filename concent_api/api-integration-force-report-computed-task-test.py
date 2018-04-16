@@ -40,9 +40,9 @@ def parse_command_line(command_line):
 
 
 def create_signed_task_to_compute(
-    task_id=None,
-    subtask_id=None,
-    deadline=None,
+    task_id,
+    subtask_id,
+    deadline,
     provider_public_key=None,
     requestor_public_key=None
 ):

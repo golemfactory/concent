@@ -165,9 +165,9 @@ def timestamp_to_isoformat(timestamp):
 
 
 def create_client_auth_message(client_priv_key, client_public_key, concent_public_key):  # pylint: disable=no-self-use
-        client_auth = ClientAuthorization()
-        client_auth.client_public_key = client_public_key
-        return dump(client_auth, client_priv_key, concent_public_key)
+    client_auth = ClientAuthorization()
+    client_auth.client_public_key = client_public_key
+    return dump(client_auth, client_priv_key, concent_public_key)
 
 
 if __name__ == '__main__':

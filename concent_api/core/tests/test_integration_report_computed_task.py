@@ -56,8 +56,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self._test_response(
@@ -113,8 +111,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -186,7 +182,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_3.status_code,  202)
@@ -279,8 +274,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -358,7 +351,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                            = serialized_reject_report_computed_task,
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_3.status_code,  202)
@@ -453,8 +445,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -540,7 +530,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_3.status_code,                    202)
@@ -661,8 +650,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -815,8 +802,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -854,8 +839,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
         self._test_400_response(response_2)
         self._assert_stored_message_counter_not_increased()
@@ -898,7 +881,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
         self._test_400_response(response)
         self._assert_stored_message_counter_not_increased()
@@ -949,7 +931,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
         self._test_400_response(response)
         self._assert_stored_message_counter_not_increased()
@@ -1000,8 +981,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -1072,7 +1051,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_3.status_code,  202)
@@ -1126,7 +1104,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
         self._test_400_response(response_4)
         self._assert_stored_message_counter_not_increased()
@@ -1177,8 +1154,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -1257,7 +1232,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_3.status_code,  202)
@@ -1307,7 +1281,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
         self._test_400_response(response_4)
         self._assert_stored_message_counter_not_increased()
@@ -1357,8 +1330,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -1429,7 +1400,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
         self._test_400_response(response_3)
         self._assert_stored_message_counter_not_increased()
@@ -1479,8 +1449,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -1559,7 +1527,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                            = serialized_reject_report_computed_task,
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
         self._test_400_response(response_3)
         self._assert_stored_message_counter_not_increased()
@@ -1587,6 +1554,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             timestamp           = "2017-12-01 10:00:00",
             compute_task_def    = compute_task_def,
         )
+        del task_to_compute.provider_public_key
 
         report_computed_task = self._get_deserialized_report_computed_task(
             timestamp = "2017-12-01 10:59:00",
@@ -1633,6 +1601,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
             compute_task_def    = compute_task_def,
+            provider_public_key='bad__key' * 11,
         )
 
         report_computed_task = self._get_deserialized_report_computed_task(
@@ -1654,7 +1623,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_force_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = 'bad__key' * 11,
             )
         self._test_400_response(response_1)
         self._assert_stored_message_counter_not_increased()
@@ -1681,6 +1649,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
             compute_task_def    = compute_task_def,
+            provider_public_key = b64encode(self.PROVIDER_PUBLIC_KEY)[:32].decode('ascii'),
         )
 
         report_computed_task = self._get_deserialized_report_computed_task(
@@ -1702,7 +1671,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_force_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.PROVIDER_PUBLIC_KEY)[:32].decode('ascii'),
             )
         self._test_400_response(response_1)
         self._assert_stored_message_counter_not_increased()
@@ -1729,6 +1697,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
             compute_task_def    = compute_task_def,
+            provider_public_key='',
         )
 
         report_computed_task = self._get_deserialized_report_computed_task(
@@ -1750,7 +1719,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_force_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = '',
             )
         self._test_400_response(response_1)
         self._assert_stored_message_counter_not_increased()
@@ -1799,7 +1767,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
         self._test_400_response(response)
         self._assert_stored_message_counter_not_increased()
@@ -1844,7 +1811,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
         self.assertEqual(response.status_code,  400)
         self.assertIn('error', response.json().keys())
@@ -1893,8 +1859,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task[:50],
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
         self._test_400_response(response_1)
         self._assert_stored_message_counter_not_increased()
@@ -1944,8 +1908,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
         self._test_400_response(response_1)
         self._assert_stored_message_counter_not_increased()
@@ -1996,8 +1958,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -2068,7 +2028,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                            = serialized_ack_report_computed_task,
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_3.status_code,  202)
@@ -2168,8 +2127,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -2240,7 +2197,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_3.status_code,  202)
@@ -2347,8 +2303,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
         self.assertEqual(response_1.status_code,  202)

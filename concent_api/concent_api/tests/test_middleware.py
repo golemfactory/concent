@@ -1,4 +1,3 @@
-from base64                 import b64encode
 import mock
 
 from django.test            import override_settings
@@ -35,7 +34,6 @@ class GolemMessagesVersionMiddlewareTest(TestCase):
             reverse('core:send'),
             data                           = serialized_ping_message,
             content_type                   = 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         )
 
         self.assertFalse(500 <= response.status_code < 600)
@@ -71,7 +69,6 @@ class ConcentVersionMiddlewareTest(TestCase):
                 reverse('core:send'),
                 data                           = serialized_ping_message,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertFalse(500 <= response.status_code < 600)

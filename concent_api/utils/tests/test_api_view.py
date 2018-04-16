@@ -1,4 +1,3 @@
-from base64                         import b64encode
 import json
 import mock
 
@@ -16,7 +15,8 @@ from golem_messages                 import message
 
 from core.exceptions                import Http400
 from core.models                    import Client
-from utils.api_view                 import api_view
+from utils.decorators               import require_golem_message
+from utils.decorators               import handle_errors_and_responses
 from utils.helpers                  import get_current_utc_timestamp
 from utils.testing_helpers          import generate_ecc_key_pair
 
@@ -61,14 +61,14 @@ class ApiViewTestCase(TestCase):
 
         decoded_message = None
 
-        @api_view
+        @require_golem_message
+        @handle_errors_and_responses
         def dummy_view(request, _message, _client_public_key):  # pylint: disable=unused-argument
             nonlocal decoded_message
             decoded_message = _message
             return None
 
         request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream', data = raw_message)
-        request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'] = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii')
 
         dummy_view(request)                                                     # pylint: disable=no-value-for-parameter
 
@@ -76,36 +76,14 @@ class ApiViewTestCase(TestCase):
         self.assertIsInstance(decoded_message, message.WantToComputeTask)
         self.assertEqual(message_to_test, self.message_to_view)
 
-    def test_api_view_should_encode_golem_message_returned_from_view(self):
-
-        @api_view
-        def dummy_view(request, _message, _client_public_key):  # pylint: disable=unused-argument
-            return self.want_to_compute
-
-        request = self.request_factory.post("/dummy-url/", content_type = '', data = '')
-        request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'] = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii')
-
-        response = dummy_view(request)                                          # pylint: disable=no-value-for-parameter
-
-        decoded_message = load(
-            response.content,                                                   # pylint: disable=no-member
-            settings.CONCENT_PRIVATE_KEY,
-            settings.CONCENT_PUBLIC_KEY,
-        )
-
-        message_to_test = message_to_dict(decoded_message)
-        self.assertEqual(response['content-type'], "application/octet-stream")  # pylint: disable=unsubscriptable-object
-        self.assertEqual(response.status_code, 200)                             # pylint: disable=no-member
-        self.assertEqual(message_to_test, self.message_to_view)
-
     def test_api_view_should_return_http_415_when_request_content_type_is_not_supported(self):
 
-        @api_view
+        @require_golem_message
+        @handle_errors_and_responses
         def dummy_view(request, _message, _client_public_key):  # pylint: disable=unused-argument
             return self.want_to_compute
 
         request = self.request_factory.post("/dummy-url/", content_type = 'application/x-www-form-urlencoded', data = self.want_to_compute)
-        request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'] = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii')
 
         response = dummy_view(request)                                          # pylint: disable=no-value-for-parameter
 
@@ -116,12 +94,12 @@ class ApiViewTestCase(TestCase):
 
     def test_api_view_should_return_http_415_when_request_content_type_is_appplication_json(self):
 
-        @api_view
+        @require_golem_message
+        @handle_errors_and_responses
         def dummy_view(request, _message, _client_public_key):  # pylint: disable=unused-argument
             return self.message_to_view
 
         request = self.request_factory.post("/dummy-url/", content_type = 'application/json', data = json.dumps(self.message_to_view))
-        request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'] = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii')
 
         response = dummy_view(request)                                          # pylint: disable=no-value-for-parameter
 
@@ -133,18 +111,23 @@ class ApiViewTestCase(TestCase):
         Tests if request to Concent with will return HTTP 405 error
         if not allowed HTTP method by view is used.
         """
+        raw_message = dump(
+            self.want_to_compute,
+            settings.CONCENT_PRIVATE_KEY,
+            settings.CONCENT_PUBLIC_KEY,
+        )
 
-        @api_view
+        @require_golem_message
+        @handle_errors_and_responses
         @require_POST
         def dummy_view(_request, _message, _client_public_key):
             self.fail()
 
-        request = self.request_factory.get(
+        request = self.request_factory.put(
             "/dummy-url/",
-            content_type = 'application/octet-stream',
-            data         = '',
+            content_type='application/octet-stream',
+            data=raw_message
         )
-        request.META['HTTP_CONCENT_CLIENT_PUBLIC_KEY'] = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii')
 
         response = dummy_view(request)  # pylint: disable=no-value-for-parameter,assignment-from-no-return
 
@@ -206,7 +189,6 @@ class ApiViewTransactionTestCase(TransactionTestCase):
                     reverse('core:send'),
                     data                                = '',
                     content_type                        = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii'),
                 )
             except TypeError:
                 pass
@@ -220,7 +202,6 @@ class ApiViewTransactionTestCase(TransactionTestCase):
                 reverse('core:send'),
                 data                                = '',
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(Client.objects.count(), 0)
@@ -262,8 +243,6 @@ class ApiViewTransactionTestCase(TransactionTestCase):
                     CONCENT_PUBLIC_KEY
                 ),
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,   202)
@@ -277,7 +256,6 @@ class ApiViewTransactionTestCase(TransactionTestCase):
                     reverse('gatekeeper:upload'),
                     data                                = '',
                     content_type                        = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii'),
                 )
             except TypeError:
                 pass
@@ -292,7 +270,6 @@ class ApiViewTransactionTestCase(TransactionTestCase):
                     reverse('gatekeeper:upload'),
                     data                                = '',
                     content_type                        = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii'),
                 )
             except Http400:
                 pass
@@ -306,7 +283,6 @@ class ApiViewTransactionTestCase(TransactionTestCase):
                 reverse('gatekeeper:upload'),
                 data                                = '',
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(settings.CONCENT_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,   200)

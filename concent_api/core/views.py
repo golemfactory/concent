@@ -9,34 +9,35 @@ from core.message_handlers          import handle_messages_from_database
 from core.subtask_helpers           import update_timed_out_subtasks
 
 from utils                          import logging
-from utils.api_view                 import api_view
 from utils.decorators               import require_golem_auth_message
+from utils.decorators               import require_golem_message
 from utils.decorators               import handle_errors_and_responses
 from .models                        import PendingResponse
 
 
-@api_view
+@csrf_exempt
 @require_POST
+@require_golem_message
+@handle_errors_and_responses
 def send(request, client_message, client_public_key):
     if client_public_key is not None:
         update_timed_out_subtasks(
             client_public_key = client_public_key,
         )
 
-    if client_message is not None:
-        logging.log_message_received(
-            client_message,
-            client_public_key if client_public_key is not None else 'UNAVAILABLE',
-        )
+    logging.log_message_received(
+        client_message,
+        client_public_key if client_public_key is not None else 'UNAVAILABLE',
+    )
 
     return handle_message(client_message, request)
 
 
 @csrf_exempt
+@require_POST
 @require_golem_auth_message
 @handle_errors_and_responses
-@require_POST
-def receive(_request, message):
+def receive(_request, message, _client_public_key):
     update_timed_out_subtasks(
         client_public_key = message.client_public_key,
     )
@@ -47,10 +48,10 @@ def receive(_request, message):
 
 
 @csrf_exempt
+@require_POST
 @require_golem_auth_message
 @handle_errors_and_responses
-@require_POST
-def receive_out_of_band(_request, message):
+def receive_out_of_band(_request, message, _client_public_key):
     update_timed_out_subtasks(
         client_public_key = message.client_public_key,
     )

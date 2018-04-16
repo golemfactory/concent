@@ -87,8 +87,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = serialized_force_payment,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
         self._test_response(
             response,
@@ -140,8 +138,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = serialized_force_payment,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
         self._test_response(
             response,
@@ -195,8 +191,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:send'),
                     data                                = serialized_force_payment,
                     content_type                        = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
         self._test_response(
             response,
@@ -250,8 +244,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:send'),
                     data                                = serialized_force_payment,
                     content_type                        = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
         self._test_response(
             response,
@@ -305,8 +297,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                         reverse('core:send'),
                         data                                = serialized_force_payment,
                         content_type                        = 'application/octet-stream',
-                        HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                        HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                     )
         self._test_response(
             response,
@@ -362,8 +352,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                             reverse('core:send'),
                             data                                = serialized_force_payment,
                             content_type                        = 'application/octet-stream',
-                            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                         )
         self._test_response(
             response_1,
@@ -432,8 +420,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                         reverse('core:send'),
                         data                                = serialized_force_payment,
                         content_type                        = 'application/octet-stream',
-                        HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                        HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                     )
 
         self._test_400_response(response)
@@ -459,8 +445,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                         reverse('core:send'),
                         data                                = serialized_force_payment,
                         content_type                        = 'application/octet-stream',
-                        HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                        HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                     )
         self._test_response(
             response,
@@ -514,8 +498,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                         reverse('core:send'),
                         data                                = serialized_force_payment,
                         content_type                        = 'application/octet-stream',
-                        HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                        HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                     )
         self._test_response(
             response,
@@ -572,8 +554,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                         reverse('core:send'),
                         data                                = serialized_force_payment,
                         content_type                        = 'application/octet-stream',
-                        HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                        HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                     )
         self._test_response(
             response,
@@ -633,8 +613,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                             reverse('core:send'),
                             data                                = serialized_force_payment,
                             content_type                        = 'application/octet-stream',
-                            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                         )
         self._test_response(
             response_1,
@@ -716,8 +694,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                             reverse('core:send'),
                             data                                = serialized_force_payment,
                             content_type                        = 'application/octet-stream',
-                            HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                         )
         self._test_response(
             response_1,

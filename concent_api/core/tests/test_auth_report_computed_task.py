@@ -71,8 +71,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = self.serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        202)
@@ -172,7 +170,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self._test_400_response(
@@ -204,7 +201,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self._test_400_response(
@@ -234,7 +230,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self._test_400_response(
@@ -270,7 +265,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        202)
@@ -316,7 +310,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                           = self._create_requestor_auth_message(),
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        204)
@@ -393,8 +386,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        202)
@@ -502,7 +493,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self._test_400_response(
@@ -541,7 +531,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self._test_400_response(
@@ -578,7 +567,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self._test_400_response(
@@ -631,7 +619,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        202)
@@ -757,8 +744,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        202)
@@ -865,7 +850,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self._test_400_response(
@@ -904,7 +888,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self._test_400_response(
@@ -941,7 +924,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self._test_400_response(
@@ -994,7 +976,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        202)
@@ -1147,8 +1128,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:send'),
                 data                                = self.serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY      = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             )
 
         self.assertEqual(response.status_code,        202)

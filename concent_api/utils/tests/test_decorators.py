@@ -17,7 +17,7 @@ from utils.decorators               import require_golem_auth_message
 from utils.testing_helpers          import generate_ecc_key_pair
 
 
-(CONCENT_PRIVATE_KEY,   CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
+(CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
 
 
 def _mock_raise_http400(_):
@@ -25,12 +25,12 @@ def _mock_raise_http400(_):
 
 
 @require_golem_auth_message
-def dummy_view_require_golem_auth_message(_request, message):  # pylint: disable=redefined-outer-name
+def dummy_view_require_golem_auth_message(_request, message, _client_public_key):  # pylint: disable=redefined-outer-name
     return message
 
 
 @handle_errors_and_responses
-def dummy_view_handle_errors_and_responses(_request, message):  # pylint: disable=redefined-outer-name
+def dummy_view_handle_errors_and_responses(_request, message, _client_public_key):  # pylint: disable=redefined-outer-name
     return message
 
 
@@ -86,13 +86,13 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', json.loads(response.content))
 
-    def test_require_golem_auth_message_should_return_http_400_when_content_type_missing(self):
+    def test_require_golem_auth_message_should_return_http_415_when_content_type_missing(self):
 
         request = self.request_factory.post("/dummy-url/")
 
         response = dummy_view_require_golem_auth_message(request)  # pylint: disable=no-value-for-parameter
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 415)
         self.assertIn('error', json.loads(response.content))
 
     def test_require_golem_auth_message_should_return_http_400_when_client_public_key_is_empty(self):
@@ -131,7 +131,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         dumped_message = dump(self._create_test_ping_message(), CONCENT_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY)
         request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream', data = dumped_message)
 
-        response = dummy_view_handle_errors_and_responses(request, dumped_message)
+        response = dummy_view_handle_errors_and_responses(request, dumped_message, self.PROVIDER_PUBLIC_KEY)
 
         loaded_response = load(response.content, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
@@ -147,7 +147,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream')
 
         with freeze_time("2017-12-31 00:00:10"):
-            response = dummy_view_handle_errors_and_responses(request, client_auth)
+            response = dummy_view_handle_errors_and_responses(request, client_auth, self.PROVIDER_PUBLIC_KEY)
             loaded_response = load(response.content, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)  # pylint: disable=no-member
 
         self.assertEqual(response.status_code, 200)  # pylint: disable=no-member
@@ -159,11 +159,11 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream')
 
         @handle_errors_and_responses
-        def dummy_view_handle_http_response(_request, _message):
+        def dummy_view_handle_http_response(_request, _message, _client_public_key):
             http_response = HttpResponse(status = 200)
             return http_response
 
-        response = dummy_view_handle_http_response(request, self.client_auth)
+        response = dummy_view_handle_http_response(request, self.client_auth, self.PROVIDER_PUBLIC_KEY)
 
         self.assertIsInstance(response, HttpResponse)
         self.assertEqual(response.status_code, 200)
@@ -173,10 +173,10 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream')
 
         @handle_errors_and_responses
-        def dummy_view_handle_none_response(_request, _message):
+        def dummy_view_handle_none_response(_request, _message, _client_public_key):
             return None
 
-        response = dummy_view_handle_none_response(request, self.client_auth)  # pylint: disable=assignment-from-none
+        response = dummy_view_handle_none_response(request, self.client_auth, self.PROVIDER_PUBLIC_KEY)  # pylint: disable=assignment-from-none
 
         self.assertEqual(response.status_code, 204)
         self.assertEqual(len(response.content), 0)
@@ -186,10 +186,10 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream')
 
         @handle_errors_and_responses
-        def dummy_view_handle_dict(_request, _message):
+        def dummy_view_handle_dict(_request, _message, _client_public_key):
             return {'dummy': 'data'}
 
-        response = dummy_view_handle_dict(request, self.client_auth)
+        response = dummy_view_handle_dict(request, self.client_auth, self.PROVIDER_PUBLIC_KEY)
 
         self.assertEqual(response.status_code, 200)  # pylint: disable=no-member
         self.assertIsInstance(response, JsonResponse)
@@ -200,10 +200,10 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream')
 
         @handle_errors_and_responses
-        def dummy_view_handle_http_400_exception(_request, _message):
+        def dummy_view_handle_http_400_exception(_request, _message, _client_public_key):
             raise Http400('dummy')
 
-        response = dummy_view_handle_http_400_exception(request, self.client_auth)  # pylint: disable=assignment-from-no-return
+        response = dummy_view_handle_http_400_exception(request, self.client_auth, self.PROVIDER_PUBLIC_KEY)  # pylint: disable=assignment-from-no-return
 
         self.assertEqual(response.status_code, 400)  # pylint: disable=no-member
         self.assertIn('error', json.loads(response.content))  # pylint: disable=no-member
@@ -213,10 +213,10 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream')
 
         @handle_errors_and_responses
-        def dummy_view_handle_http_response_not_allowed(_request, _message):
+        def dummy_view_handle_http_response_not_allowed(_request, _message, _client_public_key):
             return HttpResponseNotAllowed({}, status=405)
 
-        response = dummy_view_handle_http_response_not_allowed(request, self.client_auth)
+        response = dummy_view_handle_http_response_not_allowed(request, self.client_auth, self.PROVIDER_PUBLIC_KEY)
 
         self.assertEqual(response.status_code, 405)
         self.assertEqual(len(response.content), 0)

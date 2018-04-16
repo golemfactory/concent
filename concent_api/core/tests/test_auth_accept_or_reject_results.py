@@ -67,8 +67,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:send'),
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
         assert len(response.content)  == 0
@@ -124,8 +122,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:send'),
                     data                                = different_serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_key(self.DIFFERENT_PROVIDER_PUBLIC_KEY),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
         self._test_response(
@@ -149,8 +145,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:send'),
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
         self._test_response(
@@ -202,8 +196,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:send'),
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
         assert len(response.content) == 0
@@ -242,7 +234,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                            = self._create_diff_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_key(self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
             )
 
         self._test_204_response(response)
@@ -253,7 +244,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                            = self._create_provider_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
             )
 
         self._test_204_response(response)
@@ -265,7 +255,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
 
         deserialized_compute_task_def = self._get_deserialized_compute_task_def(
@@ -329,8 +318,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:send'),
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
         assert len(response.content)  == 0
@@ -369,7 +356,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                            = self._create_diff_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_key(self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
             )
 
         self._test_204_response(response)
@@ -380,7 +366,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                            = self._create_provider_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
             )
 
         self._test_204_response(response)
@@ -392,7 +377,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
 
         self._test_response(
@@ -436,7 +420,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:send'),
                     data                            = serialized_force_subtask_results_response,
                     content_type                    = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_key(self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
                 )
 
         self._test_400_response(
@@ -471,7 +454,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:send'),
                     data                            = serialized_force_subtask_results_response,
                     content_type                    = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
                 )
 
         self._test_400_response(
@@ -506,7 +488,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:send'),
                     data                            = serialized_force_subtask_results_response,
                     content_type                    = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
                 )
 
         self._test_400_response(
@@ -547,7 +528,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:send'),
                     data                           = serialized_force_subtask_results_response,
                     content_type                   = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
         self._assert_stored_message_counter_increased()
@@ -581,7 +561,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                            = self._create_diff_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_key(self.DIFFERENT_PROVIDER_PUBLIC_KEY),
             )
 
         self._test_204_response(response)
@@ -592,7 +571,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
 
         self._test_204_response(response)
@@ -604,7 +582,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                            = self._create_provider_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
             )
 
         self._test_response(
@@ -663,8 +640,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:send'),
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
         assert len(response.content)  == 0
@@ -703,7 +678,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data = self._create_diff_requestor_auth_message(),
                 content_type='application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_key(self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
             )
 
         self._test_204_response(response)
@@ -714,7 +688,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                           = self._create_provider_auth_message(),
                 content_type                   = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_provider_public_key(),
             )
 
         self._test_204_response(response)
@@ -726,7 +699,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
 
         self._test_response(
@@ -770,7 +742,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:send'),
                     data                            = serialized_force_subtask_results_response,
                     content_type                    = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_key(self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
                 )
 
         self._test_400_response(
@@ -805,7 +776,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:send'),
                     data                            = serialized_force_subtask_results_response,
                     content_type                    = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
                 )
 
         self._test_400_response(
@@ -840,7 +810,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:send'),
                     data                            = serialized_force_subtask_results_response,
                     content_type                    = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
                 )
 
         self._test_400_response(
@@ -885,7 +854,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:send'),
                     data                            = serialized_force_subtask_results_response,
                     content_type                    = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
                 )
 
         self._assert_stored_message_counter_increased(increased_by = 2)
@@ -920,7 +888,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                            = self._create_diff_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_key(self.DIFFERENT_PROVIDER_PUBLIC_KEY),
             )
 
         self._test_204_response(response)
@@ -931,7 +898,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
 
         self._test_204_response(response)
@@ -943,7 +909,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                            = self._create_provider_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
             )
 
         self._test_response(
@@ -999,8 +964,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:send'),
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
         assert len(response.content) == 0
@@ -1039,7 +1002,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                            = self._create_diff_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_key(self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
             )
 
         self._test_204_response(response)
@@ -1050,7 +1012,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                            = self._create_provider_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
             )
 
         self._test_204_response(response)
@@ -1062,7 +1023,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
         deserialized_compute_task_def = self._get_deserialized_compute_task_def(
             deadline    = "2018-02-05 10:00:15",
@@ -1089,7 +1049,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:receive'),
                     data                            = self._create_diff_requestor_auth_message(),
                     content_type                    = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_key(self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
                 )
 
         self._test_204_response(response)
@@ -1103,7 +1062,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:receive'),
                     data                            = self._create_provider_auth_message(),
                     content_type                    = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
                 )
         self._test_response(
             response,
@@ -1139,7 +1097,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive_out_of_band'),
                 data                            = self._create_diff_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_key(self.DIFFERENT_PROVIDER_PUBLIC_KEY),
             )
         self._test_204_response(response)
         self._assert_stored_message_counter_not_increased()
@@ -1150,7 +1107,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive_out_of_band'),
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
         self._test_response(
             response,
@@ -1202,8 +1158,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:send'),
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY      = self._get_encoded_provider_public_key(),
-                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
                 )
 
         assert len(response.content) == 0
@@ -1242,7 +1196,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                            = self._create_diff_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_key(self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
             )
 
         self._test_204_response(response)
@@ -1252,7 +1205,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                            = self._create_provider_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
             )
 
         self._test_204_response(response)
@@ -1264,7 +1216,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
         deserialized_compute_task_def = self._get_deserialized_compute_task_def(
             deadline    = "2018-02-05 10:00:15",
@@ -1290,7 +1241,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive_out_of_band'),
                 data                            = self._create_diff_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_key(self.DIFFERENT_PROVIDER_PUBLIC_KEY),
             )
         self._test_204_response(response)
         self._assert_stored_message_counter_not_increased()
@@ -1301,7 +1251,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 reverse('core:receive_out_of_band'),
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_requestor_public_key(),
             )
         self._test_response(
             response,
@@ -1337,7 +1286,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:receive'),
                     data                            = self._create_diff_requestor_auth_message(),
                     content_type                    = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_key(self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
                 )
 
         self._test_204_response(response)
@@ -1350,7 +1298,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     reverse('core:receive'),
                     data                            = self._create_provider_auth_message(),
                     content_type                    = 'application/octet-stream',
-                    HTTP_CONCENT_CLIENT_PUBLIC_KEY  = self._get_encoded_provider_public_key(),
                 )
         self._test_response(
             response,

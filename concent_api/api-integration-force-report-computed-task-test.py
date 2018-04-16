@@ -4,7 +4,6 @@ import os
 import sys
 import random
 from base64 import b64encode
-from freezegun import freeze_time
 
 from golem_messages.message.tasks import AckReportComputedTask
 from golem_messages.message         import ComputeTaskDef
@@ -19,7 +18,6 @@ from utils.testing_helpers import generate_ecc_key_pair
 
 from api_testing_common import api_request
 from api_testing_common import create_client_auth_message
-from api_testing_common import timestamp_to_isoformat
 
 from protocol_constants import get_protocol_constants
 
@@ -101,8 +99,6 @@ def main():
         ),
         headers = {
             'Content-Type':                     'application/octet-stream',
-            'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
         },
         expected_status=202,
     )
@@ -130,7 +126,6 @@ def main():
         ),
         headers = {
             'Content-Type':             'application/octet-stream',
-            'concent-client-public-key': b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
         },
         expected_status=202,
     )

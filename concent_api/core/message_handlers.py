@@ -160,15 +160,21 @@ def handle_send_ack_report_computed_task(client_message):
 
 
 def handle_send_reject_report_computed_task(client_message):
-    validate_golem_message_reject(client_message.cannot_compute_task)
+    task_to_compute = client_message.task_to_compute
 
-    task_to_compute = client_message.cannot_compute_task.task_to_compute
+    validate_golem_message_reject(client_message.cannot_compute_task)
+    validate_task_to_compute(task_to_compute)
+    validate_task_to_compute(client_message.cannot_compute_task.task_to_compute)
+
     provider_public_key = task_to_compute.provider_public_key
     requestor_public_key = task_to_compute.requestor_public_key
 
-    validate_task_to_compute(task_to_compute)
     validate_golem_message_signed_with_key(
         task_to_compute,
+        requestor_public_key,
+    )
+    validate_golem_message_signed_with_key(
+        client_message.cannot_compute_task.task_to_compute,
         requestor_public_key,
     )
 
@@ -193,6 +199,7 @@ def handle_send_reject_report_computed_task(client_message):
     validate_list_of_identical_task_to_compute([
         task_to_compute,
         deserialize_message(subtask.task_to_compute.data.tobytes()),
+        client_message.cannot_compute_task.task_to_compute,
     ])
 
     if client_message.cannot_compute_task.reason == message.CannotComputeTask.REASON.WrongCTD:

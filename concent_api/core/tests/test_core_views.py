@@ -75,6 +75,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         self.reject_report_computed_task = message.RejectReportComputedTask()
         self.reject_report_computed_task.reason                 = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
         self.reject_report_computed_task.cannot_compute_task    = self.cannot_compute_task
+        self.reject_report_computed_task.task_to_compute = task_to_compute
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_accept_valid_message(self):

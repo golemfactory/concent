@@ -100,17 +100,14 @@ def api_request(
     assert all(value not in ['', None] for value in [endpoint, host, headers])
     url = "{}/api/v1/{}/".format(host, endpoint)
 
-    if endpoint == 'send':
-        _print_data(data, url)
-        response = requests.post("{}".format(url), headers=headers, data=_prepare_data(data), verify=False)
-    else:
-        print('RECEIVE ({})'.format(url))
-        response = requests.post("{}".format(url), headers=headers, data=data, verify=False)
+    _print_data(data, url)
+    response = requests.post("{}".format(url), headers=headers, data=_prepare_data(data), verify=False)
     _print_response(private_key, public_key, response)
     validate_response_status(response.status_code, expected_status)
     validate_content_type(response.headers['Content-Type'], expected_content_type)
     validate_response_message(response.content, expected_message_type, private_key, public_key)
     print()
+    return response
 
 
 def _print_response(private_key, public_key, response):

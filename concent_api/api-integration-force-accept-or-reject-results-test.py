@@ -15,6 +15,7 @@ from utils.testing_helpers import generate_ecc_key_pair
 
 from api_testing_common import api_request
 from api_testing_common import create_client_auth_message
+from api_testing_common import parse_command_line
 from api_testing_common import timestamp_to_isoformat
 
 from protocol_constants import get_protocol_constants
@@ -25,17 +26,6 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
 (PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)  = generate_ecc_key_pair()
 (REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
-
-
-def parse_command_line(command_line):
-    if len(command_line) <= 1:
-        sys.exit('Not enough arguments')
-
-    if len(command_line) >= 3:
-        sys.exit('Too many arguments')
-
-    cluster_url = command_line[1]
-    return cluster_url
 
 
 def force_subtask_results(timestamp = None, ack_report_computed_task = None):

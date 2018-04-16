@@ -1,3 +1,5 @@
+import sys
+
 from golem_messages.exceptions      import MessageError
 from golem_messages.message         import Message
 from golem_messages.message.concents import ClientAuthorization
@@ -168,6 +170,17 @@ def create_client_auth_message(client_priv_key, client_public_key, concent_publi
     client_auth = ClientAuthorization()
     client_auth.client_public_key = client_public_key
     return dump(client_auth, client_priv_key, concent_public_key)
+
+
+def parse_command_line(command_line):
+    if len(command_line) <= 1:
+        sys.exit('Not enough arguments')
+
+    if len(command_line) >= 3:
+        sys.exit('Too many arguments')
+
+    cluster_url = command_line[1]
+    return cluster_url
 
 
 if __name__ == '__main__':

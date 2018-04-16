@@ -139,8 +139,6 @@ def main():
         ),
         headers = {
             'Content-Type':                     'application/octet-stream',
-            'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':          'True'
         },
         expected_status=202,
@@ -170,8 +168,6 @@ def main():
         ),
         headers = {
             'Content-Type':                     'application/octet-stream',
-            'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':          'True'
         },
         expected_status=200,
@@ -220,8 +216,6 @@ def main():
         ),
         headers = {
             'Content-Type':                     'application/octet-stream',
-            'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':          ''
         },
         expected_status=200,
@@ -255,8 +249,6 @@ def main():
         ),
         headers = {
             'Content-Type':                     'application/octet-stream',
-            'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':          'True'
         },
         expected_status=200,
@@ -291,8 +283,6 @@ def main():
         ),
         headers = {
             'Content-Type':                     'application/octet-stream',
-            'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':          'True'
         },
         expected_status=202,
@@ -322,7 +312,6 @@ def main():
         ),
         headers = {
             'Content-Type':                 'application/octet-stream',
-            'concent-client-public-key':    b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':      'True'
         },
         expected_status=202,
@@ -368,8 +357,6 @@ def main():
         ),
         headers = {
             'Content-Type':                     'application/octet-stream',
-            'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':          'True'
         },
         expected_status=202,
@@ -413,7 +400,6 @@ def main():
         ),
         headers = {
             'Content-Type':                 'application/octet-stream',
-            'concent-client-public-key':    b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-account-funds':      'True'
         },
         expected_status=202,

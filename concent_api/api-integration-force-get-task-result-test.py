@@ -70,7 +70,6 @@ def upload_new_file_on_cluster(task_id, subtask_id, cluster_consts, current_time
 
     headers = {
             'Authorization':                authorized_golem_transfer_token,
-            'Concent-Client-Public-Key':    b64encode(CONCENT_PUBLIC_KEY).decode(),
             'Concent-upload-path':          'blender/result/{}/{}.{}.zip'.format(task_id, task_id, subtask_id),
             'Content-Type':                 'application/octet-stream'
     }
@@ -141,8 +140,6 @@ def main():
         ),
         headers = {
             'Content-Type':                     'application/octet-stream',
-            'concent-client-public-key':        b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-            'concent-other-party-public-key':   b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         },
         expected_status=200,
         expected_message_type=message.concents.AckForceGetTaskResult.TYPE,
@@ -197,8 +194,6 @@ def main():
         ),
         headers = {
             'Content-Type':                     'application/octet-stream',
-            'concent-client-public-key':        b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
-            'concent-other-party-public-key':   b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
         },
         expected_status=200,
         expected_message_type=message.concents.AckForceGetTaskResult.TYPE,
@@ -229,7 +224,6 @@ def main():
         create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
         headers = {
             'Content-Type': 'application/octet-stream',
-            'concent-client-public-key':    b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii')
         },
         expected_status=204,
     )

@@ -158,8 +158,6 @@ def main():
 
         headers = {
             'Content-Type':                     'application/octet-stream',
-            'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-list-of-transactions':   'True',
             'temporary-v':                      '1',
             'temporary-eth-block':              '1'
@@ -179,8 +177,6 @@ def main():
 
         headers = {
             'Content-Type':                     'application/octet-stream',
-            'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-list-of-transactions':   '',
             'temporary-v':                      '-1',
             'temporary-eth-block':              '-1'
@@ -201,8 +197,6 @@ def main():
 
         headers = {
             'Content-Type':                     'application/octet-stream',
-            'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-list-of-transactions':   'True',
             'temporary-v':                      '-1',
             'temporary-eth-block':              '-1'
@@ -223,8 +217,6 @@ def main():
 
         headers = {
             'Content-Type':                     'application/octet-stream',
-            'concent-client-public-key':        b64encode(PROVIDER_PUBLIC_KEY).decode('ascii'),
-            'concent-other-party-public-key':   b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
             'temporary-list-of-transactions':   'True',
             'temporary-v':                      '1',
             'temporary-eth-block':              '1'

@@ -15,6 +15,7 @@ from utils.decorators               import handle_errors_and_responses
 from .models                        import PendingResponse
 
 
+@csrf_exempt
 @require_POST
 @require_golem_message
 @handle_errors_and_responses

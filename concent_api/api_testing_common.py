@@ -1,3 +1,6 @@
+import argparse
+import sys
+
 from golem_messages.exceptions      import MessageError
 from golem_messages.message         import Message
 from golem_messages.message.concents import ClientAuthorization
@@ -12,6 +15,38 @@ import http.client
 
 class TestAssertionException(Exception):
     pass
+
+
+class count_fails(object):
+    """
+    Decorator that wraps a test functions for intercepting assertions and counting them.
+    """
+    instances = []
+    number_of_run_tests = 0
+
+    def __init__(self, function):
+        self._function     = function
+        self.__name__ = function.__name__
+        self.failed  = False
+        count_fails.instances.append(self)
+
+    def __call__(self, *args, **kwargs):
+        try:
+            print("Running TC: " + self.__name__)
+            count_fails.number_of_run_tests += 1
+            return self._function(*args, **kwargs)
+        except TestAssertionException as exception:
+            print("{}: FAILED".format(self.__name__))
+            print(exception)
+            self.failed = True
+
+    @classmethod
+    def get_fails(cls):
+        return sum([instance.failed for instance in cls.instances])
+
+    @classmethod
+    def print_fails(cls):
+        print(f'Total failed tests : {cls.get_fails()} out of {cls.number_of_run_tests}')
 
 
 def assert_condition(actual, expected, error_message = None):
@@ -81,6 +116,8 @@ def api_request(
     def _prepare_data(data):
         if data is None:
             return ''
+        if isinstance(data, bytes):
+            return data
         return dump(
             data,
             private_key,
@@ -90,6 +127,10 @@ def api_request(
     def _print_data(data, url):
         if data is None:
             print('RECEIVE ({})'.format(url))
+
+        elif isinstance(data, bytes):
+            print('RECEIVE ({})'.format(url))
+
         else:
             print('SEND ({})'.format(url))
             print('MESSAGE:')
@@ -98,17 +139,14 @@ def api_request(
     assert all(value not in ['', None] for value in [endpoint, host, headers])
     url = "{}/api/v1/{}/".format(host, endpoint)
 
-    if endpoint == 'send':
-        _print_data(data, url)
-        response = requests.post("{}".format(url), headers=headers, data=_prepare_data(data), verify=False)
-    else:
-        print('RECEIVE ({})'.format(url))
-        response = requests.post("{}".format(url), headers=headers, data=data, verify=False)
+    _print_data(data, url)
+    response = requests.post("{}".format(url), headers=headers, data=_prepare_data(data), verify=False)
     _print_response(private_key, public_key, response)
     validate_response_status(response.status_code, expected_status)
     validate_content_type(response.headers['Content-Type'], expected_content_type)
     validate_response_message(response.content, expected_message_type, private_key, public_key)
     print()
+    return response
 
 
 def _print_response(private_key, public_key, response):
@@ -170,5 +208,46 @@ def create_client_auth_message(client_priv_key, client_public_key, concent_publi
     return dump(client_auth, client_priv_key, concent_public_key)
 
 
-if __name__ == '__main__':
-    pass
+def parse_command_line(command_line):
+    if len(command_line) <= 1:
+        sys.exit('Not enough arguments')
+
+    if len(command_line) >= 3:
+        sys.exit('Too many arguments')
+
+    cluster_url = command_line[1]
+    return cluster_url
+
+
+def get_task_id_and_subtask_id(test_id, case_name):
+    task_id = f'task_{case_name}_{test_id}'
+    subtask_id = 'sub_' + task_id
+    return (subtask_id, task_id)
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("cluster_url")
+    parser.add_argument("tc_patterns", nargs='*')
+    args = parser.parse_args()
+    return (args.cluster_url, args.tc_patterns)
+
+
+def get_tests_list(patterns, all_objects):
+    def _is_a_test(x):
+        return "case_" in x
+
+    tests = list(filter(lambda x: _is_a_test(x), all_objects))
+    if len(patterns) > 0:
+        safe_patterns = set(pattern for pattern in patterns if _is_a_test(pattern))
+        tests = set(test for pattern in safe_patterns for test in tests if pattern in test)
+    return sorted(tests)
+
+
+def execute_tests(tests_to_execute, objects, **kwargs):
+    tests = [objects[name] for name in tests_to_execute]
+    for test in tests:
+        test_id = kwargs['test_id'] + test.__name__
+        kw = {k: v for k, v in kwargs.items() if k != 'test_id'}
+        test(test_id=test_id, **kw)
+        print("-" * 80)

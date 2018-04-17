@@ -15,7 +15,7 @@ from utils.helpers import get_current_utc_timestamp
 from utils.helpers import sign_message
 from utils.testing_helpers import generate_ecc_key_pair
 
-from api_testing_common import api_request
+from api_testing_common import api_request, parse_command_line
 from api_testing_common import create_client_auth_message
 
 from protocol_constants import get_protocol_constants
@@ -28,21 +28,10 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 (REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
-def parse_command_line(command_line):
-    if len(command_line) <= 1:
-        sys.exit('Not enough arguments')
-
-    if len(command_line) >= 3:
-        sys.exit('Too many arguments')
-
-    cluster_url = command_line[1]
-    return cluster_url
-
-
 def create_signed_task_to_compute(
-    task_id=None,
-    subtask_id=None,
-    deadline=None,
+    task_id,
+    subtask_id,
+    deadline,
     provider_public_key=None,
     requestor_public_key=None
 ):

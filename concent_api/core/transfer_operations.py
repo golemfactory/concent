@@ -113,7 +113,7 @@ def create_file_transfer_token(
     """
     task_id         = report_computed_task.task_to_compute.compute_task_def['task_id']
     subtask_id      = report_computed_task.task_to_compute.compute_task_def['subtask_id']
-    file_path       = get_storage_file_path(subtask_id, task_id)
+    file_path       = get_storage_file_path(task_id, subtask_id)
 
     assert isinstance(encoded_client_public_key, bytes)
     assert operation in [FileTransferToken.Operation.download, FileTransferToken.Operation.upload]
@@ -170,8 +170,16 @@ def request_upload_status(
     file_transfer_token.sig = None
     dumped_file_transfer_token = shortcuts.dump(file_transfer_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
     headers = {
-        'Authorization':                'Golem ' + b64encode(dumped_file_transfer_token).decode(),
-        'Concent-Client-Public-Key':    b64encode(settings.CONCENT_PUBLIC_KEY).decode(),
+        'Authorization': 'Golem ' + b64encode(dumped_file_transfer_token).decode(),
+        'Concent-Auth':  b64encode(
+            shortcuts.dump(
+                message.concents.ClientAuthorization(
+                    client_public_key=settings.CONCENT_PUBLIC_KEY,
+                ),
+                settings.CONCENT_PRIVATE_KEY,
+                settings.CONCENT_PUBLIC_KEY
+            ),
+        ).decode(),
     }
     request_http_address = settings.STORAGE_CLUSTER_ADDRESS + CLUSTER_DOWNLOAD_PATH + file_transfer_token.files[0]['path']
 
@@ -188,12 +196,12 @@ def request_upload_status(
 def send_request_to_cluster_storage(headers, request_http_address):
     if settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH != '':
         return requests.head(
-                request_http_address,
-                headers=headers,
-                verify=settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH,
+            request_http_address,
+            headers=headers,
+            verify=settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH,
         )
 
     return requests.head(
-            request_http_address,
-            headers=headers
+        request_http_address,
+        headers=headers
     )

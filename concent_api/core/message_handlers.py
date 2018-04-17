@@ -11,6 +11,7 @@ from django.utils import timezone
 from golem_messages import message
 from golem_messages.datastructures import MessageHeader
 from golem_messages.message import FileTransferToken
+from golem_messages.message.tasks import SubtaskResultsRejected
 
 from core.exceptions import Http400
 from core.models import Client
@@ -19,24 +20,13 @@ from core.models import PendingResponse
 from core.models import StoredMessage
 from core.models import Subtask
 from core.payments import base
-from core.queue_operations import send_verification_request
 from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import verify_message_subtask_results_accepted
-from core.transfer_operations import create_file_transfer_token
 from core.transfer_operations import store_pending_message
+from core.transfer_operations import create_file_transfer_token
 from core.validation import validate_golem_message_reject
+from core.validation import validate_golem_message_signed_with_key
 from core.validation import validate_golem_message_subtask_results_rejected
-from core.validation import validate_golem_message_signed_with_key
-from core.validation import validate_golem_message_task_to_compute
-from core.validation import validate_id_value
-from golem_messages.message.tasks import SubtaskResultsRejected
-from core.validation import validate_task_to_compute
-from core.validation import validate_report_computed_task_time_window
-from core.validation import validate_list_of_identical_task_to_compute
-from core.validation import validate_golem_message_signed_with_key
-from core.subtask_helpers import verify_message_subtask_results_accepted
-from core.transfer_operations import store_pending_message
-from core.transfer_operations import create_file_transfer_token
 from core.validation import validate_list_of_identical_task_to_compute
 from core.validation import validate_report_computed_task_time_window
 from core.validation import validate_task_to_compute

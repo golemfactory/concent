@@ -763,7 +763,7 @@ def handle_messages_from_database(
         report_computed_task    = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
         file_transfer_token     = create_file_transfer_token(
             report_computed_task,
-            encoded_client_public_key,
+            client_public_key,
             FileTransferToken.Operation.upload,
         )
 
@@ -780,7 +780,7 @@ def handle_messages_from_database(
         report_computed_task    = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
         file_transfer_token     = create_file_transfer_token(
             report_computed_task,
-            encoded_client_public_key,
+            client_public_key,
             FileTransferToken.Operation.download,
         )
 

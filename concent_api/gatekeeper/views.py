@@ -116,7 +116,7 @@ def parse_headers(request: WSGIRequest, path_to_file: str) -> Union[FileTransfer
             settings.CONCENT_PRIVATE_KEY,
             settings.CONCENT_PUBLIC_KEY,
         )
-        client_public_key = b64encode(client_authorization.client_public_key).decode('ascii')
+        concent_client_public_key = b64encode(client_authorization.client_public_key).decode('ascii')
     except (MessageError, TypeError):
         return gatekeeper_access_denied_response(
             'Cannot load ClientAuthorization message from Concent-Auth header.',
@@ -129,77 +129,77 @@ def parse_headers(request: WSGIRequest, path_to_file: str) -> Union[FileTransfer
             loaded_golem_message.operation,
             path_to_file,
             loaded_golem_message.subtask_id,
-            client_public_key
+            concent_client_public_key
         )
     )
     # Check ConcentFileTransferToken each field:
     # -SIGNATURE
     if not isinstance(loaded_golem_message.sig, bytes):
-        return gatekeeper_access_denied_response('Empty signature field in FileTransferToken message.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
+        return gatekeeper_access_denied_response('Empty signature field in FileTransferToken message.', path_to_file, loaded_golem_message.subtask_id, concent_client_public_key)
     # -DEADLINE
     if not isinstance(loaded_golem_message.token_expiration_deadline, int):
-        return gatekeeper_access_denied_response('Wrong type of token_expiration_deadline variable.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
+        return gatekeeper_access_denied_response('Wrong type of token_expiration_deadline variable.', path_to_file, loaded_golem_message.subtask_id, concent_client_public_key)
     current_time = get_current_utc_timestamp()
 
     if current_time > loaded_golem_message.token_expiration_deadline:
-        return gatekeeper_access_denied_response('token_expiration_deadline has passed.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
+        return gatekeeper_access_denied_response('token_expiration_deadline has passed.', path_to_file, loaded_golem_message.subtask_id, concent_client_public_key)
 
     # -STORAGE_CLUSTER_ADDRESS
     if not isinstance(loaded_golem_message.storage_cluster_address, str):
-        return gatekeeper_access_denied_response('Wrong type of storage_cluster_address variable.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
+        return gatekeeper_access_denied_response('Wrong type of storage_cluster_address variable.', path_to_file, loaded_golem_message.subtask_id, concent_client_public_key)
     url_validator = URLValidator()
     try:
         url_validator(loaded_golem_message.storage_cluster_address)
     except ValidationError:
-        return gatekeeper_access_denied_response('storage_cluster_address is not a valid URL.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
+        return gatekeeper_access_denied_response('storage_cluster_address is not a valid URL.', path_to_file, loaded_golem_message.subtask_id, concent_client_public_key)
     if loaded_golem_message.storage_cluster_address != settings.STORAGE_CLUSTER_ADDRESS:
-        return gatekeeper_access_denied_response('Given storage_cluster_address is not defined in settings.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
+        return gatekeeper_access_denied_response('Given storage_cluster_address is not defined in settings.', path_to_file, loaded_golem_message.subtask_id, concent_client_public_key)
 
     # -CLIENT_PUBLIC_KEY
     if not isinstance(loaded_golem_message.authorized_client_public_key, bytes):
-        return gatekeeper_access_denied_response('Wrong type of authorized_client_public_key variable.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
-    client_public_key_base64 = (b64encode(loaded_golem_message.authorized_client_public_key)).decode('ascii')
-    if client_public_key != client_public_key_base64:
-        return gatekeeper_access_denied_response('authorized_client_public_key is different then Concent-Client-Public-Key header.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
+        return gatekeeper_access_denied_response('Wrong type of authorized_client_public_key variable.', path_to_file, loaded_golem_message.subtask_id, concent_client_public_key)
+    authorized_client_public_key_base64 = (b64encode(loaded_golem_message.authorized_client_public_key)).decode('ascii')
+    if concent_client_public_key != authorized_client_public_key_base64:
+        return gatekeeper_access_denied_response('authorized_client_public_key is different then Concent-Client-Public-Key header.', path_to_file, loaded_golem_message.subtask_id, concent_client_public_key)
 
     # -OPERATION
     if request.method == 'POST' and loaded_golem_message.operation != FileTransferToken.Operation.upload:
-        return gatekeeper_access_denied_response('Wrong operation variable for this request method.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
+        return gatekeeper_access_denied_response('Wrong operation variable for this request method.', path_to_file, loaded_golem_message.subtask_id, concent_client_public_key)
     if request.method in ['GET', 'HEAD'] and loaded_golem_message.operation != FileTransferToken.Operation.download:
-        return gatekeeper_access_denied_response('Wrong operation variable for this request method.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
+        return gatekeeper_access_denied_response('Wrong operation variable for this request method.', path_to_file, loaded_golem_message.subtask_id, concent_client_public_key)
 
     # -FILES
     if not all(isinstance(file, dict) for file in loaded_golem_message.files):
-        return gatekeeper_access_denied_response('Wrong type of files variable.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
+        return gatekeeper_access_denied_response('Wrong type of files variable.', path_to_file, loaded_golem_message.subtask_id, concent_client_public_key)
     transfer_token_paths_to_files = [file["path"] for file in loaded_golem_message.files]
     if len(transfer_token_paths_to_files) != len(set(transfer_token_paths_to_files)):
-        return gatekeeper_access_denied_response('File paths in the token must be unique', path_to_file, loaded_golem_message.subtask_id, client_public_key)
+        return gatekeeper_access_denied_response('File paths in the token must be unique', path_to_file, loaded_golem_message.subtask_id, concent_client_public_key)
 
     if not all(isinstance(file["checksum"], str) for file in loaded_golem_message.files):
-        return gatekeeper_access_denied_response("'checksum' must be a string.", path_to_file, loaded_golem_message.subtask_id, client_public_key)
+        return gatekeeper_access_denied_response("'checksum' must be a string.", path_to_file, loaded_golem_message.subtask_id, concent_client_public_key)
     if any((len(file["checksum"]) == 0 or file["checksum"].isspace()) for file in loaded_golem_message.files):
-        return gatekeeper_access_denied_response("'checksum' cannot be blank or contain only whitespace.", path_to_file, loaded_golem_message.subtask_id, client_public_key)
+        return gatekeeper_access_denied_response("'checksum' cannot be blank or contain only whitespace.", path_to_file, loaded_golem_message.subtask_id, concent_client_public_key)
     if not all(":" in file["checksum"] for file in loaded_golem_message.files):
-        return gatekeeper_access_denied_response("'checksum' must consist of two parts separated with a semicolon.", path_to_file, loaded_golem_message.subtask_id, client_public_key)
+        return gatekeeper_access_denied_response("'checksum' must consist of two parts separated with a semicolon.", path_to_file, loaded_golem_message.subtask_id, concent_client_public_key)
     file_checksums = [tuple(file["checksum"].split(":")) for file in loaded_golem_message.files]
     if not set(checksum_type for checksum_type, checksum in file_checksums).issubset(set(HashingAlgorithm._value2member_map_)):  # type: ignore
-        return gatekeeper_access_denied_response("Unrecognized checksum type.", path_to_file, loaded_golem_message.subtask_id, client_public_key)
+        return gatekeeper_access_denied_response("Unrecognized checksum type.", path_to_file, loaded_golem_message.subtask_id, concent_client_public_key)
 
     assert set(HashingAlgorithm) == {HashingAlgorithm.SHA1}, "If you add a new hashing algorithms, you need to add validations below."
     if any(VALID_SHA1_HASH_REGEX.fullmatch(file_checksum[1]) is None for file_checksum in file_checksums):
-        return gatekeeper_access_denied_response("Invalid SHA1 hash.", path_to_file, loaded_golem_message.subtask_id, client_public_key)
+        return gatekeeper_access_denied_response("Invalid SHA1 hash.", path_to_file, loaded_golem_message.subtask_id, concent_client_public_key)
 
     file_sizes = [file["size"] for file in loaded_golem_message.files]
     if any((file_size is None) for file_size in file_sizes):
-        return gatekeeper_access_denied_response("'size' must be an integer.", path_to_file, loaded_golem_message.subtask_id, client_public_key)
+        return gatekeeper_access_denied_response("'size' must be an integer.", path_to_file, loaded_golem_message.subtask_id, concent_client_public_key)
     for file_size in file_sizes:
         try:
             int(file_size)
         except (ValueError, TypeError):
-            return gatekeeper_access_denied_response("'size' must be an integer.", path_to_file, loaded_golem_message.subtask_id, client_public_key)
+            return gatekeeper_access_denied_response("'size' must be an integer.", path_to_file, loaded_golem_message.subtask_id, concent_client_public_key)
 
     if any(int(file["size"]) < 0  for file in loaded_golem_message.files):
-        return gatekeeper_access_denied_response("'size' must not be negative.", path_to_file, loaded_golem_message.subtask_id, client_public_key)
+        return gatekeeper_access_denied_response("'size' must not be negative.", path_to_file, loaded_golem_message.subtask_id, concent_client_public_key)
 
     matching_files = [file for file in loaded_golem_message.files if path_to_file == file['path']]
 
@@ -207,4 +207,4 @@ def parse_headers(request: WSGIRequest, path_to_file: str) -> Union[FileTransfer
         return matching_files[0]
     else:
         assert len(matching_files) == 0
-        return gatekeeper_access_denied_response('Path to specified file is not listed in files variable.', path_to_file, loaded_golem_message.subtask_id, client_public_key)
+        return gatekeeper_access_denied_response('Path to specified file is not listed in files variable.', path_to_file, loaded_golem_message.subtask_id, concent_client_public_key)

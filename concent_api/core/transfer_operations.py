@@ -105,7 +105,7 @@ def store_pending_message(
 
 def create_file_transfer_token(
     report_computed_task:       message.tasks.ReportComputedTask,
-    encoded_client_public_key:  bytes,
+    authorized_client_public_key: bytes,
     operation:                  FileTransferToken.Operation,
 ) -> FileTransferToken:
     """
@@ -115,7 +115,7 @@ def create_file_transfer_token(
     subtask_id      = report_computed_task.task_to_compute.compute_task_def['subtask_id']
     file_path       = get_storage_file_path(task_id, subtask_id)
 
-    assert isinstance(encoded_client_public_key, bytes)
+    assert isinstance(authorized_client_public_key, bytes)
     assert operation in [FileTransferToken.Operation.download, FileTransferToken.Operation.upload]
     if operation == FileTransferToken.Operation.upload:
         token_expiration_deadline = (
@@ -131,7 +131,7 @@ def create_file_transfer_token(
     file_transfer_token = FileTransferToken(
         token_expiration_deadline       = token_expiration_deadline,
         storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
-        authorized_client_public_key    = encoded_client_public_key,
+        authorized_client_public_key    = authorized_client_public_key,
         operation                       = operation,
         subtask_id                      = report_computed_task.task_to_compute.compute_task_def['subtask_id']
     )

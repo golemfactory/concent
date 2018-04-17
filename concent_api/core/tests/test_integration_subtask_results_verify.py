@@ -86,7 +86,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ACCEPTED,
-            task_to_compute=self.report_computed_task.task_to_compute,
+            task_to_compute=self.report_computed_task.task_to_compute,  # pylint: disable=no-member
         )
         self._assert_stored_message_counter_increased(increased_by=1)
 
@@ -119,7 +119,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.FAILED,
-            task_to_compute=self.report_computed_task.task_to_compute,
+            task_to_compute=self.report_computed_task.task_to_compute,  # pylint: disable=no-member
             report_computed_task=self.report_computed_task,
         )
         self._assert_stored_message_counter_increased(increased_by=2)
@@ -180,7 +180,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
          subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify()
 
         # when
-        with mock.patch("core.message_handlers.base.is_requestor_account_status_positive", return_value=False):
+        with mock.patch("core.message_handlers.base.is_account_status_positive", return_value=False):
             with freeze_time(subtask_results_verify_time_str):
                 response = self.client.post(
                     reverse('core:send'),
@@ -277,7 +277,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
          subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify()
 
         # when
-        with mock.patch("core.message_handlers.base.is_requestor_account_status_positive", return_value=True):
+        with mock.patch("core.message_handlers.base.is_account_status_positive", return_value=True):
             with mock.patch("core.message_handlers.send_blender_verification_request") as send_verification_request_mock:
                 with freeze_time(subtask_results_verify_time_str):
                     response = self.client.post(

@@ -1086,7 +1086,6 @@ def store_message(
 
 
 def handle_send_subtask_results_verify(
-    request,
     subtask_results_verify: message.concents.SubtaskResultsVerify
 ):
     subtask_results_rejected = subtask_results_verify.subtask_results_rejected
@@ -1135,7 +1134,9 @@ def handle_send_subtask_results_verify(
         ]
     ):
         raise Http400("SubtaskResultsVerify is not allowed in current state")
-    if not base.is_requestor_account_status_positive(request):  # pylint: disable=no-value-for-parameter
+    if not base.is_account_status_positive(  # pylint: disable=no-value-for-parameter
+        client_eth_address      = task_to_compute.requestor_ethereum_address,
+    ):
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
         )

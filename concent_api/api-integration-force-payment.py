@@ -65,10 +65,12 @@ def task_to_compute(
 
 
 def compute_task_def(
+    subtask_id  = None,
     task_id     = None,
     deadline    = None,
 ):
     compute_task_def = message.tasks.ComputeTaskDef()
+    compute_task_def['subtask_id']  = subtask_id
     compute_task_def['task_id']     = task_id
     compute_task_def['deadline']    = deadline
 
@@ -91,7 +93,8 @@ def main():
                     requestor_ethereum_public_key   = "0x" + b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
                     compute_task_def                = compute_task_def(
                         deadline = current_time,
-                        task_id  = task_id + 'a'
+                        task_id  = task_id + 'a',
+                        subtask_id=task_id + 'A'
                     )
                 )
             ),
@@ -103,7 +106,8 @@ def main():
                     requestor_ethereum_public_key   = "0x" + b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
                     compute_task_def                = compute_task_def(
                         deadline = current_time,
-                        task_id  = task_id + 'b'
+                        task_id  = task_id + 'b',
+                        subtask_id=task_id + 'B'
                     )
                 )
             )
@@ -127,7 +131,8 @@ def main():
                         requestor_ethereum_public_key   = "0x" + b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
                         compute_task_def                = compute_task_def(
                             deadline = current_time,
-                            task_id  = task_id + 'a'
+                            task_id  = task_id + 'a',
+                            subtask_id=task_id + 'A'
                         )
                     )
                 ),
@@ -139,7 +144,8 @@ def main():
                         requestor_ethereum_public_key   = "0x" + b64encode(DIFFERENT_REQUESTOR_PUBLIC_KEY).decode('ascii'),
                         compute_task_def                = compute_task_def(
                             deadline = current_time,
-                            task_id  = task_id + 'b'
+                            task_id  = task_id + 'b',
+                            subtask_id=task_id + 'B'
                         )
                     )
                 )

@@ -1,3 +1,4 @@
+import argparse
 import sys
 
 from golem_messages.exceptions      import MessageError
@@ -115,6 +116,8 @@ def api_request(
     def _prepare_data(data):
         if data is None:
             return ''
+        if isinstance(data, bytes):
+            return data
         return dump(
             data,
             private_key,
@@ -124,6 +127,10 @@ def api_request(
     def _print_data(data, url):
         if data is None:
             print('RECEIVE ({})'.format(url))
+
+        elif isinstance(data, bytes):
+            print('RECEIVE ({})'.format(url))
+
         else:
             print('SEND ({})'.format(url))
             print('MESSAGE:')
@@ -212,11 +219,35 @@ def parse_command_line(command_line):
     return cluster_url
 
 
-if __name__ == '__main__':
-    pass
-
-
 def get_task_id_and_subtask_id(test_id, case_name):
     task_id = f'task_{case_name}_{test_id}'
     subtask_id = 'sub_' + task_id
     return (subtask_id, task_id)
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("cluster_url")
+    parser.add_argument("tc_patterns", nargs='*')
+    args = parser.parse_args()
+    return (args.cluster_url, args.tc_patterns)
+
+
+def get_tests_list(patterns, all_objects):
+    def _is_a_test(x):
+        return "case_" in x
+
+    tests = list(filter(lambda x: _is_a_test(x), all_objects))
+    if len(patterns) > 0:
+        safe_patterns = set(pattern for pattern in patterns if _is_a_test(pattern))
+        tests = set(test for pattern in safe_patterns for test in tests if pattern in test)
+    return sorted(tests)
+
+
+def execute_tests(tests_to_execute, objects, **kwargs):
+    tests = [objects[name] for name in tests_to_execute]
+    for test in tests:
+        test_id = kwargs['test_id'] + test.__name__
+        kw = {k: v for k, v in kwargs.items() if k != 'test_id'}
+        test(test_id=test_id, **kw)
+        print("-" * 80)

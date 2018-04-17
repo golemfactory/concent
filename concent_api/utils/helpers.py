@@ -2,13 +2,11 @@ import calendar
 import base64
 import binascii
 import datetime
-import functools
 import time
 
 from django.utils                   import timezone
 from mypy.types                     import Union
 
-from golem_messages                 import cryptography
 from golem_messages                 import message
 from golem_messages.datastructures  import FrozenDict
 from golem_messages.exceptions      import MessageError
@@ -110,8 +108,7 @@ def sign_message(golem_message, priv_key):
     assert isinstance(priv_key, bytes) and len(priv_key) == 32
     assert golem_message.sig is None
 
-    signature = functools.partial(cryptography.ecdsa_sign, priv_key)
-    golem_message = golem_message.serialize(sign_func = signature)
+    golem_message = golem_message.serialize(sign_as = priv_key)
     golem_message = deserialize_message(golem_message)
     return golem_message
 

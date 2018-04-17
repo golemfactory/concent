@@ -46,6 +46,7 @@ class LoadWithoutPublicKeyUnitTest(TestCase):
 
         loaded_task_to_compute_with_utility_function    = load_without_public_key(
             dumped_task_to_compute,
+            REQUESTOR_PUBLIC_KEY,
         )
 
         loaded_task_to_compute_with_golem_messages_load = load(

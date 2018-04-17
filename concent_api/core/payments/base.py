@@ -64,3 +64,8 @@ def is_provider_account_status_positive(backend, request = None):
 @_add_backend
 def calculate_amount_pending(backend):
     return backend.calculate_amount_pending()
+
+
+@_add_backend
+def is_requestor_account_status_positive(backend, request):  # TODO use real concent_rpc when available
+    return backend.is_requestor_account_status_positive(request)

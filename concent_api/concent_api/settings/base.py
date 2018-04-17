@@ -220,6 +220,9 @@ MAXIMUM_DOWNLOAD_TIME = 1800  # 30 minutes
 # A global constant defining the length of the time window within which a requestor can verify subtask.
 SUBTASK_VERIFICATION_TIME = 4 * 3600  # 4 hours
 
+# A global constant defining the length of the time window within which a provider can ask concent for verifying subtask results
+ADDITIONAL_VERIFICATION_CALL_TIME = 4 * 3600  # 4 hours
+
 # A global constant defining the lenght of the time window within which a requestor must pay
 PAYMENT_DUE_TIME = 12 * 3600  # 12 hours
 

@@ -66,6 +66,12 @@ def validate_task_to_compute(task_to_compute: message.TaskToCompute):
     if not isinstance(task_to_compute, message.TaskToCompute):
         raise Http400("Expected TaskToCompute.")
 
+    if any(map(lambda x: x is None, [getattr(task_to_compute, attribute) for attribute in [
+        'compute_task_def',
+        'provider_public_key',
+        'requestor_public_key'
+    ]])):
+        raise Http400("Invalid TaskToCompute")
     task_to_compute.compute_task_def['deadline'] = validate_int_value(task_to_compute.compute_task_def['deadline'])
 
     validate_id_value(task_to_compute.compute_task_def['task_id'], 'task_id')
@@ -132,3 +138,9 @@ def validate_golem_message_signed_with_key(
                 public_key
             )
         )
+
+
+def validate_golem_message_subtask_results_rejected(subtask_results_rejected: message.tasks.SubtaskResultsRejected):
+    if not isinstance(subtask_results_rejected,  message.tasks.SubtaskResultsRejected):
+        raise Http400("subtask_results_rejected should be of type:  SubtaskResultsRejected")
+    validate_task_to_compute(subtask_results_rejected.report_computed_task.task_to_compute)

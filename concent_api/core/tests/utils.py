@@ -1,15 +1,13 @@
-from base64                 import b64encode
-
+from base64 import b64encode
 import datetime
 import functools
+
 import dateutil.parser
-
-from django.conf            import settings
-from django.test            import TestCase
-from django.shortcuts       import reverse
-from django.utils           import timezone
-
-from freezegun              import freeze_time
+from django.conf import settings
+from django.shortcuts import reverse
+from django.test import TestCase
+from django.utils import timezone
+from freezegun import freeze_time
 
 from golem_messages         import dump
 from golem_messages         import load
@@ -83,7 +81,7 @@ class ConcentIntegrationTestCase(TestCase):
             )
         return dump(
             force_get_task_result,
-            requestor_private_key or self.REQUESTOR_PRIVATE_KEY,
+            requestor_private_key if requestor_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
             settings.CONCENT_PUBLIC_KEY
         )
 
@@ -186,7 +184,7 @@ class ConcentIntegrationTestCase(TestCase):
         with freeze_time(timestamp or self._get_timestamp_string()):
             return dump(
                 ack_report_computed_task,
-                requestor_private_key or self.REQUESTOR_PRIVATE_KEY,
+                requestor_private_key if requestor_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
                 settings.CONCENT_PUBLIC_KEY
             )
 
@@ -363,7 +361,7 @@ class ConcentIntegrationTestCase(TestCase):
         )
         return dump(
             force_subtask_results,
-            provider_private_key or self.PROVIDER_PRIVATE_KEY,
+            provider_private_key if provider_private_key is not None else self.PROVIDER_PRIVATE_KEY,
             settings.CONCENT_PUBLIC_KEY,
         )
 
@@ -404,7 +402,7 @@ class ConcentIntegrationTestCase(TestCase):
 
         return dump(
             subtask_results_accepted,
-            requestor_private_key or self.REQUESTOR_PRIVATE_KEY,
+            requestor_private_key if requestor_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
             settings.CONCENT_PUBLIC_KEY,
         )
 
@@ -452,7 +450,7 @@ class ConcentIntegrationTestCase(TestCase):
             )
             return dump(
                 subtask_results_rejected,
-                requestor_private_key or self.REQUESTOR_PRIVATE_KEY,
+                requestor_private_key if requestor_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
                 settings.CONCENT_PUBLIC_KEY,
             )
 
@@ -498,7 +496,7 @@ class ConcentIntegrationTestCase(TestCase):
 
         return dump(
             force_subtask_results_response,
-            requestor_private_key or self.REQUESTOR_PRIVATE_KEY,
+            requestor_private_key if requestor_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
             settings.CONCENT_PUBLIC_KEY
         )
 
@@ -521,7 +519,7 @@ class ConcentIntegrationTestCase(TestCase):
         with freeze_time(timestamp or self._get_timestamp_string()):
             return dump(
                 force_report_computed_task,
-                provider_private_key or self.PROVIDER_PRIVATE_KEY,
+                provider_private_key if provider_private_key is not None else self.PROVIDER_PRIVATE_KEY,
                 settings.CONCENT_PUBLIC_KEY
             )
 
@@ -560,7 +558,7 @@ class ConcentIntegrationTestCase(TestCase):
         with freeze_time(timestamp or self._get_timestamp_string()):
             return dump(
                 reject_report_computed_task,
-                requestor_private_key or self.REQUESTOR_PRIVATE_KEY,
+                requestor_private_key if requestor_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
                 settings.CONCENT_PUBLIC_KEY
             )
 
@@ -588,8 +586,35 @@ class ConcentIntegrationTestCase(TestCase):
             )
         return dump(
             force_payment,
-            provider_private_key or self.PROVIDER_PRIVATE_KEY,
+            provider_private_key if provider_private_key is not None else self.PROVIDER_PRIVATE_KEY,
             settings.CONCENT_PUBLIC_KEY
+        )
+
+    def _get_deserialized_subtask_results_verify(
+        self,
+        timestamp=None,
+        subtask_results_rejected=None,
+    ):
+        """ Return SubtaskResultsVerify deserialized """
+        with freeze_time(timestamp or self._get_timestamp_string()):
+            return message.concents.SubtaskResultsVerify(
+                subtask_results_rejected=(
+                    subtask_results_rejected if subtask_results_rejected is not None else
+                    self._get_deserialized_subtask_results_rejected()
+                ),
+            )
+
+    def _get_serialized_subtask_results_verify(
+        self,
+        timestamp=None,
+        subtask_results_verify=None,
+        provider_private_key=None
+    ):
+        return dump(
+            msg=(subtask_results_verify if subtask_results_verify is not None
+                 else self._get_deserialized_subtask_results_verify(timestamp)),
+            privkey=provider_private_key if provider_private_key is not None else self.PROVIDER_PRIVATE_KEY,
+            pubkey=settings.CONCENT_PUBLIC_KEY,
         )
 
     def _store_golem_messages_in_database(
@@ -674,3 +699,13 @@ class ConcentIntegrationTestCase(TestCase):
     def _create_test_ping_message(self):  # pylint: disable=no-self-use
         ping_message = message.Ping()
         return ping_message
+
+    def _add_time_offset_to_date(self, base_time, offset):
+        """
+        :param base_time: string format
+        :param offset: timestamp format
+        :return: new time in a string format
+        """
+        return datetime.datetime.fromtimestamp(self._parse_iso_date_to_timestamp(base_time) + offset).strftime(
+            '%Y-%m-%d %H:%M:%S'
+        )

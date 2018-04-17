@@ -24,7 +24,6 @@ from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import verify_message_subtask_results_accepted
 from core.transfer_operations import store_pending_message
 from core.transfer_operations import create_file_transfer_token
-from core.validation import validate_golem_message_reject
 from core.validation import validate_golem_message_signed_with_key
 from core.validation import validate_golem_message_subtask_results_rejected
 from core.validation import validate_list_of_identical_task_to_compute
@@ -164,23 +163,50 @@ def handle_send_ack_report_computed_task(client_message):
 
 
 def handle_send_reject_report_computed_task(client_message):
-    task_to_compute = client_message.task_to_compute
+    if (
+        isinstance(client_message.cannot_compute_task, message.CannotComputeTask) and
+        isinstance(client_message.task_failure, message.TaskFailure)
+    ):
+        raise Http400("RejectReportComputedTask cannot contain CannotComputeTask and TaskFailure at the same time.")
 
-    validate_golem_message_reject(client_message.cannot_compute_task)
+    # Validate if task_to_compute is valid instance of TaskToCompute.
+    task_to_compute = client_message.task_to_compute
     validate_task_to_compute(task_to_compute)
-    validate_task_to_compute(client_message.cannot_compute_task.task_to_compute)
 
     provider_public_key = task_to_compute.provider_public_key
     requestor_public_key = task_to_compute.requestor_public_key
 
+    # Validate if TaskToCompute signed by the requestor.
     validate_golem_message_signed_with_key(
         task_to_compute,
         requestor_public_key,
     )
-    validate_golem_message_signed_with_key(
-        client_message.cannot_compute_task.task_to_compute,
-        requestor_public_key,
-    )
+
+    tasks_to_compute = [task_to_compute]
+
+    # If reason is GotMessageCannotComputeTask,
+    # cannot_compute_task is instance of CannotComputeTask signed by the provider.
+    if client_message.reason == message.RejectReportComputedTask.REASON.GotMessageCannotComputeTask:
+        if not isinstance(client_message.cannot_compute_task, message.CannotComputeTask):
+            raise Http400("Expected CannotComputeTask.")
+        validate_task_to_compute(client_message.cannot_compute_task.task_to_compute)
+        validate_golem_message_signed_with_key(
+            client_message.cannot_compute_task,
+            provider_public_key,
+        )
+        tasks_to_compute.append(client_message.cannot_compute_task.task_to_compute)
+
+    # If reason is GotMessageTaskFailure,
+    # task_failure is instance of TaskFailure signed by the provider.
+    elif client_message.reason == message.RejectReportComputedTask.REASON.GotMessageTaskFailure:
+        if not isinstance(client_message.task_failure, message.TaskFailure):
+            raise Http400("Expected TaskFailure.")
+        validate_task_to_compute(client_message.task_failure.task_to_compute)
+        validate_golem_message_signed_with_key(
+            client_message.task_failure,
+            provider_public_key,
+        )
+        tasks_to_compute.append(client_message.cannot_compute_task.task_to_compute)
 
     try:
         subtask = Subtask.objects.get(
@@ -197,16 +223,17 @@ def handle_send_reject_report_computed_task(client_message):
     if subtask.report_computed_task.subtask_id != task_to_compute.compute_task_def['subtask_id']:
         raise Http400("Received subtask_id does not match one in related ReportComputedTask. Can't accept your 'RejectReportComputedTask'.")
 
-    if subtask.requestor.public_key_bytes != client_message.cannot_compute_task.task_to_compute.requestor_public_key:
+    if subtask.requestor.public_key_bytes != requestor_public_key:
         raise Http400("Subtask requestor key does not match current client key. Can't accept your 'RejectReportComputedTask'.")
 
-    validate_list_of_identical_task_to_compute([
-        task_to_compute,
-        deserialize_message(subtask.task_to_compute.data.tobytes()),
-        client_message.cannot_compute_task.task_to_compute,
-    ])
+    tasks_to_compute.append(deserialize_message(subtask.task_to_compute.data.tobytes()))
+    validate_list_of_identical_task_to_compute(tasks_to_compute)
 
-    if client_message.cannot_compute_task.reason == message.CannotComputeTask.REASON.WrongCTD:
+    if (
+        client_message.reason in
+        [message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
+         message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded]
+    ):
         subtask = update_subtask(
             subtask                     = subtask,
             state                       = Subtask.SubtaskState.REPORTED,
@@ -228,7 +255,7 @@ def handle_send_reject_report_computed_task(client_message):
         )
         logging.log_message_added_to_queue(
             client_message,
-            client_message.cannot_compute_task.task_to_compute.requestor_public_key,
+            requestor_public_key,
         )
         return HttpResponse("", status = 202)
 

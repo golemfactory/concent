@@ -1,4 +1,3 @@
-from typing                         import Union
 from typing                         import List
 from golem_messages                 import message
 from golem_messages.cryptography    import ecdsa_verify
@@ -7,22 +6,6 @@ from golem_messages.exceptions      import MessageError
 from core.constants                 import GOLEM_PUBLIC_KEY_LENGTH
 from core.constants                 import MESSAGE_TASK_ID_MAX_LENGTH
 from core.exceptions                import Http400
-
-
-def validate_golem_message_reject(
-    golem_message: Union[message.CannotComputeTask, message.TaskFailure, message.TaskToCompute]
-):
-    if not isinstance(golem_message, (message.CannotComputeTask, message.TaskFailure, message.TaskToCompute)):
-        raise Http400("Expected CannotComputeTask, TaskFailure or TaskToCompute.")
-
-    if isinstance(golem_message, message.CannotComputeTask):
-        validate_id_value(golem_message.task_to_compute.compute_task_def['task_id'], 'task_id')
-
-    if isinstance(golem_message, (message.TaskToCompute, message.TaskFailure)):
-        if golem_message.compute_task_def['task_id'] == '':
-            raise Http400("task_id cannot be blank.")
-
-        golem_message.compute_task_def['deadline'] = validate_int_value(golem_message.compute_task_def['deadline'])
 
 
 def validate_int_value(value):

@@ -2,6 +2,7 @@ from enum import Enum
 
 from celery import shared_task
 
+from verifier.tasks import blender_verification_order
 from .models import BlenderSubtaskDefinition
 from .models import UploadReport
 from .models import VerificationRequest
@@ -52,7 +53,7 @@ def blender_verification_request(
         verification_request.upload_reports.filter(path=verification_request.result_package_path).exists()
     ):
         # If all expected files have been uploaded, the app sends blender_verification_order task to the work queue.
-        blender_verification_request.delay(
+        blender_verification_order.delay(
             verification_request.subtask_id,
             verification_request.source_package_path,
             verification_request.result_package_path,

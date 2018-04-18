@@ -2,10 +2,18 @@ import os
 import sys
 import argparse
 import json
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from message_sender import send_message
-from message_extractor import MessageExtractor
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils.testing_helpers import generate_ecc_key_pair
+from concent_api.settings import CONCENT_PUBLIC_KEY
+from message_handler import MessageHandler
+from message_extractor import MessageExtractor
+from key_manager import KeyManager
+
+(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
+(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
+
+concent_public_key = CONCENT_PUBLIC_KEY
 
 
 def get_json_data(message_file, message_str):
@@ -14,8 +22,6 @@ def get_json_data(message_file, message_str):
     else:
         return json.loads(message_str)
     # verify_schema(json_data)
-
-
 
 
 def receive_out_of_band_message(args):
@@ -52,13 +58,31 @@ def parse_arguments():
     parser_receive_out_of_band_message.add_argument("cluster_url", )
 
     parser_receive_out_of_band_message.add_argument('--subtask_id', action="store")
-    args = parser.parse_args()
-
-    return args.endpoint, args.message_file, args.message, args.cluster_url
+    return parser.parse_args()
 
 
 if __name__ == '__main__':
-    endpoint, msg_file, msg_str, cluster_url = parse_arguments()
-    json_data = get_json_data(msg_file, msg_str)
-    message = MessageExtractor().extract_message(json_data)
-    send_message(cluster_url, message)
+    args = parse_arguments()
+
+    key_manager = KeyManager()
+    requestor_public_key, requestor_private_key = key_manager.get_requestor_keys()
+    provider_public_key, provider_private_key = key_manager.get_provider_keys()
+
+    if args.endpoint == 'send':
+        json_data = get_json_data(args.message_file, args.message)
+        message = MessageExtractor(
+            requestor_public_key,
+            provider_public_key).extract_message(json_data)
+        MessageHandler(
+            requestor_private_key,
+            requestor_public_key,
+            provider_public_key,
+            provider_private_key,
+            concent_public_key).exchange_message(args.cluster_url, message)
+
+    elif args.endpoint == 'receive':
+        MessageHandler(requestor_private_key,
+                       requestor_public_key,
+                       provider_public_key,
+                       provider_private_key,
+                       concent_public_key).receive_message(args.cluster_url)

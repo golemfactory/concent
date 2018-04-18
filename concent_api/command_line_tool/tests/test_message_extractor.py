@@ -1,7 +1,7 @@
 import os
 import sys
 from base64 import b64decode
-from unittest import TestCase, skip, expectedFailure
+from unittest import TestCase
 
 from golem_messages.message import ComputeTaskDef, TaskToCompute, ReportComputedTask
 from golem_messages.message.concents import ForceGetTaskResult
@@ -38,7 +38,6 @@ class TestMessageExtractor(TestCase):
             "name": "force_get_task_result",
             "body": {
                 "report_computed_task": {
-                    "subtask_id": subtask_id,
                     "address": address,
                     "size": size,
                     # "package_hash": package_hash,
@@ -95,7 +94,6 @@ class TestMessageExtractor(TestCase):
         input = {
             "name": "report_computed_task",
             "body": {
-                "subtask_id": subtask_id,
                 "address": address,
                 "size": size,
                 # "package_hash": package_hash,

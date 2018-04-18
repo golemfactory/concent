@@ -1,3 +1,4 @@
+# !! IMPORTANT !! Must be first line of code, otherwise system checks are not run.
 default_app_config = 'concent_api.apps.ConcentApiConfig'
 
 # This creates the 'app' object for celery. Doing it here ensures that it's always created when Django starts.

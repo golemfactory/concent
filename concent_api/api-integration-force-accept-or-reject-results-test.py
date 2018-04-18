@@ -2,7 +2,6 @@
 
 import os
 import sys
-import random
 import time
 from freezegun import freeze_time
 
@@ -15,14 +14,9 @@ from utils.testing_helpers import generate_ecc_key_pair
 from api_testing_common import api_request
 from api_testing_common import count_fails
 from api_testing_common import create_client_auth_message
-from api_testing_common import execute_tests
 from api_testing_common import get_task_id_and_subtask_id
-from api_testing_common import get_tests_list
-from api_testing_common import parse_arguments
+from api_testing_common import run_tests
 from api_testing_common import timestamp_to_isoformat
-
-from protocol_constants import get_protocol_constants
-from protocol_constants import print_protocol_constants
 
 import requests
 
@@ -100,30 +94,6 @@ def report_computed_task(timestamp = None, task_to_compute = None):
         return message.tasks.ReportComputedTask(
             task_to_compute = task_to_compute
         )
-
-
-def main():
-    (cluster_url, patterns) = parse_arguments()
-    cluster_consts = get_protocol_constants(cluster_url)
-    print_protocol_constants(cluster_consts)
-
-    test_id = str(random.randrange(1, 100000))
-    tests_to_execute = get_tests_list(patterns, list(globals().keys()))
-
-    print("Tests to be executed: \n * " + "\n * ".join(tests_to_execute))
-    print()
-
-    execute_tests(
-        tests_to_execute=tests_to_execute,
-        objects=globals(),
-        cluster_url=cluster_url,
-        test_id=test_id,
-        cluster_consts=cluster_consts
-    )
-
-    if count_fails.get_fails() > 0:
-        count_fails.print_fails()
-    print("END")
 
 
 @count_fails
@@ -452,7 +422,8 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts, cluster_u
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
-        main()
+
+        run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file = sys.stderr)
         sys.exit(str(exception))

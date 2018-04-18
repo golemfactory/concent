@@ -2,7 +2,6 @@
 
 import os
 import sys
-import random
 
 from golem_messages.message.tasks import AckReportComputedTask
 from golem_messages.message         import ComputeTaskDef
@@ -15,10 +14,11 @@ from utils.helpers import get_current_utc_timestamp
 from utils.helpers import sign_message
 from utils.testing_helpers import generate_ecc_key_pair
 
-from api_testing_common import api_request, parse_command_line
+from api_testing_common import api_request
+from api_testing_common import count_fails
 from api_testing_common import create_client_auth_message
-
-from protocol_constants import get_protocol_constants
+from api_testing_common import get_task_id_and_subtask_id
+from api_testing_common import run_tests
 
 import requests
 
@@ -66,12 +66,10 @@ def ack_report_computed_task(task_to_compute):
     return ack_report_computed_task
 
 
-def main():
-    cluster_url     = parse_command_line(sys.argv)
-    subtask_id      = str(random.randrange(1, 100000))
-    task_id         = subtask_id + 'force_report'
-    current_time    = get_current_utc_timestamp()
-    cluster_consts  = get_protocol_constants(cluster_url)
+@count_fails
+def test_case_1_provider_forces_report_computed_task_and_gets_accepted(cluster_consts, cluster_url, test_id):
+    current_time = get_current_utc_timestamp()
+    (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '1')
     task_to_compute = create_signed_task_to_compute(
         task_id=task_id,
         subtask_id=subtask_id,
@@ -85,46 +83,43 @@ def main():
         force_report_computed_task(
             task_to_compute=task_to_compute
         ),
-        headers = {
-            'Content-Type':                     'application/octet-stream',
+        headers={
+            'Content-Type': 'application/octet-stream',
         },
         expected_status=202,
     )
-
     api_request(
         cluster_url,
         'receive',
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
-        headers = {
+        headers={
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
         expected_message_type=ForceReportComputedTask.TYPE,
         expected_content_type='application/octet-stream',
     )
-
     api_request(cluster_url,
-        'send',
-        REQUESTOR_PRIVATE_KEY,
-        CONCENT_PUBLIC_KEY,
-        ack_report_computed_task(
-            task_to_compute=task_to_compute
-        ),
-        headers = {
-            'Content-Type':             'application/octet-stream',
-        },
-        expected_status=202,
-    )
-
+                'send',
+                REQUESTOR_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY,
+                ack_report_computed_task(
+                    task_to_compute=task_to_compute
+                ),
+                headers={
+                    'Content-Type': 'application/octet-stream',
+                },
+                expected_status=202,
+                )
     api_request(
         cluster_url,
         'receive',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
-        headers = {
+        headers={
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
@@ -136,7 +131,8 @@ def main():
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
-        main()
+
+        run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file = sys.stderr)
         sys.exit(str(exception))

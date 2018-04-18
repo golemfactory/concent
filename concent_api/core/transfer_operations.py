@@ -17,7 +17,6 @@ from core.models import PendingResponse
 from core.models import Subtask
 from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
 from utils import logging
-from utils.helpers import decode_key
 from utils.helpers import deserialize_message
 from utils.helpers import get_storage_file_path
 from utils.helpers import sign_message
@@ -82,8 +81,8 @@ def store_pending_message(
     if payment_message is not None:
         payment_committed_message = PaymentInfo(
             payment_ts                  = datetime.datetime.fromtimestamp(payment_message.payment_ts, timezone.utc),
-            task_owner_key_bytes        = decode_key(payment_message.task_owner_key),
-            provider_eth_account_bytes  = payment_message.provider_eth_account,
+            task_owner_key              = payment_message.task_owner_key,
+            provider_eth_account        = payment_message.provider_eth_account,
             amount_paid                 = payment_message.amount_paid,
             recipient_type              = payment_message.recipient_type.name,  # pylint: disable=no-member
             amount_pending              = payment_message.amount_pending,

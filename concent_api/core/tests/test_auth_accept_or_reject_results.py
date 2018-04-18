@@ -5,6 +5,7 @@ from django.urls            import reverse
 from freezegun              import freeze_time
 from golem_messages         import message
 
+from core.constants         import ETHEREUM_ADDRESS_LENGTH
 from core.models            import Subtask
 from core.models            import PendingResponse
 from core.tests.utils       import ConcentIntegrationTestCase
@@ -14,20 +15,13 @@ from utils.testing_helpers  import generate_ecc_key_pair
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
-def _get_provider_account_status_true_mock(_):
-    return True
-
-
-def _get_requestor_account_status(_provider, _requestor):
-    pass
-
-
 @override_settings(
     CONCENT_PRIVATE_KEY       = CONCENT_PRIVATE_KEY,
     CONCENT_PUBLIC_KEY        = CONCENT_PUBLIC_KEY,
     CONCENT_MESSAGING_TIME    = 10,  # seconds
     FORCE_ACCEPTANCE_TIME     = 10,  # seconds
     SUBTASK_VERIFICATION_TIME = 10,  # seconds
+    CONCENT_ETHEREUM_ADDRESS  = 'x' * ETHEREUM_ADDRESS_LENGTH
 )
 class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
@@ -61,7 +55,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
             with freeze_time("2018-02-05 10:00:30"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -116,7 +110,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_private_key = self.DIFFERENT_PROVIDER_PRIVATE_KEY,
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
             with freeze_time("2018-02-05 10:00:31"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -139,7 +133,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 3: Provider again forces subtask results via Concent with message with the same task_id with correct keys.
         # Request is refused.
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
             with freeze_time("2018-02-05 10:00:31"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -190,7 +184,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
             with freeze_time("2018-02-05 10:00:31"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -312,7 +306,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
             with freeze_time("2018-02-05 10:00:30"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -414,7 +408,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
             with freeze_time("2018-02-05 10:00:44"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -448,7 +442,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
             with freeze_time("2018-02-05 10:00:44"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -482,7 +476,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
             with freeze_time("2018-02-05 10:00:44"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -522,7 +516,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
             with freeze_time("2018-02-05 10:00:44"):
                 self.client.post(
                     reverse('core:send'),
@@ -634,7 +628,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
             with freeze_time("2018-02-05 10:00:30"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -736,7 +730,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
             with freeze_time("2018-02-05 10:00:44"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -770,7 +764,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
             with freeze_time("2018-02-05 10:00:44"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -804,7 +798,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
             with freeze_time("2018-02-05 10:00:44"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -848,7 +842,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
             with freeze_time("2018-02-05 10:00:44"):
                 self.client.post(
                     reverse('core:send'),
@@ -958,7 +952,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
             with freeze_time("2018-02-05 10:00:30"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -1043,7 +1037,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         # STEP 4: Different requestor does not receive subtask result settled via Concent with different key.
-        with mock.patch('core.message_handlers.base.make_forced_payment', _get_requestor_account_status):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
             with freeze_time("2018-02-05 10:00:48"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -1056,7 +1050,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 5: Requestor receives subtask result settled via Concent with correct key.
 
-        with mock.patch('core.message_handlers.base.make_forced_payment', _get_requestor_account_status):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
             with freeze_time("2018-02-05 10:00:50"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -1152,7 +1146,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_provider_account_status_positive', _get_provider_account_status_true_mock):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
             with freeze_time("2018-02-05 10:00:30"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -1280,7 +1274,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # STEP 6: Different requestor does not receive subtask result settled via Concent with different key.
-        with mock.patch('core.message_handlers.base.make_forced_payment', _get_requestor_account_status):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
             with freeze_time("2018-02-05 10:00:51"):
                 response = self.client.post(
                     reverse('core:receive'),
@@ -1292,7 +1286,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         # STEP 7: Requestor receives subtask result settled via Concent with correct key.
-        with mock.patch('core.message_handlers.base.make_forced_payment', _get_requestor_account_status):
+        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
             with freeze_time("2018-02-05 10:00:51"):
                 response = self.client.post(
                     reverse('core:receive'),

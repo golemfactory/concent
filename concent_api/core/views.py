@@ -19,7 +19,7 @@ from .models                        import PendingResponse
 @require_POST
 @require_golem_message
 @handle_errors_and_responses
-def send(request, client_message, client_public_key):
+def send(_request, client_message, client_public_key):
     if client_public_key is not None:
         update_timed_out_subtasks(
             client_public_key = client_public_key,
@@ -30,7 +30,7 @@ def send(request, client_message, client_public_key):
         client_public_key if client_public_key is not None else 'UNAVAILABLE',
     )
 
-    return handle_message(client_message, request)
+    return handle_message(client_message)
 
 
 @csrf_exempt

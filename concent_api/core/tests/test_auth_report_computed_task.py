@@ -1,4 +1,5 @@
 from base64                 import b64encode
+import dateutil.parser
 
 from django.test            import override_settings
 from django.urls            import reverse
@@ -6,7 +7,6 @@ from freezegun              import freeze_time
 from golem_messages         import dump
 from golem_messages         import load
 from golem_messages         import message
-import dateutil.parser
 
 from core.tests.utils       import ConcentIntegrationTestCase
 from core.models            import PendingResponse
@@ -467,6 +467,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # 4.1.
         self.deserialized_task_to_compute.sig = None
+        self.deserialized_task_to_compute.requestor_ethereum_public_key = None
+        self.deserialized_task_to_compute.provider_ethereum_public_key = None
         task_to_compute = self._sign_message(
             self.deserialized_task_to_compute,
             self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
@@ -691,8 +693,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response.status_code,                                                                                          200)
         self.assertEqual(force_report_computed_task_response.timestamp,                                                                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"))
         self.assertEqual(force_report_computed_task_response.reject_report_computed_task.timestamp,                                     self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
-        self.assertEqual(force_report_computed_task_response.reject_report_computed_task.cannot_compute_task.timestamp,                 reject_report_computed_task.cannot_compute_task.timestamp)
-        self.assertEqual(force_report_computed_task_response.reject_report_computed_task.cannot_compute_task.task_to_compute.timestamp, reject_report_computed_task.cannot_compute_task.task_to_compute.timestamp)
+        self.assertEqual(force_report_computed_task_response.reject_report_computed_task.cannot_compute_task.timestamp,                 reject_report_computed_task.cannot_compute_task.timestamp)  # pylint: disable=no-member
+        self.assertEqual(force_report_computed_task_response.reject_report_computed_task.cannot_compute_task.task_to_compute.timestamp, reject_report_computed_task.cannot_compute_task.task_to_compute.timestamp)  # pylint: disable=no-member
 
         self._assert_client_count_is_equal(2)
 
@@ -833,6 +835,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             self.deserialized_task_to_compute,
             self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
         )
+        task_to_compute.requestor_ethereum_public_key = None
 
         with freeze_time("2017-12-01 10:00:00"):
             cannot_compute_task = message.CannotComputeTask()
@@ -925,7 +928,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 task_to_compute=task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
-
         with freeze_time("2017-12-01 11:00:05"):
             response = self.client.post(
                 reverse('core:send'),
@@ -958,6 +960,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 5: Requestor rejects computed task due to CannotComputeTask or TaskFailure with correct key
         self.deserialized_task_to_compute.sig = None
         self.deserialized_task_to_compute.provider_id = None
+        self.deserialized_task_to_compute.requestor_ethereum_public_key = None
+        self.deserialized_task_to_compute.provider_ethereum_public_key = None
         self.deserialized_task_to_compute = self._sign_message(
             self.deserialized_task_to_compute,
             self.REQUESTOR_PRIVATE_KEY,

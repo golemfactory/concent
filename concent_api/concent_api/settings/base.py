@@ -232,6 +232,12 @@ PAYMENT_BACKEND = 'core.payments.mock'
 # A global constant defining the path to self-signed SSL certificate to storage cluster
 STORAGE_CLUSTER_SSL_CERTIFICATE_PATH = ''
 
+# A global constant defining amount of time needed for geth to create new chain segment
+CREATION_NEW_CHAIN_SEGMENT_TIME = 15  # seconds
+
+# A global constant defining address to geth client
+GETH_CONTAINER_ADDRESS = 'http://localhost:8545'
+
 # Which components of this Django application should be enabled in this particular server instance.
 # The application is basically a bunch of services with totally different responsibilites that share a lot of code.
 # In a typical setup each instance has only one or two features enabled. Some of them provide public APIs, others are

@@ -5,28 +5,20 @@ from django.urls            import reverse
 from freezegun              import freeze_time
 from golem_messages         import message
 
+from core.constants         import ETHEREUM_ADDRESS_LENGTH
 from core.models            import PendingResponse
 from core.tests.utils       import ConcentIntegrationTestCase
-from utils.helpers          import get_current_utc_timestamp
 from utils.testing_helpers  import generate_ecc_key_pair
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
-def _get_requestor_valid_list_of_transactions(current_time, request):  # pylint: disable=unused-argument
-    current_time = get_current_utc_timestamp()
-    return [{'timestamp': current_time - 3700}, {'timestamp': current_time - 3800}, {'timestamp': current_time - 3900}]
-
-
-def _get_payment_summary_positive(request, subtask_results_accepted_list, list_of_transactions, list_of_forced_payments):  # pylint: disable=unused-argument
-    return 1
-
-
 @override_settings(
     CONCENT_PRIVATE_KEY  = CONCENT_PRIVATE_KEY,
     CONCENT_PUBLIC_KEY   = CONCENT_PUBLIC_KEY,
     PAYMENT_DUE_TIME     = 10,  # seconds
+    CONCENT_ETHEREUM_ADDRESS = 'x' * ETHEREUM_ADDRESS_LENGTH
 )
 class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
     def test_provider_send_force_payment_and_concent_should_return_it_to_requestor_with_correct_keys(self):
@@ -40,22 +32,30 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         subtask_results_accepted_list = [
             self._get_deserialized_subtask_results_accepted(
                 timestamp       = "2018-02-05 10:00:15",
-                payment_ts      = "2018-02-05 12:00:00",
+                payment_ts      = "2018-02-05 11:55:00",
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp                       = "2018-02-05 10:00:00",
                     deadline                        = "2018-02-05 10:00:10",
                     task_id                         = '2',
-                    requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
+                    requestor_public_key            = self.REQUESTOR_PUBLIC_KEY,
+                    requestor_ethereum_public_key   = self._get_requestor_ethereum_public_key(),
+                    provider_public_key             = self.PROVIDER_PUBLIC_KEY,
+                    provider_ethereum_public_key    = self._get_provider_ethereum_public_key(),
+                    price                           = 15000,
                 )
             ),
             self._get_deserialized_subtask_results_accepted(
                 timestamp       = "2018-02-05 9:00:15",
-                payment_ts      = "2018-02-05 11:00:00",
+                payment_ts      = "2018-02-05 11:55:00",
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
                     task_id                         = '3',
-                    requestor_ethereum_public_key   = self._get_encoded_requestor_ethereum_public_key(),
+                    requestor_public_key            = self.REQUESTOR_PUBLIC_KEY,
+                    requestor_ethereum_public_key   = self._get_requestor_ethereum_public_key(),
+                    provider_public_key             = self.PROVIDER_PUBLIC_KEY,
+                    provider_ethereum_public_key    = self._get_provider_ethereum_public_key(),
+                    price                           = 7000,
                 )
             )
         ]
@@ -65,13 +65,17 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 12:00:20"):
-            with mock.patch('core.message_handlers.base.get_list_of_transactions', _get_requestor_valid_list_of_transactions):
-                with mock.patch('core.message_handlers.base.payment_summary', _get_payment_summary_positive):
+            with mock.patch('core.message_handlers.base.make_force_payment_to_provider', self._make_force_payment_to_provider):
+                fake_responses = [mock.Mock(), mock.Mock()]
+                fake_responses[0] = self._get_list_of_batch_transactions()
+                fake_responses[1] = self._get_list_of_force_transactions()
+                with mock.patch('core.message_handlers.base.get_list_of_payments', side_effect=fake_responses):
                     response_1 = self.client.post(
                         reverse('core:send'),
                         data                                = serialized_force_payment,
                         content_type                        = 'application/octet-stream',
                     )
+
         self._test_response(
             response_1,
             status       = 200,

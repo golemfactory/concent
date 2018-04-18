@@ -4,6 +4,7 @@ from golem_messages                 import message
 from golem_messages.cryptography    import ecdsa_verify
 from golem_messages.exceptions      import MessageError
 
+from core.constants                 import ETHEREUM_ADDRESS_LENGTH
 from core.constants                 import GOLEM_PUBLIC_KEY_LENGTH
 from core.constants                 import MESSAGE_TASK_ID_MAX_LENGTH
 from core.exceptions                import Http400
@@ -79,6 +80,7 @@ def validate_task_to_compute(task_to_compute: message.TaskToCompute):
 
     validate_public_key(task_to_compute.provider_public_key, 'provider_public_key')
     validate_public_key(task_to_compute.requestor_public_key, 'requestor_public_key')
+    validate_subtask_price_task_to_compute(task_to_compute)
 
 
 def validate_report_computed_task_time_window(report_computed_task):
@@ -144,3 +146,31 @@ def validate_golem_message_subtask_results_rejected(subtask_results_rejected: me
     if not isinstance(subtask_results_rejected,  message.tasks.SubtaskResultsRejected):
         raise Http400("subtask_results_rejected should be of type:  SubtaskResultsRejected")
     validate_task_to_compute(subtask_results_rejected.report_computed_task.task_to_compute)
+
+
+def validate_subtask_price_task_to_compute(task_to_compute: message.tasks.TaskToCompute):
+    if not isinstance(task_to_compute.price, int):
+        raise Http400("Price must be a integer")
+    if task_to_compute.price < 0:
+        raise Http400("Price cannot be a negative value")
+
+
+def validate_ethereum_addresses(requestor_ethereum_address, provider_ethereum_address):
+    if not isinstance(requestor_ethereum_address, str):
+        raise Http400("Requestor's ethereum address must be a string")
+
+    if not isinstance(provider_ethereum_address, str):
+        raise Http400("Provider's ethereum address must be a string")
+
+    if not len(requestor_ethereum_address) == ETHEREUM_ADDRESS_LENGTH:
+        raise Http400(f"Requestor's ethereum address must contains exactly {ETHEREUM_ADDRESS_LENGTH} characters ")
+
+    if not len(provider_ethereum_address) == ETHEREUM_ADDRESS_LENGTH:
+        raise Http400(f"Provider's ethereum address must contains exactly {ETHEREUM_ADDRESS_LENGTH} characters ")
+
+
+def validate_list_task_to_compute_ids(subtask_results_accepted_list):
+    subtask_ids = []
+    for task_to_compute in subtask_results_accepted_list:
+        subtask_ids.append(task_to_compute.subtask_id + ':' + task_to_compute.task_id)
+    return len(subtask_ids) == len(set(subtask_ids))

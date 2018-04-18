@@ -1,6 +1,7 @@
 from base64 import b64encode
 import datetime
 import functools
+import mock
 
 import dateutil.parser
 from django.conf import settings
@@ -12,13 +13,16 @@ from freezegun import freeze_time
 from golem_messages         import dump
 from golem_messages         import load
 from golem_messages         import message
+
 from core.models            import Client
 from core.models            import PendingResponse
 from core.models            import StoredMessage
 from core.models            import Subtask
 
 from utils.helpers          import sign_message
+from utils.helpers          import get_current_utc_timestamp
 from utils.testing_helpers  import generate_ecc_key_pair
+from utils.testing_helpers  import generate_priv_and_pub_eth_account_key
 
 
 class ConcentIntegrationTestCase(TestCase):
@@ -27,10 +31,14 @@ class ConcentIntegrationTestCase(TestCase):
         super().setUp()
 
         # Keys
-        (self.PROVIDER_PRIVATE_KEY,  self.PROVIDER_PUBLIC_KEY)    = generate_ecc_key_pair()
-        (self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY)   = generate_ecc_key_pair()
-        (self.DIFFERENT_PROVIDER_PRIVATE_KEY, self.DIFFERENT_PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
-        (self.DIFFERENT_REQUESTOR_PRIVATE_KEY, self.DIFFERENT_REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
+        (self.PROVIDER_PRIVATE_KEY,                 self.PROVIDER_PUBLIC_KEY)               = generate_ecc_key_pair()
+        (self.REQUESTOR_PRIVATE_KEY,                self.REQUESTOR_PUBLIC_KEY)              = generate_ecc_key_pair()
+        (self.DIFFERENT_PROVIDER_PRIVATE_KEY,       self.DIFFERENT_PROVIDER_PUBLIC_KEY)     = generate_ecc_key_pair()
+        (self.DIFFERENT_REQUESTOR_PRIVATE_KEY,      self.DIFFERENT_REQUESTOR_PUBLIC_KEY)    = generate_ecc_key_pair()
+        (self.PROVIDER_PRIV_ETH_KEY,                self.PROVIDER_PUB_ETH_KEY)              = generate_priv_and_pub_eth_account_key()
+        (self.REQUESTOR_PRIV_ETH_KEY,               self.REQUESTOR_PUB_ETH_KEY)             = generate_priv_and_pub_eth_account_key()
+        (self.DIFFERENT_PROVIDER_PRIV_ETH_KEY,      self.DIFFERENT_PROVIDER_PUB_ETH_KEY)    = generate_priv_and_pub_eth_account_key()
+        (self.DIFFERENT_REQUESTOR_PRIV_ETH_KEY,     self.DIFFERENT_REQUESTOR_PUB_ETH_KEY)   = generate_priv_and_pub_eth_account_key()
 
         # StoredMessage
         self.stored_message_counter = 0
@@ -54,13 +62,29 @@ class ConcentIntegrationTestCase(TestCase):
         """ Returns requestor public key encoded. """
         return self._get_encoded_key(self.DIFFERENT_REQUESTOR_PUBLIC_KEY)
 
-    def _get_encoded_requestor_ethereum_public_key(self):
-        """ Returns requestor ethereum public key encoded. """
-        return '0x' + self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY)
+    def _get_requestor_ethereum_private_key(self):
+        """ Return requestor private ethereum key """
+        return self.REQUESTOR_PRIV_ETH_KEY
 
-    def _get_encoded_requestor_ethereum_different_public_key(self):
+    def _get_requestor_ethereum_public_key(self):
         """ Returns requestor ethereum public key encoded. """
-        return '0x' + self._get_encoded_key(self.DIFFERENT_REQUESTOR_PUBLIC_KEY)
+        return self.REQUESTOR_PUB_ETH_KEY
+
+    def _get_requestor_ethereum_public_key_different(self):
+        """ Returns requestor ethereum public key encoded. """
+        return self.DIFFERENT_REQUESTOR_PUB_ETH_KEY
+
+    def _get_provider_ethereum_private_key(self):
+        """ Returns provider ethereum private key """
+        return self.PROVIDER_PRIV_ETH_KEY
+
+    def _get_provider_ethereum_public_key(self):
+        """ Returns provider ethereum address """
+        return self.PROVIDER_PUB_ETH_KEY
+
+    def _get_provider_ethereum_public_key_different(self):
+        """ Returns provider ethereum diffrent address """
+        return self.DIFFERENT_PROVIDER_PUB_ETH_KEY
 
     def _sign_message(self, golem_message, client_private_key = None):
         return sign_message(
@@ -119,6 +143,7 @@ class ConcentIntegrationTestCase(TestCase):
         requestor_public_key            = None,
         requestor_ethereum_public_key   = None,
         provider_public_key             = None,
+        provider_ethereum_public_key    = None,
         price                           = 0,
         sign_with_private_key           = None,
     ):
@@ -140,11 +165,16 @@ class ConcentIntegrationTestCase(TestCase):
                 requestor_public_key            = (
                     requestor_public_key if requestor_public_key is not None else self.REQUESTOR_PUBLIC_KEY
                 ),
-                requestor_ethereum_public_key   = requestor_ethereum_public_key,
+                requestor_ethereum_public_key   = (
+                    requestor_ethereum_public_key if requestor_ethereum_public_key is not None else self._get_requestor_ethereum_public_key()
+                ),
                 provider_public_key             = (
                     provider_public_key if provider_public_key is not None else self.PROVIDER_PUBLIC_KEY
                 ),
                 price=price,
+                provider_ethereum_public_key    = (
+                    provider_ethereum_public_key if provider_ethereum_public_key is not None else self._get_provider_ethereum_public_key()
+                ),
             )
             task_to_compute = self._sign_message(
                 task_to_compute,
@@ -709,3 +739,38 @@ class ConcentIntegrationTestCase(TestCase):
         return datetime.datetime.fromtimestamp(self._parse_iso_date_to_timestamp(base_time) + offset).strftime(
             '%Y-%m-%d %H:%M:%S'
         )
+
+    def _create_payment_object(self, amount, closure_time):  # pylint: disable=no-self-use
+        payment_item = mock.Mock()
+        payment_item.amount         = amount
+        payment_item.closure_time   = closure_time
+        return payment_item
+
+    def _get_list_of_batch_transactions(self, requestor_eth_address = None, provider_eth_address = None, payment_ts = None, current_time = None, transaction_type = None):  # pylint: disable=unused-argument
+        current_time = get_current_utc_timestamp()
+        item1 = self._create_payment_object(amount = 1000, closure_time = current_time - 4000)
+        item2 = self._create_payment_object(amount = 2000, closure_time = current_time - 3000)
+        item3 = self._create_payment_object(amount = 3000, closure_time = current_time - 2000)
+        item4 = self._create_payment_object(amount = 4000, closure_time = current_time - 1000)
+        return [item1, item2, item3, item4]
+
+    def _get_list_of_force_transactions(self, requestor_eth_address = None, provider_eth_address = None, payment_ts = None, current_time = None, transaction_type = None):  # pylint: disable=unused-argument
+        current_time = get_current_utc_timestamp()
+        item1 = self._create_payment_object(amount = 1000, closure_time = current_time - 2000)
+        item2 = self._create_payment_object(amount = 2000, closure_time = current_time - 1000)
+        return [item1, item2]
+
+    def _get_empty_list_of_transactions(self, requestor_eth_address = None, provider_eth_address = None, payment_ts = None, current_time = None, transaction_type = None):  # pylint: disable=no-self-use, unused-argument
+        return []
+
+    def _make_force_payment_to_provider(self, requestor_eth_address, provider_eth_address, value, payment_ts):  # pylint: disable=no-self-use, unused-argument
+        return None
+
+    def _get_number_of_eth_block(self):  # pylint: disable=no-self-use
+        return 200000
+
+    def _pass_rpc_synchronization(self, _rpc, _address, _tx_sign):  # pylint: disable=no-self-use
+        return None
+
+    def is_account_status_positive_true_mock(self, client_eth_address, pending_value):  # pylint: disable=unused-argument, no-self-use
+        return True

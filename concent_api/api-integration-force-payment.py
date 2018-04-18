@@ -4,7 +4,6 @@ import os
 import sys
 import random
 import time
-from base64                 import b64encode
 from freezegun              import freeze_time
 
 from golem_messages         import message
@@ -50,7 +49,8 @@ def task_to_compute(
     compute_task_def                = None,
     provider_public_key             = None,
     requestor_public_key            = None,
-    requestor_ethereum_public_key   = None
+    requestor_ethereum_public_key   = None,
+    price                           = 1000
 ):
     with freeze_time(timestamp):
         task_to_compute = message.tasks.TaskToCompute(
@@ -58,17 +58,19 @@ def task_to_compute(
             requestor_public_key=requestor_public_key if requestor_public_key is not None else REQUESTOR_PUBLIC_KEY,
             compute_task_def = compute_task_def,
             requestor_ethereum_public_key = requestor_ethereum_public_key,
-            price=0,
+            price=price,
         )
         sign_message(task_to_compute, REQUESTOR_PRIVATE_KEY)
         return task_to_compute
 
 
 def compute_task_def(
+    subtask_id  = None,
     task_id     = None,
     deadline    = None,
 ):
     compute_task_def = message.tasks.ComputeTaskDef()
+    compute_task_def['subtask_id']  = subtask_id
     compute_task_def['task_id']     = task_id
     compute_task_def['deadline']    = deadline
 
@@ -85,25 +87,27 @@ def main():
         subtask_results_accepted_list = [
             subtask_results_accepted(
                 timestamp       = timestamp_to_isoformat(current_time),
-                payment_ts      = current_time - cluster_consts.payment_due_time - 1,
+                payment_ts      = current_time - cluster_consts.payment_due_time - 10,
                 task_to_compute = task_to_compute(
                     timestamp                       = timestamp_to_isoformat(current_time),
-                    requestor_ethereum_public_key   = "0x" + b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                    requestor_ethereum_public_key   = "x" * 128,
                     compute_task_def                = compute_task_def(
                         deadline = current_time,
-                        task_id  = task_id + 'a'
+                        task_id  = task_id + 'a',
+                        subtask_id=task_id + 'A'
                     )
                 )
             ),
             subtask_results_accepted(
                 timestamp       = timestamp_to_isoformat(current_time),
-                payment_ts      = current_time - cluster_consts.payment_due_time - 1,
+                payment_ts      = current_time - cluster_consts.payment_due_time - 10,
                 task_to_compute = task_to_compute(
                     timestamp                       = timestamp_to_isoformat(current_time),
-                    requestor_ethereum_public_key   = "0x" + b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                    requestor_ethereum_public_key   = "x" * 128,
                     compute_task_def                = compute_task_def(
                         deadline = current_time,
-                        task_id  = task_id + 'b'
+                        task_id  = task_id + 'b',
+                        subtask_id=task_id + 'B'
                     )
                 )
             )
@@ -121,25 +125,27 @@ def main():
             subtask_results_accepted_list = [
                 subtask_results_accepted(
                     timestamp       = timestamp_to_isoformat(current_time),
-                    payment_ts      = current_time - cluster_consts.payment_due_time - 1,
+                    payment_ts      = current_time - cluster_consts.payment_due_time - 10,
                     task_to_compute = task_to_compute(
                         timestamp                       = timestamp_to_isoformat(current_time),
-                        requestor_ethereum_public_key   = "0x" + b64encode(REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                        requestor_ethereum_public_key   = "x" * 128,
                         compute_task_def                = compute_task_def(
                             deadline = current_time,
-                            task_id  = task_id + 'a'
+                            task_id  = task_id + 'a',
+                            subtask_id=task_id + 'A'
                         )
                     )
                 ),
                 subtask_results_accepted(
                     timestamp       = timestamp_to_isoformat(current_time),
-                    payment_ts      = current_time - cluster_consts.payment_due_time - 1,
+                    payment_ts      = current_time - cluster_consts.payment_due_time - 10,
                     task_to_compute = task_to_compute(
                         timestamp                       = timestamp_to_isoformat(current_time),
-                        requestor_ethereum_public_key   = "0x" + b64encode(DIFFERENT_REQUESTOR_PUBLIC_KEY).decode('ascii'),
+                        requestor_ethereum_public_key   = "y" * 128,
                         compute_task_def                = compute_task_def(
                             deadline = current_time,
-                            task_id  = task_id + 'b'
+                            task_id  = task_id + 'b',
+                            subtask_id=task_id + 'B'
                         )
                     )
                 )
@@ -163,7 +169,37 @@ def main():
         'send',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        correct_force_payment,
+        force_payment(
+            timestamp = timestamp_to_isoformat(current_time),
+            subtask_results_accepted_list = [
+                subtask_results_accepted(
+                    timestamp       = timestamp_to_isoformat(current_time),
+                    payment_ts      = current_time,
+                    task_to_compute = task_to_compute(
+                        timestamp                       = timestamp_to_isoformat(current_time),
+                        requestor_ethereum_public_key   = "x" * 128,
+                        compute_task_def                = compute_task_def(
+                            deadline = current_time,
+                            task_id  = task_id + 'a',
+                            subtask_id=task_id + 'A'
+                        )
+                    )
+                ),
+                subtask_results_accepted(
+                    timestamp       = timestamp_to_isoformat(current_time),
+                    payment_ts      = current_time,
+                    task_to_compute = task_to_compute(
+                        timestamp                       = timestamp_to_isoformat(current_time),
+                        requestor_ethereum_public_key   = "x" * 128,
+                        compute_task_def                = compute_task_def(
+                            deadline = current_time,
+                            task_id  = task_id + 'b',
+                            subtask_id=task_id + 'B'
+                        )
+                    )
+                )
+            ]
+        ),
 
         headers = {
             'Content-Type':                     'application/octet-stream',
@@ -177,13 +213,44 @@ def main():
     )
 
     #  Test CASE 2C - Send ForcePayment with no value to be paid
-    correct_force_payment.sig = None
     api_request(
         cluster_url,
         'send',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        correct_force_payment,
+        force_payment(
+            timestamp = timestamp_to_isoformat(current_time),
+            subtask_results_accepted_list = [
+                subtask_results_accepted(
+                    timestamp       = timestamp_to_isoformat(current_time),
+                    payment_ts      = current_time,
+                    task_to_compute = task_to_compute(
+                        timestamp                       = timestamp_to_isoformat(current_time),
+                        requestor_ethereum_public_key   = "x" * 128,
+                        price=0,
+                        compute_task_def                = compute_task_def(
+                            deadline = current_time,
+                            task_id  = task_id + 'a',
+                            subtask_id=task_id + 'A'
+                        )
+                    )
+                ),
+                subtask_results_accepted(
+                    timestamp       = timestamp_to_isoformat(current_time),
+                    payment_ts      = current_time,
+                    task_to_compute = task_to_compute(
+                        timestamp                       = timestamp_to_isoformat(current_time),
+                        requestor_ethereum_public_key   = "x" * 128,
+                        price=0,
+                        compute_task_def                = compute_task_def(
+                            deadline = current_time,
+                            task_id  = task_id + 'b',
+                            subtask_id=task_id + 'B'
+                        )
+                    )
+                )
+            ]
+        ),
 
         headers = {
             'Content-Type':                     'application/octet-stream',

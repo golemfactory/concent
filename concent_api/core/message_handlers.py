@@ -28,6 +28,7 @@ from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import verify_message_subtask_results_accepted
 from core.transfer_operations import store_pending_message
 from core.transfer_operations import create_file_transfer_token
+from core.payments.sci_backend import TransactionType
 from core.validation import validate_ethereum_addresses
 from core.validation import validate_golem_message_signed_with_key
 from core.validation import validate_golem_message_subtask_results_rejected
@@ -599,7 +600,7 @@ def handle_send_force_payment(client_message: message.concents.ForcePayment) -> 
         provider_eth_address    = provider_eth_address,
         payment_ts              = oldest_payments_ts,
         current_time            = current_time,
-        transaction_type        = 'Batch',
+        transaction_type        = TransactionType.BATCH,
     )
 
     # Concent defines time T1 equal to youngest timestamp from list of transactions.
@@ -625,7 +626,7 @@ def handle_send_force_payment(client_message: message.concents.ForcePayment) -> 
         provider_eth_address    = provider_eth_address,
         payment_ts              = oldest_payments_ts + settings.PAYMENT_DUE_TIME,  # Im not sure, check it please
         current_time            = current_time,
-        transaction_type        = 'Force',
+        transaction_type        = TransactionType.FORCE,
     )
 
     (amount_paid, amount_pending) = sum_amount_price_for_provider(

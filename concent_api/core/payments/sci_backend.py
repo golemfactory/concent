@@ -1,4 +1,6 @@
 import math
+from enum import Enum
+
 from django.conf    import settings
 
 from core.constants import ETHEREUM_ADDRESS_LENGTH
@@ -20,19 +22,19 @@ def get_list_of_payments(
     assert isinstance(provider_eth_address,     str) and len(provider_eth_address)  == ETHEREUM_ADDRESS_LENGTH
     assert isinstance(payment_ts,               int) and payment_ts     >= 0
     assert isinstance(current_time,             int) and current_time   > 0
-    assert isinstance(transaction_type,         str) and transaction_type in ['Force', 'Batch']
+    assert isinstance(transaction_type,         Enum) and transaction_type in TransactionType
 
     chain_segment_amount    = math.ceil((current_time - payment_ts) / settings.CREATION_NEW_CHAIN_SEGMENT_TIME)
     from_block              = Concent_RPC().get_block_number() - chain_segment_amount  # type: ignore  # pylint: disable=no-member
 
-    if transaction_type == 'Force':
+    if transaction_type == TransactionType.FORCE:
         payments_list = Concent_RPC().get_forced_payments(  # type: ignore  # pylint: disable=no-member
             requestor_address   = requestor_eth_address,
             provider_address    = provider_eth_address,
             from_block          = from_block,
             to_block            = Concent_RPC().get_block_number(),  # type: ignore  # pylint: disable=no-member
         )
-    elif transaction_type == 'Batch':
+    elif transaction_type == TransactionType.BATCH:
         payments_list = Concent_RPC().get_batch_transfers(  # type: ignore  # pylint: disable=no-member
             payer_address   = requestor_eth_address,
             payee_address   = provider_eth_address,
@@ -80,3 +82,8 @@ def is_account_status_positive(
     client_acc_balance = Concent_RPC().get_deposit_value(client_eth_address)  # type: ignore  # pylint: disable=no-member
 
     return client_acc_balance > pending_value
+
+
+class TransactionType(Enum):
+    BATCH = 'batch'
+    FORCE = 'force'

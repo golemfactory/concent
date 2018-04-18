@@ -1,6 +1,6 @@
 from django.test                import override_settings
 from django.test                import TestCase
-from concent_api.system_check   import creation_new_chain_segment_time_check
+from concent_api.system_check   import average_block_time_check
 from concent_api.system_check   import create_error_15_if_new_chain_segment_time_not_integer
 from concent_api.system_check   import create_error_16_if_new_chain_segment_time_is_not_bigger_than_0
 from concent_api.system_check   import create_error_17_if_geth_container_address_has_wrong_value
@@ -16,48 +16,48 @@ class SystemCheckTest(TestCase):
         self.error_wrong_value = create_error_17_if_geth_container_address_has_wrong_value()
 
     @override_settings(
-        CREATION_NEW_CHAIN_SEGMENT_TIME = ''
+        AVERAGE_BLOCK_TIME = ''
     )
-    def test_creation_new_chain_segment_time_check_return_error_if_setting_is_empty(self):
+    def test_average_block_time_check_return_error_if_setting_is_empty(self):
 
-        errors = creation_new_chain_segment_time_check(None)
+        errors = average_block_time_check(None)
 
         self.assertEqual(self.error_not_integer, errors[0])
 
     @override_settings(
-        CREATION_NEW_CHAIN_SEGMENT_TIME = '5'
+        AVERAGE_BLOCK_TIME = '5'
     )
-    def test_creation_new_chain_segment_time_check_return_error_if_setting_is_a_string(self):
+    def test_average_block_time_check_return_error_if_setting_is_a_string(self):
 
-        errors = creation_new_chain_segment_time_check(None)
+        errors = average_block_time_check(None)
 
         self.assertEqual(self.error_not_integer, errors[0])
 
     @override_settings(
-        CREATION_NEW_CHAIN_SEGMENT_TIME = -1
+        AVERAGE_BLOCK_TIME = -1
     )
-    def test_creation_new_chain_segment_time_check_return_error_if_setting_less_than_0(self):
+    def test_average_block_time_check_return_error_if_setting_less_than_0(self):
         error_lesser_than_0 = create_error_16_if_new_chain_segment_time_is_not_bigger_than_0()
 
-        errors = creation_new_chain_segment_time_check(None)
+        errors = average_block_time_check(None)
 
         self.assertEqual(error_lesser_than_0, errors[0])
 
     @override_settings(
-        CREATION_NEW_CHAIN_SEGMENT_TIME = 0
+        AVERAGE_BLOCK_TIME = 0
     )
-    def test_creation_new_chain_segment_time_check_return_error_if_setting_is_0(self):
+    def test_average_block_time_check_return_error_if_setting_is_0(self):
         error_setting_is_0 = create_error_16_if_new_chain_segment_time_is_not_bigger_than_0()
 
-        errors = creation_new_chain_segment_time_check(None)
+        errors = average_block_time_check(None)
 
         self.assertEqual(error_setting_is_0, errors[0])
 
     @override_settings(
-        CREATION_NEW_CHAIN_SEGMENT_TIME = 15
+        AVERAGE_BLOCK_TIME = 15
     )
-    def test_creation_new_chain_segment_time_check_return_none_when_setting_has_correct_value(self):
-        errors = creation_new_chain_segment_time_check(None)
+    def test_average_block_time_check_return_none_when_setting_has_correct_value(self):
+        errors = average_block_time_check(None)
 
         self.assertEqual(errors, [])
 

@@ -24,7 +24,7 @@ def get_list_of_payments(
     assert isinstance(current_time,             int) and current_time   > 0
     assert isinstance(transaction_type,         Enum) and transaction_type in TransactionType
 
-    chain_segment_amount    = math.ceil((current_time - payment_ts) / settings.CREATION_NEW_CHAIN_SEGMENT_TIME)
+    block_distance = math.ceil((current_time - payment_ts) / settings.AVERAGE_BLOCK_TIME)
     last_block_before_payment = ConcentRPC().get_block_number() - block_distance  # type: ignore  # pylint: disable=no-member
 
     if transaction_type == TransactionType.FORCE:

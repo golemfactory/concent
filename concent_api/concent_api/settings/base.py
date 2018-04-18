@@ -233,7 +233,7 @@ PAYMENT_BACKEND = 'core.payments.mock'
 STORAGE_CLUSTER_SSL_CERTIFICATE_PATH = ''
 
 # A global constant defining amount of time needed for geth to create new chain segment
-CREATION_NEW_CHAIN_SEGMENT_TIME = 15  # seconds
+AVERAGE_BLOCK_TIME = 15  # seconds
 
 # A global constant defining address to geth client
 GETH_CONTAINER_ADDRESS = 'http://localhost:8545'

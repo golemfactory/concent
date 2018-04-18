@@ -233,10 +233,10 @@ PAYMENT_BACKEND = 'core.payments.mock'
 STORAGE_CLUSTER_SSL_CERTIFICATE_PATH = ''
 
 # A global constant defining amount of time needed for geth to create new chain segment
-AVERAGE_BLOCK_TIME = 15  # seconds
+# AVERAGE_BLOCK_TIME = 15  # seconds
 
 # A global constant defining address to geth client
-GETH_CONTAINER_ADDRESS = 'http://localhost:8545'
+# GETH_CONTAINER_ADDRESS = 'http://localhost:8545'
 
 # Which components of this Django application should be enabled in this particular server instance.
 # The application is basically a bunch of services with totally different responsibilites that share a lot of code.

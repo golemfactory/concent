@@ -108,14 +108,13 @@ def store_pending_message(
 
 def create_file_transfer_token_for_concent(
     report_computed_task: message.tasks.ReportComputedTask,
-    authorized_client_public_key: bytes,
     operation: FileTransferToken.Operation,
     should_add_source: bool = False,
 ) -> FileTransferToken:
     ten_minutes = 600
     return _create_file_transfer_token(
         report_computed_task,
-        authorized_client_public_key,
+        settings.CONCENT_PUBLIC_KEY,
         operation,
         ten_minutes,
         should_add_source=should_add_source,
@@ -220,7 +219,6 @@ def request_upload_status(report_computed_task: message.ReportComputedTask) -> b
 
     file_transfer_token = create_file_transfer_token_for_concent(
         report_computed_task,
-        settings.CONCENT_PUBLIC_KEY,
         FileTransferToken.Operation.download
     )
 
@@ -253,15 +251,21 @@ def request_upload_status(report_computed_task: message.ReportComputedTask) -> b
         raise exceptions.UnexpectedResponse(f'Cluster storage returned HTTP {cluster_storage_response.status_code}')
 
 
-def send_request_to_cluster_storage(headers, request_http_address):
+def send_request_to_cluster_storage(headers, request_http_address, method='head'):
+    assert method in ['get', 'head']
+
+    stream = True if method == 'get' else False
+
     if settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH != '':
-        return requests.head(
+        return getattr(requests, method)(
             request_http_address,
             headers=headers,
             verify=settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH,
+            stream=stream,
         )
 
-    return requests.head(
+    return getattr(requests, method)(
         request_http_address,
-        headers=headers
+        headers=headers,
+        stream=stream,
     )

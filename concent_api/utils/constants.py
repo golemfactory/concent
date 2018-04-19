@@ -2,7 +2,6 @@ import enum
 
 
 class ErrorCode(enum.Enum):
-    REQUEST_BODY_NOT_EMPTY                                              = 'request_body.not_empty'
     AUTH_CLIENT_AUTH_MESSAGE_MISSING                                    = 'header.client_public_key.missing'
     AUTH_CLIENT_AUTH_MESSAGE_INVALID                                    = 'header.client_public_key.invalid'
     HEADER_AUTHORIZATION_MISSING                                        = 'header.authorization.missing'
@@ -52,4 +51,6 @@ class ErrorCode(enum.Enum):
     QUEUE_SUBTASK_STATE_TRANSITION_NOT_ALLOWED                          = 'queue.subtask_state_transition_not_allowed'
     QUEUE_TIMEOUT                                                       = 'queue.timeout'
     QUEUE_WRONG_STATE                                                   = 'queue.wrong_state'
+    REQUEST_BODY_NOT_EMPTY                                              = 'request_body.not_empty'
     SUBTASK_DUPLICATE_REQUEST                                           = 'subtask.duplicate_request'
+    VERIFIIER_FILE_DOWNLOAD_FAILED                                      = 'verifier.file_download_failed'

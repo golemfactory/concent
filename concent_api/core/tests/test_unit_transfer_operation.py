@@ -105,7 +105,6 @@ class FileTransferTokenCreationTest(TestCase):
 
         token = create_file_transfer_token_for_concent(
             report_computed_task,
-            self.authorized_client_public_key,
             FileTransferToken.Operation.download
         )
         self.assertTrue(token.timestamp < token.token_expiration_deadline)

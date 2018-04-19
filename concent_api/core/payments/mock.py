@@ -8,4 +8,4 @@ def make_force_payment_to_provider(requestor_eth_address = None, provider_eth_ad
 
 
 def is_account_status_positive(client_eth_address = None, pending_value = None):  # pylint: disable=unused-argument
-    return False
+    return pending_value > 0

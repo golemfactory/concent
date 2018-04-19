@@ -211,7 +211,7 @@ def handle_send_reject_report_computed_task(client_message):
             client_message.task_failure,
             provider_public_key,
         )
-        tasks_to_compute.append(client_message.cannot_compute_task.task_to_compute)
+        tasks_to_compute.append(client_message.task_failure.task_to_compute)
 
     try:
         subtask = Subtask.objects.get(

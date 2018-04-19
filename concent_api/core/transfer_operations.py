@@ -1,6 +1,7 @@
 import datetime
 
 from base64 import b64encode
+from typing import Optional
 
 import requests
 
@@ -18,6 +19,7 @@ from core.models import Subtask
 from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
 from utils import logging
 from utils.helpers import deserialize_message
+from utils.helpers import get_current_utc_timestamp
 from utils.helpers import get_storage_file_path
 from utils.helpers import sign_message
 
@@ -37,12 +39,7 @@ def verify_file_status(
 
     for get_task_result in force_get_task_result_list:
         report_computed_task    = deserialize_message(get_task_result.report_computed_task.data.tobytes())
-        file_transfer_token     = create_file_transfer_token(
-            report_computed_task,
-            client_public_key,
-            FileTransferToken.Operation.upload
-        )
-        if request_upload_status(file_transfer_token, report_computed_task):
+        if request_upload_status(report_computed_task):
             subtask               = get_task_result
             subtask.state         = Subtask.SubtaskState.RESULT_UPLOADED.name  # pylint: disable=no-member
             subtask.next_deadline = None
@@ -102,33 +99,73 @@ def store_pending_message(
     )
 
 
-def create_file_transfer_token(
+def create_file_transfer_token_for_concent(
+    report_computed_task: message.tasks.ReportComputedTask,
+    authorized_client_public_key: bytes,
+    operation: FileTransferToken.Operation,
+) -> FileTransferToken:
+    ten_minutes = 600
+    return _create_file_transfer_token(
+        report_computed_task,
+        authorized_client_public_key,
+        operation,
+        ten_minutes,
+    )
+
+
+def create_file_transfer_token_for_golem_client(
     report_computed_task:       message.tasks.ReportComputedTask,
     authorized_client_public_key: bytes,
     operation:                  FileTransferToken.Operation,
 ) -> FileTransferToken:
+    return _create_file_transfer_token(
+        report_computed_task,
+        authorized_client_public_key,
+        operation,
+    )
+
+
+def _create_file_transfer_token(
+    report_computed_task: message.tasks.ReportComputedTask,
+    authorized_client_public_key: bytes,
+    operation: FileTransferToken.Operation,
+    deadline: Optional[int] = None
+
+) -> FileTransferToken:
     """
     Function to create FileTransferToken from ReportComputedTask message
     """
+    def calculate_token_expiration_deadline(
+        operation: FileTransferToken.Operation,
+        deadline: Optional[int],
+    ) -> int:
+        if deadline is not None:
+            token_expiration_deadline = get_current_utc_timestamp() + deadline
+        else:
+            if operation == FileTransferToken.Operation.upload:
+                token_expiration_deadline = (
+                        report_computed_task.task_to_compute.compute_task_def['deadline'] +
+                        3 * settings.CONCENT_MESSAGING_TIME +
+                        2 * settings.MAXIMUM_DOWNLOAD_TIME
+                )
+
+            elif operation == FileTransferToken.Operation.download:
+                token_expiration_deadline = (
+                        report_computed_task.task_to_compute.compute_task_def['deadline'] +
+                        settings.SUBTASK_VERIFICATION_TIME
+                )
+        return token_expiration_deadline
+
     task_id         = report_computed_task.task_to_compute.compute_task_def['task_id']
     subtask_id      = report_computed_task.task_to_compute.compute_task_def['subtask_id']
     file_path       = get_storage_file_path(task_id, subtask_id)
 
     assert isinstance(authorized_client_public_key, bytes)
+    assert isinstance(deadline, int) and not isinstance(deadline, bool) or deadline is None
     assert operation in [FileTransferToken.Operation.download, FileTransferToken.Operation.upload]
-    if operation == FileTransferToken.Operation.upload:
-        token_expiration_deadline = (
-            report_computed_task.task_to_compute.compute_task_def['deadline'] +
-            3 * settings.CONCENT_MESSAGING_TIME +
-            2 * settings.MAXIMUM_DOWNLOAD_TIME
-        )
-    elif operation == FileTransferToken.Operation.download:
-        token_expiration_deadline = (
-            report_computed_task.task_to_compute.compute_task_def['deadline'] +
-            settings.SUBTASK_VERIFICATION_TIME
-        )
+
     file_transfer_token = FileTransferToken(
-        token_expiration_deadline       = token_expiration_deadline,
+        token_expiration_deadline       = calculate_token_expiration_deadline(operation, deadline),
         storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
         authorized_client_public_key    = authorized_client_public_key,
         operation                       = operation,
@@ -144,27 +181,18 @@ def create_file_transfer_token(
     return file_transfer_token
 
 
-def request_upload_status(
-    file_transfer_token_from_database:    FileTransferToken,
-    report_computed_task:                 message.ReportComputedTask
-) -> bool:
+def request_upload_status(report_computed_task: message.ReportComputedTask) -> bool:
     slash = '/'
-    assert len(file_transfer_token_from_database.files) == 1
-    assert not file_transfer_token_from_database.files[0]['path'].startswith(slash)
     assert settings.STORAGE_CLUSTER_ADDRESS.endswith(slash)
 
-    file_transfer_token = create_file_transfer_token(
+    file_transfer_token = create_file_transfer_token_for_concent(
         report_computed_task,
         settings.CONCENT_PUBLIC_KEY,
         FileTransferToken.Operation.download
     )
 
-    assert file_transfer_token.timestamp <= file_transfer_token.token_expiration_deadline  # pylint: disable=no-member
-
-    file_transfer_token.files                 = [FileTransferToken.FileInfo()]
-    file_transfer_token.files[0]['path']      = file_transfer_token_from_database.files[0]['path']
-    file_transfer_token.files[0]['checksum']  = file_transfer_token_from_database.files[0]['checksum']
-    file_transfer_token.files[0]['size']      = file_transfer_token_from_database.files[0]['size']
+    assert len(file_transfer_token.files) == 1
+    assert not file_transfer_token.files[0]['path'].startswith(slash)
 
     file_transfer_token.sig = None
     dumped_file_transfer_token = shortcuts.dump(file_transfer_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)

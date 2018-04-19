@@ -1,12 +1,9 @@
 from django.test import override_settings
 import mock
 
-from golem_messages.message import FileTransferToken
-
 from core.tests.utils import ConcentIntegrationTestCase
 from core.exceptions import UnexpectedResponse
 
-from core.transfer_operations import create_file_transfer_token
 from core.transfer_operations import request_upload_status
 
 from utils.testing_helpers import generate_ecc_key_pair
@@ -47,31 +44,17 @@ class RequestUploadStatusTest(ConcentIntegrationTestCase):
                 subtask_id                      = '1',
             )
         )
-        file_transfer_token = create_file_transfer_token(
-            report_computed_task,
-            self.REQUESTOR_PUBLIC_KEY,
-            FileTransferToken.Operation.upload,
-        )
 
         with mock.patch('core.transfer_operations.send_request_to_cluster_storage', mock_send_request_to_cluster_correct_response):
-            cluster_response = request_upload_status(
-                file_transfer_token,
-                report_computed_task,
-            )
+            cluster_response = request_upload_status(report_computed_task)
 
         self.assertEqual(cluster_response, True)
 
         with mock.patch('core.transfer_operations.send_request_to_cluster_storage', mock_send_incorrect_request_to_cluster_incorrect_response):
-            cluster_response_2 = request_upload_status(
-                file_transfer_token,
-                report_computed_task,
-            )
+            cluster_response_2 = request_upload_status(report_computed_task)
 
         self.assertEqual(cluster_response_2, False)
 
         with self.assertRaises(UnexpectedResponse):
             with mock.patch('core.transfer_operations.send_request_to_cluster_storage', mock_send_incorrect_request_to_cluster_unexpected_response):
-                request_upload_status(
-                    file_transfer_token,
-                    report_computed_task,
-                )
+                request_upload_status(report_computed_task)

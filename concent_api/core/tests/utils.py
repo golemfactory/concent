@@ -157,7 +157,7 @@ class ConcentIntegrationTestCase(TestCase):
             elif isinstance(deadline, str):
                 compute_task_def['deadline'] = self._parse_iso_date_to_timestamp(deadline)
             else:
-                compute_task_def['deadline'] = self._parse_iso_date_to_timestamp(self._get_timestamp_string())
+                compute_task_def['deadline'] = self._parse_iso_date_to_timestamp(self._get_timestamp_string()) + 10
 
         with freeze_time(timestamp or self._get_timestamp_string()):
             task_to_compute = message.TaskToCompute(

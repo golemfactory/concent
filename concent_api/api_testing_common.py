@@ -146,7 +146,10 @@ def api_request(
     validate_content_type(response.headers['Content-Type'], expected_content_type)
     validate_response_message(response.content, expected_message_type, private_key, public_key)
     print()
-    return response
+    if response.status_code == 204:
+        return None
+    else:
+        return try_to_decode_golem_message(private_key, public_key, response.content)
 
 
 def _print_response(private_key, public_key, response):

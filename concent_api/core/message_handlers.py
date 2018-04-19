@@ -1188,7 +1188,7 @@ def handle_send_subtask_results_verify(
         file_transfer_token=create_file_transfer_token(
             subtask_results_rejected.report_computed_task,
             encoded_client_public_key,
-            "upload"
+            FileTransferToken.Operation.upload,
         ),
     )
     return ack_subtask_results_verify

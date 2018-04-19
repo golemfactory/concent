@@ -58,6 +58,15 @@ def create_error_17_if_geth_container_address_has_wrong_value():
     )
 
 
+def create_error_18_atomic_requests_not_set_for_database(database_name):
+    return Error(
+        f"ATOMIC_REQUESTS for database {database_name} is not set to True",
+        hint="ATOMIC_REQUESTS must be set to True for all databases because our views rely on the fact that on errors "
+             "all database changes are rolled back",
+        id="concent.E018",
+    )
+
+
 @register()
 def check_settings_concent_features(app_configs, **kwargs):  # pylint: disable=unused-argument
 
@@ -188,3 +197,13 @@ def geth_container_address_check(app_configs, **kwargs):  # pylint: disable=unus
         else:
             return [create_error_17_if_geth_container_address_has_wrong_value()]
     return []
+
+
+@register
+def check_atomic_requests(app_configs = None, **kwargs):  # pylint: disable=unused-argument
+    errors = []
+    if hasattr(settings, 'DATABASES') and isinstance(settings.DATABASES, dict):
+        for database_name, database_config in settings.DATABASES.items():
+            if 'ATOMIC_REQUESTS' not in database_config or database_config['ATOMIC_REQUESTS'] is not True:
+                errors.append(create_error_18_atomic_requests_not_set_for_database(database_name))
+    return errors

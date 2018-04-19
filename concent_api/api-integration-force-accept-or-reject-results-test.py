@@ -46,13 +46,13 @@ def ack_report_computed_task(timestamp = None, report_computed_task = None):
         )
 
 
-def task_to_compute(timestamp = None, compute_task_def = None, provider_public_key = None, requestor_public_key = None):
+def task_to_compute(timestamp = None, compute_task_def = None, provider_public_key = None, requestor_public_key = None, price = 0):
     with freeze_time(timestamp):
         task_to_compute = message.tasks.TaskToCompute(
             provider_public_key = provider_public_key if provider_public_key is not None else PROVIDER_PUBLIC_KEY,
             requestor_public_key = requestor_public_key if requestor_public_key is not None else REQUESTOR_PUBLIC_KEY,
             compute_task_def = compute_task_def,
-            price=0,
+            price=price,
         )
         sign_message(task_to_compute, REQUESTOR_PRIVATE_KEY)
         return task_to_compute
@@ -142,6 +142,7 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts, cluster_url, 
                 timestamp=timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time)),
                 report_computed_task=report_computed_task(
                     task_to_compute=task_to_compute(
+                        price=1,
                         timestamp=timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
                         compute_task_def=compute_task_def(
                             task_id=task_id,
@@ -183,6 +184,7 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts, cluster_url, 
                 report_computed_task=report_computed_task(
                     timestamp=timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time)),
                     task_to_compute=task_to_compute(
+                        price=1,
                         timestamp=timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
                         compute_task_def=compute_task_def(
                             deadline=current_time - (cluster_consts.subtask_verification_time),
@@ -231,6 +233,7 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts, cluster_url, 
                 timestamp=timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time * 1.4)),
                 report_computed_task=report_computed_task(
                     task_to_compute=task_to_compute(
+                        price=1,
                         timestamp=timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
                         compute_task_def=compute_task_def(
                             task_id=task_id,
@@ -260,6 +263,7 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts, cluster_url, 
                 timestamp=timestamp_to_isoformat(current_time),
                 payment_ts=timestamp_to_isoformat(current_time + 1),
                 task_to_compute=task_to_compute(
+                    price=1,
                     timestamp=timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
                     compute_task_def=compute_task_def(
                         task_id=task_id,
@@ -306,6 +310,7 @@ def test_case_2c_wrong_timestamps(cluster_consts, cluster_url, test_id):
                 timestamp=timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time * 1.4)),
                 report_computed_task=report_computed_task(
                     task_to_compute=task_to_compute(
+                        price=1,
                         timestamp=timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
                         compute_task_def=compute_task_def(
                             task_id=task_id,
@@ -379,6 +384,7 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts, cluster_u
                 timestamp=timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time * 1.4)),
                 report_computed_task=report_computed_task(
                     task_to_compute=task_to_compute(
+                        price=1,
                         timestamp=timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
                         compute_task_def=compute_task_def(
                             task_id=task_id,
@@ -408,6 +414,7 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts, cluster_u
                 timestamp=timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time * 1.4)),
                 report_computed_task=report_computed_task(
                     task_to_compute=task_to_compute(
+                        price=1,
                         timestamp=timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
                         compute_task_def=compute_task_def(
                             task_id=task_id,

@@ -114,7 +114,7 @@ def parse_headers(request: WSGIRequest, path_to_file: str) -> Union[FileTransfer
         client_authorization = load(
             b64decode(request.META['HTTP_CONCENT_AUTH'], validate=True),
             settings.CONCENT_PRIVATE_KEY,
-            settings.CONCENT_PUBLIC_KEY,
+            loaded_golem_message.authorized_client_public_key,
         )
         concent_client_public_key = b64encode(client_authorization.client_public_key).decode('ascii')
     except (MessageError, TypeError):

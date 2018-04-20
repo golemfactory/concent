@@ -233,10 +233,18 @@ PAYMENT_BACKEND = 'core.payments.mock'
 STORAGE_CLUSTER_SSL_CERTIFICATE_PATH = ''
 
 # A global constant defining amount of time needed for geth to create new chain segment
-CREATION_NEW_CHAIN_SEGMENT_TIME = 15  # seconds
+# AVERAGE_BLOCK_TIME = 15  # seconds
 
 # A global constant defining address to geth client
-GETH_CONTAINER_ADDRESS = 'http://localhost:8545'
+# GETH_CONTAINER_ADDRESS = 'http://localhost:8545'
+
+# A global constant defining Concent ethereum contract address
+# Stored in a 'string' 0x...
+# CONCENT_ETHEREUM_ADDRESS = ''
+
+# A global constant defining Concent ethereum private key
+# Stored in a 'bytes' array, e.g. b'\xf3\x97\x19\xcdX\xda...'
+# CONCENT_ETHEREUM_PRIVATE_KEY = ''
 
 # Which components of this Django application should be enabled in this particular server instance.
 # The application is basically a bunch of services with totally different responsibilites that share a lot of code.

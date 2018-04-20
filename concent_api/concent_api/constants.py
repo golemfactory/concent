@@ -4,6 +4,7 @@ from django.conf.urls import url, include
 from django.contrib   import admin
 
 import core.urls
+import conductor.urls
 import gatekeeper.urls
 
 AVAILABLE_CONCENT_FEATURES = OrderedDict([
@@ -25,6 +26,15 @@ AVAILABLE_CONCENT_FEATURES = OrderedDict([
         ],
     }),
 
+    ("conductor-urls", {
+        "required_django_apps": [
+            "conductor",
+        ],
+        "url_patterns":         [
+            url(r'^conductor/', include(conductor.urls, namespace='conductor')),
+        ],
+    }),
+
     ("gatekeeper", {
         "required_django_apps": [
             "gatekeeper",
@@ -34,3 +44,14 @@ AVAILABLE_CONCENT_FEATURES = OrderedDict([
         ],
     }),
 ])
+
+
+# Defines which database should be used for which app label
+APP_LABEL_TO_DATABASE = {
+    'auth':         'default',
+    'admin':        'default',
+    'contenttypes': 'default',
+    'core':         'default',
+    'conductor':    'storage',
+    'sessions':     'default',
+}

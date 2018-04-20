@@ -15,6 +15,16 @@ DATABASES = {
         'TEST': {
             'NAME': 'test_concent_api'
         }
+    },
+    'storage': {
+        # NAME intentionally left unset, in case tests try to access the production database.
+        # This could happen e.g. if someone executes a query at module level.
+        'ENGINE':          'django.db.backends.postgresql_psycopg2',
+        'USER':            'postgres',
+        'ATOMIC_REQUESTS': True,
+        'TEST': {
+            'NAME': 'test_storage'
+        }
     }
 }
 
@@ -31,6 +41,7 @@ LOGGING = {
 
 CONCENT_FEATURES = [
     "concent-api",
+    "conductor-urls",
     "gatekeeper",
     "admin-panel",
 ]

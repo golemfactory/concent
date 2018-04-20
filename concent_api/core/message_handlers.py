@@ -24,11 +24,11 @@ from core.models import PendingResponse
 from core.models import StoredMessage
 from core.models import Subtask
 from core.payments import base
+from core.payments.sci_backend import TransactionType
 from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import verify_message_subtask_results_accepted
 from core.transfer_operations import store_pending_message
-from core.transfer_operations import create_file_transfer_token
-from core.payments.sci_backend import TransactionType
+from core.transfer_operations import create_file_transfer_token_for_golem_client
 from core.validation import validate_ethereum_addresses
 from core.validation import validate_golem_message_signed_with_key
 from core.validation import validate_golem_message_subtask_results_rejected
@@ -841,7 +841,7 @@ def handle_messages_from_database(
 
     elif pending_response.response_type == PendingResponse.ResponseType.ForceGetTaskResultUpload.name:  # pylint: disable=no-member
         report_computed_task    = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
-        file_transfer_token     = create_file_transfer_token(
+        file_transfer_token     = create_file_transfer_token_for_golem_client(
             report_computed_task,
             client_public_key,
             FileTransferToken.Operation.upload,
@@ -858,7 +858,7 @@ def handle_messages_from_database(
 
     elif pending_response.response_type == PendingResponse.ResponseType.ForceGetTaskResultDownload.name:  # pylint: disable=no-member
         report_computed_task    = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
-        file_transfer_token     = create_file_transfer_token(
+        file_transfer_token     = create_file_transfer_token_for_golem_client(
             report_computed_task,
             client_public_key,
             FileTransferToken.Operation.download,
@@ -1186,7 +1186,7 @@ def handle_send_subtask_results_verify(
     encoded_client_public_key = b64encode(provider_public_key)
     ack_subtask_results_verify = message.concents.AckSubtaskResultsVerify(
         subtask_results_verify=subtask_results_verify,
-        file_transfer_token=create_file_transfer_token(
+        file_transfer_token=create_file_transfer_token_for_golem_client(
             subtask_results_rejected.report_computed_task,
             encoded_client_public_key,
             FileTransferToken.Operation.upload,

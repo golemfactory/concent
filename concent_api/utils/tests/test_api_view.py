@@ -207,8 +207,8 @@ class ApiViewTransactionTestCase(TransactionTestCase):
         self.assertEqual(Client.objects.count(), 0)
 
     def test_api_view_should_not_rollback_changes_on_correct_response(self):
-
-        message_timestamp              = get_current_utc_timestamp()
+        deadline_offset = 10
+        message_timestamp              = get_current_utc_timestamp() + deadline_offset
         compute_task_def               = message.ComputeTaskDef()
         compute_task_def['task_id']    = '8'
         compute_task_def['subtask_id'] = '8'

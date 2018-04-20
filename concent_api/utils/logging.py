@@ -12,7 +12,7 @@ def log_message_received(message: Message, client_public_key: str):
     task_id = get_task_id_for_logging(message)
     subtask_id = get_subtask_id_for_logging(message)
     logger.info('A message has been received in `send/` -- MESSAGE_TYPE: {} -- TASK_ID: {} -- SUBTASK_ID: {} -- CLIENT PUBLIC KEY: {}'.format(
-        message.TYPE,
+        type(message).__name__,
         task_id,
         subtask_id,
         client_public_key,
@@ -26,7 +26,7 @@ def log_message_returned(message: Message, client_public_key: str):
     task_id = get_task_id_for_logging(message)
     subtask_id = get_subtask_id_for_logging(message)
     logger.info('A message has been returned from `send/` -- MESSAGE_TYPE: {} -- TASK_ID: {} -- SUBTASK_ID: {} -- CLIENT PUBLIC KEY: {}'.format(
-        message.TYPE,
+        type(message).__name__,
         task_id,
         subtask_id,
         client_public_key,
@@ -40,7 +40,7 @@ def log_message_accepted(message: Message, client_public_key: str):
     task_id = get_task_id_for_logging(message)
     subtask_id = get_subtask_id_for_logging(message)
     logger.info('The message has been accepted for further processing -- MESSAGE_TYPE: {} -- TASK_ID: {} -- SUBTASK_ID: {} -- CLIENT PUBLIC KEY: {}'.format(
-        message.TYPE,
+        type(message).__name__,
         task_id,
         subtask_id,
         client_public_key,
@@ -51,7 +51,7 @@ def log_message_added_to_queue(message: Message, client_public_key: str):
     task_id = get_task_id_for_logging(message)
     subtask_id = get_subtask_id_for_logging(message)
     logger.info('A new message has been added to queue -- MESSAGE_TYPE: {} -- TASK_ID: {} -- SUBTASK_ID: {} -- CLIENT PUBLIC KEY: {}'.format(
-        message.TYPE,
+        type(message).__name__,
         task_id,
         subtask_id,
         client_public_key,
@@ -62,7 +62,7 @@ def log_message_delivered(message: Message, client_public_key: str):
     task_id = get_task_id_for_logging(message)
     subtask_id = get_subtask_id_for_logging(message)
     logger.info('A message in queue has been marked as delivered -- MESSAGE_TYPE: {} -- TASK_ID: {} -- SUBTASK_ID: {} -- CLIENT PUBLIC KEY: {}'.format(
-        message.TYPE,
+        type(message).__name__,
         task_id,
         subtask_id,
         client_public_key,
@@ -73,7 +73,7 @@ def log_timeout(message: Message, client_public_key: str, deadline: int):
     task_id = get_task_id_for_logging(message)
     subtask_id = get_subtask_id_for_logging(message)
     logger.info('A deadline has been exceeded -- MESSAGE_TYPE: {} -- TASK_ID: {} -- SUBTASK_ID: {} -- CLIENT PUBLIC KEY: {} -- TIMEOUT: {}'.format(
-        message.TYPE,
+        type(message).__name__,
         task_id,
         subtask_id,
         client_public_key,
@@ -92,7 +92,7 @@ def log_400_error(endpoint: str, message: Message, client_public_key: str):
     if message is not None:
         task_id      = get_task_id_for_logging(message)
         subtask_id   = get_subtask_id_for_logging(message)
-        message_type = message.TYPE
+        message_type = type(message).__name__
     else:
         task_id      = 'not available'
         subtask_id   = 'not available'
@@ -153,12 +153,13 @@ def log_subtask_updated(
 def log_stored_message_added_to_subtask(
     subtask_id:           str,
     state:                str,
-    stored_message_type:  int,
+    stored_message:  Message,
 ):
-    logger.info('A stored message has beed added to subtask -- STATE: {} SUBTASK_ID: {} STORED_MESSAGE_TYPE: {}'.format(
+    logger.info('A stored message has beed added to subtask -- STATE: {} SUBTASK_ID: {} STORED_MESSAGE_TYPE: {} TYPE: {}'.format(
         state,
         subtask_id,
-        stored_message_type,
+        stored_message.__name__,
+        stored_message.TYPE,
     ))
 
 
@@ -189,7 +190,7 @@ def log_new_pending_response(response_type: str, queue_name: str, subtask_id: st
 
 def log_receive_message_from_database(message: Message, client_public_key: str, response_type: str, queue_name: str):
     logger.info('Message {}, TYPE: {} has been received by {} endpoint -- RESPONSE_TYPE: {} -- CLIENT PUBLIC KEY: {}'.format(
-        message.__class__.__name__,
+        type(message).__name__,
         message.TYPE,
         queue_name,
         response_type,

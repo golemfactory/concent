@@ -1030,7 +1030,7 @@ def set_subtask_messages(
             logging.log_stored_message_added_to_subtask(
                 subtask.subtask_id,
                 subtask.state,
-                message_type.TYPE,
+                message_type,
             )
 
 

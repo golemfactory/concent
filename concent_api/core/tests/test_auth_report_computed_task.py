@@ -474,18 +474,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
         )
 
-        with freeze_time("2017-12-01 10:00:00"):
-            cannot_compute_task = message.CannotComputeTask()
-        cannot_compute_task.task_to_compute = task_to_compute
-        cannot_compute_task.reason = message.CannotComputeTask.REASON.WrongKey
-
-        serialized_cannot_compute_task   = dump(cannot_compute_task,            self.PROVIDER_PRIVATE_KEY,  self.REQUESTOR_PUBLIC_KEY)
-        deserialized_cannot_compute_task = load(serialized_cannot_compute_task, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
-
         with freeze_time("2017-12-01 11:00:05"):
             reject_report_computed_task = message.RejectReportComputedTask(
-                cannot_compute_task = deserialized_cannot_compute_task,
-                reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
+                reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
                 task_to_compute=task_to_compute,
             )
 
@@ -514,18 +505,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
         )
 
-        with freeze_time("2017-12-01 10:00:00"):
-            cannot_compute_task = message.CannotComputeTask()
-        cannot_compute_task.task_to_compute = task_to_compute
-        cannot_compute_task.reason = message.CannotComputeTask.REASON.WrongKey
-
-        serialized_cannot_compute_task   = dump(cannot_compute_task,            self.PROVIDER_PRIVATE_KEY,  self.REQUESTOR_PUBLIC_KEY)
-        deserialized_cannot_compute_task = load(serialized_cannot_compute_task, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
-
         with freeze_time("2017-12-01 11:00:05"):
             reject_report_computed_task = message.RejectReportComputedTask(
-                cannot_compute_task = deserialized_cannot_compute_task,
-                reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
+                reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
                 task_to_compute=task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -551,18 +533,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             self.REQUESTOR_PRIVATE_KEY,
         )
 
-        with freeze_time("2017-12-01 10:00:00"):
-            cannot_compute_task = message.CannotComputeTask()
-        cannot_compute_task.task_to_compute = task_to_compute
-        cannot_compute_task.reason = message.CannotComputeTask.REASON.WrongKey
-
-        serialized_cannot_compute_task   = dump(cannot_compute_task,            self.PROVIDER_PRIVATE_KEY,  self.REQUESTOR_PUBLIC_KEY)
-        deserialized_cannot_compute_task = load(serialized_cannot_compute_task, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
-
         with freeze_time("2017-12-01 11:00:05"):
             reject_report_computed_task = message.RejectReportComputedTask(
-                cannot_compute_task = deserialized_cannot_compute_task,
-                reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
+                reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
                 task_to_compute=task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -837,18 +810,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         task_to_compute.requestor_ethereum_public_key = None
 
-        with freeze_time("2017-12-01 10:00:00"):
-            cannot_compute_task = message.CannotComputeTask()
-        cannot_compute_task.task_to_compute = task_to_compute
-        cannot_compute_task.reason = message.CannotComputeTask.REASON.WrongCTD
-
-        serialized_cannot_compute_task   = dump(cannot_compute_task,            self.PROVIDER_PRIVATE_KEY,  self.REQUESTOR_PUBLIC_KEY)
-        deserialized_cannot_compute_task = load(serialized_cannot_compute_task, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
-
         with freeze_time("2017-12-01 11:00:05"):
             reject_report_computed_task = message.RejectReportComputedTask(
-                cannot_compute_task = deserialized_cannot_compute_task,
-                reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
+                reason=message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
                 task_to_compute=task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -876,18 +840,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
         )
 
-        with freeze_time("2017-12-01 10:00:00"):
-            cannot_compute_task = message.CannotComputeTask()
-        cannot_compute_task.task_to_compute = task_to_compute
-        cannot_compute_task.reason = message.CannotComputeTask.REASON.WrongCTD
-
-        serialized_cannot_compute_task   = dump(cannot_compute_task,            self.PROVIDER_PRIVATE_KEY,  self.REQUESTOR_PUBLIC_KEY)
-        deserialized_cannot_compute_task = load(serialized_cannot_compute_task, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
-
         with freeze_time("2017-12-01 11:00:05"):
             reject_report_computed_task = message.RejectReportComputedTask(
-                cannot_compute_task = deserialized_cannot_compute_task,
-                reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
+                reason=message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
                 task_to_compute=task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -913,18 +868,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             self.REQUESTOR_PRIVATE_KEY,
         )
 
-        with freeze_time("2017-12-01 10:00:00"):
-            cannot_compute_task = message.CannotComputeTask()
-        cannot_compute_task.task_to_compute = task_to_compute
-        cannot_compute_task.reason = message.CannotComputeTask.REASON.WrongCTD
-
-        serialized_cannot_compute_task   = dump(cannot_compute_task,            self.PROVIDER_PRIVATE_KEY,  self.REQUESTOR_PUBLIC_KEY)
-        deserialized_cannot_compute_task = load(serialized_cannot_compute_task, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
-
         with freeze_time("2017-12-01 11:00:05"):
             reject_report_computed_task = message.RejectReportComputedTask(
-                cannot_compute_task = deserialized_cannot_compute_task,
-                reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
+                reason=message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
                 task_to_compute=task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -967,18 +913,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             self.REQUESTOR_PRIVATE_KEY,
         )
 
-        with freeze_time("2017-12-01 10:00:00"):
-            cannot_compute_task = message.CannotComputeTask()
-        cannot_compute_task.task_to_compute = self.deserialized_task_to_compute
-        cannot_compute_task.reason = message.CannotComputeTask.REASON.WrongCTD
-
-        serialized_cannot_compute_task   = dump(cannot_compute_task,            self.PROVIDER_PRIVATE_KEY,  self.REQUESTOR_PUBLIC_KEY)
-        deserialized_cannot_compute_task = load(serialized_cannot_compute_task, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
-
         with freeze_time("2017-12-01 11:00:05"):
             reject_report_computed_task = message.RejectReportComputedTask(
-                cannot_compute_task = deserialized_cannot_compute_task,
-                reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
+                reason=message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
                 task_to_compute=self.deserialized_task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)

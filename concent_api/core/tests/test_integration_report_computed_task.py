@@ -508,16 +508,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 3: Requestor rejects computed task claiming that the deadline has been exceeded
 
-        cannot_compute_task = self._get_deserialized_cannot_compute_task(
-            timestamp       = "2017-12-01 10:30:00",
-            task_to_compute = task_to_compute,
-            reason          = message.tasks.CannotComputeTask.REASON.WrongCTD
-        )
-
         reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
-            timestamp           = "2017-12-01 11:00:05",
-            cannot_compute_task = cannot_compute_task,
-            reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
+            timestamp="2017-12-01 11:00:05",
+            reason=message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
             task_to_compute=task_to_compute,
         )
 
@@ -1211,16 +1204,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 3: Requestor rejects computed task via Concent
 
-        cannot_compute_task = self._get_deserialized_cannot_compute_task(
-            timestamp       = "2017-12-01 10:30:00",
-            task_to_compute = task_to_compute,
-            reason          = message.tasks.CannotComputeTask.REASON.WrongCTD
-        )
-
         reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
-            timestamp           = "2017-12-01 11:00:05",
-            cannot_compute_task = cannot_compute_task,
-            reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
+            timestamp="2017-12-01 11:00:05",
+            reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
             task_to_compute=task_to_compute,
         )
 

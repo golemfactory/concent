@@ -67,6 +67,38 @@ def create_error_18_atomic_requests_not_set_for_database(database_name):
     )
 
 
+def create_error_19_if_minimum_upload_rate_is_not_set():
+    return Error(
+        f"MINIMUM_UPLOAD_RATE is not set",
+        hint="MINIMUM_UPLOAD_RATE must be set to integer greater or equal to 1",
+        id="concent.E019",
+    )
+
+
+def create_error_20_if_minimum_upload_rate_has_wrong_value():
+    return Error(
+        f"MINIMUM_UPLOAD_RATE has wrong value",
+        hint="MINIMUM_UPLOAD_RATE must be set to integer greater or equal to 1",
+        id="concent.E020",
+    )
+
+
+def create_error_21_if_download_leadin_time_is_not_set():
+    return Error(
+        f"DOWNLOAD_LEADIN_TIME is not set",
+        hint="DOWNLOAD_LEADIN_TIME must be set to non-negative integer",
+        id="concent.E021",
+    )
+
+
+def create_error_22_if_download_leadin_time_has_wrong_value():
+    return Error(
+        f"DOWNLOAD_LEADIN_TIME has wrong value",
+        hint="DOWNLOAD_LEADIN_TIME must be set to non-negative integer",
+        id="concent.E022",
+    )
+
+
 @register()
 def check_settings_concent_features(app_configs, **kwargs):  # pylint: disable=unused-argument
 
@@ -206,4 +238,24 @@ def check_atomic_requests(app_configs = None, **kwargs):  # pylint: disable=unus
         for database_name, database_config in settings.DATABASES.items():
             if 'ATOMIC_REQUESTS' not in database_config or database_config['ATOMIC_REQUESTS'] is not True:
                 errors.append(create_error_18_atomic_requests_not_set_for_database(database_name))
+    return errors
+
+
+@register()
+def check_minimum_upload_rate(app_configs=None, **kwargs):  # pylint: disable=unused-argument
+    errors = []
+    if not hasattr(settings, 'MINIMUM_UPLOAD_RATE'):
+        return [create_error_19_if_minimum_upload_rate_is_not_set()]
+    if not isinstance(settings.MINIMUM_UPLOAD_RATE, int) or settings.MINIMUM_UPLOAD_RATE < 1:
+        return [create_error_20_if_minimum_upload_rate_has_wrong_value()]
+    return errors
+
+
+@register()
+def check_download_leadin_time(app_configs=None, **kwargs):  # pylint: disable=unused-argument
+    errors = []
+    if not hasattr(settings, 'DOWNLOAD_LEADIN_TIME'):
+        return [create_error_21_if_download_leadin_time_is_not_set()]
+    if not isinstance(settings.DOWNLOAD_LEADIN_TIME, int) or settings.DOWNLOAD_LEADIN_TIME < 0:
+        return [create_error_22_if_download_leadin_time_has_wrong_value()]
     return errors

@@ -22,6 +22,8 @@ from utils.testing_helpers import generate_ecc_key_pair
 @override_settings(
     CONCENT_PRIVATE_KEY  = CONCENT_PRIVATE_KEY,
     CONCENT_PUBLIC_KEY   = CONCENT_PUBLIC_KEY,
+    MINIMUM_UPLOAD_RATE  = 1,     # bits per second
+    DOWNLOAD_LEADIN_TIME = 10,    # seconds
 )
 class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
     def setUp(self):

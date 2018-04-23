@@ -113,7 +113,7 @@ class ConcentIntegrationTestCase(TestCase):
         self,
         subtask_id      = '1',
         task_to_compute = None,
-        size            = None,
+        size            = 1,
         package_hash    = None,
         timestamp       = None,
     ):

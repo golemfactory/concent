@@ -1396,14 +1396,19 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self._assert_client_count_is_equal(2)
 
-    def test_requestor_sends_reject_report_computed_task_after_deadline_passed(self):
+    def test_requestor_sends_wrong_reject_report_computed_task_multiple_time(self):
         """
         Tests if on request RejectReportComputedTask message Concent will return HTTP 400 error
-        if deadline has passed.
 
         Expected message exchange:
         Provider  -> Concent:    ForceReportComputedTask
-        Requestor -> Concent:    RejectReportComputedTask
+        Requestor -> Concent:    RejectReportComputedTask (CannotComputeTask and TaskFailure at the same time)
+        Concent   -> Requestor:  HTTP 400 error.
+        Requestor -> Concent:    RejectReportComputedTask (GotMessageCannotComputeTask REASON, but no CannotComputeTask)
+        Concent   -> Requestor:  HTTP 400 error.
+        Requestor -> Concent:    RejectReportComputedTask (GotMessageTaskFailure REASON, but no TaskFailure)
+        Concent   -> Requestor:  HTTP 400 error.
+        Requestor -> Concent:    RejectReportComputedTask (SubtaskTimeLimitExceeded REASON, with TaskFailure)
         Concent   -> Requestor:  HTTP 400 error.
         """
 
@@ -1492,36 +1497,102 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._assert_stored_message_counter_not_increased()
 
-        # STEP 3: Requestor rejects computed task via Concent after deadline
-
-        cannot_compute_task = self._get_deserialized_cannot_compute_task(
-            timestamp       = "2017-12-01 10:30:00",
-            task_to_compute = task_to_compute,
-            reason          = message.tasks.CannotComputeTask.REASON.WrongKey
-        )
+        # STEP 3: Requestor rejects computed task via Concent with CannotComputeTask and TaskFailure at the same time
 
         reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
-            timestamp           = "2017-12-01 11:00:15",
-            cannot_compute_task = cannot_compute_task,
-            reason              = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
+            timestamp="2017-12-01 11:00:09",
+            cannot_compute_task=message.tasks.CannotComputeTask(),
+            task_failure=message.tasks.TaskFailure(),
+            reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
+            task_to_compute=task_to_compute,
         )
 
         serialized_reject_report_computed_task = self._get_serialized_reject_report_computed_task(
-            timestamp = "2017-12-01 11:00:15",
-            reject_report_computed_task = reject_report_computed_task,
-            requestor_private_key       = self.REQUESTOR_PRIVATE_KEY,
+            timestamp="2017-12-01 11:00:09",
+            reject_report_computed_task=reject_report_computed_task,
+            requestor_private_key=self.REQUESTOR_PRIVATE_KEY,
         )
 
-        with freeze_time("2017-12-01 11:00:15"):
+        with freeze_time("2017-12-01 11:00:09"):
             response_3 = self.client.post(
                 reverse('core:send'),
-                data                            = serialized_reject_report_computed_task,
-                content_type                    = 'application/octet-stream',
+                data=serialized_reject_report_computed_task,
+                content_type='application/octet-stream',
             )
         self._test_400_response(response_3)
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(2)
+
+        # STEP 4: Requestor rejects computed task via Concent with GotMessageCannotComputeTask REASON, but without CannotComputeTask
+
+        reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
+            timestamp="2017-12-01 11:00:09",
+            reason=message.RejectReportComputedTask.REASON.GotMessageCannotComputeTask,
+            task_to_compute=task_to_compute,
+        )
+
+        serialized_reject_report_computed_task = self._get_serialized_reject_report_computed_task(
+            timestamp="2017-12-01 11:00:09",
+            reject_report_computed_task=reject_report_computed_task,
+            requestor_private_key=self.REQUESTOR_PRIVATE_KEY,
+        )
+
+        with freeze_time("2017-12-01 11:00:09"):
+            response_4 = self.client.post(
+                reverse('core:send'),
+                data=serialized_reject_report_computed_task,
+                content_type='application/octet-stream',
+            )
+        self._test_400_response(response_4)
+        self._assert_stored_message_counter_not_increased()
+
+        # STEP 5: Requestor rejects computed task via Concent with GotMessageTaskFailure REASON, but without TaskFailure
+
+        reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
+            timestamp="2017-12-01 11:00:09",
+            reason=message.RejectReportComputedTask.REASON.GotMessageTaskFailure,
+            task_to_compute=task_to_compute,
+        )
+
+        serialized_reject_report_computed_task = self._get_serialized_reject_report_computed_task(
+            timestamp="2017-12-01 11:00:09",
+            reject_report_computed_task=reject_report_computed_task,
+            requestor_private_key=self.REQUESTOR_PRIVATE_KEY,
+        )
+
+        with freeze_time("2017-12-01 11:00:09"):
+            response_5 = self.client.post(
+                reverse('core:send'),
+                data=serialized_reject_report_computed_task,
+                content_type='application/octet-stream',
+            )
+        self._test_400_response(response_5)
+        self._assert_stored_message_counter_not_increased()
+
+        # STEP 6: Requestor rejects computed task via Concent with SubtaskTimeLimitExceeded REASON and TaskFailure message
+
+        reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
+            timestamp="2017-12-01 11:00:09",
+            reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
+            task_to_compute=task_to_compute,
+            task_failure=message.tasks.TaskFailure(),
+        )
+
+        serialized_reject_report_computed_task = self._get_serialized_reject_report_computed_task(
+            timestamp="2017-12-01 11:00:09",
+            reject_report_computed_task=reject_report_computed_task,
+            requestor_private_key=self.REQUESTOR_PRIVATE_KEY,
+        )
+
+        with freeze_time("2017-12-01 11:00:09"):
+            response_6 = self.client.post(
+                reverse('core:send'),
+                data=serialized_reject_report_computed_task,
+                content_type='application/octet-stream',
+            )
+        self._test_400_response(response_6)
+        self._assert_stored_message_counter_not_increased()
 
     def test_provider_forces_computed_task_report_missing_key_returns_400_error(self):
         """

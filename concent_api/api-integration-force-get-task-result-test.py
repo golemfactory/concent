@@ -4,59 +4,49 @@ import os
 import sys
 import hashlib
 from base64 import b64encode
+from freezegun import freeze_time
 
 from golem_messages import message
 from golem_messages import shortcuts
 
 from utils.helpers import get_current_utc_timestamp
 from utils.helpers import get_storage_file_path
-from utils.helpers import sign_message
-from utils.testing_helpers import generate_ecc_key_pair
 from api_testing_common import api_request
 from api_testing_common import assert_condition
-from api_testing_common import create_client_auth_message
 from api_testing_common import count_fails
+from api_testing_common import create_client_auth_message
+from api_testing_common import create_signed_task_to_compute
 from api_testing_common import get_task_id_and_subtask_id
+from api_testing_common import PROVIDER_PRIVATE_KEY
+from api_testing_common import PROVIDER_PUBLIC_KEY
+from api_testing_common import REQUESTOR_PRIVATE_KEY
+from api_testing_common import REQUESTOR_PUBLIC_KEY
 from api_testing_common import run_tests
 from api_testing_common import timestamp_to_isoformat
-
-from concent_api.settings import CONCENT_PUBLIC_KEY
-from concent_api.settings import STORAGE_CLUSTER_ADDRESS
-from freezegun import freeze_time
-
 
 import requests
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
-(PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)  = generate_ecc_key_pair()
-(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
-
-def get_force_get_task_result(task_id, subtask_id, current_time, cluster_consts, size, package_hash, provider_public_key = None, requestor_public_key = None):
-
-    compute_task_def = message.ComputeTaskDef()
-    compute_task_def['task_id'] = task_id
-    compute_task_def['subtask_id'] = subtask_id
-    compute_task_def['deadline'] = current_time + cluster_consts.subtask_verification_time
-    task_to_compute = message.TaskToCompute(
-        provider_public_key=provider_public_key if provider_public_key is not None else PROVIDER_PUBLIC_KEY,
-        requestor_public_key=requestor_public_key if requestor_public_key is not None else REQUESTOR_PUBLIC_KEY,
-        compute_task_def = compute_task_def,
+def get_force_get_task_result(task_id, subtask_id, current_time, cluster_consts, size, package_hash):
+    task_to_compute = create_signed_task_to_compute(
+        task_id=task_id,
+        subtask_id=subtask_id,
+        deadline=current_time + cluster_consts.subtask_verification_time,
         price=0,
     )
-    sign_message(task_to_compute, REQUESTOR_PRIVATE_KEY)
 
     report_computed_task = message.ReportComputedTask(
-        task_to_compute = task_to_compute,
-        size            = size,
-        package_hash    = package_hash,
-        subtask_id = subtask_id,
+        task_to_compute=task_to_compute,
+        size=size,
+        package_hash=package_hash,
+        subtask_id=subtask_id,
     )
 
     with freeze_time(timestamp_to_isoformat(current_time)):
         force_get_task_result = message.concents.ForceGetTaskResult(
-            report_computed_task = report_computed_task,
+            report_computed_task=report_computed_task,
         )
 
     return force_get_task_result
@@ -209,7 +199,9 @@ def test_case_2_test_for_non_existing_file(cluster_consts, cluster_url, test_id)
 
 if __name__ == '__main__':
     try:
+        from concent_api.settings import CONCENT_PUBLIC_KEY
+        from concent_api.settings import STORAGE_CLUSTER_ADDRESS
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
-        print("\nERROR: Failed connect to the server.\n", file = sys.stderr)
+        print("\nERROR: Failed connect to the server.\n", file=sys.stderr)
         sys.exit(str(exception))

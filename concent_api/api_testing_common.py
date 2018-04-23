@@ -2,8 +2,12 @@ import argparse
 import random
 import sys
 
+from freezegun import freeze_time
+
 from golem_messages.exceptions      import MessageError
-from golem_messages.message         import Message
+from golem_messages.message import ComputeTaskDef
+from golem_messages.message import Message
+from golem_messages.message import TaskToCompute
 from golem_messages.message.concents import ClientAuthorization
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
@@ -13,7 +17,13 @@ import json
 import requests
 import http.client
 
-from protocol_constants import get_protocol_constants, print_protocol_constants
+from protocol_constants import get_protocol_constants
+from protocol_constants import print_protocol_constants
+from utils.helpers import sign_message
+from utils.testing_helpers import generate_ecc_key_pair
+
+(PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)  = generate_ecc_key_pair()
+(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
 class TestAssertionException(Exception):
@@ -280,3 +290,29 @@ def run_tests(objects, additional_arguments=None):
     if count_fails.get_fails() > 0:
         count_fails.print_fails()
     print("END")
+
+
+def create_signed_task_to_compute(
+    task_id,
+    subtask_id,
+    deadline,
+    timestamp=None,
+    provider_public_key=None,
+    requestor_public_key=None,
+    requestor_ethereum_public_key=None,
+    price=0
+):
+    with freeze_time(timestamp):
+        compute_task_def = ComputeTaskDef()
+        compute_task_def['task_id'] = task_id
+        compute_task_def['subtask_id'] = subtask_id
+        compute_task_def['deadline'] = deadline
+        task_to_compute = TaskToCompute(
+            provider_public_key=provider_public_key if provider_public_key is not None else PROVIDER_PUBLIC_KEY,
+            requestor_public_key=requestor_public_key if requestor_public_key is not None else REQUESTOR_PUBLIC_KEY,
+            compute_task_def=compute_task_def,
+            requestor_ethereum_public_key=requestor_ethereum_public_key,
+            price=price,
+        )
+        sign_message(task_to_compute, REQUESTOR_PRIVATE_KEY)
+        return task_to_compute

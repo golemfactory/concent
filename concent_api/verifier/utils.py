@@ -1,6 +1,7 @@
 from base64 import b64encode
 import logging
 import os
+import subprocess
 import zipfile
 
 import requests
@@ -55,8 +56,23 @@ def store_file_from_response_in_chunks(response: requests.Response, file_path: s
             f.write(chunk)
 
 
-def run_blender():
-    pass
+def run_blender(scene_file, output_format, script_file=''):
+    return subprocess.run(
+        [
+            "blender",
+            "-b", f"{scene_file}",
+            "-y",  # enable scripting by default
+            "-P", f"{script_file}",
+            "-o", f"{settings.VERIFIER_STORAGE_PATH}/{scene_file}_out",
+            "-noaudio",
+            "-F", f"{output_format.upper()}",
+            "-t", f"{1}",  # cpu_count
+            "-f", f"{1}",  # frame
+        ],
+        timeout=settings.BLENDER_MAX_RENDERING_TIME,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
 
 
 def unpack_archive(file_path):
@@ -66,3 +82,17 @@ def unpack_archive(file_path):
         for ix in range(0, min(UNPACK_CHUNK_SIZE, len(infos))):
             zf.extract(infos[ix], settings.VERIFIER_STORAGE_PATH)
         zf.close()
+
+
+def get_files_list_from_archive(file_path):
+    """ Returns list of files from given zip archive. """
+    return zipfile.ZipFile.namelist(file_path)
+
+
+def delete_file(file_path):
+    file_path = os.path.join(settings.VERIFIER_STORAGE_PATH, file_path)
+    try:
+        if os.path.isfile(file_path):
+            os.unlink(file_path)
+    except OSError as exception:
+        logger.warning(f'File with path {file_path} was not deleted, exception: {exception}')

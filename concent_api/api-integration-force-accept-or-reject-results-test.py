@@ -125,7 +125,6 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts, cluster_url, 
         ),
         headers={
             'Content-Type': 'application/octet-stream',
-            'temporary-account-funds': 'True'
         },
         expected_status=202,
     )
@@ -167,7 +166,6 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts, cluster_url, 
         ),
         headers={
             'Content-Type': 'application/octet-stream',
-            'temporary-account-funds': 'True'
         },
         expected_status=202,
     )
@@ -216,7 +214,6 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts, cluster_url, 
         ),
         headers={
             'Content-Type': 'application/octet-stream',
-            'temporary-account-funds': 'True'
         },
         expected_status=202,
     )
@@ -245,7 +242,6 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts, cluster_url, 
         ),
         headers={
             'Content-Type': 'application/octet-stream',
-            'temporary-account-funds': 'True'
         },
         expected_status=202,
     )
@@ -293,7 +289,6 @@ def test_case_2c_wrong_timestamps(cluster_consts, cluster_url, test_id):
         ),
         headers={
             'Content-Type': 'application/octet-stream',
-            'temporary-account-funds': 'True'
         },
         expected_status=200,
         expected_message_type=message.concents.ForceSubtaskResultsRejected.TYPE,
@@ -329,7 +324,6 @@ def test_case_2b_not_enough_funds(cluster_consts, cluster_url, test_id):
         ),
         headers={
             'Content-Type': 'application/octet-stream',
-            'temporary-account-funds': ''
         },
         expected_status=200,
         expected_message_type=message.concents.ServiceRefused.TYPE,
@@ -367,7 +361,6 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts, cluster_u
         ),
         headers={
             'Content-Type': 'application/octet-stream',
-            'temporary-account-funds': 'True'
         },
         expected_status=202,
     )
@@ -397,7 +390,6 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts, cluster_u
         ),
         headers={
             'Content-Type': 'application/octet-stream',
-            'temporary-account-funds': 'True'
         },
         expected_status=200,
         expected_message_type=message.concents.ServiceRefused.TYPE,

@@ -24,7 +24,7 @@ class count_fails(object):
     """
     Decorator that wraps a test functions for intercepting assertions and counting them.
     """
-    instances = []
+    instances = []  # type: ignore
     number_of_run_tests = 0
 
     def __init__(self, function):
@@ -149,7 +149,7 @@ def api_request(
     validate_content_type(response.headers['Content-Type'], expected_content_type)
     validate_response_message(response.content, expected_message_type, private_key, public_key)
     print()
-    if response.status_code == 204:
+    if response.status_code in [202, 204]:
         return None
     else:
         return try_to_decode_golem_message(private_key, public_key, response.content)

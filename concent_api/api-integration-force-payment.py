@@ -13,6 +13,7 @@ from utils.helpers import sign_message
 from utils.testing_helpers import generate_ecc_key_pair
 
 from api_testing_common import api_request
+from api_testing_common import get_task_id_and_subtask_id
 from api_testing_common import create_client_auth_message
 from api_testing_common import parse_command_line
 from api_testing_common import timestamp_to_isoformat
@@ -79,191 +80,55 @@ def compute_task_def(
 
 def main():
     cluster_url     = parse_command_line(sys.argv)
-    task_id         = str(random.randrange(1, 100000))
-    current_time    = get_current_utc_timestamp()
+    test_id         = str(random.randrange(1, 100000))
     cluster_consts = get_protocol_constants(cluster_url)
+
+    test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_accounts_are_different(
+        cluster_consts, cluster_url, test_id
+    )
+
+    test_case_2b_send_force_payment_beyond_payment_time(cluster_consts, cluster_url, test_id)
+
+    test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts, cluster_url, test_id)
+
+    test_case_2d_send_correct_force_payment(cluster_consts, cluster_url, test_id)
+
+
+def test_case_2d_send_correct_force_payment(cluster_consts, cluster_url, test_id):
+    # Test CASE 2D - Send correct ForcePayment
+    current_time = get_current_utc_timestamp()
+    (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '2D')
     correct_force_payment = force_payment(
-        timestamp = timestamp_to_isoformat(current_time),
-        subtask_results_accepted_list = [
+        timestamp=timestamp_to_isoformat(current_time),
+        subtask_results_accepted_list=[
             subtask_results_accepted(
-                timestamp       = timestamp_to_isoformat(current_time),
-                payment_ts      = current_time - cluster_consts.payment_due_time - 10,
-                task_to_compute = task_to_compute(
-                    timestamp                       = timestamp_to_isoformat(current_time),
-                    requestor_ethereum_public_key   = "x" * 128,
-                    compute_task_def                = compute_task_def(
-                        deadline = current_time,
-                        task_id  = task_id + 'a',
+                timestamp=timestamp_to_isoformat(current_time),
+                payment_ts=current_time - cluster_consts.payment_due_time - 10,
+                task_to_compute=task_to_compute(
+                    timestamp=timestamp_to_isoformat(current_time),
+                    requestor_ethereum_public_key="x" * 128,
+                    compute_task_def=compute_task_def(
+                        deadline=current_time,
+                        task_id=task_id + 'a',
                         subtask_id=task_id + 'A'
                     )
                 )
             ),
             subtask_results_accepted(
-                timestamp       = timestamp_to_isoformat(current_time),
-                payment_ts      = current_time - cluster_consts.payment_due_time - 10,
-                task_to_compute = task_to_compute(
-                    timestamp                       = timestamp_to_isoformat(current_time),
-                    requestor_ethereum_public_key   = "x" * 128,
-                    compute_task_def                = compute_task_def(
-                        deadline = current_time,
-                        task_id  = task_id + 'b',
+                timestamp=timestamp_to_isoformat(current_time),
+                payment_ts=current_time - cluster_consts.payment_due_time - 10,
+                task_to_compute=task_to_compute(
+                    timestamp=timestamp_to_isoformat(current_time),
+                    requestor_ethereum_public_key="x" * 128,
+                    compute_task_def=compute_task_def(
+                        deadline=current_time,
+                        task_id=task_id + 'b',
                         subtask_id=task_id + 'B'
                     )
                 )
             )
         ]
     )
-
-    # Test CASE 2A - Send ForcePayment with SubtaskResultsAccepted where ethereum accounts are different
-    api_request(
-        cluster_url,
-        'send',
-        PROVIDER_PRIVATE_KEY,
-        CONCENT_PUBLIC_KEY,
-        force_payment(
-            timestamp = timestamp_to_isoformat(current_time),
-            subtask_results_accepted_list = [
-                subtask_results_accepted(
-                    timestamp       = timestamp_to_isoformat(current_time),
-                    payment_ts      = current_time - cluster_consts.payment_due_time - 10,
-                    task_to_compute = task_to_compute(
-                        timestamp                       = timestamp_to_isoformat(current_time),
-                        requestor_ethereum_public_key   = "x" * 128,
-                        compute_task_def                = compute_task_def(
-                            deadline = current_time,
-                            task_id  = task_id + 'a',
-                            subtask_id=task_id + 'A'
-                        )
-                    )
-                ),
-                subtask_results_accepted(
-                    timestamp       = timestamp_to_isoformat(current_time),
-                    payment_ts      = current_time - cluster_consts.payment_due_time - 10,
-                    task_to_compute = task_to_compute(
-                        timestamp                       = timestamp_to_isoformat(current_time),
-                        requestor_ethereum_public_key   = "y" * 128,
-                        compute_task_def                = compute_task_def(
-                            deadline = current_time,
-                            task_id  = task_id + 'b',
-                            subtask_id=task_id + 'B'
-                        )
-                    )
-                )
-            ]
-        ),
-
-        headers = {
-            'Content-Type':                     'application/octet-stream',
-            'temporary-list-of-transactions':   'True',
-            'temporary-v':                      '1',
-            'temporary-eth-block':              '1'
-        },
-        expected_status=200,
-        expected_message_type=message.concents.ServiceRefused.TYPE,
-        expected_content_type='application/octet-stream',
-    )
-
-    #  Test CASE 2B - Send ForcePayment beyond payment time
-    api_request(
-        cluster_url,
-        'send',
-        PROVIDER_PRIVATE_KEY,
-        CONCENT_PUBLIC_KEY,
-        force_payment(
-            timestamp = timestamp_to_isoformat(current_time),
-            subtask_results_accepted_list = [
-                subtask_results_accepted(
-                    timestamp       = timestamp_to_isoformat(current_time),
-                    payment_ts      = current_time,
-                    task_to_compute = task_to_compute(
-                        timestamp                       = timestamp_to_isoformat(current_time),
-                        requestor_ethereum_public_key   = "x" * 128,
-                        compute_task_def                = compute_task_def(
-                            deadline = current_time,
-                            task_id  = task_id + 'a',
-                            subtask_id=task_id + 'A'
-                        )
-                    )
-                ),
-                subtask_results_accepted(
-                    timestamp       = timestamp_to_isoformat(current_time),
-                    payment_ts      = current_time,
-                    task_to_compute = task_to_compute(
-                        timestamp                       = timestamp_to_isoformat(current_time),
-                        requestor_ethereum_public_key   = "x" * 128,
-                        compute_task_def                = compute_task_def(
-                            deadline = current_time,
-                            task_id  = task_id + 'b',
-                            subtask_id=task_id + 'B'
-                        )
-                    )
-                )
-            ]
-        ),
-
-        headers = {
-            'Content-Type':                     'application/octet-stream',
-            'temporary-list-of-transactions':   '',
-            'temporary-v':                      '-1',
-            'temporary-eth-block':              '-1'
-        },
-        expected_status=200,
-        expected_message_type=message.concents.ForcePaymentRejected.TYPE,
-        expected_content_type='application/octet-stream',
-    )
-
-    #  Test CASE 2C - Send ForcePayment with no value to be paid
-    api_request(
-        cluster_url,
-        'send',
-        PROVIDER_PRIVATE_KEY,
-        CONCENT_PUBLIC_KEY,
-        force_payment(
-            timestamp = timestamp_to_isoformat(current_time),
-            subtask_results_accepted_list = [
-                subtask_results_accepted(
-                    timestamp       = timestamp_to_isoformat(current_time),
-                    payment_ts      = current_time,
-                    task_to_compute = task_to_compute(
-                        timestamp                       = timestamp_to_isoformat(current_time),
-                        requestor_ethereum_public_key   = "x" * 128,
-                        price=0,
-                        compute_task_def                = compute_task_def(
-                            deadline = current_time,
-                            task_id  = task_id + 'a',
-                            subtask_id=task_id + 'A'
-                        )
-                    )
-                ),
-                subtask_results_accepted(
-                    timestamp       = timestamp_to_isoformat(current_time),
-                    payment_ts      = current_time,
-                    task_to_compute = task_to_compute(
-                        timestamp                       = timestamp_to_isoformat(current_time),
-                        requestor_ethereum_public_key   = "x" * 128,
-                        price=0,
-                        compute_task_def                = compute_task_def(
-                            deadline = current_time,
-                            task_id  = task_id + 'b',
-                            subtask_id=task_id + 'B'
-                        )
-                    )
-                )
-            ]
-        ),
-
-        headers = {
-            'Content-Type':                     'application/octet-stream',
-            'temporary-list-of-transactions':   'True',
-            'temporary-v':                      '-1',
-            'temporary-eth-block':              '-1'
-        },
-        expected_status=200,
-        expected_message_type=message.concents.ForcePaymentRejected.TYPE,
-        expected_content_type='application/octet-stream',
-    )
-
-    # Test CASE 2D - Send correct ForcePayment
     correct_force_payment.sig = None
     api_request(
         cluster_url,
@@ -272,30 +137,181 @@ def main():
         CONCENT_PUBLIC_KEY,
         correct_force_payment,
 
-        headers = {
-            'Content-Type':                     'application/octet-stream',
-            'temporary-list-of-transactions':   'True',
-            'temporary-v':                      '1',
-            'temporary-eth-block':              '1'
+        headers={
+            'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
         expected_message_type=message.concents.ForcePaymentCommitted.TYPE,
         expected_content_type='application/octet-stream',
     )
-
     time.sleep(5)
-
     api_request(
         cluster_url,
         'receive-out-of-band',
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
-        headers = {
+        headers={
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
         expected_message_type=message.concents.ForcePaymentCommitted.TYPE,
+        expected_content_type='application/octet-stream',
+    )
+
+
+def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts, cluster_url, test_id):
+    #  Test CASE 2C - Send ForcePayment with no value to be paid
+    current_time = get_current_utc_timestamp()
+    (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '2C')
+    api_request(
+        cluster_url,
+        'send',
+        PROVIDER_PRIVATE_KEY,
+        CONCENT_PUBLIC_KEY,
+        force_payment(
+            timestamp=timestamp_to_isoformat(current_time),
+            subtask_results_accepted_list=[
+                subtask_results_accepted(
+                    timestamp=timestamp_to_isoformat(current_time),
+                    payment_ts=current_time,
+                    task_to_compute=task_to_compute(
+                        timestamp=timestamp_to_isoformat(current_time),
+                        requestor_ethereum_public_key="x" * 128,
+                        price=0,
+                        compute_task_def=compute_task_def(
+                            deadline=current_time,
+                            task_id=task_id + 'a',
+                            subtask_id=task_id + 'A'
+                        )
+                    )
+                ),
+                subtask_results_accepted(
+                    timestamp=timestamp_to_isoformat(current_time),
+                    payment_ts=current_time,
+                    task_to_compute=task_to_compute(
+                        timestamp=timestamp_to_isoformat(current_time),
+                        requestor_ethereum_public_key="x" * 128,
+                        price=0,
+                        compute_task_def=compute_task_def(
+                            deadline=current_time,
+                            task_id=task_id + 'b',
+                            subtask_id=task_id + 'B'
+                        )
+                    )
+                )
+            ]
+        ),
+
+        headers={
+            'Content-Type': 'application/octet-stream',
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForcePaymentRejected.TYPE,
+        expected_content_type='application/octet-stream',
+    )
+
+
+def test_case_2b_send_force_payment_beyond_payment_time(cluster_consts, cluster_url, test_id):
+    #  Test CASE 2B - Send ForcePayment beyond payment time
+    current_time = get_current_utc_timestamp()
+    (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '2B')
+    api_request(
+        cluster_url,
+        'send',
+        PROVIDER_PRIVATE_KEY,
+        CONCENT_PUBLIC_KEY,
+        force_payment(
+            timestamp=timestamp_to_isoformat(current_time),
+            subtask_results_accepted_list=[
+                subtask_results_accepted(
+                    timestamp=timestamp_to_isoformat(current_time),
+                    payment_ts=current_time,
+                    task_to_compute=task_to_compute(
+                        timestamp=timestamp_to_isoformat(current_time),
+                        requestor_ethereum_public_key="x" * 128,
+                        compute_task_def=compute_task_def(
+                            deadline=current_time,
+                            task_id=task_id + 'a',
+                            subtask_id=task_id + 'A'
+                        )
+                    )
+                ),
+                subtask_results_accepted(
+                    timestamp=timestamp_to_isoformat(current_time),
+                    payment_ts=current_time,
+                    task_to_compute=task_to_compute(
+                        timestamp=timestamp_to_isoformat(current_time),
+                        requestor_ethereum_public_key="x" * 128,
+                        compute_task_def=compute_task_def(
+                            deadline=current_time,
+                            task_id=task_id + 'b',
+                            subtask_id=task_id + 'B'
+                        )
+                    )
+                )
+            ]
+        ),
+
+        headers={
+            'Content-Type': 'application/octet-stream',
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForcePaymentRejected.TYPE,
+        expected_content_type='application/octet-stream',
+    )
+
+
+def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_accounts_are_different(
+    cluster_consts,
+    cluster_url,
+    test_id
+):
+    # Test CASE 2A - Send ForcePayment with SubtaskResultsAccepted where ethereum accounts are different
+    current_time = get_current_utc_timestamp()
+    (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '2A')
+    api_request(
+        cluster_url,
+        'send',
+        PROVIDER_PRIVATE_KEY,
+        CONCENT_PUBLIC_KEY,
+        force_payment(
+            timestamp=timestamp_to_isoformat(current_time),
+            subtask_results_accepted_list=[
+                subtask_results_accepted(
+                    timestamp=timestamp_to_isoformat(current_time),
+                    payment_ts=current_time - cluster_consts.payment_due_time - 10,
+                    task_to_compute=task_to_compute(
+                        timestamp=timestamp_to_isoformat(current_time),
+                        requestor_ethereum_public_key="x" * 128,
+                        compute_task_def=compute_task_def(
+                            deadline=current_time,
+                            task_id=task_id + 'a',
+                            subtask_id=task_id + 'A'
+                        )
+                    )
+                ),
+                subtask_results_accepted(
+                    timestamp=timestamp_to_isoformat(current_time),
+                    payment_ts=current_time - cluster_consts.payment_due_time - 10,
+                    task_to_compute=task_to_compute(
+                        timestamp=timestamp_to_isoformat(current_time),
+                        requestor_ethereum_public_key="y" * 128,
+                        compute_task_def=compute_task_def(
+                            deadline=current_time,
+                            task_id=task_id + 'b',
+                            subtask_id=task_id + 'B'
+                        )
+                    )
+                )
+            ]
+        ),
+
+        headers={
+            'Content-Type': 'application/octet-stream',
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ServiceRefused.TYPE,
         expected_content_type='application/octet-stream',
     )
 

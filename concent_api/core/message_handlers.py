@@ -799,7 +799,12 @@ def handle_messages_from_database(
             response_to_client          = message.concents.ForceReportComputedTaskResponse(
                 reject_report_computed_task = reject_report_computed_task,
             )
-            if reject_report_computed_task.reason == message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded:
+            if (
+                reject_report_computed_task.reason in [
+                    message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
+                    message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded
+                ]
+            ):
                 ack_report_computed_task = message.AckReportComputedTask(
                     report_computed_task = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes()),
                 )

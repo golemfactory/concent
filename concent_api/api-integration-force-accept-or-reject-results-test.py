@@ -7,6 +7,7 @@ from freezegun import freeze_time
 
 from golem_messages import message
 
+from concent_api.settings import CONCENT_PUBLIC_KEY
 from utils.helpers import get_current_utc_timestamp
 from utils.helpers import sign_message
 from utils.testing_helpers import generate_ecc_key_pair
@@ -413,8 +414,6 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts, cluster_u
 
 if __name__ == '__main__':
     try:
-        from concent_api.settings import CONCENT_PUBLIC_KEY
-
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file = sys.stderr)

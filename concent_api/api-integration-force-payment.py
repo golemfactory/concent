@@ -2,23 +2,22 @@
 
 import os
 import sys
-import random
 import time
 from freezegun              import freeze_time
 
 from golem_messages         import message
 
+from concent_api.settings import CONCENT_PUBLIC_KEY
 from utils.helpers import get_current_utc_timestamp
 from utils.helpers import sign_message
 from utils.testing_helpers import generate_ecc_key_pair
 
 from api_testing_common import api_request
-from api_testing_common import get_task_id_and_subtask_id
+from api_testing_common import count_fails
 from api_testing_common import create_client_auth_message
-from api_testing_common import parse_command_line
+from api_testing_common import get_task_id_and_subtask_id
+from api_testing_common import run_tests
 from api_testing_common import timestamp_to_isoformat
-
-from protocol_constants import get_protocol_constants
 
 import requests
 
@@ -78,34 +77,16 @@ def compute_task_def(
     return compute_task_def
 
 
-def main():
-    cluster_url     = parse_command_line(sys.argv)
-    test_id         = str(random.randrange(1, 100000))
-    cluster_consts = get_protocol_constants(cluster_url)
-
-    test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_accounts_are_different(
-        cluster_consts, cluster_url, test_id
-    )
-
-    test_case_2b_send_force_payment_beyond_payment_time(cluster_consts, cluster_url, test_id)
-
-    test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts, cluster_url, test_id)
-
-    test_case_2d_send_correct_force_payment(cluster_consts, cluster_url, test_id)
-
-
+@count_fails
 def test_case_2d_send_correct_force_payment(cluster_consts, cluster_url, test_id):
     # Test CASE 2D - Send correct ForcePayment
     current_time = get_current_utc_timestamp()
     (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '2D')
     correct_force_payment = force_payment(
-        timestamp=timestamp_to_isoformat(current_time),
         subtask_results_accepted_list=[
             subtask_results_accepted(
-                timestamp=timestamp_to_isoformat(current_time),
                 payment_ts=current_time - cluster_consts.payment_due_time - 10,
                 task_to_compute=task_to_compute(
-                    timestamp=timestamp_to_isoformat(current_time),
                     requestor_ethereum_public_key="x" * 128,
                     compute_task_def=compute_task_def(
                         deadline=current_time,
@@ -160,6 +141,7 @@ def test_case_2d_send_correct_force_payment(cluster_consts, cluster_url, test_id
     )
 
 
+@count_fails
 def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts, cluster_url, test_id):
     #  Test CASE 2C - Send ForcePayment with no value to be paid
     current_time = get_current_utc_timestamp()
@@ -212,6 +194,7 @@ def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts, clu
     )
 
 
+@count_fails
 def test_case_2b_send_force_payment_beyond_payment_time(cluster_consts, cluster_url, test_id):
     #  Test CASE 2B - Send ForcePayment beyond payment time
     current_time = get_current_utc_timestamp()
@@ -262,6 +245,7 @@ def test_case_2b_send_force_payment_beyond_payment_time(cluster_consts, cluster_
     )
 
 
+@count_fails
 def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_accounts_are_different(
     cluster_consts,
     cluster_url,
@@ -318,8 +302,7 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
 
 if __name__ == '__main__':
     try:
-        from concent_api.settings import CONCENT_PUBLIC_KEY
-        main()
+        run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file = sys.stderr)
         sys.exit(str(exception))

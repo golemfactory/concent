@@ -3,7 +3,6 @@
 import os
 import sys
 import hashlib
-import random
 from base64 import b64encode
 
 from golem_messages import message
@@ -13,21 +12,18 @@ from utils.helpers import get_current_utc_timestamp
 from utils.helpers import get_storage_file_path
 from utils.helpers import sign_message
 from utils.testing_helpers import generate_ecc_key_pair
-
 from api_testing_common import api_request
 from api_testing_common import assert_condition
 from api_testing_common import create_client_auth_message
 from api_testing_common import count_fails
-from api_testing_common import execute_tests
 from api_testing_common import get_task_id_and_subtask_id
-from api_testing_common import get_tests_list
-from api_testing_common import parse_arguments
+from api_testing_common import run_tests
 from api_testing_common import timestamp_to_isoformat
 
+from concent_api.settings import CONCENT_PUBLIC_KEY
+from concent_api.settings import STORAGE_CLUSTER_ADDRESS
 from freezegun import freeze_time
 
-from protocol_constants import get_protocol_constants
-from protocol_constants import print_protocol_constants
 
 import requests
 
@@ -82,26 +78,6 @@ def upload_file_to_storage_cluster(file_content, file_path, upload_token):
         data=file_content,
         verify=False
     )
-
-
-def main():
-    (cluster_url, patterns) = parse_arguments()
-    cluster_consts  = get_protocol_constants(cluster_url)
-    print_protocol_constants(cluster_consts)
-    test_id = str(random.randrange(1, 100000))
-
-    tests_to_execute = get_tests_list(patterns, list(globals().keys()))
-    execute_tests(
-        tests_to_execute=tests_to_execute,
-        objects=globals(),
-        cluster_consts=cluster_consts,
-        cluster_url=cluster_url,
-        test_id=test_id,
-    )
-
-    if count_fails.get_fails() > 0:
-        count_fails.print_fails()
-    print("END")
 
 
 @count_fails
@@ -233,8 +209,7 @@ def test_case_2_test_for_non_existing_file(cluster_consts, cluster_url, test_id)
 
 if __name__ == '__main__':
     try:
-        from concent_api.settings import CONCENT_PUBLIC_KEY, STORAGE_CLUSTER_ADDRESS
-        main()
+        run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file = sys.stderr)
         sys.exit(str(exception))

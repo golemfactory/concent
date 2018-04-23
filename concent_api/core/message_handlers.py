@@ -36,6 +36,7 @@ from core.validation import validate_list_of_identical_task_to_compute
 from core.validation import validate_report_computed_task_time_window
 from core.validation import validate_task_to_compute
 from utils import logging
+from utils.helpers import calculate_maximum_download_time
 from utils.helpers import deserialize_message
 from utils.helpers import get_current_utc_timestamp
 from utils.helpers import parse_timestamp_to_utc_datetime
@@ -318,7 +319,7 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
     force_get_task_result_deadline = (
         client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] +
         2 * settings.CONCENT_MESSAGING_TIME +
-        settings.MAXIMUM_DOWNLOAD_TIME
+        calculate_maximum_download_time(client_message.report_computed_task.size)
     )
 
     if Subtask.objects.filter(

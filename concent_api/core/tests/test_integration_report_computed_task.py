@@ -339,6 +339,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             timestamp           = "2017-12-01 11:00:05",
             cannot_compute_task = cannot_compute_task,
             task_to_compute=task_to_compute,
+            reason=message.RejectReportComputedTask.REASON.GotMessageCannotComputeTask,
         )
 
         serialized_reject_report_computed_task = self._get_serialized_reject_report_computed_task(
@@ -2366,6 +2367,179 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 content_type                    = 'application/octet-stream',
             )
         self._test_204_response(response_4)
+        self._assert_stored_message_counter_not_increased()
+
+        self._assert_client_count_is_equal(2)
+
+    def test_provider_forces_computed_task_report_and_requestor_sends_rejection_due_to_task_failure(self):
+        # Expected message exchange:
+        # Provider  -> Concent:    MessageForceReportComputedTask
+        # Concent   -> Requestor:  MessageForceReportComputedTask
+        # Requestor -> Concent:    MessageRejectReportComputedTask (GotMessageTaskFailure)
+        # Concent   -> Provider:   MessageRejectReportComputedTask
+
+        # STEP 1: Provider forces computed task report via Concent
+
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id='1',
+            subtask_id='8',
+            deadline="2017-12-01 11:00:00"
+        )
+
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp="2017-12-01 10:00:00",
+            compute_task_def=compute_task_def,
+        )
+
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp="2017-12-01 10:59:00",
+            task_to_compute=task_to_compute,
+        )
+
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp="2017-12-01 10:59:00",
+            force_report_computed_task=self._get_deserialized_force_report_computed_task(
+                timestamp="2017-12-01 10:59:00",
+                report_computed_task=report_computed_task
+            ),
+            provider_private_key=self.PROVIDER_PRIVATE_KEY
+        )
+
+        with freeze_time("2017-12-01 10:59:00"):
+            response_1 = self.client.post(
+                reverse('core:send'),
+                data=serialized_force_report_computed_task,
+                content_type='application/octet-stream',
+            )
+
+        self.assertEqual(response_1.status_code, 202)
+        self.assertEqual(len(response_1.content), 0)
+        self._assert_stored_message_counter_increased(increased_by=2)
+        self._test_subtask_state(
+            task_id='1',
+            subtask_id='8',
+            subtask_state=Subtask.SubtaskState.FORCING_REPORT,
+            provider_key=self._get_encoded_provider_public_key(),
+            requestor_key=self._get_encoded_requestor_public_key(),
+            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            next_deadline=self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+        )
+        self._test_last_stored_messages(
+            expected_messages=[
+                message.TaskToCompute,
+                message.ReportComputedTask,
+            ],
+            task_id='1',
+            subtask_id='8',
+            timestamp="2017-12-01 10:59:00"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id='8',
+            client_public_key=self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive=[
+                PendingResponse.ResponseType.ForceReportComputedTask,
+            ]
+        )
+
+        # STEP 2: Concent forces computed task report on the requestor
+
+        with freeze_time("2017-12-01 11:00:05"):
+            response_2 = self.client.post(
+                reverse('core:receive'),
+                data=self._create_requestor_auth_message(),
+                content_type='application/octet-stream',
+            )
+
+        self._test_response(
+            response_2,
+            status=200,
+            key=self.REQUESTOR_PRIVATE_KEY,
+            message_type=message.concents.ForceReportComputedTask,
+            fields={
+                'timestamp': self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'report_computed_task.task_to_compute.timestamp': self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'report_computed_task.task_to_compute.compute_task_def': compute_task_def,
+            }
+        )
+        self._assert_stored_message_counter_not_increased()
+
+        # STEP 3: Requestor rejects computed task due to TaskFailure
+
+        task_failure = self._get_deserialized_task_failure(
+            timestamp="2017-12-01 10:30:00",
+            subtask_id='8',
+            err='Stop later soldier sit.',
+            task_to_compute=task_to_compute,
+        )
+
+        reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
+            timestamp="2017-12-01 11:00:05",
+            task_failure=task_failure,
+            task_to_compute=task_to_compute,
+            reason=message.RejectReportComputedTask.REASON.GotMessageTaskFailure,
+        )
+
+        serialized_reject_report_computed_task = self._get_serialized_reject_report_computed_task(
+            timestamp="2017-12-01 11:00:05",
+            reject_report_computed_task=reject_report_computed_task,
+            requestor_private_key=self.REQUESTOR_PRIVATE_KEY,
+        )
+
+        with freeze_time("2017-12-01 11:00:05"):
+            response_3 = self.client.post(
+                reverse('core:send'),
+                data=serialized_reject_report_computed_task,
+                content_type='application/octet-stream',
+            )
+
+        self.assertEqual(response_3.status_code, 202)
+        self.assertEqual(len(response_3.content), 0)
+        self._assert_stored_message_counter_increased(increased_by=1)
+        self._test_subtask_state(
+            task_id='1',
+            subtask_id='8',
+            subtask_state=Subtask.SubtaskState.FAILED,
+            provider_key=self._get_encoded_provider_public_key(),
+            requestor_key=self._get_encoded_requestor_public_key(),
+            expected_nested_messages={'task_to_compute', 'report_computed_task', 'reject_report_computed_task'},
+        )
+        self._test_last_stored_messages(
+            expected_messages=[
+                message.RejectReportComputedTask,
+            ],
+            task_id='1',
+            subtask_id='8',
+            timestamp="2017-12-01 11:00:05"
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id='8',
+            client_public_key=self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive=[
+                PendingResponse.ResponseType.ForceReportComputedTaskResponse,
+            ]
+        )
+
+        # STEP 4: Concent passes computed task rejection to the provider
+
+        with freeze_time("2017-12-01 11:00:15"):
+            response_4 = self.client.post(
+                reverse('core:receive'),
+                data=self._create_provider_auth_message(),
+                content_type='application/octet-stream',
+            )
+
+        self._test_response(
+            response_4,
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ForceReportComputedTaskResponse,
+            fields={
+                'timestamp': self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
+                'reject_report_computed_task.timestamp': self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'reject_report_computed_task.task_failure.task_to_compute.timestamp': self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'reject_report_computed_task.task_failure.task_to_compute.compute_task_def': compute_task_def,
+            }
+        )
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(2)

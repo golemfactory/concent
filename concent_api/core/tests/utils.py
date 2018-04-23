@@ -560,10 +560,11 @@ class ConcentIntegrationTestCase(TestCase):
         reason          = None,
     ):
         with freeze_time(timestamp or self._get_timestamp_string()):
-            return message.tasks.CannotComputeTask(
+            cannot_compute_task = message.tasks.CannotComputeTask(
                 task_to_compute = task_to_compute,
                 reason          = reason,
             )
+            return self._sign_message(cannot_compute_task, self.PROVIDER_PRIVATE_KEY)
 
     def _get_deserialized_task_failure(
         self,

@@ -29,7 +29,8 @@ def request_upload_status_false_mock(_report_computed_task):
     CONCENT_PUBLIC_KEY          = CONCENT_PUBLIC_KEY,
     CONCENT_MESSAGING_TIME      = 10,    # seconds
     FORCE_ACCEPTANCE_TIME       = 10,    # seconds
-    MAXIMUM_DOWNLOAD_TIME       = 10,    # seconds
+    MINIMUM_UPLOAD_RATE         = 1,     # bits per second
+    DOWNLOAD_LEADIN_TIME        = 10,    # seconds
     SUBTASK_VERIFICATION_TIME   = 1800,  # 30 minutes
 )
 class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
@@ -350,7 +351,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:02"))
-        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
+        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:02:32"))
         self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
 
         self._assert_stored_message_counter_not_increased()
@@ -584,7 +585,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:03"))
-        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
+        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:02:32"))
         self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
 
         self._assert_stored_message_counter_not_increased()
@@ -810,7 +811,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:02"))
-        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
+        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:02:32"))
         self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
 
         self._assert_stored_message_counter_not_increased()
@@ -1036,7 +1037,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:02"))
-        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:50"))
+        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:02:32"))
         self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
 
         self._assert_stored_message_counter_not_increased()

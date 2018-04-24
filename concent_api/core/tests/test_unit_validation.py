@@ -7,9 +7,11 @@ from golem_messages.message.tasks import SubtaskResultsRejected
 from golem_messages.message.tasks import TaskToCompute
 
 from core.constants import ETHEREUM_ADDRESS_LENGTH
+from core.tests.utils import ConcentIntegrationTestCase
 from core.exceptions import Http400
 from core.validation import validate_ethereum_addresses
 from core.validation import validate_golem_message_subtask_results_rejected
+from core.validation import validate_all_messages_identical
 from core.validation import validate_subtask_price_task_to_compute
 
 
@@ -62,3 +64,28 @@ class ValidatorsTest(TestCase):
 
     def test_that_function_will_not_return_anything_when_price_is_zero(self):  # pylint: disable=no-self-use
         validate_subtask_price_task_to_compute(mocked_message_with_price(0))
+
+
+class TestValidateAllMessagesIdentical(ConcentIntegrationTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.report_computed_task = self._get_deserialized_report_computed_task()
+
+    def test_that_function_pass_when_in_list_is_one_item(self):
+
+        try:
+            validate_all_messages_identical([self.report_computed_task])
+        except Exception:  # pylint: disable=broad-except
+            self.fail()
+
+    def test_that_function_pass_when_in_list_are_two_same_report_computed_task(self):
+        try:
+            validate_all_messages_identical([self.report_computed_task, self.report_computed_task])
+        except Exception:  # pylint: disable=broad-except
+            self.fail()
+
+    def test_that_function_raise_http400_when_any_slot_will_be_different_in_messages(self):
+        different_report_computed_task = self._get_deserialized_report_computed_task(size = 10)
+        with self.assertRaises(Http400):
+            validate_all_messages_identical([self.report_computed_task, different_report_computed_task])

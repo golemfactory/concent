@@ -223,11 +223,11 @@ LOGGING = {
 
 # A global constant defining the length of the time window within which a requestor or a provider is supposed to
 # contact concent and send or receive a message as defined in the protocol.
-CONCENT_MESSAGING_TIME = 3600  # seconds
+CONCENT_MESSAGING_TIME = int(constants.CMT.total_seconds())
 
 # A global constant defining the length of the time window within which a requestor can
 # contact concent for forced getting task results.
-FORCE_ACCEPTANCE_TIME = 4 * 3600  # 4 hours
+FORCE_ACCEPTANCE_TIME = int(constants.FAT.total_seconds())
 
 # A global constant defining the assumed default resource download rate.
 MINIMUM_UPLOAD_RATE = constants.DEFAULT_UPLOAD_RATE
@@ -242,7 +242,7 @@ SUBTASK_VERIFICATION_TIME = 4 * 3600  # 4 hours
 ADDITIONAL_VERIFICATION_CALL_TIME = 4 * 3600  # 4 hours
 
 # A global constant defining the lenght of the time window within which a requestor must pay
-PAYMENT_DUE_TIME = 12 * 3600  # 12 hours
+PAYMENT_DUE_TIME = int(constants.PDT.total_seconds())
 
 # A global constant defining currently used payment backend.
 PAYMENT_BACKEND = 'core.payments.mock'

@@ -64,10 +64,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             key             = self.PROVIDER_PRIVATE_KEY,
             message_type    = message.concents.ForceReportComputedTaskResponse,
             fields          = {
-                'timestamp':                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:01:00"),
-                'reject_report_computed_task.timestamp':                        self._parse_iso_date_to_timestamp("2017-12-01 11:01:00"),
-                'reject_report_computed_task.reason':                           message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
-                'reject_report_computed_task.task_to_compute.compute_task_def': compute_task_def
+                'timestamp': self._parse_iso_date_to_timestamp("2017-12-01 11:01:00"),
+                'reason':    message.concents.ForceReportComputedTaskResponse.REASON.SubtaskTimeout,
             }
         )
         self._assert_stored_message_counter_not_increased()

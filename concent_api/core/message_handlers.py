@@ -13,7 +13,6 @@ from django.utils import timezone
 from golem_sci.events import BatchTransferEvent
 from golem_sci.events import ForcedPaymentEvent
 from golem_messages import message
-from golem_messages.datastructures import MessageHeader
 from golem_messages.message import FileTransferToken
 from golem_messages.message.tasks import SubtaskResultsRejected
 
@@ -65,17 +64,8 @@ def handle_send_force_report_computed_task(client_message):
             provider_public_key,
             client_message.report_computed_task.task_to_compute.compute_task_def['deadline'],
         )
-        reject_force_report_computed_task                 = message.RejectReportComputedTask(
-            header = MessageHeader(
-                type_     = message.RejectReportComputedTask.TYPE,
-                timestamp = client_message.timestamp,
-                encrypted = False,
-            )
-        )
-        reject_force_report_computed_task.reason          = message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded
-        reject_force_report_computed_task.task_to_compute = task_to_compute
         return message.concents.ForceReportComputedTaskResponse(
-            reject_report_computed_task = reject_force_report_computed_task
+            reason=message.concents.ForceReportComputedTaskResponse.REASON.SubtaskTimeout
         )
 
     subtask = store_subtask(

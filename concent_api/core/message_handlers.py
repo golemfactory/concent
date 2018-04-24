@@ -214,6 +214,13 @@ def handle_send_reject_report_computed_task(client_message):
         )
         tasks_to_compute.append(client_message.task_failure.task_to_compute)
 
+    # RejectReportComputedTask should contain empty cannot_compute_task and task_failure
+    else:
+        if client_message.cannot_compute_task is not None or client_message.task_failure is not None:
+            raise Http400("RejectReportComputedTask require empty 'cannot_compute_task' and 'task_failure' with {} reason.".format(
+                client_message.reason.name
+            ))
+
     try:
         subtask = Subtask.objects.get(
             subtask_id = task_to_compute.compute_task_def['subtask_id'],

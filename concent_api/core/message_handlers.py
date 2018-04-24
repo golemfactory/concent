@@ -28,10 +28,10 @@ from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import verify_message_subtask_results_accepted
 from core.transfer_operations import store_pending_message
 from core.transfer_operations import create_file_transfer_token_for_golem_client
+from core.validation import validate_all_messages_identical
 from core.validation import validate_ethereum_addresses
 from core.validation import validate_golem_message_signed_with_key
 from core.validation import validate_golem_message_subtask_results_rejected
-from core.validation import validate_list_of_identical_task_to_compute
 from core.validation import validate_report_computed_task_time_window
 from core.validation import validate_task_to_compute
 from utils import logging
@@ -93,6 +93,7 @@ def handle_send_force_report_computed_task(client_message):
 
 def handle_send_ack_report_computed_task(client_message):
     task_to_compute = client_message.report_computed_task.task_to_compute
+    report_computed_task = client_message.report_computed_task
     provider_public_key = task_to_compute.provider_public_key
     requestor_public_key = task_to_compute.requestor_public_key
 
@@ -126,11 +127,18 @@ def handle_send_ack_report_computed_task(client_message):
                 "Received AckReportComputedTask but RejectReportComputedTask "
                 "or another AckReportComputedTask for this task has already been submitted."
             )
-
-        validate_list_of_identical_task_to_compute([
+        validate_all_messages_identical([
             task_to_compute,
             deserialize_message(subtask.task_to_compute.data.tobytes()),
         ])
+        new_report_computed_task = None
+        try:
+            validate_all_messages_identical([
+                report_computed_task,
+                deserialize_message(subtask.report_computed_task.data.tobytes()),
+            ])
+        except Http400:
+            new_report_computed_task = report_computed_task
 
         subtask = update_subtask(
             subtask                     = subtask,
@@ -138,6 +146,7 @@ def handle_send_ack_report_computed_task(client_message):
             next_deadline               = None,
             set_next_deadline           = True,
             ack_report_computed_task    = client_message,
+            report_computed_task        = new_report_computed_task,
         )
         store_pending_message(
             response_type       = PendingResponse.ResponseType.ForceReportComputedTaskResponse,
@@ -231,7 +240,7 @@ def handle_send_reject_report_computed_task(client_message):
         raise Http400("Subtask requestor key does not match current client key. Can't accept your 'RejectReportComputedTask'.")
 
     tasks_to_compute.append(deserialize_message(subtask.task_to_compute.data.tobytes()))
-    validate_list_of_identical_task_to_compute(tasks_to_compute)
+    validate_all_messages_identical(tasks_to_compute)
 
     if (
         client_message.reason in
@@ -482,7 +491,7 @@ def handle_send_force_subtask_results_response(client_message):
     if subtask.subtask_results_accepted_id is not None or subtask.subtask_results_rejected_id is not None:
         raise Http400("This subtask has been resolved already.")
 
-    validate_list_of_identical_task_to_compute([
+    validate_all_messages_identical([
         task_to_compute,
         deserialize_message(subtask.task_to_compute.data.tobytes()),
     ])
@@ -1022,7 +1031,13 @@ def set_subtask_messages(
 
     for message_name, message_type in Subtask.MESSAGE_FOR_FIELD.items():
         message_to_store = subtask_messages_to_set.get(message_name)
-        if message_to_store is not None and getattr(subtask, message_name) is None:
+        if (
+            message_to_store is not None and
+            (
+                getattr(subtask, message_name) is None or
+                message_to_store.__class__ in Subtask.MESSAGE_REPLACEMENT_FOR_STATE[subtask.state_enum]
+            )
+        ):
             assert isinstance(message_to_store, message_type)
             stored_message = store_message(
                 message_to_store,
@@ -1061,7 +1076,7 @@ def store_or_update_subtask(
 
     if subtask is not None:
         if task_to_compute is not None and subtask.task_to_compute is not None:
-            validate_list_of_identical_task_to_compute([
+            validate_all_messages_identical([
                 task_to_compute,
                 deserialize_message(subtask.task_to_compute.data.tobytes()),
             ])

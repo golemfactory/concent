@@ -122,11 +122,9 @@ class ConcentIntegrationTestCase(TestCase):
             report_computed_task = message.ReportComputedTask(
                 task_to_compute = (
                     task_to_compute or
-                    self._sign_message(
                         self._get_deserialized_task_to_compute(
                             subtask_id=subtask_id
                         )
-                    )
                 ),
                 size            = size,
                 package_hash    = package_hash
@@ -187,20 +185,23 @@ class ConcentIntegrationTestCase(TestCase):
         timestamp       = None,
         deadline        = None,
         subtask_id      = '1',
+        report_computed_task = None,
         task_to_compute = None
     ):
         """ Returns AckReportComputedTask deserialized. """
         with freeze_time(timestamp or self._get_timestamp_string()):
             ack_report_computed_task = message.AckReportComputedTask(
-                report_computed_task = message.ReportComputedTask(
-                    task_to_compute = (
-                        task_to_compute or
-                        self._get_deserialized_task_to_compute(
-                            timestamp = timestamp,
-                            deadline  = deadline,
-                            subtask_id=subtask_id
-                        )
-                    ),
+                report_computed_task = (
+                    report_computed_task if report_computed_task is not None else message.ReportComputedTask(
+                        task_to_compute = (
+                            task_to_compute or
+                            self._get_deserialized_task_to_compute(
+                                timestamp = timestamp,
+                                deadline  = deadline,
+                                subtask_id=subtask_id
+                            )
+                        ),
+                    )
                 )
             )
         return ack_report_computed_task
@@ -792,3 +793,8 @@ class ConcentIntegrationTestCase(TestCase):
 
     def is_account_status_positive_true_mock(self, client_eth_address, pending_value):  # pylint: disable=unused-argument, no-self-use
         return True
+
+    def _test_report_computed_task_in_database(self, report_computed_task):
+        subtask = Subtask.objects.get(subtask_id = report_computed_task.subtask_id)
+        stored_report_computed_task = message.Message.deserialize(subtask.report_computed_task.data.tobytes(), decrypt_func = None, check_time = False)
+        self.assertEqual(stored_report_computed_task, report_computed_task)

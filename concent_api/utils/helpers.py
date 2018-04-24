@@ -4,12 +4,16 @@ import binascii
 import datetime
 import time
 
+from django.conf import settings
 from django.utils                   import timezone
+from mypy.types import Optional
 from mypy.types                     import Union
+import requests
 
 from golem_messages                 import message
 from golem_messages.datastructures  import FrozenDict
 from golem_messages.exceptions      import MessageError
+from golem_messages.shortcuts import dump
 
 from core.exceptions                import Http400
 from utils.constants                import ErrorCode
@@ -133,3 +137,36 @@ def join_messages(*messages):
     if len(messages) == 1:
         return messages[0]
     return ' '.join(m.strip() for m in messages if m not in ['', None])
+
+
+def upload_file_to_storage_cluster(
+    file_content: str,
+    file_path: str,
+    upload_token: message.concents.FileTransferToken,
+    client_public_key: Optional[bytes] = None,
+    client_private_key: Optional[bytes] = None,
+) -> requests.Response:
+    dumped_upload_token = dump(upload_token, None, settings.CONCENT_PUBLIC_KEY)
+    base64_encoded_token = base64.b64encode(dumped_upload_token).decode()
+    headers = {
+        'Authorization': 'Golem ' + base64_encoded_token,
+        'Concent-Auth': base64.b64encode(
+            dump(
+                message.concents.ClientAuthorization(
+                    client_public_key=(
+                        client_public_key if client_public_key is not None else settings.CONCENT_PUBLIC_KEY
+                    ),
+                ),
+                client_private_key if client_private_key is not None else settings.CONCENT_PRIVATE_KEY,
+                settings.CONCENT_PUBLIC_KEY
+            ),
+        ).decode(),
+        'Concent-Upload-Path': file_path,
+        'Content-Type': 'application/octet-stream'
+    }
+    return requests.post(
+        "{}upload/".format(settings.STORAGE_CLUSTER_ADDRESS),
+        headers=headers,
+        data=file_content,
+        verify=False
+    )

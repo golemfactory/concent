@@ -2,34 +2,28 @@
 
 import os
 import sys
-import random
 import time
 from freezegun import freeze_time
 
 from golem_messages import message
 
 from utils.helpers import get_current_utc_timestamp
-from utils.helpers import sign_message
-from utils.testing_helpers import generate_ecc_key_pair
 
 from api_testing_common import api_request
 from api_testing_common import count_fails
 from api_testing_common import create_client_auth_message
-from api_testing_common import execute_tests
+from api_testing_common import create_signed_task_to_compute
 from api_testing_common import get_task_id_and_subtask_id
-from api_testing_common import get_tests_list
-from api_testing_common import parse_arguments
+from api_testing_common import PROVIDER_PRIVATE_KEY
+from api_testing_common import PROVIDER_PUBLIC_KEY
+from api_testing_common import REQUESTOR_PRIVATE_KEY
+from api_testing_common import REQUESTOR_PUBLIC_KEY
+from api_testing_common import run_tests
 from api_testing_common import timestamp_to_isoformat
-
-from protocol_constants import get_protocol_constants
-from protocol_constants import print_protocol_constants
 
 import requests
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
-
-(PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)  = generate_ecc_key_pair()
-(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
 def force_subtask_results(timestamp = None, ack_report_computed_task = None):
@@ -44,31 +38,6 @@ def ack_report_computed_task(timestamp = None, report_computed_task = None):
         return message.AckReportComputedTask(
             report_computed_task=report_computed_task,
         )
-
-
-def task_to_compute(timestamp = None, compute_task_def = None, provider_public_key = None, requestor_public_key = None, price = 0):
-    with freeze_time(timestamp):
-        task_to_compute = message.tasks.TaskToCompute(
-            provider_public_key = provider_public_key if provider_public_key is not None else PROVIDER_PUBLIC_KEY,
-            requestor_public_key = requestor_public_key if requestor_public_key is not None else REQUESTOR_PUBLIC_KEY,
-            compute_task_def = compute_task_def,
-            price=price,
-        )
-        sign_message(task_to_compute, REQUESTOR_PRIVATE_KEY)
-        return task_to_compute
-
-
-def compute_task_def(
-    task_id     = None,
-    subtask_id  = None,
-    deadline    = None,
-):
-    compute_task_def = message.tasks.ComputeTaskDef()
-    compute_task_def['task_id']     = task_id
-    compute_task_def['deadline']    = deadline
-    compute_task_def['subtask_id']  = subtask_id
-
-    return compute_task_def
 
 
 def force_subtask_results_response(timestamp = None, subtask_results_accepted = None, subtask_results_rejected = None):
@@ -102,35 +71,18 @@ def report_computed_task(timestamp = None, task_to_compute = None):
         )
 
 
-def main():
-    (cluster_url, patterns) = parse_arguments()
-    cluster_consts = get_protocol_constants(cluster_url)
-    print_protocol_constants(cluster_consts)
-
-    test_id = str(random.randrange(1, 100000))
-    tests_to_execute = get_tests_list(patterns, list(globals().keys()))
-
-    print("Tests to be executed: \n * " + "\n * ".join(tests_to_execute))
-    print()
-
-    execute_tests(
-        tests_to_execute=tests_to_execute,
-        objects=globals(),
-        cluster_url=cluster_url,
-        test_id=test_id,
-        cluster_consts=cluster_consts
-    )
-
-    if count_fails.get_fails() > 0:
-        count_fails.print_fails()
-    print("END")
-
-
 @count_fails
 def test_case_2d_requestor_rejects_subtask_results(cluster_consts, cluster_url, test_id):
     # Test CASE 2D + 3 + 4B + 5. Requestor sends ForceSubtaskResultsResponse with SubtaskResultsRejected
     current_time = get_current_utc_timestamp()
     (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, '2D')
+    signed_task_to_compute = create_signed_task_to_compute(
+        timestamp=timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
+        task_id=task_id,
+        subtask_id=subtask_id,
+        deadline=current_time - (cluster_consts.subtask_verification_time),
+        price=1,
+    )
     api_request(
         cluster_url,
         'send',
@@ -141,21 +93,12 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts, cluster_url, 
             ack_report_computed_task=ack_report_computed_task(
                 timestamp=timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time)),
                 report_computed_task=report_computed_task(
-                    task_to_compute=task_to_compute(
-                        price=1,
-                        timestamp=timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
-                        compute_task_def=compute_task_def(
-                            task_id=task_id,
-                            subtask_id=subtask_id,
-                            deadline=current_time - (cluster_consts.subtask_verification_time),
-                        )
-                    )
+                    task_to_compute=signed_task_to_compute,
                 )
             )
         ),
         headers={
             'Content-Type': 'application/octet-stream',
-            'temporary-account-funds': 'True'
         },
         expected_status=202,
     )
@@ -183,21 +126,12 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts, cluster_url, 
                 timestamp=timestamp_to_isoformat(current_time),
                 report_computed_task=report_computed_task(
                     timestamp=timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time)),
-                    task_to_compute=task_to_compute(
-                        price=1,
-                        timestamp=timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
-                        compute_task_def=compute_task_def(
-                            deadline=current_time - (cluster_consts.subtask_verification_time),
-                            task_id=task_id,
-                            subtask_id=subtask_id,
-                        )
-                    )
+                    task_to_compute=signed_task_to_compute,
                 )
             )
         ),
         headers={
             'Content-Type': 'application/octet-stream',
-            'temporary-account-funds': 'True'
         },
         expected_status=202,
     )
@@ -222,6 +156,13 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts, cluster_url, 
     #  Step 1. Send ForceSubtaskResults
     current_time = get_current_utc_timestamp()
     (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '4B')
+    signed_task_to_compute = create_signed_task_to_compute(
+        timestamp=timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
+        task_id=task_id,
+        subtask_id=subtask_id,
+        deadline=current_time - (cluster_consts.subtask_verification_time),
+        price=1,
+    )
     api_request(
         cluster_url,
         'send',
@@ -232,21 +173,12 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts, cluster_url, 
             ack_report_computed_task=ack_report_computed_task(
                 timestamp=timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time * 1.4)),
                 report_computed_task=report_computed_task(
-                    task_to_compute=task_to_compute(
-                        price=1,
-                        timestamp=timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
-                        compute_task_def=compute_task_def(
-                            task_id=task_id,
-                            subtask_id=subtask_id,
-                            deadline=current_time - (cluster_consts.subtask_verification_time),
-                        )
-                    )
+                    task_to_compute=signed_task_to_compute
                 )
             )
         ),
         headers={
             'Content-Type': 'application/octet-stream',
-            'temporary-account-funds': 'True'
         },
         expected_status=202,
     )
@@ -262,20 +194,11 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts, cluster_url, 
             subtask_results_accepted=subtask_results_accepted(
                 timestamp=timestamp_to_isoformat(current_time),
                 payment_ts=timestamp_to_isoformat(current_time + 1),
-                task_to_compute=task_to_compute(
-                    price=1,
-                    timestamp=timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
-                    compute_task_def=compute_task_def(
-                        task_id=task_id,
-                        subtask_id=subtask_id,
-                        deadline=current_time - (cluster_consts.subtask_verification_time),
-                    )
-                )
+                task_to_compute=signed_task_to_compute
             )
         ),
         headers={
             'Content-Type': 'application/octet-stream',
-            'temporary-account-funds': 'True'
         },
         expected_status=202,
     )
@@ -309,21 +232,18 @@ def test_case_2c_wrong_timestamps(cluster_consts, cluster_url, test_id):
             ack_report_computed_task=ack_report_computed_task(
                 timestamp=timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time * 1.4)),
                 report_computed_task=report_computed_task(
-                    task_to_compute=task_to_compute(
-                        price=1,
+                    task_to_compute=create_signed_task_to_compute(
                         timestamp=timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
-                        compute_task_def=compute_task_def(
-                            task_id=task_id,
-                            subtask_id=subtask_id,
-                            deadline=current_time - (cluster_consts.subtask_verification_time * 20),
-                        )
+                        task_id=task_id,
+                        subtask_id=subtask_id,
+                        deadline=current_time - (cluster_consts.subtask_verification_time * 20),
+                        price=1,
                     )
                 )
             )
         ),
         headers={
             'Content-Type': 'application/octet-stream',
-            'temporary-account-funds': 'True'
         },
         expected_status=200,
         expected_message_type=message.concents.ForceSubtaskResultsRejected.TYPE,
@@ -342,24 +262,21 @@ def test_case_2b_not_enough_funds(cluster_consts, cluster_url, test_id):
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         force_subtask_results(
-            timestamp=timestamp_to_isoformat(current_time),  # current_time
+            timestamp=timestamp_to_isoformat(current_time),
             ack_report_computed_task=ack_report_computed_task(
                 timestamp=timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time * 1.4)),
                 report_computed_task=report_computed_task(
-                    task_to_compute=task_to_compute(
+                    task_to_compute=create_signed_task_to_compute(
                         timestamp=timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
-                        compute_task_def=compute_task_def(
-                            task_id=task_id,
-                            subtask_id=subtask_id,
-                            deadline=current_time - (cluster_consts.subtask_verification_time),
-                        )
+                        task_id=task_id,
+                        subtask_id=subtask_id,
+                        deadline=current_time - (cluster_consts.subtask_verification_time),
                     )
                 )
             )
         ),
         headers={
             'Content-Type': 'application/octet-stream',
-            'temporary-account-funds': ''
         },
         expected_status=200,
         expected_message_type=message.concents.ServiceRefused.TYPE,
@@ -373,6 +290,13 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts, cluster_u
     #  Step 1. Send ForceSubtaskResults first time
     current_time = get_current_utc_timestamp()
     (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '2A')
+    signed_task_to_compute = create_signed_task_to_compute(
+        timestamp=timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
+        task_id=task_id,
+        subtask_id=subtask_id,
+        deadline=current_time - (cluster_consts.subtask_verification_time),
+        price=1,
+    )
     api_request(
         cluster_url,
         'send',
@@ -383,21 +307,12 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts, cluster_u
             ack_report_computed_task=ack_report_computed_task(
                 timestamp=timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time * 1.4)),
                 report_computed_task=report_computed_task(
-                    task_to_compute=task_to_compute(
-                        price=1,
-                        timestamp=timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
-                        compute_task_def=compute_task_def(
-                            task_id=task_id,
-                            subtask_id=subtask_id,
-                            deadline=current_time - (cluster_consts.subtask_verification_time),
-                        )
-                    )
+                    task_to_compute=signed_task_to_compute
                 )
             )
         ),
         headers={
             'Content-Type': 'application/octet-stream',
-            'temporary-account-funds': 'True'
         },
         expected_status=202,
     )
@@ -413,21 +328,12 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts, cluster_u
             ack_report_computed_task=ack_report_computed_task(
                 timestamp=timestamp_to_isoformat(current_time - (cluster_consts.subtask_verification_time * 1.4)),
                 report_computed_task=report_computed_task(
-                    task_to_compute=task_to_compute(
-                        price=1,
-                        timestamp=timestamp_to_isoformat(current_time - cluster_consts.subtask_verification_time * 1.5),
-                        compute_task_def=compute_task_def(
-                            task_id=task_id,
-                            subtask_id=subtask_id,
-                            deadline=current_time - (cluster_consts.subtask_verification_time),
-                        )
-                    )
+                    task_to_compute=signed_task_to_compute
                 )
             )
         ),
         headers={
             'Content-Type': 'application/octet-stream',
-            'temporary-account-funds': 'True'
         },
         expected_status=200,
         expected_message_type=message.concents.ServiceRefused.TYPE,
@@ -452,7 +358,7 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts, cluster_u
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
-        main()
+        run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file = sys.stderr)
         sys.exit(str(exception))

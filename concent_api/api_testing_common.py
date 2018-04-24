@@ -1,8 +1,13 @@
 import argparse
+import random
 import sys
 
+from freezegun import freeze_time
+
 from golem_messages.exceptions      import MessageError
-from golem_messages.message         import Message
+from golem_messages.message import ComputeTaskDef
+from golem_messages.message import Message
+from golem_messages.message import TaskToCompute
 from golem_messages.message.concents import ClientAuthorization
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
@@ -11,6 +16,14 @@ import datetime
 import json
 import requests
 import http.client
+
+from protocol_constants import get_protocol_constants
+from protocol_constants import print_protocol_constants
+from utils.helpers import sign_message
+from utils.testing_helpers import generate_ecc_key_pair
+
+(PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)  = generate_ecc_key_pair()
+(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
 class TestAssertionException(Exception):
@@ -21,7 +34,7 @@ class count_fails(object):
     """
     Decorator that wraps a test functions for intercepting assertions and counting them.
     """
-    instances = []
+    instances = []  # type: ignore
     number_of_run_tests = 0
 
     def __init__(self, function):
@@ -146,7 +159,7 @@ def api_request(
     validate_content_type(response.headers['Content-Type'], expected_content_type)
     validate_response_message(response.content, expected_message_type, private_key, public_key)
     print()
-    if response.status_code == 204:
+    if response.status_code in [202, 204]:
         return None
     else:
         return try_to_decode_golem_message(private_key, public_key, response.content)
@@ -254,3 +267,52 @@ def execute_tests(tests_to_execute, objects, **kwargs):
         kw = {k: v for k, v in kwargs.items() if k != 'test_id'}
         test(test_id=test_id, **kw)
         print("-" * 80)
+
+
+def run_tests(objects, additional_arguments=None):
+    if additional_arguments is None:
+        additional_arguments = {}
+    (cluster_url, patterns) = parse_arguments()
+    cluster_consts = get_protocol_constants(cluster_url)
+    print_protocol_constants(cluster_consts)
+    test_id = str(random.randrange(1, 100000))
+    tests_to_execute = get_tests_list(patterns, list(objects.keys()))
+    print("Tests to be executed: \n * " + "\n * ".join(tests_to_execute))
+    print()
+    execute_tests(
+        tests_to_execute=tests_to_execute,
+        objects=objects,
+        cluster_url=cluster_url,
+        test_id=test_id,
+        cluster_consts=cluster_consts,
+        **additional_arguments
+    )
+    if count_fails.get_fails() > 0:
+        count_fails.print_fails()
+    print("END")
+
+
+def create_signed_task_to_compute(
+    task_id,
+    subtask_id,
+    deadline,
+    timestamp=None,
+    provider_public_key=None,
+    requestor_public_key=None,
+    requestor_ethereum_public_key=None,
+    price=0
+):
+    with freeze_time(timestamp):
+        compute_task_def = ComputeTaskDef()
+        compute_task_def['task_id'] = task_id
+        compute_task_def['subtask_id'] = subtask_id
+        compute_task_def['deadline'] = deadline
+        task_to_compute = TaskToCompute(
+            provider_public_key=provider_public_key if provider_public_key is not None else PROVIDER_PUBLIC_KEY,
+            requestor_public_key=requestor_public_key if requestor_public_key is not None else REQUESTOR_PUBLIC_KEY,
+            compute_task_def=compute_task_def,
+            requestor_ethereum_public_key=requestor_ethereum_public_key,
+            price=price,
+        )
+        sign_message(task_to_compute, REQUESTOR_PRIVATE_KEY)
+        return task_to_compute

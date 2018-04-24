@@ -2,7 +2,8 @@
 [run]
 omit=
     api-integration-*-test.py
-    api_testing_helpers.py
+    api-integration-force-payment.py
+    api_testing_common.py
     manage.py
     */__init__.py
     */admin.py

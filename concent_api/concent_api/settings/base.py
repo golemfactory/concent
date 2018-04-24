@@ -1,5 +1,7 @@
 import os
 
+from golem_messages import constants
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -227,8 +229,11 @@ CONCENT_MESSAGING_TIME = 3600  # seconds
 # contact concent for forced getting task results.
 FORCE_ACCEPTANCE_TIME = 4 * 3600  # 4 hours
 
-# A global constant defining the length of the time window within which FileTransferToken message is valid.
-MAXIMUM_DOWNLOAD_TIME = 1800  # 30 minutes
+# A global constant defining the assumed default resource download rate.
+MINIMUM_UPLOAD_RATE = constants.DEFAULT_UPLOAD_RATE
+
+# A global constant defining the download timeout margin independent from the size of the result.
+DOWNLOAD_LEADIN_TIME = int(constants.DOWNLOAD_LEADIN_TIME.total_seconds())
 
 # A global constant defining the length of the time window within which a requestor can verify subtask.
 SUBTASK_VERIFICATION_TIME = 4 * 3600  # 4 hours

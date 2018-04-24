@@ -8,7 +8,8 @@ ProtocolConstants = NamedTuple(
         ("concent_messaging_time", int),
         ("subtask_verification_time", int),
         ("force_acceptance_time", int),
-        ("maximum_download_time", int),
+        ("minimum_upload_rate", int),
+        ("download_leadin_time", int),
         ("payment_due_time", int),
     ]
 )

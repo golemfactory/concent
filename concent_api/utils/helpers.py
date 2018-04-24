@@ -4,12 +4,14 @@ import binascii
 import datetime
 import time
 
+from django.conf                    import settings
 from django.utils                   import timezone
 from mypy.types                     import Union
 
 from golem_messages                 import message
 from golem_messages.datastructures  import FrozenDict
 from golem_messages.exceptions      import MessageError
+from golem_messages.helpers         import maximum_download_time
 
 from core.exceptions                import Http400
 from core.validation                import validate_public_key
@@ -150,3 +152,14 @@ def get_validated_client_public_key_from_client_message(golem_message: message.b
 
 def get_storage_file_path(subtask_id, task_id):
     return f'blender/result/{task_id}/{task_id}.{subtask_id}.zip'
+
+
+def calculate_maximum_download_time(size: int) -> int:
+    assert isinstance(size, int)
+
+    return int(
+        maximum_download_time(
+            size,
+            settings.MINIMUM_UPLOAD_RATE,
+        ).total_seconds()
+    )

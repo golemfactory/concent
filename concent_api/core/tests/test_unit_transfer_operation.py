@@ -13,6 +13,7 @@ from core.exceptions import UnexpectedResponse
 from core.transfer_operations import create_file_transfer_token_for_concent
 from core.transfer_operations import create_file_transfer_token_for_golem_client
 from core.transfer_operations import request_upload_status
+from utils.helpers import calculate_maximum_download_time
 from utils.helpers import parse_datetime_to_timestamp
 
 from utils.testing_helpers import generate_ecc_key_pair
@@ -72,7 +73,8 @@ class RequestUploadStatusTest(ConcentIntegrationTestCase):
 @override_settings(
     CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
     CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
-    MAXIMUM_DOWNLOAD_TIME=1800,
+    MINIMUM_UPLOAD_RATE=1,
+    DOWNLOAD_LEADIN_TIME= 10,
     CONCENT_MESSAGING_TIME=20,
     SUBTASK_VERIFICATION_TIME=50,
 )
@@ -97,7 +99,7 @@ class FileTransferTokenCreationTest(TestCase):
 
     def test_that_download_file_transfer_token_for_golem_client_is_can_be_out_of_date(self):
         with freeze_time(self.time):
-            new_time = self._get_deadline_exceeded_time_for_download_token()
+            new_time = self._get_deadline_exceeded_time_for_download_token(self.report_computed_task.size)
             with freeze_time(new_time):
                 download_token = create_file_transfer_token_for_golem_client(
                     self.report_computed_task,
@@ -122,7 +124,7 @@ class FileTransferTokenCreationTest(TestCase):
             seconds=settings.SUBTASK_VERIFICATION_TIME + self.deadline + 1
         )
 
-    def _get_deadline_exceeded_time_for_download_token(self):
+    def _get_deadline_exceeded_time_for_download_token(self, size):
         return self.time + datetime.timedelta(
-            seconds=3 * settings.CONCENT_MESSAGING_TIME + 2 * settings.MAXIMUM_DOWNLOAD_TIME + self.deadline + 1
+            seconds=3 * settings.CONCENT_MESSAGING_TIME + 2 * calculate_maximum_download_time(size) + self.deadline + 1
         )

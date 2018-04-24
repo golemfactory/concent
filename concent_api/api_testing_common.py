@@ -154,13 +154,13 @@ def api_request(
 
 def _print_response(private_key, public_key, response):
     if response.content is None:
-        print('RAW RESPONSE: Reponse content is None')
+        print('RESPONSE: <empty>')
     elif len(response.content) != 0:
         _print_message_from_response(private_key, public_key, response)
     else:
         print('STATUS: {} {}'.format(response.status_code, http.client.responses[response.status_code]))
         if response.text not in ['', None]:
-            print('RAW RESPONSE: {}'.format(response.text))
+            print('RAW RESPONSE (text): {}'.format(response.text))
 
 
 def _print_message_from_response(private_key, public_key, response):
@@ -172,7 +172,7 @@ def _print_message_from_response(private_key, public_key, response):
     elif response.headers['Content-Type'] == 'application/json':
         _print_message_from_json(response)
     else:
-        print('RAW RESPONSE: Unexpected content-type of response message')
+        print('ERROR: Unexpected content-type of response message')
 
 
 def _print_message_from_json(response):

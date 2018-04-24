@@ -197,7 +197,10 @@ def _print_message_from_json(response):
 
 def _print_message_from_stream(private_key, public_key, content):
     decoded_response = try_to_decode_golem_message(private_key, public_key, content)
-    print_golem_message(decoded_response)
+    if decoded_response is None:
+        print("ERROR: Decoded Golem Message is 'None'")
+    else:
+        print_golem_message(decoded_response)
 
 
 def try_to_decode_golem_message(private_key, public_key, content):

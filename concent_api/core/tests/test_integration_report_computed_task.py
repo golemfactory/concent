@@ -511,7 +511,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
             timestamp="2017-12-01 11:00:05",
-            reason=message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
+            reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
             task_to_compute=task_to_compute,
         )
 

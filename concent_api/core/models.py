@@ -231,6 +231,42 @@ class Subtask(Model):
         for state in states
     }.issubset(set(SubtaskState))
 
+    # Defines in which states exist possibility to replace message nested in Subtask.
+    MESSAGE_REPLACEMENT_FOR_STATE = {
+        SubtaskState.FORCING_REPORT: {
+            message.ReportComputedTask,
+        },
+        SubtaskState.REPORTED: {
+            None,
+        },
+        SubtaskState.FORCING_RESULT_TRANSFER: {
+            None,
+        },
+        SubtaskState.RESULT_UPLOADED: {
+            None,
+        },
+        SubtaskState.FORCING_ACCEPTANCE: {
+            None,
+        },
+        SubtaskState.REJECTED: {
+            None,
+        },
+        SubtaskState.VERIFICATION_FILE_TRANSFER: {
+            None,
+        },
+        SubtaskState.ADDITIONAL_VERIFICATION: {
+            None,
+        },
+        SubtaskState.ACCEPTED: {
+            None,
+        },
+        SubtaskState.FAILED: {
+            None,
+        },
+    }
+
+    assert set(MESSAGE_REPLACEMENT_FOR_STATE) == set(SubtaskState)
+
     class Meta:
         unique_together = (
             ('requestor', 'task_id'),

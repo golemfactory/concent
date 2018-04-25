@@ -21,7 +21,7 @@ ethereum==1.6.1
 factory-boy==2.9.2
 Faker==0.8.10
 freezegun==0.3.9
--e git://github.com/golemfactory/golem-messages.git@7cdfbc9aaf3601aff7a16efc5a5b6f1eaa0f0f1e#egg=Golem_Messages
+-e git://github.com/golemfactory/golem-messages.git@61686b3580c4ffd044cb5097033045d143c90c6f#egg=Golem_Messages
 -e git://github.com/golemfactory/golem-smart-contracts-interface.git@ac18a87c45b730c01eef37f15d86d7862aea819a#egg=Golem_Smart_Contracts_Interface
 idna==2.6
 kombu==4.1.0

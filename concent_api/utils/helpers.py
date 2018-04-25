@@ -30,10 +30,6 @@ def is_base64(data: str) -> bool:
         return False
 
 
-def decode_key(key: str) -> bytes:
-    return base64.b64decode(key.encode('ascii'), validate = True)
-
-
 def get_current_utc_timestamp() -> int:
     """
     Returns current timestamp as int.

@@ -99,6 +99,22 @@ def create_error_22_if_download_leadin_time_has_wrong_value():
     )
 
 
+def create_error_23_if_concent_time_settings_is_not_defined(concent_setting_name):
+    return Error(
+        f"{concent_setting_name} is not defined",
+        hint=f"{concent_setting_name} must be set to non-negative integer",
+        id="concent.E023",
+    )
+
+
+def create_error_24_if_concent_time_settings_have_wrong_value(concent_setting_name):
+    return Error(
+        f"{concent_setting_name} has wrong value",
+        hint=f"{concent_setting_name} must be set to non-negative integer",
+        id="concent.E024",
+    )
+
+
 @register()
 def check_settings_concent_features(app_configs, **kwargs):  # pylint: disable=unused-argument
 
@@ -259,3 +275,21 @@ def check_download_leadin_time(app_configs=None, **kwargs):  # pylint: disable=u
     if not isinstance(settings.DOWNLOAD_LEADIN_TIME, int) or settings.DOWNLOAD_LEADIN_TIME < 0:
         return [create_error_22_if_download_leadin_time_has_wrong_value()]
     return errors
+
+
+@register()
+def check_concents_time_settings(app_configs=None, **kwargs):  # pylint: disable=unused-argument
+    CONCENT_TIME_SETTINGS = [
+        'CONCENT_MESSAGING_TIME',
+        'FORCE_ACCEPTANCE_TIME',
+        'PAYMENT_DUE_TIME',
+    ]
+    settings_not_defined = []
+    settings_wrong_value = []
+    for concent_setting in CONCENT_TIME_SETTINGS:
+        if not hasattr(settings, concent_setting):
+            settings_not_defined.append(create_error_23_if_concent_time_settings_is_not_defined(concent_setting))
+        else:
+            if not isinstance(getattr(settings, concent_setting), int) or getattr(settings, concent_setting) < 0:
+                settings_wrong_value.append(create_error_24_if_concent_time_settings_have_wrong_value(concent_setting))
+    return settings_not_defined + settings_wrong_value

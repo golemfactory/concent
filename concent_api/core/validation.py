@@ -80,30 +80,28 @@ def validate_golem_message_client_authorization(golem_message: message.concents.
     validate_public_key(golem_message.client_public_key, 'client_public_key')
 
 
-def validate_list_of_identical_task_to_compute(list_of_task_to_compute: List[message.TaskToCompute]):
-    assert isinstance(list_of_task_to_compute, list)
-    assert all([isinstance(task_to_compute, message.TaskToCompute) for task_to_compute in list_of_task_to_compute])
+def validate_all_messages_identical(golem_messages_list: List[message.Message]):
+    assert isinstance(golem_messages_list, list)
+    assert len(golem_messages_list) >= 1
+    assert all(isinstance(golem_message, message.Message) for golem_message in golem_messages_list)
+    assert len(set(type(golem_message) for golem_message in golem_messages_list)) == 1
 
-    if len(list_of_task_to_compute) <= 1:
-        return True
+    base_golem_message = golem_messages_list[0]
 
-    base_task_to_compute = list_of_task_to_compute[0]
-
-    for i, task_to_compute in enumerate(list_of_task_to_compute[1:], start = 1):
-        for slot in message.TaskToCompute.__slots__:
-            if getattr(base_task_to_compute, slot) != getattr(task_to_compute, slot):
+    for i, golem_message in enumerate(golem_messages_list[1:], start=1):
+        for slot in base_golem_message.__slots__:
+            if getattr(base_golem_message, slot) != getattr(golem_message, slot):
                 raise Http400(
-                    'TaskToCompute messages are not identical. '
+                    '{} messages are not identical. '
                     'There is a difference between messages with index 0 on passed list and with index {}'
                     'The difference is on field {}: {} is not equal {}'.format(
+                        type(base_golem_message).__name__,
                         i,
                         slot,
-                        getattr(base_task_to_compute, slot),
-                        getattr(task_to_compute, slot),
+                        getattr(base_golem_message, slot),
+                        getattr(golem_message, slot),
                     )
                 )
-
-    return True
 
 
 def validate_golem_message_signed_with_key(

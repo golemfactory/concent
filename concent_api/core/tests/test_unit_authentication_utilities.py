@@ -6,9 +6,9 @@ from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 
 from core.exceptions                import Http400
+from core.validation                import validate_all_messages_identical
 from core.validation                import validate_golem_message_client_authorization
 from core.validation                import validate_golem_message_signed_with_key
-from core.validation                import validate_list_of_identical_task_to_compute
 from utils.shortcuts                import load_without_public_key
 from utils.testing_helpers          import generate_ecc_key_pair
 
@@ -136,24 +136,24 @@ class ValidateGolemMessageSignedWithKeyUnitTest(TestCase):
 
 class ValidateListOfIdenticalTaskToComputeUnitTest(TestCase):
 
-    def test_validate_list_of_identical_task_to_compute_should_raise_error_when_not_list_is_used(self):
+    def test_that_validate_all_messages_identical_should_raise_error_when_not_list_is_used(self):
 
         with self.assertRaises(AssertionError):
-            validate_list_of_identical_task_to_compute({})
+            validate_all_messages_identical({})
 
         with self.assertRaises(AssertionError):
-            validate_list_of_identical_task_to_compute(1)
+            validate_all_messages_identical(1)
 
         with self.assertRaises(AssertionError):
-            validate_list_of_identical_task_to_compute('str')
+            validate_all_messages_identical('str')
 
         with self.assertRaises(AssertionError):
-            validate_list_of_identical_task_to_compute(True)
+            validate_all_messages_identical(True)
 
-    def test_validate_list_of_identical_task_to_compute_should_raise_error_when_not_all_list_items_are_instances_of_task_to_compute(self):
+    def test_that_validate_all_messages_identical_should_raise_error_when_not_all_list_items_are_instances_of_task_to_compute(self):
 
         with self.assertRaises(AssertionError):
-            validate_list_of_identical_task_to_compute(
+            validate_all_messages_identical(
                 [
                     message.TaskToCompute(),
                     message.TaskToCompute(),
@@ -161,20 +161,17 @@ class ValidateListOfIdenticalTaskToComputeUnitTest(TestCase):
                 ]
             )
 
-    def test_validate_list_of_identical_task_to_compute_should_return_true_if_list_has_0_or_one_element(self):
-        self.assertTrue(
-            validate_list_of_identical_task_to_compute([])
-        )
+    def test_that_function_raises_assertion_error_when_list_has_0_elements(self):
+        with self.assertRaises(AssertionError):
+            validate_all_messages_identical([])
 
-        self.assertTrue(
-            validate_list_of_identical_task_to_compute(
-                [
-                    message.TaskToCompute(),
-                ]
-            )
-        )
+    def test_that_function_passes_when_list_has_1_elemt(self):
+        try:
+            validate_all_messages_identical([message.TaskToCompute()])
+        except Exception:  # pylint: disable=broad-except
+            self.fail()
 
-    def test_validate_list_of_identical_task_to_compute_should_raise_http400_when_not_all_task_to_compute_are_identical(self):
+    def test_that_validate_all_messages_identical_should_raise_http400_when_not_all_task_to_compute_are_identical(self):
         list_of_not_identical_task_to_compute = [
             message.TaskToCompute(
                 requestor_id = 1
@@ -188,11 +185,11 @@ class ValidateListOfIdenticalTaskToComputeUnitTest(TestCase):
         ]
 
         with self.assertRaises(Http400):
-            validate_list_of_identical_task_to_compute(
+            validate_all_messages_identical(
                 list_of_not_identical_task_to_compute
             )
 
-    def test_validate_list_of_identical_task_to_compute_should_not_raise_http400_when_all_task_to_compute_are_identical(self):
+    def test_that_validate_all_messages_identical_should_not_raise_http400_when_all_task_to_compute_are_identical(self):
         list_of_identical_task_to_compute = [
             message.TaskToCompute(
                 requestor_id = 1
@@ -206,7 +203,7 @@ class ValidateListOfIdenticalTaskToComputeUnitTest(TestCase):
         ]
 
         try:
-            validate_list_of_identical_task_to_compute(
+            validate_all_messages_identical(
                 list_of_identical_task_to_compute
             )
         except Http400:

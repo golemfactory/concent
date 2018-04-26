@@ -8,6 +8,7 @@ from django.urls    import reverse
 
 from golem_messages.shortcuts       import dump
 from golem_messages.message         import FileTransferToken
+from golem_messages.factories.concents import FileTransferTokenFactory
 
 from core.tests.utils               import ConcentIntegrationTestCase
 from utils.helpers import get_current_utc_timestamp
@@ -25,16 +26,14 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
     def setUp(self):
         self.message_timestamp  = get_current_utc_timestamp()
         self.public_key         = '85cZzVjahnRpUBwm0zlNnqTdYom1LF1P1WNShLg17cmhN2UssnPrCjHKTi5susO3wrr/q07eswumbL82b4HgOw=='
-        self.upload_token                                 = FileTransferToken()
-        self.upload_token.token_expiration_deadline       = self.message_timestamp + 3600
-        self.upload_token.storage_cluster_address         = 'http://devel.concent.golem.network/'
-        self.upload_token.authorized_client_public_key    = b'\xf3\x97\x19\xcdX\xda\x86tiP\x1c&\xd39M\x9e\xa4\xddb\x89\xb5,]O\xd5cR\x84\xb85\xed\xc9\xa17e,\xb2s\xeb\n1\xcaN.l\xba\xc3\xb7\xc2\xba\xff\xabN\xde\xb3\x0b\xa6l\xbf6o\x81\xe0;'
-
-        self.upload_token.files                 = [FileTransferToken.FileInfo()]
+        self.upload_token = FileTransferTokenFactory(
+            token_expiration_deadline=self.message_timestamp + 3600,
+            storage_cluster_address='http://devel.concent.golem.network/',
+            authorized_client_public_key=settings.CONCENT_PUBLIC_KEY,
+            operation=FileTransferToken.Operation.upload,
+        )
         self.upload_token.files[0]['path']      = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
         self.upload_token.files[0]['checksum']  = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89'
-        self.upload_token.files[0]['size']      = 1024
-        self.upload_token.operation             = FileTransferToken.Operation.upload
 
         self.header_concent_auth = self._create_client_auth_message_as_header(
             settings.CONCENT_PRIVATE_KEY,
@@ -352,16 +351,14 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
     def setUp(self):
         self.message_timestamp  = get_current_utc_timestamp()
         self.public_key         = '85cZzVjahnRpUBwm0zlNnqTdYom1LF1P1WNShLg17cmhN2UssnPrCjHKTi5susO3wrr/q07eswumbL82b4HgOw=='
-        self.download_token                                 = FileTransferToken()
-        self.download_token.token_expiration_deadline       = self.message_timestamp + 3600
-        self.download_token.storage_cluster_address         = 'http://devel.concent.golem.network/'
-        self.download_token.authorized_client_public_key    = b'\xf3\x97\x19\xcdX\xda\x86tiP\x1c&\xd39M\x9e\xa4\xddb\x89\xb5,]O\xd5cR\x84\xb85\xed\xc9\xa17e,\xb2s\xeb\n1\xcaN.l\xba\xc3\xb7\xc2\xba\xff\xabN\xde\xb3\x0b\xa6l\xbf6o\x81\xe0;'
-
-        self.download_token.files                 = [FileTransferToken.FileInfo()]
+        self.download_token = FileTransferTokenFactory(
+            token_expiration_deadline=self.message_timestamp + 3600,
+            storage_cluster_address='http://devel.concent.golem.network/',
+            authorized_client_public_key=settings.CONCENT_PUBLIC_KEY,
+            operation=FileTransferToken.Operation.download,
+        )
         self.download_token.files[0]['path']      = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
         self.download_token.files[0]['checksum']  = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89'
-        self.download_token.files[0]['size']      = 1024
-        self.download_token.operation             = FileTransferToken.Operation.download
 
         self.header_concent_auth = self._create_client_auth_message_as_header(
             settings.CONCENT_PRIVATE_KEY,

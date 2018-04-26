@@ -12,7 +12,6 @@ from core.message_handlers import store_or_update_subtask
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
 from core.transfer_operations import create_file_transfer_token_for_golem_client
-from utils.helpers import decode_key
 from utils.helpers import sign_message
 from utils.testing_helpers import generate_ecc_key_pair
 
@@ -318,8 +317,8 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time(subtask_results_verify_time_str):
             file_transfer_token = create_file_transfer_token_for_golem_client(
                 self.report_computed_task,
-                b64encode(decode_key(self._get_encoded_provider_public_key())),
-                "upload"
+                b64encode(self.PROVIDER_PUBLIC_KEY),
+                message.FileTransferToken.Operation.upload
             )
             file_transfer_token.encrypted = False
         return file_transfer_token

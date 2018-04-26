@@ -181,42 +181,19 @@ def gatekeeper_access_denied_response_200_mock(_message, _path = None, _subtask_
 )
 class ApiViewTransactionTestCase(TransactionTestCase):
 
-    def test_api_view_should_rollback_changes_on_500_error(self):
+    def setUp(self):
+        super().setUp()
 
-        with mock.patch('core.views.logging.log_message_received', _log_message_received_500_mock):
-            try:
-                self.client.post(
-                    reverse('core:send'),
-                    data                                = '',
-                    content_type                        = 'application/octet-stream',
-                )
-            except TypeError:
-                pass
-
-        self.assertEqual(Client.objects.count(), 0)
-
-    def test_api_view_should_rollback_changes_on_400_error(self):
-
-        with mock.patch('core.views.logging.log_message_received', _log_message_received_400_mock):
-            self.client.post(
-                reverse('core:send'),
-                data                                = '',
-                content_type                        = 'application/octet-stream',
-            )
-
-        self.assertEqual(Client.objects.count(), 0)
-
-    def test_api_view_should_not_rollback_changes_on_correct_response(self):
         deadline_offset = 10
-        message_timestamp              = get_current_utc_timestamp() + deadline_offset
-        compute_task_def               = message.ComputeTaskDef()
-        compute_task_def['task_id']    = '8'
+        message_timestamp = get_current_utc_timestamp() + deadline_offset
+        compute_task_def = message.ComputeTaskDef()
+        compute_task_def['task_id'] = '8'
         compute_task_def['subtask_id'] = '8'
-        compute_task_def['deadline']   = message_timestamp
-        task_to_compute                = message.TaskToCompute(
-            compute_task_def     = compute_task_def,
-            requestor_public_key = REQUESTOR_PUBLIC_KEY,
-            provider_public_key  = PROVIDER_PUBLIC_KEY,
+        compute_task_def['deadline'] = message_timestamp
+        task_to_compute = message.TaskToCompute(
+            compute_task_def=compute_task_def,
+            requestor_public_key=REQUESTOR_PUBLIC_KEY,
+            provider_public_key=PROVIDER_PUBLIC_KEY,
             price=0,
         )
         task_to_compute = load(
@@ -227,30 +204,79 @@ class ApiViewTransactionTestCase(TransactionTestCase):
             ),
             settings.CONCENT_PRIVATE_KEY,
             REQUESTOR_PUBLIC_KEY,
-            check_time = False,
+            check_time=False,
         )
 
-        force_report_computed_task                                      = message.ForceReportComputedTask()
-        force_report_computed_task.report_computed_task                 = message.tasks.ReportComputedTask()
-        force_report_computed_task.report_computed_task.task_to_compute = task_to_compute
+        self.force_report_computed_task = message.ForceReportComputedTask()
+        self.force_report_computed_task.report_computed_task = message.tasks.ReportComputedTask()
+        self.force_report_computed_task.report_computed_task.task_to_compute = task_to_compute
 
-        with mock.patch('core.views.logging.log_message_received', _log_message_received_correct_response_mock):
-            response = self.client.post(
+    def test_api_view_should_rollback_changes_on_500_error(self):
+
+        with mock.patch(
+            'core.views.logging.log_message_received',
+            side_effect=_log_message_received_500_mock
+        ) as _log_message_received_500_mock_function:
+            try:
+                self.client.post(
+                    reverse('core:send'),
+                    data                                = dump(
+                        self.force_report_computed_task,
+                        PROVIDER_PRIVATE_KEY,
+                        CONCENT_PUBLIC_KEY
+                    ),
+                    content_type                        = 'application/octet-stream',
+                )
+            except TypeError:
+                pass
+
+        _log_message_received_500_mock_function.assert_called()
+        self.assertEqual(Client.objects.count(), 0)
+
+    def test_api_view_should_rollback_changes_on_400_error(self):
+
+        with mock.patch(
+            'core.views.logging.log_message_received',
+            side_effect=_log_message_received_400_mock
+        ) as _log_message_received_400_mock_function:
+            self.client.post(
                 reverse('core:send'),
                 data                                = dump(
-                    force_report_computed_task,
+                    self.force_report_computed_task,
                     PROVIDER_PRIVATE_KEY,
                     CONCENT_PUBLIC_KEY
                 ),
                 content_type                        = 'application/octet-stream',
             )
 
+        _log_message_received_400_mock_function.assert_called()
+        self.assertEqual(Client.objects.count(), 0)
+
+    def test_api_view_should_not_rollback_changes_on_correct_response(self):
+        with mock.patch(
+            'core.views.logging.log_message_received',
+            side_effect=_log_message_received_correct_response_mock
+        ) as _log_message_received_correct_response_mock_function:
+            response = self.client.post(
+                reverse('core:send'),
+                data                                = dump(
+                    self.force_report_computed_task,
+                    PROVIDER_PRIVATE_KEY,
+                    CONCENT_PUBLIC_KEY
+                ),
+                content_type                        = 'application/octet-stream',
+            )
+
+        _log_message_received_correct_response_mock_function.assert_called()
         self.assertEqual(response.status_code,   202)
         self.assertEqual(Client.objects.count(), 3)  # 3 because view itself is creating 2 clients.
 
     def test_non_api_view_should_rollback_changes_on_500_error(self):
 
-        with mock.patch('gatekeeper.views.gatekeeper_access_denied_response', gatekeeper_access_denied_response_500_mock):
+        with mock.patch(
+            'gatekeeper.views.gatekeeper_access_denied_response',
+            side_effect=gatekeeper_access_denied_response_500_mock
+        ) as gatekeeper_access_denied_response_500_mock_function:
             try:
                 self.client.post(
                     reverse('gatekeeper:upload'),
@@ -260,11 +286,15 @@ class ApiViewTransactionTestCase(TransactionTestCase):
             except TypeError:
                 pass
 
+        gatekeeper_access_denied_response_500_mock_function.assert_called()
         self.assertEqual(Client.objects.count(), 0)
 
     def test_non_api_view_should_rollback_changes_on_400_error(self):
 
-        with mock.patch('gatekeeper.views.gatekeeper_access_denied_response', gatekeeper_access_denied_response_400_mock):
+        with mock.patch(
+            'gatekeeper.views.gatekeeper_access_denied_response',
+            side_effect=gatekeeper_access_denied_response_400_mock
+        ) as gatekeeper_access_denied_response_400_mock_function:
             try:
                 self.client.post(
                     reverse('gatekeeper:upload'),
@@ -274,17 +304,22 @@ class ApiViewTransactionTestCase(TransactionTestCase):
             except Http400:
                 pass
 
+        gatekeeper_access_denied_response_400_mock_function.assert_called()
         self.assertEqual(Client.objects.count(), 0)
 
     def test_non_api_view_should_not_rollback_changes_on_200_response(self):
 
-        with mock.patch('gatekeeper.views.gatekeeper_access_denied_response', gatekeeper_access_denied_response_200_mock):
+        with mock.patch(
+            'gatekeeper.views.gatekeeper_access_denied_response',
+            side_effect=gatekeeper_access_denied_response_200_mock
+        ) as gatekeeper_access_denied_response_200_mock_function:
             response = self.client.post(
                 reverse('gatekeeper:upload'),
                 data                                = '',
                 content_type                        = 'application/octet-stream',
             )
 
+        gatekeeper_access_denied_response_200_mock_function.assert_called()
         self.assertEqual(response.status_code,   200)
         self.assertEqual(Client.objects.count(), 1)
 

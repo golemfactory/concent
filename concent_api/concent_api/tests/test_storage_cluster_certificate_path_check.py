@@ -53,6 +53,9 @@ class TestStorageClusterCertificatePathCheck(TestCase):
         assert_that(errors).is_length(1)
         assert_that(errors[0]).is_equal_to(expected_error)
 
+        _isfile_mock.assert_called_with(settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH)
+        _exists_mock.assert_called_with(settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH)
+
     @override_settings(
         STORAGE_CLUSTER_SSL_CERTIFICATE_PATH = 'existing_file.crt'
     )
@@ -63,3 +66,6 @@ class TestStorageClusterCertificatePathCheck(TestCase):
 
         assert_that(errors).is_instance_of(list)
         assert_that(errors).is_empty()
+
+        _isfile_mock.assert_called_with(settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH)
+        _exists_mock.assert_called_with(settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH)

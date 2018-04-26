@@ -120,8 +120,13 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
 
         request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream', data = self._create_provider_auth_message())
 
-        with mock.patch('utils.decorators.load_without_public_key', _mock_raise_http400):
+        with mock.patch(
+            'utils.decorators.load_without_public_key',
+            side_effect=_mock_raise_http400
+        ) as _mock_raise_http400_function:
             response = dummy_view_require_golem_auth_message(request)  # pylint: disable=no-value-for-parameter
+
+        _mock_raise_http400_function.assert_called()
 
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', json.loads(response.content))

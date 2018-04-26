@@ -39,6 +39,13 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent             -> Provider:   ServiceRefused
         """
 
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp   = "2018-02-05 10:00:00",
+            deadline    = "2018-02-05 10:00:15",
+            task_id     = "2",
+            subtask_id  = "xxyyzz",
+        )
+
         # STEP 1: Provider forces subtask results via Concent.
         # Request is processed correctly.
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
@@ -46,22 +53,25 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2018-02-05 10:00:20",
                 subtask_id      = "xxyyzz",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp   = "2018-02-05 10:00:00",
-                    deadline    = "2018-02-05 10:00:15",
-                    task_id     = "2",
-                    subtask_id  = "xxyyzz",
-                )
+                task_to_compute = task_to_compute
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
+        with mock.patch(
+            'core.message_handlers.base.is_account_status_positive',
+            side_effect=self.is_account_status_positive_true_mock
+        ) as is_account_status_positive_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
                 response = self.client.post(
                     reverse('core:send'),
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                 )
+
+        is_account_status_positive_true_mock_function.assert_called_with(
+            client_eth_address=task_to_compute.requestor_ethereum_address,
+            pending_value=task_to_compute.price,
+        )
 
         assert len(response.content)  == 0
         assert response.status_code   == 202
@@ -110,13 +120,12 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_private_key = self.DIFFERENT_PROVIDER_PRIVATE_KEY,
         )
 
-        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
-            with freeze_time("2018-02-05 10:00:31"):
-                response = self.client.post(
-                    reverse('core:send'),
-                    data                                = different_serialized_force_subtask_results,
-                    content_type                        = 'application/octet-stream',
-                )
+        with freeze_time("2018-02-05 10:00:31"):
+            response = self.client.post(
+                reverse('core:send'),
+                data                                = different_serialized_force_subtask_results,
+                content_type                        = 'application/octet-stream',
+            )
 
         self._test_response(
             response,
@@ -133,13 +142,12 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 3: Provider again forces subtask results via Concent with message with the same task_id with correct keys.
         # Request is refused.
-        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
-            with freeze_time("2018-02-05 10:00:31"):
-                response = self.client.post(
-                    reverse('core:send'),
-                    data                                = serialized_force_subtask_results,
-                    content_type                        = 'application/octet-stream',
-                )
+        with freeze_time("2018-02-05 10:00:31"):
+            response = self.client.post(
+                reverse('core:send'),
+                data                                = serialized_force_subtask_results,
+                content_type                        = 'application/octet-stream',
+            )
 
         self._test_response(
             response,
@@ -168,6 +176,13 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent     -> Requestor:                 ForceSubtaskResults (new timestamp)
         """
 
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp   = "2018-02-05 10:00:00",
+            deadline    = "2018-02-05 10:00:15",
+            task_id     = "2",
+            subtask_id  = "xxyyzz",
+        )
+
         # STEP 1: Provider forces subtask results via Concent.
         # Request is processed correctly.
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
@@ -175,22 +190,25 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2018-02-05 10:00:20",
                 subtask_id      = "xxyyzz",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp   = "2018-02-05 10:00:00",
-                    deadline    = "2018-02-05 10:00:15",
-                    task_id     = "2",
-                    subtask_id  = "xxyyzz",
-                )
+                task_to_compute = task_to_compute
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
+        with mock.patch(
+            'core.message_handlers.base.is_account_status_positive',
+            side_effect=self.is_account_status_positive_true_mock
+        ) as is_account_status_positive_true_mock_function:
             with freeze_time("2018-02-05 10:00:31"):
                 response = self.client.post(
                     reverse('core:send'),
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                 )
+
+        is_account_status_positive_true_mock_function.assert_called_with(
+            client_eth_address=task_to_compute.requestor_ethereum_address,
+            pending_value=task_to_compute.price,
+        )
 
         assert len(response.content) == 0
         assert response.status_code  == 202
@@ -306,13 +324,21 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
+        with mock.patch(
+            'core.message_handlers.base.is_account_status_positive',
+            side_effect=self.is_account_status_positive_true_mock
+        ) as is_account_status_positive_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
                 response = self.client.post(
                     reverse('core:send'),
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                 )
+
+        is_account_status_positive_true_mock_function.assert_called_with(
+            client_eth_address=task_to_compute.requestor_ethereum_address,
+            pending_value=task_to_compute.price,
+        )
 
         assert len(response.content)  == 0
         assert response.status_code   == 202
@@ -408,13 +434,12 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
-            with freeze_time("2018-02-05 10:00:44"):
-                response = self.client.post(
-                    reverse('core:send'),
-                    data                            = serialized_force_subtask_results_response,
-                    content_type                    = 'application/octet-stream',
-                )
+        with freeze_time("2018-02-05 10:00:44"):
+            response = self.client.post(
+                reverse('core:send'),
+                data                                = serialized_force_subtask_results_response,
+                content_type                        = 'application/octet-stream',
+            )
 
         self._test_400_response(
             response,
@@ -442,13 +467,12 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
-            with freeze_time("2018-02-05 10:00:44"):
-                response = self.client.post(
-                    reverse('core:send'),
-                    data                            = serialized_force_subtask_results_response,
-                    content_type                    = 'application/octet-stream',
-                )
+        with freeze_time("2018-02-05 10:00:44"):
+            response = self.client.post(
+                reverse('core:send'),
+                data                                = serialized_force_subtask_results_response,
+                content_type                        = 'application/octet-stream',
+            )
 
         self._test_400_response(
             response,
@@ -476,13 +500,12 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
-            with freeze_time("2018-02-05 10:00:44"):
-                response = self.client.post(
-                    reverse('core:send'),
-                    data                            = serialized_force_subtask_results_response,
-                    content_type                    = 'application/octet-stream',
-                )
+        with freeze_time("2018-02-05 10:00:44"):
+            response = self.client.post(
+                reverse('core:send'),
+                data                                = serialized_force_subtask_results_response,
+                content_type                        = 'application/octet-stream',
+            )
 
         self._test_400_response(
             response,
@@ -516,13 +539,12 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
-            with freeze_time("2018-02-05 10:00:44"):
-                self.client.post(
-                    reverse('core:send'),
-                    data                           = serialized_force_subtask_results_response,
-                    content_type                   = 'application/octet-stream',
-                )
+        with freeze_time("2018-02-05 10:00:44"):
+            self.client.post(
+                reverse('core:send'),
+                data                                = serialized_force_subtask_results_response,
+                content_type                        = 'application/octet-stream',
+            )
 
         self._assert_stored_message_counter_increased()
         self._test_subtask_state(
@@ -628,13 +650,21 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
+        with mock.patch(
+            'core.message_handlers.base.is_account_status_positive',
+            side_effect=self.is_account_status_positive_true_mock
+        ) as is_account_status_positive_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
                 response = self.client.post(
                     reverse('core:send'),
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                 )
+
+        is_account_status_positive_true_mock_function.assert_called_with(
+            client_eth_address=task_to_compute.requestor_ethereum_address,
+            pending_value=task_to_compute.price,
+        )
 
         assert len(response.content)  == 0
         assert response.status_code   == 202
@@ -730,13 +760,12 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
-            with freeze_time("2018-02-05 10:00:44"):
-                response = self.client.post(
-                    reverse('core:send'),
-                    data                            = serialized_force_subtask_results_response,
-                    content_type                    = 'application/octet-stream',
-                )
+        with freeze_time("2018-02-05 10:00:44"):
+            response = self.client.post(
+                reverse('core:send'),
+                data                                = serialized_force_subtask_results_response,
+                content_type                        = 'application/octet-stream',
+            )
 
         self._test_400_response(
             response,
@@ -764,13 +793,12 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
-            with freeze_time("2018-02-05 10:00:44"):
-                response = self.client.post(
-                    reverse('core:send'),
-                    data                            = serialized_force_subtask_results_response,
-                    content_type                    = 'application/octet-stream',
-                )
+        with freeze_time("2018-02-05 10:00:44"):
+            response = self.client.post(
+                reverse('core:send'),
+                data                                = serialized_force_subtask_results_response,
+                content_type                        = 'application/octet-stream',
+            )
 
         self._test_400_response(
             response,
@@ -798,13 +826,12 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
-            with freeze_time("2018-02-05 10:00:44"):
-                response = self.client.post(
-                    reverse('core:send'),
-                    data                            = serialized_force_subtask_results_response,
-                    content_type                    = 'application/octet-stream',
-                )
+        with freeze_time("2018-02-05 10:00:44"):
+            response = self.client.post(
+                reverse('core:send'),
+                data                                = serialized_force_subtask_results_response,
+                content_type                        = 'application/octet-stream',
+            )
 
         self._test_400_response(
             response,
@@ -842,13 +869,12 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
-            with freeze_time("2018-02-05 10:00:44"):
-                self.client.post(
-                    reverse('core:send'),
-                    data                            = serialized_force_subtask_results_response,
-                    content_type                    = 'application/octet-stream',
-                )
+        with freeze_time("2018-02-05 10:00:44"):
+            self.client.post(
+                reverse('core:send'),
+                data                                = serialized_force_subtask_results_response,
+                content_type                        = 'application/octet-stream',
+            )
 
         self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
@@ -936,6 +962,13 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent                   -> Requestor                    SubtaskResultsSettled
         """
 
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp   = "2018-02-05 10:00:00",
+            deadline    = "2018-02-05 10:00:15",
+            task_id     = '1',
+            subtask_id  = "xxyyzz",
+        )
+
         # STEP 1: Provider forces subtask results via Concent.
         # Request is processed correctly.
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
@@ -943,22 +976,25 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2018-02-05 10:00:20",
                 subtask_id      = "xxyyzz",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp   = "2018-02-05 10:00:00",
-                    deadline    = "2018-02-05 10:00:15",
-                    task_id     = '1',
-                    subtask_id  = "xxyyzz",
-                )
+                task_to_compute = task_to_compute,
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
+        with mock.patch(
+            'core.message_handlers.base.is_account_status_positive',
+            side_effect=self.is_account_status_positive_true_mock
+        ) as is_account_status_positive_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
                 response = self.client.post(
                     reverse('core:send'),
                     data                                = serialized_force_subtask_results,
                     content_type                        = 'application/octet-stream',
                 )
+
+        is_account_status_positive_true_mock_function.assert_called_with(
+            client_eth_address=task_to_compute.requestor_ethereum_address,
+            pending_value=task_to_compute.price,
+        )
 
         assert len(response.content) == 0
         assert response.status_code  == 202
@@ -1036,27 +1072,25 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
         self._assert_stored_message_counter_not_increased()
 
-        # STEP 4: Different requestor does not receive subtask result settled via Concent with different key.
-        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
-            with freeze_time("2018-02-05 10:00:48"):
-                response = self.client.post(
-                    reverse('core:receive'),
-                    data                            = self._create_diff_requestor_auth_message(),
-                    content_type                    = 'application/octet-stream',
-                )
+        # STEP 4: Different provider does not receive subtask result settled via Concent with different key.
+        with freeze_time("2018-02-05 10:00:48"):
+            response = self.client.post(
+                reverse('core:receive'),
+                data=self._create_diff_provider_auth_message(),
+                content_type='application/octet-stream',
+            )
 
         self._test_204_response(response)
         self._assert_stored_message_counter_not_increased()
 
-        # STEP 5: Requestor receives subtask result settled via Concent with correct key.
+        # STEP 5: Provider receives subtask result settled via Concent with correct key.
+        with freeze_time("2018-02-05 10:00:50"):
+            response = self.client.post(
+                reverse('core:receive'),
+                data=self._create_provider_auth_message(),
+                content_type='application/octet-stream',
+            )
 
-        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
-            with freeze_time("2018-02-05 10:00:50"):
-                response = self.client.post(
-                    reverse('core:receive'),
-                    data                            = self._create_provider_auth_message(),
-                    content_type                    = 'application/octet-stream',
-                )
         self._test_response(
             response,
             status       = 200,
@@ -1085,7 +1119,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ]
         )
 
-        # STEP 6: Different provider does not receive subtask result settled via Concent with different key.
+        # STEP 6: Different requestor does not receive subtask result settled via Concent with different key.
         with freeze_time("2018-02-05 10:00:51"):
             response = self.client.post(
                 reverse('core:receive_out_of_band'),
@@ -1095,7 +1129,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._test_204_response(response)
         self._assert_stored_message_counter_not_increased()
 
-        # STEP 7: Provider receives subtask result settled via Concent with correct key.
+        # STEP 7: Requestor receives subtask result settled via Concent with correct key.
         with freeze_time("2018-02-05 10:00:51"):
             response = self.client.post(
                 reverse('core:receive_out_of_band'),
@@ -1130,6 +1164,13 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent                   -> Provider:                    SubtaskResultsSettled
         """
 
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp   = "2018-02-05 10:00:00",
+            deadline    = "2018-02-05 10:00:15",
+            task_id     = '1',
+            subtask_id  = "xxyyzz",
+        )
+
         # STEP 1: Provider forces subtask results via Concent.
         # Request is processed correctly.
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
@@ -1137,22 +1178,25 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2018-02-05 10:00:20",
                 subtask_id      = "xxyyzz",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp   = "2018-02-05 10:00:00",
-                    deadline    = "2018-02-05 10:00:15",
-                    task_id     = '1',
-                    subtask_id  = "xxyyzz",
-                )
+                task_to_compute = task_to_compute
             )
         )
 
-        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
+        with mock.patch(
+            'core.message_handlers.base.is_account_status_positive',
+            side_effect=self.is_account_status_positive_true_mock
+        ) as is_account_status_positive_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
                 response = self.client.post(
                     reverse('core:send'),
-                    data                                = serialized_force_subtask_results,
-                    content_type                        = 'application/octet-stream',
+                    data=serialized_force_subtask_results,
+                    content_type='application/octet-stream',
                 )
+
+        is_account_status_positive_true_mock_function.assert_called_with(
+            client_eth_address=task_to_compute.requestor_ethereum_address,
+            pending_value=task_to_compute.price,
+        )
 
         assert len(response.content) == 0
         assert response.status_code  == 202
@@ -1274,25 +1318,29 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # STEP 6: Different requestor does not receive subtask result settled via Concent with different key.
-        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
-            with freeze_time("2018-02-05 10:00:51"):
-                response = self.client.post(
-                    reverse('core:receive'),
-                    data                            = self._create_diff_requestor_auth_message(),
-                    content_type                    = 'application/octet-stream',
-                )
+        with freeze_time("2018-02-05 10:00:51"):
+            response = self.client.post(
+                reverse('core:receive'),
+                data=self._create_diff_requestor_auth_message(),
+                content_type='application/octet-stream',
+            )
+
+        is_account_status_positive_true_mock_function.assert_called_with(
+            client_eth_address=task_to_compute.requestor_ethereum_address,
+            pending_value=task_to_compute.price,
+        )
 
         self._test_204_response(response)
         self._assert_stored_message_counter_not_increased()
 
         # STEP 7: Requestor receives subtask result settled via Concent with correct key.
-        with mock.patch('core.message_handlers.base.is_account_status_positive', self.is_account_status_positive_true_mock):
-            with freeze_time("2018-02-05 10:00:51"):
-                response = self.client.post(
-                    reverse('core:receive'),
-                    data                            = self._create_provider_auth_message(),
-                    content_type                    = 'application/octet-stream',
-                )
+        with freeze_time("2018-02-05 10:00:51"):
+            response = self.client.post(
+                reverse('core:receive'),
+                data=self._create_provider_auth_message(),
+                content_type='application/octet-stream',
+            )
+
         self._test_response(
             response,
             status       = 200,

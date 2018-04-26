@@ -55,19 +55,33 @@ class RequestUploadStatusTest(ConcentIntegrationTestCase):
             )
         )
 
-        with mock.patch('core.transfer_operations.send_request_to_cluster_storage', mock_send_request_to_cluster_correct_response):
+        with mock.patch(
+            'core.transfer_operations.send_request_to_cluster_storage',
+            side_effect=mock_send_request_to_cluster_correct_response
+        ) as mock_send_request_to_cluster_correct_response_function:
             cluster_response = request_upload_status(report_computed_task)
 
         self.assertEqual(cluster_response, True)
+        mock_send_request_to_cluster_correct_response_function.assert_called()
 
-        with mock.patch('core.transfer_operations.send_request_to_cluster_storage', mock_send_incorrect_request_to_cluster_incorrect_response):
-            cluster_response_2 = request_upload_status(report_computed_task)
+        with mock.patch(
+            'core.transfer_operations.send_request_to_cluster_storage',
+            side_effect=mock_send_incorrect_request_to_cluster_incorrect_response
+        ) as mock_send_incorrect_request_to_cluster_incorrect_response_function:
+            cluster_response_2 = request_upload_status(
+                report_computed_task)
 
         self.assertEqual(cluster_response_2, False)
+        mock_send_incorrect_request_to_cluster_incorrect_response_function.assert_called()
 
         with self.assertRaises(UnexpectedResponse):
-            with mock.patch('core.transfer_operations.send_request_to_cluster_storage', mock_send_incorrect_request_to_cluster_unexpected_response):
+            with mock.patch(
+                'core.transfer_operations.send_request_to_cluster_storage',
+                side_effect=mock_send_incorrect_request_to_cluster_unexpected_response
+            ) as mock_send_incorrect_request_to_cluster_unexpected_response_function:
                 request_upload_status(report_computed_task)
+
+        mock_send_incorrect_request_to_cluster_unexpected_response_function.assert_called()
 
 
 @override_settings(

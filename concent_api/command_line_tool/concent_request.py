@@ -21,7 +21,6 @@ def get_json_data(message_file, message_str):
         return json.load(open(message_file))
     else:
         return json.loads(message_str)
-    # verify_schema(json_data)
 
 
 def receive_out_of_band_message(args):
@@ -48,16 +47,16 @@ def parse_arguments():
     # receive
     parser_receive_message = subparsers.add_parser('receive')
     parser_receive_message.set_defaults(endpoint="receive")
-    parser_receive_message.add_argument("cluster_url", )
-    parser_receive_message.add_argument('--subtask_id', action="store")
+    parser_receive_message.add_argument("cluster_url")
+    parser_receive_message.add_argument('--party', action="store", choices=('provider', 'requestor'), required=True)
 
     # ENDPOINT
     # receive-out-of-band
     parser_receive_out_of_band_message = subparsers.add_parser('receive-out-of-band')
     parser_receive_out_of_band_message.set_defaults(endpoint="receive_out_of_band_message")
-    parser_receive_out_of_band_message.add_argument("cluster_url", )
+    parser_receive_out_of_band_message.add_argument("cluster_url")
+    parser_receive_out_of_band_message.add_argument('--party', action="store", choices=('provider', 'requestor'), required=True)
 
-    parser_receive_out_of_band_message.add_argument('--subtask_id', action="store")
     return parser.parse_args()
 
 
@@ -68,21 +67,26 @@ if __name__ == '__main__':
     requestor_public_key, requestor_private_key = key_manager.get_requestor_keys()
     provider_public_key, provider_private_key = key_manager.get_provider_keys()
 
+    # print('REQUESTOR_PRIVATE_KEY', '\n', requestor_private_key, '\n')
+    # print('REQUESTOR_PUBLIC_KEY', '\n', requestor_public_key, '\n')
+    # print('PROVIDER_PRIVATE_KEY', '\n', provider_private_key, '\n')
+    # print('PROVIDER_PUBLIC_KEY', '\n', provider_public_key, '\n')
+
+    message_handler = MessageHandler(
+        requestor_private_key,
+        requestor_public_key,
+        provider_public_key,
+        provider_private_key,
+        concent_public_key)
+
     if args.endpoint == 'send':
         json_data = get_json_data(args.message_file, args.message)
         message = MessageExtractor(
             requestor_public_key,
             provider_public_key).extract_message(json_data)
-        MessageHandler(
-            requestor_private_key,
-            requestor_public_key,
-            provider_public_key,
-            provider_private_key,
-            concent_public_key).exchange_message(args.cluster_url, message)
+
+        message_handler.prepare_to_send_message(args.cluster_url, message)
+
 
     elif args.endpoint == 'receive':
-        MessageHandler(requestor_private_key,
-                       requestor_public_key,
-                       provider_public_key,
-                       provider_private_key,
-                       concent_public_key).receive_message(args.cluster_url)
+        message_handler.prepare_to_receive_message(args.cluster_url, args.party)

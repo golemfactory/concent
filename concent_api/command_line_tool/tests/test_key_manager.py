@@ -1,5 +1,8 @@
 from unittest import TestCase
 
+from django.conf import settings
+from django.test import override_settings
+
 import key_manager
 
 
@@ -13,6 +16,10 @@ PREDEFINED_PROVIDER_PUBLIC_KEY = b"\xd4\x8b\xf9\x91\x88 PDS{\x1fr\xbfb\xa6z\xc4\
 
 
 class TestKeyManager(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        settings.configure()
+
     def setUp(self):
         key_manager.REQUESTOR_PRIVATE_KEY = None
         key_manager.REQUESTOR_PUBLIC_KEY = None
@@ -56,6 +63,36 @@ class TestKeyManager(TestCase):
 
         self.assertEqual(provider_public_key, PREDEFINED_PROVIDER_PUBLIC_KEY)
         self.assertEqual(provider_private_key, PREDEFINED_PROVIDER_PRIVATE_KEY)
+
+    @override_settings(
+        CONCENT_PUBLIC_KEY=b'7' * 64
+    )
+    def test_that_concent_public_key_is_returned_when_defined(self):
+        concent_public_key = key_manager.KeyManager().get_concent_public_key()
+
+        self._assert_is_valid_public_key(concent_public_key)
+
+    def test_that_wrong_configuration_exception_is_raised_when_concent_public_key_is_not_defined(self):
+        del settings.CONCENT_PUBLIC_KEY
+        with self.assertRaises(key_manager.WrongConfigurationException) as e:
+            key_manager.KeyManager().get_concent_public_key()
+        self.assertTrue("not defined" in e.exception.message)
+
+    @override_settings(
+        CONCENT_PUBLIC_KEY='7' * 64
+    )
+    def test_that_wrong_configuration_exception_is_raised_when_concent_public_key_type_is_not_bytes(self):
+        with self.assertRaises(key_manager.WrongConfigurationException) as e:
+            key_manager.KeyManager().get_concent_public_key()
+        self.assertTrue("should be bytes" in e.exception.message)
+
+    @override_settings(
+        CONCENT_PUBLIC_KEY=b'7' * 123
+    )
+    def test_that_wrong_configuration_exception_is_raised_when_concent_public_key_type_is_of_wrong_length(self):
+        with self.assertRaises(key_manager.WrongConfigurationException) as e:
+            key_manager.KeyManager().get_concent_public_key()
+        self.assertTrue("is of wrong length" in e.exception.message)
 
     def _assert_keys_are_not_equal(self, first_key, second_key, key_type):
         getattr(self, f"_assert_is_valid_{key_type}_key")(first_key)

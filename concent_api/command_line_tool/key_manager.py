@@ -1,10 +1,17 @@
 from utils.testing_helpers import generate_ecc_key_pair
+from django.conf import settings
+
 
 REQUESTOR_PRIVATE_KEY = None
 REQUESTOR_PUBLIC_KEY = None
 
 PROVIDER_PRIVATE_KEY = None
 PROVIDER_PUBLIC_KEY = None
+
+
+class WrongConfigurationException(Exception):
+    def __init__(self, error_message):
+        self.message = error_message
 
 
 def are_keys_predifined(party):
@@ -40,3 +47,14 @@ class KeyManager(object):
 
     def get_provider_keys(self):
         return self.provider_public_key, self.provider_private_key
+
+    def get_concent_public_key(self):
+        if not hasattr(settings, "CONCENT_PUBLIC_KEY"):
+            raise WrongConfigurationException("CONCENT_PUBLIC_KEY is not defined")
+        concent_public_key = settings.CONCENT_PUBLIC_KEY
+        if not isinstance(concent_public_key, bytes):
+            raise WrongConfigurationException("CONCENT_PUBLIC_KEY should be bytes")
+        key_length = len(concent_public_key)
+        if key_length != 64:
+            raise WrongConfigurationException(f"CONCENT_PUBLIC_KEY is of wrong length: {key_length}")
+        return concent_public_key

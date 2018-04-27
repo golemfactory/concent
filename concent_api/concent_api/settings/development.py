@@ -5,6 +5,7 @@ from .base import *  # NOQA  # pylint: disable=wildcard-import
 SECRET_KEY = 'testkey'
 
 DEBUG = True
+DEBUG_INFO_IN_ERROR_RESPONSES = True
 
 DATABASES['control']['USER']     = 'postgres'
 DATABASES['control']['PASSWORD'] = ''

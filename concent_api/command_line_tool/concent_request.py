@@ -32,6 +32,7 @@ def parse_arguments():
     parser_send_message = subparsers.add_parser('send')
     parser_send_message.add_argument("cluster_url")
     parser_send_message.set_defaults(endpoint="send")
+    parser_send_message.add_argument("--print_keys", action="store_true")
     json_format = parser_send_message.add_mutually_exclusive_group(required=True)
     json_format.add_argument('-s', '--message', action="store")
     json_format.add_argument('-f', '--message-file', action="store")
@@ -41,6 +42,7 @@ def parse_arguments():
     parser_receive_message = subparsers.add_parser('receive')
     parser_receive_message.set_defaults(endpoint="receive")
     parser_receive_message.add_argument("cluster_url")
+    parser_receive_message.add_argument("--print_keys", action="store_true")
     parser_receive_message.add_argument("--party", action="store", choices=('provider', 'requestor'), required=True)
 
     # ENDPOINT
@@ -48,6 +50,7 @@ def parse_arguments():
     parser_receive_out_of_band_message = subparsers.add_parser('receive-out-of-band')
     parser_receive_out_of_band_message.set_defaults(endpoint="receive_out_of_band_message")
     parser_receive_out_of_band_message.add_argument("cluster_url")
+    parser_receive_out_of_band_message.add_argument("--print_keys", action="store_true")
     parser_receive_out_of_band_message.add_argument(
         '--party',
         action="store",
@@ -55,6 +58,15 @@ def parse_arguments():
         required=True)
 
     return parser.parse_args()
+
+
+def print_keys(requestor_public_key, requestor_private_key, provider_public_key, provider_private_key,
+               concent_public_key):
+    print('REQUESTOR_PRIVATE_KEY', '\n', requestor_private_key, '\n')
+    print('REQUESTOR_PUBLIC_KEY', '\n', requestor_public_key, '\n')
+    print('PROVIDER_PRIVATE_KEY', '\n', provider_private_key, '\n')
+    print('PROVIDER_PUBLIC_KEY', '\n', provider_public_key, '\n')
+    print('CONCENT_PUBLIC_KEY', '\n', concent_public_key, '\n')
 
 
 if __name__ == '__main__':
@@ -65,10 +77,6 @@ if __name__ == '__main__':
     provider_public_key, provider_private_key = key_manager.get_provider_keys()
     concent_public_key = key_manager.get_concent_public_key()
 
-    # print('REQUESTOR_PRIVATE_KEY', '\n', requestor_private_key, '\n')
-    # print('REQUESTOR_PUBLIC_KEY', '\n', requestor_public_key, '\n')
-    # print('PROVIDER_PRIVATE_KEY', '\n', provider_private_key, '\n')
-    # print('PROVIDER_PUBLIC_KEY', '\n', provider_public_key, '\n')
     if args.print_keys:
         print_keys(requestor_public_key, requestor_private_key, provider_public_key, provider_private_key,
                    concent_public_key)

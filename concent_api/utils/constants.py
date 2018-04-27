@@ -5,6 +5,7 @@ class ErrorCode(enum.Enum):
     REQUEST_BODY_NOT_EMPTY                                              = 'request_body.not_empty'
     AUTH_CLIENT_AUTH_MESSAGE_MISSING                                    = 'header.client_public_key.missing'
     AUTH_CLIENT_AUTH_MESSAGE_INVALID                                    = 'header.client_public_key.invalid'
+    CONCENT_APPLICATION_CRASH                                           = 'concent.application_crash'
     HEADER_AUTHORIZATION_MISSING                                        = 'header.authorization.missing'
     HEADER_AUTHORIZATION_MISSING_TOKEN                                  = 'header.authorization.missing_token'
     HEADER_AUTHORIZATION_TOKEN_INVALID_MESSAGE                          = 'header.authorization.token_not_valid_message'

@@ -116,10 +116,11 @@ You can put the output of the script above directly in your `local_settings.py`
     createdb --username postgres concent_api
     ```
 
-7. Run Django migrations to initialize the database and create the tables:
+7. Run Django migrations for each database to initialize and create the tables:
 
     ```
-    concent_api/manage.py migrate
+    concent_api/manage.py migrate --database control
+    concent_api/manage.py migrate --database storage
     ```
 
 8. Create a superuser account:

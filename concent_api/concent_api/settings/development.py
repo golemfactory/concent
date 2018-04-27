@@ -5,8 +5,8 @@ SECRET_KEY = 'testkey'
 
 DEBUG = True
 
-DATABASES['default']['USER']     = 'postgres'
-DATABASES['default']['PASSWORD'] = ''
+DATABASES['control']['USER']     = 'postgres'
+DATABASES['control']['PASSWORD'] = ''
 
 DATABASES['storage']['USER']     = 'postgres'
 DATABASES['storage']['PASSWORD'] = ''

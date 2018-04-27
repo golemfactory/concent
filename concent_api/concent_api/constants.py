@@ -58,11 +58,12 @@ AVAILABLE_CONCENT_FEATURES = OrderedDict([
 
 # Defines which database should be used for which app label
 APP_LABEL_TO_DATABASE = {
-    'auth':         'default',
-    'admin':        'default',
-    'contenttypes': 'default',
-    'core':         'default',
+    'auth':         'control',
+    'admin':        'control',
+    'contenttypes': 'control',
+    'core':         'control',
     'conductor':    'storage',
-    'database':     'default',
-    'sessions':     'default',
+    'constance':    'control',
+    'database':     'control',
+    'sessions':     'control',
 }

@@ -6,14 +6,23 @@ SECRET_KEY = 'testkey'
 DEBUG = True
 
 DATABASES = {
+    # 'default' must be set for testing, otherwise tests won't work
     'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'USER': 'postgres',
+        'ATOMIC_REQUESTS': True,
+        'TEST': {
+            'NAME': 'test_default'
+        }
+    },
+    'control': {
         # NAME intentionally left unset, in case tests try to access the production database.
         # This could happen e.g. if someone executes a query at module level.
         'ENGINE':          'django.db.backends.postgresql_psycopg2',
         'USER':            'postgres',
         'ATOMIC_REQUESTS': True,
         'TEST': {
-            'NAME': 'test_concent_api'
+            'NAME': 'test_control'
         }
     },
     'storage': {

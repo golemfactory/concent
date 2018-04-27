@@ -29,7 +29,7 @@ def dummy_view_require_golem_auth_message(_request, message, _client_public_key)
     return message
 
 
-@handle_errors_and_responses
+@handle_errors_and_responses(database_name='default')
 def dummy_view_handle_errors_and_responses(_request, message, _client_public_key):  # pylint: disable=redefined-outer-name
     return message
 
@@ -163,7 +163,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
 
         request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream')
 
-        @handle_errors_and_responses
+        @handle_errors_and_responses(database_name='default')
         def dummy_view_handle_http_response(_request, _message, _client_public_key):
             http_response = HttpResponse(status = 200)
             return http_response
@@ -177,7 +177,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
 
         request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream')
 
-        @handle_errors_and_responses
+        @handle_errors_and_responses(database_name='default')
         def dummy_view_handle_none_response(_request, _message, _client_public_key):
             return None
 
@@ -190,7 +190,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
 
         request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream')
 
-        @handle_errors_and_responses
+        @handle_errors_and_responses(database_name='default')
         def dummy_view_handle_dict(_request, _message, _client_public_key):
             return {'dummy': 'data'}
 
@@ -204,7 +204,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
 
         request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream')
 
-        @handle_errors_and_responses
+        @handle_errors_and_responses(database_name='default')
         def dummy_view_handle_http_400_exception(_request, _message, _client_public_key):
             raise Http400('dummy')
 
@@ -217,7 +217,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
 
         request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream')
 
-        @handle_errors_and_responses
+        @handle_errors_and_responses(database_name='default')
         def dummy_view_handle_http_response_not_allowed(_request, _message, _client_public_key):
             return HttpResponseNotAllowed({}, status=405)
 

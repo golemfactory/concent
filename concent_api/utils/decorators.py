@@ -94,66 +94,71 @@ def require_golem_message(view):
     return wrapper
 
 
-def handle_errors_and_responses(view):
+def handle_errors_and_responses(database_name):
     """
     Decorator for handling responses from Concent
-    for golem clients
+    for golem clients and handling transactions on given database name if it is not None.
     """
-    @wraps(view)
-    def wrapper(request, client_message, client_public_key, *args, **kwargs):
-        try:
-            sid = transaction.savepoint()
-            response_from_view = view(request, client_message, client_public_key, *args, **kwargs)
-            transaction.savepoint_commit(sid)
-        except Http400 as exception:
-            logging.log_400_error(
-                view.__name__,
-                client_message,
-                client_public_key,
-            )
-            transaction.savepoint_rollback(sid)
-            return JsonResponse({'error': str(exception)}, status = 400)
-        except ConcentInSoftShutdownMode:
-            transaction.savepoint_rollback(sid)
-            return JsonResponse({'error': 'Concent is in soft shutdown mode.'}, status = 503)
-        if isinstance(response_from_view, message.Message):
-            assert response_from_view.sig is None
-            logging.log_message_returned(
-                response_from_view,
-                client_public_key,
-            )
-            serialized_message = dump(
-                response_from_view,
-                settings.CONCENT_PRIVATE_KEY,
-                client_public_key,
-            )
+    def decorator(view):
+        @wraps(view)
+        def wrapper(request, client_message, client_public_key, *args, **kwargs):
+            assert database_name in settings.DATABASES or database_name is None
+            try:
+                if database_name is not None:
+                    sid = transaction.savepoint(using=database_name)
+                response_from_view = view(request, client_message, client_public_key, *args, **kwargs)
+                if database_name is not None:
+                    transaction.savepoint_commit(sid, using=database_name)
+            except Http400 as exception:
+                logging.log_400_error(
+                    view.__name__,
+                    client_message,
+                    client_public_key,
+                )
+                if database_name is not None:
+                    transaction.savepoint_rollback(sid, using=database_name)
+                return JsonResponse({'error': str(exception)}, status = 400)
+            except ConcentInSoftShutdownMode:
+                transaction.savepoint_rollback(sid, using=database_name)
+                return JsonResponse({'error': 'Concent is in soft shutdown mode.'}, status=503)
+            if isinstance(response_from_view, message.Message):
+                assert response_from_view.sig is None
+                logging.log_message_returned(
+                    response_from_view,
+                    client_public_key,
+                )
+                serialized_message = dump(
+                    response_from_view,
+                    settings.CONCENT_PRIVATE_KEY,
+                    client_public_key,
+                )
+                return HttpResponse(serialized_message, content_type = 'application/octet-stream')
+            elif isinstance(response_from_view, dict):
+                return JsonResponse(response_from_view, safe = False)
+            elif isinstance(response_from_view, HttpResponseNotAllowed):
+                logging.log_message_not_allowed(
+                    view.__name__,
+                    request.method,
+                    client_public_key,
+                )
+                return response_from_view
+            elif isinstance(response_from_view, HttpResponse):
+                logging.log_message_accepted(
+                    client_message,
+                    client_public_key,
+                )
+                return response_from_view
+            elif response_from_view is None:
+                logging.log_empty_queue(
+                    view.__name__,
+                    client_public_key,
+                )
+                return HttpResponse("", status = 204)
+            elif isinstance(response_from_view, bytes):
+                return HttpResponse(response_from_view)
 
-            return HttpResponse(serialized_message, content_type = 'application/octet-stream')
-        elif isinstance(response_from_view, dict):
-            return JsonResponse(response_from_view, safe = False)
-        elif isinstance(response_from_view, HttpResponseNotAllowed):
-            logging.log_message_not_allowed(
-                view.__name__,
-                request.method,
-                client_public_key,
-            )
-            return response_from_view
-        elif isinstance(response_from_view, HttpResponse):
-            logging.log_message_accepted(
-                client_message,
-                client_public_key,
-            )
-            return response_from_view
-        elif response_from_view is None:
-            logging.log_empty_queue(
-                view.__name__,
-                client_public_key,
-            )
-            return HttpResponse("", status = 204)
-        elif isinstance(response_from_view, bytes):
-            return HttpResponse(response_from_view)
+            assert False, "Invalid response type"
+            raise Exception("Invalid response type")
 
-        assert False, "Invalid response type"
-        raise Exception("Invalid response type")
-
-    return wrapper
+        return wrapper
+    return decorator

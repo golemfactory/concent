@@ -45,9 +45,7 @@ class MessageHandler():
         headers = {
             'Content-Type': 'application/octet-stream',
         }
-
         response = requests.post(cluster_url, headers=headers, data=data)
-
         if response.status_code == 202:
             print('')
             print('STATUS: 202 Message Accepted')
@@ -61,31 +59,27 @@ class MessageHandler():
             deserialized_response = load(response.content, priv_key, self.concent_pub_key, check_time=False)
             self.print_message(deserialized_response, cluster_url, 'response')
 
+    def select_keys(self, party):
+        priv_key = getattr(self, f'{party}_private_key')
+        pub_key = getattr(self, f'{party}_public_key')
+        return priv_key, pub_key
 
     def prepare_to_send_message(self, cluster_url, message):
         for party, message_types in key_map.items():
             if type(message) in message_types:
-                priv_key = getattr(self, f'{party}_private_key')
-                pub_key = getattr(self, f'{party}_public_key')
+                priv_key, pub_key = self.select_keys(party)
                 break
         else:
             raise Exception(f'Unsupported Message Type: {type(message)}')
         self.print_message(message, cluster_url, 'send')
-
         sign_message(get_field_from_message(message, 'task_to_compute'), self.requestor_private_key)
         serialized_message = dump(message, priv_key, self.concent_pub_key)
-
         self.handle_message(priv_key, cluster_url, serialized_message)
-
-
 
     def prepare_to_receive_message(self, cluster_url, party):
         print("""\n-----------------
 Endpoint: RECEIVE
 -----------------""")
-        priv_key = getattr(self, f'{party}_private_key')
-        pub_key = getattr(self, f'{party}_public_key')
-
+        priv_key, pub_key = self.select_keys(party)
         auth_data = create_client_auth_message(priv_key, pub_key, self.concent_pub_key)
-
         self.handle_message(priv_key, cluster_url, auth_data)

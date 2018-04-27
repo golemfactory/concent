@@ -4,16 +4,9 @@ import argparse
 import json
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils.testing_helpers import generate_ecc_key_pair
-from concent_api.settings import CONCENT_PUBLIC_KEY
 from message_handler import MessageHandler
 from message_extractor import MessageExtractor
 from key_manager import KeyManager
-
-(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
-(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
-
-concent_public_key = CONCENT_PUBLIC_KEY
 
 
 def get_json_data(message_file, message_str):
@@ -48,14 +41,18 @@ def parse_arguments():
     parser_receive_message = subparsers.add_parser('receive')
     parser_receive_message.set_defaults(endpoint="receive")
     parser_receive_message.add_argument("cluster_url")
-    parser_receive_message.add_argument('--party', action="store", choices=('provider', 'requestor'), required=True)
+    parser_receive_message.add_argument("--party", action="store", choices=('provider', 'requestor'), required=True)
 
     # ENDPOINT
     # receive-out-of-band
     parser_receive_out_of_band_message = subparsers.add_parser('receive-out-of-band')
     parser_receive_out_of_band_message.set_defaults(endpoint="receive_out_of_band_message")
     parser_receive_out_of_band_message.add_argument("cluster_url")
-    parser_receive_out_of_band_message.add_argument('--party', action="store", choices=('provider', 'requestor'), required=True)
+    parser_receive_out_of_band_message.add_argument(
+        '--party',
+        action="store",
+        choices=('provider', 'requestor'),
+        required=True)
 
     return parser.parse_args()
 
@@ -66,11 +63,15 @@ if __name__ == '__main__':
     key_manager = KeyManager()
     requestor_public_key, requestor_private_key = key_manager.get_requestor_keys()
     provider_public_key, provider_private_key = key_manager.get_provider_keys()
+    concent_public_key = key_manager.get_concent_public_key()
 
     # print('REQUESTOR_PRIVATE_KEY', '\n', requestor_private_key, '\n')
     # print('REQUESTOR_PUBLIC_KEY', '\n', requestor_public_key, '\n')
     # print('PROVIDER_PRIVATE_KEY', '\n', provider_private_key, '\n')
     # print('PROVIDER_PUBLIC_KEY', '\n', provider_public_key, '\n')
+    if args.print_keys:
+        print_keys(requestor_public_key, requestor_private_key, provider_public_key, provider_private_key,
+                   concent_public_key)
 
     message_handler = MessageHandler(
         requestor_private_key,

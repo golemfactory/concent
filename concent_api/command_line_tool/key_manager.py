@@ -1,7 +1,6 @@
 from utils.testing_helpers import generate_ecc_key_pair
 from django.conf import settings
 
-
 REQUESTOR_PRIVATE_KEY = b"\xf1)\x82\xfd\xa7t\xd5\x7f\x00K\xa9\x12\x80\xed\x88\xef\xae\x03;\x11<0\xf8b\x96@\xaa\x92\xef\xa6;'"
 REQUESTOR_PUBLIC_KEY = b'\xe3\xb0zQ\xef\xf3\xed\x82K\xe6^@ \x0b^\xd9\xbd\x05q\r\xc5\xda)\x96G\x89\xd6\x9c\x83[v\xa4C\xdf\x1d2\x03\xbfc\xd2\x05^\xa0\xae\xc2\xfb\xd5\xf4\xcf\xb9_\xb0r\xac\x93\xe2\xbd\xed\xaf\xb5l\xa25T'
 
@@ -34,7 +33,7 @@ def _get_predefined_keys(party):
 
 class KeyManager(object):
     def __init__(self):
-        self.requestor_private_key, self.requestor_public_key  = self._get_or_generate_keys('requestor')
+        self.requestor_private_key, self.requestor_public_key = self._get_or_generate_keys('requestor')
         self.provider_private_key, self.provider_public_key = self._get_or_generate_keys('provider')
 
     def _get_or_generate_keys(self, party):

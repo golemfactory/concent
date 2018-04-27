@@ -1,4 +1,5 @@
 import datetime
+from django.conf import settings
 from django.test import override_settings
 from django.test import TestCase
 import mock
@@ -7,7 +8,6 @@ from freezegun import freeze_time
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.message import FileTransferToken
 
-from concent_api import settings
 from core.tests.utils import ConcentIntegrationTestCase
 from core.exceptions import UnexpectedResponse
 from core.transfer_operations import create_file_transfer_token_for_concent

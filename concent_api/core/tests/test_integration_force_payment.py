@@ -6,6 +6,7 @@ from golem_messages         import message
 
 from core.constants         import ETHEREUM_ADDRESS_LENGTH
 from core.models            import PendingResponse
+from core.payments.sci_backend import TransactionType
 from core.tests.utils       import ConcentIntegrationTestCase
 from utils.testing_helpers  import generate_ecc_key_pair
 
@@ -140,19 +141,21 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         Provider  -> Concent:    ForcePayment
         Concent   -> Provider:   ForcePaymentRejected
         """
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp                       = "2018-02-05 10:00:00",
+            deadline                        = "2018-02-05 10:00:10",
+            task_id                         = '2',
+            requestor_public_key            = self.REQUESTOR_PUBLIC_KEY,
+            requestor_ethereum_public_key   = self._get_requestor_ethereum_public_key(),
+            provider_public_key             = self.PROVIDER_PUBLIC_KEY,
+            provider_ethereum_public_key    = self._get_provider_ethereum_public_key(),
+        )
+
         subtask_results_accepted_list = [
             self._get_deserialized_subtask_results_accepted(
                 timestamp       = "2018-02-05 10:00:15",
                 payment_ts      = "2018-02-05 12:00:00",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp                       = "2018-02-05 10:00:00",
-                    deadline                        = "2018-02-05 10:00:10",
-                    task_id                         = '2',
-                    requestor_public_key            = self.REQUESTOR_PUBLIC_KEY,
-                    requestor_ethereum_public_key   = self._get_requestor_ethereum_public_key(),
-                    provider_public_key             = self.PROVIDER_PUBLIC_KEY,
-                    provider_ethereum_public_key    = self._get_provider_ethereum_public_key(),
-                )
+                task_to_compute = task_to_compute
             ),
             self._get_deserialized_subtask_results_accepted(
                 timestamp       = "2018-02-05 9:00:15",
@@ -173,13 +176,24 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             subtask_results_accepted_list = subtask_results_accepted_list
         )
 
-        with freeze_time("2018-02-05 12:00:09"):
-            with mock.patch('core.message_handlers.base.get_list_of_payments', self._get_list_of_force_transactions):
+        with mock.patch(
+            'core.message_handlers.base.get_list_of_payments',
+            side_effect=self._get_list_of_force_transactions
+        ) as get_list_of_payments_mock_function:
+            with freeze_time("2018-02-05 12:00:09"):
                 response = self.client.post(
                     reverse('core:send'),
                     data                                = serialized_force_payment,
                     content_type                        = 'application/octet-stream',
                 )
+
+        get_list_of_payments_mock_function.assert_called_with(
+            requestor_eth_address=task_to_compute.requestor_ethereum_address,
+            provider_eth_address=task_to_compute.provider_ethereum_address,
+            payment_ts=self._parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
+            current_time=self._parse_iso_date_to_timestamp("2018-02-05 12:00:09"),
+            transaction_type=TransactionType.BATCH,
+        )
 
         self._test_response(
             response,
@@ -199,20 +213,22 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         Provider  -> Concent:    ForcePayment
         Concent   -> Provider:   ForcePaymentRejected
         """
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp                       = "2018-02-05 10:00:00",
+            deadline                        = "2018-02-05 10:00:10",
+            task_id                         = '2',
+            subtask_id                      = '2',
+            requestor_public_key            = self.REQUESTOR_PUBLIC_KEY,
+            requestor_ethereum_public_key   = self._get_requestor_ethereum_public_key(),
+            provider_public_key             = self.PROVIDER_PUBLIC_KEY,
+            provider_ethereum_public_key    = self._get_provider_ethereum_public_key(),
+        )
+
         subtask_results_accepted_list = [
             self._get_deserialized_subtask_results_accepted(
                 timestamp       = "2018-02-05 10:00:15",
                 payment_ts      = "2018-02-05 12:00:00",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp                       = "2018-02-05 10:00:00",
-                    deadline                        = "2018-02-05 10:00:10",
-                    task_id                         = '2',
-                    subtask_id                      = '2',
-                    requestor_public_key            = self.REQUESTOR_PUBLIC_KEY,
-                    requestor_ethereum_public_key   = self._get_requestor_ethereum_public_key(),
-                    provider_public_key             = self.PROVIDER_PUBLIC_KEY,
-                    provider_ethereum_public_key    = self._get_provider_ethereum_public_key(),
-                )
+                task_to_compute = task_to_compute
             ),
             self._get_deserialized_subtask_results_accepted(
                 timestamp       = "2018-02-05 9:00:15",
@@ -234,13 +250,24 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             subtask_results_accepted_list = subtask_results_accepted_list
         )
 
-        with freeze_time("2018-02-05 12:00:20"):
-            with mock.patch('core.message_handlers.base.get_list_of_payments', self._get_list_of_force_transactions):
+        with mock.patch(
+            'core.message_handlers.base.get_list_of_payments',
+            side_effect=self._get_list_of_force_transactions
+        ) as get_list_of_payments_mock_function:
+            with freeze_time("2018-02-05 12:00:20"):
                 response = self.client.post(
                     reverse('core:send'),
                     data                                = serialized_force_payment,
                     content_type                        = 'application/octet-stream',
                 )
+
+        get_list_of_payments_mock_function.assert_called_with(
+            requestor_eth_address=task_to_compute.requestor_ethereum_address,
+            provider_eth_address=task_to_compute.provider_ethereum_address,
+            payment_ts=self._parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
+            current_time=self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+            transaction_type=TransactionType.BATCH,
+        )
 
         self._test_response(
             response,
@@ -260,20 +287,22 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         Provider  -> Concent:    ForcePayment
         Concent   -> Provider:   ForcePaymentRejected
         """
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp                       = "2018-02-05 10:00:00",
+            deadline                        = "2018-02-05 10:00:10",
+            task_id                         = '2',
+            requestor_public_key            = self.REQUESTOR_PUBLIC_KEY,
+            requestor_ethereum_public_key   = self._get_requestor_ethereum_public_key(),
+            provider_public_key             = self.PROVIDER_PUBLIC_KEY,
+            provider_ethereum_public_key    = self._get_provider_ethereum_public_key(),
+            price                           = 10000,
+        )
+
         subtask_results_accepted_list = [
             self._get_deserialized_subtask_results_accepted(
                 timestamp       = "2018-02-05 10:00:15",
                 payment_ts      = "2018-02-05 11:55:00",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp                       = "2018-02-05 10:00:00",
-                    deadline                        = "2018-02-05 10:00:10",
-                    task_id                         = '2',
-                    requestor_public_key            = self.REQUESTOR_PUBLIC_KEY,
-                    requestor_ethereum_public_key   = self._get_requestor_ethereum_public_key(),
-                    provider_public_key             = self.PROVIDER_PUBLIC_KEY,
-                    provider_ethereum_public_key    = self._get_provider_ethereum_public_key(),
-                    price                           = 10000,
-                )
+                task_to_compute = task_to_compute
             ),
             self._get_deserialized_subtask_results_accepted(
                 timestamp       = "2018-02-05 9:00:15",
@@ -296,15 +325,25 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 12:00:20"):
-            fake_responses = []
-            fake_responses.append(self._get_list_of_batch_transactions())
-            fake_responses.append(self._get_list_of_force_transactions())
-            with mock.patch('core.message_handlers.base.get_list_of_payments', side_effect=fake_responses):
+            fake_responses = [
+                self._get_list_of_batch_transactions(),
+                self._get_list_of_force_transactions()
+            ]
+            with mock.patch('core.message_handlers.base.get_list_of_payments', side_effect=fake_responses) as get_list_of_payments_mock_function:
                 response = self.client.post(
                     reverse('core:send'),
                     data                                = serialized_force_payment,
                     content_type                        = 'application/octet-stream',
                 )
+
+        get_list_of_payments_mock_function.assert_called_with(
+            requestor_eth_address=task_to_compute.requestor_ethereum_address,
+            provider_eth_address=task_to_compute.provider_ethereum_address,
+            payment_ts=self._parse_iso_date_to_timestamp("2018-02-05 11:55:10"),
+            current_time=self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+            transaction_type=TransactionType.FORCE,
+        )
+
         self._test_response(
             response,
             status       = 200,
@@ -324,20 +363,22 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         Concent   -> Provider:   ForcePaymentCommitted
         Concent   -> Requestor:  ForcePaymentCommitted
         """
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp                       = "2018-02-05 10:00:00",
+            deadline                        = "2018-02-05 10:00:10",
+            task_id                         = '2',
+            requestor_public_key            = self.REQUESTOR_PUBLIC_KEY,
+            requestor_ethereum_public_key   = self._get_requestor_ethereum_public_key(),
+            provider_public_key             = self.PROVIDER_PUBLIC_KEY,
+            provider_ethereum_public_key    = self._get_provider_ethereum_public_key(),
+            price                           = 15000,
+        )
+
         subtask_results_accepted_list = [
             self._get_deserialized_subtask_results_accepted(
                 timestamp       = "2018-02-05 10:00:15",
                 payment_ts      = "2018-02-05 11:55:00",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp                       = "2018-02-05 10:00:00",
-                    deadline                        = "2018-02-05 10:00:10",
-                    task_id                         = '2',
-                    requestor_public_key            = self.REQUESTOR_PUBLIC_KEY,
-                    requestor_ethereum_public_key   = self._get_requestor_ethereum_public_key(),
-                    provider_public_key             = self.PROVIDER_PUBLIC_KEY,
-                    provider_ethereum_public_key    = self._get_provider_ethereum_public_key(),
-                    price                           = 15000,
-                )
+                task_to_compute = task_to_compute
             ),
             self._get_deserialized_subtask_results_accepted(
                 timestamp       = "2018-02-05 9:00:15",
@@ -361,16 +402,39 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 12:00:20"):
-            with mock.patch('core.message_handlers.base.make_force_payment_to_provider', self._make_force_payment_to_provider):
-                fake_responses = []
-                fake_responses.append(self._get_list_of_batch_transactions())
-                fake_responses.append(self._get_list_of_force_transactions())
-                with mock.patch('core.message_handlers.base.get_list_of_payments', side_effect=fake_responses):
-                    response_1 = self.client.post(
-                        reverse('core:send'),
-                        data                                = serialized_force_payment,
-                        content_type                        = 'application/octet-stream',
-                    )
+            fake_responses = [
+                self._get_list_of_batch_transactions(),
+                self._get_list_of_force_transactions()
+            ]
+            with mock.patch(
+                'core.message_handlers.base.make_force_payment_to_provider',
+                side_effect=self._make_force_payment_to_provider
+            ) as make_force_payment_to_provider_mock_function,\
+                mock.patch(
+                'core.message_handlers.base.get_list_of_payments',
+                side_effect=fake_responses
+            ) as get_list_of_payments_mock_function:
+                response_1 = self.client.post(
+                    reverse('core:send'),
+                    data                                = serialized_force_payment,
+                    content_type                        = 'application/octet-stream',
+                )
+
+        make_force_payment_to_provider_mock_function.assert_called_with(
+            requestor_eth_address=task_to_compute.requestor_ethereum_address,
+            provider_eth_address=task_to_compute.provider_ethereum_address,
+            value=9000,
+            payment_ts=self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+        )
+
+        get_list_of_payments_mock_function.assert_called_with(
+            requestor_eth_address=task_to_compute.requestor_ethereum_address,
+            provider_eth_address=task_to_compute.provider_ethereum_address,
+            payment_ts=self._parse_iso_date_to_timestamp("2018-02-05 11:55:10"),
+            current_time=self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+            transaction_type=TransactionType.FORCE,
+        )
+
         # Sum of prices from force and batch lists of transactions which have been paid
         amount_paid = 10000 + 3000
         # Sum of price in all TaskToCompute messages minus amount_paid
@@ -607,21 +671,22 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         Concent   -> Provider:   ForcePaymentCommitted
         Concent   -> Requestor:  ForcePaymentCommitted
         """
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp                       = "2018-02-05 10:00:00",
+            deadline                        = "2018-02-05 10:00:10",
+            task_id                         = '2',
+            requestor_public_key            = self.REQUESTOR_PUBLIC_KEY,
+            requestor_ethereum_public_key   = self._get_requestor_ethereum_public_key(),
+            provider_public_key             = self.PROVIDER_PUBLIC_KEY,
+            provider_ethereum_public_key    = self._get_provider_ethereum_public_key(),
+            price                           = 20000,
+        )
 
         subtask_results_accepted_list = [
             self._get_deserialized_subtask_results_accepted(
                 timestamp       = "2018-02-05 10:00:15",
                 payment_ts      = "2018-02-05 12:00:00",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp                       = "2018-02-05 10:00:00",
-                    deadline                        = "2018-02-05 10:00:10",
-                    task_id                         = '2',
-                    requestor_public_key            = self.REQUESTOR_PUBLIC_KEY,
-                    requestor_ethereum_public_key   = self._get_requestor_ethereum_public_key(),
-                    provider_public_key             = self.PROVIDER_PUBLIC_KEY,
-                    provider_ethereum_public_key    = self._get_provider_ethereum_public_key(),
-                    price                           = 20000,
-                )
+                task_to_compute = task_to_compute
             ),
             self._get_deserialized_subtask_results_accepted(
                 timestamp       = "2018-02-05 9:00:15",
@@ -644,13 +709,35 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 12:00:20"):
-            with mock.patch('core.message_handlers.base.get_list_of_payments', self._get_empty_list_of_transactions):
-                with mock.patch('core.message_handlers.base.make_force_payment_to_provider', self._make_force_payment_to_provider):
-                    response_1 = self.client.post(
-                        reverse('core:send'),
-                        data                                = serialized_force_payment,
-                        content_type                        = 'application/octet-stream',
-                    )
+            with mock.patch(
+                'core.message_handlers.base.get_list_of_payments',
+                side_effect=self._get_empty_list_of_transactions
+            ) as get_list_of_payments_mock_function,\
+                mock.patch(
+                'core.message_handlers.base.make_force_payment_to_provider',
+                side_effect=self._make_force_payment_to_provider
+            ) as make_force_payment_to_provider_mock_function:
+                response_1 = self.client.post(
+                    reverse('core:send'),
+                    data                                = serialized_force_payment,
+                    content_type                        = 'application/octet-stream',
+                )
+
+        make_force_payment_to_provider_mock_function.assert_called_with(
+            requestor_eth_address=task_to_compute.requestor_ethereum_address,
+            provider_eth_address=task_to_compute.provider_ethereum_address,
+            value=25000,
+            payment_ts=self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+        )
+
+        get_list_of_payments_mock_function.assert_called_with(
+            requestor_eth_address=task_to_compute.requestor_ethereum_address,
+            provider_eth_address=task_to_compute.provider_ethereum_address,
+            payment_ts=self._parse_iso_date_to_timestamp("2018-02-05 11:00:10"),
+            current_time=self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+            transaction_type=TransactionType.FORCE,
+        )
+
         self._test_response(
             response_1,
             status       = 200,

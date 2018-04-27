@@ -181,7 +181,10 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
          subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify()
 
         # when
-        with mock.patch("core.message_handlers.base.is_account_status_positive", return_value=False):
+        with mock.patch(
+            "core.message_handlers.base.is_account_status_positive",
+            return_value=False
+        ) as is_account_status_positive_mock:
             with freeze_time(subtask_results_verify_time_str):
                 response = self.client.post(
                     reverse('core:send'),
@@ -190,6 +193,10 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
                     HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
+
+        is_account_status_positive_mock.assert_called_with(
+            client_eth_address=self.report_computed_task.task_to_compute.requestor_ethereum_address
+        )
 
         # then
         self._test_response(
@@ -278,7 +285,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
          subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify()
 
         # when
-        with mock.patch("core.message_handlers.base.is_account_status_positive", return_value=True):
+        with mock.patch("core.message_handlers.base.is_account_status_positive", return_value=True) as is_account_status_positive_mock:
             with mock.patch("core.message_handlers.send_blender_verification_request") as send_verification_request_mock:
                 with freeze_time(subtask_results_verify_time_str):
                     response = self.client.post(
@@ -288,6 +295,10 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                         HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
                         HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                     )
+
+        is_account_status_positive_mock.assert_called_with(
+            client_eth_address=self.report_computed_task.task_to_compute.requestor_ethereum_address
+        )
 
         # then
         self._test_response(

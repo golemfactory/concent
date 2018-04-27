@@ -27,7 +27,7 @@ class ConductorVerificationIntegrationTest(TestCase):
 
     def _prepare_verification_request_with_blender_subtask_definition(self):
         verification_request = VerificationRequest(
-            subtask_id='1',
+            subtask_id=self.compute_task_def['subtask_id'],
             source_package_path=self.source_package_path,
             result_package_path=self.result_package_path,
         )
@@ -143,7 +143,13 @@ class ConductorVerificationIntegrationTest(TestCase):
         upload_report = UploadReport.objects.last()
         self.assertEqual(upload_report.path, self.source_package_path)
 
-        mock_task.assert_called()
+        mock_task.assert_called_with(
+            self.compute_task_def['subtask_id'],
+            self.source_package_path,
+            self.result_package_path,
+            BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
+            self.scene_file,
+        )
 
     def test_blender_verification_request_task_should_create_verification_request_and_blender_subtask_definition(self):
         blender_verification_request(

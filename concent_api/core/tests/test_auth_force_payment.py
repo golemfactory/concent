@@ -64,17 +64,27 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             subtask_results_accepted_list = subtask_results_accepted_list
         )
 
-        with freeze_time("2018-02-05 12:00:20"):
-            with mock.patch('core.message_handlers.base.make_force_payment_to_provider', self._make_force_payment_to_provider):
-                fake_responses = [mock.Mock(), mock.Mock()]
-                fake_responses[0] = self._get_list_of_batch_transactions()
-                fake_responses[1] = self._get_list_of_force_transactions()
-                with mock.patch('core.message_handlers.base.get_list_of_payments', side_effect=fake_responses):
+        with mock.patch(
+            'core.message_handlers.base.make_force_payment_to_provider',
+            side_effect=self._make_force_payment_to_provider
+        ) as make_force_payment_to_provider_mock:
+            with freeze_time("2018-02-05 12:00:20"):
+                fake_responses = [
+                    self._get_list_of_batch_transactions(),
+                    self._get_list_of_force_transactions(),
+                ]
+                with mock.patch(
+                    'core.message_handlers.base.get_list_of_payments',
+                    side_effect=fake_responses
+                ) as get_list_of_payments_mock:
                     response_1 = self.client.post(
                         reverse('core:send'),
                         data                                = serialized_force_payment,
                         content_type                        = 'application/octet-stream',
                     )
+
+        make_force_payment_to_provider_mock.assert_called_once()
+        self.assertEqual(get_list_of_payments_mock.call_count, 2)
 
         self._test_response(
             response_1,

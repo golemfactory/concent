@@ -141,13 +141,20 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 2: Requestor again forces get task result via Concent.
         # Concent rejects request immediately because message was already sent.
-        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
+        with mock.patch(
+            'core.transfer_operations.request_upload_status',
+            side_effect=request_upload_status_false_mock
+        ) as request_upload_status_false_mock_function:
             with freeze_time("2017-12-01 11:00:09"):
                 response = self.client.post(
                     reverse('core:send'),
-                    data                                = serialized_force_get_task_result,
-                    content_type                        = 'application/octet-stream',
+                    data=serialized_force_get_task_result,
+                    content_type='application/octet-stream',
                 )
+
+        request_upload_status_false_mock_function.assert_called_with(
+            deserialized_report_computed_task
+        )
 
         self.assertEqual(response.status_code,  200)
 
@@ -309,13 +316,12 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.
-        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
-            with freeze_time("2017-12-01 11:00:12"):
-                response_2 = self.client.post(
-                    reverse('core:receive'),
-                    data                           = self._create_provider_auth_message(),
-                    content_type                   = 'application/octet-stream',
-                )
+        with freeze_time("2017-12-01 11:00:12"):
+            response_2 = self.client.post(
+                reverse('core:receive'),
+                data=self._create_provider_auth_message(),
+                content_type='application/octet-stream',
+            )
 
         self.assertEqual(response_2.status_code, 200)
         self._assert_stored_message_counter_increased(increased_by = 0)
@@ -356,13 +362,20 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
 
         # STEP 3: Requestor receives force get task result failed due to lack of provider submit.
-        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
+        with mock.patch(
+            'core.transfer_operations.request_upload_status',
+            side_effect=request_upload_status_false_mock
+        ) as request_upload_status_false_mock_function:
             with freeze_time("2017-12-01 11:00:21"):
                 response_3 = self.client.post(
                     reverse('core:receive'),
-                    data                           = self._create_requestor_auth_message(),
-                    content_type                   = 'application/octet-stream',
+                    data=self._create_requestor_auth_message(),
+                    content_type='application/octet-stream',
                 )
+
+        request_upload_status_false_mock_function.assert_called_with(
+            deserialized_report_computed_task
+        )
 
         self.assertEqual(response_3.status_code, 200)
         self._assert_stored_message_counter_not_increased()
@@ -445,13 +458,12 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.
-        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
-            with freeze_time("2017-12-01 11:00:12"):
-                response_2 = self.client.post(
-                    reverse('core:receive'),
-                    data                           = self._create_provider_auth_message(),
-                    content_type                   = 'application/octet-stream',
-                )
+        with freeze_time("2017-12-01 11:00:12"):
+            response_2 = self.client.post(
+                reverse('core:receive'),
+                data=self._create_provider_auth_message(),
+                content_type='application/octet-stream',
+            )
 
         self.assertEqual(response_2.status_code, 200)
         self._assert_stored_message_counter_increased(increased_by = 0)
@@ -465,14 +477,21 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
         )
 
-        # STEP 2: Requestor receives force get task result failed due to lack of provider submit.
-        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
+        # STEP 3: Requestor receives force get task result failed due to lack of provider submit.
+        with mock.patch(
+            'core.transfer_operations.request_upload_status',
+            side_effect=request_upload_status_false_mock
+        ) as request_upload_status_false_mock_function:
             with freeze_time("2017-12-01 11:00:21"):
                 response_3 = self.client.post(
                     reverse('core:receive'),
-                    data                           = self._create_requestor_auth_message(),
-                    content_type                   = 'application/octet-stream',
+                    data=self._create_requestor_auth_message(),
+                    content_type='application/octet-stream',
                 )
+
+        request_upload_status_false_mock_function.assert_called_with(
+            deserialized_report_computed_task
+        )
 
         self.assertEqual(response_3.status_code, 200)
         self._assert_stored_message_counter_not_increased()
@@ -561,13 +580,12 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.
-        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
-            with freeze_time("2017-12-01 11:00:06"):
-                response_2 = self.client.post(
-                    reverse('core:receive'),
-                    data                           = self._create_provider_auth_message(),
-                    content_type                   = 'application/octet-stream',
-                )
+        with freeze_time("2017-12-01 11:00:06"):
+            response_2 = self.client.post(
+                reverse('core:receive'),
+                data=self._create_provider_auth_message(),
+                content_type='application/octet-stream',
+            )
 
         self.assertEqual(response_2.status_code, 200)
         self._assert_stored_message_counter_increased(increased_by = 0)
@@ -608,13 +626,20 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
 
         # STEP 3: Requestor receives force get task result upload.
-        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_true_mock):
+        with mock.patch(
+            'core.transfer_operations.request_upload_status',
+            side_effect=request_upload_status_true_mock
+        ) as request_upload_status_true_mock_function:
             with freeze_time("2017-12-01 11:00:21"):
                 response_3 = self.client.post(
                     reverse('core:receive'),
-                    data                           = self._create_requestor_auth_message(),
-                    content_type                   = 'application/octet-stream',
+                    data=self._create_requestor_auth_message(),
+                    content_type='application/octet-stream',
                 )
+
+        request_upload_status_true_mock_function.assert_called_with(
+            deserialized_report_computed_task
+        )
 
         self.assertEqual(response_3.status_code, 200)
         self._assert_stored_message_counter_increased(increased_by = 0)
@@ -708,13 +733,12 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.
-        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_true_mock):
-            with freeze_time("2017-12-01 11:00:12"):
-                response_2 = self.client.post(
-                    reverse('core:receive'),
-                    data                           = self._create_provider_auth_message(),
-                    content_type                   = 'application/octet-stream',
-                )
+        with freeze_time("2017-12-01 11:00:12"):
+            response_2 = self.client.post(
+                reverse('core:receive'),
+                data                           = self._create_provider_auth_message(),
+                content_type                   = 'application/octet-stream',
+            )
 
         self.assertEqual(response_2.status_code, 200)
         self._assert_stored_message_counter_increased(increased_by = 0)
@@ -755,13 +779,20 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
 
         # STEP 3: Requestor receives force get task result failed due to lack of provider submit.
-        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_true_mock):
+        with mock.patch(
+            'core.transfer_operations.request_upload_status',
+            side_effect=request_upload_status_true_mock
+        ) as request_upload_status_true_mock_function:
             with freeze_time("2017-12-01 11:00:21"):
                 response_3 = self.client.post(
                     reverse('core:receive'),
-                    data         = self._create_requestor_auth_message(),
-                    content_type = 'application/octet-stream',
+                    data=self._create_requestor_auth_message(),
+                    content_type='application/octet-stream',
                 )
+
+        request_upload_status_true_mock_function.assert_called_with(
+            deserialized_report_computed_task
+        )
 
         self.assertEqual(response_3.status_code, 200)
         self._assert_stored_message_counter_increased(increased_by = 0)
@@ -863,13 +894,12 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.
-        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_false_mock):
-            with freeze_time("2017-12-01 11:00:12"):
-                response_2 = self.client.post(
-                    reverse('core:receive'),
-                    data                           = self._create_provider_auth_message(),
-                    content_type                   = 'application/octet-stream',
-                )
+        with freeze_time("2017-12-01 11:00:12"):
+            response_2 = self.client.post(
+                reverse('core:receive'),
+                data                           = self._create_provider_auth_message(),
+                content_type                   = 'application/octet-stream',
+            )
 
         self.assertEqual(response_2.status_code, 200)
         self._assert_stored_message_counter_not_increased()
@@ -904,13 +934,20 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
 
         # STEP 3: Requestor receives force get task result download because Provider uploaded file.
-        with mock.patch('core.transfer_operations.request_upload_status', request_upload_status_true_mock):
+        with mock.patch(
+            'core.transfer_operations.request_upload_status',
+            side_effect=request_upload_status_true_mock
+        ) as request_upload_status_true_mock_function:
             with freeze_time("2017-12-01 11:00:21"):
                 response_3 = self.client.post(
                     reverse('core:receive'),
-                    data                           = self._create_requestor_auth_message(),
-                    content_type                   = 'application/octet-stream',
+                    data=self._create_requestor_auth_message(),
+                    content_type='application/octet-stream',
                 )
+
+        request_upload_status_true_mock_function.assert_called_with(
+            deserialized_report_computed_task
+        )
 
         self.assertEqual(response_3.status_code,  200)
         self._test_subtask_state(

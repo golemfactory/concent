@@ -1,8 +1,8 @@
-import os
-import sys
 import argparse
 import json
-
+import os
+import sys
+# TODO: Remove when importing from api_testing_common is no longer needed or when setup.py will be created.
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from message_handler import MessageHandler
 from message_extractor import MessageExtractor
@@ -14,12 +14,6 @@ def get_json_data(message_file, message_str):
         return json.load(open(message_file))
     else:
         return json.loads(message_str)
-
-
-def receive_out_of_band_message(args):
-    print('------------------------------\n Message out-of-band recieved\n------------------------------')
-    print('cluster_url:', args.cluster_url)
-    print('subtask_id:', args.subtask_id)
 
 
 def parse_arguments():
@@ -47,11 +41,11 @@ def parse_arguments():
 
     # ENDPOINT
     # receive-out-of-band
-    parser_receive_out_of_band_message = subparsers.add_parser('receive-out-of-band')
-    parser_receive_out_of_band_message.set_defaults(endpoint="receive_out_of_band_message")
-    parser_receive_out_of_band_message.add_argument("cluster_url")
-    parser_receive_out_of_band_message.add_argument("--print_keys", action="store_true")
-    parser_receive_out_of_band_message.add_argument(
+    parser_receive_out_of_band = subparsers.add_parser('receive-out-of-band')
+    parser_receive_out_of_band.set_defaults(endpoint="receive-out-of-band")
+    parser_receive_out_of_band.add_argument("cluster_url")
+    parser_receive_out_of_band.add_argument("--print_keys", action="store_true")
+    parser_receive_out_of_band.add_argument(
         '--party',
         action="store",
         choices=('provider', 'requestor'),
@@ -60,13 +54,14 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def print_keys(requestor_public_key, requestor_private_key, provider_public_key, provider_private_key,
-               concent_public_key):
-    print('REQUESTOR_PRIVATE_KEY', '\n', requestor_private_key, '\n')
-    print('REQUESTOR_PUBLIC_KEY', '\n', requestor_public_key, '\n')
-    print('PROVIDER_PRIVATE_KEY', '\n', provider_private_key, '\n')
-    print('PROVIDER_PUBLIC_KEY', '\n', provider_public_key, '\n')
-    print('CONCENT_PUBLIC_KEY', '\n', concent_public_key, '\n')
+def print_keys(req_pub_key, req_priv_key, prov_pub_key, prov_priv_key, conc_pub_key):
+    print('REQUESTOR_PRIVATE_KEY = ', req_priv_key)
+    print('REQUESTOR_PUBLIC_KEY = ', req_pub_key)
+    print('')
+    print('PROVIDER_PRIVATE_KEY = ', prov_priv_key)
+    print('PROVIDER_PUBLIC_KEY = ', prov_pub_key)
+    print('')
+    print('CONCENT_PUBLIC_KEY = ', conc_pub_key)
 
 
 if __name__ == '__main__':
@@ -78,24 +73,30 @@ if __name__ == '__main__':
     concent_public_key = key_manager.get_concent_public_key()
 
     if args.print_keys:
-        print_keys(requestor_public_key, requestor_private_key, provider_public_key, provider_private_key,
-                   concent_public_key)
+        print_keys(
+            requestor_public_key,
+            requestor_private_key,
+            provider_public_key,
+            provider_private_key,
+            concent_public_key,
+        )
 
     message_handler = MessageHandler(
         requestor_private_key,
         requestor_public_key,
         provider_public_key,
         provider_private_key,
-        concent_public_key)
+        concent_public_key,
+    )
 
     if args.endpoint == 'send':
         json_data = get_json_data(args.message_file, args.message)
         message = MessageExtractor(
             requestor_public_key,
-            provider_public_key).extract_message(json_data)
+            provider_public_key
+        ).extract_message(json_data)
 
-        message_handler.prepare_to_send_message(args.cluster_url, message)
+        message_handler.send(args.cluster_url, message)
 
-
-    elif args.endpoint == 'receive':
-        message_handler.prepare_to_receive_message(args.cluster_url, args.party)
+    elif args.endpoint == 'receive' or 'receive-out-of-band':
+        message_handler.receive(args.cluster_url, args.party, args.endpoint)

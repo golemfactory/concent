@@ -1,7 +1,7 @@
 from django.conf.urls import url
 
-from .views import upload_report
+from .views import report_upload
 
 urlpatterns = [
-    url(r'^upload_report/(?P<file_path>.+\.zip)$', upload_report, name='upload_report'),
+    url(r'^report-upload/(?P<file_path>.+\.zip)$', report_upload, name='report-upload'),
 ]

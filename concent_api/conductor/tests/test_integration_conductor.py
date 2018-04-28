@@ -46,7 +46,7 @@ class ConductorVerificationIntegrationTest(TestCase):
 
     def test_conductor_should_return_404_when_file_path_parameter_not_matching_url_pattern_is_used(self):
         response = self.client.get(
-            '/conductor/upload-report/blender/result/ef0dc1/ef0dc1.zzz523.arj',
+            '/conductor/report-upload/blender/result/ef0dc1/ef0dc1.zzz523.arj',
             content_type = 'application/octet-stream',
         )
 
@@ -55,7 +55,7 @@ class ConductorVerificationIntegrationTest(TestCase):
     def test_conductor_should_create_upload_report(self):
         response = self.client.get(
             reverse(
-                'conductor:upload_report',
+                'conductor:report-upload',
                 kwargs={
                     'file_path': self.source_package_path
                 }
@@ -75,7 +75,7 @@ class ConductorVerificationIntegrationTest(TestCase):
 
         response = self.client.get(
             reverse(
-                'conductor:upload_report',
+                'conductor:report-upload',
                 kwargs={
                     'file_path': self.source_package_path
                 }
@@ -101,7 +101,7 @@ class ConductorVerificationIntegrationTest(TestCase):
 
         response = self.client.get(
             reverse(
-                'conductor:upload_report',
+                'conductor:report-upload',
                 kwargs={
                     'file_path': self.source_package_path
                 }
@@ -129,7 +129,7 @@ class ConductorVerificationIntegrationTest(TestCase):
         with mock.patch('conductor.views.blender_verification_request.delay') as mock_task:
             response = self.client.get(
                 reverse(
-                    'conductor:upload_report',
+                    'conductor:report-upload',
                     kwargs={
                         'file_path': self.source_package_path
                     }

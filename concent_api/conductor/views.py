@@ -5,7 +5,7 @@ from .models import VerificationRequest
 from .tasks import blender_verification_request
 
 
-def upload_report(_request, file_path):
+def report_upload(_request, file_path):
 
     # If there's a corresponding VerificationRequest, the load it and link it to UploadReport.
     try:

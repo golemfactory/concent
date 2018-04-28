@@ -5,6 +5,7 @@ from django.http                    import JsonResponse
 from django.test                    import TestCase
 
 from gatekeeper.utils               import gatekeeper_access_denied_response
+from utils.constants                import ErrorCode
 from utils.testing_helpers          import generate_ecc_key_pair
 
 
@@ -18,6 +19,7 @@ class GatekeeperAccessDeniedResponseTest(TestCase):
     def test_gatekeeper_access_denied_response_should_return_appropriate_body_and_headers(self):
         response = gatekeeper_access_denied_response(
             self.message,
+            ErrorCode.HEADER_AUTHORIZATION_MISSING,
             self.path,
             None,
             self.client_key
@@ -32,3 +34,4 @@ class GatekeeperAccessDeniedResponseTest(TestCase):
         self.assertEqual(response_body["message"], self.message)
         self.assertEqual(response_body["path_to_file"], self.path)
         self.assertEqual(response_body["client_key"], self.client_key)
+        self.assertEqual(response_body["error_code"], ErrorCode.HEADER_AUTHORIZATION_MISSING.value)

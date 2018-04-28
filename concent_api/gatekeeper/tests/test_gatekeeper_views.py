@@ -11,8 +11,9 @@ from golem_messages.message         import FileTransferToken
 from golem_messages.factories.concents import FileTransferTokenFactory
 
 from core.tests.utils               import ConcentIntegrationTestCase
-from utils.helpers import get_current_utc_timestamp
-from utils.helpers import get_storage_file_path
+from utils.constants                import ErrorCode
+from utils.helpers                  import get_current_utc_timestamp
+from utils.helpers                  import get_storage_file_path
 
 
 @override_settings(
@@ -77,6 +78,8 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
         self.assertIsInstance(response, JsonResponse)
         self.assertEqual(response.status_code, 401)
         self.assertIn('message', response.json().keys())
+        self.assertIn('error_code', response.json().keys())
+        self.assertEqual(response.json()["error_code"], ErrorCode.HEADER_CONTENT_TYPE_NOT_SUPPORTED.value)
 
     @freeze_time("2018-12-30 12:00:01")
     def test_upload_should_return_401_if_message_token_deadline_pass(self):
@@ -95,6 +98,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
         self.assertIsInstance(response, JsonResponse)
         self.assertEqual(response.status_code, 401)
         self.assertIn('message', response.json().keys())
+        self.assertEqual(response.json()["error_code"], ErrorCode.AUTH_CLIENT_AUTH_MESSAGE_INVALID.value)
 
     @freeze_time("2018-12-30 11:00:00")
     def test_upload_should_return_401_if_file_paths_are_not_unique(self):
@@ -128,20 +132,22 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
         self.assertIsInstance(response, JsonResponse)
         self.assertEqual(response.status_code, 401)
         self.assertIn('message', response.json().keys())
+        self.assertIn('error_code', response.json().keys())
         self.assertEqual("application/json", response["Content-Type"])
+        self.assertEqual(response.json()["error_code"], ErrorCode.MESSAGE_FILES_PATHS_NOT_UNIQUE.value)
 
     @freeze_time("2018-12-30 11:00:00")
     def test_upload_should_return_401_if_checksum_is_wrong(self):
-        invalid_values = [
-            b'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
-            '',
-            '95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
-            ':95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
-            'sha1:95a0f391c7ad86686ab1366bcd519ba5amONj',
-            'sha1:',
-        ]
+        invalid_values_with_expected_error_code = {
+            b'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89':   ErrorCode.MESSAGE_FILES_CHECKSUM_WRONG_TYPE,
+            '':                                                 ErrorCode.MESSAGE_FILES_CHECKSUM_EMPTY,
+            '95a0f391c7ad86686ab1366bcd519ba5ab3cce89':         ErrorCode.MESSAGE_FILES_CHECKSUM_WRONG_FORMAT,
+            ':95a0f391c7ad86686ab1366bcd519ba5ab3cce89':        ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_ALGORITHM,
+            'sha1:95a0f391c7ad86686ab1366bcd519ba5amONj':       ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_SHA1_HASH,
+            'sha1:':                                            ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_SHA1_HASH,
+        }
 
-        for invalid_value in invalid_values:
+        for invalid_value, error_code in invalid_values_with_expected_error_code.items():
             file1 = FileTransferToken.FileInfo(
                 path     = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
                 checksum = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
@@ -172,18 +178,20 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             self.assertIsInstance(response, JsonResponse)
             self.assertEqual(response.status_code, 401)
             self.assertIn('message', response.json().keys())
+            self.assertIn('error_code', response.json().keys())
             self.assertEqual("application/json", response["Content-Type"])
+            self.assertEqual(response.json()["error_code"], error_code.value)
 
     @freeze_time("2018-12-30 11:00:00")
     def test_upload_should_return_401_if_size_of_file_is_wrong(self):
-        invalid_values = [
-            None,
-            'number',
-            '-2',
-            '1.0',
-        ]
+        invalid_values_with_expected_error_code = {
+            None: ErrorCode.MESSAGE_FILES_SIZE_EMPTY,
+            'number': ErrorCode.MESSAGE_FILES_SIZE_WRONG_TYPE,
+            '-2': ErrorCode.MESSAGE_FILES_SIZE_NEGATIVE,
+            '1.0': ErrorCode.MESSAGE_FILES_SIZE_WRONG_TYPE,
+        }
 
-        for invalid_value in invalid_values:
+        for invalid_value, error_code in invalid_values_with_expected_error_code.items():
             file1 = FileTransferToken.FileInfo(
                 path     = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
                 checksum = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
@@ -215,16 +223,17 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             self.assertEqual(response.status_code, 401)
             self.assertIn('message', response.json().keys())
             self.assertEqual("application/json", response["Content-Type"])
+            self.assertEqual(response.json()["error_code"], error_code.value)
 
     @freeze_time("2018-12-30 11:00:00")
     def test_upload_should_return_401_if_newlines_in_message_checksum(self):
-        invalid_values = [
-            's\nha1:95a0f391c7ad866\n86ab1366bcd519ba5ab3cce89',
-            '\nsha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
-            'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89\n',
-        ]
+        invalid_values_with_expected_error_code = {
+            's\nha1:95a0f391c7ad866\n86ab1366bcd519ba5ab3cce89': ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_ALGORITHM,
+            '\nsha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89': ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_ALGORITHM,
+            'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89\n': ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_SHA1_HASH,
+        }
 
-        for value in invalid_values:
+        for value, error_code in invalid_values_with_expected_error_code.items():
             file = FileTransferToken.FileInfo(
                 path     = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
                 size     = 1024,
@@ -250,16 +259,17 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             self.assertEqual(response.status_code, 401)
             self.assertIn('message', response.json().keys())
             self.assertEqual("application/json", response["Content-Type"])
+            self.assertEqual(response.json()["error_code"], error_code.value)
 
     @freeze_time("2018-12-30 11:00:00")
     def test_upload_should_return_401_if_newlines_in_message_path(self):
-        invalid_values = [
-            'blen\nder/benchmark/test_task/scene-Helicopter-2\n7-cycles.blend',
-            '\nblender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
-            'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend\n',
-        ]
+        invalid_values_with_expected_error_code = {
+            'blen\nder/benchmark/test_task/scene-Helicopter-2\n7-cycles.blend': ErrorCode.MESSAGE_FILES_PATH_NOT_LISTED_IN_FILES,
+            '\nblender/benchmark/test_task/scene-Helicopter-27-cycles.blend': ErrorCode.MESSAGE_FILES_PATH_NOT_LISTED_IN_FILES,
+            'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend\n': ErrorCode.MESSAGE_FILES_PATH_NOT_LISTED_IN_FILES,
+        }
 
-        for value in invalid_values:
+        for value, error_code in invalid_values_with_expected_error_code.items():
             file = FileTransferToken.FileInfo(
                 path     = value,
                 checksum = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
@@ -284,7 +294,9 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             self.assertIsInstance(response, JsonResponse)
             self.assertEqual(response.status_code, 401)
             self.assertIn('message', response.json().keys())
+            self.assertIn('error_code', response.json().keys())
             self.assertEqual("application/json", response["Content-Type"])
+            self.assertEqual(response.json()["error_code"], error_code.value)
 
     @freeze_time("2018-02-12 16:19:00")
     def test_upload_should_return_401_if_previously_causing_500_error_authorization_header_is_used(self):
@@ -388,25 +400,40 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
     def test_download_should_return_401_if_wrong_authorization_header(self):
         golem_download_token = dump(self.download_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
         encrypted_token = b64encode(golem_download_token).decode()
-        wrong_test_headers = [
-            {'HTTP_AUTHORIZATION':      'GolemGolem '+ encrypted_token},
-            {'HTTP_AUTHORIZATION_ABC':  'GolemGolem '+ encrypted_token},
-            {'HTTP_AUTHORIZATION':      ''},
-            {'HTTP_AUTHORIZATION':      'Golem encrypted_token '},
-            {'HTTP_AUTHORIZATION':      'Golem a' + encrypted_token}
-        ]
-        for headers in wrong_test_headers:
+        wrong_test_headers_with_expected_error_code = {
+            'GolemGolem '+ encrypted_token: ErrorCode.HEADER_AUTHORIZATION_UNRECOGNIZED_SCHEME.value,
+            '':                             ErrorCode.HEADER_AUTHORIZATION_MISSING_TOKEN.value,
+            'Golem encrypted_token ':       ErrorCode.HEADER_AUTHORIZATION_NOT_BASE64_ENCODED_VALUE.value,
+            'Golem a' + encrypted_token:    ErrorCode.HEADER_AUTHORIZATION_NOT_BASE64_ENCODED_VALUE.value,
+        }
+        for authorization_header_value, error_code in wrong_test_headers_with_expected_error_code.items():
             response = self.client.get(
                 '{}{}'.format(
                     reverse('gatekeeper:download'),
                     'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
                 ),
                 HTTP_CONCENT_AUTH=self.header_concent_auth,
-                **headers,
+                HTTP_AUTHORIZATION=authorization_header_value,
             )
             self.assertIsInstance(response, JsonResponse)
             self.assertEqual(response.status_code, 401)
             self.assertIn('message', response.json().keys())
+            self.assertIn('error_code', response.json().keys())
+            self.assertEqual(response.json()["error_code"], error_code)
+
+        response = self.client.get(
+            '{}{}'.format(
+                reverse('gatekeeper:download'),
+                'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
+            ),
+            HTTP_CONCENT_AUTH=self.header_concent_auth,
+            HTTP_AUTHORIZATION_ABC='Golem ' + encrypted_token,
+        )
+        self.assertIsInstance(response, JsonResponse)
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('message', response.json().keys())
+        self.assertIn('error_code', response.json().keys())
+        self.assertEqual(response.json()["error_code"], ErrorCode.HEADER_AUTHORIZATION_MISSING.value)
 
     @freeze_time("2018-12-30 11:00:00")
     def test_download_should_return_401_if_wrong_token_cluster_address(self):
@@ -426,6 +453,8 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
         self.assertIsInstance(response, JsonResponse)
         self.assertEqual(response.status_code, 401)
         self.assertIn('message', response.json().keys())
+        self.assertIn('error_code', response.json().keys())
+        self.assertEqual(response.json()["error_code"], ErrorCode.MESSAGE_STORAGE_CLUSTER_INVALID_URL.value)
 
     @freeze_time("2018-12-30 11:00:00")
     def test_download_should_return_401_if_file_paths_are_not_unique(self):
@@ -458,20 +487,22 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
         self.assertIsInstance(response, JsonResponse)
         self.assertEqual(response.status_code, 401)
         self.assertIn('message', response.json().keys())
+        self.assertIn('error_code', response.json().keys())
         self.assertEqual("application/json", response["Content-Type"])
+        self.assertEqual(response.json()["error_code"], ErrorCode.MESSAGE_FILES_PATHS_NOT_UNIQUE.value)
 
     @freeze_time("2018-12-30 11:00:00")
     def test_download_should_return_401_if_checksum_is_wrong(self):
-        invalid_values = [
-            b'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
-            '',
-            '95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
-            ':95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
-            'sha1:95a0f391c7ad86686ab1366bcd519ba5amONj',
-            'sha1:',
-        ]
+        invalid_values_with_expected_error_code = {
+            b'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89':   ErrorCode.MESSAGE_FILES_CHECKSUM_WRONG_TYPE,
+            '':                                                 ErrorCode.MESSAGE_FILES_CHECKSUM_EMPTY,
+            '95a0f391c7ad86686ab1366bcd519ba5ab3cce89':         ErrorCode.MESSAGE_FILES_CHECKSUM_WRONG_FORMAT,
+            ':95a0f391c7ad86686ab1366bcd519ba5ab3cce89':        ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_ALGORITHM,
+            'sha1:95a0f391c7ad86686ab1366bcd519ba5amONj':       ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_SHA1_HASH,
+            'sha1:':                                            ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_SHA1_HASH,
+        }
 
-        for invalid_value in invalid_values:
+        for invalid_value, error_code in invalid_values_with_expected_error_code.items():
             file1 = FileTransferToken.FileInfo(
                 path     = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
                 checksum = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
@@ -501,18 +532,20 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
             self.assertIsInstance(response, JsonResponse)
             self.assertEqual(response.status_code, 401)
             self.assertIn('message', response.json().keys())
+            self.assertIn('error_code', response.json().keys())
             self.assertEqual("application/json", response["Content-Type"])
+            self.assertEqual(response.json()["error_code"], error_code.value)
 
     @freeze_time("2018-12-30 11:00:00")
     def test_download_should_return_401_if_size_of_file_is_wrong(self):
-        invalid_values = [
-            None,
-            'number',
-            '-2',
-            '1.0',
-        ]
+        invalid_values_with_expected_error_code = {
+            None: ErrorCode.MESSAGE_FILES_SIZE_EMPTY,
+            'number': ErrorCode.MESSAGE_FILES_SIZE_WRONG_TYPE,
+            '-2': ErrorCode.MESSAGE_FILES_SIZE_NEGATIVE,
+            '1.0': ErrorCode.MESSAGE_FILES_SIZE_WRONG_TYPE,
+        }
 
-        for invalid_value in invalid_values:
+        for invalid_value, error_code in invalid_values_with_expected_error_code.items():
             file1 = FileTransferToken.FileInfo(
                 path     = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
                 checksum = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
@@ -543,16 +576,17 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
             self.assertEqual(response.status_code, 401)
             self.assertIn('message', response.json().keys())
             self.assertEqual("application/json", response["Content-Type"])
+            self.assertEqual(response.json()["error_code"], error_code.value)
 
     @freeze_time("2018-12-30 11:00:00")
     def test_download_should_return_400_if_newlines_in_message_checksum(self):
-        invalid_values = [
-            's\nha1:95a0f391c7ad866\n86ab1366bcd519ba5ab3cce89',
-            '\nsha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
-            'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89\n',
-        ]
+        invalid_values_with_expected_error_code = {
+            's\nha1:95a0f391c7ad866\n86ab1366bcd519ba5ab3cce89': ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_ALGORITHM,
+            '\nsha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89': ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_ALGORITHM,
+            'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89\n': ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_SHA1_HASH,
+        }
 
-        for value in invalid_values:
+        for value, error_code in invalid_values_with_expected_error_code.items():
             file = FileTransferToken.FileInfo(
                 path     = 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
                 checksum = value,
@@ -577,16 +611,17 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
             self.assertEqual(response.status_code, 401)
             self.assertIn('message', response.json().keys())
             self.assertEqual("application/json", response["Content-Type"])
+            self.assertEqual(response.json()["error_code"], error_code.value)
 
     @freeze_time("2018-12-30 11:00:00")
     def test_download_should_return_400_if_newlines_in_message_path(self):
-        invalid_values = [
-            'blen\nder/benchmark/test_task/scene-Helicopter-2\n7-cycles.blend',
-            '\nblender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
-            'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend\n',
-        ]
+        invalid_values_with_expected_error_code = {
+            'blen\nder/benchmark/test_task/scene-Helicopter-2\n7-cycles.blend': ErrorCode.MESSAGE_FILES_PATH_NOT_LISTED_IN_FILES,
+            '\nblender/benchmark/test_task/scene-Helicopter-27-cycles.blend': ErrorCode.MESSAGE_FILES_PATH_NOT_LISTED_IN_FILES,
+            'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend\n': ErrorCode.MESSAGE_FILES_PATH_NOT_LISTED_IN_FILES,
+        }
 
-        for value in invalid_values:
+        for value, error_code in invalid_values_with_expected_error_code.items():
             file = FileTransferToken.FileInfo(
                 path     = value,
                 checksum = 'sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
@@ -610,7 +645,9 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
             self.assertIsInstance(response, JsonResponse)
             self.assertEqual(response.status_code, 401)
             self.assertIn('message', response.json().keys())
+            self.assertIn('error_code', response.json().keys())
             self.assertEqual("application/json", response["Content-Type"])
+            self.assertEqual(response.json()["error_code"], error_code.value)
 
     @freeze_time("2018-12-30 11:00:00")
     def test_download_should_return_401_concent_auth_header_is_missing(self):

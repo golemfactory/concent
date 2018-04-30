@@ -12,6 +12,7 @@ from golem_messages                 import message
 
 from core.exceptions                import Http400
 from core.tests.utils               import ConcentIntegrationTestCase
+from utils.constants                import ErrorCode
 from utils.decorators               import handle_errors_and_responses
 from utils.decorators               import require_golem_auth_message
 from utils.testing_helpers          import generate_ecc_key_pair
@@ -21,7 +22,10 @@ from utils.testing_helpers          import generate_ecc_key_pair
 
 
 def _mock_raise_http400(_):
-    raise Http400('dummy http400')
+    raise Http400(
+        'dummy http400',
+        error_code=ErrorCode.MESSAGE_UNEXPECTED,
+    )
 
 
 @require_golem_auth_message
@@ -206,7 +210,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
 
         @handle_errors_and_responses(database_name='default')
         def dummy_view_handle_http_400_exception(_request, _message, _client_public_key):
-            raise Http400('dummy')
+            raise Http400('dummy', error_code=ErrorCode.MESSAGE_UNEXPECTED)
 
         response = dummy_view_handle_http_400_exception(request, self.client_auth, self.PROVIDER_PUBLIC_KEY)  # pylint: disable=assignment-from-no-return
 

@@ -43,7 +43,13 @@ def require_golem_auth_message(view):
                 else:
                     return JsonResponse({'error': 'Client Authentication message not included'}, status = 400)
             except Http400 as exception:
-                return JsonResponse({'error': f'{exception}'}, status = 400)
+                return JsonResponse(
+                    {
+                        'error': f'{exception.error_message}',
+                        'error_code': exception.error_code.value,
+                    },
+                    status=400
+                )
             except FieldError as exception:
                 return JsonResponse({'error': join_messages('Golem Message contains wrong fields.', str(exception))}, status = 400)
             except MessageFromFutureError as exception:
@@ -77,7 +83,13 @@ def require_golem_message(view):
                 assert golem_message is not None
                 client_public_key = get_validated_client_public_key_from_client_message(golem_message)
             except Http400 as exception:
-                return JsonResponse({'error': f'{exception}'}, status = 400)
+                return JsonResponse(
+                    {
+                        'error': f'{exception.error_message}',
+                        'error_code': exception.error_code.value,
+                    },
+                    status=400
+                )
             except FieldError as exception:
                 return JsonResponse({'error': join_messages('Golem Message contains wrong fields.', str(exception))}, status = 400)
             except MessageFromFutureError as exception:
@@ -118,7 +130,13 @@ def handle_errors_and_responses(database_name):
                 )
                 if database_name is not None:
                     transaction.savepoint_rollback(sid, using=database_name)
-                return JsonResponse({'error': str(exception)}, status = 400)
+                return JsonResponse(
+                    {
+                        'error': exception.error_message,
+                        'error_code': exception.error_code.value,
+                    },
+                    status=400
+                )
             except ConcentInSoftShutdownMode:
                 transaction.savepoint_rollback(sid, using=database_name)
                 return JsonResponse({'error': 'Concent is in soft shutdown mode.'}, status=503)

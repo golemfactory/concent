@@ -15,6 +15,7 @@ from golem_messages.helpers         import maximum_download_time
 
 from core.exceptions                import Http400
 from core.validation                import validate_public_key
+from utils.constants                import ErrorCode
 
 
 def is_base64(data: str) -> bool:
@@ -98,7 +99,10 @@ def deserialize_message(raw_message_data):
         assert golem_message is not None
         return golem_message
     except MessageError as exception:
-        raise Http400("Unable to deserialize Golem Message: {}.".format(exception))
+        raise Http400(
+            "Unable to deserialize Golem Message: {}.".format(exception),
+            error_code=ErrorCode.MESSAGE_UNABLE_TO_DESERIALIZE,
+        )
 
 
 def sign_message(golem_message, priv_key):

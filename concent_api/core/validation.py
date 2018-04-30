@@ -7,6 +7,7 @@ from core.constants                 import ETHEREUM_ADDRESS_LENGTH
 from core.constants                 import GOLEM_PUBLIC_KEY_LENGTH
 from core.constants                 import MESSAGE_TASK_ID_MAX_LENGTH
 from core.exceptions                import Http400
+from utils.constants                import ErrorCode
 
 
 def validate_int_value(value):
@@ -19,43 +20,70 @@ def validate_int_value(value):
         try:
             value = int(value)
         except (ValueError, TypeError):
-            raise Http400("Wrong type, expected a value that can be converted to an integer.")
+            raise Http400(
+                "Wrong type, expected a value that can be converted to an integer.",
+                error_code=ErrorCode.MESSAGE_VALUE_NOT_INTEGER,
+            )
     if value < 0:
-        raise Http400("Wrong type, expected non-negative integer but negative integer provided.")
+        raise Http400(
+            "Wrong type, expected non-negative integer but negative integer provided.",
+            error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE,
+        )
     return value
 
 
 def validate_id_value(value, field_name):
     if not isinstance(value, str):
-        raise Http400("{} must be string.".format(field_name))
+        raise Http400(
+            "{} must be string.".format(field_name),
+            error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE,
+        )
 
     if value == '':
-        raise Http400("{} cannot be blank.".format(field_name))
+        raise Http400(
+            "{} cannot be blank.".format(field_name),
+            error_code=ErrorCode.MESSAGE_VALUE_BLANK,
+        )
 
     if len(value) > MESSAGE_TASK_ID_MAX_LENGTH:
-        raise Http400("{} cannot be longer than {} chars.".format(field_name, MESSAGE_TASK_ID_MAX_LENGTH))
+        raise Http400(
+            "{} cannot be longer than {} chars.".format(field_name, MESSAGE_TASK_ID_MAX_LENGTH),
+            error_code=ErrorCode.MESSAGE_VALUE_WRONG_LENGTH,
+        )
 
 
 def validate_public_key(value, field_name):
     assert isinstance(field_name, str)
 
     if not isinstance(value, bytes):
-        raise Http400("{} must be bytes.".format(field_name))
+        raise Http400(
+            "{} must be bytes.".format(field_name),
+            error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE,
+        )
 
     if len(value) != GOLEM_PUBLIC_KEY_LENGTH:
-        raise Http400("The length of {} must be exactly {} characters.".format(field_name, GOLEM_PUBLIC_KEY_LENGTH))
+        raise Http400(
+            "The length of {} must be exactly {} characters.".format(field_name, GOLEM_PUBLIC_KEY_LENGTH),
+            error_code = ErrorCode.MESSAGE_VALUE_WRONG_LENGTH,
+        )
 
 
 def validate_task_to_compute(task_to_compute: message.TaskToCompute):
     if not isinstance(task_to_compute, message.TaskToCompute):
-        raise Http400("Expected TaskToCompute.")
+        raise Http400(
+            f"Expected TaskToCompute instead of {type(task_to_compute).__name__}.",
+            error_code=ErrorCode.MESSAGE_INVALID,
+        )
 
     if any(map(lambda x: x is None, [getattr(task_to_compute, attribute) for attribute in [
         'compute_task_def',
         'provider_public_key',
         'requestor_public_key'
     ]])):
-        raise Http400("Invalid TaskToCompute")
+        raise Http400(
+            "Invalid TaskToCompute",
+            error_code=ErrorCode.MESSAGE_WRONG_FIELDS,
+        )
     task_to_compute.compute_task_def['deadline'] = validate_int_value(task_to_compute.compute_task_def['deadline'])
 
     validate_id_value(task_to_compute.compute_task_def['task_id'], 'task_id')
@@ -70,12 +98,18 @@ def validate_report_computed_task_time_window(report_computed_task):
     assert isinstance(report_computed_task, message.ReportComputedTask)
 
     if report_computed_task.timestamp < report_computed_task.task_to_compute.timestamp:
-        raise Http400("ReportComputedTask timestamp is older then nested TaskToCompute.")
+        raise Http400(
+            "ReportComputedTask timestamp is older then nested TaskToCompute.",
+            error_code=ErrorCode.MESSAGE_TIMESTAMP_TOO_OLD,
+        )
 
 
 def validate_golem_message_client_authorization(golem_message: message.concents.ClientAuthorization):
     if not isinstance(golem_message, message.concents.ClientAuthorization):
-        raise Http400('Expected ClientAuthorization.')
+        raise Http400(
+            'Expected ClientAuthorization.',
+            error_code=ErrorCode.AUTH_CLIENT_AUTH_MESSAGE_MISSING,
+        )
 
     validate_public_key(golem_message.client_public_key, 'client_public_key')
 
@@ -100,7 +134,8 @@ def validate_all_messages_identical(golem_messages_list: List[message.Message]):
                         slot,
                         getattr(base_golem_message, slot),
                         getattr(golem_message, slot),
-                    )
+                    ),
+                    error_code=ErrorCode.MESSAGES_NOT_IDENTICAL,
                 )
 
 
@@ -119,35 +154,57 @@ def validate_golem_message_signed_with_key(
             'There was an exception when validating if golem_message {} is signed with public key {}'.format(
                 golem_message.TYPE,
                 public_key
-            )
+            ),
+            error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG,
         )
 
 
 def validate_golem_message_subtask_results_rejected(subtask_results_rejected: message.tasks.SubtaskResultsRejected):
     if not isinstance(subtask_results_rejected,  message.tasks.SubtaskResultsRejected):
-        raise Http400("subtask_results_rejected should be of type:  SubtaskResultsRejected")
+        raise Http400(
+            "subtask_results_rejected should be of type:  SubtaskResultsRejected",
+            error_code=ErrorCode.MESSAGE_INVALID,
+        )
     validate_task_to_compute(subtask_results_rejected.report_computed_task.task_to_compute)
 
 
 def validate_subtask_price_task_to_compute(task_to_compute: message.tasks.TaskToCompute):
     if not isinstance(task_to_compute.price, int):
-        raise Http400("Price must be a integer")
+        raise Http400(
+            "Price must be a integer",
+            error_code=ErrorCode.MESSAGE_VALUE_NOT_INTEGER,
+        )
     if task_to_compute.price < 0:
-        raise Http400("Price cannot be a negative value")
+        raise Http400(
+            "Price cannot be a negative value",
+            error_code=ErrorCode.MESSAGE_VALUE_NEGATIVE,
+        )
 
 
 def validate_ethereum_addresses(requestor_ethereum_address, provider_ethereum_address):
     if not isinstance(requestor_ethereum_address, str):
-        raise Http400("Requestor's ethereum address must be a string")
+        raise Http400(
+            "Requestor's ethereum address must be a string",
+            error_code=ErrorCode.MESSAGE_VALUE_NOT_STRING,
+        )
 
     if not isinstance(provider_ethereum_address, str):
-        raise Http400("Provider's ethereum address must be a string")
+        raise Http400(
+            "Provider's ethereum address must be a string",
+            error_code=ErrorCode.MESSAGE_VALUE_NOT_STRING,
+        )
 
     if not len(requestor_ethereum_address) == ETHEREUM_ADDRESS_LENGTH:
-        raise Http400(f"Requestor's ethereum address must contains exactly {ETHEREUM_ADDRESS_LENGTH} characters ")
+        raise Http400(
+            f"Requestor's ethereum address must contains exactly {ETHEREUM_ADDRESS_LENGTH} characters ",
+            error_code=ErrorCode.MESSAGE_VALUE_WRONG_LENGTH,
+        )
 
     if not len(provider_ethereum_address) == ETHEREUM_ADDRESS_LENGTH:
-        raise Http400(f"Provider's ethereum address must contains exactly {ETHEREUM_ADDRESS_LENGTH} characters ")
+        raise Http400(
+            f"Provider's ethereum address must contains exactly {ETHEREUM_ADDRESS_LENGTH} characters ",
+            error_code=ErrorCode.MESSAGE_VALUE_WRONG_LENGTH,
+        )
 
 
 def validate_list_task_to_compute_ids(subtask_results_accepted_list):

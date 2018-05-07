@@ -638,22 +638,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
         self._assert_stored_message_counter_not_increased()
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '2',
-            subtask_id = 'xxyyzz',
-            deadline    = "2018-02-05 10:00:15",
-        )
-
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
             timestamp               = "2018-02-05 10:00:43",
             subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
                 timestamp               = "2018-02-05 11:00:00",
                 payment_ts              = "2018-02-05 11:00:01",
-                task_to_compute         = self._get_deserialized_task_to_compute(
-                    timestamp           = "2018-02-05 10:00:00",
-                    compute_task_def    = compute_task_def,
-                ),
+                task_to_compute         = task_to_compute,
             )
         )
 
@@ -706,7 +697,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'subtask_results_accepted.timestamp':                           self._parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
                 'subtask_results_accepted.payment_ts':                          self._parse_iso_date_to_timestamp("2018-02-05 11:00:01"),
                 'subtask_results_accepted.task_to_compute.timestamp':           self._parse_iso_date_to_timestamp("2018-02-05 10:00:00"),
-                'subtask_results_accepted.task_to_compute.compute_task_def':    compute_task_def,
+                'subtask_results_accepted.task_to_compute.compute_task_def':    task_to_compute.compute_task_def,
             }
         )
 
@@ -817,12 +808,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 report_computed_task    = self._get_deserialized_report_computed_task(
                     timestamp   = "2018-02-05 10:00:44",
                     subtask_id  = 'xxyyzz',
-                    task_to_compute = self._get_deserialized_task_to_compute(
-                        timestamp   = "2018-02-05 10:00:00",
-                        deadline    = "2018-02-05 10:00:15",
-                        task_id     = '2',
-                        subtask_id  = 'xxyyzz',
-                    )
+                    task_to_compute = task_to_compute,
                 )
             )
         )

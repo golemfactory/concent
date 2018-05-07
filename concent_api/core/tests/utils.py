@@ -13,6 +13,7 @@ from freezegun import freeze_time
 from golem_messages         import dump
 from golem_messages         import load
 from golem_messages         import message
+from golem_messages.factories.tasks import TaskToComputeFactory
 
 from core.models            import Client
 from core.models            import PendingResponse
@@ -140,6 +141,7 @@ class ConcentIntegrationTestCase(TestCase):
         compute_task_def                = None,
         requestor_public_key            = None,
         requestor_ethereum_public_key   = None,
+        provider_id                     = None,
         provider_public_key             = None,
         provider_ethereum_public_key    = None,
         price                           = 0,
@@ -158,13 +160,16 @@ class ConcentIntegrationTestCase(TestCase):
                 compute_task_def['deadline'] = self._parse_iso_date_to_timestamp(self._get_timestamp_string()) + 10
 
         with freeze_time(timestamp or self._get_timestamp_string()):
-            task_to_compute = message.TaskToCompute(
+            task_to_compute = TaskToComputeFactory(
                 compute_task_def                = compute_task_def,
                 requestor_public_key            = (
                     requestor_public_key if requestor_public_key is not None else self.REQUESTOR_PUBLIC_KEY
                 ),
                 requestor_ethereum_public_key   = (
                     requestor_ethereum_public_key if requestor_ethereum_public_key is not None else self._get_requestor_ethereum_public_key()
+                ),
+                provider_id                     = (
+                    provider_id if provider_id is not None else self.PROVIDER_PUBLIC_KEY
                 ),
                 provider_public_key             = (
                     provider_public_key if provider_public_key is not None else self.PROVIDER_PUBLIC_KEY
@@ -233,7 +238,7 @@ class ConcentIntegrationTestCase(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json().keys())
         if error_message is not None:
-            self.assertEqual(response.json()['error'], error_message)
+            self.assertIn(error_message, response.json()['error'])
 
     def _test_response(self, response, status, key, message_type = None, fields = None):
         self.assertEqual(response.status_code, status)

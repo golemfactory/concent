@@ -511,11 +511,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             response,
             error_message = 'TaskToCompute messages are not identical. '
                 'There is a difference between messages with index 0 on passed list and with index {}'
-                'The difference is on field {}: {} is not equal {}'.format(
+                'The difference is on field {}'.format(
                     1,
                     'provider_id',
-                    'different_id',
-                    'None'
                 )
         )
         self._assert_stored_message_counter_not_increased()
@@ -523,7 +521,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # STEP 5: Requestor sends forces subtask results response via Concent with correct keys.
         # Request is processed correctly.
         task_to_compute.sig = None
-        task_to_compute.provider_id = None
+        task_to_compute.provider_id = self.PROVIDER_PUBLIC_KEY
         task_to_compute = self._sign_message(
             task_to_compute,
             self.REQUESTOR_PRIVATE_KEY,
@@ -837,11 +835,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             response,
             error_message = 'TaskToCompute messages are not identical. '
                 'There is a difference between messages with index 0 on passed list and with index {}'
-                'The difference is on field {}: {} is not equal {}'.format(
+                'The difference is on field {}'.format(
                     1,
                     'provider_id',
-                    'different_id',
-                    'None'
                 )
         )
         self._assert_stored_message_counter_not_increased()
@@ -849,7 +845,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # STEP 5: Requestor sends forces subtask results response via Concent with correct keys.
         # Request is processed correctly.
         task_to_compute.sig = None
-        task_to_compute.provider_id = None
+        task_to_compute.provider_id = self.PROVIDER_PUBLIC_KEY
         task_to_compute = self._sign_message(
             task_to_compute,
             self.REQUESTOR_PRIVATE_KEY,

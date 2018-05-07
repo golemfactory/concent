@@ -180,7 +180,7 @@ def handle_send_reject_report_computed_task(client_message):
         raise Http400("RejectReportComputedTask cannot contain CannotComputeTask and TaskFailure at the same time.")
 
     # Validate if task_to_compute is valid instance of TaskToCompute.
-    task_to_compute = client_message.task_to_compute
+    task_to_compute = client_message.attached_task_to_compute
     validate_task_to_compute(task_to_compute)
 
     provider_public_key = task_to_compute.provider_public_key

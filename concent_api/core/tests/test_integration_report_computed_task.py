@@ -2535,7 +2535,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         task_failure = self._get_deserialized_task_failure(
             timestamp="2017-12-01 10:30:00",
-            subtask_id='8',
             err='Stop later soldier sit.',
             task_to_compute=task_to_compute,
         )

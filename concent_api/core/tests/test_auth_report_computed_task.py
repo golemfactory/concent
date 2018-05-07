@@ -477,7 +477,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:05"):
             reject_report_computed_task = message.RejectReportComputedTask(
                 reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
-                task_to_compute=task_to_compute,
+                attached_task_to_compute=task_to_compute,
             )
 
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -508,7 +508,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:05"):
             reject_report_computed_task = message.RejectReportComputedTask(
                 reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
-                task_to_compute=task_to_compute,
+                attached_task_to_compute=task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
@@ -536,7 +536,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:05"):
             reject_report_computed_task = message.RejectReportComputedTask(
                 reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
-                task_to_compute=task_to_compute,
+                attached_task_to_compute=task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
@@ -589,7 +589,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             reject_report_computed_task = message.RejectReportComputedTask(
                 cannot_compute_task = deserialized_cannot_compute_task,
                 reason              = message.RejectReportComputedTask.REASON.GotMessageCannotComputeTask,
-                task_to_compute=self.deserialized_task_to_compute,
+                attached_task_to_compute=self.deserialized_task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
@@ -813,7 +813,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:05"):
             reject_report_computed_task = message.RejectReportComputedTask(
                 reason=message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
-                task_to_compute=task_to_compute,
+                attached_task_to_compute=task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
@@ -843,7 +843,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:05"):
             reject_report_computed_task = message.RejectReportComputedTask(
                 reason=message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
-                task_to_compute=task_to_compute,
+                attached_task_to_compute=task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
@@ -871,7 +871,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:05"):
             reject_report_computed_task = message.RejectReportComputedTask(
                 reason=message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
-                task_to_compute=task_to_compute,
+                attached_task_to_compute=task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
         with freeze_time("2017-12-01 11:00:05"):
@@ -916,7 +916,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:05"):
             reject_report_computed_task = message.RejectReportComputedTask(
                 reason=message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
-                task_to_compute=self.deserialized_task_to_compute,
+                attached_task_to_compute=self.deserialized_task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 

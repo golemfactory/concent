@@ -1,10 +1,12 @@
 from django.http.response import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 
 from .models import UploadReport
 from .models import VerificationRequest
 from .tasks import blender_verification_request
 
 
+@csrf_exempt
 def report_upload(_request, file_path):
 
     # If there's a corresponding VerificationRequest, the load it and link it to UploadReport.

@@ -11,6 +11,7 @@ from golem_messages         import message
 from core.tests.utils       import ConcentIntegrationTestCase
 from core.models            import PendingResponse
 from core.models            import Subtask
+from utils.constants        import ErrorCode
 from utils.testing_helpers  import generate_ecc_key_pair
 
 
@@ -177,7 +178,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             error_message='There was an exception when validating if golem_message {} is signed with public key {}'.format(
                 message.TaskToCompute.TYPE,
                 self.REQUESTOR_PUBLIC_KEY,
-            )
+            ),
+            error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG,
         )
 
         # 4.2.
@@ -205,7 +207,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_400_response(
             response,
-            error_message = "Subtask requestor key does not match current client key. Can't accept your 'AckReportComputedTask'."
+            error_message = "Subtask requestor key does not match current client key. Can't accept your 'AckReportComputedTask'.",
+            error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH,
         )
 
         # 4.3.
@@ -241,7 +244,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                     'provider_id',
                     'different_id',
                     self.deserialized_task_to_compute.provider_id
-                )
+                ),
+            error_code=ErrorCode.MESSAGES_NOT_IDENTICAL,
         )
 
         # STEP 5: Requestor accepts computed task via Concent with correct key
@@ -463,7 +467,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             error_message='There was an exception when validating if golem_message {} is signed with public key {}'.format(
                 message.TaskToCompute.TYPE,
                 self.REQUESTOR_PUBLIC_KEY,
-            )
+            ),
+            error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG,
         )
 
         # 4.2.
@@ -490,7 +495,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_400_response(
             response,
-            error_message = "Subtask requestor key does not match current client key. Can't accept your 'RejectReportComputedTask'."
+            error_message = "Subtask requestor key does not match current client key. Can't accept your 'RejectReportComputedTask'.",
+            error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH,
         )
 
         # 4.3.
@@ -525,7 +531,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                     'provider_id',
                     'different_id',
                     self.deserialized_task_to_compute.provider_id
-                )
+                ),
+            error_code=ErrorCode.MESSAGES_NOT_IDENTICAL,
         )
 
         self._test_subtask_state(
@@ -768,7 +775,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             error_message='There was an exception when validating if golem_message {} is signed with public key {}'.format(
                 message.TaskToCompute.TYPE,
                 self.REQUESTOR_PUBLIC_KEY,
-            )
+            ),
+            error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG,
         )
 
         # 4.2.
@@ -795,7 +803,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_400_response(
             response,
-            error_message = "Subtask requestor key does not match current client key. Can't accept your 'RejectReportComputedTask'."
+            error_message = "Subtask requestor key does not match current client key. Can't accept your 'RejectReportComputedTask'.",
+            error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH,
         )
 
         # 4.3.
@@ -829,7 +838,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                     'provider_id',
                     'different_id',
                     self.deserialized_task_to_compute.provider_id
-                )
+                ),
+            error_code=ErrorCode.MESSAGES_NOT_IDENTICAL,
         )
 
         self._test_subtask_state(

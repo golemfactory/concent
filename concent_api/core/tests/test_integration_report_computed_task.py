@@ -8,6 +8,7 @@ from golem_messages                 import message
 from core.models                    import PendingResponse
 from core.models                    import Subtask
 from core.tests.utils               import ConcentIntegrationTestCase
+from utils.constants                import ErrorCode
 from utils.testing_helpers          import generate_ecc_key_pair
 
 
@@ -852,7 +853,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 data                                = serialized_force_report_computed_task,
                 content_type                        = 'application/octet-stream',
             )
-        self._test_400_response(response_2)
+        self._test_400_response(
+            response_2,
+            error_code=ErrorCode.SUBTASK_DUPLICATE_REQUEST,
+        )
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(2)
@@ -894,7 +898,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
             )
-        self._test_400_response(response)
+        self._test_400_response(
+            response,
+            error_code=ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED,
+        )
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(0)
@@ -920,15 +927,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             compute_task_def    = compute_task_def,
         )
 
-        cannot_compute_task = self._get_deserialized_cannot_compute_task(
-            timestamp       = "2017-12-01 10:30:00",
-            task_to_compute = task_to_compute,
-            reason          = message.tasks.CannotComputeTask.REASON.WrongCTD
-        )
-
         reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
             timestamp           = "2017-12-01 11:00:05",
-            cannot_compute_task = cannot_compute_task,
+            task_to_compute=task_to_compute,
             reason              = message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
         )
 
@@ -944,7 +945,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
             )
-        self._test_400_response(response)
+        self._test_400_response(
+            response,
+            error_code=ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED,
+        )
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(0)
@@ -1092,17 +1096,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # STEP 4: Requestor rejects computed task via Concent
-
-        cannot_compute_task = self._get_deserialized_cannot_compute_task(
-            timestamp       = "2017-12-01 10:30:00",
-            task_to_compute = task_to_compute,
-            reason          = message.tasks.CannotComputeTask.REASON.WrongEnvironment
-        )
-
         reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
             timestamp           = "2017-12-01 11:00:05",
-            cannot_compute_task = cannot_compute_task,
-            reason=message.RejectReportComputedTask.REASON.GotMessageCannotComputeTask
+            task_to_compute=task_to_compute
         )
 
         serialized_reject_report_computed_task = self._get_serialized_reject_report_computed_task(
@@ -1117,7 +1113,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 data                           = serialized_reject_report_computed_task,
                 content_type                   = 'application/octet-stream',
             )
-        self._test_400_response(response_4)
+        self._test_400_response(
+            response_4,
+            error_code=ErrorCode.QUEUE_WRONG_STATE,
+        )
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(2)
@@ -1288,7 +1287,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
             )
-        self._test_400_response(response_4)
+        self._test_400_response(
+            response_4,
+            error_code=ErrorCode.QUEUE_WRONG_STATE,
+        )
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(2)
@@ -1407,7 +1409,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 data                           = serialized_ack_report_computed_task,
                 content_type                   = 'application/octet-stream',
             )
-        self._test_400_response(response_3)
+        self._test_400_response(
+            response_3,
+            error_code=ErrorCode.QUEUE_TIMEOUT,
+        )
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(2)
@@ -1535,7 +1540,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 data=serialized_reject_report_computed_task,
                 content_type='application/octet-stream',
             )
-        self._test_400_response(response_3)
+        self._test_400_response(
+            response_3,
+            error_code=ErrorCode.MESSAGE_INVALID,
+        )
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(2)
@@ -1560,7 +1568,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 data=serialized_reject_report_computed_task,
                 content_type='application/octet-stream',
             )
-        self._test_400_response(response_4)
+        self._test_400_response(
+            response_4,
+            error_code=ErrorCode.MESSAGE_INVALID,
+        )
         self._assert_stored_message_counter_not_increased()
 
         # STEP 5: Requestor rejects computed task via Concent with GotMessageTaskFailure REASON, but without TaskFailure
@@ -1583,7 +1594,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 data=serialized_reject_report_computed_task,
                 content_type='application/octet-stream',
             )
-        self._test_400_response(response_5)
+        self._test_400_response(
+            response_5,
+            error_code=ErrorCode.MESSAGE_INVALID,
+        )
         self._assert_stored_message_counter_not_increased()
 
         # STEP 6: Requestor rejects computed task via Concent with SubtaskTimeLimitExceeded REASON and TaskFailure message
@@ -1607,7 +1621,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 data=serialized_reject_report_computed_task,
                 content_type='application/octet-stream',
             )
-        self._test_400_response(response_6)
+        self._test_400_response(
+            response_6,
+            error_code=ErrorCode.MESSAGE_INVALID,
+        )
         self._assert_stored_message_counter_not_increased()
 
     def test_provider_forces_computed_task_report_missing_key_returns_400_error(self):
@@ -1653,7 +1670,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 data            = serialized_force_report_computed_task,
                 content_type    = 'application/octet-stream',
             )
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE,
+        )
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(0)
@@ -1701,7 +1721,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 data                           = serialized_force_report_computed_task,
                 content_type                   = 'application/octet-stream',
             )
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE,
+        )
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(0)
@@ -1749,7 +1772,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 data                           = serialized_force_report_computed_task,
                 content_type                   = 'application/octet-stream',
             )
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE
+        )
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(0)
@@ -1797,7 +1823,10 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 data                           = serialized_force_report_computed_task,
                 content_type                   = 'application/octet-stream',
             )
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE,
+        )
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(0)

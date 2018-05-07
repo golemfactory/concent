@@ -10,6 +10,7 @@ from golem_messages.message import FileTransferToken
 from core.models            import PendingResponse
 from core.models            import Subtask
 from core.tests.utils       import ConcentIntegrationTestCase
+from utils.constants        import ErrorCode
 from utils.testing_helpers  import generate_ecc_key_pair
 
 
@@ -152,7 +153,8 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             error_message='There was an exception when validating if golem_message {} is signed with public key {}'.format(
                 message.TaskToCompute.TYPE,
                 self.REQUESTOR_PUBLIC_KEY,
-            )
+            ),
+            error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG
         )
 
         # 2.2.

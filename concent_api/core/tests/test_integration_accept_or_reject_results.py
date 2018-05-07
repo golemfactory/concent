@@ -6,10 +6,12 @@ from freezegun              import freeze_time
 from golem_messages         import message
 
 from core.constants         import ETHEREUM_ADDRESS_LENGTH
+from core.message_handlers  import store_or_update_subtask
 from core.models            import StoredMessage
 from core.models            import Subtask
 from core.models            import PendingResponse
 from core.tests.utils       import ConcentIntegrationTestCase
+from utils.constants        import ErrorCode
 from utils.testing_helpers  import generate_ecc_key_pair
 
 
@@ -907,7 +909,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 content_type                        = 'application/octet-stream',
             )
 
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code=ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED
+        )
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(0)
@@ -947,7 +952,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 content_type                    = 'application/octet-stream',
             )
 
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code=ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED
+        )
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(0)
@@ -1271,7 +1279,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_provider_public_key(),
         )
 
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code=ErrorCode.MESSAGE_INVALID
+        )
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(0)
@@ -1301,7 +1312,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_provider_public_key(),
         )
 
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code=ErrorCode.MESSAGE_INVALID
+        )
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(0)
@@ -1670,22 +1684,22 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        self._store_golem_messages_in_database(
-            message_type            = deserialized_force_subtask_results.TYPE,
-            timestamp               = "2018-02-05 10:00:30",
-            data                    = deserialized_force_subtask_results,
-            task_id                 = deserialized_force_subtask_results.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-        )
-        self._assert_stored_message_counter_increased()
-
         compute_task_def = self._get_deserialized_compute_task_def(
             task_id     = '2',
             deadline    = "2018-02-05 11:00:00",
         )
 
-        deserialized_subtask_results_response = self._get_deserialized_force_subtask_results_response(
-            timestamp = "2018-02-05 11:00:00",
-            subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
+        task_to_compute = deserialized_force_subtask_results.ack_report_computed_task.report_computed_task.task_to_compute  # pylint: disable=no-member,
+
+        subtask = store_or_update_subtask(
+            task_id=task_to_compute.compute_task_def['task_id'],
+            subtask_id=task_to_compute.compute_task_def['subtask_id'],
+            provider_public_key=self.PROVIDER_PUBLIC_KEY,
+            requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
+            state=Subtask.SubtaskState.ACCEPTED,
+            report_computed_task=deserialized_force_subtask_results.ack_report_computed_task.report_computed_task,  # pylint: disable=no-member,
+            task_to_compute=task_to_compute,
+            subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp   = "2018-02-05 11:00:00",
                 payment_ts = "2018-02-05 11:00:01",
                 task_to_compute = self._get_deserialized_task_to_compute(
@@ -1694,14 +1708,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 ),
             ),
         )
+        subtask.state = Subtask.SubtaskState.FORCING_ACCEPTANCE.name  # pylint: disable=no-member,
+        subtask.save()  # full_clean() is omitted here on purpose
 
-        self._store_golem_messages_in_database(
-            message_type            = deserialized_subtask_results_response.TYPE,
-            timestamp               = "2018-02-05 11:00:01",
-            data                    = deserialized_subtask_results_response,
-            task_id                 = deserialized_subtask_results_response.subtask_results_accepted.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-        )
-        self._assert_stored_message_counter_increased()
+        self._assert_stored_message_counter_increased(increased_by=3)
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
@@ -1723,7 +1733,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 content_type                    = 'application/octet-stream',
             )
 
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code=ErrorCode.SUBTASK_DUPLICATE_REQUEST
+        )
         self._assert_stored_message_counter_not_increased()
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
@@ -1751,10 +1764,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 content_type                    = 'application/octet-stream',
             )
 
-        self._test_400_response(response_2)
+        self._test_400_response(
+            response_2,
+            error_code=ErrorCode.SUBTASK_DUPLICATE_REQUEST
+        )
         self._assert_stored_message_counter_not_increased()
 
-        self._assert_client_count_is_equal(0)
+        self._assert_client_count_is_equal(2)
 
     def test_requestor_send_again_subtask_results_accepted_or_rejected_when_message_already_rejected_concent_should_return_http_400(self):
         """
@@ -1771,7 +1787,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         deserialized_force_subtask_results = self._get_deserialized_force_subtask_results(
             timestamp                   = "2018-02-05 10:00:15",
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
-                subtask_id      = "2",
+                subtask_id      = "xxyyzz",
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp   = "2018-02-05 10:00:00",
                     deadline    = "2018-02-05 10:00:10",
@@ -1780,43 +1796,29 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        self._store_golem_messages_in_database(
-            message_type            = deserialized_force_subtask_results.TYPE,
-            timestamp               = "2018-02-05 10:00:30",
-            data                    = deserialized_force_subtask_results,
-            task_id                 = deserialized_force_subtask_results.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-        )
-        self._assert_stored_message_counter_increased()
-
-        deserialized_subtask_results_response = self._get_deserialized_force_subtask_results_response(
-            timestamp = "2018-02-05 11:00:00",
-            subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
-                timestamp   = "2018-02-05 11:00:00",
-                reason      = message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-                report_computed_task = self._get_deserialized_report_computed_task(
-                    subtask_id = '2',
-                    task_to_compute = self._get_deserialized_task_to_compute(
-                        timestamp   = "2018-02-05 11:00:00",
-                        deadline    = "2018-02-05 11:00:05",
-                        task_id     = '2',
-                    )
-                )
-            )
-        )
-
-        self._store_golem_messages_in_database(
-            message_type            = deserialized_subtask_results_response.TYPE,
-            timestamp               = "2018-02-05 11:00:01",
-            data                    = deserialized_subtask_results_response,
-            task_id                 = deserialized_subtask_results_response.subtask_results_rejected.report_computed_task.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-        )
-        self._assert_stored_message_counter_increased()
-
         compute_task_def = self._get_deserialized_compute_task_def(
             task_id     = '2',
             deadline    = "2018-02-05 11:00:00",
         )
 
+        task_to_compute = deserialized_force_subtask_results.ack_report_computed_task.report_computed_task.task_to_compute  # pylint: disable=no-member,
+
+        subtask = store_or_update_subtask(
+            task_id=task_to_compute.compute_task_def['task_id'],
+            subtask_id=task_to_compute.compute_task_def['subtask_id'],
+            provider_public_key=self.PROVIDER_PUBLIC_KEY,
+            requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
+            state=Subtask.SubtaskState.ACCEPTED,
+            report_computed_task=deserialized_force_subtask_results.ack_report_computed_task.report_computed_task,  # pylint: disable=no-member,
+            task_to_compute=task_to_compute,
+            subtask_results_rejected=self._get_deserialized_subtask_results_rejected(
+                timestamp   = "2018-02-05 11:00:00",
+            ),
+        )
+        subtask.state = Subtask.SubtaskState.FORCING_ACCEPTANCE.name  # pylint: disable=no-member,
+        subtask.save()  # full_clean() is omitted here on purpose
+
+        self._assert_stored_message_counter_increased(increased_by=3)
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
             timestamp               = "2018-02-05 11:00:01",
@@ -1836,7 +1838,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 data                            = serialized_force_subtask_results_response,
                 content_type                    = 'application/octet-stream',
             )
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code=ErrorCode.SUBTASK_DUPLICATE_REQUEST
+        )
         self._assert_stored_message_counter_not_increased()
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
@@ -1864,12 +1869,15 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 content_type                    = 'application/octet-stream',
             )
 
-        self._test_400_response(response_2)
+        self._test_400_response(
+            response_2,
+            error_code=ErrorCode.SUBTASK_DUPLICATE_REQUEST
+        )
         self._assert_stored_message_counter_not_increased()
 
-        self._assert_client_count_is_equal(0)
+        self._assert_client_count_is_equal(2)
 
-    def test_requestor_send_subtask_results_without_accepted_or_rejected_should_return_http_400(self):
+    def test_requestor_send_force_subtask_results_response_without_accepted_or_rejected_should_return_http_400(self):
         """
         Test if Requestor wants to send ForceSubtaskResultsResponse without SubtaskResultsAccepted
         or SubtaskResultsRejected then Concent should return HTTP 400 as not supported.
@@ -1878,51 +1886,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Requestor   -> Concent: ForceSubtaskResultsResponse (empty)
         Concent     -> Requestor: HTTP 400
         """
-        deserialized_force_subtask_results = self._get_deserialized_force_subtask_results(
-            timestamp                = "2018-02-05 10:00:15",
-            ack_report_computed_task = self._get_deserialized_ack_report_computed_task(
-                subtask_id = "xxyyzz",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp = "2018-02-05 10:00:00",
-                    deadline  = "2018-02-05 10:00:10",
-                    task_id   = '2',
-                )
-            )
-        )
-
-        self._store_golem_messages_in_database(
-            message_type         = deserialized_force_subtask_results.TYPE,
-            timestamp            = "2018-02-05 10:00:30",
-            data                 = deserialized_force_subtask_results,
-            task_id              = deserialized_force_subtask_results.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-        )
-        self._assert_stored_message_counter_increased()
-
-        compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '2',
-            deadline    = "2018-02-05 11:00:00",
-        )
-
-        deserialized_subtask_results_response = self._get_deserialized_force_subtask_results_response(
-            timestamp                = "2018-02-05 11:00:00",
-            subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
-                timestamp  = "2018-02-05 11:00:00",
-                payment_ts = "2018-02-05 11:00:01",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp           = "2018-02-05 10:00:00",
-                    compute_task_def    = compute_task_def,
-                )
-            )
-        )
-
-        self._store_golem_messages_in_database(
-            message_type         = deserialized_subtask_results_response.TYPE,
-            timestamp            = "2018-02-05 11:00:01",
-            data                 = deserialized_subtask_results_response,
-            task_id              = deserialized_subtask_results_response.subtask_results_accepted.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-        )
-        self._assert_stored_message_counter_increased()
-
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key = self.REQUESTOR_PRIVATE_KEY,
             timestamp             = "2018-02-05 11:00:01",
@@ -1935,7 +1898,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 content_type                   = 'application/octet-stream',
             )
 
-        self._test_400_response(response_1)
+        self._test_400_response(
+            response_1,
+            error_code=ErrorCode.MESSAGE_UNEXPECTED
+        )
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(0)

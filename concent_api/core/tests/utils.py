@@ -473,9 +473,7 @@ class ConcentIntegrationTestCase(TestCase):
                     report_computed_task or
                     self._get_deserialized_report_computed_task(
                         subtask_id      = '1',
-                        task_to_compute = self._sign_message(
-                            self._get_deserialized_task_to_compute()
-                        )
+                        task_to_compute = self._get_deserialized_task_to_compute()
                     )
                 ),
             )
@@ -730,6 +728,8 @@ class ConcentIntegrationTestCase(TestCase):
 
             golem_message.full_clean()
             golem_message.save()
+
+        return golem_message
 
     def _send_force_report_computed_task(self):
         report_computed_task = message.tasks.ReportComputedTask(

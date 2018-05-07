@@ -12,6 +12,7 @@ from core.message_handlers import store_or_update_subtask
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
 from core.transfer_operations import create_file_transfer_token_for_golem_client
+from utils.constants import ErrorCode
 from utils.helpers import sign_message
 from utils.testing_helpers import generate_ecc_key_pair
 
@@ -104,7 +105,10 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             )
 
         # then
-        self._test_400_response(response)
+        self._test_400_response(
+            response,
+            error_code=ErrorCode.QUEUE_SUBTASK_STATE_TRANSITION_NOT_ALLOWED
+        )
         self._assert_stored_message_counter_not_increased()
 
     def test_that_concent_responds_with_http_400_when_verification_received_in_failed_state(self):
@@ -138,7 +142,10 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             )
 
         # then
-        self._test_400_response(response)
+        self._test_400_response(
+            response,
+            error_code=ErrorCode.QUEUE_SUBTASK_STATE_TRANSITION_NOT_ALLOWED
+        )
         self._assert_stored_message_counter_not_increased()
 
     def test_that_concent_responds_with_service_refused_when_request_arrives_too_late(self):

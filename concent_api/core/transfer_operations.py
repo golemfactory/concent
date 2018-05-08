@@ -55,8 +55,8 @@ def verify_file_status(
             )
             logging.log_file_status(
                 subtask.subtask_id,
-                subtask.requestor.public_key,
-                subtask.provider.public_key,
+                subtask.requestor.public_key_bytes,
+                subtask.provider.public_key_bytes,
             )
 
 
@@ -96,7 +96,7 @@ def store_pending_message(
         response_type.name,
         queue.name,
         subtask_id,
-        client.public_key,
+        client.public_key_bytes,
     )
 
 

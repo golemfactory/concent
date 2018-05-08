@@ -107,9 +107,9 @@ def handle_errors_and_responses(view):
         except Http400 as exception:
             logging.log_400_error(
                 view.__name__,
-                client_message,
                 client_public_key,
-            )
+                client_message,
+                           )
             transaction.savepoint_rollback(sid)
             return JsonResponse({'error': str(exception)}, status = 400)
         if isinstance(response_from_view, message.Message):
@@ -130,8 +130,8 @@ def handle_errors_and_responses(view):
         elif isinstance(response_from_view, HttpResponseNotAllowed):
             logging.log_message_not_allowed(
                 view.__name__,
-                request.method,
                 client_public_key,
+                request.method,
             )
             return response_from_view
         elif isinstance(response_from_view, HttpResponse):

@@ -27,7 +27,7 @@ def send(_request, client_message, client_public_key):
 
     logging.log_message_received(
         client_message,
-        client_public_key if client_public_key is not None else 'UNAVAILABLE',
+        client_public_key,
     )
 
     return handle_message(client_message)

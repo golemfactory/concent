@@ -1,8 +1,6 @@
-import math
 from enum import Enum
 
-from django.conf    import settings
-
+from golem_sci.blockshelper import BlocksHelper
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from utils.singleton import ConcentRPC
 
@@ -24,22 +22,23 @@ def get_list_of_payments(
     assert isinstance(current_time,             int) and current_time   > 0
     assert isinstance(transaction_type,         Enum) and transaction_type in TransactionType
 
-    block_distance = math.ceil((current_time - payment_ts) / settings.AVERAGE_BLOCK_TIME)
-    last_block_before_payment = ConcentRPC().get_block_number() - block_distance  # type: ignore  # pylint: disable=no-member
+    concent_rpc = ConcentRPC()
+
+    last_block_before_payment = BlocksHelper(concent_rpc).get_first_block_after(payment_ts).number
 
     if transaction_type == TransactionType.FORCE:
-        payments_list = ConcentRPC().get_forced_payments(  # type: ignore  # pylint: disable=no-member
+        payments_list = concent_rpc.get_forced_payments(  # pylint: disable=no-member
             requestor_address   = requestor_eth_address,
             provider_address    = provider_eth_address,
             from_block          = last_block_before_payment,
-            to_block            = ConcentRPC().get_block_number(),  # type: ignore  # pylint: disable=no-member
+            to_block            = concent_rpc.get_block_number(),  # pylint: disable=no-member
         )
     elif transaction_type == TransactionType.BATCH:
-        payments_list = ConcentRPC().get_batch_transfers(  # type: ignore  # pylint: disable=no-member
+        payments_list = concent_rpc.get_batch_transfers(  # pylint: disable=no-member
             payer_address   = requestor_eth_address,
             payee_address   = provider_eth_address,
             from_block      = last_block_before_payment,
-            to_block        = ConcentRPC().get_block_number(),  # type: ignore  # pylint: disable=no-member
+            to_block        = concent_rpc.get_block_number(),  # pylint: disable=no-member
         )
 
     return payments_list

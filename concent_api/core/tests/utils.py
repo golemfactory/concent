@@ -570,13 +570,11 @@ class ConcentIntegrationTestCase(TestCase):
     def _get_deserialized_task_failure(
         self,
         timestamp=None,
-        subtask_id='2',
         err=None,
         task_to_compute=None,
     ):
         with freeze_time(timestamp or self._get_timestamp_string()):
             task_failure = message.tasks.TaskFailure(
-                subtask_id=subtask_id,
                 err=err,
                 task_to_compute=task_to_compute,
             )
@@ -593,7 +591,7 @@ class ConcentIntegrationTestCase(TestCase):
         with freeze_time(timestamp or self._get_timestamp_string()):
             return message.RejectReportComputedTask(
                 cannot_compute_task = cannot_compute_task,
-                task_to_compute     = task_to_compute,
+                attached_task_to_compute = task_to_compute,
                 task_failure        = task_failure,
                 reason              = reason,
             )

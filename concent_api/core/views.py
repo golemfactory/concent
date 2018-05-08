@@ -70,7 +70,6 @@ def protocol_constants(_request):
             'force_acceptance_time':     settings.FORCE_ACCEPTANCE_TIME,
             'minimum_upload_rate':       settings.MINIMUM_UPLOAD_RATE,
             'download_leadin_time':      settings.DOWNLOAD_LEADIN_TIME,
-            'subtask_verification_time': settings.SUBTASK_VERIFICATION_TIME,
             'payment_due_time':          settings.PAYMENT_DUE_TIME,
         }
     )

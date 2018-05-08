@@ -1,15 +1,20 @@
 import base64
 
+from django.contrib.postgres.fields import JSONField
+from django.core.validators import validate_ipv4_address
 from django.core.validators import ValidationError
 from django.db.models       import BinaryField
 from django.db.models       import BooleanField
 from django.db.models       import CharField
 from django.db.models       import DateTimeField
+from django.db.models       import DecimalField
 from django.db.models       import IntegerField
 from django.db.models       import ForeignKey
 from django.db.models       import Model
 from django.db.models       import OneToOneField
 from django.db.models       import PositiveSmallIntegerField
+from django.db.models       import PositiveIntegerField
+from django.db.models       import TextField
 from django.db.models       import Manager
 from django.utils           import timezone
 
@@ -23,7 +28,10 @@ from utils.fields           import ChoiceEnum
 from .constants             import TASK_OWNER_KEY_LENGTH
 from .constants             import ETHEREUM_ADDRESS_LENGTH
 from .constants             import GOLEM_PUBLIC_KEY_LENGTH
+from .constants             import HASH_FUNCTION
+from .constants             import HASH_LENGTH
 from .constants             import MESSAGE_TASK_ID_MAX_LENGTH
+from .constants             import NUMBER_OF_ALL_PORTS
 
 
 class StoredMessage(Model):
@@ -485,3 +493,478 @@ class PaymentInfo(Model):
             raise ValidationError({
                 'pending_response': 'PaymentInfo should be related with Pending Response'
             })
+
+
+class AbstractMessageModel(Model):
+
+    sig = BinaryField()
+    timestamp = IntegerField()
+    encrypted = BooleanField(default = False)
+
+    class Meta:
+        abstract = True
+
+
+class StoredComputeTaskDef(AbstractMessageModel):
+
+    # Defines items list from ComputeTaskDef
+    ITEMS = [
+        'task_id',
+        'subtask_id',
+        'deadline',
+        'src_code',
+        'extra_data',
+        'short_description',
+        'working_directory',
+        'performance',
+        'docker_images',
+    ]
+
+    task_id = CharField(max_length=MESSAGE_TASK_ID_MAX_LENGTH)
+    subtask_id = CharField(max_length=MESSAGE_TASK_ID_MAX_LENGTH)
+    deadline = DateTimeField(blank = True, null = True)
+    src_code = TextField()
+    extra_data = JSONField()
+    short_description = TextField()
+    working_directory = TextField()
+    performance = DecimalField(decimal_places=2, max_digits=3)
+    docker_images = JSONField()
+
+    if not len(ITEMS) == len(message.tasks.ComputeTaskDef().ITEMS.keys()):
+        raise ValidationError({
+            'ComputeTaskDef': 'StoredComputeTaskDef model has not same fields as golem_messages.message.tasks.ComputeTaskDef()'
+        })
+
+    for model_item, golem_message_item in zip(ITEMS, message.tasks.ComputeTaskDef().ITEMS.keys()):
+        if not model_item == golem_message_item:
+            raise ValidationError({
+                'ComputeTaskDef': 'StoredComputeTaskDef model has not same fields as golem_messages.message.tasks.ComputeTaskDef()'
+            })
+    '''
+    VALIDATION FOR task_id
+    VALIDATION FOR subtask_id
+    VALIDATION FOR deadline
+    VALIDATION FOR src_code
+    VALIDATION FOR extra_data
+    VALIDATION FOR short_description
+    VALIDATION FOR working_directory
+    VALIDATION FOR performance
+    VALIDATION FOR docker_images
+    '''
+
+
+class StoredTaskToCompute(AbstractMessageModel):
+
+    ITEMS = [
+        'requestor_id',
+        'requestor_public_key',
+        'requestor_ethereum_public_key',
+        'provider_id',
+        'provider_public_key',
+        'provider_ethereum_public_key',
+        'compute_task_def',
+        'package_hash',
+        'concent_enabled',
+        'price',
+        'header',
+        'sig',
+    ]
+
+    requestor_id = BinaryField()
+    requestor_public_key = BinaryField()
+    requestor_ethereum_public_key = BinaryField()
+    provider_id = BinaryField()
+    provider_public_key = BinaryField()
+    provider_ethereum_public_key = BinaryField()
+    compute_task_def = ForeignKey(StoredComputeTaskDef)
+    package_hash = CharField(max_length=HASH_LENGTH)
+    concent_enabled = BooleanField(default=False)
+    price = PositiveIntegerField()
+
+    if not len(ITEMS) == len(message.tasks.TaskToCompute().__slots__):
+        raise ValidationError({
+            'StoredTaskToCompute': 'StoredTaskToCompute model has not same fields as golem_messages.message.tasks.TaskToCompute()'
+        })
+
+    for model_item, golem_message_item in zip(ITEMS, message.tasks.TaskToCompute().__slots__):
+        if not model_item == golem_message_item:
+            raise ValidationError({
+                'StoredTaskToCompute': 'StoredTaskToCompute model has not same fields as golem_messages.message.tasks.TaskToCompute()'
+            })
+
+    def clean(self):
+        if not len(self.requestor_id) == GOLEM_PUBLIC_KEY_LENGTH or not isinstance(self.requestor_id, bytes):
+            raise ValidationError({
+                'requestor_id': f'requestor_id must be bytes instance and must have length equal to {GOLEM_PUBLIC_KEY_LENGTH}'
+            })
+
+        if not len(self.requestor_public_key) == GOLEM_PUBLIC_KEY_LENGTH or not isinstance(self.requestor_public_key, bytes):
+            raise ValidationError({
+                'requestor_public_key': f'requestor_public_key must be bytes instance and must have length equal to {GOLEM_PUBLIC_KEY_LENGTH}'
+            })
+
+        if not len(self.requestor_ethereum_public_key) == GOLEM_PUBLIC_KEY_LENGTH or not isinstance(self.requestor_ethereum_public_key, bytes):
+            raise ValidationError({
+                'requestor_ethereum_public_key': f'requestor_ethereum_public_key must be bytes instance and must have length equal to {GOLEM_PUBLIC_KEY_LENGTH}'
+            })
+
+        if not len(self.provider_id) == GOLEM_PUBLIC_KEY_LENGTH or not isinstance(self.provider_id, bytes):
+            raise ValidationError({
+                'provider_id': f'provider_id must be bytes instance and must have length equal to {GOLEM_PUBLIC_KEY_LENGTH}'
+            })
+
+        if not len(self.provider_public_key) == GOLEM_PUBLIC_KEY_LENGTH or not isinstance(self.provider_public_key, bytes):
+            raise ValidationError({
+                'provider_public_key': f'provider_public_key must be bytes instance and must have length equal to {GOLEM_PUBLIC_KEY_LENGTH}'
+            })
+
+        if not len(self.provider_ethereum_public_key) == GOLEM_PUBLIC_KEY_LENGTH or not isinstance(self.provider_ethereum_public_key, bytes):
+            raise ValidationError({
+                'provider_ethereum_public_key': f'provider_ethereum_public_key must be bytes instance and must have length equal to {GOLEM_PUBLIC_KEY_LENGTH}'
+            })
+
+        if not self.package_hash[:4] == HASH_FUNCTION:
+            raise ValidationError({
+                'package_hash': f'package_hash should be hashed with {HASH_FUNCTION} function'
+            })
+
+        if not len(self.package_hash) == HASH_LENGTH:
+            raise ValidationError({
+                'package_hash': f'package_hash should has length equal to {HASH_LENGTH}'
+            })
+
+        if not isinstance(self.concent_enabled, bool):
+            raise ValidationError({
+                'concent_enabled': 'concent_enabled should be instance of boolean'
+            })
+
+        if not isinstance(self.price, int) or not self.price >= 0:
+            raise ValidationError({
+                'price': 'Price must be an integer and bigger than or equal 0'
+            })
+
+
+class StoredTaskFailure(AbstractMessageModel):
+
+    ITEMS = [
+        'task_to_compute',
+        'err',
+        'header',
+        'sig',
+    ]
+
+    if not len(ITEMS) == len(message.tasks.TaskFailure().__slots__):
+        raise ValidationError({
+            'StoredTaskFailure': 'StoredTaskFailure model has not same fields as golem_messages.message.tasks.TaskFailure()'
+        })
+
+    for model_item, golem_message_item in zip(ITEMS, message.tasks.TaskFailure().__slots__):
+        if not model_item == golem_message_item:
+            raise ValidationError({
+                'StoredTaskFailure': 'StoredTaskFailure model has not same fields as golem_messages.message.tasks.TaskFailure()'
+            })
+
+    task_to_compute = ForeignKey(StoredTaskToCompute)
+    err = TextField()
+
+    '''
+    VALIDATION FOR err
+    '''
+
+
+class StoredCannotComputeTask(AbstractMessageModel):
+
+    ITEMS = [
+        'task_to_compute',
+        'reason',
+        'header',
+        'sig',
+    ]
+
+    if not len(ITEMS) == len(message.tasks.CannotComputeTask().__slots__):
+        raise ValidationError({
+            'StoredCannotComputeTask': 'StoredCannotComputeTask model has not same fields as golem_messages.message.tasks.CannotComputeTask()'
+        })
+
+    for model_item, golem_message_item in zip(ITEMS, message.tasks.CannotComputeTask().__slots__):
+        if not model_item == golem_message_item:
+            raise ValidationError({
+                'StoredCannotComputeTask': 'StoredCannotComputeTask model has not same fields as golem_messages.message.tasks.CannotComputeTask()'
+            })
+
+    class CannotComputeTaskReason(ChoiceEnum):
+        WrongCTD = 'WrongCTD'
+        WrongKey = 'WrongKey'
+        WrongAddress = 'WrongAddress'
+        WrongEnvironment = 'WrongEnvironment'
+        NoSourceCode = 'NoSourceCode'
+        WrongDockerImages = 'WrongDockerImages'
+        ConcentRequired = 'ConcentRequired'
+        ConcentDisabled = 'ConcentDisabled'
+
+    if not len(CannotComputeTaskReason.__members__) == len(message.tasks.CannotComputeTask.REASON.__members__):
+        raise ValidationError({
+            'CannotComputeTaskReason': 'CannotComputeTaskReason Enum has not same fields as golem_messages.message.tasks.CannotComputeTask.REASON'
+        })
+
+    for model_item, golem_message_item in zip(CannotComputeTaskReason.__members__, message.tasks.CannotComputeTask.REASON.__members__):
+        if not model_item == golem_message_item:
+            raise ValidationError({
+                'CannotComputeTaskReason': 'CannotComputeTaskReason Enum has not same fields as golem_messages.message.tasks.CannotComputeTask.REASON'
+            })
+
+    task_to_compute = ForeignKey(StoredTaskToCompute)
+    reason = CharField(max_length=32, choices=CannotComputeTaskReason.choices())
+
+
+class StoredReportComputedTask(AbstractMessageModel):
+
+    ITEMS = [
+        'result_type',
+        'node_name',
+        'address',
+        'node_info',
+        'port',
+        'key_id',
+        'extra_data',
+        'eth_account',
+        'task_to_compute',
+        'size',
+        'package_hash',
+        'multihash',
+        'secret',
+        'options',
+        'header',
+        'sig',
+    ]
+
+    if not len(ITEMS) == len(message.tasks.ReportComputedTask().__slots__):
+        raise ValidationError({
+            'StoredReportComputedTask': 'StoredReportComputedTask model has not same fields as golem_messages.message.tasks.ReportComputedTask()'
+        })
+
+    for model_item, golem_message_item in zip(ITEMS, message.tasks.ReportComputedTask().__slots__):
+        if not model_item == golem_message_item:
+            raise ValidationError({
+                'StoredReportComputedTask': 'StoredReportComputedTask model has not same fields as golem_messages.message.tasks.ReportComputedTask()'
+            })
+
+    result_type = PositiveSmallIntegerField()
+    node_name = CharField(max_length=32)
+    address = CharField(max_length=15)
+    node_info = JSONField()
+    port = PositiveIntegerField()
+    key_id = BinaryField()
+    extra_data = JSONField()
+    eth_account = CharField(max_length=32)
+    task_to_compute = ForeignKey(StoredTaskToCompute)
+    size = PositiveIntegerField()
+    package_hash = CharField(max_length=HASH_LENGTH)
+    multihash = CharField(max_length=HASH_LENGTH)
+    secret = TextField()
+    options = TextField()
+
+    def clean(self):
+        '''
+        VALIDATION FOR result_type
+        VALIDATION FOR node_name
+        '''
+        try:
+            validate_ipv4_address(self.address)
+        except ValidationError:
+            return ValidationError({
+                'address': 'Address field is not valid IPv4 address'
+            })
+        '''
+        VALIDATION FOR node_info
+        '''
+        if not isinstance(self.port, int) or self.port > NUMBER_OF_ALL_PORTS:
+            return ValidationError({
+                'port': f'Port must be integer and must be beetwen 0 and {NUMBER_OF_ALL_PORTS}'
+            })
+
+        if not isinstance(self.key_id, bytes) or not len(self.key_id) == GOLEM_PUBLIC_KEY_LENGTH:
+            return ValidationError({
+                'key_id': f'key_id must be bytes instance and must have length equal to {GOLEM_PUBLIC_KEY_LENGTH}'
+            })
+        '''
+        VALIDATION FOR extra_data
+        '''
+        if not isinstance(self.eth_account, str) or not len(self.eth_account) == ETHEREUM_ADDRESS_LENGTH:
+            raise ValidationError({
+                'eth_account': f'ethereum account address must be a string with {ETHEREUM_ADDRESS_LENGTH} characters'
+            })
+        '''
+        VALIDATION FOR size
+        '''
+        if not self.package_hash[:4] == HASH_FUNCTION:
+            raise ValidationError({
+                'package_hash': f'package_hash should be hashed with {HASH_FUNCTION} function'
+            })
+
+        if not len(self.package_hash) == HASH_LENGTH:
+            raise ValidationError({
+                'package_hash': f'package_hash should has length equal to {HASH_LENGTH}'
+            })
+
+        if not self.multihash[:4] == HASH_FUNCTION:
+            raise ValidationError({
+                'multihash': f'multihash should be hashed with {HASH_FUNCTION} function'
+            })
+
+        if not len(self.multihash) == HASH_LENGTH:
+            raise ValidationError({
+                'multihash': f'multihash should has length equal to {HASH_LENGTH}'
+            })
+        '''
+        VALIDATION FOR secret
+        VALIDATION FOR options
+        '''
+
+
+class StoredAckReportComputedTask(AbstractMessageModel):
+
+    ITEMS = [
+        'report_computed_task',
+        'header',
+        'sig',
+    ]
+
+    if not len(ITEMS) == len(message.tasks.AckReportComputedTask.__slots__):
+        raise ValidationError({
+            'StoredAckReportComputedTask': 'StoredAckReportComputedTask model has not same fields as golem_messages.message.tasks.AckReportComputedTask()'
+        })
+
+    for model_item, golem_message_item in zip(ITEMS, message.tasks.AckReportComputedTask.__slots__):
+        if not model_item == golem_message_item:
+            raise ValidationError({
+                'StoredAckReportComputedTask': 'StoredAckReportComputedTask model has not same fields as golem_messages.message.tasks.AckReportComputedTask()'
+            })
+
+    report_computed_task = ForeignKey(StoredReportComputedTask)
+
+
+class StoredRejectReportComputedTask(AbstractMessageModel):
+
+    ITEMS = [
+        'attached_task_to_compute',
+        'task_failure',
+        'cannot_compute_task',
+        'reason',
+        'header',
+        'sig',
+    ]
+
+    if not len(ITEMS) == len(message.tasks.RejectReportComputedTask.__slots__):
+        raise ValidationError({
+            'StoredRejectReportComputedTask': 'StoredRejectReportComputedTask model has not same fields as golem_messages.message.tasks.RejectReportComputedTask()'
+        })
+
+    for model_item, golem_message_item in zip(ITEMS, message.tasks.RejectReportComputedTask.__slots__):
+        if not model_item == golem_message_item:
+            raise ValidationError({
+                'StoredRejectReportComputedTask': 'StoredRejectReportComputedTask model has not same fields as golem_messages.message.tasks.RejectReportComputedTask()'
+            })
+
+    class RejectReason(ChoiceEnum):
+        SubtaskTimeLimitExceeded = 'SubtaskTimeLimitExceeded'
+        GotMessageCannotComputeTask = 'GotMessageCannotComputeTask'
+        GotMessageTaskFailure = 'GotMessageTaskFailure'
+
+    if not len(RejectReason.__members__) == len(message.tasks.RejectReportComputedTask.REASON.__members__):
+        raise ValidationError({
+            'RejectReason': 'RejectReason Enum has not same fields as golem_messages.message.tasks.RejectReportComputedTask.REASON'
+        })
+
+    for model_item, golem_message_item in zip(RejectReason.__members__, message.tasks.RejectReportComputedTask.REASON.__members__):
+        if not model_item == golem_message_item:
+            raise ValidationError({
+                'RejectReason': 'RejectReason Enum has not same fields as golem_messages.message.tasks.RejectReportComputedTask.REASON'
+            })
+
+    attached_task_to_compute = ForeignKey(StoredTaskToCompute)
+    task_failure = ForeignKey(StoredTaskFailure)
+    cannot_compute_task = ForeignKey(StoredCannotComputeTask)
+    reason = CharField(max_length=32, choices=RejectReason.choices())
+
+    def clean(self):
+        if self.attached_task_to_compute and self.reason is not self.RejectReason.SubtaskTimeLimitExceeded:
+            raise ValidationError({
+                'attached_task_to_compute': "'SubtaskTimeLimitExceeded' is only right reason when TaskToCompute message is attached to RejectReportComputedTask"
+            })
+
+        if self.task_failure and self.reason is not self.RejectReason.GotMessageTaskFailure:
+            raise ValidationError({
+                'task_failure': "'GotMessageTaskFailure' is only right reason when TaskFailure message is attached to RejectReportComputedTask"
+            })
+
+        if self.cannot_compute_task and self.reason is not self.RejectReason.GotMessageCannotComputeTask:
+            raise ValidationError({
+                'cannot_compute_task': "'GotMessageCannotComputeTask' is only right reason when CannotComputeTask message is attached to RejectReportComputedTask"
+            })
+
+
+class StoredSubtaskResultsAccepted(AbstractMessageModel):
+
+    ITEMS = [
+        'payment_ts',
+        'task_to_compute',
+        'header',
+        'sig',
+    ]
+
+    if not len(ITEMS) == len(message.tasks.SubtaskResultsAccepted.__slots__):
+        raise ValidationError({
+            'StoredSubtaskResultsAccepted': 'StoredSubtaskResultsAccepted model has not same fields as golem_messages.message.tasks.SubtaskResultsAccepted()'
+        })
+
+    for model_item, golem_message_item in zip(ITEMS, message.tasks.SubtaskResultsAccepted.__slots__):
+        if not model_item == golem_message_item:
+            raise ValidationError({
+                'StoredSubtaskResultsAccepted': 'StoredSubtaskResultsAccepted model has not same fields as golem_messages.message.tasks.SubtaskResultsAccepted()'
+            })
+
+    payment_ts = IntegerField()
+    task_to_compute = ForeignKey(StoredTaskToCompute)
+
+
+class StoredSubtaskResultsRejected(AbstractMessageModel):
+
+    ITEMS = [
+        'report_computed_task',
+        'reason',
+        'header',
+        'sig',
+    ]
+
+    if not len(ITEMS) == len(message.tasks.SubtaskResultsRejected.__slots__):
+        raise ValidationError({
+            'StoredSubtaskResultsRejected': 'StoredSubtaskResultsRejected model has not same fields as golem_messages.message.tasks.SubtaskResultsRejected()'
+        })
+
+    for model_item, golem_message_item in zip(ITEMS, message.tasks.SubtaskResultsRejected.__slots__):
+        if not model_item == golem_message_item:
+            raise ValidationError({
+                'StoredSubtaskResultsRejected': 'StoredSubtaskResultsRejected model has not same fields as golem_messages.message.tasks.SubtaskResultsRejected()'
+            })
+
+    class SubtaskResultsRejectedReason(ChoiceEnum):
+        VerificationNegative = 'VerificationNegative'
+        ConcentResourcesFailure = 'ConcentResourcesFailure'
+        ConcentVerificationNegative = 'ConcentVerificationNegative'
+        ForcedResourcesFailure ='ForcedResourcesFailure'
+        ResourcesFailure = 'ResourcesFailure'
+
+    if not len(SubtaskResultsRejectedReason.__members__) == len(message.tasks.SubtaskResultsRejected.REASON.__members__):
+        raise ValidationError({
+            'SubtaskResultsRejectedReason': 'SubtaskResultsRejectedReason Enum has not same fields as golem_messages.message.tasks.SubtaskResultsRejected.REASON'
+        })
+
+    for model_item, golem_message_item in zip(SubtaskResultsRejectedReason.__members__, message.tasks.SubtaskResultsRejected.REASON.__members__):
+        if not model_item == golem_message_item:
+            raise ValidationError({
+                'SubtaskResultsRejectedReason': 'SubtaskResultsRejectedReason Enum has not same fields as golem_messages.message.tasks.SubtaskResultsRejected.REASON'
+            })
+
+    report_computed_task = ForeignKey(StoredReportComputedTask)
+    reason = CharField(max_length=32, choices=SubtaskResultsRejectedReason.choices())

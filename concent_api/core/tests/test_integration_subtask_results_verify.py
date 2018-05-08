@@ -47,8 +47,10 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
             next_deadline=self._parse_iso_date_to_timestamp(
-                subtask_results_verify_time_str) + settings.ADDITIONAL_VERIFICATION_CALL_TIME
+                subtask_results_verify_time_str) + settings.ADDITIONAL_VERIFICATION_CALL_TIME,
+            task_to_compute=self.report_computed_task.task_to_compute
         )
+        self._assert_stored_message_counter_increased(1)
 
         # when
         with freeze_time(subtask_results_verify_time_str):

@@ -740,11 +740,11 @@ def store_subtask(
         requestor       = requestor,
         state           = state.name,
         next_deadline   = parse_timestamp_to_utc_datetime(next_deadline) if next_deadline is not None else None,
+        task_to_compute = store_message(task_to_compute, task_id, subtask_id)
     )
 
     set_subtask_messages(
         subtask,
-        task_to_compute             = task_to_compute,
         report_computed_task        = report_computed_task,
         ack_report_computed_task    = ack_report_computed_task,
         reject_report_computed_task = reject_report_computed_task,

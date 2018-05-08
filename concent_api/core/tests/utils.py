@@ -13,6 +13,7 @@ from freezegun import freeze_time
 from golem_messages         import dump
 from golem_messages         import load
 from golem_messages         import message
+from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
 
 from core.models            import Client
@@ -148,17 +149,13 @@ class ConcentIntegrationTestCase(TestCase):
         sign_with_private_key           = None,
     ):
         """ Returns TaskToCompute deserialized. """
-        if compute_task_def is None:
-            compute_task_def                = message.ComputeTaskDef()
-            compute_task_def['task_id']     = task_id
-            compute_task_def['subtask_id']  = subtask_id
-            if isinstance(deadline, int):
-                compute_task_def['deadline'] = deadline
-            elif isinstance(deadline, str):
-                compute_task_def['deadline'] = self._parse_iso_date_to_timestamp(deadline)
-            else:
-                compute_task_def['deadline'] = self._parse_iso_date_to_timestamp(self._get_timestamp_string()) + 10
-
+        compute_task_def = (
+            compute_task_def if compute_task_def is not None else self._get_deserialized_compute_task_def(
+                task_id=task_id,
+                subtask_id=subtask_id,
+                deadline=deadline,
+            )
+        )
         with freeze_time(timestamp or self._get_timestamp_string()):
             task_to_compute = TaskToComputeFactory(
                 compute_task_def                = compute_task_def,
@@ -496,11 +493,16 @@ class ConcentIntegrationTestCase(TestCase):
         subtask_id  = '2',
         deadline    = None,
     ):
-        compute_task_def                = message.tasks.ComputeTaskDef()
-        compute_task_def['task_id']     = task_id
-        compute_task_def['subtask_id']  = subtask_id
-        compute_task_def['deadline']    = self._parse_iso_date_to_timestamp(deadline)
-
+        compute_task_def = ComputeTaskDefFactory(
+            task_id=task_id,
+            subtask_id=subtask_id,
+        )
+        if isinstance(deadline, int):
+            compute_task_def['deadline'] = deadline
+        elif isinstance(deadline, str):
+            compute_task_def['deadline'] = self._parse_iso_date_to_timestamp(deadline)
+        else:
+            compute_task_def['deadline'] = self._parse_iso_date_to_timestamp(self._get_timestamp_string()) + 10
         return compute_task_def
 
     def _get_deserialized_force_subtask_results_response(

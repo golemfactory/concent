@@ -304,11 +304,15 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent     -> Requestor:   ForceSubtaskResults (new timestamp)
         """
 
+        compute_task_def = self._get_deserialized_compute_task_def(
+            deadline="2018-02-05 10:00:15",
+            task_id='2',
+            subtask_id='xxyyzz',
+        )
+
         task_to_compute = self._get_deserialized_task_to_compute(
-            timestamp   = "2018-02-05 10:00:00",
-            deadline    = "2018-02-05 10:00:15",
-            task_id     = '2',
-            subtask_id  = 'xxyyzz',
+            timestamp="2018-02-05 10:00:00",
+            compute_task_def=compute_task_def,
         )
 
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
@@ -372,12 +376,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
-
-        deserialized_compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2018-02-05 10:00:15",
-            task_id     = '2',
-            subtask_id  = 'xxyyzz',
-        )
         self._test_response(
             response_2,
             status       = 200,
@@ -386,7 +384,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             fields       = {
                 'timestamp':                                                    self._parse_iso_date_to_timestamp("2018-02-05 10:00:29"),
                 'ack_report_computed_task.subtask_id':                          'xxyyzz',
-                "ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def":    deserialized_compute_task_def,
+                "ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def": compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -407,11 +405,15 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent     -> Requestor:   SubtaskResultsSettled
         """
 
+        compute_task_def = self._get_deserialized_compute_task_def(
+            deadline="2018-02-05 10:00:15",
+            task_id='2',
+            subtask_id='xxyyzz',
+        )
+
         task_to_compute = self._get_deserialized_task_to_compute(
-            timestamp   = "2018-02-05 10:00:00",
-            deadline    = "2018-02-05 10:00:15",
-            task_id     = '2',
-            subtask_id  = 'xxyyzz',
+            timestamp="2018-02-05 10:00:00",
+            compute_task_def=compute_task_def,
         )
 
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
@@ -475,11 +477,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
-        deserialized_compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2018-02-05 10:00:15",
-            task_id     = '2',
-            subtask_id  = 'xxyyzz',
-        )
         self._test_response(
             response_2,
             status       = 200,
@@ -488,7 +485,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             fields       = {
                 'timestamp':                                                 self._parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
                 'ack_report_computed_task.subtask_id':                       'xxyyzz',
-                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': deserialized_compute_task_def,
+                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -518,7 +515,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.SubtaskResultsSettled,
             fields       = {
                 'timestamp':                        self._parse_iso_date_to_timestamp("2018-02-05 11:00:01"),
-                'task_to_compute.compute_task_def': deserialized_compute_task_def,
+                'task_to_compute.compute_task_def': compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -536,7 +533,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.SubtaskResultsSettled,
             fields       = {
                 'timestamp':                        self._parse_iso_date_to_timestamp("2018-02-05 11:00:01"),
-                'task_to_compute.compute_task_def': deserialized_compute_task_def,
+                'task_to_compute.compute_task_def': compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -1317,11 +1314,15 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent     -> Requestor:   HTTP 204
         """
 
+        compute_task_def = self._get_deserialized_compute_task_def(
+            deadline="2018-02-05 10:00:15",
+            task_id='2',
+            subtask_id='xxyyzz',
+        )
+
         task_to_compute = self._get_deserialized_task_to_compute(
-            timestamp   = "2018-02-05 10:00:00",
-            deadline    = "2018-02-05 10:00:15",
-            task_id     = '2',
-            subtask_id  = 'xxyyzz',
+            timestamp="2018-02-05 10:00:00",
+            compute_task_def=compute_task_def,
         )
 
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
@@ -1385,11 +1386,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
-        deserialized_compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2018-02-05 10:00:15",
-            task_id     = '2',
-            subtask_id  = 'xxyyzz',
-        )
         self._test_response(
             response_2,
             status       = 200,
@@ -1398,7 +1394,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             fields       = {
                 'timestamp':                                                 self._parse_iso_date_to_timestamp("2018-02-05 10:00:31"),
                 'ack_report_computed_task.subtask_id':                       'xxyyzz',
-                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': deserialized_compute_task_def,
+                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -1422,7 +1418,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.SubtaskResultsSettled,
             fields       = {
                 'timestamp':                        self._parse_iso_date_to_timestamp("2018-02-05 10:00:51"),
-                'task_to_compute.compute_task_def': deserialized_compute_task_def,
+                'task_to_compute.compute_task_def': compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -1467,7 +1463,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.SubtaskResultsSettled,
             fields       = {
                 'timestamp':                        self._parse_iso_date_to_timestamp("2018-02-05 10:00:51"),
-                'task_to_compute.compute_task_def': deserialized_compute_task_def,
+                'task_to_compute.compute_task_def': compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -1495,11 +1491,15 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent     -> Requestor:   HTTP 204
         """
 
+        compute_task_def = self._get_deserialized_compute_task_def(
+            deadline="2018-02-05 10:00:15",
+            task_id='2',
+            subtask_id='xxyyzz',
+        )
+
         task_to_compute = self._get_deserialized_task_to_compute(
-            timestamp   = "2018-02-05 10:00:00",
-            deadline    = "2018-02-05 10:00:15",
-            task_id     = '2',
-            subtask_id  = "xxyyzz",
+            timestamp="2018-02-05 10:00:00",
+            compute_task_def=compute_task_def,
         )
 
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
@@ -1563,11 +1563,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
-        deserialized_compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2018-02-05 10:00:15",
-            task_id     = '2',
-            subtask_id  = 'xxyyzz',
-        )
         self._test_response(
             response_2,
             status       = 200,
@@ -1576,7 +1571,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             fields       = {
                 'timestamp':                                                 self._parse_iso_date_to_timestamp("2018-02-05 10:00:31"),
                 'ack_report_computed_task.subtask_id':                       'xxyyzz',
-                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': deserialized_compute_task_def,
+                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -1594,7 +1589,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.SubtaskResultsSettled,
             fields       = {
                 'timestamp':                        self._parse_iso_date_to_timestamp("2018-02-05 10:00:51"),
-                'task_to_compute.compute_task_def': deserialized_compute_task_def,
+                'task_to_compute.compute_task_def': compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -1629,7 +1624,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.SubtaskResultsSettled,
             fields       = {
                 'timestamp':                        self._parse_iso_date_to_timestamp("2018-02-05 10:00:51"),
-                'task_to_compute.compute_task_def': deserialized_compute_task_def,
+                'task_to_compute.compute_task_def': compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()

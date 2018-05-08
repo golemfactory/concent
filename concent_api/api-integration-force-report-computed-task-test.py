@@ -21,6 +21,7 @@ from api_testing_common import PROVIDER_PUBLIC_KEY
 from api_testing_common import REQUESTOR_PRIVATE_KEY
 from api_testing_common import REQUESTOR_PUBLIC_KEY
 from api_testing_common import run_tests
+from api_testing_common import SUBTASK_VERIFICATION_TIME
 
 import requests
 
@@ -51,7 +52,7 @@ def test_case_1_provider_forces_report_computed_task_and_gets_accepted(cluster_c
     task_to_compute = create_signed_task_to_compute(
         task_id=task_id,
         subtask_id=subtask_id,
-        deadline=current_time + (cluster_consts.subtask_verification_time * 2)
+        deadline=current_time + (SUBTASK_VERIFICATION_TIME * 2)
     )
     api_request(
         cluster_url,

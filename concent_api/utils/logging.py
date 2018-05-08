@@ -162,13 +162,15 @@ def log_subtask_updated(
 
 
 def log_stored_message_added_to_subtask(
+        task_id: str,
         subtask_id: str,
         state: str,
         stored_message: Message,
 ):
     logger.info(
-        'A stored message has beed added to subtask -- STATE: {} SUBTASK_ID: {} STORED_MESSAGE_TYPE: {} TYPE: {}'.format(
+        'A stored message has beed added to subtask -- STATE: {} TASK_ID: {} SUBTASK_ID: {} STORED_MESSAGE_TYPE: {} TYPE: {}'.format(
             state,
+            task_id,
             subtask_id,
             stored_message.__name__,
             stored_message.TYPE,
@@ -191,11 +193,12 @@ def log_change_subtask_state_name(old_state, new_state):
     ))
 
 
-def log_new_pending_response(response_type: str, queue_name: str, subtask_id: str, client_public_key: bytes):
+def log_new_pending_response(response_type: str, queue_name: str, task_id: str, subtask_id: str, client_public_key: bytes):
     logger.info(
-        'New pending response in {} endpoint -- RESPONSE_TYPE: {} -- SUBTASK_ID: {} -- CLIENT PUBLIC KEY: {}'.format(
+        'New pending response in {} endpoint -- RESPONSE_TYPE: {} -- TASK_ID: {} -- SUBTASK_ID: {} -- CLIENT PUBLIC KEY: {}'.format(
             queue_name,
             response_type,
+            task_id,
             subtask_id,
             client_public_key,
         ))

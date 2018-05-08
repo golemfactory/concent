@@ -1046,6 +1046,7 @@ def set_subtask_messages(
             )
             setattr(subtask, message_name, stored_message)
             logging.log_stored_message_added_to_subtask(
+                subtask.task_id,
                 subtask.subtask_id,
                 subtask.state,
                 message_type,

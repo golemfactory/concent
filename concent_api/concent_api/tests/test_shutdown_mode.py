@@ -30,7 +30,6 @@ from utils.testing_helpers      import generate_ecc_key_pair
     PAYMENT_GRACE_PERIOD        = 10,  # seconds
     CONCENT_MESSAGING_TIME      = 10,  # seconds
     FORCE_ACCEPTANCE_TIME       = 10,  # seconds
-    SUBTASK_VERIFICATION_TIME   = 10,  # seconds
     ADMINS                      = ['admin@localhost']
 )
 class SoftShutdownModeTest(ConcentIntegrationTestCase):

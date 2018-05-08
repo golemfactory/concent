@@ -90,7 +90,6 @@ class RequestUploadStatusTest(ConcentIntegrationTestCase):
     MINIMUM_UPLOAD_RATE=1,
     DOWNLOAD_LEADIN_TIME= 10,
     CONCENT_MESSAGING_TIME=20,
-    SUBTASK_VERIFICATION_TIME=50,
 )
 class FileTransferTokenCreationTest(TestCase):
     def setUp(self):
@@ -135,7 +134,7 @@ class FileTransferTokenCreationTest(TestCase):
 
     def _get_deadline_exceeded_time_for_upload_token(self):
         return self.time + datetime.timedelta(
-            seconds=settings.SUBTASK_VERIFICATION_TIME + self.deadline + 1
+            seconds=10 + self.deadline + 1
         )
 
     def _get_deadline_exceeded_time_for_download_token(self, size):

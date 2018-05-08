@@ -1,3 +1,4 @@
+import datetime
 import mock
 
 from django.test            import override_settings
@@ -31,9 +32,14 @@ def request_upload_status_false_mock(_request_upload_status_false_mock):
     FORCE_ACCEPTANCE_TIME       = 10,    # seconds
     MINIMUM_UPLOAD_RATE         = 1,     # bits per second
     DOWNLOAD_LEADIN_TIME        = 10,    # seconds
-    SUBTASK_VERIFICATION_TIME   = 1800,  # 30 minutes
 )
 class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.patcher = mock.patch('utils.helpers.subtask_verification_time', return_value=datetime.timedelta(seconds=1800))
+        self.addCleanup(self.patcher.stop)
+        self.patcher.start()
 
     def test_requestor_forces_get_task_result_and_concent_immediately_sends_rejection_due_to_exceeded_time_for_download(self):
         """

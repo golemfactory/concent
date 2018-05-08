@@ -1,3 +1,4 @@
+import datetime
 import mock
 
 from django.test            import override_settings
@@ -20,10 +21,15 @@ from utils.testing_helpers  import generate_ecc_key_pair
     CONCENT_PUBLIC_KEY        = CONCENT_PUBLIC_KEY,
     CONCENT_MESSAGING_TIME    = 10,  # seconds
     FORCE_ACCEPTANCE_TIME     = 10,  # seconds
-    SUBTASK_VERIFICATION_TIME = 10,  # seconds
     CONCENT_ETHEREUM_ADDRESS  = 'x' * ETHEREUM_ADDRESS_LENGTH
 )
 class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.patcher = mock.patch('utils.helpers.subtask_verification_time', return_value=datetime.timedelta(seconds=10))
+        self.addCleanup(self.patcher.stop)
+        self.patcher.start()
 
     def test_provider_forces_subtask_results_for_task_which_was_already_submitted_concent_should_refuse_with_correct_keys(self):
         """

@@ -136,18 +136,20 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_task_to_compute(
         self,
-        timestamp                       = None,
-        deadline                        = None,
-        task_id                         = '1',
-        subtask_id                      = '2',
-        compute_task_def                = None,
-        requestor_public_key            = None,
-        requestor_ethereum_public_key   = None,
-        provider_id                     = None,
-        provider_public_key             = None,
-        provider_ethereum_public_key    = None,
-        price                           = 0,
-        sign_with_private_key           = None,
+        timestamp: int = None,
+        deadline = None,
+        task_id: str = '1',
+        subtask_id: str = '2',
+        compute_task_def = None,
+        requestor_id: bytes = None,
+        requestor_public_key: bytes = None,
+        requestor_ethereum_public_key: bytes = None,
+        provider_id: bytes = None,
+        provider_public_key: bytes = None,
+        provider_ethereum_public_key: bytes = None,
+        price = 0,
+        package_hash: str = 'sha1:230fb0cad8c7ed29810a2183f0ec1d39c9df3f4a',
+        sign_with_private_key = None,
     ):
         """ Returns TaskToCompute deserialized. """
         compute_task_def = (
@@ -159,7 +161,10 @@ class ConcentIntegrationTestCase(TestCase):
         )
         with freeze_time(timestamp or self._get_timestamp_string()):
             task_to_compute = TaskToComputeFactory(
-                compute_task_def                = compute_task_def,
+                compute_task_def=compute_task_def,
+                requestor_id=(
+                    requestor_id if requestor_id is not None else self.REQUESTOR_PUBLIC_KEY
+                ),
                 requestor_public_key            = (
                     requestor_public_key if requestor_public_key is not None else self.REQUESTOR_PUBLIC_KEY
                 ),
@@ -172,10 +177,11 @@ class ConcentIntegrationTestCase(TestCase):
                 provider_public_key             = (
                     provider_public_key if provider_public_key is not None else self.PROVIDER_PUBLIC_KEY
                 ),
-                price=price,
                 provider_ethereum_public_key    = (
                     provider_ethereum_public_key if provider_ethereum_public_key is not None else self._get_provider_ethereum_public_key()
                 ),
+                price=price,
+                package_hash=package_hash,
             )
             task_to_compute = self._sign_message(
                 task_to_compute,

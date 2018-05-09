@@ -5,6 +5,7 @@ from unittest import TestCase
 
 from golem_messages.message import ComputeTaskDef, TaskToCompute, ReportComputedTask
 from golem_messages.message.concents import ForceGetTaskResult
+# TODO: Remove when when setup.py will be created.
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from command_line_tool.message_extractor import MessageExtractor, convert_message_name, split_uppercase
 from assertpy import assert_that
@@ -18,7 +19,6 @@ class TestMessageExtractor(TestCase):
         assert_that(task).is_equal_to('force_computed_task')
 
     def test_that_exception_is_raised_when_wrong_dict_is_given(self):  # TODO: what exception?
-        # assert_that()
         self.fail("not implemented yet")
 
     def test_that_force_get_task_result_message_is_created_when_appropriate_dict_is_given(self):
@@ -56,7 +56,7 @@ class TestMessageExtractor(TestCase):
             }
         }
 
-        message = MessageExtractor().extract_message(input)
+        message = MessageExtractor(requestor_public_key, provider_public_key).extract_message(input)
         assert_that(message).is_instance_of(ForceGetTaskResult)
         report_computed_task = message.report_computed_task
         assert_that(report_computed_task).is_instance_of(ReportComputedTask)
@@ -111,7 +111,7 @@ class TestMessageExtractor(TestCase):
             }
         }
 
-        task = MessageExtractor().extract_message(input)
+        task = MessageExtractor(requestor_public_key, provider_public_key).extract_message(input)
         assert_that(task).is_instance_of(ReportComputedTask)
         assert_that(task.subtask_id).is_equal_to(subtask_id)
         assert_that(task.address).is_equal_to(address)
@@ -156,7 +156,7 @@ class TestMessageExtractor(TestCase):
             }
         }
 
-        task = MessageExtractor().extract_message(input)
+        task = MessageExtractor(requestor_public_key, provider_public_key).extract_message(input)
         assert_that(task).is_instance_of(TaskToCompute)
         assert_that(task.requestor_public_key).is_equal_to(b64decode(requestor_public_key))
         assert_that(task.requestor_ethereum_public_key).is_equal_to(b64decode(requestor_ethereum_public_key))
@@ -171,6 +171,10 @@ class TestMessageExtractor(TestCase):
         task_id = "2"
         subtask_id = "12"
         deadline = 1510394400
+
+        requestor_public_key = "mrdOXP6Owe3i48G29RHPVU6wewvuUNuNxFB+kPTDnmI21+p5ShttCSUAbHOVm8OIUF9hEluc1+lICJZGkFSSOA=="
+        provider_public_key = "PKn3TUiXdfeoHjoeu6PEDMD5JqrdmyeKlbG5rWUpgAs6qbKj7k9bm8vvkmhn40RkMykho6uAHsYVy72ZBYUelQ=="
+
         input = {
             "name": "compute_task_def",
             "body": {
@@ -180,7 +184,7 @@ class TestMessageExtractor(TestCase):
             }
         }
 
-        task = MessageExtractor().extract_message(input)
+        task = MessageExtractor(requestor_public_key, provider_public_key).extract_message(input)
         assert_that(task).is_instance_of(ComputeTaskDef)
         assert_that(task["task_id"]).is_equal_to(task_id)
         assert_that(task["subtask_id"]).is_equal_to(subtask_id)

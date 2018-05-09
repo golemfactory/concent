@@ -812,7 +812,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 11:00:05"):
             reject_report_computed_task = message.RejectReportComputedTask(
-                reason=message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
+                reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
                 attached_task_to_compute=task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -842,7 +842,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 11:00:05"):
             reject_report_computed_task = message.RejectReportComputedTask(
-                reason=message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
+                reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
                 attached_task_to_compute=task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -870,7 +870,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 11:00:05"):
             reject_report_computed_task = message.RejectReportComputedTask(
-                reason=message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
+                reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
                 attached_task_to_compute=task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -915,7 +915,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 11:00:05"):
             reject_report_computed_task = message.RejectReportComputedTask(
-                reason=message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
+                reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
                 attached_task_to_compute=self.deserialized_task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)

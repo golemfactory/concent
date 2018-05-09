@@ -16,10 +16,11 @@ CONCENT_PUBLIC_KEY  = b'\xf3\x97\x19\xcdX\xda\x86tiP\x1c&\xd39M\x9e\xa4\xddb\x89
 CONCENT_PRIVATE_KEY = b'l\xcdh\x19\xeb$>\xbcG\xa1\xc7v\xe8\xd7o\x0c\xbf\x0e\x0fM\x89lw\x1e\xd7K\xd6Hnv$\xa2'
 
 CONCENT_FEATURES = [
+    "admin-panel",
     "concent-api",
     # "conductor-urls", TODO: Uncomment when deployment is ready
     "gatekeeper",
-    "admin-panel",
+    "verifier",
 ]
 
 # URL format: 'protocol://<user>:<password>@<hostname>:<port>/<virtual host>'

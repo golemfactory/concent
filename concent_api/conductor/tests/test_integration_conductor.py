@@ -204,7 +204,7 @@ class ConductorVerificationIntegrationTest(TestCase):
         upload_report.full_clean()
         upload_report.save()
 
-        with mock.patch('conductor.tasks.blender_verification_request.delay') as mock_task:
+        with mock.patch('conductor.tasks.blender_verification_order.delay') as mock_task:
             blender_verification_request(
                 subtask_id=self.compute_task_def['subtask_id'],
                 source_package_path=self.source_package_path,

@@ -498,21 +498,6 @@ def handle_send_force_subtask_results_response(client_message):
         deserialize_message(subtask.task_to_compute.data.tobytes()),
     ])
 
-    acceptance_deadline = (
-        task_to_compute.compute_task_def['deadline'] +
-        calculate_subtask_verification_time(report_computed_task) +
-        settings.FORCE_ACCEPTANCE_TIME +
-        settings.CONCENT_MESSAGING_TIME
-    )
-
-    if acceptance_deadline < get_current_utc_timestamp():
-        logging.log_timeout(
-            client_message,
-            requestor_public_key,
-            client_message.timestamp + settings.CONCENT_MESSAGING_TIME,
-        )
-        raise Http400("Time to accept this task is already over.")
-
     subtask = update_subtask(
         subtask                     = subtask,
         state                       = state,

@@ -34,22 +34,6 @@ def create_error_15_ssl_cert_path_is_not_a_file(path):
     )
 
 
-def create_error_15_if_new_chain_segment_time_not_integer():
-    return Error(
-        "AVERAGE_BLOCK_TIME should be integer",
-        hint    = "Set correct value for AVERAGE_BLOCK_TIME in your local_settings.py",
-        id      = "concent.E015",
-    )
-
-
-def create_error_16_if_new_chain_segment_time_is_not_bigger_than_0():
-    return Error(
-        "AVERAGE_BLOCK_TIME should be bigger than 0",
-        hint    = "Set correct value for AVERAGE_BLOCK_TIME in your local_settings.py",
-        id      = "concent.E016",
-    )
-
-
 def create_error_17_if_geth_container_address_has_wrong_value():
     return Error(
         "GETH_CONTAINER_ADDRESS should be a valid url address",
@@ -209,24 +193,6 @@ def storage_cluster_certificate_path_check(app_configs = None, **kwargs):  # pyl
             errors.append(create_error_14_cert_path_does_not_exist(certificate_path))
         elif not os.path.isfile(certificate_path):
             errors.append(create_error_15_ssl_cert_path_is_not_a_file(certificate_path))
-    return errors
-
-
-@register()
-def average_block_time_check(app_configs, **kwargs):  # pylint: disable=unused-argument
-    errors = []
-    if (
-        hasattr(settings, 'PAYMENT_BACKEND') and
-        settings.PAYMENT_BACKEND == 'core.payments.sci_backend'
-    ):
-        if (
-            hasattr(settings, 'AVERAGE_BLOCK_TIME')
-        ):
-            average_block_time = settings.AVERAGE_BLOCK_TIME
-            if not isinstance(average_block_time, int):
-                errors.append(create_error_15_if_new_chain_segment_time_not_integer())
-            elif not average_block_time > 0:
-                errors.append(create_error_16_if_new_chain_segment_time_is_not_bigger_than_0())
     return errors
 
 

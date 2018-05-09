@@ -55,8 +55,8 @@ def verify_file_status(
             )
             logging.log_file_status(
                 subtask.subtask_id,
-                subtask.requestor.public_key,
-                subtask.provider.public_key,
+                subtask.requestor.public_key_bytes,
+                subtask.provider.public_key_bytes,
             )
 
 
@@ -88,15 +88,18 @@ def store_pending_message(
         )
         payment_committed_message.full_clean()
         payment_committed_message.save()
+        task_id = None
         subtask_id = None
     else:
+        task_id = subtask.task_id
         subtask_id = subtask.subtask_id
 
     logging.log_new_pending_response(
         response_type.name,
         queue.name,
+        task_id,
         subtask_id,
-        client.public_key,
+        client.public_key_bytes,
     )
 
 

@@ -756,8 +756,8 @@ def store_subtask(
         task_id,
         subtask_id,
         state.name,
-        subtask.provider.public_key,
-        subtask.requestor.public_key,
+        provider_public_key,
+        requestor_public_key,
         next_deadline,
     )
 
@@ -951,7 +951,7 @@ def mark_message_as_delivered_and_log(undelivered_message, log_message):
 
     logging.log_receive_message_from_database(
         log_message,
-        undelivered_message.client.public_key,
+        undelivered_message.client.public_key_bytes,
         undelivered_message.response_type,
         undelivered_message.queue
     )
@@ -998,8 +998,8 @@ def update_subtask(
         subtask.task_id,
         subtask.subtask_id,
         state.name,
-        subtask.provider.public_key,
-        subtask.requestor.public_key,
+        subtask.provider.public_key_bytes,
+        subtask.requestor.public_key_bytes,
         next_deadline,
     )
 
@@ -1059,6 +1059,7 @@ def set_subtask_messages(
             )
             setattr(subtask, message_name, stored_message)
             logging.log_stored_message_added_to_subtask(
+                subtask.task_id,
                 subtask.subtask_id,
                 subtask.state,
                 message_type,

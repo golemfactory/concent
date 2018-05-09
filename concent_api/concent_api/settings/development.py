@@ -20,7 +20,7 @@ CONCENT_FEATURES = [
     "concent-api",
     # "conductor-urls", TODO: Uncomment when deployment is ready
     "gatekeeper",
-    "verifier",
+    # "verifier",  TODO: Uncomment when deployment is ready
 ]
 
 # URL format: 'protocol://<user>:<password>@<hostname>:<port>/<virtual host>'

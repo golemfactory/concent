@@ -7,13 +7,13 @@ from utils.helpers import get_field_from_message
 logger = getLogger(__name__)
 
 
-def replace_key_to_unavailable_instead_of_none(f):
+def replace_key_to_unavailable_instead_of_none(log_function):
     def wrap(*args):
-        args_list = list(args)
-        if args_list[1] is None:
+        if args[1] is None:
+            args_list = list(args)
             args_list[1] = 'UNAVAILABLE'
-        return f(*tuple(args_list))
-
+            args = log_function(*tuple(args_list))
+        return args
     return wrap
 
 

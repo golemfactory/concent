@@ -295,7 +295,7 @@ class Subtask(Model):
     next_deadline               = DateTimeField(blank = True, null = True)
 
     # Related messages
-    task_to_compute             = OneToOneField(StoredMessage, blank = True, null = True, related_name = 'subtasks_for_task_to_compute')
+    task_to_compute             = OneToOneField(StoredMessage, blank = True, null = False, related_name = 'subtasks_for_task_to_compute')
     report_computed_task        = OneToOneField(StoredMessage, blank = True, null = True, related_name = 'subtasks_for_report_computed_task')
     ack_report_computed_task    = OneToOneField(StoredMessage, blank = True, null = True, related_name = 'subtasks_for_ack_report_computed_task')
     reject_report_computed_task = OneToOneField(StoredMessage, blank = True, null = True, related_name = 'subtasks_for_reject_report_computed_task')

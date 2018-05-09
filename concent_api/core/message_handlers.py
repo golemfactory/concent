@@ -246,11 +246,8 @@ def handle_send_reject_report_computed_task(client_message):
     tasks_to_compute.append(deserialize_message(subtask.task_to_compute.data.tobytes()))
     validate_all_messages_identical(tasks_to_compute)
 
-    if (
-        client_message.reason in
-        [message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
-         message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded]
-    ):
+    if client_message.reason == message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded:
+
         subtask = update_subtask(
             subtask                     = subtask,
             state                       = Subtask.SubtaskState.REPORTED,
@@ -807,12 +804,8 @@ def handle_messages_from_database(
             response_to_client          = message.concents.ForceReportComputedTaskResponse(
                 reject_report_computed_task = reject_report_computed_task,
             )
-            if (
-                reject_report_computed_task.reason in [
-                    message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
-                    message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded
-                ]
-            ):
+            if reject_report_computed_task.reason == message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded:
+
                 ack_report_computed_task = message.AckReportComputedTask(
                     report_computed_task = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes()),
                 )

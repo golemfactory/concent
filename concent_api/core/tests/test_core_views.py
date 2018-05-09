@@ -74,7 +74,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         )
         self.reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
             task_to_compute=task_to_compute,
-            reason=message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
+            reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
         )
 
     @freeze_time("2017-11-17 10:00:00")

@@ -40,7 +40,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'concent_api.middleware.GolemMessagesVersionMiddleware',
     'concent_api.middleware.ConcentVersionMiddleware',
-    'raven.contrib.django.raven_compat.middleware.Sentry404CatchMiddleware',
 ]
 
 ROOT_URLCONF = 'concent_api.urls'
@@ -215,7 +214,7 @@ LOGGING = {
         },
         'django.request': {
             # Level is DEBUG because we're leaving filtering up to the handler.
-            'handlers':  ['mail_admins', 'sentry'],
+            'handlers':  ['sentry'],
             'level':     'DEBUG',
             'propagate': True,
         },

@@ -448,7 +448,7 @@ class PaymentInfo(Model):
         Requestor   = 'requestor'
 
     payment_ts              = DateTimeField()
-    task_owner_key          = CharField(max_length = CLIENT_DETAILS_LENGTH)
+    task_owner_key          = BinaryField()
     provider_eth_account    = CharField(max_length = ETHEREUM_ADDRESS_LENGTH)
     amount_paid             = IntegerField()
     recipient_type          = CharField(max_length = 32, choices = RecipientType.choices())
@@ -471,9 +471,9 @@ class PaymentInfo(Model):
                 'amount_paid': 'Amount paid must be an integer and bigger than or equal 0'
             })
 
-        if not isinstance(self.task_owner_key, str) or not len(self.task_owner_key) == CLIENT_DETAILS_LENGTH:
+        if not isinstance(self.task_owner_key, bytes) or not len(self.task_owner_key) == CLIENT_DETAILS_LENGTH:
             raise ValidationError({
-                'task_owner_key': f'Task owner key must be a string with {CLIENT_DETAILS_LENGTH} characters'
+                'task_owner_key': f'Task owner key must be a bytes string with {CLIENT_DETAILS_LENGTH} characters'
             })
 
         if not isinstance(self.provider_eth_account, str) or not len(self.provider_eth_account) == ETHEREUM_ADDRESS_LENGTH:

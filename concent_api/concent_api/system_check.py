@@ -36,8 +36,8 @@ def create_error_15_ssl_cert_path_is_not_a_file(path):
 
 def create_error_17_if_geth_container_address_has_wrong_value():
     return Error(
-        "GETH_CONTAINER_ADDRESS should be a valid url address",
-        hint    = "Set correct value for GETH_CONTAINER_ADDRESS in your local_settings.py",
+        "GETH_ADDRESS should be a valid url address",
+        hint    = "Set correct value for GETH_ADDRESS in your local_settings.py",
         id      = "concent.E017",
     )
 
@@ -210,10 +210,10 @@ def geth_container_address_check(app_configs, **kwargs):  # pylint: disable=unus
         hasattr(settings, 'PAYMENT_BACKEND') and
         settings.PAYMENT_BACKEND == 'core.payments.sci_backend'
     ):
-        if hasattr(settings, 'GETH_CONTAINER_ADDRESS'):
+        if hasattr(settings, 'GETH_ADDRESS'):
             url_validator = URLValidator(schemes = ['http', 'https'])
             try:
-                url_validator(settings.GETH_CONTAINER_ADDRESS)
+                url_validator(settings.GETH_ADDRESS)
             except ValidationError:
                 return [create_error_17_if_geth_container_address_has_wrong_value()]
         else:

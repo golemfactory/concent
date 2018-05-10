@@ -1,5 +1,7 @@
 import os
 
+from mypy.types import Dict  # noqa # pylint: disable=unused-import
+
 from golem_messages import constants
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -66,7 +68,10 @@ WSGI_APPLICATION = 'concent_api.wsgi.application'
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
 DATABASES = {
-    'default': {
+    # We set 'default' database to empty config explicitly, as we want to control very carefully which models are in
+    # which database. However, django requires 'default' database to exists in settings.
+    'default': {},
+    'control': {
         'ENGINE':     'django.db.backends.postgresql_psycopg2',
         'NAME':       'concent_api',
         # 'USER':     'postgres',
@@ -88,12 +93,12 @@ DATABASES = {
         # Wrap each request in a transactions and rolled back on failure by default
         'ATOMIC_REQUESTS': True,
     }
-}
+}  # type: Dict[Dict]
 
 DATABASE_ROUTERS = ['concent_api.database_router.DatabaseRouter']
 
 # Defines database used by Constance app.
-CONSTANCE_DBS = ['default']
+CONSTANCE_DBS = ['control']
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators

@@ -62,7 +62,7 @@ class ApiViewTestCase(TestCase):
         decoded_message = None
 
         @require_golem_message
-        @handle_errors_and_responses
+        @handle_errors_and_responses(database_name='default')
         def dummy_view(request, _message, _client_public_key):  # pylint: disable=unused-argument
             nonlocal decoded_message
             decoded_message = _message
@@ -79,7 +79,7 @@ class ApiViewTestCase(TestCase):
     def test_api_view_should_return_http_415_when_request_content_type_is_not_supported(self):
 
         @require_golem_message
-        @handle_errors_and_responses
+        @handle_errors_and_responses(database_name='default')
         def dummy_view(request, _message, _client_public_key):  # pylint: disable=unused-argument
             return self.want_to_compute
 
@@ -95,7 +95,7 @@ class ApiViewTestCase(TestCase):
     def test_api_view_should_return_http_415_when_request_content_type_is_appplication_json(self):
 
         @require_golem_message
-        @handle_errors_and_responses
+        @handle_errors_and_responses(database_name='default')
         def dummy_view(request, _message, _client_public_key):  # pylint: disable=unused-argument
             return self.message_to_view
 
@@ -118,7 +118,7 @@ class ApiViewTestCase(TestCase):
         )
 
         @require_golem_message
-        @handle_errors_and_responses
+        @handle_errors_and_responses(database_name='default')
         @require_POST
         def dummy_view(_request, _message, _client_public_key):
             self.fail()
@@ -180,6 +180,8 @@ def gatekeeper_access_denied_response_200_mock(_message, _path = None, _subtask_
     CONCENT_PUBLIC_KEY  = CONCENT_PUBLIC_KEY,
 )
 class ApiViewTransactionTestCase(TransactionTestCase):
+
+    multi_db = True
 
     def setUp(self):
         super().setUp()

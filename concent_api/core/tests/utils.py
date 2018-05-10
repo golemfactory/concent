@@ -30,6 +30,8 @@ from utils.testing_helpers  import generate_priv_and_pub_eth_account_key
 
 class ConcentIntegrationTestCase(TestCase):
 
+    multi_db = True
+
     def setUp(self):
         super().setUp()
 

@@ -18,7 +18,7 @@ from .models                        import PendingResponse
 @csrf_exempt
 @require_POST
 @require_golem_message
-@handle_errors_and_responses
+@handle_errors_and_responses(database_name='control')
 def send(_request, client_message, client_public_key):
     if client_public_key is not None:
         update_timed_out_subtasks(
@@ -36,7 +36,7 @@ def send(_request, client_message, client_public_key):
 @csrf_exempt
 @require_POST
 @require_golem_auth_message
-@handle_errors_and_responses
+@handle_errors_and_responses(database_name='control')
 def receive(_request, message, _client_public_key):
     update_timed_out_subtasks(
         client_public_key = message.client_public_key,
@@ -50,7 +50,7 @@ def receive(_request, message, _client_public_key):
 @csrf_exempt
 @require_POST
 @require_golem_auth_message
-@handle_errors_and_responses
+@handle_errors_and_responses(database_name='control')
 def receive_out_of_band(_request, message, _client_public_key):
     update_timed_out_subtasks(
         client_public_key = message.client_public_key,

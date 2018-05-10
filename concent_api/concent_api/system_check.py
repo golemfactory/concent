@@ -42,11 +42,10 @@ def create_error_17_if_geth_container_address_has_wrong_value():
     )
 
 
-def create_error_18_atomic_requests_not_set_for_database(database_name):
+def create_error_18_invalid_setting_type(setting, value):
     return Error(
-        f"ATOMIC_REQUESTS for database {database_name} is not set to True",
-        hint="ATOMIC_REQUESTS must be set to True for all databases because our views rely on the fact that on errors "
-             "all database changes are rolled back",
+        f"Setting {setting} has incorrect value {value}",
+        hint=f"Set correct value on setting {setting}",
         id="concent.E018",
     )
 
@@ -96,6 +95,15 @@ def create_error_24_if_concent_time_settings_have_wrong_value(concent_setting_na
         f"{concent_setting_name} has wrong value",
         hint=f"{concent_setting_name} must be set to non-negative integer",
         id="concent.E024",
+    )
+
+
+def create_error_25_atomic_requests_not_set_for_database(database_name):
+    return Error(
+        f"ATOMIC_REQUESTS for database {database_name} is not set to True",
+        hint="ATOMIC_REQUESTS must be set to True for all databases because our views rely on the fact that on errors "
+             "all database changes are rolled back",
+        id="concent.E019",
     )
 
 
@@ -218,8 +226,18 @@ def check_atomic_requests(app_configs = None, **kwargs):  # pylint: disable=unus
     errors = []
     if hasattr(settings, 'DATABASES') and isinstance(settings.DATABASES, dict):
         for database_name, database_config in settings.DATABASES.items():
-            if 'ATOMIC_REQUESTS' not in database_config or database_config['ATOMIC_REQUESTS'] is not True:
-                errors.append(create_error_18_atomic_requests_not_set_for_database(database_name))
+
+            if database_config.get('ENGINE') != 'django.db.backends.dummy':
+                atomic_requests = database_config.get('ATOMIC_REQUESTS', False)
+
+                if not isinstance(atomic_requests, bool):
+                    errors.append(create_error_18_invalid_setting_type(
+                        f"DATABASES[{database_name}]['ATOMIC_REQUESTS']",
+                        atomic_requests)
+                    )
+
+                if not atomic_requests:
+                    errors.append(create_error_25_atomic_requests_not_set_for_database(database_name))
     return errors
 
 

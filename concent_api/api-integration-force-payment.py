@@ -56,7 +56,6 @@ def test_case_2d_send_correct_force_payment(cluster_consts, cluster_url, test_id
                     task_id=task_id + 'a',
                     subtask_id=subtask_id + 'A',
                     deadline=current_time,
-                    requestor_ethereum_public_key="x" * 128,
                     price=1000,
                 )
             ),
@@ -67,7 +66,6 @@ def test_case_2d_send_correct_force_payment(cluster_consts, cluster_url, test_id
                     task_id=task_id + 'b',
                     subtask_id=subtask_id + 'B',
                     deadline=current_time,
-                    requestor_ethereum_public_key="x" * 128,
                     price=1000,
                 )
             )
@@ -125,7 +123,6 @@ def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts, clu
                         task_id=task_id + 'a',
                         subtask_id=subtask_id + 'A',
                         deadline=current_time,
-                        requestor_ethereum_public_key="x" * 128,
                         price=0,
                     )
                 ),
@@ -137,7 +134,6 @@ def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts, clu
                         task_id=task_id + 'b',
                         subtask_id=subtask_id + 'B',
                         deadline=current_time,
-                        requestor_ethereum_public_key="x" * 128,
                         price=0,
                     )
                 )
@@ -174,7 +170,6 @@ def test_case_2b_send_force_payment_beyond_payment_time(cluster_consts, cluster_
                         task_id=task_id + 'a',
                         subtask_id=subtask_id + 'A',
                         deadline=current_time,
-                        requestor_ethereum_public_key="x" * 128,
                         price=1000,
                     )
                 ),
@@ -186,7 +181,6 @@ def test_case_2b_send_force_payment_beyond_payment_time(cluster_consts, cluster_
                         task_id=task_id + 'b',
                         subtask_id=subtask_id + 'B',
                         deadline=current_time,
-                        requestor_ethereum_public_key="x" * 128,
                         price=1000,
                     )
                 )
@@ -227,7 +221,6 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
                         task_id=task_id + 'a',
                         subtask_id=subtask_id + 'A',
                         deadline=current_time,
-                        requestor_ethereum_public_key="x" * 128,
                         price=1000,
                     )
                 ),
@@ -239,8 +232,8 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
                         task_id=task_id + 'b',
                         subtask_id=subtask_id + 'B',
                         deadline=current_time,
-                        requestor_ethereum_public_key="y" * 128,
-                        price=1000,
+                        price=15000,
+                        requestor_ethereum_public_key=b'0' * GOLEM_PUBLIC_KEY_LENGTH
                     )
                 )
             ]
@@ -258,6 +251,7 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
+        from core.constants import GOLEM_PUBLIC_KEY_LENGTH
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file = sys.stderr)

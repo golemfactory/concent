@@ -25,6 +25,9 @@ from utils.testing_helpers import generate_ecc_key_pair
 (PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)  = generate_ecc_key_pair()
 (REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
+REQUESTOR_ETHEREUM_PUBLIC_KEY = b'F\xdei\xa1\xc0\x10\xc8M\xce\xaf\xc0p\r\x8e\x8f\xb1` \x8d\xf7=\xa6\xb6\xbazL\xbbY\xd6:\xd5\x06\x8dP\xe7#\xb9\xbb\xf8T\xc73\xebH\x7f2\xcav\xb1\xd8w\xde\xdb\x89\xf0\xddD\xa5\xbf\x030\xf3\x96;'
+PROVIDER_ETHEREUM_PUBLIC_KEY = b'\x05\xa7w\xc6\x9b\x89<\xf8Rz\xef\xc4AwN}\xa0\x0e{p\xc8\xa7AF\xfc\xd26\xc1)\xdbgp\x8b]9\xfd\xaa]\xd5H@?F\x14\xdbU\x8b\x93\x8d\xf1\xfc/{s3\x8c\xc7\x80-,\x9d\x194u\x8d'
+
 
 class TestAssertionException(Exception):
     pass
@@ -302,7 +305,8 @@ def create_signed_task_to_compute(
     timestamp=None,
     provider_public_key=None,
     requestor_public_key=None,
-    requestor_ethereum_public_key=None,
+    requestor_ethereum_public_key=REQUESTOR_ETHEREUM_PUBLIC_KEY,
+    provider_ethereum_public_key=PROVIDER_ETHEREUM_PUBLIC_KEY,
     price=0
 ):
     with freeze_time(timestamp):
@@ -315,6 +319,7 @@ def create_signed_task_to_compute(
             requestor_public_key=requestor_public_key if requestor_public_key is not None else REQUESTOR_PUBLIC_KEY,
             compute_task_def=compute_task_def,
             requestor_ethereum_public_key=requestor_ethereum_public_key,
+            provider_ethereum_public_key=provider_ethereum_public_key,
             price=price,
         )
         sign_message(task_to_compute, REQUESTOR_PRIVATE_KEY)

@@ -69,8 +69,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 10:59:00"):
             response = self.client.post(
                 reverse('core:send'),
-                data                                = self.serialized_force_report_computed_task,
-                content_type                        = 'application/octet-stream',
+                data=self.serialized_force_report_computed_task,
+                content_type='application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        202)
@@ -240,13 +240,12 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                     1,
                     'provider_id',
                     'different_id',
-                    'None'
+                    self.deserialized_task_to_compute.provider_id
                 )
         )
 
         # STEP 5: Requestor accepts computed task via Concent with correct key
         self.deserialized_task_to_compute.sig = None
-        self.deserialized_task_to_compute.provider_id = None
         self.deserialized_task_to_compute = self._sign_message(
             self.deserialized_task_to_compute,
             self.REQUESTOR_PRIVATE_KEY,
@@ -353,39 +352,11 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        compute_task_def = message.ComputeTaskDef()
-        compute_task_def['task_id']    = '1'
-        compute_task_def['subtask_id'] = '8'
-        compute_task_def['deadline']   = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute(
-                compute_task_def     = compute_task_def,
-                provider_public_key  = self.PROVIDER_PUBLIC_KEY,
-                requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
-                price=0,
-            )
-
-        # sign task_to_compute message with PROVIDER sig
-
-        serialized_task_to_compute   = dump(task_to_compute,             self.REQUESTOR_PRIVATE_KEY,   self.PROVIDER_PUBLIC_KEY)
-        deserialized_task_to_compute = load(serialized_task_to_compute,  self.PROVIDER_PRIVATE_KEY,  self.REQUESTOR_PUBLIC_KEY, check_time = False)
-
-        with freeze_time("2017-12-01 10:59:00"):
-            report_computed_task = message.tasks.ReportComputedTask(
-                task_to_compute = deserialized_task_to_compute
-            )
-
-        with freeze_time("2017-12-01 10:59:00"):
-            force_report_computed_task = message.ForceReportComputedTask()
-
-        force_report_computed_task.report_computed_task = report_computed_task
-        serialized_force_report_computed_task           = dump(force_report_computed_task, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
-
         with freeze_time("2017-12-01 10:59:00"):
             response = self.client.post(
                 reverse('core:send'),
-                data                                = serialized_force_report_computed_task,
-                content_type                        = 'application/octet-stream',
+                data=self.serialized_force_report_computed_task,
+                content_type='application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        202)
@@ -457,8 +428,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,                                                                  200)
         self.assertEqual(force_report_computed_task_from_view.timestamp,                                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
-        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   force_report_computed_task.report_computed_task.task_to_compute.timestamp)  # pylint: disable=no-member
-        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             force_report_computed_task.report_computed_task.task_to_compute)            # pylint: disable=no-member
+        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   self.force_report_computed_task.report_computed_task.task_to_compute.timestamp)  # pylint: disable=no-member
+        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             self.force_report_computed_task.report_computed_task.task_to_compute)            # pylint: disable=no-member
 
         # STEP 4:
         # 4.1. TaskToCompute is send signed with different key, request is rejected with proper error message.
@@ -467,8 +438,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # 4.1.
         self.deserialized_task_to_compute.sig = None
-        self.deserialized_task_to_compute.requestor_ethereum_public_key = None
-        self.deserialized_task_to_compute.provider_ethereum_public_key = None
         task_to_compute = self._sign_message(
             self.deserialized_task_to_compute,
             self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
@@ -555,7 +524,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                     1,
                     'provider_id',
                     'different_id',
-                    'None'
+                    self.deserialized_task_to_compute.provider_id
                 )
         )
 
@@ -571,7 +540,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 5: Requestor rejects computed task due to CannotComputeTask or TaskFailure with correct key
         self.deserialized_task_to_compute.sig = None
-        self.deserialized_task_to_compute.provider_id = None
         self.deserialized_task_to_compute = self._sign_message(
             self.deserialized_task_to_compute,
             self.REQUESTOR_PRIVATE_KEY,
@@ -690,39 +658,11 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        compute_task_def = message.ComputeTaskDef()
-        compute_task_def['task_id']    = '1'
-        compute_task_def['subtask_id'] = '8'
-        compute_task_def['deadline']   = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
-        with freeze_time("2017-12-01 10:00:00"):
-            task_to_compute = message.TaskToCompute(
-                compute_task_def     = compute_task_def,
-                provider_public_key  = self.PROVIDER_PUBLIC_KEY,
-                requestor_public_key = self.REQUESTOR_PUBLIC_KEY,
-                price=0,
-            )
-
-        # sign task_to_compute message with PROVIDER sig
-
-        serialized_task_to_compute   = dump(task_to_compute,            self.REQUESTOR_PRIVATE_KEY,  self.PROVIDER_PUBLIC_KEY)
-        deserialized_task_to_compute = load(serialized_task_to_compute, self.PROVIDER_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY, check_time = False)
-
-        with freeze_time("2017-12-01 10:59:00"):
-            report_computed_task = message.tasks.ReportComputedTask(
-                task_to_compute = deserialized_task_to_compute
-            )
-
-        with freeze_time("2017-12-01 10:59:00"):
-            force_report_computed_task = message.ForceReportComputedTask()
-
-        force_report_computed_task.report_computed_task = report_computed_task
-        serialized_force_report_computed_task           = dump(force_report_computed_task, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
-
         with freeze_time("2017-12-01 10:59:00"):
             response = self.client.post(
                 reverse('core:send'),
-                data                                = serialized_force_report_computed_task,
-                content_type                        = 'application/octet-stream',
+                data=self.serialized_force_report_computed_task,
+                content_type='application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        202)
@@ -794,8 +734,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,                                                                  200)
         self.assertEqual(force_report_computed_task_from_view.timestamp,                                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
-        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   force_report_computed_task.report_computed_task.task_to_compute.timestamp)  # pylint: disable=no-member
-        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             force_report_computed_task.report_computed_task.task_to_compute)            # pylint: disable=no-member
+        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   self.force_report_computed_task.report_computed_task.task_to_compute.timestamp)  # pylint: disable=no-member
+        self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             self.force_report_computed_task.report_computed_task.task_to_compute)            # pylint: disable=no-member
 
         # STEP 4:
         # 4.1. TaskToCompute is send signed with different key, request is rejected with proper error message.
@@ -808,7 +748,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             self.deserialized_task_to_compute,
             self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
         )
-        task_to_compute.requestor_ethereum_public_key = None
 
         with freeze_time("2017-12-01 11:00:05"):
             reject_report_computed_task = message.RejectReportComputedTask(
@@ -889,7 +828,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                     1,
                     'provider_id',
                     'different_id',
-                    'None'
+                    self.deserialized_task_to_compute.provider_id
                 )
         )
 
@@ -905,9 +844,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 5: Requestor rejects computed task due to CannotComputeTask or TaskFailure with correct key
         self.deserialized_task_to_compute.sig = None
-        self.deserialized_task_to_compute.provider_id = None
-        self.deserialized_task_to_compute.requestor_ethereum_public_key = None
-        self.deserialized_task_to_compute.provider_ethereum_public_key = None
         self.deserialized_task_to_compute = self._sign_message(
             self.deserialized_task_to_compute,
             self.REQUESTOR_PRIVATE_KEY,
@@ -1001,7 +937,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertIsInstance(message_from_concent_to_provider,                                     message.concents.ForceReportComputedTaskResponse)
         self.assertEqual(message_from_concent_to_provider.timestamp,                                self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"))
-        self.assertEqual(message_from_concent_to_provider.ack_report_computed_task.report_computed_task.task_to_compute, deserialized_task_to_compute)
+        self.assertEqual(message_from_concent_to_provider.ack_report_computed_task.report_computed_task.task_to_compute, self.deserialized_task_to_compute)
 
         # STEP 8: Requestor do not receives computed task report verdict out of band due to an overridden decision with different or mixed key
 
@@ -1075,8 +1011,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 10:59:00"):
             response = self.client.post(
                 reverse('core:send'),
-                data                                = self.serialized_force_report_computed_task,
-                content_type                        = 'application/octet-stream',
+                data=self.serialized_force_report_computed_task,
+                content_type='application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        202)

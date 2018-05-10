@@ -176,11 +176,15 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent     -> Requestor:                 ForceSubtaskResults (new timestamp)
         """
 
+        compute_task_def = self._get_deserialized_compute_task_def(
+            deadline="2018-02-05 10:00:15",
+            task_id='2',
+            subtask_id='xxyyzz',
+        )
+
         task_to_compute = self._get_deserialized_task_to_compute(
-            timestamp   = "2018-02-05 10:00:00",
-            deadline    = "2018-02-05 10:00:15",
-            task_id     = "2",
-            subtask_id  = "xxyyzz",
+            timestamp="2018-02-05 10:00:00",
+            compute_task_def=compute_task_def,
         )
 
         # STEP 1: Provider forces subtask results via Concent.
@@ -269,11 +273,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 content_type                    = 'application/octet-stream',
             )
 
-        deserialized_compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2018-02-05 10:00:15",
-            task_id     = '2',
-            subtask_id  = "xxyyzz",
-        )
         self._test_response(
             response,
             status       = 200,
@@ -282,7 +281,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             fields       = {
                 'timestamp':                                                    self._parse_iso_date_to_timestamp("2018-02-05 10:00:29"),
                 'ack_report_computed_task.subtask_id':                          'xxyyzz',
-                "ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def":    deserialized_compute_task_def,
+                "ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def": compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -511,11 +510,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             response,
             error_message = 'TaskToCompute messages are not identical. '
                 'There is a difference between messages with index 0 on passed list and with index {}'
-                'The difference is on field {}: {} is not equal {}'.format(
+                'The difference is on field {}'.format(
                     1,
                     'provider_id',
-                    'different_id',
-                    'None'
                 )
         )
         self._assert_stored_message_counter_not_increased()
@@ -523,7 +520,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # STEP 5: Requestor sends forces subtask results response via Concent with correct keys.
         # Request is processed correctly.
         task_to_compute.sig = None
-        task_to_compute.provider_id = None
+        task_to_compute.provider_id = self.PROVIDER_PUBLIC_KEY
         task_to_compute = self._sign_message(
             task_to_compute,
             self.REQUESTOR_PRIVATE_KEY,
@@ -837,11 +834,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             response,
             error_message = 'TaskToCompute messages are not identical. '
                 'There is a difference between messages with index 0 on passed list and with index {}'
-                'The difference is on field {}: {} is not equal {}'.format(
+                'The difference is on field {}'.format(
                     1,
                     'provider_id',
-                    'different_id',
-                    'None'
                 )
         )
         self._assert_stored_message_counter_not_increased()
@@ -849,7 +844,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # STEP 5: Requestor sends forces subtask results response via Concent with correct keys.
         # Request is processed correctly.
         task_to_compute.sig = None
-        task_to_compute.provider_id = None
+        task_to_compute.provider_id = self.PROVIDER_PUBLIC_KEY
         task_to_compute = self._sign_message(
             task_to_compute,
             self.REQUESTOR_PRIVATE_KEY,
@@ -962,11 +957,15 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent                   -> Requestor                    SubtaskResultsSettled
         """
 
+        compute_task_def = self._get_deserialized_compute_task_def(
+            deadline="2018-02-05 10:00:15",
+            task_id='1',
+            subtask_id='xxyyzz',
+        )
+
         task_to_compute = self._get_deserialized_task_to_compute(
-            timestamp   = "2018-02-05 10:00:00",
-            deadline    = "2018-02-05 10:00:15",
-            task_id     = '1',
-            subtask_id  = "xxyyzz",
+            timestamp="2018-02-05 10:00:00",
+            compute_task_def=compute_task_def,
         )
 
         # STEP 1: Provider forces subtask results via Concent.
@@ -1054,11 +1053,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
-        deserialized_compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2018-02-05 10:00:15",
-            task_id     = '1',
-            subtask_id  = "xxyyzz",
-        )
         self._test_response(
             response,
             status       = 200,
@@ -1067,7 +1061,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             fields       = {
                 'timestamp':                                                 self._parse_iso_date_to_timestamp("2018-02-05 10:00:24"),
                 'ack_report_computed_task.subtask_id':                       'xxyyzz',
-                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': deserialized_compute_task_def,
+                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -1098,7 +1092,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.SubtaskResultsSettled,
             fields       = {
                 'timestamp':                        self._parse_iso_date_to_timestamp("2018-02-05 10:00:50"),
-                'task_to_compute.compute_task_def': deserialized_compute_task_def,
+                'task_to_compute.compute_task_def': compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -1143,7 +1137,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.SubtaskResultsSettled,
             fields       = {
                 'timestamp':                        self._parse_iso_date_to_timestamp("2018-02-05 10:00:51"),
-                'task_to_compute.compute_task_def': deserialized_compute_task_def,
+                'task_to_compute.compute_task_def': compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -1164,11 +1158,15 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent                   -> Provider:                    SubtaskResultsSettled
         """
 
+        compute_task_def = self._get_deserialized_compute_task_def(
+            deadline="2018-02-05 10:00:15",
+            task_id='1',
+            subtask_id='xxyyzz',
+        )
+
         task_to_compute = self._get_deserialized_task_to_compute(
-            timestamp   = "2018-02-05 10:00:00",
-            deadline    = "2018-02-05 10:00:15",
-            task_id     = '1',
-            subtask_id  = "xxyyzz",
+            timestamp="2018-02-05 10:00:00",
+            compute_task_def=compute_task_def,
         )
 
         # STEP 1: Provider forces subtask results via Concent.
@@ -1255,11 +1253,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
-        deserialized_compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2018-02-05 10:00:15",
-            task_id     = '1',
-            subtask_id  = "xxyyzz",
-        )
         self._test_response(
             response,
             status       = 200,
@@ -1268,7 +1261,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             fields       = {
                 'timestamp':                                                 self._parse_iso_date_to_timestamp("2018-02-05 10:00:24"),
                 'ack_report_computed_task.subtask_id':                       'xxyyzz',
-                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': deserialized_compute_task_def,
+                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -1297,7 +1290,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.SubtaskResultsSettled,
             fields       = {
                 'timestamp':                        self._parse_iso_date_to_timestamp("2018-02-05 10:00:51"),
-                'task_to_compute.compute_task_def': deserialized_compute_task_def,
+                'task_to_compute.compute_task_def': compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -1348,7 +1341,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.SubtaskResultsSettled,
             fields       = {
                 'timestamp':                        self._parse_iso_date_to_timestamp("2018-02-05 10:00:51"),
-                'task_to_compute.compute_task_def': deserialized_compute_task_def,
+                'task_to_compute.compute_task_def': compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()

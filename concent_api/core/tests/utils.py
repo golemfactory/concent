@@ -1,4 +1,5 @@
 from base64 import b64encode
+from typing import List
 import datetime
 import functools
 import mock
@@ -13,6 +14,8 @@ from freezegun import freeze_time
 from golem_messages         import dump
 from golem_messages         import load
 from golem_messages         import message
+from golem_messages.factories.tasks import ComputeTaskDefFactory
+from golem_messages.factories.tasks import TaskToComputeFactory
 
 from core.models            import Client
 from core.models            import PendingResponse
@@ -133,46 +136,52 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_task_to_compute(
         self,
-        timestamp                       = None,
-        deadline                        = None,
-        task_id                         = '1',
-        subtask_id                      = '2',
-        compute_task_def                = None,
-        requestor_public_key            = None,
-        requestor_ethereum_public_key   = None,
-        provider_public_key             = None,
-        provider_ethereum_public_key    = None,
-        price                           = 0,
-        sign_with_private_key           = None,
+        timestamp: int = None,
+        deadline = None,
+        task_id: str = '1',
+        subtask_id: str = '2',
+        compute_task_def = None,
+        requestor_id: bytes = None,
+        requestor_public_key: bytes = None,
+        requestor_ethereum_public_key: bytes = None,
+        provider_id: bytes = None,
+        provider_public_key: bytes = None,
+        provider_ethereum_public_key: bytes = None,
+        price = 0,
+        package_hash: str = 'sha1:230fb0cad8c7ed29810a2183f0ec1d39c9df3f4a',
+        sign_with_private_key = None,
     ):
         """ Returns TaskToCompute deserialized. """
-        if compute_task_def is None:
-            compute_task_def                = message.ComputeTaskDef()
-            compute_task_def['task_id']     = task_id
-            compute_task_def['subtask_id']  = subtask_id
-            if isinstance(deadline, int):
-                compute_task_def['deadline'] = deadline
-            elif isinstance(deadline, str):
-                compute_task_def['deadline'] = self._parse_iso_date_to_timestamp(deadline)
-            else:
-                compute_task_def['deadline'] = self._parse_iso_date_to_timestamp(self._get_timestamp_string()) + 10
-
+        compute_task_def = (
+            compute_task_def if compute_task_def is not None else self._get_deserialized_compute_task_def(
+                task_id=task_id,
+                subtask_id=subtask_id,
+                deadline=deadline,
+            )
+        )
         with freeze_time(timestamp or self._get_timestamp_string()):
-            task_to_compute = message.TaskToCompute(
-                compute_task_def                = compute_task_def,
+            task_to_compute = TaskToComputeFactory(
+                compute_task_def=compute_task_def,
+                requestor_id=(
+                    requestor_id if requestor_id is not None else self.REQUESTOR_PUBLIC_KEY
+                ),
                 requestor_public_key            = (
                     requestor_public_key if requestor_public_key is not None else self.REQUESTOR_PUBLIC_KEY
                 ),
                 requestor_ethereum_public_key   = (
                     requestor_ethereum_public_key if requestor_ethereum_public_key is not None else self._get_requestor_ethereum_public_key()
                 ),
+                provider_id                     = (
+                    provider_id if provider_id is not None else self.PROVIDER_PUBLIC_KEY
+                ),
                 provider_public_key             = (
                     provider_public_key if provider_public_key is not None else self.PROVIDER_PUBLIC_KEY
                 ),
-                price=price,
                 provider_ethereum_public_key    = (
                     provider_ethereum_public_key if provider_ethereum_public_key is not None else self._get_provider_ethereum_public_key()
                 ),
+                price=price,
+                package_hash=package_hash,
             )
             task_to_compute = self._sign_message(
                 task_to_compute,
@@ -233,7 +242,7 @@ class ConcentIntegrationTestCase(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', response.json().keys())
         if error_message is not None:
-            self.assertEqual(response.json()['error'], error_message)
+            self.assertIn(error_message, response.json()['error'])
 
     def _test_response(self, response, status, key, message_type = None, fields = None):
         self.assertEqual(response.status_code, status)
@@ -487,14 +496,43 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_compute_task_def(
         self,
-        task_id     = '1',
-        subtask_id  = '2',
-        deadline    = None,
+        task_id: str = '1',
+        subtask_id: str = '2',
+        deadline = None,
+        extra_data: set = None,
+        short_description: str = 'path_root: /home/dariusz/Documents/tasks/resources, start_task: 6, end_task: 6...',
+        working_directory: str = '.',
+        performance: float = 829.7531773625524,
+        docker_images: List[set] = None,
     ):
-        compute_task_def                = message.tasks.ComputeTaskDef()
-        compute_task_def['task_id']     = task_id
-        compute_task_def['subtask_id']  = subtask_id
-        compute_task_def['deadline']    = self._parse_iso_date_to_timestamp(deadline)
+        compute_task_def = ComputeTaskDefFactory(
+            task_id=task_id,
+            subtask_id=subtask_id,
+            short_description=short_description,
+            working_directory=working_directory,
+            performance=performance,
+        )
+        if isinstance(deadline, int):
+            compute_task_def['deadline'] = deadline
+        elif isinstance(deadline, str):
+            compute_task_def['deadline'] = self._parse_iso_date_to_timestamp(deadline)
+        else:
+            compute_task_def['deadline'] = self._parse_iso_date_to_timestamp(self._get_timestamp_string()) + 10
+
+        if extra_data is None:
+            compute_task_def['extra_data'] = {
+                'end_task': 6,
+                'frames': [1],
+                'outfilebasename': 'Heli-cycles(3)',
+                'output_format': 'PNG',
+                'path_root': '/home/dariusz/Documents/tasks/resources',
+                'scene_file': '/golem/resources/scene-Helicopter-27-internal.blend',
+                'script_src': '# This template is rendered by',
+                'start_task': 6,
+                'total_tasks': 8
+            }
+        if docker_images is None:
+            compute_task_def['docker_images'] = [{'image_id': None, 'repository': 'golemfactory/blender', 'tag': '1.4'}]
 
         return compute_task_def
 

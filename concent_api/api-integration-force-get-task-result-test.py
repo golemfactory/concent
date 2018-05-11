@@ -161,7 +161,7 @@ def test_case_2_test_for_non_existing_file(cluster_consts, cluster_url, test_id)
             current_time,
             cluster_consts,
             size    = 1024,
-            package_hash = '098f6bcd4621d373cade4e832627b4f6'
+            package_hash = 'sha1:b3ff7013c4644cdcbb6c7e4f1e5fdb10b9ceda5d'
         ),
         headers = {
             'Content-Type':                     'application/octet-stream',

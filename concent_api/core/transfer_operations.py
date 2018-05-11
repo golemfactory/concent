@@ -216,10 +216,10 @@ def request_upload_status(report_computed_task: message.ReportComputedTask) -> b
 
     if cluster_storage_response.status_code == 200:
         return True
-    elif cluster_storage_response.status_code in [401, 404]:
+    elif cluster_storage_response.status_code == 404:
         return False
     else:
-        raise exceptions.UnexpectedResponse()
+        raise exceptions.UnexpectedResponse(f'Cluster storage returned HTTP {cluster_storage_response.status_code}')
 
 
 def send_request_to_cluster_storage(headers, request_http_address):

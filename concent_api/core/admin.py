@@ -19,9 +19,11 @@ class ActivePassiveStateFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         if self.value() == 'active':
-            return queryset.filter(state__in = Subtask.ACTIVE_STATES)
+            active_state_names = [x.name for x in Subtask.ACTIVE_STATES]
+            return queryset.filter(state__in=active_state_names)
         elif self.value() == 'passive':
-            return queryset.filter(state__in = Subtask.PASSIVE_STATES)
+            passive_state_names = [x.name for x in Subtask.PASSIVE_STATES]
+            return queryset.filter(state__in=passive_state_names)
         return queryset
 
 

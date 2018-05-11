@@ -40,6 +40,7 @@ from core.validation import validate_report_computed_task_time_window
 from core.validation import validate_task_to_compute
 from utils import logging
 from utils.helpers import calculate_maximum_download_time
+from utils.helpers import calculate_subtask_verification_time
 from utils.helpers import deserialize_message
 from utils.helpers import get_current_utc_timestamp
 from utils.helpers import parse_timestamp_to_utc_datetime
@@ -394,11 +395,11 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
 
     verification_deadline       = (
         client_message.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def['deadline'] +
-        settings.SUBTASK_VERIFICATION_TIME
+        calculate_subtask_verification_time(client_message.ack_report_computed_task.report_computed_task)
     )
     forcing_acceptance_deadline = (
         client_message.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def['deadline'] +
-        settings.SUBTASK_VERIFICATION_TIME +
+        calculate_subtask_verification_time(client_message.ack_report_computed_task.report_computed_task) +
         settings.FORCE_ACCEPTANCE_TIME
     )
     if forcing_acceptance_deadline < current_time:
@@ -496,21 +497,6 @@ def handle_send_force_subtask_results_response(client_message):
         task_to_compute,
         deserialize_message(subtask.task_to_compute.data.tobytes()),
     ])
-
-    acceptance_deadline = (
-        task_to_compute.compute_task_def['deadline'] +
-        settings.SUBTASK_VERIFICATION_TIME +
-        settings.FORCE_ACCEPTANCE_TIME +
-        settings.CONCENT_MESSAGING_TIME
-    )
-
-    if acceptance_deadline < get_current_utc_timestamp():
-        logging.log_timeout(
-            client_message,
-            requestor_public_key,
-            client_message.timestamp + settings.CONCENT_MESSAGING_TIME,
-        )
-        raise Http400("Time to accept this task is already over.")
 
     subtask = update_subtask(
         subtask                     = subtask,

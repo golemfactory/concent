@@ -19,6 +19,7 @@ from core.models import Subtask
 from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
 from utils import logging
 from utils.helpers import calculate_maximum_download_time
+from utils.helpers import calculate_subtask_verification_time
 from utils.helpers import deserialize_message
 from utils.helpers import get_current_utc_timestamp
 from utils.helpers import get_storage_file_path
@@ -153,7 +154,7 @@ def _create_file_transfer_token(
             elif operation == FileTransferToken.Operation.download:
                 token_expiration_deadline = (
                         report_computed_task.task_to_compute.compute_task_def['deadline'] +
-                        settings.SUBTASK_VERIFICATION_TIME
+                        calculate_subtask_verification_time(report_computed_task)
                 )
         return token_expiration_deadline
 

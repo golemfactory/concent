@@ -22,6 +22,7 @@ from api_testing_common import PROVIDER_PUBLIC_KEY
 from api_testing_common import REQUESTOR_PRIVATE_KEY
 from api_testing_common import REQUESTOR_PUBLIC_KEY
 from api_testing_common import run_tests
+from api_testing_common import SUBTASK_VERIFICATION_TIME
 from api_testing_common import timestamp_to_isoformat
 
 import requests
@@ -33,7 +34,7 @@ def get_force_get_task_result(task_id, subtask_id, current_time, cluster_consts,
     task_to_compute = create_signed_task_to_compute(
         task_id=task_id,
         subtask_id=subtask_id,
-        deadline=current_time + cluster_consts.subtask_verification_time,
+        deadline=current_time + SUBTASK_VERIFICATION_TIME,
         price=0,
     )
 

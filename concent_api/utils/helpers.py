@@ -12,6 +12,7 @@ from golem_messages                 import message
 from golem_messages.datastructures  import FrozenDict
 from golem_messages.exceptions      import MessageError
 from golem_messages.helpers         import maximum_download_time
+from golem_messages.helpers         import subtask_verification_time
 
 from core.exceptions                import Http400
 from core.validation                import validate_public_key
@@ -157,5 +158,15 @@ def calculate_maximum_download_time(size: int) -> int:
         maximum_download_time(
             size,
             settings.MINIMUM_UPLOAD_RATE,
+        ).total_seconds()
+    )
+
+
+def calculate_subtask_verification_time(report_computed_task: message.ReportComputedTask) -> int:
+    assert isinstance(report_computed_task, message.ReportComputedTask)
+
+    return int(
+        subtask_verification_time(
+            report_computed_task
         ).total_seconds()
     )

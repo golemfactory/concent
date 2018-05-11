@@ -271,7 +271,7 @@ PAYMENT_BACKEND = 'core.payments.mock'
 STORAGE_CLUSTER_SSL_CERTIFICATE_PATH = ''
 
 # A global constant defining address to geth client
-# GETH_CONTAINER_ADDRESS = 'http://localhost:8545'
+# GETH_ADDRESS = 'http://localhost:8545'
 
 # A global constant defining Concent ethereum contract address
 # Stored in a 'string' 0x...

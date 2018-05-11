@@ -25,6 +25,12 @@ import requests
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
+"""
+Average time for 2 blocks
+Constans needed for test to get last 2 blocks
+"""
+AVERAGE_TIME_FOR_TWO_BLOCKS = 30
+
 
 def force_payment(timestamp = None, subtask_results_accepted_list = None):
     with freeze_time(timestamp):
@@ -49,25 +55,23 @@ def test_case_2d_send_correct_force_payment(cluster_consts, cluster_url, test_id
     correct_force_payment = force_payment(
         subtask_results_accepted_list=[
             subtask_results_accepted(
-                payment_ts=current_time - cluster_consts.payment_due_time - 10,
+                payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
 
                 task_to_compute=create_signed_task_to_compute(
                     timestamp=parse_timestamp_to_utc_datetime(current_time),
                     task_id=task_id + 'a',
                     subtask_id=subtask_id + 'A',
                     deadline=current_time,
-                    requestor_ethereum_public_key="x" * 128,
                     price=1000,
                 )
             ),
             subtask_results_accepted(
-                payment_ts=current_time - cluster_consts.payment_due_time - 10,
+                payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                 task_to_compute=create_signed_task_to_compute(
                     timestamp=parse_timestamp_to_utc_datetime(current_time),
                     task_id=task_id + 'b',
                     subtask_id=subtask_id + 'B',
                     deadline=current_time,
-                    requestor_ethereum_public_key="x" * 128,
                     price=1000,
                 )
             )
@@ -119,25 +123,23 @@ def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts, clu
             subtask_results_accepted_list=[
                 subtask_results_accepted(
                     timestamp=timestamp_to_isoformat(current_time),
-                    payment_ts=current_time,
+                    payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=parse_timestamp_to_utc_datetime(current_time),
                         task_id=task_id + 'a',
                         subtask_id=subtask_id + 'A',
                         deadline=current_time,
-                        requestor_ethereum_public_key="x" * 128,
                         price=0,
                     )
                 ),
                 subtask_results_accepted(
                     timestamp=timestamp_to_isoformat(current_time),
-                    payment_ts=current_time,
+                    payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=parse_timestamp_to_utc_datetime(current_time),
                         task_id=task_id + 'b',
                         subtask_id=subtask_id + 'B',
                         deadline=current_time,
-                        requestor_ethereum_public_key="x" * 128,
                         price=0,
                     )
                 )
@@ -174,20 +176,18 @@ def test_case_2b_send_force_payment_beyond_payment_time(cluster_consts, cluster_
                         task_id=task_id + 'a',
                         subtask_id=subtask_id + 'A',
                         deadline=current_time,
-                        requestor_ethereum_public_key="x" * 128,
-                        price=1000,
+                        price=15000,
                     )
                 ),
                 subtask_results_accepted(
                     timestamp=timestamp_to_isoformat(current_time),
-                    payment_ts=current_time,
+                    payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=parse_timestamp_to_utc_datetime(current_time),
                         task_id=task_id + 'b',
                         subtask_id=subtask_id + 'B',
                         deadline=current_time,
-                        requestor_ethereum_public_key="x" * 128,
-                        price=1000,
+                        price=15000,
                     )
                 )
             ]
@@ -221,26 +221,25 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
             subtask_results_accepted_list=[
                 subtask_results_accepted(
                     timestamp=timestamp_to_isoformat(current_time),
-                    payment_ts=current_time - cluster_consts.payment_due_time - 10,
+                    payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=parse_timestamp_to_utc_datetime(current_time),
                         task_id=task_id + 'a',
                         subtask_id=subtask_id + 'A',
                         deadline=current_time,
-                        requestor_ethereum_public_key="x" * 128,
-                        price=1000,
+                        price=15000,
                     )
                 ),
                 subtask_results_accepted(
                     timestamp=timestamp_to_isoformat(current_time),
-                    payment_ts=current_time - cluster_consts.payment_due_time - 10,
+                    payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=parse_timestamp_to_utc_datetime(current_time),
                         task_id=task_id + 'b',
                         subtask_id=subtask_id + 'B',
                         deadline=current_time,
-                        requestor_ethereum_public_key="y" * 128,
-                        price=1000,
+                        price=15000,
+                        requestor_ethereum_public_key=b'0' * GOLEM_PUBLIC_KEY_LENGTH
                     )
                 )
             ]
@@ -258,6 +257,7 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
+        from core.constants import GOLEM_PUBLIC_KEY_LENGTH
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file = sys.stderr)

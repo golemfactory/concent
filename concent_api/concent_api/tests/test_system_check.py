@@ -12,7 +12,7 @@ class SystemCheckTest(TestCase):
         self.error_wrong_value = create_error_17_if_geth_container_address_has_wrong_value()
 
     @override_settings(
-        GETH_CONTAINER_ADDRESS = 'http://localhost:8545'
+        GETH_ADDRESS = 'http://localhost:8545'
     )
     def test_geth_container_address_check_correct_value(self):
         errors = geth_container_address_check(None)
@@ -20,28 +20,28 @@ class SystemCheckTest(TestCase):
         self.assertEqual(errors, [])
 
     @override_settings(
-        GETH_CONTAINER_ADDRESS = 'http://localhost8545'
+        GETH_ADDRESS = 'http://localhost8545'
     )
     def test_geth_container_address_check_should_return_error_because_of_missing_colon(self):
         errors = geth_container_address_check(None)
         self.assertEqual(self.error_wrong_value, errors[0])
 
     @override_settings(
-        GETH_CONTAINER_ADDRESS = 'localhost:8545'
+        GETH_ADDRESS = 'localhost:8545'
     )
     def test_geth_container_address_check_should_return_error_if_in_setting_is_missing_http_at_the_beginning(self):
         errors = geth_container_address_check(None)
         self.assertEqual(self.error_wrong_value, errors[0])
 
     @override_settings(
-        GETH_CONTAINER_ADDRESS = 'http:/localhost:8545'
+        GETH_ADDRESS = 'http:/localhost:8545'
     )
     def test_geth_container_address_check_should_return_error_if_slash_is_missing(self):
         errors = geth_container_address_check(None)
         self.assertEqual(self.error_wrong_value, errors[0])
 
     @override_settings(
-        GETH_CONTAINER_ADDRESS = 'localhost:8545/http://'
+        GETH_ADDRESS = 'localhost:8545/http://'
     )
     def test_geth_container_address_check_should_return_error_if_http_is_in_the_end(self):
         errors = geth_container_address_check(None)

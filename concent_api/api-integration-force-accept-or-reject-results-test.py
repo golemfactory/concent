@@ -271,6 +271,8 @@ def test_case_2b_not_enough_funds(cluster_consts, cluster_url, test_id):
                         task_id=task_id,
                         subtask_id=subtask_id,
                         deadline=current_time - (cluster_consts.subtask_verification_time),
+                        requestor_ethereum_public_key=b'0' * GOLEM_PUBLIC_KEY_LENGTH,
+                        provider_ethereum_public_key=b'1' * GOLEM_PUBLIC_KEY_LENGTH
                     )
                 )
             )
@@ -358,6 +360,7 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts, cluster_u
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
+        from core.constants import GOLEM_PUBLIC_KEY_LENGTH
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file = sys.stderr)

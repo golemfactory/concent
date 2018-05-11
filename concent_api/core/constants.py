@@ -9,4 +9,4 @@ GOLEM_PUBLIC_KEY_LENGTH = 64
 ETHEREUM_ADDRESS_LENGTH = 42
 
 # Defines length of Clients ids, public keys or ethereum public keys
-CLIENT_DETAILS_LENGTH = 128
+TASK_OWNER_KEY_LENGTH = 64

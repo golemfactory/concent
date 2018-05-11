@@ -27,4 +27,4 @@ CELERY_BROKER_URL = 'amqp://localhost:5672'
 
 STORAGE_CLUSTER_ADDRESS = 'http://devel.concent.golem.network/'
 
-GETH_CONTAINER_ADDRESS = 'http://localhost:8545'
+GETH_ADDRESS = 'http://localhost:8545'

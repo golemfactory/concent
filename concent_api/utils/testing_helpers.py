@@ -2,7 +2,7 @@ import os
 import random
 import string
 from golem_messages import ECCx
-from core.constants import CLIENT_DETAILS_LENGTH
+from golem_messages.cryptography import privtopub
 
 
 def generate_ecc_key_pair():
@@ -12,7 +12,7 @@ def generate_ecc_key_pair():
 
 def generate_priv_and_pub_eth_account_key():
     client_eth_priv_key = os.urandom(32)
-    client_eth_pub_key = generate_random_string(CLIENT_DETAILS_LENGTH)
+    client_eth_pub_key = privtopub(client_eth_priv_key)
     return (client_eth_priv_key, client_eth_pub_key)
 
 

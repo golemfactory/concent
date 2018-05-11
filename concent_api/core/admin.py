@@ -53,7 +53,7 @@ class SubtaskAdmin(ModelAdminReadOnlyMixin, admin.ModelAdmin):
     get_provider_public_key.short_description = 'Provider public key'  # type: ignore
 
     def get_requestor_public_key(self, obj):  # pylint: disable=no-self-use
-        return obj.provider.public_key
+        return obj.requestor.public_key
     get_requestor_public_key.short_description = 'Requestor public key'  # type: ignore
 
 

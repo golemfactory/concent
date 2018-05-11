@@ -4,6 +4,7 @@ from django.test            import TestCase
 from django.utils           import timezone
 
 from golem_messages         import message
+from utils.helpers          import join_messages
 from utils.helpers          import parse_datetime_to_timestamp
 from utils.helpers          import parse_timestamp_to_utc_datetime
 from utils.helpers          import sign_message
@@ -66,3 +67,17 @@ class HelpersTestCase(TestCase):
 
         self.assertIsNot(ping_message.sig, None)
         self.assertIsInstance(ping_message.sig, bytes)
+
+    def test_join_messages_should_return_joined_string_separeted_with_whitespace(self):
+        """ Tests if join_messages function works as expected. """
+        for messages, expected_join in {
+            ('Error in Golem Message.', 'Invalid value'): 'Error in Golem Message. Invalid value',
+            ('  Error in Golem Message.', '  Invalid value'): 'Error in Golem Message. Invalid value',
+            ('Error in Golem Message.  ', 'Invalid value '): 'Error in Golem Message. Invalid value',
+            ('Error in Golem Message.', 'Invalid value', 'for enum slot'): 'Error in Golem Message. Invalid value for enum slot',
+            (' Error in Golem Message.', 'Invalid value ', 'for enum slot '): 'Error in Golem Message. Invalid value for enum slot',
+        }.items():
+            self.assertEqual(join_messages(*messages), expected_join)
+
+    def test_join_messages_with_single_argument_should_return_single_string(self):
+        self.assertEqual(join_messages('Error in Golem Message.'), 'Error in Golem Message.')

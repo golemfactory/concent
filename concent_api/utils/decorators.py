@@ -19,6 +19,7 @@ from core.exceptions                import ConcentInSoftShutdownMode
 from core.exceptions                import Http400
 
 from utils.helpers                  import get_validated_client_public_key_from_client_message
+from utils.helpers import join_messages
 from utils.shortcuts                import load_without_public_key
 
 from utils                          import logging
@@ -43,16 +44,16 @@ def require_golem_auth_message(view):
                     return JsonResponse({'error': 'Client Authentication message not included'}, status = 400)
             except Http400 as exception:
                 return JsonResponse({'error': f'{exception}'}, status = 400)
-            except FieldError:
-                return JsonResponse({'error': "Golem Message contains wrong fields."}, status = 400)
-            except MessageFromFutureError:
-                return JsonResponse({'error': 'Message timestamp too far in the future.'}, status = 400)
-            except MessageTooOldError:
-                return JsonResponse({'error': 'Message is too old.'}, status = 400)
+            except FieldError as exception:
+                return JsonResponse({'error': join_messages('Golem Message contains wrong fields.', str(exception))}, status = 400)
+            except MessageFromFutureError as exception:
+                return JsonResponse({'error': join_messages('Message timestamp too far in the future.', str(exception))}, status = 400)
+            except MessageTooOldError as exception:
+                return JsonResponse({'error': join_messages('Message is too old.', str(exception))}, status = 400)
             except TimestampError as exception:
-                return JsonResponse({'error': '{}'.format(exception)}, status = 400)
+                return JsonResponse({'error': f'{exception}'}, status = 400)
             except MessageError as exception:
-                return JsonResponse({'error': "Error in Golem Message. {}".format(exception)}, status = 400)
+                return JsonResponse({'error': join_messages('Error in Golem Message.', str(exception))}, status = 400)
         else:
             return JsonResponse({'error': "Concent supports only application/octet-stream."}, status = 415)
 
@@ -77,16 +78,16 @@ def require_golem_message(view):
                 client_public_key = get_validated_client_public_key_from_client_message(golem_message)
             except Http400 as exception:
                 return JsonResponse({'error': f'{exception}'}, status = 400)
-            except FieldError:
-                return JsonResponse({'error': "Golem Message contains wrong fields."}, status = 400)
-            except MessageFromFutureError:
-                return JsonResponse({'error': 'Message timestamp too far in the future.'}, status = 400)
-            except MessageTooOldError:
-                return JsonResponse({'error': 'Message is too old.'}, status = 400)
+            except FieldError as exception:
+                return JsonResponse({'error': join_messages('Golem Message contains wrong fields.', str(exception))}, status = 400)
+            except MessageFromFutureError as exception:
+                return JsonResponse({'error': join_messages('Message timestamp too far in the future.', str(exception))}, status = 400)
+            except MessageTooOldError as exception:
+                return JsonResponse({'error': join_messages('Message is too old.', str(exception))}, status = 400)
             except TimestampError as exception:
-                return JsonResponse({'error': '{}'.format(exception)}, status = 400)
+                return JsonResponse({'error': f'{exception}'}, status = 400)
             except MessageError as exception:
-                return JsonResponse({'error': "Error in Golem Message. {}".format(exception)}, status = 400)
+                return JsonResponse({'error': join_messages('Error in Golem Message.', str(exception))}, status = 400)
         else:
             return JsonResponse({'error': "Concent supports only application/octet-stream."}, status = 415)
 

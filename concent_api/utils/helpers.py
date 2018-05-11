@@ -170,3 +170,9 @@ def calculate_subtask_verification_time(report_computed_task: message.ReportComp
             report_computed_task
         ).total_seconds()
     )
+
+
+def join_messages(*messages):
+    if len(messages) == 1:
+        return messages[0]
+    return ' '.join(m.strip() for m in messages if m not in ['', None])

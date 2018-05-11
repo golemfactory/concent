@@ -75,3 +75,7 @@ MINIMUM_UPLOAD_RATE       = 1
 DOWNLOAD_LEADIN_TIME      = 3
 
 CUSTOM_PROTOCOL_TIMES = True
+
+# disable HandleServerErrorMiddleware in tests
+if MIDDLEWARE.index('concent_api.middleware.HandleServerErrorMiddleware') is not None:
+    MIDDLEWARE.remove('concent_api.middleware.HandleServerErrorMiddleware')

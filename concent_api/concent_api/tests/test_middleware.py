@@ -114,6 +114,18 @@ class ConcentVersionMiddlewareTest(TestCase):
     CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
     DEBUG=False,
     DEBUG_INFO_IN_ERROR_RESPONSES=False,
+    MIDDLEWARE=[
+        'concent_api.middleware.HandleServerErrorMiddleware',
+        'django.middleware.security.SecurityMiddleware',
+        'django.contrib.sessions.middleware.SessionMiddleware',
+        'django.middleware.common.CommonMiddleware',
+        'django.middleware.csrf.CsrfViewMiddleware',
+        'django.contrib.auth.middleware.AuthenticationMiddleware',
+        'django.contrib.messages.middleware.MessageMiddleware',
+        'django.middleware.clickjacking.XFrameOptionsMiddleware',
+        'concent_api.middleware.GolemMessagesVersionMiddleware',
+        'concent_api.middleware.ConcentVersionMiddleware',
+    ]
 )
 class HandleServerErrorMiddlewareTest(ConcentIntegrationTestCase):
     def test_that_middlware_does_not_intercept_2xx_http_responses(self):

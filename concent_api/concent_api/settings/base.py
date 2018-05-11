@@ -32,7 +32,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'concent_api.middleware.HandleServerErrorMiddleware',
+    'concent_api.middleware.HandleServerErrorMiddleware',  # this middleware is disabled in tests - check testing.py
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',

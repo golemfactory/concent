@@ -126,7 +126,7 @@ class ConductorVerificationIntegrationTest(TestCase):
         upload_report.full_clean()
         upload_report.save()
 
-        with mock.patch('conductor.views.blender_verification_request.delay') as mock_task:
+        with mock.patch('conductor.views.blender_verification_order.delay') as mock_task:
             response = self.client.get(
                 reverse(
                     'conductor:report-upload',

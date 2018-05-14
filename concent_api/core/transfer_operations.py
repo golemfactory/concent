@@ -90,12 +90,15 @@ def store_pending_message(
         payment_committed_message.full_clean()
         payment_committed_message.save()
         subtask_id = None
+        task_id = None
     else:
+        task_id = subtask.task_id
         subtask_id = subtask.subtask_id
 
     logging.log_new_pending_response(
         response_type.name,
         queue.name,
+        task_id,
         subtask_id,
         client.public_key_bytes,
     )

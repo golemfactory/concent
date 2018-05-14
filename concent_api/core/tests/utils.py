@@ -16,6 +16,7 @@ from golem_messages         import load
 from golem_messages         import message
 from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
+from golem_messages.message.base import Message
 
 from core.models            import Client
 from core.models            import PendingResponse
@@ -246,7 +247,7 @@ class ConcentIntegrationTestCase(TestCase):
         if error_message is not None:
             self.assertIn(error_message, response.json()['error'])
 
-    def _test_response(self, response, status, key, message_type = None, fields = None):
+    def _test_response(self, response, status, key, message_type=None, fields=None, nested_message_verifiable_by=None):
         self.assertEqual(response.status_code, status)
         if message_type:
             message_from_concent = load(
@@ -262,6 +263,12 @@ class ConcentIntegrationTestCase(TestCase):
                     self.assertEqual(functools.reduce(getattr, field_name.split('.'), message_from_concent), field_value)
         else:
             self.assertEqual(len(response.content), 0)
+
+        if nested_message_verifiable_by is not None:
+            assert isinstance(nested_message_verifiable_by, dict)
+            for nested_message, public_key in nested_message_verifiable_by.items():
+                nested_message = functools.reduce(getattr, nested_message.split('.'), message_from_concent)
+                self.assertTrue(Message.verify_signature(nested_message, public_key))
 
     def _test_subtask_state(
         self,

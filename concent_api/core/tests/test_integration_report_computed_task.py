@@ -1086,6 +1086,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
             timestamp           = "2017-12-01 11:00:05",
             cannot_compute_task = cannot_compute_task,
+            reason=message.RejectReportComputedTask.REASON.GotMessageCannotComputeTask
         )
 
         serialized_reject_report_computed_task = self._get_serialized_reject_report_computed_task(

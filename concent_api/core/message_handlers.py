@@ -181,7 +181,7 @@ def handle_send_reject_report_computed_task(client_message):
         raise Http400("RejectReportComputedTask cannot contain CannotComputeTask and TaskFailure at the same time.")
 
     # Validate if task_to_compute is valid instance of TaskToCompute.
-    task_to_compute = client_message.attached_task_to_compute
+    task_to_compute = client_message.task_to_compute
     validate_task_to_compute(task_to_compute)
 
     provider_public_key = task_to_compute.provider_public_key
@@ -193,8 +193,6 @@ def handle_send_reject_report_computed_task(client_message):
         requestor_public_key,
     )
 
-    tasks_to_compute = [task_to_compute]
-
     # If reason is GotMessageCannotComputeTask,
     # cannot_compute_task is instance of CannotComputeTask signed by the provider.
     if client_message.reason == message.RejectReportComputedTask.REASON.GotMessageCannotComputeTask:
@@ -205,7 +203,6 @@ def handle_send_reject_report_computed_task(client_message):
             client_message.cannot_compute_task,
             provider_public_key,
         )
-        tasks_to_compute.append(client_message.cannot_compute_task.task_to_compute)
 
     # If reason is GotMessageTaskFailure,
     # task_failure is instance of TaskFailure signed by the provider.
@@ -217,7 +214,6 @@ def handle_send_reject_report_computed_task(client_message):
             client_message.task_failure,
             provider_public_key,
         )
-        tasks_to_compute.append(client_message.task_failure.task_to_compute)
 
     # RejectReportComputedTask should contain empty cannot_compute_task and task_failure
     else:
@@ -244,8 +240,12 @@ def handle_send_reject_report_computed_task(client_message):
     if subtask.requestor.public_key_bytes != requestor_public_key:
         raise Http400("Subtask requestor key does not match current client key. Can't accept your 'RejectReportComputedTask'.")
 
-    tasks_to_compute.append(deserialize_message(subtask.task_to_compute.data.tobytes()))
-    validate_all_messages_identical(tasks_to_compute)
+    validate_all_messages_identical(
+        [
+            task_to_compute,
+            deserialize_message(subtask.task_to_compute.data.tobytes()),
+        ]
+    )
 
     if client_message.reason == message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded:
 

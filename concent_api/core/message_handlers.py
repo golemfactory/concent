@@ -391,7 +391,7 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
         pending_value           = client_message.ack_report_computed_task.report_computed_task.task_to_compute.price,
     ):
         return message.concents.ServiceRefused(
-            reason      = message.concents.ServiceRefused.REASON.TooSmallProviderDeposit,
+            reason      = message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
         )
 
     verification_deadline       = (

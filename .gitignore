@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Collect static files
+/concent_api/static-root
+
 # Distribution / packaging
 .Python
 env/

@@ -1,9 +1,9 @@
 from django.http.response import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
+from verifier.tasks import blender_verification_order
 from .models import UploadReport
 from .models import VerificationRequest
-from .tasks import blender_verification_request
 
 
 @csrf_exempt
@@ -33,7 +33,7 @@ def report_upload(_request, file_path):
         verification_request.upload_reports.filter(path=verification_request.result_package_path).exists()
     ):
         # If all expected files have been uploaded, the app sends blender_verification_order task to the work queue.
-        blender_verification_request.delay(
+        blender_verification_order.delay(
             verification_request.subtask_id,
             verification_request.source_package_path,
             verification_request.result_package_path,

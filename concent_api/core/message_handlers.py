@@ -44,6 +44,7 @@ from utils.helpers import calculate_subtask_verification_time
 from utils.helpers import deserialize_message
 from utils.helpers import get_current_utc_timestamp
 from utils.helpers import parse_timestamp_to_utc_datetime
+from utils.helpers import sign_message
 
 
 def handle_send_force_report_computed_task(client_message):
@@ -795,14 +796,17 @@ def handle_messages_from_database(
                 ack_report_computed_task = message.AckReportComputedTask(
                     report_computed_task = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes()),
                 )
+                sign_message(ack_report_computed_task, settings.CONCENT_PRIVATE_KEY)
                 response_to_client.ack_report_computed_task = ack_report_computed_task
             mark_message_as_delivered_and_log(pending_response, response_to_client)
             return response_to_client
         else:
+            ack_report_computed_task = message.AckReportComputedTask(
+                report_computed_task=deserialize_message(pending_response.subtask.report_computed_task.data.tobytes()),
+            )
+            sign_message(ack_report_computed_task, settings.CONCENT_PRIVATE_KEY)
             response_to_client = message.concents.ForceReportComputedTaskResponse(
-                ack_report_computed_task = message.AckReportComputedTask(
-                    report_computed_task=deserialize_message(pending_response.subtask.report_computed_task.data.tobytes()),
-                ),
+                ack_report_computed_task = ack_report_computed_task,
             )
             mark_message_as_delivered_and_log(pending_response, response_to_client)
             return response_to_client
@@ -811,6 +815,7 @@ def handle_messages_from_database(
         ack_report_computed_task = message.AckReportComputedTask(
             report_computed_task=deserialize_message(pending_response.subtask.report_computed_task.data.tobytes()),
         )
+        sign_message(ack_report_computed_task, settings.CONCENT_PRIVATE_KEY)
         report_computed_task     = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
         response_to_client = message.concents.VerdictReportComputedTask(
             ack_report_computed_task    = ack_report_computed_task,

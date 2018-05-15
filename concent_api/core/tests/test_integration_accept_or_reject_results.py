@@ -189,7 +189,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             key          = self.PROVIDER_PRIVATE_KEY,
             message_type = message.concents.ServiceRefused,
             fields       = {
-                'reason':       message.concents.ServiceRefused.REASON.TooSmallProviderDeposit,
+                'reason':       message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
                 'timestamp':    self._parse_iso_date_to_timestamp("2018-02-05 10:00:35")
             }
         )

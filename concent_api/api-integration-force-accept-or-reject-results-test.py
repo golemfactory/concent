@@ -6,6 +6,7 @@ import time
 from freezegun import freeze_time
 
 from golem_messages import message
+from golem_messages.helpers import maximum_download_time
 
 from utils.helpers import get_current_utc_timestamp
 
@@ -19,12 +20,14 @@ from api_testing_common import PROVIDER_PUBLIC_KEY
 from api_testing_common import REQUESTOR_PRIVATE_KEY
 from api_testing_common import REQUESTOR_PUBLIC_KEY
 from api_testing_common import run_tests
-from api_testing_common import SUBTASK_VERIFICATION_TIME
 from api_testing_common import timestamp_to_isoformat
 
 import requests
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
+
+
+REPORT_COMPUTED_TASK_SIZE = 10
 
 
 def force_subtask_results(timestamp = None, ack_report_computed_task = None):
@@ -69,8 +72,29 @@ def report_computed_task(timestamp = None, task_to_compute = None):
     with freeze_time(timestamp):
         return message.tasks.ReportComputedTask(
             task_to_compute = task_to_compute,
-            size=10,
+            size=REPORT_COMPUTED_TASK_SIZE,
         )
+
+
+def calculate_timestamp(current_time, concent_messaging_time):
+    return timestamp_to_isoformat(
+        current_time - (2 + _precalculate_subtask_verification_time(concent_messaging_time))
+    )
+
+
+def calculate_deadline(current_time, concent_messaging_time):
+    return current_time - (1 + _precalculate_subtask_verification_time(concent_messaging_time))
+
+
+def calculate_deadline_too_far_in_the_future(current_time, concent_messaging_time):
+    return current_time - (1 + (20 * _precalculate_subtask_verification_time(concent_messaging_time)))
+
+
+def _precalculate_subtask_verification_time(concent_messaging_time):
+    return (
+        (4 * concent_messaging_time) +
+        (3 * int(maximum_download_time(REPORT_COMPUTED_TASK_SIZE).total_seconds()))
+    )
 
 
 @count_fails
@@ -79,10 +103,10 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts, cluster_url, 
     current_time = get_current_utc_timestamp()
     (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, '2D')
     signed_task_to_compute = create_signed_task_to_compute(
-        timestamp=timestamp_to_isoformat(current_time - SUBTASK_VERIFICATION_TIME * 1.5),
+        timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time),
         task_id=task_id,
         subtask_id=subtask_id,
-        deadline=current_time - (SUBTASK_VERIFICATION_TIME),
+        deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time),
         price=1,
     )
     api_request(
@@ -93,7 +117,7 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts, cluster_url, 
         force_subtask_results(
             timestamp=timestamp_to_isoformat(current_time),
             ack_report_computed_task=ack_report_computed_task(
-                timestamp=timestamp_to_isoformat(current_time - (SUBTASK_VERIFICATION_TIME)),
+                timestamp=timestamp_to_isoformat(current_time),
                 report_computed_task=report_computed_task(
                     task_to_compute=signed_task_to_compute,
                 )
@@ -127,7 +151,7 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts, cluster_url, 
             subtask_results_rejected=subtask_results_rejected(
                 timestamp=timestamp_to_isoformat(current_time),
                 report_computed_task=report_computed_task(
-                    timestamp=timestamp_to_isoformat(current_time - (SUBTASK_VERIFICATION_TIME)),
+                    timestamp=timestamp_to_isoformat(current_time),
                     task_to_compute=signed_task_to_compute,
                 )
             )
@@ -159,10 +183,10 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts, cluster_url, 
     current_time = get_current_utc_timestamp()
     (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '4B')
     signed_task_to_compute = create_signed_task_to_compute(
-        timestamp=timestamp_to_isoformat(current_time - SUBTASK_VERIFICATION_TIME * 1.5),
+        timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time),
         task_id=task_id,
         subtask_id=subtask_id,
-        deadline=current_time - (SUBTASK_VERIFICATION_TIME),
+        deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time),
         price=1,
     )
     api_request(
@@ -173,7 +197,7 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts, cluster_url, 
         force_subtask_results(
             timestamp=timestamp_to_isoformat(current_time),
             ack_report_computed_task=ack_report_computed_task(
-                timestamp=timestamp_to_isoformat(current_time - (SUBTASK_VERIFICATION_TIME * 1.4)),
+                timestamp=timestamp_to_isoformat(current_time),
                 report_computed_task=report_computed_task(
                     task_to_compute=signed_task_to_compute
                 )
@@ -232,13 +256,13 @@ def test_case_2c_wrong_timestamps(cluster_consts, cluster_url, test_id):
         force_subtask_results(
             timestamp=timestamp_to_isoformat(current_time),
             ack_report_computed_task=ack_report_computed_task(
-                timestamp=timestamp_to_isoformat(current_time - (SUBTASK_VERIFICATION_TIME * 1.4)),
+                timestamp=timestamp_to_isoformat(current_time),
                 report_computed_task=report_computed_task(
                     task_to_compute=create_signed_task_to_compute(
-                        timestamp=timestamp_to_isoformat(current_time - SUBTASK_VERIFICATION_TIME * 1.5),
+                        timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time),
                         task_id=task_id,
                         subtask_id=subtask_id,
-                        deadline=current_time - (SUBTASK_VERIFICATION_TIME * 20),
+                        deadline=calculate_deadline_too_far_in_the_future(current_time, cluster_consts.concent_messaging_time),
                         price=1,
                     )
                 )
@@ -266,13 +290,13 @@ def test_case_2b_not_enough_funds(cluster_consts, cluster_url, test_id):
         force_subtask_results(
             timestamp=timestamp_to_isoformat(current_time),
             ack_report_computed_task=ack_report_computed_task(
-                timestamp=timestamp_to_isoformat(current_time - (SUBTASK_VERIFICATION_TIME * 1.4)),
+                timestamp=timestamp_to_isoformat(current_time),
                 report_computed_task=report_computed_task(
                     task_to_compute=create_signed_task_to_compute(
-                        timestamp=timestamp_to_isoformat(current_time - SUBTASK_VERIFICATION_TIME * 1.5),
+                        timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time),
                         task_id=task_id,
                         subtask_id=subtask_id,
-                        deadline=current_time - (SUBTASK_VERIFICATION_TIME),
+                        deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time),
                         requestor_ethereum_public_key=b'0' * GOLEM_PUBLIC_KEY_LENGTH,
                         provider_ethereum_public_key=b'1' * GOLEM_PUBLIC_KEY_LENGTH
                     )
@@ -295,10 +319,10 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts, cluster_u
     current_time = get_current_utc_timestamp()
     (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '2A')
     signed_task_to_compute = create_signed_task_to_compute(
-        timestamp=timestamp_to_isoformat(current_time - SUBTASK_VERIFICATION_TIME * 1.5),
+        timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time),
         task_id=task_id,
         subtask_id=subtask_id,
-        deadline=current_time - (SUBTASK_VERIFICATION_TIME),
+        deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time),
         price=1,
     )
     api_request(
@@ -309,7 +333,7 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts, cluster_u
         force_subtask_results(
             timestamp=timestamp_to_isoformat(current_time),
             ack_report_computed_task=ack_report_computed_task(
-                timestamp=timestamp_to_isoformat(current_time - (SUBTASK_VERIFICATION_TIME * 1.4)),
+                timestamp=timestamp_to_isoformat(current_time),
                 report_computed_task=report_computed_task(
                     task_to_compute=signed_task_to_compute
                 )
@@ -330,7 +354,7 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts, cluster_u
         force_subtask_results(
             timestamp=timestamp_to_isoformat(current_time),
             ack_report_computed_task=ack_report_computed_task(
-                timestamp=timestamp_to_isoformat(current_time - (SUBTASK_VERIFICATION_TIME * 1.4)),
+                timestamp=timestamp_to_isoformat(current_time),
                 report_computed_task=report_computed_task(
                     task_to_compute=signed_task_to_compute
                 )

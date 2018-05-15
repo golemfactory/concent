@@ -1,4 +1,3 @@
-import datetime
 import mock
 
 from django.test            import override_settings
@@ -37,7 +36,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
     def setUp(self):
         super().setUp()
-        self.patcher = mock.patch('utils.helpers.subtask_verification_time', return_value=datetime.timedelta(seconds=1800))
+        self.patcher = mock.patch('core.transfer_operations.calculate_subtask_verification_time', return_value=1800)
         self.addCleanup(self.patcher.stop)
         self.patcher.start()
 

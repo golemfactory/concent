@@ -1,4 +1,3 @@
-import datetime
 import mock
 
 from django.test            import override_settings
@@ -27,7 +26,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
     def setUp(self):
         super().setUp()
-        self.patcher = mock.patch('utils.helpers.subtask_verification_time', return_value=datetime.timedelta(seconds=10))
+        self.patcher = mock.patch('core.message_handlers.calculate_subtask_verification_time', return_value=10)
         self.addCleanup(self.patcher.stop)
         self.patcher.start()
 

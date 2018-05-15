@@ -489,6 +489,7 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
             set_next_deadline           = True,
             ack_report_computed_task    = client_message.ack_report_computed_task,
             task_to_compute             = client_message.ack_report_computed_task.report_computed_task.task_to_compute,
+            report_computed_task        = client_message.ack_report_computed_task.report_computed_task,
         )
         store_pending_message(
             response_type       = PendingResponse.ResponseType.ForceSubtaskResults,
@@ -767,12 +768,12 @@ def store_subtask(
     requestor_public_key:           bytes,
     state:                          Subtask.SubtaskState,
     next_deadline:                  Optional[int],
-    task_to_compute:                message.TaskToCompute                = None,
-    report_computed_task:           message.ReportComputedTask           = None,
-    ack_report_computed_task:       message.AckReportComputedTask        = None,
-    reject_report_computed_task:    message.RejectReportComputedTask     = None,
-    subtask_results_accepted:       message.tasks.SubtaskResultsAccepted = None,
-    subtask_results_rejected:       message.tasks.SubtaskResultsRejected = None,
+    task_to_compute:                message.TaskToCompute,
+    report_computed_task:           message.ReportComputedTask,
+    ack_report_computed_task:       Optional[message.AckReportComputedTask]        = None,
+    reject_report_computed_task:    Optional[message.RejectReportComputedTask]     = None,
+    subtask_results_accepted:       Optional[message.tasks.SubtaskResultsAccepted] = None,
+    subtask_results_rejected:       Optional[message.tasks.SubtaskResultsRejected] = None,
 ):
     """
     Validates and stores subtask and its data in Subtask table.
@@ -782,6 +783,8 @@ def store_subtask(
     assert isinstance(subtask_id,           str)
     assert isinstance(provider_public_key,  bytes)
     assert isinstance(requestor_public_key, bytes)
+    assert isinstance(task_to_compute, message.TaskToCompute)
+    assert isinstance(report_computed_task, message.ReportComputedTask)
     assert state in Subtask.SubtaskState
     assert (state in Subtask.ACTIVE_STATES)  == (isinstance(next_deadline, int))
     assert (state in Subtask.PASSIVE_STATES) == (next_deadline is None)
@@ -796,12 +799,12 @@ def store_subtask(
         requestor       = requestor,
         state           = state.name,
         next_deadline   = parse_timestamp_to_utc_datetime(next_deadline) if next_deadline is not None else None,
-        task_to_compute = store_message(task_to_compute, task_id, subtask_id)
+        task_to_compute=store_message(task_to_compute, task_id, subtask_id),
+        report_computed_task=store_message(report_computed_task, task_id, subtask_id),
     )
 
     set_subtask_messages(
         subtask,
-        report_computed_task        = report_computed_task,
         ack_report_computed_task    = ack_report_computed_task,
         reject_report_computed_task = reject_report_computed_task,
         subtask_results_accepted    = subtask_results_accepted,
@@ -1212,7 +1215,8 @@ def handle_send_subtask_results_verify(
     subtask_results_verify: message.concents.SubtaskResultsVerify
 ):
     subtask_results_rejected = subtask_results_verify.subtask_results_rejected
-    task_to_compute = subtask_results_rejected.report_computed_task.task_to_compute
+    report_computed_task = subtask_results_rejected.report_computed_task
+    task_to_compute = report_computed_task.task_to_compute
     compute_task_def = task_to_compute.compute_task_def
 
     requestor_public_key = task_to_compute.requestor_public_key
@@ -1276,7 +1280,8 @@ def handle_send_subtask_results_verify(
         next_deadline=subtask_results_rejected.timestamp + settings.ADDITIONAL_VERIFICATION_CALL_TIME,
         set_next_deadline=True,
         task_to_compute=task_to_compute,
-        subtask_results_rejected=subtask_results_rejected
+        report_computed_task=report_computed_task,
+        subtask_results_rejected=subtask_results_rejected,
     )
 
     send_blender_verification_request()
@@ -1285,7 +1290,7 @@ def handle_send_subtask_results_verify(
     ack_subtask_results_verify = message.concents.AckSubtaskResultsVerify(
         subtask_results_verify=subtask_results_verify,
         file_transfer_token=create_file_transfer_token_for_golem_client(
-            subtask_results_rejected.report_computed_task,
+            report_computed_task,
             encoded_client_public_key,
             FileTransferToken.Operation.upload,
         ),

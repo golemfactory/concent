@@ -49,9 +49,10 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
             next_deadline=self._parse_iso_date_to_timestamp(
                 subtask_results_verify_time_str) + settings.ADDITIONAL_VERIFICATION_CALL_TIME,
-            task_to_compute=self.report_computed_task.task_to_compute
+            task_to_compute=self.report_computed_task.task_to_compute,
+            report_computed_task=self.report_computed_task,
         )
-        self._assert_stored_message_counter_increased(1)
+        self._assert_stored_message_counter_increased(2)
 
         # when
         with freeze_time(subtask_results_verify_time_str):
@@ -91,8 +92,9 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ACCEPTED,
             task_to_compute=self.report_computed_task.task_to_compute,  # pylint: disable=no-member
+            report_computed_task=self.report_computed_task,
         )
-        self._assert_stored_message_counter_increased(increased_by=1)
+        self._assert_stored_message_counter_increased(increased_by=2)
 
         # when
         with freeze_time(subtask_results_verify_time_str):
@@ -320,7 +322,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 'file_transfer_token': self._prepare_file_transfer_token(subtask_results_verify_time_str),
             }
         )
-        self._assert_stored_message_counter_increased(increased_by=2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         send_verification_request_mock.assert_called_once()  # TODO: once verification_request implemented change to 'assert_called_once_with'
 
     def _prepare_subtask_results_verify(self, serialized_subtask_results_verify):

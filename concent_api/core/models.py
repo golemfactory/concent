@@ -530,12 +530,12 @@ class StoredComputeTaskDef(AbstractMessageModel):
     performance = DecimalField(decimal_places=2, max_digits=3)
     docker_images = JSONField()
 
-    if not len(ITEMS) == len(message.tasks.ComputeTaskDef().ITEMS.keys()):
+    if not len(ITEMS) == len(message.tasks.ComputeTaskDef.ITEMS.keys()):
         raise ValidationError({
             'ComputeTaskDef': 'StoredComputeTaskDef model has not same fields as golem_messages.message.tasks.ComputeTaskDef()'
         })
 
-    for model_item, golem_message_item in zip(ITEMS, message.tasks.ComputeTaskDef().ITEMS.keys()):
+    for model_item, golem_message_item in zip(ITEMS, message.tasks.ComputeTaskDef.ITEMS.keys()):
         if not model_item == golem_message_item:
             raise ValidationError({
                 'ComputeTaskDef': 'StoredComputeTaskDef model has not same fields as golem_messages.message.tasks.ComputeTaskDef()'
@@ -581,47 +581,31 @@ class StoredTaskToCompute(AbstractMessageModel):
     concent_enabled = BooleanField(default=False)
     price = PositiveIntegerField()
 
-    if not len(ITEMS) == len(message.tasks.TaskToCompute().__slots__):
+    if not len(ITEMS) == len(message.tasks.TaskToCompute.__slots__):
         raise ValidationError({
             'StoredTaskToCompute': 'StoredTaskToCompute model has not same fields as golem_messages.message.tasks.TaskToCompute()'
         })
 
-    for model_item, golem_message_item in zip(ITEMS, message.tasks.TaskToCompute().__slots__):
+    for model_item, golem_message_item in zip(ITEMS, message.tasks.TaskToCompute.__slots__):
         if not model_item == golem_message_item:
             raise ValidationError({
                 'StoredTaskToCompute': 'StoredTaskToCompute model has not same fields as golem_messages.message.tasks.TaskToCompute()'
             })
 
     def clean(self):
-        if not len(self.requestor_id) == GOLEM_PUBLIC_KEY_LENGTH or not isinstance(self.requestor_id, bytes):
-            raise ValidationError({
-                'requestor_id': f'requestor_id must be bytes instance and must have length equal to {GOLEM_PUBLIC_KEY_LENGTH}'
-            })
-
-        if not len(self.requestor_public_key) == GOLEM_PUBLIC_KEY_LENGTH or not isinstance(self.requestor_public_key, bytes):
-            raise ValidationError({
-                'requestor_public_key': f'requestor_public_key must be bytes instance and must have length equal to {GOLEM_PUBLIC_KEY_LENGTH}'
-            })
-
-        if not len(self.requestor_ethereum_public_key) == GOLEM_PUBLIC_KEY_LENGTH or not isinstance(self.requestor_ethereum_public_key, bytes):
-            raise ValidationError({
-                'requestor_ethereum_public_key': f'requestor_ethereum_public_key must be bytes instance and must have length equal to {GOLEM_PUBLIC_KEY_LENGTH}'
-            })
-
-        if not len(self.provider_id) == GOLEM_PUBLIC_KEY_LENGTH or not isinstance(self.provider_id, bytes):
-            raise ValidationError({
-                'provider_id': f'provider_id must be bytes instance and must have length equal to {GOLEM_PUBLIC_KEY_LENGTH}'
-            })
-
-        if not len(self.provider_public_key) == GOLEM_PUBLIC_KEY_LENGTH or not isinstance(self.provider_public_key, bytes):
-            raise ValidationError({
-                'provider_public_key': f'provider_public_key must be bytes instance and must have length equal to {GOLEM_PUBLIC_KEY_LENGTH}'
-            })
-
-        if not len(self.provider_ethereum_public_key) == GOLEM_PUBLIC_KEY_LENGTH or not isinstance(self.provider_ethereum_public_key, bytes):
-            raise ValidationError({
-                'provider_ethereum_public_key': f'provider_ethereum_public_key must be bytes instance and must have length equal to {GOLEM_PUBLIC_KEY_LENGTH}'
-            })
+        fields = {
+            'requestor_id': self.requestor_id,
+            'requestor_public_key': self.requestor_public_key,
+            'requestor_ethereum_public_key': self.requestor_ethereum_public_key,
+            'provider_id': self.provider_id,
+            'provider_public_key': self.provider_public_key,
+            'provider_ethereum_public_key': self.provider_ethereum_public_key
+        }
+        for field in fields:
+            if not len(fields[field]) == GOLEM_PUBLIC_KEY_LENGTH or not isinstance(fields[field], bytes):
+                raise ValidationError({
+                    f'{field}': f'{field} must be bytes instance and must have length equal to {GOLEM_PUBLIC_KEY_LENGTH}'   
+                })
 
         if not self.package_hash[:4] == HASH_FUNCTION:
             raise ValidationError({
@@ -653,12 +637,12 @@ class StoredTaskFailure(AbstractMessageModel):
         'sig',
     ]
 
-    if not len(ITEMS) == len(message.tasks.TaskFailure().__slots__):
+    if not len(ITEMS) == len(message.tasks.TaskFailure.__slots__):
         raise ValidationError({
             'StoredTaskFailure': 'StoredTaskFailure model has not same fields as golem_messages.message.tasks.TaskFailure()'
         })
 
-    for model_item, golem_message_item in zip(ITEMS, message.tasks.TaskFailure().__slots__):
+    for model_item, golem_message_item in zip(ITEMS, message.tasks.TaskFailure.__slots__):
         if not model_item == golem_message_item:
             raise ValidationError({
                 'StoredTaskFailure': 'StoredTaskFailure model has not same fields as golem_messages.message.tasks.TaskFailure()'
@@ -681,12 +665,12 @@ class StoredCannotComputeTask(AbstractMessageModel):
         'sig',
     ]
 
-    if not len(ITEMS) == len(message.tasks.CannotComputeTask().__slots__):
+    if not len(ITEMS) == len(message.tasks.CannotComputeTask.__slots__):
         raise ValidationError({
             'StoredCannotComputeTask': 'StoredCannotComputeTask model has not same fields as golem_messages.message.tasks.CannotComputeTask()'
         })
 
-    for model_item, golem_message_item in zip(ITEMS, message.tasks.CannotComputeTask().__slots__):
+    for model_item, golem_message_item in zip(ITEMS, message.tasks.CannotComputeTask.__slots__):
         if not model_item == golem_message_item:
             raise ValidationError({
                 'StoredCannotComputeTask': 'StoredCannotComputeTask model has not same fields as golem_messages.message.tasks.CannotComputeTask()'
@@ -738,12 +722,12 @@ class StoredReportComputedTask(AbstractMessageModel):
         'sig',
     ]
 
-    if not len(ITEMS) == len(message.tasks.ReportComputedTask().__slots__):
+    if not len(ITEMS) == len(message.tasks.ReportComputedTask.__slots__):
         raise ValidationError({
             'StoredReportComputedTask': 'StoredReportComputedTask model has not same fields as golem_messages.message.tasks.ReportComputedTask()'
         })
 
-    for model_item, golem_message_item in zip(ITEMS, message.tasks.ReportComputedTask().__slots__):
+    for model_item, golem_message_item in zip(ITEMS, message.tasks.ReportComputedTask.__slots__):
         if not model_item == golem_message_item:
             raise ValidationError({
                 'StoredReportComputedTask': 'StoredReportComputedTask model has not same fields as golem_messages.message.tasks.ReportComputedTask()'

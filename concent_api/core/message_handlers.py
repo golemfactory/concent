@@ -1284,7 +1284,7 @@ def handle_send_subtask_results_verify(
         subtask_results_rejected=subtask_results_rejected,
     )
 
-    send_blender_verification_request()
+    send_blender_verification_request(compute_task_def)
 
     encoded_client_public_key = b64encode(provider_public_key)
     ack_subtask_results_verify = message.concents.AckSubtaskResultsVerify(

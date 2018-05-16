@@ -4,8 +4,11 @@ from django.utils               import timezone
 
 from core.models                import PendingResponse
 from core.models                import Subtask
+from core.payments              import base
 from core.transfer_operations   import store_pending_message
 from core.transfer_operations   import verify_file_status
+from utils.helpers              import deserialize_message
+from utils.helpers              import get_current_utc_timestamp
 from utils                      import logging
 
 
@@ -67,8 +70,17 @@ def update_timed_out_subtasks(
                 subtask             = subtask,
             )
         elif subtask.state == Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name:  # pylint: disable=no-member
-            # TODO: Make payment from requestor's deposit just like in the forced acceptance use case.
             locked_subtask = Subtask.objects.select_for_update().get(pk=subtask.pk)
+            task_to_compute = deserialize_message(locked_subtask.task_to_compute.data.tobytes())
+
+            # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
+            base.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
+                requestor_eth_address=task_to_compute.requestor_ethereum_address,
+                provider_eth_address=task_to_compute.provider_ethereum_address,
+                value=task_to_compute.price,
+                payment_ts=get_current_utc_timestamp(),
+            )
+
             update_subtask_state(
                 subtask                 = locked_subtask,
                 state                   = Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member

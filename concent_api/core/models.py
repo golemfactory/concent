@@ -24,6 +24,7 @@ from golem_messages         import message
 from core.exceptions        import ConcentInSoftShutdownMode
 from utils.fields           import Base64Field
 from utils.fields           import ChoiceEnum
+from .model_validators import validate_amount_paid
 
 from .constants             import TASK_OWNER_KEY_LENGTH
 from .constants             import ETHEREUM_ADDRESS_LENGTH
@@ -458,7 +459,7 @@ class PaymentInfo(Model):
     payment_ts              = DateTimeField()
     task_owner_key          = BinaryField()
     provider_eth_account    = CharField(max_length = ETHEREUM_ADDRESS_LENGTH)
-    amount_paid             = IntegerField()
+    amount_paid             = IntegerField(validators = [validate_amount_paid])
     recipient_type          = CharField(max_length = 32, choices = RecipientType.choices())
     amount_pending          = IntegerField()
     pending_response        = ForeignKey(PendingResponse, related_name = 'payments')

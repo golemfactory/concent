@@ -370,6 +370,7 @@ class ConcentIntegrationTestCase(TestCase):
         for pending_response in PendingResponse.objects.filter(
             delivered   = False,
             queue       = PendingResponse.Queue.ReceiveOutOfBand.name,  # pylint: disable=no-member
+            client__public_key=client_public_key_out_of_band,
         ):
             self.assertIn(pending_response.response_type,           expected_pending_responses_receive_out_of_band_types)
             self.assertEqual(pending_response.subtask.subtask_id,   subtask_id)

@@ -10,13 +10,16 @@ from golem_messages import message, load
 
 from conductor.models import BlenderSubtaskDefinition
 from core.message_handlers import store_or_update_subtask
+from core.models import PendingResponse
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
 from core.transfer_operations import create_file_transfer_token_for_golem_client
 from utils.constants import ErrorCode
+from utils.helpers import get_current_utc_timestamp
 from utils.helpers import get_storage_result_file_path
 from utils.helpers import get_storage_scene_file_path
 from utils.helpers import get_storage_source_file_path
+from utils.helpers import parse_timestamp_to_utc_datetime
 from utils.helpers import sign_message
 from utils.testing_helpers import generate_ecc_key_pair
 
@@ -336,6 +339,97 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             }
         )
         self._assert_stored_message_counter_increased(increased_by=3)
+
+    def test_that_concent_should_change_subtask_state_if_verification_is_after_deadline(self):
+        """
+        Tests that Concent should change subtask state if verification is after deadline.
+        To achieve changing state by working queue mechanism, a duplicated SubtaskResultsVerify is being sent.
+
+        Provider -> Concent: SubtaskResultsVerify
+        """
+
+        with freeze_time("2018-04-01 10:30:00"):
+            subtask = store_or_update_subtask(
+                task_id=self.task_id,
+                subtask_id=self.subtask_id,
+                provider_public_key=self.PROVIDER_PUBLIC_KEY,
+                requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
+                state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
+                next_deadline=get_current_utc_timestamp() + settings.ADDITIONAL_VERIFICATION_CALL_TIME,
+                task_to_compute=self.report_computed_task.task_to_compute,
+                report_computed_task=self.report_computed_task,
+            )
+            self._assert_stored_message_counter_increased(2)
+
+        with freeze_time(parse_timestamp_to_utc_datetime(subtask.next_deadline.timestamp() + 1)):
+            serialized_subtask_results_verify = self._get_serialized_subtask_results_verify(
+                subtask_results_verify=self._get_deserialized_subtask_results_verify(
+                    subtask_results_rejected=self._get_deserialized_subtask_results_rejected(
+                        reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
+                        report_computed_task=self.report_computed_task,
+                    )
+                )
+            )
+
+            response = self.client.post(
+                reverse('core:send'),
+                data=serialized_subtask_results_verify,
+                content_type='application/octet-stream',
+            )
+
+        assert response.status_code == 200
+
+        subtask.refresh_from_db()
+        self.assertEqual(subtask.state_enum, Subtask.SubtaskState.ACCEPTED)
+        self.assertEqual(subtask.next_deadline, None)
+        self._test_undelivered_pending_responses(
+            subtask_id=subtask.subtask_id,
+            client_public_key=self._get_encoded_provider_public_key(),
+            client_public_key_out_of_band=self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive_out_of_band=[
+                PendingResponse.ResponseType.SubtaskResultsSettled,
+            ]
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id=subtask.subtask_id,
+            client_public_key=self._get_encoded_requestor_public_key(),
+            client_public_key_out_of_band=self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive_out_of_band=[
+                PendingResponse.ResponseType.SubtaskResultsSettled,
+            ]
+        )
+
+        response_2 = self.client.post(
+            reverse('core:receive_out_of_band'),
+            data         = self._create_requestor_auth_message(),
+            content_type = 'application/octet-stream',
+        )
+
+        self._test_response(
+            response_2,
+            status          = 200,
+            key             = self.REQUESTOR_PRIVATE_KEY,
+            message_type    = message.concents.SubtaskResultsSettled,
+            fields          = {
+                'task_to_compute': self.report_computed_task.task_to_compute,
+            }
+        )
+
+        response_3 = self.client.post(
+            reverse('core:receive_out_of_band'),
+            data         = self._create_provider_auth_message(),
+            content_type = 'application/octet-stream',
+        )
+
+        self._test_response(
+            response_3,
+            status          = 200,
+            key             = self.PROVIDER_PRIVATE_KEY,
+            message_type    = message.concents.SubtaskResultsSettled,
+            fields          = {
+                'task_to_compute': self.report_computed_task.task_to_compute,
+            }
+        )
 
     def _prepare_subtask_results_verify(self, serialized_subtask_results_verify):
         subtask_results_verify = load(

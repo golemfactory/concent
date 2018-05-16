@@ -505,26 +505,22 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
 
 def handle_send_force_subtask_results_response(client_message):
     if isinstance(client_message.subtask_results_accepted, message.tasks.SubtaskResultsAccepted):
-        validate_task_to_compute(client_message.subtask_results_accepted.task_to_compute)
         task_to_compute           = client_message.subtask_results_accepted.task_to_compute
-        report_computed_task      = None
         subtask_results_accepted  = client_message.subtask_results_accepted
         subtask_results_rejected  = None
         state                     = Subtask.SubtaskState.ACCEPTED
         response_type             = PendingResponse.ResponseType.ForceSubtaskResultsResponse
     else:
-        validate_task_to_compute(client_message.subtask_results_rejected.report_computed_task.task_to_compute)
         task_to_compute           = client_message.subtask_results_rejected.report_computed_task.task_to_compute
-        report_computed_task      = client_message.subtask_results_rejected.report_computed_task
         subtask_results_accepted  = None
         subtask_results_rejected  = client_message.subtask_results_rejected
         state                     = Subtask.SubtaskState.REJECTED
         response_type             = PendingResponse.ResponseType.SubtaskResultsRejected
 
+    validate_task_to_compute(task_to_compute)
     provider_public_key = task_to_compute.provider_public_key
     requestor_public_key = task_to_compute.requestor_public_key
 
-    validate_task_to_compute(task_to_compute)
     validate_golem_message_signed_with_key(
         task_to_compute,
         requestor_public_key,
@@ -575,7 +571,6 @@ def handle_send_force_subtask_results_response(client_message):
         state                       = state,
         next_deadline               = None,
         set_next_deadline           = True,
-        report_computed_task        = report_computed_task,
         subtask_results_accepted    = subtask_results_accepted,
         subtask_results_rejected    = subtask_results_rejected,
     )

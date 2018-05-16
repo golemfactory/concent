@@ -394,6 +394,13 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
             reason      = message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
         )
 
+    base.make_force_payment_to_provider(
+        requestor_eth_address = client_message.ack_report_computed_task.report_computed_task.task_to_compute.requestor_ethereum_address,
+        provider_eth_address = client_message.ack_report_computed_task.report_computed_task.task_to_compute.provider_ethereum_address,
+        value = client_message.ack_report_computed_task.report_computed_task.task_to_compute.price,
+        payment_ts = current_time,
+    )
+
     verification_deadline       = (
         client_message.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def['deadline'] +
         calculate_subtask_verification_time(client_message.ack_report_computed_task.report_computed_task)

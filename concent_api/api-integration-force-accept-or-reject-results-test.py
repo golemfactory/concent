@@ -107,7 +107,7 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts, cluster_url, 
         task_id=task_id,
         subtask_id=subtask_id,
         deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time),
-        price=1,
+        price=10000,
     )
     api_request(
         cluster_url,
@@ -187,7 +187,7 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts, cluster_url, 
         task_id=task_id,
         subtask_id=subtask_id,
         deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time),
-        price=1,
+        price=10000,
     )
     api_request(
         cluster_url,
@@ -263,7 +263,7 @@ def test_case_2c_wrong_timestamps(cluster_consts, cluster_url, test_id):
                         task_id=task_id,
                         subtask_id=subtask_id,
                         deadline=calculate_deadline_too_far_in_the_future(current_time, cluster_consts.concent_messaging_time),
-                        price=1,
+                        price=10000,
                     )
                 )
             )
@@ -298,7 +298,8 @@ def test_case_2b_not_enough_funds(cluster_consts, cluster_url, test_id):
                         subtask_id=subtask_id,
                         deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time),
                         requestor_ethereum_public_key=b'0' * GOLEM_PUBLIC_KEY_LENGTH,
-                        provider_ethereum_public_key=b'1' * GOLEM_PUBLIC_KEY_LENGTH
+                        provider_ethereum_public_key=b'1' * GOLEM_PUBLIC_KEY_LENGTH,
+                        price=10000,
                     )
                 )
             )
@@ -323,7 +324,7 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts, cluster_u
         task_id=task_id,
         subtask_id=subtask_id,
         deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time),
-        price=1,
+        price=10000,
     )
     api_request(
         cluster_url,

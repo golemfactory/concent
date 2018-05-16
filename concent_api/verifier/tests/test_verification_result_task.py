@@ -5,6 +5,7 @@ from django.db import DatabaseError
 from django.test import TransactionTestCase
 
 from celery.exceptions import Retry
+from freezegun import freeze_time
 from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 
@@ -14,7 +15,8 @@ from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
 from utils.constants import ErrorCode
 from utils.helpers import get_current_utc_timestamp
-from utils.testing_helpers import generate_ecc_key_pair
+from utils.helpers import parse_timestamp_to_utc_datetime
+from utils.testing_helpers  import generate_ecc_key_pair
 from verifier.constants import VerificationResult
 from verifier.constants import VERIFICATION_RESULT_SUBTASK_STATE_ACCEPTED_LOG_MESSAGE
 from verifier.constants import VERIFICATION_RESULT_SUBTASK_STATE_FAILED_LOG_MESSAGE
@@ -87,10 +89,11 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
         )
 
     def test_that_verification_result_mismatch_should_add_pending_messages_subtask_results_rejected(self):
-        verification_result(  # pylint: disable=no-value-for-parameter
-            self.subtask.subtask_id,
-            VerificationResult.MISMATCH,
-        )
+        with freeze_time(parse_timestamp_to_utc_datetime(get_current_utc_timestamp())):
+            verification_result(  # pylint: disable=no-value-for-parameter
+                self.subtask.subtask_id,
+                VerificationResult.MISMATCH,
+            )
 
         self.subtask.refresh_from_db()
         self.assertEqual(self.subtask.state_enum, Subtask.SubtaskState.FAILED)
@@ -100,13 +103,14 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
         self.assertTrue(PendingResponse.objects.filter(client=self.subtask.requestor).exists())
 
     def test_that_verification_result_error_should_add_pending_messages_subtask_results_settled_and_change_subtask_state_to_accepted(self):
-        with mock.patch('verifier.tasks.logger.info') as logging_info_mock:
-            verification_result(  # pylint: disable=no-value-for-parameter
-                self.subtask.subtask_id,
-                VerificationResult.ERROR,
-                'test',
-                ErrorCode.REQUEST_BODY_NOT_EMPTY,
-            )
+        with freeze_time(parse_timestamp_to_utc_datetime(get_current_utc_timestamp())):
+            with mock.patch('verifier.tasks.logger.info') as logging_info_mock:
+                verification_result(  # pylint: disable=no-value-for-parameter
+                    self.subtask.subtask_id,
+                    VerificationResult.ERROR,
+                    'test',
+                    ErrorCode.REQUEST_BODY_NOT_EMPTY,
+                )
 
         self.subtask.refresh_from_db()
         self.assertEqual(self.subtask.state_enum, Subtask.SubtaskState.ACCEPTED)
@@ -123,10 +127,25 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
         )
 
     def test_that_verification_result_match_should_add_pending_messages_subtask_results_settled_and_change_subtask_state_to_accepted(self):
-        verification_result(  # pylint: disable=no-value-for-parameter
-            self.subtask.subtask_id,
-            VerificationResult.MATCH,
-        )
+        with freeze_time(parse_timestamp_to_utc_datetime(get_current_utc_timestamp())):
+            verification_result(  # pylint: disable=no-value-for-parameter
+                self.subtask.subtask_id,
+                VerificationResult.MATCH,
+            )
+
+        self.subtask.refresh_from_db()
+        self.assertEqual(self.subtask.state_enum, Subtask.SubtaskState.ACCEPTED)
+        self.assertEqual(self.subtask.next_deadline, None)
+        self.assertEqual(PendingResponse.objects.count(), 2)
+        self.assertTrue(PendingResponse.objects.filter(client=self.subtask.provider).exists())
+        self.assertTrue(PendingResponse.objects.filter(client=self.subtask.requestor).exists())
+
+    def test_that_verification_result_after_deadline_should_add_pending_messages_subtask_results_settled_and_change_subtask_state_to_accepted(self):
+        with freeze_time(parse_timestamp_to_utc_datetime(self.subtask.next_deadline.timestamp() + 1)):
+            verification_result(
+                self.subtask.subtask_id,
+                VerificationResult.MATCH,
+            )
 
         self.subtask.refresh_from_db()
         self.assertEqual(self.subtask.state_enum, Subtask.SubtaskState.ACCEPTED)

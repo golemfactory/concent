@@ -113,8 +113,8 @@ def handle_errors_and_responses(database_name):
             except Http400 as exception:
                 logging.log_400_error(
                     view.__name__,
-                    client_message,
                     client_public_key,
+                    client_message,
                 )
                 if database_name is not None:
                     transaction.savepoint_rollback(sid, using=database_name)
@@ -139,8 +139,8 @@ def handle_errors_and_responses(database_name):
             elif isinstance(response_from_view, HttpResponseNotAllowed):
                 logging.log_message_not_allowed(
                     view.__name__,
-                    request.method,
                     client_public_key,
+                    request.method,
                 )
                 return response_from_view
             elif isinstance(response_from_view, HttpResponse):

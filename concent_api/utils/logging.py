@@ -8,7 +8,16 @@ from utils.helpers                  import get_field_from_message
 logger = getLogger(__name__)
 
 
-def log_message_received(message: Message, client_public_key: str):
+def replace_key_to_unavailable_instead_of_none(log_function):
+    def wrap(*args, **kwargs):
+        args_list = [arg if arg is not None else 'UNAVAILABLE' for arg in args]
+        kwargs = {key: value if value is not None else 'UNAVAILABLE' for (key, value) in kwargs.items()}
+        log_function(*args_list, **kwargs)
+    return wrap
+
+
+@replace_key_to_unavailable_instead_of_none
+def log_message_received(message: Message, client_public_key: bytes):
     task_id = get_task_id_for_logging(message)
     subtask_id = get_subtask_id_for_logging(message)
     logger.info('A message has been received in `send/` -- MESSAGE_TYPE: {} -- TASK_ID: {} -- SUBTASK_ID: {} -- CLIENT PUBLIC KEY: {}'.format(
@@ -22,7 +31,8 @@ def log_message_received(message: Message, client_public_key: str):
     ))
 
 
-def log_message_returned(message: Message, client_public_key: str):
+@replace_key_to_unavailable_instead_of_none
+def log_message_returned(message: Message, client_public_key: bytes):
     task_id = get_task_id_for_logging(message)
     subtask_id = get_subtask_id_for_logging(message)
     logger.info('A message has been returned from `send/` -- MESSAGE_TYPE: {} -- TASK_ID: {} -- SUBTASK_ID: {} -- CLIENT PUBLIC KEY: {}'.format(
@@ -36,7 +46,7 @@ def log_message_returned(message: Message, client_public_key: str):
     ))
 
 
-def log_message_accepted(message: Message, client_public_key: str):
+def log_message_accepted(message: Message, client_public_key: bytes):
     task_id = get_task_id_for_logging(message)
     subtask_id = get_subtask_id_for_logging(message)
     logger.info('The message has been accepted for further processing -- MESSAGE_TYPE: {} -- TASK_ID: {} -- SUBTASK_ID: {} -- CLIENT PUBLIC KEY: {}'.format(
@@ -47,7 +57,7 @@ def log_message_accepted(message: Message, client_public_key: str):
     ))
 
 
-def log_message_added_to_queue(message: Message, client_public_key: str):
+def log_message_added_to_queue(message: Message, client_public_key: bytes):
     task_id = get_task_id_for_logging(message)
     subtask_id = get_subtask_id_for_logging(message)
     logger.info('A new message has been added to queue -- MESSAGE_TYPE: {} -- TASK_ID: {} -- SUBTASK_ID: {} -- CLIENT PUBLIC KEY: {}'.format(
@@ -58,18 +68,7 @@ def log_message_added_to_queue(message: Message, client_public_key: str):
     ))
 
 
-def log_message_delivered(message: Message, client_public_key: str):
-    task_id = get_task_id_for_logging(message)
-    subtask_id = get_subtask_id_for_logging(message)
-    logger.info('A message in queue has been marked as delivered -- MESSAGE_TYPE: {} -- TASK_ID: {} -- SUBTASK_ID: {} -- CLIENT PUBLIC KEY: {}'.format(
-        type(message).__name__,
-        task_id,
-        subtask_id,
-        client_public_key,
-    ))
-
-
-def log_timeout(message: Message, client_public_key: str, deadline: int):
+def log_timeout(message: Message, client_public_key: bytes, deadline: int):
     task_id = get_task_id_for_logging(message)
     subtask_id = get_subtask_id_for_logging(message)
     logger.info('A deadline has been exceeded -- MESSAGE_TYPE: {} -- TASK_ID: {} -- SUBTASK_ID: {} -- CLIENT PUBLIC KEY: {} -- TIMEOUT: {}'.format(
@@ -81,14 +80,16 @@ def log_timeout(message: Message, client_public_key: str, deadline: int):
     ))
 
 
-def log_empty_queue(endpoint: str, client_public_key: str):
+@replace_key_to_unavailable_instead_of_none
+def log_empty_queue(endpoint: str, client_public_key: bytes):
     logger.info('A message queue is empty in `{}()` -- CLIENT PUBLIC KEY: {}'.format(
         endpoint,
         client_public_key,
     ))
 
 
-def log_400_error(endpoint: str, message: Message, client_public_key: str):
+@replace_key_to_unavailable_instead_of_none
+def log_400_error(endpoint: str, client_public_key: bytes, message: Message):
     if message is not None:
         task_id      = get_task_id_for_logging(message)
         subtask_id   = get_subtask_id_for_logging(message)
@@ -106,7 +107,8 @@ def log_400_error(endpoint: str, message: Message, client_public_key: str):
     ))
 
 
-def log_message_not_allowed(endpoint: str, method: str, client_public_key: str):
+@replace_key_to_unavailable_instead_of_none
+def log_message_not_allowed(endpoint: str, client_public_key: bytes, method: str):
     logger.info('Endpoint {} does not allow HTTP method {} -- CLIENT PUBLIC KEY: {}'.format(
         endpoint,
         method,
@@ -118,8 +120,8 @@ def log_subtask_stored(
     task_id:              str,
     subtask_id:           str,
     state:                str,
-    provider_public_key:  str,
-    requestor_public_key: str,
+    provider_public_key:  bytes,
+    requestor_public_key: bytes,
     next_deadline:        int          = None,
 ):
     logger.info('A subtask has been stored -- STATE: {} -- NEXT_DEADLINE: {} -- TASK_ID: {} -- SUBTASK_ID: {} -- PROVIDER PUBLIC KEY: {} -- REQUESTOR PUBLIC KEY: {}'.format(
@@ -136,8 +138,8 @@ def log_subtask_updated(
     task_id:              str,
     subtask_id:           str,
     state:                str,
-    provider_public_key:  str,
-    requestor_public_key: str,
+    provider_public_key:  bytes,
+    requestor_public_key: bytes,
     next_deadline:        int          = None,
 ):
     logger.info('A subtask has been updated -- STATE: {} -- NEXT_DEADLINE: {} -- TASK_ID: {} -- SUBTASK_ID: {} -- PROVIDER PUBLIC KEY: {} -- REQUESTOR PUBLIC KEY: {}'.format(
@@ -179,7 +181,7 @@ def log_change_subtask_state_name(old_state, new_state):
     ))
 
 
-def log_new_pending_response(response_type: str, queue_name: str, subtask_id: str, client_public_key: str):
+def log_new_pending_response(response_type: str, queue_name: str, subtask_id: str, client_public_key: bytes):
     logger.info('New pending response in {} endpoint -- RESPONSE_TYPE: {} -- SUBTASK_ID: {} -- CLIENT PUBLIC KEY: {}'.format(
         queue_name,
         response_type,
@@ -188,7 +190,7 @@ def log_new_pending_response(response_type: str, queue_name: str, subtask_id: st
     ))
 
 
-def log_receive_message_from_database(message: Message, client_public_key: str, response_type: str, queue_name: str):
+def log_receive_message_from_database(message: Message, client_public_key: bytes, response_type: str, queue_name: str):
     logger.info('Message {}, TYPE: {} has been received by {} endpoint -- RESPONSE_TYPE: {} -- CLIENT PUBLIC KEY: {}'.format(
         type(message).__name__,
         message.TYPE,
@@ -198,7 +200,7 @@ def log_receive_message_from_database(message: Message, client_public_key: str, 
     ))
 
 
-def log_file_status(subtask_id: str, requestor_public_key: str, provider_public_key: str):
+def log_file_status(subtask_id: str, requestor_public_key: bytes, provider_public_key: bytes):
     logger.info('File assigned to subtask with {} id already uploaded. -- REQUESTOR PUBLIC KEY: {} -- PROVIDER PUBLIC KEY {}'.format(
         subtask_id,
         requestor_public_key,

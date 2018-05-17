@@ -824,18 +824,17 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 content_type                        = 'application/octet-stream',
             )
 
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=1)
         self._test_subtask_state(
             task_id                      = '2',
             subtask_id                   = 'xxyyzz',
             subtask_state                = Subtask.SubtaskState.REJECTED,
             provider_key                 = self._get_encoded_provider_public_key(),
             requestor_key                = self._get_encoded_requestor_public_key(),
-            expected_nested_messages     = {'task_to_compute', 'report_computed_task', 'ack_report_computed_task', 'subtask_results_rejected'},
+            expected_nested_messages     = {'task_to_compute', 'ack_report_computed_task', 'subtask_results_rejected'},
         )
         self._test_last_stored_messages(
             expected_messages = [
-                message.tasks.ReportComputedTask,
                 message.tasks.SubtaskResultsRejected,
             ],
             task_id         = '2',

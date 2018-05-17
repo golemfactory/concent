@@ -12,6 +12,7 @@ from django.views.decorators.http   import require_POST
 from golem_messages                 import dump
 from golem_messages                 import load
 from golem_messages                 import message
+from golem_messages.factories       import tasks
 
 from core.exceptions                import Http400
 from core.models                    import Client
@@ -193,7 +194,7 @@ class ApiViewTransactionTestCase(TransactionTestCase):
         compute_task_def['task_id'] = '8'
         compute_task_def['subtask_id'] = '8'
         compute_task_def['deadline'] = message_timestamp
-        task_to_compute = message.TaskToCompute(
+        task_to_compute = tasks.TaskToComputeFactory(
             compute_task_def=compute_task_def,
             requestor_public_key=REQUESTOR_PUBLIC_KEY,
             provider_public_key=PROVIDER_PUBLIC_KEY,

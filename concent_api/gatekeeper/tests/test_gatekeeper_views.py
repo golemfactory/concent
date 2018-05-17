@@ -404,7 +404,7 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
             'GolemGolem '+ encrypted_token: ErrorCode.HEADER_AUTHORIZATION_UNRECOGNIZED_SCHEME.value,
             '':                             ErrorCode.HEADER_AUTHORIZATION_MISSING_TOKEN.value,
             'Golem encrypted_token ':       ErrorCode.HEADER_AUTHORIZATION_NOT_BASE64_ENCODED_VALUE.value,
-            'Golem a' + encrypted_token:    ErrorCode.HEADER_AUTHORIZATION_NOT_BASE64_ENCODED_VALUE.value,
+            'Golem a' + encrypted_token:    ErrorCode.HEADER_AUTHORIZATION_TOKEN_INVALID_MESSAGE.value,
         }
         for authorization_header_value, error_code in wrong_test_headers_with_expected_error_code.items():
             response = self.client.get(

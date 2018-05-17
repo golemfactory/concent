@@ -2,6 +2,7 @@ from django.test                    import override_settings
 from django.test                    import TestCase
 
 from golem_messages                 import message
+from golem_messages.factories       import tasks
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 
@@ -36,7 +37,7 @@ class LoadWithoutPublicKeyUnitTest(TestCase):
         compute_task_def['deadline']    = 1510912800
 
         # Create TaskToCompute
-        task_to_compute = message.TaskToCompute(
+        task_to_compute = tasks.TaskToComputeFactory(
             compute_task_def = compute_task_def,
             price=0,
         )
@@ -108,6 +109,7 @@ class ValidateGolemMessageSignedWithKeyUnitTest(TestCase):
 
         dumped_ping = dump(ping, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
         ping = load(dumped_ping, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        ping.sign_message(CONCENT_PRIVATE_KEY)
 
         assert ping.sig is not None
 

@@ -19,6 +19,7 @@ from core.models                    import StoredMessage
 from core.models                    import PendingResponse
 from core.tests.utils               import ConcentIntegrationTestCase
 from core.models                    import Subtask
+from utils.constants                import ErrorCode
 from utils.helpers                  import get_current_utc_timestamp
 from utils.testing_helpers          import generate_ecc_key_pair
 
@@ -201,8 +202,10 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             ),
             content_type                        = 'application/octet-stream',
         )
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('error', response.json().keys())
+        self._test_400_response(
+            response,
+            error_code=ErrorCode.MESSAGE_VALUE_BLANK
+        )
 
         data                                        = message.ForceReportComputedTask()
         data.report_computed_task                   = message.tasks.ReportComputedTask()
@@ -218,8 +221,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             ),
             content_type                        = 'application/octet-stream',
         )
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('error', response.json().keys())
+        self._test_400_response(response)
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_task_id_already_use(self):
@@ -249,8 +251,10 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         )
 
         self.assertIsInstance(response_400, JsonResponse)
-        self.assertEqual(response_400.status_code, 400)
-        self.assertIn('error', response_400.json().keys())
+        self._test_400_response(
+            response_400,
+            error_code=ErrorCode.SUBTASK_DUPLICATE_REQUEST
+        )
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_get_invalid_type_of_message(self):
@@ -267,8 +271,10 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             content_type                   = 'application/octet-stream',
         )
 
-        self.assertEqual(response_400.status_code, 400)
-        self.assertIn('error', response_400.json().keys())
+        self._test_400_response(
+            response_400,
+            error_code=ErrorCode.MESSAGE_UNEXPECTED
+        )
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_task_to_compute_deadline_exceeded(self):
@@ -302,8 +308,10 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             content_type                    = 'application/octet-stream',
         )
 
-        self.assertEqual(response_400.status_code, 400)
-        self.assertIn('error', response_400.json().keys())
+        self._test_400_response(
+            response_400,
+            error_code=ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED
+        )
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_reject_message_save_as_receive_out_of_band_status(self):
@@ -371,8 +379,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 content_type                   = 'application/octet-stream',
             )
 
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('error', response.json().keys())
+        self._test_400_response(response)
 
     def test_send_should_reject_message_when_timestamp_too_far_in_future(self):
         with freeze_time("2017-11-17 10:10:00"):
@@ -391,8 +398,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 content_type                   = 'application/octet-stream',
             )
 
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('error', response.json().keys())
+        self._test_400_response(response)
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_task_to_compute_deadline_is_not_an_integer(self):
@@ -439,8 +445,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                     content_type = 'application/octet-stream',
                 )
 
-            self.assertEqual(response_400.status_code, 400)
-            self.assertIn('error', response_400.json().keys())
+            self._test_400_response(response_400)
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_202_if_task_to_compute_deadline_is_correct(self):
@@ -494,7 +499,10 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
             response = self._send_force_report_computed_task()
 
-            self._test_400_response(response)
+            self._test_400_response(
+                response,
+                error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE
+            )
             self._assert_stored_message_counter_not_increased()
             self._assert_client_count_is_equal(0)
 
@@ -514,7 +522,10 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
             response = self._send_force_report_computed_task()
 
-            self._test_400_response(response)
+            self._test_400_response(
+                response,
+                error_code=ErrorCode.MESSAGE_VALUE_WRONG_LENGTH
+            )
             self._assert_stored_message_counter_not_increased()
             self._assert_client_count_is_equal(0)
 
@@ -552,7 +563,10 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 content_type                        = 'application/octet-stream',
             )
 
-        self._test_400_response(response)
+        self._test_400_response(
+            response,
+            error_code=ErrorCode.MESSAGE_TIMESTAMP_TOO_OLD
+        )
 
 
 @override_settings(

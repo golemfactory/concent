@@ -15,6 +15,7 @@ from golem_messages                 import message
 
 from core.exceptions                import Http400
 from core.models                    import Client
+from utils.constants                import ErrorCode
 from utils.decorators               import require_golem_message
 from utils.decorators               import handle_errors_and_responses
 from utils.helpers                  import get_current_utc_timestamp
@@ -145,7 +146,7 @@ def _log_message_received_400_mock(_message, _client_public_key):
     Client.objects.get_or_create_full_clean(
         CONCENT_PUBLIC_KEY
     )
-    raise Http400
+    raise Http400('', error_code=ErrorCode.MESSAGE_UNEXPECTED)
 
 
 def _log_message_received_correct_response_mock(_message, _client_public_key):
@@ -165,7 +166,7 @@ def gatekeeper_access_denied_response_400_mock(_message, _path = None, _subtask_
     Client.objects.get_or_create_full_clean(
         CONCENT_PUBLIC_KEY
     )
-    raise Http400
+    raise Http400('', error_code=ErrorCode.MESSAGE_UNEXPECTED)
 
 
 def gatekeeper_access_denied_response_200_mock(_message, _path = None, _subtask_id = None, _client_key = None):

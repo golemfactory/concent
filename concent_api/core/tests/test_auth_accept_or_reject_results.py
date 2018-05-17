@@ -9,6 +9,7 @@ from core.constants         import ETHEREUM_ADDRESS_LENGTH
 from core.models            import Subtask
 from core.models            import PendingResponse
 from core.tests.utils       import ConcentIntegrationTestCase
+from utils.constants        import ErrorCode
 from utils.testing_helpers  import generate_ecc_key_pair
 
 
@@ -450,7 +451,8 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             error_message = 'There was an exception when validating if golem_message {} is signed with public key {}'.format(
                 message.TaskToCompute.TYPE,
                 self.REQUESTOR_PUBLIC_KEY,
-            )
+            ),
+            error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG
         )
         self._assert_stored_message_counter_not_increased()
 
@@ -482,7 +484,8 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             response,
             error_message = "Subtask requestor key does not match current client key.  Can't accept your '{}'.".format(
                 message.concents.ForceSubtaskResultsResponse.TYPE,
-            )
+            ),
+            error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH
         )
         self._assert_stored_message_counter_not_increased()
 
@@ -518,7 +521,8 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'The difference is on field {}'.format(
                     1,
                     'provider_id',
-                )
+                ),
+            error_code=ErrorCode.MESSAGES_NOT_IDENTICAL
         )
         self._assert_stored_message_counter_not_increased()
 
@@ -774,7 +778,8 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             error_message = 'There was an exception when validating if golem_message {} is signed with public key {}'.format(
                 message.TaskToCompute.TYPE,
                 self.REQUESTOR_PUBLIC_KEY,
-            )
+            ),
+            error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG
         )
         self._assert_stored_message_counter_not_increased()
 
@@ -806,7 +811,8 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             response,
             error_message = "Subtask requestor key does not match current client key.  Can't accept your '{}'.".format(
                 message.concents.ForceSubtaskResultsResponse.TYPE,
-            )
+            ),
+            error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH
         )
         self._assert_stored_message_counter_not_increased()
 
@@ -842,7 +848,8 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'The difference is on field {}'.format(
                     1,
                     'provider_id',
-                )
+                ),
+            error_code=ErrorCode.MESSAGES_NOT_IDENTICAL
         )
         self._assert_stored_message_counter_not_increased()
 

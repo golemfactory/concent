@@ -39,6 +39,7 @@ from core.validation import validate_golem_message_subtask_results_rejected
 from core.validation import validate_report_computed_task_time_window
 from core.validation import validate_task_to_compute
 from utils import logging
+from utils.constants import ErrorCode
 from utils.helpers import calculate_maximum_download_time
 from utils.helpers import calculate_subtask_verification_time
 from utils.helpers import deserialize_message
@@ -62,7 +63,10 @@ def handle_send_force_report_computed_task(client_message):
     if Subtask.objects.filter(
         subtask_id = client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'],
     ).exists():
-        raise Http400("{} is already being processed for this task.".format(client_message.__class__.__name__))
+        raise Http400(
+            "{} is already being processed for this task.".format(client_message.__class__.__name__),
+            error_code=ErrorCode.SUBTASK_DUPLICATE_REQUEST,
+        )
 
     if client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] < get_current_utc_timestamp():
         logging.log_timeout(
@@ -115,23 +119,36 @@ def handle_send_ack_report_computed_task(client_message):
                 subtask_id = task_to_compute.compute_task_def['subtask_id'],
             )
         except Subtask.DoesNotExist:
-            raise Http400("'ForceReportComputedTask' for this subtask_id has not been initiated yet. Can't accept your 'AckReportComputedTask'.")
+            raise Http400(
+                "'ForceReportComputedTask' for this subtask_id has not been initiated yet. Can't accept your 'AckReportComputedTask'.",
+                error_code=ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED,
+            )
 
         if subtask.state_enum != Subtask.SubtaskState.FORCING_REPORT:
-            raise Http400("Subtask state is {} instead of FORCING_REPORT. Can't accept your 'AckReportComputedTask'.".format(
-                subtask.state
-            ))
+            raise Http400(
+                "Subtask state is {} instead of FORCING_REPORT. Can't accept your 'AckReportComputedTask'.".format(
+                    subtask.state
+                ),
+                error_code=ErrorCode.QUEUE_WRONG_STATE,
+            )
 
         if subtask.report_computed_task.subtask_id != task_to_compute.compute_task_def['subtask_id']:
-            raise Http400("Received subtask_id does not match one in related ReportComputedTask. Can't accept your 'AckReportComputedTask'.")
+            raise Http400(
+                "Received subtask_id does not match one in related ReportComputedTask. Can't accept your 'AckReportComputedTask'.",
+                error_code=ErrorCode.QUEUE_SUBTASK_ID_MISMATCH,
+            )
 
         if subtask.requestor.public_key_bytes != task_to_compute.requestor_public_key:
-            raise Http400("Subtask requestor key does not match current client key. Can't accept your 'AckReportComputedTask'.")
+            raise Http400(
+                "Subtask requestor key does not match current client key. Can't accept your 'AckReportComputedTask'.",
+                error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH,
+            )
 
         if subtask.ack_report_computed_task_id is not None or subtask.reject_report_computed_task_id is not None:
             raise Http400(
                 "Received AckReportComputedTask but RejectReportComputedTask "
-                "or another AckReportComputedTask for this task has already been submitted."
+                "or another AckReportComputedTask for this task has already been submitted.",
+                error_code=ErrorCode.SUBTASK_DUPLICATE_REQUEST,
             )
         validate_all_messages_identical([
             task_to_compute,
@@ -171,7 +188,10 @@ def handle_send_ack_report_computed_task(client_message):
             requestor_public_key,
             task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
         )
-        raise Http400("Time to acknowledge this task is already over.")
+        raise Http400(
+            "Time to acknowledge this task is already over.",
+            error_code=ErrorCode.QUEUE_TIMEOUT,
+        )
 
 
 def handle_send_reject_report_computed_task(client_message):
@@ -179,7 +199,10 @@ def handle_send_reject_report_computed_task(client_message):
         isinstance(client_message.cannot_compute_task, message.CannotComputeTask) and
         isinstance(client_message.task_failure, message.TaskFailure)
     ):
-        raise Http400("RejectReportComputedTask cannot contain CannotComputeTask and TaskFailure at the same time.")
+        raise Http400(
+            "RejectReportComputedTask cannot contain CannotComputeTask and TaskFailure at the same time.",
+            error_code=ErrorCode.MESSAGE_INVALID,
+        )
 
     # Validate if task_to_compute is valid instance of TaskToCompute.
     task_to_compute = client_message.task_to_compute
@@ -198,7 +221,10 @@ def handle_send_reject_report_computed_task(client_message):
     # cannot_compute_task is instance of CannotComputeTask signed by the provider.
     if client_message.reason == message.RejectReportComputedTask.REASON.GotMessageCannotComputeTask:
         if not isinstance(client_message.cannot_compute_task, message.CannotComputeTask):
-            raise Http400("Expected CannotComputeTask.")
+            raise Http400(
+                "Expected CannotComputeTask inside RejectReportComputedTask.",
+                error_code=ErrorCode.MESSAGE_INVALID,
+            )
         validate_task_to_compute(client_message.cannot_compute_task.task_to_compute)
         validate_golem_message_signed_with_key(
             client_message.cannot_compute_task,
@@ -209,7 +235,10 @@ def handle_send_reject_report_computed_task(client_message):
     # task_failure is instance of TaskFailure signed by the provider.
     elif client_message.reason == message.RejectReportComputedTask.REASON.GotMessageTaskFailure:
         if not isinstance(client_message.task_failure, message.TaskFailure):
-            raise Http400("Expected TaskFailure.")
+            raise Http400(
+                "Expected TaskFailure inside RejectReportComputedTask.",
+                error_code=ErrorCode.MESSAGE_INVALID,
+            )
         validate_task_to_compute(client_message.task_failure.task_to_compute)
         validate_golem_message_signed_with_key(
             client_message.task_failure,
@@ -219,27 +248,42 @@ def handle_send_reject_report_computed_task(client_message):
     # RejectReportComputedTask should contain empty cannot_compute_task and task_failure
     else:
         if client_message.cannot_compute_task is not None or client_message.task_failure is not None:
-            raise Http400("RejectReportComputedTask require empty 'cannot_compute_task' and 'task_failure' with {} reason.".format(
-                client_message.reason.name
-            ))
+            raise Http400(
+                "RejectReportComputedTask requires empty 'cannot_compute_task' and 'task_failure' with {} reason.".format(
+                    client_message.reason.name
+                ),
+                error_code=ErrorCode.MESSAGE_INVALID,
+            )
 
     try:
         subtask = Subtask.objects.get(
             subtask_id = task_to_compute.compute_task_def['subtask_id'],
         )
     except Subtask.DoesNotExist:
-        raise Http400("'ForceReportComputedTask' for this task and client has not been initiated yet. Can't accept your 'RejectReportComputedTask'.")
+        raise Http400(
+            "'ForceReportComputedTask' for this task and client combination has not been initiated yet. Can't accept your 'RejectReportComputedTask'.",
+            error_code=ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED,
+        )
 
     if subtask.state_enum != Subtask.SubtaskState.FORCING_REPORT:
-        raise Http400("Subtask state is {} instead of FORCING_REPORT. Can't accept your 'RejectReportComputedTask'.".format(
-            subtask.state
-        ))
+        raise Http400(
+            "Subtask state is {} instead of FORCING_REPORT. Can't accept your 'RejectReportComputedTask'.".format(
+                subtask.state
+            ),
+            error_code=ErrorCode.QUEUE_WRONG_STATE,
+        )
 
     if subtask.report_computed_task.subtask_id != task_to_compute.compute_task_def['subtask_id']:
-        raise Http400("Received subtask_id does not match one in related ReportComputedTask. Can't accept your 'RejectReportComputedTask'.")
+        raise Http400(
+            "Received subtask_id does not match one in related ReportComputedTask. Can't accept your 'RejectReportComputedTask'.",
+            error_code=ErrorCode.QUEUE_SUBTASK_ID_MISMATCH,
+        )
 
     if subtask.requestor.public_key_bytes != requestor_public_key:
-        raise Http400("Subtask requestor key does not match current client key. Can't accept your 'RejectReportComputedTask'.")
+        raise Http400(
+            "Subtask requestor key does not match current client key. Can't accept your 'RejectReportComputedTask'.",
+            error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH,
+        )
 
     validate_all_messages_identical(
         [
@@ -279,7 +323,10 @@ def handle_send_reject_report_computed_task(client_message):
 
     if get_current_utc_timestamp() <= deserialized_message.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
         if subtask.ack_report_computed_task_id is not None or subtask.ack_report_computed_task_id is not None:
-            raise Http400("Received RejectReportComputedTask but AckReportComputedTask or another RejectReportComputedTask for this task has already been submitted.")
+            raise Http400(
+                "Received RejectReportComputedTask but AckReportComputedTask or another RejectReportComputedTask for this task has already been submitted.",
+                error_code=ErrorCode.SUBTASK_DUPLICATE_REQUEST,
+            )
 
         subtask = update_subtask(
             subtask                     = subtask,
@@ -305,7 +352,10 @@ def handle_send_reject_report_computed_task(client_message):
             requestor_public_key,
             deserialized_message.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
         )
-        raise Http400("Time to acknowledge this task is already over.")
+        raise Http400(
+            "Time to acknowledge this task is already over.",
+            error_code=ErrorCode.QUEUE_TIMEOUT,
+        )
 
 
 def handle_send_force_get_task_result(client_message: message.concents.ForceGetTaskResult) -> message.concents:
@@ -485,21 +535,35 @@ def handle_send_force_subtask_results_response(client_message):
             subtask_id = task_to_compute.compute_task_def['subtask_id'],
         )
     except Subtask.DoesNotExist:
-        raise Http400("'ForceSubtaskResults' for this subtask has not been initiated yet. Can't accept your '{}'.".format(client_message.TYPE))
+        raise Http400(
+            "'ForceSubtaskResults' for this subtask has not been initiated yet. Can't accept your '{}'.".format(
+                client_message.TYPE
+            ),
+            error_code=ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED,
+        )
 
     if subtask.state_enum != Subtask.SubtaskState.FORCING_ACCEPTANCE:
-        raise Http400("Subtask state is {} instead of FORCING_ACCEPTANCE. Can't accept your '{}'.".format(
-            subtask.state,
-            client_message.TYPE,
-        ))
+        raise Http400(
+            "Subtask state is {} instead of FORCING_ACCEPTANCE. Can't accept your '{}'.".format(
+                subtask.state,
+                client_message.TYPE,
+            ),
+            error_code=ErrorCode.QUEUE_WRONG_STATE,
+        )
 
     if subtask.requestor.public_key_bytes != requestor_public_key:
-        raise Http400("Subtask requestor key does not match current client key.  Can't accept your '{}'.".format(
-            client_message.TYPE
-        ))
+        raise Http400(
+            "Subtask requestor key does not match current client key.  Can't accept your '{}'.".format(
+                client_message.TYPE
+            ),
+            error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH,
+        )
 
     if subtask.subtask_results_accepted_id is not None or subtask.subtask_results_rejected_id is not None:
-        raise Http400("This subtask has been resolved already.")
+        raise Http400(
+            "This subtask has been resolved already.",
+            error_code=ErrorCode.SUBTASK_DUPLICATE_REQUEST,
+        )
 
     validate_all_messages_identical([
         task_to_compute,
@@ -690,9 +754,15 @@ def handle_send_force_payment(client_message: message.concents.ForcePayment) -> 
 
 def handle_unsupported_golem_messages_type(client_message):
     if hasattr(client_message, 'TYPE'):
-        raise Http400("This message type ({}) is either not supported or cannot be submitted to Concent.".format(client_message.TYPE))
+        raise Http400(
+            "This message type ({}) is either not supported or cannot be submitted to Concent.".format(client_message.TYPE),
+            error_code=ErrorCode.MESSAGE_UNEXPECTED,
+        )
     else:
-        raise Http400("Unknown message type or not a Golem message.")
+        raise Http400(
+            "Unknown message type or not a Golem message.",
+            error_code=ErrorCode.MESSAGE_UNKNOWN,
+        )
 
 
 def store_subtask(
@@ -1190,7 +1260,10 @@ def handle_send_subtask_results_verify(
             Subtask.SubtaskState.FAILED.name,  # pylint: disable=no-member
         ]
     ):
-        raise Http400("SubtaskResultsVerify is not allowed in current state")
+        raise Http400(
+            "SubtaskResultsVerify is not allowed in current state",
+            error_code=ErrorCode.QUEUE_SUBTASK_STATE_TRANSITION_NOT_ALLOWED,
+        )
     if not base.is_account_status_positive(  # pylint: disable=no-value-for-parameter
         client_eth_address      = task_to_compute.requestor_ethereum_address,
     ):

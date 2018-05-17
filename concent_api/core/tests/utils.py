@@ -241,11 +241,12 @@ class ConcentIntegrationTestCase(TestCase):
         self.assertEqual(response.status_code, 204)
         self.assertEqual(len(response.content), 0)
 
-    def _test_400_response(self, response, error_message = None):
+    def _test_400_response(self, response, error_message = None, error_code = None):
         self.assertEqual(response.status_code, 400)
-        self.assertIn('error', response.json().keys())
+        self.assertIn('error', response.json())
         if error_message is not None:
             self.assertIn(error_message, response.json()['error'])
+            self.assertEqual(response.json()['error_code'], error_code.value)
 
     def _test_response(self, response, status, key, message_type=None, fields=None, nested_message_verifiable_by=None):
         self.assertEqual(response.status_code, status)
@@ -472,9 +473,7 @@ class ConcentIntegrationTestCase(TestCase):
                     report_computed_task or
                     self._get_deserialized_report_computed_task(
                         subtask_id      = '1',
-                        task_to_compute = self._sign_message(
-                            self._get_deserialized_task_to_compute()
-                        )
+                        task_to_compute = self._get_deserialized_task_to_compute()
                     )
                 ),
             )
@@ -729,6 +728,8 @@ class ConcentIntegrationTestCase(TestCase):
 
             golem_message.full_clean()
             golem_message.save()
+
+        return golem_message
 
     def _send_force_report_computed_task(self):
         report_computed_task = message.tasks.ReportComputedTask(

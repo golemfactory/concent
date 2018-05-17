@@ -8,7 +8,7 @@ from utils.helpers                  import get_field_from_message
 logger = getLogger(__name__)
 
 
-def replace_key_to_unavailable_instead_of_none(log_function):
+def replace_element_to_unavailable_instead_of_none(log_function):
     def wrap(*args, **kwargs):
         args_list = [arg if arg is not None else 'UNAVAILABLE' for arg in args]
         kwargs = {key: value if value is not None else 'UNAVAILABLE' for (key, value) in kwargs.items()}
@@ -16,7 +16,7 @@ def replace_key_to_unavailable_instead_of_none(log_function):
     return wrap
 
 
-@replace_key_to_unavailable_instead_of_none
+@replace_element_to_unavailable_instead_of_none
 def log_message_received(message: Message, client_public_key: bytes):
     task_id = get_task_id_for_logging(message)
     subtask_id = get_subtask_id_for_logging(message)
@@ -31,7 +31,7 @@ def log_message_received(message: Message, client_public_key: bytes):
     ))
 
 
-@replace_key_to_unavailable_instead_of_none
+@replace_element_to_unavailable_instead_of_none
 def log_message_returned(message: Message, client_public_key: bytes):
     task_id = get_task_id_for_logging(message)
     subtask_id = get_subtask_id_for_logging(message)
@@ -80,7 +80,7 @@ def log_timeout(message: Message, client_public_key: bytes, deadline: int):
     ))
 
 
-@replace_key_to_unavailable_instead_of_none
+@replace_element_to_unavailable_instead_of_none
 def log_empty_queue(endpoint: str, client_public_key: bytes):
     logger.info('A message queue is empty in `{}()` -- CLIENT PUBLIC KEY: {}'.format(
         endpoint,
@@ -88,7 +88,7 @@ def log_empty_queue(endpoint: str, client_public_key: bytes):
     ))
 
 
-@replace_key_to_unavailable_instead_of_none
+@replace_element_to_unavailable_instead_of_none
 def log_400_error(endpoint: str, client_public_key: bytes, message: Message):
     if message is not None:
         task_id      = get_task_id_for_logging(message)
@@ -107,7 +107,7 @@ def log_400_error(endpoint: str, client_public_key: bytes, message: Message):
     ))
 
 
-@replace_key_to_unavailable_instead_of_none
+@replace_element_to_unavailable_instead_of_none
 def log_message_not_allowed(endpoint: str, client_public_key: bytes, method: str):
     logger.info('Endpoint {} does not allow HTTP method {} -- CLIENT PUBLIC KEY: {}'.format(
         endpoint,

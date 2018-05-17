@@ -179,7 +179,7 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts, cluster_url, 
 @count_fails
 def test_case_4b_requestor_accepts_subtaks_results(cluster_consts, cluster_url, test_id):
     # Test CASE 4B + 5. Requestor sends ForceSubtaskResultsResponse with SubtaskResultsAccepted
-    #  Step 1. Send ForceSubtaskResults
+    #  Step 1. Provider sends ForceSubtaskResults
     current_time = get_current_utc_timestamp()
     (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '4B')
     signed_task_to_compute = create_signed_task_to_compute(
@@ -209,7 +209,21 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts, cluster_url, 
         expected_status=202,
     )
     time.sleep(1)
-    #  Step 2. Send ForceSubtaskResultsResponse
+    #  Step 2. Requestor receives ForceSubtaskResults
+    api_request(
+        cluster_url,
+        'receive',
+        REQUESTOR_PRIVATE_KEY,
+        CONCENT_PUBLIC_KEY,
+        create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
+        headers={
+            'Content-Type': 'application/octet-stream',
+        },
+        expected_status=200,
+        expected_message_type=message.concents.ForceSubtaskResults.TYPE,
+        expected_content_type='application/octet-stream',
+    )
+    #  Step 3. Requestor sends ForceSubtaskResultsResponse
     api_request(
         cluster_url,
         'send',
@@ -228,6 +242,7 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts, cluster_url, 
         },
         expected_status=202,
     )
+    #  Step 4. Provider receives ForceSubtaskResultsResponse
     api_request(
         cluster_url,
         'receive',

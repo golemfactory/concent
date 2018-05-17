@@ -444,7 +444,7 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
             reason      = message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
         )
 
-    base.make_force_payment_to_provider(
+    base.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
         requestor_eth_address = client_message.ack_report_computed_task.report_computed_task.task_to_compute.requestor_ethereum_address,
         provider_eth_address = client_message.ack_report_computed_task.report_computed_task.task_to_compute.provider_ethereum_address,
         value = client_message.ack_report_computed_task.report_computed_task.task_to_compute.price,

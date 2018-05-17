@@ -1,6 +1,5 @@
 from typing                         import List
 from golem_messages                 import message
-from golem_messages.cryptography    import ecdsa_verify
 from golem_messages.exceptions      import MessageError
 
 from core.constants                 import ETHEREUM_ADDRESS_LENGTH
@@ -143,12 +142,12 @@ def validate_golem_message_signed_with_key(
     golem_message: message.base.Message,
     public_key: bytes,
 ):
-    assert isinstance(golem_message,    message.base.Message)
+    assert isinstance(golem_message, message.base.Message)
 
     validate_public_key(public_key, 'public_key')
 
     try:
-        ecdsa_verify(public_key, golem_message.sig, golem_message.get_short_hash())
+        golem_message.verify_signature(public_key)
     except MessageError:
         raise Http400(
             'There was an exception when validating if golem_message {} is signed with public key {}'.format(

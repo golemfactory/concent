@@ -8,11 +8,11 @@ from django.http                    import HttpResponse
 from django.http                    import JsonResponse
 from django.utils                   import timezone
 
+from golem_messages                 import message
 from golem_messages                 import settings
+from golem_messages.factories       import tasks
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
-from golem_messages                 import message
-from golem_messages.message         import Message as GolemMessage
 
 from core.models                    import Client
 from core.models                    import StoredMessage
@@ -133,7 +133,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             self.PROVIDER_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY,
         )
-        self.assertIsInstance(response_message, GolemMessage)
+        self.assertIsInstance(response_message, message.concents.ForceReportComputedTaskResponse)
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_accept_valid_message_with_non_numeric_task_id(self):
@@ -283,7 +283,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         compute_task_def['deadline'] = self.message_timestamp - 9000
 
         with freeze_time(datetime.datetime.fromtimestamp(self.message_timestamp - 10000)):
-            task_to_compute = message.TaskToCompute(
+            task_to_compute = tasks.TaskToComputeFactory(
                 compute_task_def     = self.compute_task_def,
                 provider_public_key  = PROVIDER_PUBLIC_KEY,
                 requestor_public_key = REQUESTOR_PUBLIC_KEY,
@@ -418,7 +418,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         for deadline in invalid_values:
             StoredMessage.objects.all().delete()
             compute_task_def['deadline'] = deadline
-            task_to_compute = message.TaskToCompute(
+            task_to_compute = tasks.TaskToComputeFactory(
                 compute_task_def     = compute_task_def,
                 provider_public_key  = PROVIDER_PUBLIC_KEY,
                 requestor_public_key = REQUESTOR_PUBLIC_KEY,
@@ -583,7 +583,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             self.compute_task_def['task_id']    = '1'
             self.compute_task_def['subtask_id'] = '1'
             self.compute_task_def['deadline']   = get_current_utc_timestamp() + (60 * 37)
-            self.task_to_compute = message.TaskToCompute(
+            self.task_to_compute = tasks.TaskToComputeFactory(
                 compute_task_def     = self.compute_task_def,
                 provider_public_key  = PROVIDER_PUBLIC_KEY,
                 requestor_public_key = REQUESTOR_PUBLIC_KEY,
@@ -602,8 +602,8 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             type        = self.force_golem_data.report_computed_task.TYPE,
             timestamp   = message_timestamp,
             data        = self.force_golem_data.report_computed_task.serialize(),
-            task_id     = self.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-            subtask_id  = self.task_to_compute.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id  = self.compute_task_def['subtask_id'],  # pylint: disable=no-member
         )
         new_message.full_clean()
         new_message.save()
@@ -624,8 +624,8 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             type        = self.task_to_compute.TYPE,
             timestamp   = message_timestamp,
             data        = self.task_to_compute.serialize(),
-            task_id     = self.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-            subtask_id  = self.task_to_compute.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id  = self.compute_task_def['subtask_id'],  # pylint: disable=no-member
         )
         task_to_compute_message.full_clean()
         task_to_compute_message.save()
@@ -701,8 +701,8 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             type        = self.force_golem_data.report_computed_task.TYPE,
             timestamp   = message_timestamp,
             data        = self.force_golem_data.report_computed_task.serialize(),
-            task_id     = self.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-            subtask_id  = self.task_to_compute.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id  = self.compute_task_def['subtask_id'],  # pylint: disable=no-member
         )
         new_message.full_clean()
         new_message.save()
@@ -711,8 +711,8 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             type        = self.task_to_compute.TYPE,
             timestamp   = message_timestamp,
             data        = self.task_to_compute.serialize(),
-            task_id     = self.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-            subtask_id  = self.task_to_compute.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id  = self.compute_task_def['subtask_id'],  # pylint: disable=no-member
         )
         task_to_compute_message.full_clean()
         task_to_compute_message.save()
@@ -727,8 +727,8 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             type        = ack_report_computed_task.TYPE,
             timestamp   = message_timestamp,
             data        = ack_report_computed_task.serialize(),
-            task_id     = self.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-            subtask_id  = self.task_to_compute.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id  = self.compute_task_def['subtask_id'],  # pylint: disable=no-member
         )
         stored_ack_report_computed_task.full_clean()
         stored_ack_report_computed_task.save()
@@ -830,7 +830,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
         self.compute_task_def['task_id']    = '1'
         self.compute_task_def['subtask_id'] = '1'
         self.compute_task_def['deadline']   = get_current_utc_timestamp() - 60
-        self.task_to_compute                = message.TaskToCompute(
+        self.task_to_compute                = tasks.TaskToComputeFactory(
             compute_task_def     = self.compute_task_def,
             provider_public_key  = PROVIDER_PUBLIC_KEY,
             requestor_public_key = REQUESTOR_PUBLIC_KEY,
@@ -854,8 +854,8 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             type        = self.force_golem_data.report_computed_task.TYPE,
             timestamp   = message_timestamp,
             data        = self.force_golem_data.report_computed_task.serialize(),
-            task_id     = self.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-            subtask_id  = self.task_to_compute.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id  = self.compute_task_def['subtask_id'],  # pylint: disable=no-member
         )
         new_message.full_clean()
         new_message.save()
@@ -864,8 +864,8 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             type        = self.task_to_compute.TYPE,
             timestamp   = message_timestamp,
             data        = self.task_to_compute.serialize(),
-            task_id     = self.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-            subtask_id  = self.task_to_compute.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id  = self.compute_task_def['subtask_id'],  # pylint: disable=no-member
         )
         task_to_compute_message.full_clean()
         task_to_compute_message.save()
@@ -880,8 +880,8 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             type        = ack_report_computed_task.TYPE,
             timestamp   = message_timestamp,
             data        = ack_report_computed_task.serialize(),
-            task_id     = self.task_to_compute.compute_task_def['task_id'],  # pylint: disable=no-member
-            subtask_id  = self.task_to_compute.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id  = self.compute_task_def['subtask_id'],  # pylint: disable=no-member
         )
         stored_ack_report_computed_task.full_clean()
         stored_ack_report_computed_task.save()

@@ -2,6 +2,7 @@ from django.test                    import override_settings
 from django.test                    import TestCase
 
 from golem_messages                 import message
+from golem_messages.factories       import tasks
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 
@@ -30,13 +31,14 @@ class LoadWithoutPublicKeyUnitTest(TestCase):
         """
 
         # Create and fill some data into ComputeTaskDef
-        compute_task_def = message.ComputeTaskDef()
-        compute_task_def['task_id']     = '1'
-        compute_task_def['subtask_id']  = '2'
-        compute_task_def['deadline']    = 1510912800
+        compute_task_def = tasks.ComputeTaskDefFactory(
+            task_id='1',
+            subtask_id='2',
+            deadline=1510912800,
+        )
 
         # Create TaskToCompute
-        task_to_compute = message.TaskToCompute(
+        task_to_compute = tasks.TaskToComputeFactory(
             compute_task_def = compute_task_def,
             price=0,
         )
@@ -104,32 +106,34 @@ class ValidateGolemMessageClientAuthorizationUnitTest(TestCase):
 class ValidateGolemMessageSignedWithKeyUnitTest(TestCase):
 
     def test_validate_golem_message_signed_with_key_should_not_raise_error_if_correct_message_and_key_is_used(self):
-        ping = message.Ping()
+        task_to_compute = tasks.TaskToComputeFactory()
 
-        dumped_ping = dump(ping, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
-        ping = load(dumped_ping, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        dumped_task_to_compute = dump(task_to_compute, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        task_to_compute = load(dumped_task_to_compute, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
-        assert ping.sig is not None
+        assert task_to_compute.sig is not None
+        assert task_to_compute.SIGN is not False
 
         try:
             validate_golem_message_signed_with_key(
-                ping,
+                task_to_compute,
                 CONCENT_PUBLIC_KEY,
             )
         except Http400:
             self.fail()
 
     def test_validate_golem_message_signed_with_key_should_raise_error_if_incorrect_message_and_key_is_used(self):
-        ping = message.Ping()
+        task_to_compute = tasks.TaskToComputeFactory()
 
-        dumped_ping = dump(ping, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
-        ping = load(dumped_ping, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        dumped_task_to_compute = dump(task_to_compute, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        task_to_compute = load(dumped_task_to_compute, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
-        assert ping.sig is not None
+        assert task_to_compute.sig is not None
+        assert task_to_compute.SIGN is not False
 
         with self.assertRaises(Http400):
             validate_golem_message_signed_with_key(
-                ping,
+                task_to_compute,
                 REQUESTOR_PUBLIC_KEY,
             )
 

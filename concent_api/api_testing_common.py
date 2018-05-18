@@ -321,6 +321,7 @@ def create_signed_task_to_compute(
             requestor_ethereum_public_key=requestor_ethereum_public_key,
             provider_ethereum_public_key=provider_ethereum_public_key,
             price=price,
+            size=1,
         )
         sign_message(task_to_compute, REQUESTOR_PRIVATE_KEY)
         return task_to_compute

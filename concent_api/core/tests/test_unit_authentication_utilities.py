@@ -106,30 +106,34 @@ class ValidateGolemMessageClientAuthorizationUnitTest(TestCase):
 class ValidateGolemMessageSignedWithKeyUnitTest(TestCase):
 
     def test_validate_golem_message_signed_with_key_should_not_raise_error_if_correct_message_and_key_is_used(self):
-        ping = message.Ping()
+        task_to_compute = tasks.TaskToComputeFactory()
 
-        ping.sign_message(CONCENT_PRIVATE_KEY)
+        dumped_task_to_compute = dump(task_to_compute, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        task_to_compute = load(dumped_task_to_compute, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
-        assert ping.sig is not None
+        assert task_to_compute.sig is not None
+        assert task_to_compute.SIGN is not False
 
         try:
             validate_golem_message_signed_with_key(
-                ping,
+                task_to_compute,
                 CONCENT_PUBLIC_KEY,
             )
         except Http400:
             self.fail()
 
     def test_validate_golem_message_signed_with_key_should_raise_error_if_incorrect_message_and_key_is_used(self):
-        ping = message.Ping()
+        task_to_compute = tasks.TaskToComputeFactory()
 
-        ping.sign_message(CONCENT_PRIVATE_KEY)
+        dumped_task_to_compute = dump(task_to_compute, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        task_to_compute = load(dumped_task_to_compute, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
-        assert ping.sig is not None
+        assert task_to_compute.sig is not None
+        assert task_to_compute.SIGN is not False
 
         with self.assertRaises(Http400):
             validate_golem_message_signed_with_key(
-                ping,
+                task_to_compute,
                 REQUESTOR_PUBLIC_KEY,
             )
 

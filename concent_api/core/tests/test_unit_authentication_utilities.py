@@ -31,10 +31,11 @@ class LoadWithoutPublicKeyUnitTest(TestCase):
         """
 
         # Create and fill some data into ComputeTaskDef
-        compute_task_def = message.ComputeTaskDef()
-        compute_task_def['task_id']     = '1'
-        compute_task_def['subtask_id']  = '2'
-        compute_task_def['deadline']    = 1510912800
+        compute_task_def = tasks.ComputeTaskDefFactory(
+            task_id='1',
+            subtask_id='2',
+            deadline=1510912800,
+        )
 
         # Create TaskToCompute
         task_to_compute = tasks.TaskToComputeFactory(
@@ -107,8 +108,6 @@ class ValidateGolemMessageSignedWithKeyUnitTest(TestCase):
     def test_validate_golem_message_signed_with_key_should_not_raise_error_if_correct_message_and_key_is_used(self):
         ping = message.Ping()
 
-        dumped_ping = dump(ping, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
-        ping = load(dumped_ping, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
         ping.sign_message(CONCENT_PRIVATE_KEY)
 
         assert ping.sig is not None
@@ -124,8 +123,7 @@ class ValidateGolemMessageSignedWithKeyUnitTest(TestCase):
     def test_validate_golem_message_signed_with_key_should_raise_error_if_incorrect_message_and_key_is_used(self):
         ping = message.Ping()
 
-        dumped_ping = dump(ping, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
-        ping = load(dumped_ping, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        ping.sign_message(CONCENT_PRIVATE_KEY)
 
         assert ping.sig is not None
 

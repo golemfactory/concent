@@ -11,7 +11,6 @@ from django.utils                   import timezone
 from golem_messages                 import message
 from golem_messages                 import settings
 from golem_messages.factories       import tasks
-from golem_messages.message         import Message as GolemMessage
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 
@@ -134,7 +133,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             self.PROVIDER_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY,
         )
-        self.assertIsInstance(response_message, GolemMessage)
+        self.assertIsInstance(response_message, message.concents.ForceReportComputedTaskResponse)
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_accept_valid_message_with_non_numeric_task_id(self):

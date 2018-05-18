@@ -56,7 +56,7 @@ class RequestUploadStatusTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.transfer_operations.send_request_to_cluster_storage',
+            'core.transfer_operations.send_request_to_storage_cluster',
             side_effect=mock_send_request_to_cluster_correct_response
         ) as mock_send_request_to_cluster_correct_response_function:
             cluster_response = request_upload_status(report_computed_task)
@@ -65,7 +65,7 @@ class RequestUploadStatusTest(ConcentIntegrationTestCase):
         mock_send_request_to_cluster_correct_response_function.assert_called()
 
         with mock.patch(
-            'core.transfer_operations.send_request_to_cluster_storage',
+            'core.transfer_operations.send_request_to_storage_cluster',
             side_effect=mock_send_incorrect_request_to_cluster_incorrect_response
         ) as mock_send_incorrect_request_to_cluster_incorrect_response_function:
             cluster_response_2 = request_upload_status(
@@ -76,7 +76,7 @@ class RequestUploadStatusTest(ConcentIntegrationTestCase):
 
         with self.assertRaises(UnexpectedResponse):
             with mock.patch(
-                'core.transfer_operations.send_request_to_cluster_storage',
+                'core.transfer_operations.send_request_to_storage_cluster',
                 side_effect=mock_send_incorrect_request_to_cluster_unexpected_response
             ) as mock_send_incorrect_request_to_cluster_unexpected_response_function:
                 request_upload_status(report_computed_task)

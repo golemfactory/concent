@@ -45,7 +45,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
 
     def test_that_blender_verification_order_should_download_two_files_and_call_verification_result_with_result_match(self):
         with mock.patch('verifier.tasks.clean_directory') as mock_clean_directory,\
-            mock.patch('verifier.tasks.send_request_to_cluster_storage') as mock_send_request_to_cluster_storage,\
+            mock.patch('verifier.tasks.send_request_to_storage_cluster') as mock_send_request_to_storage_cluster,\
             mock.patch('verifier.tasks.store_file_from_response_in_chunks') as mock_store_file_from_response_in_chunks,\
             mock.patch('verifier.tasks.verification_result.delay') as mock_verification_result:  # noqa: E125
             blender_verification_order(
@@ -64,8 +64,8 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
             )
 
         mock_clean_directory.assert_called_once()
-        mock_send_request_to_cluster_storage.assert_called()
-        self.assertEqual(mock_send_request_to_cluster_storage.call_count, 2)
+        mock_send_request_to_storage_cluster.assert_called()
+        self.assertEqual(mock_send_request_to_storage_cluster.call_count, 2)
         mock_store_file_from_response_in_chunks.assert_called()
         self.assertEqual(mock_store_file_from_response_in_chunks.call_count, 2)
         mock_verification_result.assert_called_once_with(
@@ -75,7 +75,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
 
     def test_that_blender_verification_order_should_call_verification_result_with_result_error_if_download_fails(self):
         with mock.patch('verifier.tasks.clean_directory') as mock_clean_directory,\
-            mock.patch('verifier.tasks.send_request_to_cluster_storage') as mock_send_request_to_cluster_storage,\
+            mock.patch('verifier.tasks.send_request_to_storage_cluster') as mock_send_request_to_storage_cluster,\
             mock.patch('verifier.tasks.store_file_from_response_in_chunks', mock_store_file_from_response_in_chunks_raise_exception),\
             mock.patch('verifier.tasks.verification_result.delay') as mock_verification_result:  # noqa: E125
             blender_verification_order(
@@ -94,7 +94,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
             )
 
         mock_clean_directory.assert_called_once()
-        mock_send_request_to_cluster_storage.assert_called_once()
+        mock_send_request_to_storage_cluster.assert_called_once()
         mock_verification_result.assert_called_once_with(
             self.compute_task_def['subtask_id'],
             VerificationResult.ERROR,

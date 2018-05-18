@@ -11,11 +11,11 @@ from django.conf import settings
 from django.db import DatabaseError
 from django.db import transaction
 
-from core.transfer_operations import create_file_transfer_token_for_concent
-from core.transfer_operations import send_request_to_cluster_storage
-from core.transfer_operations import store_pending_message
 from core.models import PendingResponse
 from core.models import Subtask
+from core.transfer_operations import create_file_transfer_token_for_concent
+from core.transfer_operations import send_request_to_storage_cluster
+from core.transfer_operations import store_pending_message
 from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
 from utils.constants import ErrorCode
 from utils.helpers import get_current_utc_timestamp
@@ -63,7 +63,7 @@ def blender_verification_order(
     for file_path in (source_package_path, result_package_path):
         try:
             file_transfer_token.sig = None
-            cluster_response = send_request_to_cluster_storage(
+            cluster_response = send_request_to_storage_cluster(
                 prepare_storage_request_headers(file_transfer_token),
                 settings.STORAGE_CLUSTER_ADDRESS + CLUSTER_DOWNLOAD_PATH + file_path,
                 method='get',

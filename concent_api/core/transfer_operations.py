@@ -241,17 +241,17 @@ def request_upload_status(report_computed_task: message.ReportComputedTask) -> b
     }
     request_http_address = settings.STORAGE_CLUSTER_ADDRESS + CLUSTER_DOWNLOAD_PATH + file_transfer_token.files[0]['path']
 
-    cluster_storage_response = send_request_to_cluster_storage(headers, request_http_address)
+    storage_cluster_response = send_request_to_storage_cluster(headers, request_http_address)
 
-    if cluster_storage_response.status_code == 200:
+    if storage_cluster_response.status_code == 200:
         return True
-    elif cluster_storage_response.status_code == 404:
+    elif storage_cluster_response.status_code == 404:
         return False
     else:
-        raise exceptions.UnexpectedResponse(f'Cluster storage returned HTTP {cluster_storage_response.status_code}')
+        raise exceptions.UnexpectedResponse(f'Cluster storage returned HTTP {storage_cluster_response.status_code}')
 
 
-def send_request_to_cluster_storage(headers, request_http_address, method='head'):
+def send_request_to_storage_cluster(headers, request_http_address, method='head'):
     assert method in ['get', 'head']
 
     stream = True if method == 'get' else False

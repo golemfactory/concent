@@ -10,6 +10,7 @@ ProtocolConstants = NamedTuple(
         ("minimum_upload_rate", int),
         ("download_leadin_time", int),
         ("payment_due_time", int),
+        ("additional_verification_call_time", int)
     ]
 )
 

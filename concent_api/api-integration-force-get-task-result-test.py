@@ -10,7 +10,7 @@ from golem_messages import message
 from golem_messages import shortcuts
 
 from utils.helpers import get_current_utc_timestamp
-from utils.helpers import get_storage_file_path
+from utils.helpers import get_storage_result_file_path
 from api_testing_common import api_request
 from api_testing_common import assert_condition
 from api_testing_common import count_fails
@@ -78,7 +78,7 @@ def test_case_1_test_for_existing_file(cluster_consts, cluster_url, test_id):
     file_content = task_id
     file_size = len(file_content)
     file_check_sum = 'sha1:' + hashlib.sha1(file_content.encode()).hexdigest()
-    file_path = get_storage_file_path(task_id, subtask_id)
+    file_path = get_storage_result_file_path(task_id, subtask_id)
 
     # Case 1 - test for existing file
     api_request(

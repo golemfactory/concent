@@ -150,8 +150,16 @@ def get_validated_client_public_key_from_client_message(golem_message: message.b
     return None
 
 
-def get_storage_file_path(subtask_id, task_id):
-    return f'blender/result/{task_id}/{task_id}.{subtask_id}.zip'
+def get_storage_file_path(category, subtask_id, task_id):
+    return f'blender/{category}/{task_id}/{task_id}.{subtask_id}.zip'
+
+
+def get_storage_result_file_path(subtask_id, task_id):
+    return get_storage_file_path('result', subtask_id, task_id)
+
+
+def get_storage_source_file_path(subtask_id, task_id):
+    return get_storage_file_path('source', subtask_id, task_id)
 
 
 def calculate_maximum_download_time(size: int) -> int:

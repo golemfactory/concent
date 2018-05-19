@@ -22,7 +22,7 @@ from utils.helpers import calculate_maximum_download_time
 from utils.helpers import calculate_subtask_verification_time
 from utils.helpers import deserialize_message
 from utils.helpers import get_current_utc_timestamp
-from utils.helpers import get_storage_file_path
+from utils.helpers import get_storage_result_file_path
 from utils.helpers import sign_message
 
 
@@ -135,8 +135,7 @@ def _create_file_transfer_token(
     report_computed_task: message.tasks.ReportComputedTask,
     authorized_client_public_key: bytes,
     operation: FileTransferToken.Operation,
-    deadline: Optional[int] = None
-
+    deadline: Optional[int] = None,
 ) -> FileTransferToken:
     """
     Function to create FileTransferToken from ReportComputedTask message
@@ -164,7 +163,7 @@ def _create_file_transfer_token(
 
     task_id         = report_computed_task.task_to_compute.compute_task_def['task_id']
     subtask_id      = report_computed_task.task_to_compute.compute_task_def['subtask_id']
-    file_path       = get_storage_file_path(task_id, subtask_id)
+    file_path       = get_storage_result_file_path(task_id, subtask_id)
 
     assert isinstance(authorized_client_public_key, bytes)
     assert isinstance(deadline, int) and not isinstance(deadline, bool) or deadline is None

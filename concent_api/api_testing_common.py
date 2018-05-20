@@ -1,6 +1,7 @@
 import argparse
 import random
 import sys
+from base64 import b64encode
 
 from freezegun import freeze_time
 
@@ -315,24 +316,57 @@ def create_signed_task_to_compute(
     timestamp=None,
     provider_public_key=None,
     requestor_public_key=None,
-    requestor_ethereum_public_key=REQUESTOR_ETHEREUM_PUBLIC_KEY,
-    provider_ethereum_public_key=PROVIDER_ETHEREUM_PUBLIC_KEY,
-    price=0
+    requestor_ethereum_public_key=None,
+    provider_ethereum_public_key=None,
+    price=0,
+    size=0,
+    package_hash=None,
 ):
     with freeze_time(timestamp):
         compute_task_def = ComputeTaskDefFactory(
             task_id=task_id,
             subtask_id=subtask_id,
             deadline= deadline,
+            extra_data={
+                'output_format': 'jpg',
+                'scene_file': 'test.jpg',
+            }
         )
         task_to_compute = TaskToComputeFactory(
             provider_public_key=provider_public_key if provider_public_key is not None else _get_provider_hex_public_key(),
             requestor_public_key=requestor_public_key if requestor_public_key is not None else _get_requestor_hex_public_key(),
             compute_task_def=compute_task_def,
-            requestor_ethereum_public_key=requestor_ethereum_public_key,
-            provider_ethereum_public_key=provider_ethereum_public_key,
+            requestor_ethereum_public_key=requestor_ethereum_public_key if requestor_ethereum_public_key is not None else REQUESTOR_ETHEREUM_PUBLIC_KEY,
+            provider_ethereum_public_key=provider_ethereum_public_key if provider_ethereum_public_key is not None else PROVIDER_ETHEREUM_PUBLIC_KEY,
             price=price,
-            size=1,
+            size=size,
+            package_hash=package_hash,
         )
         sign_message(task_to_compute, REQUESTOR_PRIVATE_KEY)
         return task_to_compute
+
+
+def upload_file_to_storage_cluster(
+    file_content,
+    file_path,
+    upload_token,
+    private_key,
+    public_key,
+    content_public_key,
+    storage_cluster_address,
+):
+    dumped_upload_token = dump(upload_token, None, content_public_key)
+    b64_encoded_token = b64encode(dumped_upload_token).decode()
+    headers = {
+        'Authorization': 'Golem ' + b64_encoded_token,
+        'Concent-Auth': b64encode(
+            create_client_auth_message(private_key, public_key, content_public_key)).decode(),
+        'Concent-Upload-Path': file_path,
+        'Content-Type': 'application/octet-stream'
+    }
+    return requests.post(
+        "{}upload/".format(storage_cluster_address),
+        headers=headers,
+        data=file_content,
+        verify=False
+    )

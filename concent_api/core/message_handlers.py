@@ -1265,7 +1265,8 @@ def handle_send_subtask_results_verify(
             error_code=ErrorCode.QUEUE_SUBTASK_STATE_TRANSITION_NOT_ALLOWED,
         )
     if not base.is_account_status_positive(  # pylint: disable=no-value-for-parameter
-        client_eth_address      = task_to_compute.requestor_ethereum_address,
+        client_eth_address=task_to_compute.requestor_ethereum_address,
+        pending_value=task_to_compute.price,
     ):
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,

@@ -23,7 +23,7 @@ def mock_store_file_from_response_in_chunks_raise_exception(_response, _file_pat
     CONCENT_PRIVATE_KEY         = CONCENT_PRIVATE_KEY,
     CONCENT_PUBLIC_KEY          = CONCENT_PUBLIC_KEY,
 )
-class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
+class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
 
     multi_db = True
 

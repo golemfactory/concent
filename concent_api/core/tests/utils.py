@@ -153,6 +153,7 @@ class ConcentIntegrationTestCase(TestCase):
         price = 0,
         package_hash: str = 'sha1:230fb0cad8c7ed29810a2183f0ec1d39c9df3f4a',
         sign_with_private_key = None,
+        size=1,
     ):
         """ Returns TaskToCompute deserialized. """
         compute_task_def = (
@@ -185,6 +186,7 @@ class ConcentIntegrationTestCase(TestCase):
                 ),
                 price=price,
                 package_hash=package_hash,
+                size=size,
             )
             task_to_compute = self._sign_message(
                 task_to_compute,

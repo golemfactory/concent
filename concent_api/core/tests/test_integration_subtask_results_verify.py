@@ -6,7 +6,8 @@ from django.test import override_settings
 from django.urls import reverse
 from freezegun import freeze_time
 
-from golem_messages import message, load
+from golem_messages import load
+from golem_messages import message
 
 from conductor.models import BlenderSubtaskDefinition
 from core.message_handlers import store_or_update_subtask
@@ -336,6 +337,20 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             fields={
                 'subtask_results_verify': self._prepare_subtask_results_verify(serialized_subtask_results_verify),
                 'file_transfer_token': self._prepare_file_transfer_token(subtask_results_verify_time_str),
+                'file_transfer_token.files': [
+                    message.FileTransferToken.FileInfo(
+                        path='blender/result/subtask1/subtask1.task1.zip',
+                        checksum=None,
+                        size=1,
+                        category=message.FileTransferToken.FileInfo.Category.results,
+                    ),
+                    message.FileTransferToken.FileInfo(
+                        path='blender/source/subtask1/subtask1.task1.zip',
+                        checksum='sha1:230fb0cad8c7ed29810a2183f0ec1d39c9df3f4a',
+                        size=1,
+                        category=message.FileTransferToken.FileInfo.Category.resources,
+                    )
+                ]
             }
         )
         self._assert_stored_message_counter_increased(increased_by=3)

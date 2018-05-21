@@ -12,3 +12,4 @@ raven
 mypy
 celery
 django-constance[database]
+python-mimeparse

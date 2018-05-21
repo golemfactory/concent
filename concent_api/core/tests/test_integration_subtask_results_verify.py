@@ -340,7 +340,8 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             file_transfer_token = create_file_transfer_token_for_golem_client(
                 self.report_computed_task,
                 b64encode(self.PROVIDER_PUBLIC_KEY),
-                message.FileTransferToken.Operation.upload
+                message.FileTransferToken.Operation.upload,
+                should_add_source=True,
             )
             file_transfer_token.encrypted = False
         return file_transfer_token

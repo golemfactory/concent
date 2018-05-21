@@ -13,7 +13,7 @@ from golem_messages.factories.concents import FileTransferTokenFactory
 from core.tests.utils               import ConcentIntegrationTestCase
 from utils.constants                import ErrorCode
 from utils.helpers                  import get_current_utc_timestamp
-from utils.helpers                  import get_storage_file_path
+from utils.helpers                  import get_storage_result_file_path
 
 
 @override_settings(
@@ -304,7 +304,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
         response = self.client.post(
             '{}{}'.format(
                 reverse('gatekeeper:upload'),
-                get_storage_file_path(
+                get_storage_result_file_path(
                     task_id=1,
                     subtask_id=2,
                 ),
@@ -321,7 +321,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
 
     def test_upload_should_return_401_if_specific_file_info_data(self):
         file = FileTransferToken.FileInfo(
-            path     = get_storage_file_path(
+            path     = get_storage_result_file_path(
                 task_id=1,
                 subtask_id=2
             ),
@@ -336,7 +336,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
         response = self.client.post(
             '{}{}'.format(
                 reverse('gatekeeper:upload'),
-                get_storage_file_path(
+                get_storage_result_file_path(
                     task_id=1,
                     subtask_id=2,
                 ),

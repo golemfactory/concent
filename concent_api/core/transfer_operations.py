@@ -22,7 +22,8 @@ from utils.helpers import calculate_maximum_download_time
 from utils.helpers import calculate_subtask_verification_time
 from utils.helpers import deserialize_message
 from utils.helpers import get_current_utc_timestamp
-from utils.helpers import get_storage_file_path
+from utils.helpers import get_storage_result_file_path
+from utils.helpers import get_storage_source_file_path
 from utils.helpers import sign_message
 
 
@@ -109,6 +110,7 @@ def create_file_transfer_token_for_concent(
     report_computed_task: message.tasks.ReportComputedTask,
     authorized_client_public_key: bytes,
     operation: FileTransferToken.Operation,
+    should_add_source: bool = False,
 ) -> FileTransferToken:
     ten_minutes = 600
     return _create_file_transfer_token(
@@ -116,6 +118,7 @@ def create_file_transfer_token_for_concent(
         authorized_client_public_key,
         operation,
         ten_minutes,
+        should_add_source=should_add_source,
     )
 
 
@@ -123,11 +126,13 @@ def create_file_transfer_token_for_golem_client(
     report_computed_task:       message.tasks.ReportComputedTask,
     authorized_client_public_key: bytes,
     operation:                  FileTransferToken.Operation,
+    should_add_source: bool = False,
 ) -> FileTransferToken:
     return _create_file_transfer_token(
         report_computed_task,
         authorized_client_public_key,
         operation,
+        should_add_source=should_add_source,
     )
 
 
@@ -135,8 +140,8 @@ def _create_file_transfer_token(
     report_computed_task: message.tasks.ReportComputedTask,
     authorized_client_public_key: bytes,
     operation: FileTransferToken.Operation,
-    deadline: Optional[int] = None
-
+    deadline: Optional[int] = None,
+    should_add_source: bool = False,
 ) -> FileTransferToken:
     """
     Function to create FileTransferToken from ReportComputedTask message
@@ -164,10 +169,11 @@ def _create_file_transfer_token(
 
     task_id         = report_computed_task.task_to_compute.compute_task_def['task_id']
     subtask_id      = report_computed_task.task_to_compute.compute_task_def['subtask_id']
-    file_path       = get_storage_file_path(task_id, subtask_id)
+    file_path       = get_storage_result_file_path(task_id, subtask_id)
 
     assert isinstance(authorized_client_public_key, bytes)
     assert isinstance(deadline, int) and not isinstance(deadline, bool) or deadline is None
+    assert isinstance(should_add_source, bool)
     assert operation in [FileTransferToken.Operation.download, FileTransferToken.Operation.upload]
 
     file_transfer_token = FileTransferToken(
@@ -177,14 +183,35 @@ def _create_file_transfer_token(
         operation                       = operation,
         subtask_id                      = report_computed_task.task_to_compute.compute_task_def['subtask_id']
     )
-    file_transfer_token.files = [FileTransferToken.FileInfo()]
-    file_transfer_token.files[0]['path']      = file_path
-    file_transfer_token.files[0]['checksum']  = report_computed_task.package_hash
-    file_transfer_token.files[0]['size']      = report_computed_task.size
+    files = [
+        create_file_info(
+            file_path=file_path,
+            package_hash=report_computed_task.package_hash,
+            size=report_computed_task.size,
+        )
+    ]
+    if should_add_source:
+        files.append(
+            create_file_info(
+                file_path=get_storage_source_file_path(task_id, subtask_id),
+                package_hash=report_computed_task.task_to_compute.package_hash,
+                size=report_computed_task.task_to_compute.size,
+            )
+        )
+        files.reverse()
 
+    file_transfer_token.files = files
     file_transfer_token = sign_message(file_transfer_token, settings.CONCENT_PRIVATE_KEY)
 
     return file_transfer_token
+
+
+def create_file_info(file_path, package_hash, size):
+    return FileTransferToken.FileInfo(
+        path=file_path,
+        checksum=package_hash,
+        size=size,
+    )
 
 
 def request_upload_status(report_computed_task: message.ReportComputedTask) -> bool:

@@ -291,6 +291,10 @@ class Subtask(Model):
 
     task_id = CharField(max_length=MESSAGE_TASK_ID_MAX_LENGTH)
 
+    computation_deadline        = DateTimeField()
+
+    result_package_size         = IntegerField()
+
     # Golem clients are not guaranteed to use unique subtask_id because they are UUIDs,
     # but Concent at this moment does not support subtasks with non-unique IDs.
     # However, the combination of requestor's public key and subtask ID is guaranteed to be unique.

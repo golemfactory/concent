@@ -149,6 +149,8 @@ def log_subtask_stored(
     state: str,
     provider_public_key: bytes,
     requestor_public_key: bytes,
+    computation_deadline: int,
+    result_package_size: int,
     next_deadline: Optional[int] = None,
 ):
     logger.info(
@@ -158,6 +160,8 @@ def log_subtask_stored(
         f"SUBTASK_ID: {subtask_id} -- "
         f"PROVIDER PUBLIC KEY: {_convert_bytes_to_hex(provider_public_key)} "
         f"REQUESTOR PUBLIC KEY: {_convert_bytes_to_hex(requestor_public_key)}"
+        f"RESULT_PACKAGE_SIZE: {result_package_size} -- "
+        f"COMPUTATION_DEADLINE: {computation_deadline} -- "
     )
 
 

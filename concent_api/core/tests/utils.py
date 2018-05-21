@@ -516,6 +516,7 @@ class ConcentIntegrationTestCase(TestCase):
         compute_task_def = ComputeTaskDefFactory(
             task_id=task_id,
             subtask_id=subtask_id,
+            extra_data=extra_data,
             short_description=short_description,
             working_directory=working_directory,
             performance=performance,

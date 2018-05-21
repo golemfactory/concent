@@ -351,6 +351,42 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
         self.assertIn('message', response.json().keys())
         self.assertEqual("application/json", response["Content-Type"])
 
+    @freeze_time("2018-12-30 11:00:00")
+    def test_upload_should_return_401_if_file_categories_are_not_unique_across_file_info_list(self):
+        file_1 = FileTransferToken.FileInfo(
+            path='blender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+            checksum='sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
+            size=1024,
+            category=FileTransferToken.FileInfo.Category.results
+        )
+        file_2 = FileTransferToken.FileInfo(
+            path='blender/benchmark/test_task/scene-Helicopter-28-cycles.blend',
+            checksum='sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
+            size=1024,
+            category=FileTransferToken.FileInfo.Category.results
+        )
+
+        self.upload_token.files = [file_1, file_2]
+
+        golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+        encoded_token = b64encode(golem_upload_token).decode()
+        response = self.client.post(
+            '{}{}'.format(
+                reverse('gatekeeper:upload'),
+                'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
+            ),
+            HTTP_AUTHORIZATION='Golem ' + encoded_token,
+            HTTP_CONCENT_AUTH=self.header_concent_auth,
+            content_type='application/x-www-form-urlencoded',
+        )
+
+        self.assertIsInstance(response, JsonResponse)
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('message', response.json().keys())
+        self.assertIn('error_code', response.json().keys())
+        self.assertEqual("application/json", response["Content-Type"])
+        self.assertEqual(response.json()["error_code"], ErrorCode.MESSAGE_FILES_CATEGORY_NOT_UNIQUE.value)
+
 
 @override_settings(
     CONCENT_PRIVATE_KEY = b'l\xcdh\x19\xeb$>\xbcG\xa1\xc7v\xe8\xd7o\x0c\xbf\x0e\x0fM\x89lw\x1e\xd7K\xd6Hnv$\xa2',
@@ -681,3 +717,39 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
         self.assertIsInstance(response, JsonResponse)
         self.assertEqual(response.status_code, 401)
         self.assertIn('message', response.json().keys())
+
+    @freeze_time("2018-12-30 11:00:00")
+    def test_download_should_return_401_if_file_categories_are_not_unique_across_file_info_list(self):
+        file_1 = FileTransferToken.FileInfo(
+            path='blender/benchmark/test_task/scene-Helicopter-27-cycles.blend',
+            checksum='sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
+            size=1024,
+            category=FileTransferToken.FileInfo.Category.results
+        )
+        file_2 = FileTransferToken.FileInfo(
+            path='blender/benchmark/test_task/scene-Helicopter-28-cycles.blend',
+            checksum='sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
+            size=1024,
+            category=FileTransferToken.FileInfo.Category.results
+        )
+
+        self.download_token.files = [file_1, file_2]
+
+        golem_download_token = dump(self.download_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+        encoded_token = b64encode(golem_download_token).decode()
+        response = self.client.get(
+            '{}{}'.format(
+                reverse('gatekeeper:download'),
+                'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
+            ),
+            HTTP_AUTHORIZATION='Golem ' + encoded_token,
+            HTTP_CONCENT_AUTH=self.header_concent_auth,
+            content_type='application/x-www-form-urlencoded',
+        )
+
+        self.assertIsInstance(response, JsonResponse)
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('message', response.json().keys())
+        self.assertIn('error_code', response.json().keys())
+        self.assertEqual("application/json", response["Content-Type"])
+        self.assertEqual(response.json()["error_code"], ErrorCode.MESSAGE_FILES_CATEGORY_NOT_UNIQUE.value)

@@ -1287,12 +1287,11 @@ def handle_send_subtask_results_verify(
 
     send_blender_verification_request(compute_task_def)
 
-    encoded_client_public_key = b64encode(provider_public_key)
     ack_subtask_results_verify = message.concents.AckSubtaskResultsVerify(
         subtask_results_verify=subtask_results_verify,
         file_transfer_token=create_file_transfer_token_for_golem_client(
             report_computed_task,
-            encoded_client_public_key,
+            requestor_public_key,
             FileTransferToken.Operation.upload,
             should_add_source=True,
         ),

@@ -55,10 +55,6 @@ def blender_verification_order(
         should_add_source=True,
     )
 
-    # !! Files MUST be added in following order - sources first, then results !!
-    assert file_transfer_token.files[0]['path'] == source_package_path
-    assert file_transfer_token.files[1]['path'] == result_package_path
-
     # Remove any files from VERIFIER_STORAGE_PATH.
     clean_directory(settings.VERIFIER_STORAGE_PATH)
 

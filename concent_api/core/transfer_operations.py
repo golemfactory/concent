@@ -187,6 +187,7 @@ def _create_file_transfer_token(
             file_path=file_path,
             package_hash=report_computed_task.package_hash,
             size=report_computed_task.size,
+            category=FileTransferToken.FileInfo.Category.results,
         )
     ]
     if should_add_source:
@@ -195,9 +196,9 @@ def _create_file_transfer_token(
                 file_path=get_storage_source_file_path(task_id, subtask_id),
                 package_hash=report_computed_task.task_to_compute.package_hash,
                 size=report_computed_task.task_to_compute.size,
+                category=FileTransferToken.FileInfo.Category.resources,
             )
         )
-        files.reverse()
 
     file_transfer_token.files = files
     file_transfer_token = sign_message(file_transfer_token, settings.CONCENT_PRIVATE_KEY)
@@ -205,11 +206,18 @@ def _create_file_transfer_token(
     return file_transfer_token
 
 
-def create_file_info(file_path, package_hash, size):
+def create_file_info(
+    file_path: str,
+    package_hash: str,
+    size: int,
+    category: FileTransferToken.FileInfo.Category,
+) -> FileTransferToken.FileInfo:
+    assert isinstance(category, FileTransferToken.FileInfo.Category)
     return FileTransferToken.FileInfo(
         path=file_path,
         checksum=package_hash,
         size=size,
+        category=category
     )
 
 

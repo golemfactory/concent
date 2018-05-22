@@ -103,7 +103,47 @@ def create_error_25_atomic_requests_not_set_for_database(database_name):
         f"ATOMIC_REQUESTS for database {database_name} is not set to True",
         hint="ATOMIC_REQUESTS must be set to True for all databases because our views rely on the fact that on errors "
              "all database changes are rolled back",
-        id="concent.E019",
+        id="concent.E025",
+    )
+
+
+def create_error_26_storage_server_internal_address_is_not_set():
+    return Error(
+        'STORAGE_SERVER_INTERNAL_ADDRESS setting is not defined',
+        hint='Set STORAGE_SERVER_INTERNAL_ADDRESS in your local_settings.py to the address of a Concent storage cluster that offers the /upload/ and /download/ endpoints.',
+        id='concent.E026',
+    )
+
+
+def create_error_27_storage_server_internal_address_is_not_valid_url(error):
+    return Error(
+        'STORAGE_SERVER_INTERNAL_ADDRESS is not a valid URL',
+        hint='{}'.format(error),
+        id='concent.E027',
+    )
+
+
+def create_error_28_verifier_storage_path_is_not_set():
+    return Error(
+        'VERIFIER_STORAGE_PATH setting is not defined',
+        hint='Set VERIFIER_STORAGE_PATH in your local_settings.py to the path to a directory where verifier can store files downloaded from the storage server, rendering results and any intermediate files.',
+        id='concent.E028',
+    )
+
+
+def create_error_29_verifier_storage_path_is_does_not_exists():
+    return Error(
+        'VERIFIER_STORAGE_PATH directory does not exists',
+        hint='Create directory {} or change VERIFIER_STORAGE_PATH setting'.format(settings.VERIFIER_STORAGE_PATH),
+        id='concent.E029',
+    )
+
+
+def create_error_30_verifier_storage_path_is_not_accessible():
+    return Error(
+        'Cannot write to VERIFIER_STORAGE_PATH',
+        hint='Current user does not have write permissions to directory {}'.format(settings.VERIFIER_STORAGE_PATH),
+        id='concent.E030',
     )
 
 
@@ -162,6 +202,35 @@ def check_settings_storage_cluster_address(app_configs, **kwargs):  # pylint: di
                 hint = '{}'.format(error),
                 id   = 'concent.E011',
             )]
+
+    return []
+
+
+@register()
+def check_settings_storage_server_internal_address(app_configs = None, **kwargs):  # pylint: disable=unused-argument
+    if not hasattr(settings, 'STORAGE_SERVER_INTERNAL_ADDRESS') and 'verifier' in settings.CONCENT_FEATURES:
+        return [create_error_26_storage_server_internal_address_is_not_set()]
+
+    if hasattr(settings, 'STORAGE_SERVER_INTERNAL_ADDRESS'):
+        url_validator = URLValidator(schemes = ['http', 'https'])
+        try:
+            url_validator(settings.STORAGE_SERVER_INTERNAL_ADDRESS)
+        except ValidationError as error:
+            return [create_error_27_storage_server_internal_address_is_not_valid_url(error)]
+
+    return []
+
+
+@register()
+def check_settings_verifier_storage_path(app_configs = None, **kwargs):  # pylint: disable=unused-argument
+    if not hasattr(settings, 'VERIFIER_STORAGE_PATH') and 'verifier' in settings.CONCENT_FEATURES:
+        return [create_error_28_verifier_storage_path_is_not_set()]
+
+    if hasattr(settings, 'VERIFIER_STORAGE_PATH'):
+        if not os.path.exists(settings.VERIFIER_STORAGE_PATH):
+            return [create_error_29_verifier_storage_path_is_does_not_exists()]
+        if not os.access(settings.VERIFIER_STORAGE_PATH, os.W_OK):
+            return [create_error_30_verifier_storage_path_is_not_accessible()]
 
     return []
 

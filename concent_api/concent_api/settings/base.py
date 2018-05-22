@@ -278,6 +278,13 @@ STORAGE_CLUSTER_SSL_CERTIFICATE_PATH = ''
 # Stored in a 'bytes' array, e.g. b'\xf3\x97\x19\xcdX\xda...'
 # CONCENT_ETHEREUM_PRIVATE_KEY = ''
 
+# A global constant defining the URL of the storage server
+# STORAGE_SERVER_INTERNAL_ADDRESS = ''
+
+# A global constant defining Path to a directory where verifier can store files downloaded from the storage server,
+# rendering results and any intermediate files.
+# VERIFIER_STORAGE_PATH = ''
+
 # Which components of this Django application should be enabled in this particular server instance.
 # The application is basically a bunch of services with totally different responsibilites that share a lot of code.
 # In a typical setup each instance has only one or two features enabled. Some of them provide public APIs, others are

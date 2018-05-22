@@ -1,15 +1,22 @@
 from enum import Enum
 import logging
+import os
 
 from celery import shared_task
 from mypy.types import Optional
+from golem_messages import message
+from requests import HTTPError
 
+from django.conf import settings
 from django.db import DatabaseError
 from django.db import transaction
 
-from core.transfer_operations import store_pending_message
 from core.models import PendingResponse
 from core.models import Subtask
+from core.transfer_operations import create_file_transfer_token_for_concent
+from core.transfer_operations import send_request_to_storage_cluster
+from core.transfer_operations import store_pending_message
+from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
 from utils.constants import ErrorCode
 from utils.helpers import get_current_utc_timestamp
 from utils.helpers import parse_timestamp_to_utc_datetime
@@ -19,6 +26,9 @@ from .constants import MAXIMUM_VERIFICATION_RESULT_TASK_RETRIES
 from .constants import VERIFICATION_RESULT_SUBTASK_STATE_ACCEPTED_LOG_MESSAGE
 from .constants import VERIFICATION_RESULT_SUBTASK_STATE_FAILED_LOG_MESSAGE
 from .constants import VERIFICATION_RESULT_SUBTASK_STATE_UNEXPECTED_LOG_MESSAGE
+from .utils import clean_directory
+from .utils import prepare_storage_request_headers
+from .utils import store_file_from_response_in_chunks
 
 
 logger = logging.getLogger(__name__)
@@ -27,11 +37,64 @@ logger = logging.getLogger(__name__)
 @shared_task
 def blender_verification_order(
     subtask_id:             str,
-    source_package_path:    str,  # pylint: disable=unused-argument
-    result_package_path:    str,  # pylint: disable=unused-argument
+    source_package_path:    str,
+    result_package_path:    str,
     output_format:          Enum,  # pylint: disable=unused-argument
     scene_file:             str,  # pylint: disable=unused-argument
+    report_computed_task:   message.ReportComputedTask,
 ):
+    assert source_package_path != result_package_path
+
+    # Generate a FileTransferToken valid for a download of any file listed in the order.
+    file_transfer_token = create_file_transfer_token_for_concent(
+        report_computed_task=report_computed_task,
+        operation=message.FileTransferToken.Operation.download,
+        should_add_source=True,
+    )
+
+    # !! Files MUST be added in following order - sources first, then results !!
+    assert file_transfer_token.files[0]['path'] == source_package_path
+    assert file_transfer_token.files[1]['path'] == result_package_path
+
+    # Remove any files from VERIFIER_STORAGE_PATH.
+    clean_directory(settings.VERIFIER_STORAGE_PATH)
+
+    # Download all the files listed in the message from the storage server to local storage.
+    for file_path in (source_package_path, result_package_path):
+        try:
+            file_transfer_token.sig = None
+            cluster_response = send_request_to_storage_cluster(
+                prepare_storage_request_headers(file_transfer_token),
+                settings.STORAGE_CLUSTER_ADDRESS + CLUSTER_DOWNLOAD_PATH + file_path,
+                method='get',
+            )
+            store_file_from_response_in_chunks(
+                cluster_response,
+                os.path.join(
+                    settings.VERIFIER_STORAGE_PATH,
+                    os.path.split(file_path)[0],
+                )
+            )
+
+        except (OSError, HTTPError) as exception:
+            logger.info('blender_verification_order for SUBTASK_ID {subtask_id} failed with error {exception}.')
+            verification_result.delay(
+                subtask_id,
+                VerificationResult.ERROR,
+                str(exception),
+                ErrorCode.VERIFIIER_FILE_DOWNLOAD_FAILED
+            )
+            return
+        except Exception as exception:
+            logger.info('blender_verification_order for SUBTASK_ID {subtask_id} failed with error {exception}.')
+            verification_result.delay(
+                subtask_id,
+                VerificationResult.ERROR,
+                str(exception),
+                ErrorCode.VERIFIIER_FILE_DOWNLOAD_FAILED
+            )
+            raise
+
     verification_result.delay(
         subtask_id,
         VerificationResult.MATCH,

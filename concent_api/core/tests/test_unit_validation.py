@@ -9,10 +9,12 @@ from golem_messages.message.tasks import TaskToCompute
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.tests.utils import ConcentIntegrationTestCase
 from core.exceptions import Http400
+from core.validation import validate_all_messages_identical
 from core.validation import validate_ethereum_addresses
 from core.validation import validate_golem_message_subtask_results_rejected
-from core.validation import validate_all_messages_identical
+from core.validation import validate_id_value
 from core.validation import validate_subtask_price_task_to_compute
+from utils.constants import ErrorCode
 
 
 def mocked_message_with_price(price):
@@ -89,3 +91,35 @@ class TestValidateAllMessagesIdentical(ConcentIntegrationTestCase):
         different_report_computed_task = self._get_deserialized_report_computed_task(size = 10)
         with self.assertRaises(Http400):
             validate_all_messages_identical([self.report_computed_task, different_report_computed_task])
+
+
+class TestValidateIdValue(ConcentIntegrationTestCase):
+
+    def test_that_function_should_pass_when_value_is_alphanumeric(self):
+        correct_values = [
+            'a',
+            '0',
+            'a0',
+            '0a',
+        ]
+
+        for value in correct_values:
+            try:
+                validate_id_value(value, 'test')
+            except Exception:  # pylint: disable=broad-except
+                self.fail()
+
+    def test_that_function_should_raise_exception_when_value_is_not_alphanumeric(self):
+        incorrect_values = [
+            '*',
+            'a-',
+            '0-',
+            'a+0',
+            '0+a',
+        ]
+
+        for value in incorrect_values:
+            try:
+                validate_id_value(value, 'test')
+            except Http400 as exception:
+                self.assertEqual(exception.error_code, ErrorCode.MESSAGE_VALUE_NOT_ALPHANUMERIC)

@@ -40,6 +40,7 @@ class ErrorCode(enum.Enum):
     MESSAGE_WRONG_FIELDS                                                = 'message.wrong_fields'
     MESSAGE_VALUE_BLANK                                                 = 'message.value_blank'
     MESSAGE_VALUE_NEGATIVE                                              = 'message.value_negative'
+    MESSAGE_VALUE_NOT_ALPHANUMERIC                                      = 'message.value_not_alphanumeric'
     MESSAGE_VALUE_NOT_INTEGER                                           = 'message.value_not_integer'
     MESSAGE_VALUE_NOT_STRING                                            = 'message.value_not_string'
     MESSAGE_VALUE_WRONG_LENGTH                                          = 'message.value_wrong_length'

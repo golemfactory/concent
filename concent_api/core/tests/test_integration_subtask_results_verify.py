@@ -28,8 +28,8 @@ from utils.testing_helpers import generate_ecc_key_pair
 class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
     def setUp(self):
         super().setUp()
-        self.task_id = "task_1"
-        self.subtask_id = "subtask_1"
+        self.task_id = "task1"
+        self.subtask_id = "subtask1"
         self.report_computed_task = self._create_report_computed_task()
 
     def test_that_concent_responds_with_service_refused_when_verification_for_this_subtask_is_duplicated(self):

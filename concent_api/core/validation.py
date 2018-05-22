@@ -50,6 +50,12 @@ def validate_id_value(value, field_name):
             error_code=ErrorCode.MESSAGE_VALUE_WRONG_LENGTH,
         )
 
+    if not value.isalnum():
+        raise Http400(
+            f'{field_name} must contain only alphanumeric chars.',
+            error_code=ErrorCode.MESSAGE_VALUE_NOT_ALPHANUMERIC,
+        )
+
 
 def validate_public_key(value, field_name):
     assert isinstance(field_name, str)

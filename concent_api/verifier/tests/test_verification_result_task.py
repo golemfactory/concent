@@ -6,6 +6,7 @@ from django.test import TransactionTestCase
 
 from celery.exceptions import Retry
 from golem_messages.factories.tasks import TaskToComputeFactory
+from golem_messages.factories.tasks import ReportComputedTaskFactory
 
 from core.message_handlers import store_subtask
 from core.models import PendingResponse
@@ -154,6 +155,9 @@ class VerifierVerificationResultTaskTransactionTest(TransactionTestCase):
             next_deadline=get_current_utc_timestamp() + settings.CONCENT_MESSAGING_TIME,
             task_to_compute=TaskToComputeFactory(
                 task_id='1',
+                subtask_id='8',
+            ),
+            report_computed_task=ReportComputedTaskFactory(
                 subtask_id='8',
             )
         )

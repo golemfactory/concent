@@ -8,11 +8,15 @@ from freezegun import freeze_time
 
 from golem_messages import message, load
 
+from conductor.models import BlenderSubtaskDefinition
 from core.message_handlers import store_or_update_subtask
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
 from core.transfer_operations import create_file_transfer_token_for_golem_client
 from utils.constants import ErrorCode
+from utils.helpers import get_storage_result_file_path
+from utils.helpers import get_storage_scene_file_path
+from utils.helpers import get_storage_source_file_path
 from utils.helpers import sign_message
 from utils.testing_helpers import generate_ecc_key_pair
 
@@ -30,6 +34,8 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         super().setUp()
         self.task_id = "task1"
         self.subtask_id = "subtask1"
+        self.source_package_path = get_storage_source_file_path(self.subtask_id, self.task_id)
+        self.result_package_path = get_storage_result_file_path(self.subtask_id, self.task_id)
         self.report_computed_task = self._create_report_computed_task()
 
     def test_that_concent_responds_with_service_refused_when_verification_for_this_subtask_is_duplicated(self):
@@ -297,7 +303,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
 
         # when
         with mock.patch("core.message_handlers.base.is_account_status_positive", return_value=True) as is_account_status_positive_mock:
-            with mock.patch("core.message_handlers.send_blender_verification_request") as send_verification_request_mock:
+            with mock.patch("core.queue_operations.blender_verification_request.delay") as send_verification_request_mock:
                 with freeze_time(subtask_results_verify_time_str):
                     response = self.client.post(
                         reverse('core:send'),
@@ -309,6 +315,13 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
 
         is_account_status_positive_mock.assert_called_with(
             client_eth_address=self.report_computed_task.task_to_compute.requestor_ethereum_address
+        )
+        send_verification_request_mock.assert_called_once_with(
+            subtask_id=self.subtask_id,
+            source_package_path=self.source_package_path,
+            result_package_path=self.result_package_path,
+            output_format=self.report_computed_task.task_to_compute.compute_task_def['extra_data']['output_format'],
+            scene_file=self.report_computed_task.task_to_compute.compute_task_def['extra_data']['scene_file'],
         )
 
         # then
@@ -323,7 +336,6 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             }
         )
         self._assert_stored_message_counter_increased(increased_by=3)
-        send_verification_request_mock.assert_called_once()  # TODO: once verification_request implemented change to 'assert_called_once_with'
 
     def _prepare_subtask_results_verify(self, serialized_subtask_results_verify):
         subtask_results_verify = load(
@@ -375,11 +387,25 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
 
     def _create_report_computed_task(self):
         time_str = "2018-04-01 10:00:00"
-        task_to_compute = self._get_deserialized_task_to_compute(
-            timestamp=time_str,
+        compute_task_def = self._get_deserialized_compute_task_def(
             deadline=self._add_time_offset_to_date(time_str, 3600),
             task_id=self.task_id,
-            subtask_id=self.subtask_id
+            subtask_id=self.subtask_id,
+            extra_data={
+                'end_task': 6,
+                'frames': [1],
+                'outfilebasename': 'Heli-cycles(3)',
+                'output_format': BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
+                'path_root': '/home/dariusz/Documents/tasks/resources',
+                'scene_file': get_storage_scene_file_path(self.subtask_id, self.task_id),
+                'script_src': '# This template is rendered by',
+                'start_task': 6,
+                'total_tasks': 8
+            }
+        )
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp=time_str,
+            compute_task_def=compute_task_def,
         )
 
         report_computed_task = self._get_deserialized_report_computed_task(

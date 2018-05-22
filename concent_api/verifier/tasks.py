@@ -7,7 +7,7 @@ from mypy.types import Optional
 from django.db import DatabaseError
 from django.db import transaction
 
-from core.message_handlers import store_pending_message
+from core.transfer_operations import store_pending_message
 from core.models import PendingResponse
 from core.models import Subtask
 from utils.constants import ErrorCode

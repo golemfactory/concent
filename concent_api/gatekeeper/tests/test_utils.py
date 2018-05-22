@@ -3,6 +3,7 @@ import json
 
 from django.http                    import JsonResponse
 from django.test                    import TestCase
+from golem_messages.message         import FileTransferToken
 
 from gatekeeper.utils               import gatekeeper_access_denied_response
 from utils.constants                import ErrorCode
@@ -19,6 +20,7 @@ class GatekeeperAccessDeniedResponseTest(TestCase):
     def test_gatekeeper_access_denied_response_should_return_appropriate_body_and_headers(self):
         response = gatekeeper_access_denied_response(
             self.message,
+            FileTransferToken.Operation.upload,
             ErrorCode.HEADER_AUTHORIZATION_MISSING,
             self.path,
             None,

@@ -1,9 +1,9 @@
 from logging                        import getLogger
 
+from golem_messages.message import FileTransferToken
 from golem_messages.message.base    import Message
 
 from utils.helpers                  import get_field_from_message
-
 
 logger = getLogger(__name__)
 
@@ -224,3 +224,64 @@ def get_subtask_id_for_logging(message):
     if not isinstance(subtask_id, str):
         subtask_id = ''
     return subtask_id
+
+
+def log_request_received(path_to_file, operation: FileTransferToken.Operation):
+    logger.debug("{} request received. Path to file: '{}'".format(
+        operation.capitalize(),
+        path_to_file
+    ))
+
+
+@replace_element_to_unavailable_instead_of_none
+def log_message_under_validation(
+    operation: FileTransferToken.Operation,
+    message_type: str,
+    file_path: str,
+    subtask_id: bytes,
+    public_key: bytes
+):
+
+    logger.debug("{} request will be validated. Message type: '{}'. File: '{}', with subtask_id '{}'. Client public key: '{}'".format(
+        operation.capitalize(),
+        message_type,
+        file_path,
+        subtask_id,
+        public_key
+    ))
+
+
+@replace_element_to_unavailable_instead_of_none
+def log_message_successfully_validated(
+    operation: FileTransferToken.Operation,
+    message_type: str,
+    file_path: str,
+    subtask_id: bytes,
+    public_key: bytes
+):
+    logger.info("{} request passed all validations.  Message type: '{}'. File: '{}', with subtask_id '{}'. Client public key: '{}'".format(
+        operation.capitalize(),
+        message_type,
+        file_path,
+        subtask_id,
+        public_key
+    ))
+
+
+@replace_element_to_unavailable_instead_of_none
+def log_operation_validation_failed(
+    operation: FileTransferToken.Operation,
+    message: str,
+    error_code: str,
+    path: str,
+    subtask_id: str,
+    client_key: str
+):
+    logger.info("{} validation failed. Message: {} Error code: '{}'. File '{}', with subtask_id '{}'. Client public key: '{}'".format(
+        operation.capitalize(),
+        message,
+        error_code,
+        path,
+        subtask_id,
+        client_key
+    ))

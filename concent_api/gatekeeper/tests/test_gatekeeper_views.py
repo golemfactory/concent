@@ -44,14 +44,14 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
     @freeze_time("2018-12-30 11:00:00")
     def test_upload_should_accept_valid_message(self):
         golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
-        encrypted_token = b64encode(golem_upload_token).decode()
+        encoded_token = b64encode(golem_upload_token).decode()
         response = self.client.post(
             '{}{}'.format(
                 reverse('gatekeeper:upload'),
                 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
             ),
             content_type='application/octet-stream',
-            HTTP_AUTHORIZATION = 'Golem ' + encrypted_token,
+            HTTP_AUTHORIZATION = 'Golem ' + encoded_token,
             HTTP_CONCENT_AUTH=self.header_concent_auth,
         )
 
@@ -64,13 +64,13 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
     @freeze_time("2018-12-30 11:00:00")
     def test_upload_should_return_401_if_wrong_request_content_type(self):
         golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
-        encrypted_token = b64encode(golem_upload_token).decode()
+        encoded_token = b64encode(golem_upload_token).decode()
         response = self.client.post(
             '{}{}'.format(
                 reverse('gatekeeper:upload'),
                 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
             ),
-            HTTP_AUTHORIZATION = 'Golem ' + encrypted_token,
+            HTTP_AUTHORIZATION = 'Golem ' + encoded_token,
             HTTP_CONCENT_AUTH=self.header_concent_auth,
             content_type = '',
         )
@@ -84,13 +84,13 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
     @freeze_time("2018-12-30 12:00:01")
     def test_upload_should_return_401_if_message_token_deadline_pass(self):
         golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
-        encrypted_token = b64encode(golem_upload_token).decode()
+        encoded_token = b64encode(golem_upload_token).decode()
         response = self.client.post(
             '{}{}'.format(
                 reverse('gatekeeper:upload'),
                 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
             ),
-            HTTP_AUTHORIZATION = 'Golem ' + encrypted_token,
+            HTTP_AUTHORIZATION = 'Golem ' + encoded_token,
             HTTP_CONCENT_AUTH=self.header_concent_auth,
             content_type = 'application/x-www-form-urlencoded',
         )
@@ -164,13 +164,13 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             self.upload_token.sig   = None
 
             golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
-            encrypted_token = b64encode(golem_upload_token).decode()
+            encoded_token = b64encode(golem_upload_token).decode()
             response = self.client.post(
                 '{}{}'.format(
                     reverse('gatekeeper:upload'),
                     'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
                 ),
-                HTTP_AUTHORIZATION             = 'Golem ' + encrypted_token,
+                HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
                 HTTP_CONCENT_AUTH=self.header_concent_auth,
                 content_type                   = 'application/x-www-form-urlencoded',
             )
@@ -208,13 +208,13 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             self.upload_token.sig   = None
 
             golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
-            encrypted_token = b64encode(golem_upload_token).decode()
+            encoded_token = b64encode(golem_upload_token).decode()
             response = self.client.post(
                 '{}{}'.format(
                     reverse('gatekeeper:upload'),
                     'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
                 ),
-                HTTP_AUTHORIZATION             = 'Golem ' + encrypted_token,
+                HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
                 HTTP_CONCENT_AUTH=self.header_concent_auth,
                 content_type                   = 'application/x-www-form-urlencoded',
             )
@@ -244,13 +244,13 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             self.upload_token.sig = None
 
             golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
-            encrypted_token = b64encode(golem_upload_token).decode()
+            encoded_token = b64encode(golem_upload_token).decode()
             response = self.client.post(
                 '{}{}'.format(
                     reverse('gatekeeper:upload'),
                     'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
                 ),
-                HTTP_AUTHORIZATION             = 'Golem ' + encrypted_token,
+                HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
                 HTTP_CONCENT_AUTH=self.header_concent_auth,
                 content_type                   = 'application/x-www-form-urlencoded',
             )
@@ -280,13 +280,13 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             self.upload_token.sig   = None
 
             golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
-            encrypted_token = b64encode(golem_upload_token).decode()
+            encoded_token = b64encode(golem_upload_token).decode()
             response = self.client.post(
                 '{}{}'.format(
                     reverse('gatekeeper:upload'),
                     'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
                 ),
-                HTTP_AUTHORIZATION             = 'Golem ' + encrypted_token,
+                HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
                 HTTP_CONCENT_AUTH=self.header_concent_auth,
                 content_type                   = 'application/x-www-form-urlencoded',
             )
@@ -332,7 +332,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
         self.upload_token.files = [file]
 
         golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
-        encrypted_token = b64encode(golem_upload_token).decode()
+        encoded_token = b64encode(golem_upload_token).decode()
         response = self.client.post(
             '{}{}'.format(
                 reverse('gatekeeper:upload'),
@@ -341,7 +341,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
                     subtask_id=2,
                 ),
             ),
-            HTTP_AUTHORIZATION             = 'Golem ' + encrypted_token,
+            HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
             HTTP_CONCENT_AUTH=self.header_concent_auth,
             content_type                   = 'application/x-www-form-urlencoded',
         )
@@ -416,13 +416,13 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
     @freeze_time("2018-12-30 11:00:00")
     def test_download_should_accept_valid_message(self):
         golem_download_token = dump(self.download_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
-        encrypted_token = b64encode(golem_download_token).decode()
+        encoded_token = b64encode(golem_download_token).decode()
         response = self.client.get(
             '{}{}'.format(
                 reverse('gatekeeper:download'),
                 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
             ),
-            HTTP_AUTHORIZATION = 'Golem ' + encrypted_token,
+            HTTP_AUTHORIZATION = 'Golem ' + encoded_token,
             HTTP_CONCENT_AUTH=self.header_concent_auth,
         )
 
@@ -435,12 +435,12 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
     @freeze_time("2018-12-30 11:00:00")
     def test_download_should_return_401_if_wrong_authorization_header(self):
         golem_download_token = dump(self.download_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
-        encrypted_token = b64encode(golem_download_token).decode()
+        encoded_token = b64encode(golem_download_token).decode()
         wrong_test_headers_with_expected_error_code = {
-            'GolemGolem '+ encrypted_token: ErrorCode.HEADER_AUTHORIZATION_UNRECOGNIZED_SCHEME.value,
+            'GolemGolem '+ encoded_token: ErrorCode.HEADER_AUTHORIZATION_UNRECOGNIZED_SCHEME.value,
             '':                             ErrorCode.HEADER_AUTHORIZATION_MISSING_TOKEN.value,
-            'Golem encrypted_token ':       ErrorCode.HEADER_AUTHORIZATION_NOT_BASE64_ENCODED_VALUE.value,
-            'Golem a' + encrypted_token:    ErrorCode.HEADER_AUTHORIZATION_TOKEN_INVALID_MESSAGE.value,
+            'Golem encoded_token ':       ErrorCode.HEADER_AUTHORIZATION_NOT_BASE64_ENCODED_VALUE.value,
+            'Golem a' + encoded_token:    ErrorCode.HEADER_AUTHORIZATION_TOKEN_INVALID_MESSAGE.value,
         }
         for authorization_header_value, error_code in wrong_test_headers_with_expected_error_code.items():
             response = self.client.get(
@@ -463,7 +463,7 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
                 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
             ),
             HTTP_CONCENT_AUTH=self.header_concent_auth,
-            HTTP_AUTHORIZATION_ABC='Golem ' + encrypted_token,
+            HTTP_AUTHORIZATION_ABC='Golem ' + encoded_token,
         )
         self.assertIsInstance(response, JsonResponse)
         self.assertEqual(response.status_code, 401)
@@ -476,13 +476,13 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
         upload_token = self.download_token
         upload_token.storage_cluster_address = 'www://storage.concent.golem.network/'
         golem_upload_token = dump(upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
-        encrypted_token = b64encode(golem_upload_token).decode()
+        encoded_token = b64encode(golem_upload_token).decode()
         response = self.client.get(
             '{}{}'.format(
                 reverse('gatekeeper:download'),
                 'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
             ),
-            HTTP_AUTHORIZATION = 'Golem ' + encrypted_token,
+            HTTP_AUTHORIZATION = 'Golem ' + encoded_token,
             HTTP_CONCENT_AUTH=self.header_concent_auth,
         )
 
@@ -555,13 +555,13 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
             self.download_token.sig   = None
 
             golem_download_token = dump(self.download_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
-            encrypted_token = b64encode(golem_download_token).decode()
+            encoded_token = b64encode(golem_download_token).decode()
             response = self.client.get(
                 '{}{}'.format(
                     reverse('gatekeeper:download'),
                     'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
                 ),
-                HTTP_AUTHORIZATION             = 'Golem ' + encrypted_token,
+                HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
                 HTTP_CONCENT_AUTH=self.header_concent_auth,
             )
 
@@ -598,13 +598,13 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
             self.download_token.sig   = None
 
             golem_download_token = dump(self.download_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
-            encrypted_token = b64encode(golem_download_token).decode()
+            encoded_token = b64encode(golem_download_token).decode()
             response = self.client.get(
                 '{}{}'.format(
                     reverse('gatekeeper:download'),
                     'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
                 ),
-                HTTP_AUTHORIZATION             = 'Golem ' + encrypted_token,
+                HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
                 HTTP_CONCENT_AUTH=self.header_concent_auth,
             )
 
@@ -633,13 +633,13 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
             self.download_token.sig   = None
 
             golem_download_token = dump(self.download_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
-            encrypted_token = b64encode(golem_download_token).decode()
+            encoded_token = b64encode(golem_download_token).decode()
             response = self.client.get(
                 '{}{}'.format(
                     reverse('gatekeeper:download'),
                     'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
                 ),
-                HTTP_AUTHORIZATION             = 'Golem ' + encrypted_token,
+                HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
                 HTTP_CONCENT_AUTH=self.header_concent_auth,
             )
 
@@ -668,13 +668,13 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
             self.download_token.sig   = None
 
             golem_download_token = dump(self.download_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
-            encrypted_token = b64encode(golem_download_token).decode()
+            encoded_token = b64encode(golem_download_token).decode()
             response = self.client.get(
                 '{}{}'.format(
                     reverse('gatekeeper:download'),
                     'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
                 ),
-                HTTP_AUTHORIZATION             = 'Golem ' + encrypted_token,
+                HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
                 HTTP_CONCENT_AUTH=self.header_concent_auth,
             )
 

@@ -7,7 +7,7 @@ from utils import logging
 def gatekeeper_access_denied_response(
     message: str,
     operation: FileTransferToken.Operation,
-    error_code=None,
+    error_code,
     path=None,
     subtask_id=None,
     client_key=None

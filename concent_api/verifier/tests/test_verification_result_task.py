@@ -1,6 +1,7 @@
 import mock
 
 from django.conf import settings
+from django.test import override_settings
 from django.db import DatabaseError
 from django.test import TransactionTestCase
 
@@ -24,6 +25,9 @@ from verifier.constants import VERIFICATION_RESULT_SUBTASK_STATE_UNEXPECTED_LOG_
 from verifier.tasks import verification_result
 
 
+@override_settings(
+    CONCENT_MESSAGING_TIME = 10,
+)
 class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
 
     multi_db = True
@@ -142,7 +146,7 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
 
     def test_that_verification_result_after_deadline_should_add_pending_messages_subtask_results_settled_and_change_subtask_state_to_accepted(self):
         with freeze_time(parse_timestamp_to_utc_datetime(self.subtask.next_deadline.timestamp() + 1)):
-            verification_result(
+            verification_result(  # pylint: disable=no-value-for-parameter
                 self.subtask.subtask_id,
                 VerificationResult.MATCH,
             )

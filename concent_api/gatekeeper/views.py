@@ -382,6 +382,40 @@ def parse_headers(request: WSGIRequest, path_to_file: str, operation: FileTransf
             concent_client_public_key
         )
 
+    # Validate category in FileInfo
+    if not all('category' in file for file in loaded_golem_message.files):
+        return gatekeeper_access_denied_response(
+            "Missing 'category' field in FileInfo.",
+            operation,
+            ErrorCode.MESSAGE_FILES_CATEGORY_MISSING,
+            path_to_file,
+            loaded_golem_message.subtask_id,
+            concent_client_public_key
+        )
+
+    if not all(
+        isinstance(file['category'], FileTransferToken.FileInfo.Category) for file in loaded_golem_message.files
+    ):
+        return gatekeeper_access_denied_response(
+            "'category' field has invalid value.",
+            operation,
+            ErrorCode.MESSAGE_FILES_CATEGORY_INVALID,
+            path_to_file,
+            loaded_golem_message.subtask_id,
+            concent_client_public_key
+        )
+
+    categories = [file_info['category'] for file_info in loaded_golem_message.files]
+    if len(set(categories)) != len(categories):
+        return gatekeeper_access_denied_response(
+            "'category' field must be unique across FileInfo list.",
+            operation,
+            ErrorCode.MESSAGE_FILES_CATEGORY_NOT_UNIQUE,
+            path_to_file,
+            loaded_golem_message.subtask_id,
+            concent_client_public_key
+        )
+
     matching_files = [file for file in loaded_golem_message.files if path_to_file == file['path']]
 
     if len(matching_files) == 1:

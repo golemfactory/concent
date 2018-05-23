@@ -73,7 +73,7 @@ def upload_file_to_storage_cluster(file_content, file_path, upload_token):
 @count_fails
 def test_case_1_test_for_existing_file(cluster_consts, cluster_url, test_id):
     current_time    = get_current_utc_timestamp()
-    (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'existing_file')
+    (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'existingfile')
 
     file_content = task_id
     file_size = len(file_content)
@@ -147,7 +147,7 @@ def test_case_1_test_for_existing_file(cluster_consts, cluster_url, test_id):
 @count_fails
 def test_case_2_test_for_non_existing_file(cluster_consts, cluster_url, test_id):
     current_time    = get_current_utc_timestamp()
-    (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'non_existing_file')
+    (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'nonexistingfile')
 
     api_request(
         cluster_url,

@@ -15,6 +15,7 @@ from golem_messages         import dump
 from golem_messages         import load
 from golem_messages         import message
 from golem_messages.factories.tasks import ComputeTaskDefFactory
+from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.message.base import Message
 from golem_messages.utils import encode_hex
@@ -126,25 +127,22 @@ class ConcentIntegrationTestCase(TestCase):
             settings.CONCENT_PUBLIC_KEY
         )
 
-    def _get_deserialized_report_computed_task(  # pylint: disable=no-self-use
+    def _get_deserialized_report_computed_task(
         self,
-        subtask_id      = '1',
+        subtask_id: str = '1',
         task_to_compute = None,
-        size            = 1,
+        size: int = 1,
         package_hash: str = 'sha1:4452d71687b6bc2c9389c3349fdc17fbd73b833b',
-        timestamp       = None,
+        timestamp: int = None,
     ):
         """ Returns ReportComputedTask deserialized. """
         with freeze_time(timestamp or self._get_timestamp_string()):
-            report_computed_task = message.ReportComputedTask(
-                task_to_compute = (
-                    task_to_compute or
-                        self._get_deserialized_task_to_compute(
-                            subtask_id=subtask_id
-                        )
+            report_computed_task = ReportComputedTaskFactory(
+                task_to_compute=(
+                    task_to_compute or self._get_deserialized_task_to_compute(subtask_id=subtask_id)
                 ),
-                size            = size,
-                package_hash    = package_hash
+                package_hash=package_hash,
+                size=size,
             )
         return report_computed_task
 

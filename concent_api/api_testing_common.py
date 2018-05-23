@@ -242,8 +242,8 @@ def parse_command_line(command_line):
 
 
 def get_task_id_and_subtask_id(test_id, case_name):
-    task_id = f'task_{case_name}_{test_id}'
-    subtask_id = 'sub_' + task_id
+    task_id = f'task{case_name}{test_id}'
+    subtask_id = 'sub' + task_id
     return (subtask_id, task_id)
 
 
@@ -269,7 +269,7 @@ def get_tests_list(patterns, all_objects):
 def execute_tests(tests_to_execute, objects, **kwargs):
     tests = [objects[name] for name in tests_to_execute]
     for test in tests:
-        test_id = kwargs['test_id'] + test.__name__
+        test_id = kwargs['test_id'] + '0'.join(test.__name__.split('_'))
         kw = {k: v for k, v in kwargs.items() if k != 'test_id'}
         test(test_id=test_id, **kw)
         print("-" * 80)

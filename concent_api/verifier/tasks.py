@@ -13,11 +13,14 @@ from django.db import transaction
 
 from core.models import PendingResponse
 from core.models import Subtask
+from core.payments import base
+from core.subtask_helpers import update_subtask_state
 from core.transfer_operations import create_file_transfer_token_for_concent
 from core.transfer_operations import send_request_to_storage_cluster
 from core.transfer_operations import store_pending_message
 from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
 from utils.constants import ErrorCode
+from utils.helpers import deserialize_message
 from utils.helpers import get_current_utc_timestamp
 from utils.helpers import parse_timestamp_to_utc_datetime
 from .constants import VerificationResult
@@ -149,7 +152,27 @@ def verification_result(
     # If the time is already past next_deadline for the subtask (SubtaskResultsRejected.timestamp + AVCT)
     # worker ignores worker's message and processes the timeout.
     if subtask.next_deadline < parse_timestamp_to_utc_datetime(get_current_utc_timestamp()):
-        pass  # TODO: Process timeout here
+        task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
+        # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
+        base.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
+            requestor_eth_address=task_to_compute.requestor_ethereum_address,
+            provider_eth_address=task_to_compute.provider_ethereum_address,
+            value=task_to_compute.price,
+            payment_ts=get_current_utc_timestamp(),
+        )
+
+        update_subtask_state(
+            subtask=subtask,
+            state=Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
+        )
+        for public_key in [subtask.provider.public_key_bytes, subtask.requestor.public_key_bytes]:
+            store_pending_message(
+                response_type=PendingResponse.ResponseType.SubtaskResultsSettled,
+                client_public_key=public_key,
+                queue=PendingResponse.Queue.ReceiveOutOfBand,
+                subtask=subtask,
+            )
+        return
 
     if result == VerificationResult.MISMATCH:
         # Worker adds SubtaskResultsRejected to provider's and requestor's receive queues (both out-of-band)
@@ -175,8 +198,15 @@ def verification_result(
                 f'SUBTASK_ID {subtask_id} -- RESULT {result} -- ERROR MESSAGE {error_message} -- ERROR CODE {error_code}'
             )
 
+        task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
+
         # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
-        # TODO: make payment
+        base.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
+            requestor_eth_address=task_to_compute.requestor_ethereum_address,
+            provider_eth_address=task_to_compute.provider_ethereum_address,
+            value=task_to_compute.price,
+            payment_ts=get_current_utc_timestamp(),
+        )
 
         # Worker adds SubtaskResultsSettled to provider's and requestor's receive queues (both out-of-band)
         for public_key in [subtask.provider.public_key_bytes, subtask.requestor.public_key_bytes]:
@@ -188,9 +218,9 @@ def verification_result(
             )
 
         # Worker changes subtask state to ACCEPTED
-        subtask.state = Subtask.SubtaskState.ACCEPTED.name  # pylint: disable=no-member
-        subtask.next_deadline = None
-        subtask.full_clean()
-        subtask.save()
+        update_subtask_state(
+            subtask=subtask,
+            state=Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
+        )
 
     logger.info(f'verification_result_task ends with: SUBTASK_ID {subtask_id} -- RESULT {result}')

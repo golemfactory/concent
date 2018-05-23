@@ -66,7 +66,25 @@ def update_timed_out_subtasks(
                 queue               = PendingResponse.Queue.ReceiveOutOfBand,
                 subtask             = subtask,
             )
-        assert subtask.state is not Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name  # pylint: disable=no-member
+        elif subtask.state == Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name:  # pylint: disable=no-member
+            # TODO: Make payment from requestor's deposit just like in the forced acceptance use case.
+            locked_subtask = Subtask.objects.select_for_update().get(pk=subtask.pk)
+            update_subtask_state(
+                subtask                 = locked_subtask,
+                state                   = Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
+            )
+            store_pending_message(
+                response_type       = PendingResponse.ResponseType.SubtaskResultsSettled,
+                client_public_key   = locked_subtask.provider.public_key_bytes,
+                queue               = PendingResponse.Queue.ReceiveOutOfBand,
+                subtask             = locked_subtask,
+            )
+            store_pending_message(
+                response_type       = PendingResponse.ResponseType.SubtaskResultsSettled,
+                client_public_key   = locked_subtask.requestor.public_key_bytes,
+                queue               = PendingResponse.Queue.ReceiveOutOfBand,
+                subtask             = locked_subtask,
+            )
 
     logging.log_changes_in_subtask_states(
         b64encode(client_public_key),

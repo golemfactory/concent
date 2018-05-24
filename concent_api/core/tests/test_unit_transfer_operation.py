@@ -138,5 +138,11 @@ class FileTransferTokenCreationTest(TestCase):
 
     def _get_deadline_exceeded_time_for_download_token(self, size):
         return self.time + datetime.timedelta(
-            seconds=3 * settings.CONCENT_MESSAGING_TIME + 2 * calculate_maximum_download_time(size) + self.deadline + 1
+            seconds=(
+                3 * settings.CONCENT_MESSAGING_TIME +
+                2 * calculate_maximum_download_time(
+                    size,
+                    settings.MINIMUM_UPLOAD_RATE,
+                ) + self.deadline + 1
+            )
         )

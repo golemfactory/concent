@@ -18,6 +18,7 @@ class TestDownloadLeadinTimeCheck(TestCase):
 
         self.assertEqual(errors, [])
 
+    @override_settings()
     def test_not_set_download_leadin_time_setting_value_should_produce_error(self):
         del settings.DOWNLOAD_LEADIN_TIME
 

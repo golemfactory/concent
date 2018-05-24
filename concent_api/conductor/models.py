@@ -1,4 +1,5 @@
 from django.core.validators import ValidationError
+from django.db.models import BooleanField
 from django.db.models import CharField
 from django.db.models import DateTimeField
 from django.db.models import ForeignKey
@@ -20,6 +21,12 @@ class VerificationRequest(Model):
 
     # Relative path of the .zip file that contains the rendering result received from the provider.
     result_package_path = CharField(max_length=255, unique=True)
+
+    # True when `upload_finished` task for this subtask has already been sent to the work queue.
+    upload_finished = BooleanField(default=False)
+
+    # True when `upload_acknowledged` task for this subtask has already been processed.
+    upload_acknowledged = BooleanField(default=False)
 
     def clean(self):
         super().clean()

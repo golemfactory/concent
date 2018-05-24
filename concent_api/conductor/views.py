@@ -1,8 +1,8 @@
 from django.http.response import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
+from core.tasks import upload_finished
 from utils.decorators import provides_concent_feature
-from verifier.tasks import blender_verification_order
 from .models import UploadReport
 from .models import VerificationRequest
 
@@ -34,13 +34,11 @@ def report_upload(_request, file_path):
         verification_request.upload_reports.filter(path=verification_request.source_package_path).exists() and
         verification_request.upload_reports.filter(path=verification_request.result_package_path).exists()
     ):
-        # If all expected files have been uploaded, the app sends blender_verification_order task to the work queue.
-        blender_verification_order.delay(
-            verification_request.subtask_id,
-            verification_request.source_package_path,
-            verification_request.result_package_path,
-            verification_request.blender_subtask_definition.output_format,
-            verification_request.blender_subtask_definition.scene_file,
-        )
+        # If all expected files have been uploaded, the app sends upload_finished task to the work queue.
+        upload_finished.delay(verification_request.subtask_id)
+
+        verification_request.upload_finished = True
+        verification_request.full_clean()
+        verification_request.save()
 
     return HttpResponse()

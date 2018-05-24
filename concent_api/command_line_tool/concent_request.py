@@ -62,7 +62,7 @@ def print_keys(req_pub_key, req_priv_key, prov_pub_key, prov_priv_key, conc_pub_
 
 if __name__ == '__main__':
     args = parse_arguments()
-
+    cluster_url = "{}/api/v1/{}/".format(args.cluster_url, args.endpoint)
     key_manager = KeyManager()
     requestor_public_key, requestor_private_key = key_manager.get_requestor_keys()
     provider_public_key, provider_private_key = key_manager.get_provider_keys()
@@ -92,7 +92,7 @@ if __name__ == '__main__':
             provider_public_key
         ).extract_message(json_data)
 
-        message_handler.send(args.cluster_url, message)
+        message_handler.send(cluster_url, message)
 
     elif args.endpoint == 'receive' or 'receive-out-of-band':
-        message_handler.receive(args.cluster_url, args.party, args.endpoint)
+        message_handler.receive(cluster_url, args.party, args.endpoint)

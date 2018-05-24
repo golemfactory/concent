@@ -70,9 +70,10 @@ class MessageHandler():
         elif response.status_code == 204:
             print('')
             print('STATUS: 204 No Content')
-        elif response.status_code in [400, 404, 500]:
+        elif response.status_code in [400, 404, 500, 503]:
             print('')
             print('STATUS: {}'.format(response.status_code))
+            print('Response Content:', response.content)
         else:
             deserialized_response = load(response.content, priv_key, self.concent_pub_key, check_time=False)
             print_message(deserialized_response, cluster_url, '')

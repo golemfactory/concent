@@ -10,7 +10,8 @@
                 "requestor_ethereum_public_key": "b'T8ER1hrI9hH0Zyu/m6u9H2K4rc1mC/dlCqK0PSzBSwvKBdHfysmrIIsQMyvecDU+TIkhDmq93Olfo5h2FSGRjw=='",
                 "provider_public_key": "",
                 "provider_ethereum_public_key": "b'A9LjJQJDc9ugt+kxA/r58chrekDr3VFZpfjU6Pv9dTP1gGLOvKEUxGwlB1ffDAbdWY8P0Pa37Mt6muFpJKC1mA=='==",
-                "price": 0,
+                "price": 1,
+                "size": 1,
                 "package_hash": "sha1:ee0697983f0b4cba0ae7c5343aa68f002ae22992",
                 "compute_task_def": {
                     "task_id": "",

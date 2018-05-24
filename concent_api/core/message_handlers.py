@@ -2,6 +2,7 @@ import datetime
 import copy
 
 from base64 import b64encode
+from logging import getLogger
 from typing import List
 from typing import Optional
 from typing import Union
@@ -48,6 +49,8 @@ from utils.helpers import parse_timestamp_to_utc_datetime
 from utils.helpers import sign_message
 from .utils import hex_to_bytes_convert
 
+logger = getLogger(__name__)
+
 
 def handle_send_force_report_computed_task(client_message):
     task_to_compute = client_message.report_computed_task.task_to_compute
@@ -71,6 +74,7 @@ def handle_send_force_report_computed_task(client_message):
 
     if client_message.report_computed_task.task_to_compute.compute_task_def['deadline'] < get_current_utc_timestamp():
         logging.log_timeout(
+            logger,
             client_message,
             provider_public_key,
             client_message.report_computed_task.task_to_compute.compute_task_def['deadline'],
@@ -96,6 +100,7 @@ def handle_send_force_report_computed_task(client_message):
         subtask             = subtask,
     )
     logging.log_message_added_to_queue(
+        logger,
         client_message,
         provider_public_key,
     )
@@ -179,12 +184,14 @@ def handle_send_ack_report_computed_task(client_message):
             subtask             = subtask,
         )
         logging.log_message_added_to_queue(
+            logger,
             client_message,
             requestor_public_key,
         )
         return HttpResponse("", status = 202)
     else:
         logging.log_timeout(
+            logger,
             client_message,
             requestor_public_key,
             task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
@@ -315,6 +322,7 @@ def handle_send_reject_report_computed_task(client_message):
             subtask             = subtask,
         )
         logging.log_message_added_to_queue(
+            logger,
             client_message,
             requestor_public_key,
         )
@@ -343,12 +351,14 @@ def handle_send_reject_report_computed_task(client_message):
             subtask             = subtask,
         )
         logging.log_message_added_to_queue(
+            logger,
             client_message,
             requestor_public_key,
         )
         return HttpResponse("", status = 202)
     else:
         logging.log_timeout(
+            logger,
             client_message,
             requestor_public_key,
             deserialized_message.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
@@ -388,6 +398,7 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
 
     elif force_get_task_result_deadline < get_current_utc_timestamp():
         logging.log_timeout(
+            logger,
             client_message,
             requestor_public_key,
             force_get_task_result_deadline,
@@ -466,6 +477,7 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
     )
     if forcing_acceptance_deadline < current_time:
         logging.log_timeout(
+            logger,
             client_message,
             provider_public_key,
             forcing_acceptance_deadline,
@@ -476,6 +488,7 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
         )
     elif current_time < verification_deadline:
         logging.log_timeout(
+            logger,
             client_message,
             provider_public_key,
             verification_deadline,
@@ -504,6 +517,7 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
             subtask             = subtask,
         )
         logging.log_message_added_to_queue(
+            logger,
             client_message,
             provider_public_key,
         )
@@ -588,6 +602,7 @@ def handle_send_force_subtask_results_response(client_message):
         subtask             = subtask,
     )
     logging.log_message_added_to_queue(
+        logger,
         client_message,
         requestor_public_key,
     )
@@ -820,6 +835,7 @@ def store_subtask(
     subtask.save()
 
     logging.log_subtask_stored(
+        logger,
         task_id,
         subtask_id,
         state.name,
@@ -1021,6 +1037,7 @@ def mark_message_as_delivered_and_log(undelivered_message, log_message):
     undelivered_message.save()
 
     logging.log_receive_message_from_database(
+        logger,
         log_message,
         undelivered_message.client.public_key_bytes,
         undelivered_message.response_type,
@@ -1066,6 +1083,7 @@ def update_subtask(
     subtask.save()
 
     logging.log_subtask_updated(
+        logger,
         subtask.task_id,
         subtask.subtask_id,
         state.name,
@@ -1130,10 +1148,13 @@ def set_subtask_messages(
             )
             setattr(subtask, message_name, stored_message)
             logging.log_stored_message_added_to_subtask(
+                logger,
                 subtask.task_id,
                 subtask.subtask_id,
                 subtask.state,
                 message_type,
+                message_to_store.provider_id,
+                message_to_store.requestor_id,
             )
 
 

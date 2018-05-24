@@ -64,19 +64,19 @@ class MessageHandler():
             'Content-Type': 'application/octet-stream',
         }
         response = requests.post(cluster_url, headers=headers, data=data)
-        if response.status_code == 202:
+        if response.status_code == 200:
+            deserialized_response = load(response.content, priv_key, self.concent_pub_key, check_time=False)
+            print_message(deserialized_response, cluster_url, '')
+        elif response.status_code == 202:
             print('')
             print('STATUS: 202 Message Accepted')
         elif response.status_code == 204:
             print('')
             print('STATUS: 204 No Content')
-        elif response.status_code in [400, 404, 500, 503]:
+        else:
             print('')
             print('STATUS: {}'.format(response.status_code))
             print('Response Content:', response.content)
-        else:
-            deserialized_response = load(response.content, priv_key, self.concent_pub_key, check_time=False)
-            print_message(deserialized_response, cluster_url, '')
 
     def select_keys(self, party):
         priv_key = getattr(self, f'{party}_private_key')

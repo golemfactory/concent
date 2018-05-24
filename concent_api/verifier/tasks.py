@@ -46,19 +46,30 @@ logger = logging.getLogger(__name__)
 def blender_verification_order(
     subtask_id: str,
     source_package_path: str,
+    source_size: int,
+    source_package_hash: str,
     result_package_path: str,
+    result_size: int,
+    result_package_hash: str,
     output_format: str,
     scene_file: str,  # pylint: disable=unused-argument
-    report_computed_task:   message.ReportComputedTask,
 ):
-    assert source_package_path != result_package_path
     assert output_format in BlenderSubtaskDefinition.OutputFormat.__members__.keys()
+    assert source_package_path != result_package_path
+    assert source_package_hash != result_package_hash
+    assert (source_size and source_package_hash and source_package_path) and (result_size and result_package_hash and result_package_path)
+    assert isinstance(subtask_id, str)
 
     # Generate a FileTransferToken valid for a download of any file listed in the order.
     file_transfer_token = create_file_transfer_token_for_concent(
-        report_computed_task=report_computed_task,
+        subtask_id=subtask_id,
+        source_package_path=source_package_path,
+        source_size=source_size,
+        source_package_hash=source_package_hash,
+        result_package_path=result_package_path,
+        result_size=result_size,
+        result_package_hash=result_package_hash,
         operation=message.FileTransferToken.Operation.download,
-        should_add_source=True,
     )
 
     # Remove any files from VERIFIER_STORAGE_PATH.

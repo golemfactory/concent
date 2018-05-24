@@ -107,98 +107,92 @@ def store_pending_message(
 
 
 def create_file_transfer_token_for_concent(
-    report_computed_task: message.tasks.ReportComputedTask,
+    subtask_id: str,
+    result_package_path: str,
+    result_size: int,
+    result_package_hash: str,
     operation: FileTransferToken.Operation,
-    should_add_source: bool = False,
+    source_package_path: Optional[str] = None,
+    source_size: Optional[int] = None,
+    source_package_hash: Optional[str] = None,
 ) -> FileTransferToken:
-    ten_minutes = 600
     return _create_file_transfer_token(
-        report_computed_task,
-        settings.CONCENT_PUBLIC_KEY,
-        operation,
-        ten_minutes,
-        should_add_source=should_add_source,
+        subtask_id=subtask_id,
+        source_package_path=source_package_path,
+        source_size=source_size,
+        source_package_hash=source_package_hash,
+        result_package_path=result_package_path,
+        result_size=result_size,
+        result_package_hash=result_package_hash,
+        authorized_client_public_key=settings.CONCENT_PUBLIC_KEY,
+        operation=operation,
+        token_expiration_deadline=get_current_utc_timestamp() + calculate_maximum_download_time(result_size, settings.MINIMUM_UPLOAD_RATE)
     )
 
 
 def create_file_transfer_token_for_golem_client(
-    report_computed_task:       message.tasks.ReportComputedTask,
+    report_computed_task: message.tasks.ReportComputedTask,
     authorized_client_public_key: bytes,
-    operation:                  FileTransferToken.Operation,
-    should_add_source: bool = False,
+    operation: FileTransferToken.Operation,
 ) -> FileTransferToken:
+    subtask_id = report_computed_task.task_to_compute.compute_task_def['subtask_id']
+    task_id = report_computed_task.task_to_compute.compute_task_def['task_id']
     return _create_file_transfer_token(
-        report_computed_task,
-        authorized_client_public_key,
-        operation,
-        should_add_source=should_add_source,
+        subtask_id=subtask_id,
+        source_package_path=get_storage_source_file_path(task_id, subtask_id),
+        source_size=report_computed_task.task_to_compute.size,
+        source_package_hash=report_computed_task.task_to_compute.package_hash,
+        result_package_path=get_storage_result_file_path(task_id, subtask_id),
+        result_size=report_computed_task.size,
+        result_package_hash=report_computed_task.package_hash,
+        authorized_client_public_key=authorized_client_public_key,
+        operation=operation,
+        token_expiration_deadline=calculate_token_expiration_deadline(operation, report_computed_task)
     )
 
 
 def _create_file_transfer_token(
-    report_computed_task: message.tasks.ReportComputedTask,
+    subtask_id: str,
+    result_package_path: str,
+    result_size: int,
+    result_package_hash: str,
     authorized_client_public_key: bytes,
     operation: FileTransferToken.Operation,
-    deadline: Optional[int] = None,
-    should_add_source: bool = False,
+    source_package_path: Optional[str] = None,
+    source_size: Optional[int] = None,
+    source_package_hash: Optional[str] = None,
+    token_expiration_deadline: Optional[int] = None,
 ) -> FileTransferToken:
-    """
-    Function to create FileTransferToken from ReportComputedTask message
-    """
-    def calculate_token_expiration_deadline(
-        operation: FileTransferToken.Operation,
-        deadline: Optional[int],
-    ) -> int:
-        if deadline is not None:
-            token_expiration_deadline = get_current_utc_timestamp() + deadline
-        else:
-            if operation == FileTransferToken.Operation.upload:
-                token_expiration_deadline = (
-                    report_computed_task.task_to_compute.compute_task_def['deadline'] +
-                    3 * settings.CONCENT_MESSAGING_TIME +
-                    2 * calculate_maximum_download_time(
-                        report_computed_task.size,
-                        settings.MINIMUM_UPLOAD_RATE,
-                    )
-                )
 
-            elif operation == FileTransferToken.Operation.download:
-                token_expiration_deadline = (
-                    report_computed_task.task_to_compute.compute_task_def['deadline'] +
-                    calculate_subtask_verification_time(report_computed_task)
-                )
-        return token_expiration_deadline
-
-    task_id         = report_computed_task.task_to_compute.compute_task_def['task_id']
-    subtask_id      = report_computed_task.task_to_compute.compute_task_def['subtask_id']
-    file_path       = get_storage_result_file_path(task_id, subtask_id)
-
+    assert (source_size and source_package_hash and source_package_path) or (result_size and result_package_hash and result_package_path)
     assert isinstance(authorized_client_public_key, bytes)
-    assert isinstance(deadline, int) and not isinstance(deadline, bool) or deadline is None
-    assert isinstance(should_add_source, bool)
+    assert isinstance(token_expiration_deadline, int) and not isinstance(token_expiration_deadline, bool) or token_expiration_deadline is None
     assert operation in [FileTransferToken.Operation.download, FileTransferToken.Operation.upload]
 
     file_transfer_token = FileTransferToken(
-        token_expiration_deadline       = calculate_token_expiration_deadline(operation, deadline),
+        token_expiration_deadline       = token_expiration_deadline,
         storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
         authorized_client_public_key    = authorized_client_public_key,
         operation                       = operation,
-        subtask_id                      = report_computed_task.task_to_compute.compute_task_def['subtask_id']
+        subtask_id                      = subtask_id
     )
-    files = [
-        create_file_info(
-            file_path=file_path,
-            package_hash=report_computed_task.package_hash,
-            size=report_computed_task.size,
-            category=FileTransferToken.FileInfo.Category.results,
-        )
-    ]
-    if should_add_source:
+    files = []
+    if result_package_path and result_package_hash and result_size:
         files.append(
             create_file_info(
-                file_path=get_storage_source_file_path(task_id, subtask_id),
-                package_hash=report_computed_task.task_to_compute.package_hash,
-                size=report_computed_task.task_to_compute.size,
+                file_path=result_package_path,
+                package_hash=result_package_hash,
+                size=result_size,
+                category=FileTransferToken.FileInfo.Category.results,
+            )
+        )
+
+    if source_package_path and source_package_hash and source_size:
+        files.append(
+            create_file_info(
+                file_path=source_package_path,
+                package_hash=source_package_hash,
+                size=source_size,
                 category=FileTransferToken.FileInfo.Category.resources,
             )
         )
@@ -229,8 +223,11 @@ def request_upload_status(report_computed_task: message.ReportComputedTask) -> b
     assert settings.STORAGE_CLUSTER_ADDRESS.endswith(slash)
 
     file_transfer_token = create_file_transfer_token_for_concent(
-        report_computed_task,
-        FileTransferToken.Operation.download
+        subtask_id=report_computed_task.subtask_id,
+        result_package_path=get_storage_result_file_path(report_computed_task.task_id, report_computed_task.subtask_id),
+        result_size=report_computed_task.size,
+        result_package_hash=report_computed_task.package_hash,
+        operation=FileTransferToken.Operation.download
     )
 
     assert len(file_transfer_token.files) == 1
@@ -280,3 +277,22 @@ def send_request_to_storage_cluster(headers, request_http_address, method='head'
         headers=headers,
         stream=stream,
     )
+
+
+def calculate_token_expiration_deadline(
+    operation: FileTransferToken.Operation,
+    report_computed_task: message.tasks.ReportComputedTask,
+) -> int:
+    if operation == FileTransferToken.Operation.upload:
+        token_expiration_deadline = (
+            report_computed_task.task_to_compute.compute_task_def['deadline'] +
+            3 * settings.CONCENT_MESSAGING_TIME +
+            2 * calculate_maximum_download_time(report_computed_task.size, settings.MINIMUM_UPLOAD_RATE)
+        )
+
+    elif operation == FileTransferToken.Operation.download:
+        token_expiration_deadline = (
+            report_computed_task.task_to_compute.compute_task_def['deadline'] +
+            calculate_subtask_verification_time(report_computed_task)
+        )
+    return token_expiration_deadline

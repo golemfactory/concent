@@ -391,7 +391,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:02"))
-        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:02:32"))
+        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"))
         self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
 
         self._assert_stored_message_counter_not_increased()
@@ -636,7 +636,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:03"))
-        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:02:32"))
+        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"))
         self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
 
         self._assert_stored_message_counter_not_increased()
@@ -872,7 +872,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:02"))
-        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:02:32"))
+        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"))
         self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
 
         self._assert_stored_message_counter_not_increased()
@@ -1100,7 +1100,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp,                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:02"))
-        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:02:32"))
+        self.assertEqual(message_file_transfer_token.token_expiration_deadline, self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"))
         self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
 
         self._assert_stored_message_counter_not_increased()

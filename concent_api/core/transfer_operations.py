@@ -16,10 +16,10 @@ from core.models import Client
 from core.models import PaymentInfo
 from core.models import PendingResponse
 from core.models import Subtask
+from core.utils import calculate_maximum_download_time
+from core.utils import calculate_subtask_verification_time
 from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
 from utils import logging
-from utils.helpers import calculate_maximum_download_time
-from utils.helpers import calculate_subtask_verification_time
 from utils.helpers import deserialize_message
 from utils.helpers import get_current_utc_timestamp
 from utils.helpers import get_storage_result_file_path
@@ -154,15 +154,18 @@ def _create_file_transfer_token(
         else:
             if operation == FileTransferToken.Operation.upload:
                 token_expiration_deadline = (
-                        report_computed_task.task_to_compute.compute_task_def['deadline'] +
-                        3 * settings.CONCENT_MESSAGING_TIME +
-                        2 * calculate_maximum_download_time(report_computed_task.size)
+                    report_computed_task.task_to_compute.compute_task_def['deadline'] +
+                    3 * settings.CONCENT_MESSAGING_TIME +
+                    2 * calculate_maximum_download_time(
+                        report_computed_task.size,
+                        settings.MINIMUM_UPLOAD_RATE,
+                    )
                 )
 
             elif operation == FileTransferToken.Operation.download:
                 token_expiration_deadline = (
-                        report_computed_task.task_to_compute.compute_task_def['deadline'] +
-                        calculate_subtask_verification_time(report_computed_task)
+                    report_computed_task.task_to_compute.compute_task_def['deadline'] +
+                    calculate_subtask_verification_time(report_computed_task)
                 )
         return token_expiration_deadline
 

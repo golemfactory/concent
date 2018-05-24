@@ -6,7 +6,7 @@ from golem_messages import cryptography
 ecies = cryptography.ECIES()
 
 
-def load_without_public_key(data, client_public_key = None):
+def load_without_public_key(data, client_public_key = None, check_time = True):
     """ Does the same `load` from golem_messages.shortcuts, but doesn't require public key. """
 
     def decrypt(payload):
@@ -14,4 +14,4 @@ def load_without_public_key(data, client_public_key = None):
             return payload
         return ecies.decrypt(payload, settings.CONCENT_PRIVATE_KEY)
 
-    return message.base.Message.deserialize(data, decrypt, True, client_public_key)
+    return message.base.Message.deserialize(data, decrypt, check_time, client_public_key)

@@ -137,21 +137,21 @@ class ApiViewTestCase(TestCase):
         self.assertEqual(response.status_code,  405)
 
 
-def _log_message_received_500_mock(_message, _client_public_key):
+def _log_changes_in_subtask_states_500_mock(_message, _client_public_key):
     Client.objects.get_or_create_full_clean(
         CONCENT_PUBLIC_KEY
     )
     raise TypeError
 
 
-def _log_message_received_400_mock(_message, _client_public_key):
+def _log_changes_in_subtask_states_400_mock(_logger, _message, _client_public_key):
     Client.objects.get_or_create_full_clean(
         CONCENT_PUBLIC_KEY
     )
     raise Http400('', error_code=ErrorCode.MESSAGE_UNEXPECTED)
 
 
-def _log_message_received_correct_response_mock(_message, _client_public_key):
+def _log_changes_in_subtask_states_correct_response_mock(_logger, _message, _client_public_key):
     Client.objects.get_or_create_full_clean(
         CONCENT_PUBLIC_KEY
     )
@@ -219,9 +219,9 @@ class ApiViewTransactionTestCase(TransactionTestCase):
     def test_api_view_should_rollback_changes_on_500_error(self):
 
         with mock.patch(
-            'core.views.logging.log_message_received',
-            side_effect=_log_message_received_500_mock
-        ) as _log_message_received_500_mock_function:
+            'core.subtask_helpers.logging.log_changes_in_subtask_states',
+            side_effect=_log_changes_in_subtask_states_500_mock
+        ) as _log_changes_in_subtask_states_500_mock_function:
             try:
                 self.client.post(
                     reverse('core:send'),
@@ -235,15 +235,15 @@ class ApiViewTransactionTestCase(TransactionTestCase):
             except TypeError:
                 pass
 
-        _log_message_received_500_mock_function.assert_called()
+        _log_changes_in_subtask_states_500_mock_function.assert_called()
         self.assertEqual(Client.objects.count(), 0)
 
     def test_api_view_should_rollback_changes_on_400_error(self):
 
         with mock.patch(
-            'core.views.logging.log_message_received',
-            side_effect=_log_message_received_400_mock
-        ) as _log_message_received_400_mock_function:
+            'core.subtask_helpers.logging.log_changes_in_subtask_states',
+            side_effect=_log_changes_in_subtask_states_400_mock
+        ) as _log_changes_in_subtask_states_400_mock_function:
             self.client.post(
                 reverse('core:send'),
                 data                                = dump(
@@ -254,14 +254,14 @@ class ApiViewTransactionTestCase(TransactionTestCase):
                 content_type                        = 'application/octet-stream',
             )
 
-        _log_message_received_400_mock_function.assert_called()
+        _log_changes_in_subtask_states_400_mock_function.assert_called()
         self.assertEqual(Client.objects.count(), 0)
 
     def test_api_view_should_not_rollback_changes_on_correct_response(self):
         with mock.patch(
-            'core.views.logging.log_message_received',
-            side_effect=_log_message_received_correct_response_mock
-        ) as _log_message_received_correct_response_mock_function:
+            'core.subtask_helpers.logging.log_changes_in_subtask_states',
+            side_effect=_log_changes_in_subtask_states_correct_response_mock
+        ) as _log_changes_in_subtask_states_correct_response_mock_function:
             response = self.client.post(
                 reverse('core:send'),
                 data                                = dump(
@@ -272,7 +272,7 @@ class ApiViewTransactionTestCase(TransactionTestCase):
                 content_type                        = 'application/octet-stream',
             )
 
-        _log_message_received_correct_response_mock_function.assert_called()
+        _log_changes_in_subtask_states_correct_response_mock_function.assert_called()
         self.assertEqual(response.status_code,   202)
         self.assertEqual(Client.objects.count(), 3)  # 3 because view itself is creating 2 clients.
 

@@ -2,6 +2,7 @@ import binascii
 from base64                         import b64decode
 from base64                         import b64encode
 import re
+from logging import getLogger
 from typing                         import Union
 
 from django.conf                    import settings
@@ -28,6 +29,7 @@ from utils.helpers                  import get_current_utc_timestamp
 
 
 VALID_SHA1_HASH_REGEX = re.compile(r"^[a-fA-F\d]{40}$")
+logger = getLogger(__name__)
 
 
 @provides_concent_feature('gatekeeper')
@@ -35,6 +37,7 @@ VALID_SHA1_HASH_REGEX = re.compile(r"^[a-fA-F\d]{40}$")
 @require_POST
 def upload(request):
     logging.log_request_received(
+        logger,
         request.META['PATH_INFO'] if 'PATH_INFO' in request.META.keys() else '-path to file UNAVAILABLE-',
         FileTransferToken.Operation.upload
     )
@@ -66,6 +69,7 @@ def upload(request):
 @require_safe
 def download(request):
     logging.log_request_received(
+        logger,
         request.META['PATH_INFO'] if 'PATH_INFO' in request.META.keys() else '-path to file UNAVAILABLE-',
         FileTransferToken.Operation.download
     )
@@ -169,6 +173,7 @@ def parse_headers(request: WSGIRequest, path_to_file: str, operation: FileTransf
         )
 
     logging.log_message_under_validation(
+            logger,
             loaded_golem_message.operation,
             loaded_golem_message.__class__.__name__,
             path_to_file,
@@ -423,6 +428,7 @@ def parse_headers(request: WSGIRequest, path_to_file: str, operation: FileTransf
 
     if len(matching_files) == 1:
         logging.log_message_successfully_validated(
+            logger,
             loaded_golem_message.operation,
             loaded_golem_message.__class__.__name__,
             path_to_file,

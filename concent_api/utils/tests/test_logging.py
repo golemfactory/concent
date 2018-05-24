@@ -1,26 +1,15 @@
+from logging import getLogger
 from unittest import TestCase
-from unittest.mock import patch
 
 import mock
 
-from utils.logging import log_empty_queue, replace_element_to_unavailable_instead_of_none, Message
+from utils.logging import Message
+from utils.logging import replace_element_to_unavailable_instead_of_none
 from utils.testing_helpers import generate_ecc_key_pair
 
 (PRIVATE_KEY, PUBLIC_KEY) = generate_ecc_key_pair()
 
-
-# pylint: disable=R0201
-class ApiViewTestCase(TestCase):
-
-    @patch('utils.logging.logger')
-    def test_check_log_empty_queue_schould_log_given_data(self, mock_logger):
-        endpoint = 'endpoint_name'
-        log_empty_queue(endpoint, PRIVATE_KEY)
-
-        mock_logger.info.assert_called_with('A message queue is empty in `{}()` -- CLIENT PUBLIC KEY: {}'.format(
-            endpoint,
-            PRIVATE_KEY,
-        ))
+logger = getLogger(__name__)
 
 
 # pylint: disable=R0201

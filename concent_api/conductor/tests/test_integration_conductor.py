@@ -146,7 +146,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         upload_report.full_clean()
         upload_report.save()
 
-        with mock.patch('conductor.views.blender_verification_order.delay') as mock_task:
+        with mock.patch('conductor.views.upload_finished.delay') as mock_task:
             response = self.client.get(
                 reverse(
                     'conductor:report-upload',
@@ -163,13 +163,10 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         upload_report = UploadReport.objects.last()
         self.assertEqual(upload_report.path, self.source_package_path)
 
-        mock_task.assert_called_with(
-            self.compute_task_def['subtask_id'],
-            self.source_package_path,
-            self.result_package_path,
-            BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
-            self.scene_file,
-        )
+        mock_task.assert_called_once_with(self.compute_task_def['subtask_id'])
+
+        verification_request.refresh_from_db()
+        self.assertTrue(verification_request.upload_finished)
 
     def test_blender_verification_request_task_should_create_verification_request_and_blender_subtask_definition(self):
         blender_verification_request(

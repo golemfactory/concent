@@ -11,14 +11,13 @@ from typing import Union
 import golem_messages.message as message_messages
 import golem_messages.message.concents as message_concents
 import golem_messages.message.tasks as message_tasks
-from golem_messages.datastructures import FrozenDict
+from golem_messages.datastructures import FrozenDict as Task
 from golem_messages.message import Message
 
 DEFAULT_ID_STRING_LENGTH = 36
 GENERATE_ID_CHARS = (string.ascii_letters + string.digits)
 
 JsonType = Dict[Text, Any]
-Task = FrozenDict
 
 
 def make_random_string(length=None, chars=None):

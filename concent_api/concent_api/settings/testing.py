@@ -76,6 +76,8 @@ DOWNLOAD_LEADIN_TIME      = 3
 
 CUSTOM_PROTOCOL_TIMES = True
 
+ADDITIONAL_VERIFICATION_CALL_TIME = 10
+
 # disable HandleServerErrorMiddleware in tests
 if MIDDLEWARE.index('concent_api.middleware.HandleServerErrorMiddleware') is not None:
     MIDDLEWARE.remove('concent_api.middleware.HandleServerErrorMiddleware')

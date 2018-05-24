@@ -5,6 +5,7 @@ from golem_messages.exceptions      import MessageError
 from core.constants                 import ETHEREUM_ADDRESS_LENGTH
 from core.constants                 import GOLEM_PUBLIC_KEY_LENGTH
 from core.constants                 import MESSAGE_TASK_ID_MAX_LENGTH
+from core.constants                 import VALID_ID_REGEX
 from core.exceptions                import Http400
 from utils.constants                import ErrorCode
 
@@ -50,10 +51,10 @@ def validate_id_value(value, field_name):
             error_code=ErrorCode.MESSAGE_VALUE_WRONG_LENGTH,
         )
 
-    if not value.isalnum():
+    if VALID_ID_REGEX.fullmatch(value) is None:
         raise Http400(
             f'{field_name} must contain only alphanumeric chars.',
-            error_code=ErrorCode.MESSAGE_VALUE_NOT_ALPHANUMERIC,
+            error_code=ErrorCode.MESSAGE_VALUE_NOT_ALLOWED,
         )
 
 

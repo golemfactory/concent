@@ -7,6 +7,7 @@ from golem_messages.message.tasks import SubtaskResultsRejected
 from golem_messages.message.tasks import TaskToCompute
 
 from core.constants import ETHEREUM_ADDRESS_LENGTH
+from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
 from core.tests.utils import ConcentIntegrationTestCase
 from core.exceptions import Http400
 from core.validation import validate_all_messages_identical
@@ -93,14 +94,15 @@ class TestValidateAllMessagesIdentical(ConcentIntegrationTestCase):
             validate_all_messages_identical([self.report_computed_task, different_report_computed_task])
 
 
-class TestValidateIdValue(ConcentIntegrationTestCase):
+class TestValidateIdValue(TestCase):
 
-    def test_that_function_should_pass_when_value_is_alphanumeric(self):
+    def test_that_function_should_pass_when_value_is_allowed(self):
         correct_values = [
             'a',
             '0',
             'a0',
             '0a',
+            'a-_b'
         ]
 
         for value in correct_values:
@@ -109,11 +111,11 @@ class TestValidateIdValue(ConcentIntegrationTestCase):
             except Exception:  # pylint: disable=broad-except
                 self.fail()
 
-    def test_that_function_should_raise_exception_when_value_is_not_alphanumeric(self):
+    def test_that_function_should_raise_exception_when_value_is_not_allowed(self):
         incorrect_values = [
             '*',
-            'a-',
-            '0-',
+            'a()',
+            '0@',
             'a+0',
             '0+a',
         ]
@@ -122,4 +124,28 @@ class TestValidateIdValue(ConcentIntegrationTestCase):
             try:
                 validate_id_value(value, 'test')
             except Http400 as exception:
-                self.assertEqual(exception.error_code, ErrorCode.MESSAGE_VALUE_NOT_ALPHANUMERIC)
+                self.assertEqual(exception.error_code, ErrorCode.MESSAGE_VALUE_NOT_ALLOWED)
+
+    def test_that_function_should_raise_exception_when_value_is_not_a_string(self):
+        incorrect_values = 1
+
+        try:
+            validate_id_value(incorrect_values, 'test')
+        except Http400 as exception:
+            self.assertEqual(exception.error_code, ErrorCode.MESSAGE_VALUE_WRONG_TYPE)
+
+    def test_that_function_should_raise_exception_when_value_is_blank(self):
+        incorrect_values = ''
+
+        try:
+            validate_id_value(incorrect_values, 'test')
+        except Http400 as exception:
+            self.assertEqual(exception.error_code, ErrorCode.MESSAGE_VALUE_BLANK)
+
+    def test_that_function_should_raise_exception_when_value_is_too_long(self):
+        incorrect_values = 'a' * (MESSAGE_TASK_ID_MAX_LENGTH + 1)
+
+        try:
+            validate_id_value(incorrect_values, 'test')
+        except Http400 as exception:
+            self.assertEqual(exception.error_code, ErrorCode.MESSAGE_VALUE_WRONG_LENGTH)

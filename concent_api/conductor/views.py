@@ -1,11 +1,13 @@
 from django.http.response import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
+from utils.decorators import provides_concent_feature
 from verifier.tasks import blender_verification_order
 from .models import UploadReport
 from .models import VerificationRequest
 
 
+@provides_concent_feature('conductor-urls')
 @csrf_exempt
 def report_upload(_request, file_path):
 

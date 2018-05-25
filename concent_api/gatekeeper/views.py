@@ -23,12 +23,14 @@ from gatekeeper.enums               import HashingAlgorithm
 from gatekeeper.utils               import gatekeeper_access_denied_response
 from utils                          import logging
 from utils.constants                import ErrorCode
+from utils.decorators import provides_concent_feature
 from utils.helpers                  import get_current_utc_timestamp
 
 
 VALID_SHA1_HASH_REGEX = re.compile(r"^[a-fA-F\d]{40}$")
 
 
+@provides_concent_feature('gatekeeper')
 @csrf_exempt
 @require_POST
 def upload(request):
@@ -59,6 +61,7 @@ def upload(request):
     return response
 
 
+@provides_concent_feature('gatekeeper')
 @csrf_exempt
 @require_safe
 def download(request):

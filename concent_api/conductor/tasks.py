@@ -1,5 +1,6 @@
 from celery import shared_task
 
+from utils.decorators import provides_concent_feature
 from verifier.tasks import blender_verification_order
 from .models import BlenderSubtaskDefinition
 from .models import UploadReport
@@ -7,6 +8,7 @@ from .models import VerificationRequest
 
 
 @shared_task
+@provides_concent_feature('conductor-worker')
 def blender_verification_request(
     subtask_id:             str,
     source_package_path:    str,

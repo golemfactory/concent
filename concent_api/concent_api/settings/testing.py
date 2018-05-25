@@ -51,7 +51,9 @@ LOGGING = {
 CONCENT_FEATURES = [
     "admin-panel",
     "concent-api",
+    "concent-worker",
     "conductor-urls",
+    "conductor-worker",
     "gatekeeper",
     "verifier",
 ]

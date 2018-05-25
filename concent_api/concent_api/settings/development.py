@@ -18,7 +18,9 @@ CONCENT_PRIVATE_KEY = b'l\xcdh\x19\xeb$>\xbcG\xa1\xc7v\xe8\xd7o\x0c\xbf\x0e\x0fM
 CONCENT_FEATURES = [
     "admin-panel",
     "concent-api",
+    "concent-worker",
     "conductor-urls",
+    "conductor-worker",
     "gatekeeper",
     "verifier",
 ]

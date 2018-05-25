@@ -57,3 +57,4 @@ class ErrorCode(enum.Enum):
     REQUEST_BODY_NOT_EMPTY                                              = 'request_body.not_empty'
     SUBTASK_DUPLICATE_REQUEST                                           = 'subtask.duplicate_request'
     VERIFIIER_FILE_DOWNLOAD_FAILED                                      = 'verifier.file_download_failed'
+    VERIFIIER_UNPACKING_ARCHIVE_FAILED                                  = 'verifier.unpacking_archive_failed'

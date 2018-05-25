@@ -1,4 +1,4 @@
-from enum import Enum
+from zipfile import BadZipFile
 import logging
 import os
 
@@ -11,6 +11,7 @@ from django.conf import settings
 from django.db import DatabaseError
 from django.db import transaction
 
+from conductor.models import BlenderSubtaskDefinition
 from core.models import PendingResponse
 from core.models import Subtask
 from core.payments import base
@@ -31,7 +32,9 @@ from .constants import VERIFICATION_RESULT_SUBTASK_STATE_FAILED_LOG_MESSAGE
 from .constants import VERIFICATION_RESULT_SUBTASK_STATE_UNEXPECTED_LOG_MESSAGE
 from .utils import clean_directory
 from .utils import prepare_storage_request_headers
+from .utils import run_blender
 from .utils import store_file_from_response_in_chunks
+from .utils import unpack_archive
 
 
 logger = logging.getLogger(__name__)
@@ -39,12 +42,12 @@ logger = logging.getLogger(__name__)
 
 @shared_task
 def blender_verification_order(
-    subtask_id:             str,
-    source_package_path:    str,
-    result_package_path:    str,
-    output_format:          Enum,  # pylint: disable=unused-argument
-    scene_file:             str,  # pylint: disable=unused-argument
-    report_computed_task:   message.ReportComputedTask,
+    subtask_id: str,
+    source_package_path: str,
+    result_package_path: str,
+    output_format: BlenderSubtaskDefinition.OutputFormat,  # pylint: disable=unused-argument
+    scene_file: str,  # pylint: disable=unused-argument
+    report_computed_task: message.ReportComputedTask,
 ):
     assert source_package_path != result_package_path
 
@@ -94,6 +97,22 @@ def blender_verification_order(
             )
             raise
 
+    # Verifier runs blender
+    run_blender()
+
+    # Verifier unpacks the archive with project source.
+    for file_path in (source_package_path, result_package_path):
+        try:
+            unpack_archive(file_path)
+        except (OSError, BadZipFile) as e:
+            verification_result.delay(
+                subtask_id,
+                VerificationResult.ERROR,
+                str(e),
+                ErrorCode.VERIFIIER_UNPACKING_ARCHIVE_FAILED
+            )
+            return
+
     verification_result.delay(
         subtask_id,
         VerificationResult.MATCH,
@@ -104,10 +123,10 @@ def blender_verification_order(
 @transaction.atomic(using='control')
 def verification_result(
     self,
-    subtask_id:     str,
-    result:         VerificationResult,
-    error_message:  Optional[str] = None,
-    error_code:     Optional[ErrorCode] = None,
+    subtask_id: str,
+    result: VerificationResult,
+    error_message: Optional[str] = None,
+    error_code: Optional[ErrorCode] = None,
 ):
     logger.info(f'verification_result_task starts with: SUBTASK_ID {subtask_id} -- RESULT {result}')
 

@@ -11,6 +11,10 @@ class ConcentInSoftShutdownMode(Exception):
     pass
 
 
+class ConcentFeatureIsNotAvailable(Exception):
+    pass
+
+
 class Http400(Exception):
 
     def __init__(self, error_message: Optional[str], error_code: ErrorCode) -> None:

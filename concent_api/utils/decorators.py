@@ -16,6 +16,7 @@ from golem_messages.exceptions      import TimestampError
 
 from core.validation                import validate_golem_message_signed_with_key
 from core.exceptions                import ConcentInSoftShutdownMode
+from core.exceptions import ConcentFeatureIsNotAvailable
 from core.exceptions                import Http400
 
 from utils.helpers                  import get_validated_client_public_key_from_client_message
@@ -179,5 +180,24 @@ def handle_errors_and_responses(database_name):
             assert False, "Invalid response type"
             raise Exception("Invalid response type")
 
+        return wrapper
+    return decorator
+
+
+def provides_concent_feature(concent_feature: str):
+    """
+    Decorator for declaring that given `concent_feature` is required to be in setting CONCENT_FEATURES
+    for decorated view or celery task function.
+    """
+    def decorator(_function):
+        assert callable(_function)
+
+        @wraps(_function)
+        def wrapper(*args, **kwargs):
+            if concent_feature not in settings.CONCENT_FEATURES:
+                raise ConcentFeatureIsNotAvailable(
+                    f'Concent feature `{concent_feature}` is not enabled. Function `{_function.__name__}` cannot be called in this configuration.'
+                )
+            return _function(*args, **kwargs)
         return wrapper
     return decorator

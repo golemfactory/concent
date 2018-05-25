@@ -43,14 +43,23 @@ def _print_message_info(message_info):
     print('-' * len(message_info) + '\n' + str(message_info) + '\n' + '-' * len(message_info))
 
 
+def print_response_info(response):
+    print('STATUS: {}'.format(response.status_code))
+    print('Content-Type: {}'.format(response.headers['Content-Type']))
+    if response.headers['Content-Type'] == 'text/html':
+        print('CONTENT: {}'.format('Not Found'))
+    else:
+        print('CONTENT: {}'.format(response.content))
+
+
 class MessageHandler():
     def __init__(
-        self,
-        requestor_private_key,
-        requestor_public_key,
-        provider_public_key,
-        provider_private_key,
-        concent_pub_key,
+            self,
+            requestor_private_key,
+            requestor_public_key,
+            provider_public_key,
+            provider_private_key,
+            concent_pub_key,
     ):
 
         self.requestor_private_key = requestor_private_key
@@ -64,19 +73,14 @@ class MessageHandler():
             'Content-Type': 'application/octet-stream',
         }
         response = requests.post(cluster_url, headers=headers, data=data)
-        if response.status_code == 200:
-            deserialized_response = load(response.content, priv_key, self.concent_pub_key, check_time=False)
-            print_message(deserialized_response, cluster_url, '')
-        elif response.status_code == 202:
-            print('')
-            print('STATUS: 202 Message Accepted')
-        elif response.status_code == 204:
-            print('')
-            print('STATUS: 204 No Content')
+        if response.headers['Content-Type'] == 'application/octet-stream':
+            if response.status_code == 200:
+                deserialized_response = load(response.content, priv_key, self.concent_pub_key, check_time=False)
+                print_message(deserialized_response, cluster_url, '')
+            else:
+                print_response_info(response)
         else:
-            print('')
-            print('STATUS: {}'.format(response.status_code))
-            print('Response Content:', response.content)
+            print_response_info(response)
 
     def select_keys(self, party):
         priv_key = getattr(self, f'{party}_private_key')

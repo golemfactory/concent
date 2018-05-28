@@ -1,4 +1,5 @@
 import base64
+import datetime
 
 from django.core.validators import ValidationError
 from django.db.models       import BinaryField
@@ -322,10 +323,14 @@ class Subtask(Model):
         if config.SOFT_SHUTDOWN_MODE is True and self.state_enum in self.ACTIVE_STATES:
             raise ConcentInSoftShutdownMode
 
-        # next_deadline must be int only for active states
-        if not self._state.adding and not isinstance(self.next_deadline, int) and self.state_enum in self.ACTIVE_STATES:
+        # next_deadline must be datetime only for active states
+        if (
+            not self._state.adding and
+            not isinstance(self.next_deadline, datetime.datetime) and
+            self.state_enum in self.ACTIVE_STATES
+        ):
             raise ValidationError({
-                'next_deadline': 'next_deadline must be int for active state.'
+                'next_deadline': 'next_deadline must be datetime for active state.'
             })
 
         # next_deadline must be None in passive states

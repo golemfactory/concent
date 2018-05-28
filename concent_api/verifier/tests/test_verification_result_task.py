@@ -56,7 +56,7 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
         with mock.patch('verifier.tasks.logger.warning') as logging_warning_mock:
             verification_result(  # pylint: disable=no-value-for-parameter
                 self.subtask.subtask_id,
-                VerificationResult.MATCH,
+                VerificationResult.MATCH.name,
             )
 
         logging_warning_mock.assert_called_once_with(
@@ -69,7 +69,7 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
         with mock.patch('verifier.tasks.logger.warning') as logging_warning_mock:
             verification_result(  # pylint: disable=no-value-for-parameter
                 self.subtask.subtask_id,
-                VerificationResult.MATCH,
+                VerificationResult.MATCH.name,
             )
 
         logging_warning_mock.assert_called_once_with(
@@ -82,7 +82,7 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
         with mock.patch('verifier.tasks.logger.error') as logging_error_mock:
             verification_result(  # pylint: disable=no-value-for-parameter
                 self.subtask.subtask_id,
-                VerificationResult.MATCH,
+                VerificationResult.MATCH.name,
             )
 
         logging_error_mock.assert_called_once_with(
@@ -96,7 +96,7 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
         with freeze_time(parse_timestamp_to_utc_datetime(get_current_utc_timestamp())):
             verification_result(  # pylint: disable=no-value-for-parameter
                 self.subtask.subtask_id,
-                VerificationResult.MISMATCH,
+                VerificationResult.MISMATCH.name,
             )
 
         self.subtask.refresh_from_db()
@@ -111,9 +111,9 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
             with mock.patch('verifier.tasks.logger.info') as logging_info_mock:
                 verification_result(  # pylint: disable=no-value-for-parameter
                     self.subtask.subtask_id,
-                    VerificationResult.ERROR,
+                    VerificationResult.ERROR.name,
                     'test',
-                    ErrorCode.REQUEST_BODY_NOT_EMPTY,
+                    ErrorCode.REQUEST_BODY_NOT_EMPTY.name,
                 )
 
         self.subtask.refresh_from_db()
@@ -127,14 +127,14 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
         self.assertEqual(
             logging_info_mock.call_args_list[1][0][0],
             f'verification_result_task processing error result with: '
-            f'SUBTASK_ID {self.subtask.subtask_id} -- RESULT {VerificationResult.ERROR} -- ERROR MESSAGE test -- ERROR CODE {ErrorCode.REQUEST_BODY_NOT_EMPTY}'
+            f'SUBTASK_ID {self.subtask.subtask_id} -- RESULT {VerificationResult.ERROR.name} -- ERROR MESSAGE test -- ERROR CODE {ErrorCode.REQUEST_BODY_NOT_EMPTY.name}'
         )
 
     def test_that_verification_result_match_should_add_pending_messages_subtask_results_settled_and_change_subtask_state_to_accepted(self):
         with freeze_time(parse_timestamp_to_utc_datetime(get_current_utc_timestamp())):
             verification_result(  # pylint: disable=no-value-for-parameter
                 self.subtask.subtask_id,
-                VerificationResult.MATCH,
+                VerificationResult.MATCH.name,
             )
 
         self.subtask.refresh_from_db()
@@ -148,7 +148,7 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
         with freeze_time(parse_timestamp_to_utc_datetime(self.subtask.next_deadline.timestamp() + 1)):
             verification_result(  # pylint: disable=no-value-for-parameter
                 self.subtask.subtask_id,
-                VerificationResult.MATCH,
+                VerificationResult.MATCH.name,
             )
 
         self.subtask.refresh_from_db()
@@ -191,5 +191,5 @@ class VerifierVerificationResultTaskTransactionTest(TransactionTestCase):
             with self.assertRaises(Retry):
                 verification_result(  # pylint: disable=no-value-for-parameter
                     self.subtask.subtask_id,
-                    VerificationResult.MATCH,
+                    VerificationResult.MATCH.name,
                 )

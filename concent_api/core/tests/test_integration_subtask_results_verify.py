@@ -1,5 +1,3 @@
-from base64 import b64encode
-
 import mock
 from django.conf import settings
 from django.test import override_settings
@@ -78,7 +76,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self._test_response(
             response,
             status=200,
-            key=self.PROVIDER_PRIVATE_KEY,
+            key=self.REQUESTOR_PRIVATE_KEY,
             message_type=message.concents.ServiceRefused,
             fields={
                 'reason': message.concents.ServiceRefused.REASON.DuplicateRequest,
@@ -184,7 +182,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self._test_response(
             response,
             status=200,
-            key=self.PROVIDER_PRIVATE_KEY,
+            key=self.REQUESTOR_PRIVATE_KEY,
             message_type=message.concents.ServiceRefused,
             fields={
                 'reason': message.concents.ServiceRefused.REASON.InvalidRequest,
@@ -216,14 +214,15 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         is_account_status_positive_mock.assert_called_with(
-            client_eth_address=self.report_computed_task.task_to_compute.requestor_ethereum_address
+            client_eth_address=self.report_computed_task.task_to_compute.requestor_ethereum_address,
+            pending_value=0,
         )
 
         # then
         self._test_response(
             response,
             status=200,
-            key=self.PROVIDER_PRIVATE_KEY,
+            key=self.REQUESTOR_PRIVATE_KEY,
             message_type=message.concents.ServiceRefused,
             fields={
                 'reason': message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
@@ -255,7 +254,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self._test_response(
             response,
             status=200,
-            key=self.PROVIDER_PRIVATE_KEY,
+            key=self.REQUESTOR_PRIVATE_KEY,
             message_type=message.concents.ServiceRefused,
             fields={
                 'reason': message.concents.ServiceRefused.REASON.InvalidRequest,
@@ -288,7 +287,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self._test_response(
             response,
             status=200,
-            key=self.PROVIDER_PRIVATE_KEY,
+            key=self.REQUESTOR_PRIVATE_KEY,
             message_type=message.concents.ServiceRefused,
             fields={
                 'reason': message.concents.ServiceRefused.REASON.InvalidRequest,
@@ -318,7 +317,8 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                     )
 
         is_account_status_positive_mock.assert_called_with(
-            client_eth_address=self.report_computed_task.task_to_compute.requestor_ethereum_address
+            client_eth_address=self.report_computed_task.task_to_compute.requestor_ethereum_address,
+            pending_value=0,
         )
         send_verification_request_mock.assert_called_once_with(
             subtask_id=self.subtask_id,
@@ -332,7 +332,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self._test_response(
             response,
             status=200,
-            key=self.PROVIDER_PRIVATE_KEY,
+            key=self.REQUESTOR_PRIVATE_KEY,
             message_type=message.concents.AckSubtaskResultsVerify,
             fields={
                 'subtask_results_verify': self._prepare_subtask_results_verify(serialized_subtask_results_verify),
@@ -460,11 +460,10 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time(subtask_results_verify_time_str):
             file_transfer_token = create_file_transfer_token_for_golem_client(
                 self.report_computed_task,
-                b64encode(self.PROVIDER_PUBLIC_KEY),
+                self.REQUESTOR_PUBLIC_KEY,
                 message.FileTransferToken.Operation.upload,
                 should_add_source=True,
             )
-            file_transfer_token.encrypted = False
         return file_transfer_token
 
     def _create_serialized_subtask_results_verify(

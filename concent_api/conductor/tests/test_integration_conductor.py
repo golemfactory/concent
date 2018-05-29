@@ -1,22 +1,25 @@
 import mock
 
 from django.test    import override_settings
-from django.test    import TestCase
 from django.urls    import reverse
 
 from golem_messages import message
 
+from core.message_handlers import store_subtask
+from core.models import Subtask
+from core.tests.utils import ConcentIntegrationTestCase
 from ..models       import BlenderSubtaskDefinition
 from ..models       import UploadReport
 from ..models       import VerificationRequest
 from ..tasks        import blender_verification_request
 
 
-class ConductorVerificationIntegrationTest(TestCase):
+class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
 
     multi_db = True
 
     def setUp(self):
+        super().setUp()
         self.source_package_path = 'blender/source/ef0dc1/ef0dc1.zzz523.zip'
         self.result_package_path = 'blender/result/ef0dc1/ef0dc1.zzz523.zip'
         self.scene_file = 'blender/scene/ef0dc1/ef0dc1.zzz523.zip'
@@ -24,6 +27,23 @@ class ConductorVerificationIntegrationTest(TestCase):
         self.compute_task_def = message.ComputeTaskDef()
         self.compute_task_def['task_id'] = 'ef0dc1'
         self.compute_task_def['subtask_id'] = 'zzz523'
+
+        self.report_computed_task=self._get_deserialized_report_computed_task(
+            task_to_compute=self._get_deserialized_task_to_compute(
+                compute_task_def=self.compute_task_def
+            )
+        )
+
+        store_subtask(
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
+            provider_public_key=self.report_computed_task.task_to_compute.provider_public_key,
+            requestor_public_key=self.report_computed_task.task_to_compute.requestor_public_key,
+            state=Subtask.SubtaskState.REPORTED,
+            task_to_compute=self.report_computed_task.task_to_compute,
+            report_computed_task=self.report_computed_task,
+            next_deadline=None
+        )
 
     def _prepare_verification_request_with_blender_subtask_definition(self):
         verification_request = VerificationRequest(
@@ -216,7 +236,11 @@ class ConductorVerificationIntegrationTest(TestCase):
         mock_task.assert_called_with(
             self.compute_task_def['subtask_id'],
             self.source_package_path,
+            self.report_computed_task.task_to_compute.size,
+            self.report_computed_task.task_to_compute.package_hash,
             self.result_package_path,
+            self.report_computed_task.size,  # pylint: disable=no-member
+            self.report_computed_task.package_hash,  # pylint: disable=no-member
             BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
             self.scene_file,
         )

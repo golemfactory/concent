@@ -1265,7 +1265,8 @@ def handle_send_subtask_results_verify(
             error_code=ErrorCode.QUEUE_SUBTASK_STATE_TRANSITION_NOT_ALLOWED,
         )
     if not base.is_account_status_positive(  # pylint: disable=no-value-for-parameter
-        client_eth_address      = task_to_compute.requestor_ethereum_address,
+        client_eth_address=task_to_compute.requestor_ethereum_address,
+        pending_value=task_to_compute.price,
     ):
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
@@ -1286,12 +1287,11 @@ def handle_send_subtask_results_verify(
 
     send_blender_verification_request(compute_task_def)
 
-    encoded_client_public_key = b64encode(provider_public_key)
     ack_subtask_results_verify = message.concents.AckSubtaskResultsVerify(
         subtask_results_verify=subtask_results_verify,
         file_transfer_token=create_file_transfer_token_for_golem_client(
             report_computed_task,
-            encoded_client_public_key,
+            requestor_public_key,
             FileTransferToken.Operation.upload,
             should_add_source=True,
         ),

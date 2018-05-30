@@ -12,8 +12,6 @@ from golem_messages.datastructures  import FrozenDict
 from golem_messages.exceptions      import MessageError
 
 from core.exceptions                import Http400
-from core.utils import hex_to_bytes_convert
-from core.validation import validate_hex_public_key
 from utils.constants                import ErrorCode
 
 
@@ -112,41 +110,6 @@ def sign_message(golem_message, priv_key):
     golem_message = golem_message.serialize(sign_as = priv_key)
     golem_message = deserialize_message(golem_message)
     return golem_message
-
-
-def get_validated_client_public_key_from_client_message(golem_message: message.base.Message):
-    if (
-        isinstance(golem_message, message.concents.ForcePayment) and
-        isinstance(golem_message.subtask_results_accepted_list, list) and
-        len(golem_message.subtask_results_accepted_list) > 0
-    ):
-        task_to_compute = get_field_from_message(golem_message.subtask_results_accepted_list[0], 'task_to_compute')
-    elif isinstance(golem_message, message.base.Message):
-        task_to_compute = get_field_from_message(golem_message, 'task_to_compute')
-    else:
-        return None
-
-    if task_to_compute is not None:
-        if isinstance(golem_message, (
-            message.ForceReportComputedTask,
-            message.concents.ForceSubtaskResults,
-            message.concents.ForcePayment,
-        )):
-            client_public_key = task_to_compute.provider_public_key
-            validate_hex_public_key(client_public_key, 'provider_public_key')
-        elif isinstance(golem_message, (
-            message.AckReportComputedTask,
-            message.RejectReportComputedTask,
-            message.concents.ForceGetTaskResult,
-            message.concents.ForceSubtaskResultsResponse,
-            message.concents.SubtaskResultsVerify,
-        )):
-            client_public_key = task_to_compute.requestor_public_key
-            validate_hex_public_key(client_public_key, 'requestor_public_key')
-
-        return hex_to_bytes_convert(client_public_key)
-
-    return None
 
 
 def get_storage_file_path(category, subtask_id, task_id):

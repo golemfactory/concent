@@ -9,7 +9,10 @@ from core.constants                 import GOLEM_PUBLIC_KEY_HEX_LENGTH
 from core.constants                 import MESSAGE_TASK_ID_MAX_LENGTH
 from core.constants                 import VALID_ID_REGEX
 from core.exceptions                import Http400
+from core.utils import hex_to_bytes_convert
+from gatekeeper.enums import HashingAlgorithm
 from utils.constants                import ErrorCode
+from utils.helpers import get_field_from_message
 
 
 def validate_int_value(value):
@@ -232,3 +235,38 @@ def validate_list_task_to_compute_ids(subtask_results_accepted_list):
     for task_to_compute in subtask_results_accepted_list:
         subtask_ids.append(task_to_compute.subtask_id + ':' + task_to_compute.task_id)
     return len(subtask_ids) == len(set(subtask_ids))
+
+
+def get_validated_client_public_key_from_client_message(golem_message: message.base.Message):
+    if (
+        isinstance(golem_message, message.concents.ForcePayment) and
+        isinstance(golem_message.subtask_results_accepted_list, list) and
+        len(golem_message.subtask_results_accepted_list) > 0
+    ):
+        task_to_compute = get_field_from_message(golem_message.subtask_results_accepted_list[0], 'task_to_compute')
+    elif isinstance(golem_message, message.base.Message):
+        task_to_compute = get_field_from_message(golem_message, 'task_to_compute')
+    else:
+        return None
+
+    if task_to_compute is not None:
+        if isinstance(golem_message, (
+            message.ForceReportComputedTask,
+            message.concents.ForceSubtaskResults,
+            message.concents.ForcePayment,
+        )):
+            client_public_key = task_to_compute.provider_public_key
+            validate_hex_public_key(client_public_key, 'provider_public_key')
+        elif isinstance(golem_message, (
+            message.AckReportComputedTask,
+            message.RejectReportComputedTask,
+            message.concents.ForceGetTaskResult,
+            message.concents.ForceSubtaskResultsResponse,
+            message.concents.SubtaskResultsVerify,
+        )):
+            client_public_key = task_to_compute.requestor_public_key
+            validate_hex_public_key(client_public_key, 'requestor_public_key')
+
+        return hex_to_bytes_convert(client_public_key)
+
+    return None

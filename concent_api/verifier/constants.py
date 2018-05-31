@@ -1,5 +1,4 @@
-from enum import Enum
-
+from enum import IntEnum
 
 CELERY_LOCKED_SUBTASK_DELAY = 60
 
@@ -9,10 +8,10 @@ MAXIMUM_VERIFICATION_RESULT_TASK_RETRIES = 3
 UNPACK_CHUNK_SIZE = 50  # bytes
 
 
-class VerificationResult(Enum):
-    MATCH       = 'match'
-    MISMATCH    = 'mismatch'
-    ERROR       = 'error'
+class VerificationResult(IntEnum):
+    MATCH       = 0
+    MISMATCH    = 1
+    ERROR       = 2
 
 
 VERIFICATION_RESULT_SUBTASK_STATE_ACCEPTED_LOG_MESSAGE = (

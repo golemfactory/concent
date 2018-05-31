@@ -60,7 +60,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 result_package_path=self.result_package_path,
                 output_format=BlenderSubtaskDefinition.OutputFormat(
                     self.compute_task_def['extra_data']['output_format']
-                ),
+                ).name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
                 report_computed_task=self._get_deserialized_report_computed_task(
                     task_to_compute=self._get_deserialized_task_to_compute(
@@ -75,7 +75,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(mock_unpack_archive.call_count, 2)
         mock_verification_result.assert_called_once_with(
             self.compute_task_def['subtask_id'],
-            VerificationResult.MATCH,
+            VerificationResult.MATCH.name,
         )
 
     def test_that_blender_verification_order_should_call_verification_result_with_result_error_if_download_fails(self):
@@ -89,7 +89,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 result_package_path=self.result_package_path,
                 output_format=BlenderSubtaskDefinition.OutputFormat(
                     self.compute_task_def['extra_data']['output_format']
-                ),
+                ).name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
                 report_computed_task=self._get_deserialized_report_computed_task(
                     task_to_compute=self._get_deserialized_task_to_compute(
@@ -102,9 +102,9 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         mock_send_request_to_storage_cluster.assert_called_once()
         mock_verification_result.assert_called_once_with(
             self.compute_task_def['subtask_id'],
-            VerificationResult.ERROR,
+            VerificationResult.ERROR.name,
             '',
-            ErrorCode.VERIFIIER_FILE_DOWNLOAD_FAILED,
+            ErrorCode.VERIFIIER_FILE_DOWNLOAD_FAILED.name,
         )
 
     def test_blender_verification_order_should_call_verification_result_with_result_error_if_unpacking_archive_fails(self):
@@ -119,7 +119,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 result_package_path=self.result_package_path,
                 output_format=BlenderSubtaskDefinition.OutputFormat(
                     self.compute_task_def['extra_data']['output_format']
-                ),
+                ).name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
                 report_computed_task=self._get_deserialized_report_computed_task(
                     task_to_compute=self._get_deserialized_task_to_compute()

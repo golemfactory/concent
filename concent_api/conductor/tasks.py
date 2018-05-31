@@ -1,5 +1,3 @@
-from enum import Enum
-
 from celery import shared_task
 
 from verifier.tasks import blender_verification_order
@@ -13,9 +11,11 @@ def blender_verification_request(
     subtask_id:             str,
     source_package_path:    str,
     result_package_path:    str,
-    output_format:          Enum,
+    output_format:          str,
     scene_file:             str,
 ):
+    assert output_format in BlenderSubtaskDefinition.OutputFormat.__members__.keys()
+
     # The app creates a new instance of VerificationRequest in the database
     # and a BlenderSubtaskDefinition instance associated with it.
     verification_request = VerificationRequest(
@@ -28,7 +28,7 @@ def blender_verification_request(
 
     blender_subtask_definition = BlenderSubtaskDefinition(
         verification_request=verification_request,
-        output_format=output_format,
+        output_format=BlenderSubtaskDefinition.OutputFormat[output_format].name,
         scene_file=scene_file,
     )
     blender_subtask_definition.full_clean()

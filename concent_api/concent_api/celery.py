@@ -24,7 +24,16 @@ from concent_api.constants  import AVAILABLE_CONCENT_FEATURES  # noqa: E402 pyli
 for feature_name in settings.CONCENT_FEATURES:
 
     app.conf.imports += tuple(
-        ['{}.tasks'.format(app)
+        [f'{app}.tasks'
          for app in AVAILABLE_CONCENT_FEATURES[feature_name]['required_django_apps']
-         if importlib.util.find_spec('{}.tasks'.format(app)) is not None]
+         if importlib.util.find_spec(f'{app}.tasks') is not None]
     )
+
+app.conf.task_create_missing_queues = True
+app.conf.task_routes = ([
+    ('verifier.tasks.verification_result', {'queue': 'concent'}),
+    ('conductor.tasks.blender_verification_request', {'queue': 'conductor'}),
+    ('verifier.tasks.blender_verification_order', {'queue': 'verifier'}),
+],)
+app.conf.task_default_queue = 'non_existing'
+app.conf.task_create_missing_queues = False

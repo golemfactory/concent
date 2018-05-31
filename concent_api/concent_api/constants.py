@@ -27,6 +27,13 @@ AVAILABLE_CONCENT_FEATURES = OrderedDict([
         ],
     }),
 
+    ("concent-worker", {
+        "required_django_apps": [
+            "core",
+        ],
+        "url_patterns": [],
+    }),
+
     ("conductor-urls", {
         "required_django_apps": [
             "conductor",
@@ -34,6 +41,13 @@ AVAILABLE_CONCENT_FEATURES = OrderedDict([
         "url_patterns":         [
             url(r'^conductor/', include(conductor.urls, namespace='conductor')),
         ],
+    }),
+
+    ("conductor-worker", {
+        "required_django_apps": [
+            "conductor",
+        ],
+        "url_patterns": [],
     }),
 
     ("gatekeeper", {

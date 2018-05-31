@@ -21,6 +21,7 @@ from core.transfer_operations import send_request_to_storage_cluster
 from core.transfer_operations import store_pending_message
 from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
 from utils.constants import ErrorCode
+from utils.decorators import provides_concent_feature
 from utils.helpers import deserialize_message
 from utils.helpers import get_current_utc_timestamp
 from utils.helpers import parse_timestamp_to_utc_datetime
@@ -41,6 +42,7 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task
+@provides_concent_feature('verifier')
 def blender_verification_order(
     subtask_id: str,
     source_package_path: str,
@@ -121,6 +123,7 @@ def blender_verification_order(
 
 
 @shared_task(bind=True)
+@provides_concent_feature('concent-worker')
 @transaction.atomic(using='control')
 def verification_result(
     self,

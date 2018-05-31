@@ -30,4 +30,4 @@ urlpatterns = []  # type: ignore
 
 # Run project only with features specified in CONCENT_FEATURES variable
 for feature_name in settings.CONCENT_FEATURES:
-    urlpatterns += AVAILABLE_CONCENT_FEATURES[feature_name]['url_patterns']
+    urlpatterns += AVAILABLE_CONCENT_FEATURES[feature_name]['url_patterns']  # type: ignore

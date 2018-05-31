@@ -4,6 +4,7 @@ from django.test            import TestCase
 from django.utils           import timezone
 
 from golem_messages         import message
+
 from utils.helpers          import join_messages
 from utils.helpers          import parse_datetime_to_timestamp
 from utils.helpers          import parse_timestamp_to_utc_datetime

@@ -285,6 +285,8 @@ STORAGE_CLUSTER_SSL_CERTIFICATE_PATH = ''
 # rendering results and any intermediate files.
 # VERIFIER_STORAGE_PATH = ''
 
+CUSTOM_PROTOCOL_TIMES = False
+
 # Which components of this Django application should be enabled in this particular server instance.
 # The application is basically a bunch of services with totally different responsibilites that share a lot of code.
 # In a typical setup each instance has only one or two features enabled. Some of them provide public APIs, others are

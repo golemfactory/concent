@@ -4,14 +4,12 @@ import binascii
 import datetime
 import time
 
-from django.conf                    import settings
 from django.utils                   import timezone
 from mypy.types                     import Union
 
 from golem_messages                 import message
 from golem_messages.datastructures  import FrozenDict
 from golem_messages.exceptions      import MessageError
-from golem_messages.helpers         import maximum_download_time
 
 from core.exceptions                import Http400
 from core.validation                import validate_public_key
@@ -164,43 +162,6 @@ def get_storage_scene_file_path(subtask_id, task_id):
 
 def get_storage_source_file_path(subtask_id, task_id):
     return get_storage_file_path('source', subtask_id, task_id)
-
-
-def calculate_maximum_download_time(size: int) -> int:
-    assert isinstance(size, int)
-
-    return int(
-        maximum_download_time(
-            size,
-            settings.MINIMUM_UPLOAD_RATE,
-        ).total_seconds()
-    )
-
-
-def calculate_subtask_verification_time(report_computed_task: message.ReportComputedTask) -> int:
-    """
-    Currently we are not using subtask_verification_time() from golem-messages only because it has hard-coded values
-    and we cannot make it use values from our settings.
-    This is temporary solution until https://github.com/golemfactory/golem-messages/issues/217 is implemented.
-    """
-    assert isinstance(report_computed_task, message.ReportComputedTask)
-
-    mdt = maximum_download_time(
-        size=report_computed_task.size,
-    )
-    ttc_dt = datetime.datetime.utcfromtimestamp(
-        report_computed_task.task_to_compute.timestamp,
-    )
-    subtask_dt = datetime.datetime.utcfromtimestamp(
-        report_computed_task.task_to_compute.compute_task_def['deadline'],
-    )
-    subtask_timeout = subtask_dt - ttc_dt
-
-    return int(
-        (4 * settings.CONCENT_MESSAGING_TIME) +
-        (3 * mdt.total_seconds()) +
-        (0.5 * subtask_timeout.total_seconds())
-    )
 
 
 def join_messages(*messages):

@@ -13,7 +13,7 @@ from core.exceptions import UnexpectedResponse
 from core.transfer_operations import create_file_transfer_token_for_concent
 from core.transfer_operations import create_file_transfer_token_for_golem_client
 from core.transfer_operations import request_upload_status
-from utils.helpers import calculate_maximum_download_time
+from core.utils import calculate_maximum_download_time
 from utils.helpers import parse_datetime_to_timestamp
 
 from utils.testing_helpers import generate_ecc_key_pair
@@ -138,5 +138,11 @@ class FileTransferTokenCreationTest(TestCase):
 
     def _get_deadline_exceeded_time_for_download_token(self, size):
         return self.time + datetime.timedelta(
-            seconds=3 * settings.CONCENT_MESSAGING_TIME + 2 * calculate_maximum_download_time(size) + self.deadline + 1
+            seconds=(
+                3 * settings.CONCENT_MESSAGING_TIME +
+                2 * calculate_maximum_download_time(
+                    size,
+                    settings.MINIMUM_UPLOAD_RATE,
+                ) + self.deadline + 1
+            )
         )

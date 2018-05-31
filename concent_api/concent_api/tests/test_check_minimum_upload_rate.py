@@ -18,6 +18,7 @@ class TestMinimumUploadRateCheck(TestCase):
 
         self.assertEqual(errors, [])
 
+    @override_settings()
     def test_not_set_minimum_upload_rate_setting_value_should_produce_error(self):
         del settings.MINIMUM_UPLOAD_RATE
 

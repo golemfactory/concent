@@ -8,6 +8,8 @@ from django.conf            import settings
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 
+from golem_messages import constants
+
 from concent_api.constants  import AVAILABLE_CONCENT_FEATURES
 
 
@@ -144,6 +146,33 @@ def create_error_30_verifier_storage_path_is_not_accessible():
         'Cannot write to VERIFIER_STORAGE_PATH',
         hint='Current user does not have write permissions to directory {}'.format(settings.VERIFIER_STORAGE_PATH),
         id='concent.E030',
+    )
+
+
+def create_error_31_custom_protocol_times_is_not_set():
+    return Error(
+        'CUSTOM_PROTOCOL_TIMES setting is not set',
+        hint='Set CUSTOM_PROTOCOL_TIMES in your local_settings.py to the boolean value.',
+        id='concent.E031',
+    )
+
+
+def create_error_32_custom_protocol_times_has_wrong_value():
+    return Error(
+        'CUSTOM_PROTOCOL_TIMES setting has wrong value',
+        hint='Set CUSTOM_PROTOCOL_TIMES in your local_settings.py to the boolean value.',
+        id='concent.E032',
+    )
+
+
+def create_error_33_custom_protocol_times_is_false_and_settings_does_not_match_golem_messages_constants(
+    concent_setting_name,
+):
+    return Error(
+        f'CUSTOM_PROTOCOL_TIMES setting is False and Concent setting {concent_setting_name} does not match golem '
+        'messages constant',
+        hint='If CUSTOM_PROTOCOL_TIMES is False, Concent time settings must match golem messages constants.',
+        id='concent.E033',
     )
 
 
@@ -346,3 +375,27 @@ def check_concents_time_settings(app_configs=None, **kwargs):  # pylint: disable
             if not isinstance(getattr(settings, concent_setting), int) or getattr(settings, concent_setting) < 0:
                 settings_wrong_value.append(create_error_24_if_concent_time_settings_have_wrong_value(concent_setting))
     return settings_not_defined + settings_wrong_value
+
+
+@register()
+def check_custom_protocol_times(app_configs=None, **kwargs):  # pylint: disable=unused-argument
+    errors = []
+    if not hasattr(settings, 'CUSTOM_PROTOCOL_TIMES'):
+        return [create_error_31_custom_protocol_times_is_not_set()]
+    if not isinstance(settings.CUSTOM_PROTOCOL_TIMES, bool):
+        return [create_error_32_custom_protocol_times_has_wrong_value()]
+    if settings.CUSTOM_PROTOCOL_TIMES is False:
+        for concent_setting_name, is_equal in {
+            'CONCENT_MESSAGING_TIME':   settings.CONCENT_MESSAGING_TIME == int(constants.CMT.total_seconds()),
+            'FORCE_ACCEPTANCE_TIME':    settings.FORCE_ACCEPTANCE_TIME  == int(constants.FAT.total_seconds()),
+            'PAYMENT_DUE_TIME':         settings.PAYMENT_DUE_TIME       == int(constants.PDT.total_seconds()),
+            'DOWNLOAD_LEADIN_TIME':     settings.DOWNLOAD_LEADIN_TIME   == int(constants.DOWNLOAD_LEADIN_TIME.total_seconds()),
+            'MINIMUM_UPLOAD_RATE':      settings.MINIMUM_UPLOAD_RATE    == constants.DEFAULT_UPLOAD_RATE,
+        }.items():
+            if not is_equal:
+                errors.append(
+                    create_error_33_custom_protocol_times_is_false_and_settings_does_not_match_golem_messages_constants(
+                        concent_setting_name
+                    )
+                )
+    return errors

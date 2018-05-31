@@ -26,7 +26,7 @@ from core.models import PaymentInfo
 from core.models import PendingResponse
 from core.models import StoredMessage
 from core.models import Subtask
-from core.payments import base
+import core.payments.base
 from core.payments.sci_backend import TransactionType
 from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import verify_message_subtask_results_accepted
@@ -439,7 +439,7 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
             reason = message.concents.ServiceRefused.REASON.DuplicateRequest,
         )
 
-    if not base.is_account_status_positive(  # pylint: disable=no-value-for-parameter
+    if not core.payments.base.is_account_status_positive(  # pylint: disable=no-value-for-parameter
         client_eth_address      = client_message.ack_report_computed_task.report_computed_task.task_to_compute.requestor_ethereum_address,
         pending_value           = client_message.ack_report_computed_task.report_computed_task.task_to_compute.price,
     ):
@@ -447,7 +447,7 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
             reason      = message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
         )
 
-    base.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
+    core.payments.base.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
         requestor_eth_address = client_message.ack_report_computed_task.report_computed_task.task_to_compute.requestor_ethereum_address,
         provider_eth_address = client_message.ack_report_computed_task.report_computed_task.task_to_compute.provider_ethereum_address,
         value = client_message.ack_report_computed_task.report_computed_task.task_to_compute.price,
@@ -667,7 +667,7 @@ def handle_send_force_payment(client_message: message.concents.ForcePayment) -> 
     )
 
     # Concent gets list of transactions from payment API where timestamp >= T0.
-    list_of_transactions = base.get_list_of_payments(  # pylint: disable=no-value-for-parameter
+    list_of_transactions = core.payments.base.get_list_of_payments(  # pylint: disable=no-value-for-parameter
         requestor_eth_address   = requestor_eth_address,
         provider_eth_address    = provider_eth_address,
         payment_ts              = oldest_payments_ts,
@@ -693,7 +693,7 @@ def handle_send_force_payment(client_message: message.concents.ForcePayment) -> 
         )
 
     # Concent gets list of forced payments from payment API where T0 <= payment_ts + PAYMENT_DUE_TIME.
-    list_of_forced_payments = base.get_list_of_payments(  # pylint: disable=no-value-for-parameter
+    list_of_forced_payments = core.payments.base.get_list_of_payments(  # pylint: disable=no-value-for-parameter
         requestor_eth_address   = requestor_eth_address,
         provider_eth_address    = provider_eth_address,
         payment_ts              = oldest_payments_ts + settings.PAYMENT_DUE_TIME,  # Im not sure, check it please
@@ -717,7 +717,7 @@ def handle_send_force_payment(client_message: message.concents.ForcePayment) -> 
             reason = message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound
         )
     elif amount_pending > 0:
-        base.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
+        core.payments.base.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
             requestor_eth_address   = requestor_eth_address,
             provider_eth_address    = provider_eth_address,
             value                   = amount_pending,
@@ -1269,7 +1269,7 @@ def handle_send_subtask_results_verify(
             "SubtaskResultsVerify is not allowed in current state",
             error_code=ErrorCode.QUEUE_SUBTASK_STATE_TRANSITION_NOT_ALLOWED,
         )
-    if not base.is_account_status_positive(  # pylint: disable=no-value-for-parameter
+    if not core.payments.base.is_account_status_positive(  # pylint: disable=no-value-for-parameter
         client_eth_address=task_to_compute.requestor_ethereum_address,
         pending_value=task_to_compute.price,
     ):

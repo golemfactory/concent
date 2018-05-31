@@ -177,7 +177,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.base.get_list_of_payments',
+            'core.message_handlers.core.payments.base.get_list_of_payments',
             side_effect=self._get_list_of_force_transactions
         ) as get_list_of_payments_mock_function:
             with freeze_time("2018-02-05 12:00:09"):
@@ -251,7 +251,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.base.get_list_of_payments',
+            'core.message_handlers.core.payments.base.get_list_of_payments',
             side_effect=self._get_list_of_force_transactions
         ) as get_list_of_payments_mock_function:
             with freeze_time("2018-02-05 12:00:20"):
@@ -329,7 +329,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 self._get_list_of_batch_transactions(),
                 self._get_list_of_force_transactions()
             ]
-            with mock.patch('core.message_handlers.base.get_list_of_payments', side_effect=fake_responses) as get_list_of_payments_mock_function:
+            with mock.patch('core.message_handlers.core.payments.base.get_list_of_payments', side_effect=fake_responses) as get_list_of_payments_mock_function:
                 response = self.client.post(
                     reverse('core:send'),
                     data                                = serialized_force_payment,
@@ -407,11 +407,11 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 self._get_list_of_force_transactions()
             ]
             with mock.patch(
-                'core.message_handlers.base.make_force_payment_to_provider',
+                'core.message_handlers.core.payments.base.make_force_payment_to_provider',
                 side_effect=self._make_force_payment_to_provider
             ) as make_force_payment_to_provider_mock_function,\
                 mock.patch(
-                'core.message_handlers.base.get_list_of_payments',
+                'core.message_handlers.core.payments.base.get_list_of_payments',
                 side_effect=fake_responses
             ) as get_list_of_payments_mock_function:
                 response_1 = self.client.post(
@@ -710,11 +710,11 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2018-02-05 12:00:20"):
             with mock.patch(
-                'core.message_handlers.base.get_list_of_payments',
+                'core.message_handlers.core.payments.base.get_list_of_payments',
                 side_effect=self._get_empty_list_of_transactions
             ) as get_list_of_payments_mock_function,\
                 mock.patch(
-                'core.message_handlers.base.make_force_payment_to_provider',
+                'core.message_handlers.core.payments.base.make_force_payment_to_provider',
                 side_effect=self._make_force_payment_to_provider
             ) as make_force_payment_to_provider_mock_function:
                 response_1 = self.client.post(

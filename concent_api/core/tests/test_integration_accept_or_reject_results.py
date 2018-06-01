@@ -253,6 +253,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ForceSubtaskResultsRejected,
             fields       = {
                 'reason':       message.concents.ForceSubtaskResultsRejected.REASON.RequestPremature,
+                'force_subtask_results.timestamp': self._parse_iso_date_to_timestamp("2018-03-05 10:00:24"),
+                'force_subtask_results.task_to_compute.timestamp': self._parse_iso_date_to_timestamp("2018-03-05 10:00:00"),
                 'timestamp':    self._parse_iso_date_to_timestamp("2018-03-05 10:00:24"),
             }
         )
@@ -294,6 +296,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ForceSubtaskResultsRejected,
             fields       = {
                 'reason':       message.concents.ForceSubtaskResultsRejected.REASON.RequestTooLate,
+                'force_subtask_results.timestamp': self._parse_iso_date_to_timestamp("2018-03-05 10:00:40"),
+                'force_subtask_results.task_to_compute.timestamp': self._parse_iso_date_to_timestamp("2018-03-05 10:00:00"),
                 'timestamp':    self._parse_iso_date_to_timestamp("2018-03-05 10:00:40"),
             }
         )

@@ -470,7 +470,8 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
             forcing_acceptance_deadline,
         )
         return message.concents.ForceSubtaskResultsRejected(
-            reason = message.concents.ForceSubtaskResultsRejected.REASON.RequestTooLate,
+            force_subtask_results=client_message,
+            reason=message.concents.ForceSubtaskResultsRejected.REASON.RequestTooLate,
         )
     elif current_time < verification_deadline:
         logging.log_timeout(
@@ -479,7 +480,8 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
             verification_deadline,
         )
         return message.concents.ForceSubtaskResultsRejected(
-            reason = message.concents.ForceSubtaskResultsRejected.REASON.RequestPremature,
+            force_subtask_results=client_message,
+            reason=message.concents.ForceSubtaskResultsRejected.REASON.RequestPremature,
         )
     else:
         subtask = store_or_update_subtask(

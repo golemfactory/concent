@@ -23,6 +23,9 @@ def blender_verification_request(
     output_format:          str,
     scene_file:             str,
 ):
+    assert isinstance(output_format, str)
+
+    output_format = output_format.upper()
     assert output_format in BlenderSubtaskDefinition.OutputFormat.__members__.keys()
 
     # The app creates a new instance of VerificationRequest in the database

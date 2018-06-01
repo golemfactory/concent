@@ -93,7 +93,7 @@ def blender_verification_order(
             )
 
         except (OSError, HTTPError) as exception:
-            logger.info('blender_verification_order for SUBTASK_ID {subtask_id} failed with error {exception}.')
+            logger.info(f'blender_verification_order for SUBTASK_ID {subtask_id} failed with error {exception}.')
             verification_result.delay(
                 subtask_id,
                 VerificationResult.ERROR.name,
@@ -102,7 +102,7 @@ def blender_verification_order(
             )
             return
         except Exception as exception:
-            logger.info('blender_verification_order for SUBTASK_ID {subtask_id} failed with error {exception}.')
+            logger.info(f'blender_verification_order for SUBTASK_ID {subtask_id} failed with error {exception}.')
             verification_result.delay(
                 subtask_id,
                 VerificationResult.ERROR.name,

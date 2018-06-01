@@ -88,7 +88,7 @@ def blender_verification_order(
                 cluster_response,
                 os.path.join(
                     settings.VERIFIER_STORAGE_PATH,
-                    os.path.split(file_path)[0],
+                    os.path.basename(file_path),
                 )
             )
 
@@ -117,7 +117,9 @@ def blender_verification_order(
     # Verifier unpacks the archive with project source.
     for file_path in (source_package_path, result_package_path):
         try:
-            unpack_archive(file_path)
+            unpack_archive(
+                os.path.basename(file_path)
+            )
         except (OSError, BadZipFile) as e:
             verification_result.delay(
                 subtask_id,

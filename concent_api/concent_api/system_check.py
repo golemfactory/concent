@@ -192,6 +192,38 @@ def create_error_20_max_rendering_time_is_not_positive_integer():
     )
 
 
+def create_error_31_verifier_min_ssim_is_not_set():
+    return Error(
+        'VERIFIER_MIN_SSIM setting is not defined but `verifier` Concent feature is on',
+        hint='Set VERIFIER_MIN_SSIM in your local settings when `verifier` Concent feature is on.',
+        id='concent.E031',
+    )
+
+
+def create_error_32_verifier_min_ssim_is_set():
+    return Error(
+        'VERIFIER_MIN_SSIM setting is defined but `verifier` Concent feature is off',
+        hint='Unset or set to None VERIFIER_MIN_SSIM in your local settings when `verifier` Concent feature is off.',
+        id='concent.E032',
+    )
+
+
+def create_error_33_verifier_min_ssim_has_wrong_type():
+    return Error(
+        f"VERIFIER_MIN_SSIM has wrong type",
+        hint=f"VERIFIER_MIN_SSIM must be set to float.",
+        id="concent.E033",
+    )
+
+
+def create_error_34_verifier_min_ssim_has_wrong_value(verifier_min_ssim):
+    return Error(
+        f"VERIFIER_MIN_SSIM has wrong value",
+        hint=f"VERIFIER_MIN_SSIM must be have value between -1 and 1. Currently it has {verifier_min_ssim}.",
+        id="concent.E034",
+    )
+
+
 @register()
 def check_settings_concent_features(app_configs, **kwargs):  # pylint: disable=unused-argument
 
@@ -430,3 +462,24 @@ def check_custom_protocol_times(app_configs=None, **kwargs):  # pylint: disable=
                     )
                 )
     return errors
+
+
+@register()
+def check_verifier_min_ssim(app_configs=None, **kwargs):  # pylint: disable=unused-argument
+    if 'verifier' in settings.CONCENT_FEATURES and not hasattr(settings, 'VERIFIER_MIN_SSIM'):
+        return [create_error_31_verifier_min_ssim_is_not_set()]
+    elif (
+        'verifier' not in settings.CONCENT_FEATURES and (
+            hasattr(settings, 'VERIFIER_MIN_SSIM') and
+            settings.VERIFIER_MIN_SSIM is not None
+        )
+    ):
+        return [create_error_32_verifier_min_ssim_is_set()]
+
+    if hasattr(settings, 'VERIFIER_MIN_SSIM') and settings.VERIFIER_MIN_SSIM is not None:
+        if not isinstance(settings.VERIFIER_MIN_SSIM, float):
+            return [create_error_33_verifier_min_ssim_has_wrong_type()]
+        if not -1 <= settings.VERIFIER_MIN_SSIM <= 1:
+            return [create_error_34_verifier_min_ssim_has_wrong_value(settings.VERIFIER_MIN_SSIM)]
+
+    return []

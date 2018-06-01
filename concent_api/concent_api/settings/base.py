@@ -297,6 +297,10 @@ BLENDER_MAX_RENDERING_TIME = 60 * 60 * 24 * 7
 
 CUSTOM_PROTOCOL_TIMES = False
 
+# The minimum acceptable value of the SSIM metric. Values below this threshold for an image pair will result in a
+# failed verification (i.e. the images are considered different).
+VERIFIER_MIN_SSIM = 0.94
+
 # Which components of this Django application should be enabled in this particular server instance.
 # The application is basically a bunch of services with totally different responsibilites that share a lot of code.
 # In a typical setup each instance has only one or two features enabled. Some of them provide public APIs, others are

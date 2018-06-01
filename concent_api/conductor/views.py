@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.http.response import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
@@ -14,7 +15,7 @@ def report_upload(_request, file_path):
     # If there's a corresponding VerificationRequest, the load it and link it to UploadReport.
     try:
         verification_request = VerificationRequest.objects.get(
-            source_package_path = file_path
+            Q(source_package_path=file_path) | Q(result_package_path=file_path)
         )
     except VerificationRequest.DoesNotExist:
         verification_request = None

@@ -1296,7 +1296,6 @@ def handle_send_subtask_results_verify(
             report_computed_task,
             requestor_public_key,
             FileTransferToken.Operation.upload,
-            should_add_source=True,
         ),
     )
     return ack_subtask_results_verify

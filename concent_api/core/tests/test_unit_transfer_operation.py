@@ -14,8 +14,9 @@ from core.transfer_operations import create_file_transfer_token_for_concent
 from core.transfer_operations import create_file_transfer_token_for_golem_client
 from core.transfer_operations import request_upload_status
 from core.utils import calculate_maximum_download_time
+from utils.helpers import get_storage_source_file_path
+from utils.helpers import get_storage_result_file_path
 from utils.helpers import parse_datetime_to_timestamp
-
 from utils.testing_helpers import generate_ecc_key_pair
 
 
@@ -47,11 +48,11 @@ def mock_send_incorrect_request_to_cluster_unexpected_response(_headers, _reques
 class RequestUploadStatusTest(ConcentIntegrationTestCase):
     def test_properly_work_of_request_upload_status_function(self):
 
-        report_computed_task = self._get_deserialized_report_computed_task(
-            subtask_id = '1',
-            task_to_compute = self._get_deserialized_task_to_compute(
-                task_id                         = '1/1',
-                subtask_id                      = '1',
+        report_computed_task=self._get_deserialized_report_computed_task(
+            subtask_id='1',
+            task_to_compute=self._get_deserialized_task_to_compute(
+                task_id='1/1',
+                subtask_id='1',
             )
         )
 
@@ -102,10 +103,15 @@ class FileTransferTokenCreationTest(TestCase):
 
     def test_that_file_transfer_token_for_concent_is_never_out_of_date(self):
         report_computed_task = ReportComputedTaskFactory()
-
         token = create_file_transfer_token_for_concent(
-            report_computed_task,
-            FileTransferToken.Operation.download
+            subtask_id=report_computed_task.subtask_id,
+            source_package_path=get_storage_source_file_path(report_computed_task.task_id, report_computed_task.subtask_id),
+            source_size=report_computed_task.task_to_compute.size,
+            source_package_hash=report_computed_task.task_to_compute.package_hash,
+            result_package_path=get_storage_result_file_path(report_computed_task.task_id, report_computed_task.subtask_id),
+            result_size=report_computed_task.size,
+            result_package_hash=report_computed_task.package_hash,
+            operation=FileTransferToken.Operation.download,
         )
         self.assertTrue(token.timestamp < token.token_expiration_deadline)
 

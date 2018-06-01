@@ -340,7 +340,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 'file_transfer_token.files': [
                     message.FileTransferToken.FileInfo(
                         path='blender/result/subtask1/subtask1.task1.zip',
-                        checksum=None,
+                        checksum='sha1:4452d71687b6bc2c9389c3349fdc17fbd73b833b',
                         size=1,
                         category=message.FileTransferToken.FileInfo.Category.results,
                     ),
@@ -462,7 +462,6 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 self.report_computed_task,
                 self.REQUESTOR_PUBLIC_KEY,
                 message.FileTransferToken.Operation.upload,
-                should_add_source=True,
             )
         return file_transfer_token
 

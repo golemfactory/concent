@@ -121,9 +121,9 @@ def blender_verification_order(
         except (OSError, BadZipFile) as e:
             verification_result.delay(
                 subtask_id,
-                VerificationResult.ERROR,
+                VerificationResult.ERROR.name,
                 str(e),
-                ErrorCode.VERIFIIER_UNPACKING_ARCHIVE_FAILED
+                ErrorCode.VERIFIIER_UNPACKING_ARCHIVE_FAILED.name
             )
             return
 

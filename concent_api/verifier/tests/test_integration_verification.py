@@ -140,7 +140,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(mock_store_file_from_response_in_chunks.call_count, 2)
         mock_verification_result.assert_called_once_with(
             self.compute_task_def['subtask_id'],
-            VerificationResult.ERROR,
+            VerificationResult.ERROR.name,
             '',
-            ErrorCode.VERIFIIER_UNPACKING_ARCHIVE_FAILED,
+            ErrorCode.VERIFIIER_UNPACKING_ARCHIVE_FAILED.name,
         )

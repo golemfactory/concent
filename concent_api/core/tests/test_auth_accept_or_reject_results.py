@@ -64,7 +64,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.base.is_account_status_positive',
+            'core.message_handlers.core.payments.base.is_account_status_positive',
             side_effect=self.is_account_status_positive_true_mock
         ) as is_account_status_positive_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
@@ -206,7 +206,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.base.is_account_status_positive',
+            'core.message_handlers.core.payments.base.is_account_status_positive',
             side_effect=self.is_account_status_positive_true_mock
         ) as is_account_status_positive_true_mock_function:
             with freeze_time("2018-02-05 10:00:31"):
@@ -332,7 +332,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.base.is_account_status_positive',
+            'core.message_handlers.core.payments.base.is_account_status_positive',
             side_effect=self.is_account_status_positive_true_mock
         ) as is_account_status_positive_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
@@ -665,7 +665,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.base.is_account_status_positive',
+            'core.message_handlers.core.payments.base.is_account_status_positive',
             side_effect=self.is_account_status_positive_true_mock
         ) as is_account_status_positive_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
@@ -1005,7 +1005,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.base.is_account_status_positive',
+            'core.message_handlers.core.payments.base.is_account_status_positive',
             side_effect=self.is_account_status_positive_true_mock
         ) as is_account_status_positive_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
@@ -1207,7 +1207,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.base.is_account_status_positive',
+            'core.message_handlers.core.payments.base.is_account_status_positive',
             side_effect=self.is_account_status_positive_true_mock
         ) as is_account_status_positive_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):

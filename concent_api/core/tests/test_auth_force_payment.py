@@ -65,7 +65,7 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.base.make_force_payment_to_provider',
+            'core.message_handlers.core.payments.base.make_force_payment_to_provider',
             side_effect=self._make_force_payment_to_provider
         ) as make_force_payment_to_provider_mock:
             with freeze_time("2018-02-05 12:00:20"):
@@ -74,7 +74,7 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     self._get_list_of_force_transactions(),
                 ]
                 with mock.patch(
-                    'core.message_handlers.base.get_list_of_payments',
+                    'core.message_handlers.core.payments.base.get_list_of_payments',
                     side_effect=fake_responses
                 ) as get_list_of_payments_mock:
                     response_1 = self.client.post(

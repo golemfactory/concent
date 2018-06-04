@@ -12,9 +12,9 @@ from django.db import DatabaseError
 from django.db import transaction
 
 from conductor.models import BlenderSubtaskDefinition
+import core.payments.base
 from core.models import PendingResponse
 from core.models import Subtask
-from core.payments import base
 from core.subtask_helpers import update_subtask_state
 from core.transfer_operations import create_file_transfer_token_for_concent
 from core.transfer_operations import send_request_to_storage_cluster
@@ -188,7 +188,7 @@ def verification_result(
     if subtask.next_deadline < parse_timestamp_to_utc_datetime(get_current_utc_timestamp()):
         task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
         # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
-        base.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
+        core.payments.base.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
             requestor_eth_address=task_to_compute.requestor_ethereum_address,
             provider_eth_address=task_to_compute.provider_ethereum_address,
             value=task_to_compute.price,
@@ -235,7 +235,7 @@ def verification_result(
         task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
 
         # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
-        base.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
+        core.payments.base.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
             requestor_eth_address=task_to_compute.requestor_ethereum_address,
             provider_eth_address=task_to_compute.provider_ethereum_address,
             value=task_to_compute.price,

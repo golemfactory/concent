@@ -10,7 +10,7 @@ coverage
 tblib
 
 # Force the latest version of pylint pyflakes and pep8. There are numerous issues with older versions.
-pylint        >= 1.8.2
-pylint-django >= 0.9.0
+pylint        >= 1.9.1
+pylint-django >= 0.11.0
 pyflakes      >= 1.6.0
 pep8          >= 1.7.1

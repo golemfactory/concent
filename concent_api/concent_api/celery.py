@@ -20,4 +20,3 @@ app.conf.task_routes = ([
     ('verifier.tasks.blender_verification_order', {'queue': 'verifier'}),
 ],)
 app.conf.task_default_queue = 'non_existing'
-app.conf.task_create_missing_queues = False

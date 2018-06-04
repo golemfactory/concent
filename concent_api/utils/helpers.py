@@ -12,7 +12,8 @@ from golem_messages.datastructures  import FrozenDict
 from golem_messages.exceptions      import MessageError
 
 from core.exceptions                import Http400
-from core.validation                import validate_public_key
+from core.utils import hex_to_bytes_convert
+from core.validation import validate_hex_public_key
 from utils.constants                import ErrorCode
 
 
@@ -132,7 +133,7 @@ def get_validated_client_public_key_from_client_message(golem_message: message.b
             message.concents.ForcePayment,
         )):
             client_public_key = task_to_compute.provider_public_key
-            validate_public_key(client_public_key, 'provider_public_key')
+            validate_hex_public_key(client_public_key, 'provider_public_key')
         elif isinstance(golem_message, (
             message.AckReportComputedTask,
             message.RejectReportComputedTask,
@@ -141,9 +142,9 @@ def get_validated_client_public_key_from_client_message(golem_message: message.b
             message.concents.SubtaskResultsVerify,
         )):
             client_public_key = task_to_compute.requestor_public_key
-            validate_public_key(client_public_key, 'requestor_public_key')
+            validate_hex_public_key(client_public_key, 'requestor_public_key')
 
-        return client_public_key
+        return hex_to_bytes_convert(client_public_key)
 
     return None
 

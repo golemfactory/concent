@@ -1,9 +1,11 @@
-from typing                         import List
+from typing import List
+from typing import Union
 from golem_messages                 import message
 from golem_messages.exceptions      import MessageError
 
 from core.constants                 import ETHEREUM_ADDRESS_LENGTH
 from core.constants                 import GOLEM_PUBLIC_KEY_LENGTH
+from core.constants                 import GOLEM_PUBLIC_KEY_HEX_LENGTH
 from core.constants                 import MESSAGE_TASK_ID_MAX_LENGTH
 from core.constants                 import VALID_ID_REGEX
 from core.exceptions                import Http400
@@ -58,19 +60,31 @@ def validate_id_value(value, field_name):
         )
 
 
-def validate_public_key(value, field_name):
-    assert isinstance(field_name, str)
+def validate_hex_public_key(value, field_name):
+    validate_key_with_desired_parameters(field_name, value, str, GOLEM_PUBLIC_KEY_HEX_LENGTH)
 
-    if not isinstance(value, bytes):
+
+def validate_bytes_public_key(value, field_name):
+    validate_key_with_desired_parameters(field_name, value, bytes, GOLEM_PUBLIC_KEY_LENGTH)
+
+
+def validate_key_with_desired_parameters(
+        key_name: str,
+        key_value,
+        expected_type: Union,
+        expected_lenght: int
+):
+
+    if not isinstance(key_value, expected_type):
         raise Http400(
-            "{} must be bytes.".format(field_name),
+            "{} must be {}.".format(key_name, str(expected_type)),
             error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE,
         )
 
-    if len(value) != GOLEM_PUBLIC_KEY_LENGTH:
+    if len(key_value) != expected_lenght:
         raise Http400(
-            "The length of {} must be exactly {} characters.".format(field_name, GOLEM_PUBLIC_KEY_LENGTH),
-            error_code = ErrorCode.MESSAGE_VALUE_WRONG_LENGTH,
+            "The length of {} must be exactly {} characters.".format(key_name, expected_lenght),
+            error_code=ErrorCode.MESSAGE_VALUE_WRONG_LENGTH,
         )
 
 
@@ -95,8 +109,8 @@ def validate_task_to_compute(task_to_compute: message.TaskToCompute):
     validate_id_value(task_to_compute.compute_task_def['task_id'], 'task_id')
     validate_id_value(task_to_compute.compute_task_def['subtask_id'], 'subtask_id')
 
-    validate_public_key(task_to_compute.provider_public_key, 'provider_public_key')
-    validate_public_key(task_to_compute.requestor_public_key, 'requestor_public_key')
+    validate_hex_public_key(task_to_compute.provider_public_key, 'provider_public_key')
+    validate_hex_public_key(task_to_compute.requestor_public_key, 'requestor_public_key')
     validate_subtask_price_task_to_compute(task_to_compute)
 
 
@@ -117,7 +131,7 @@ def validate_golem_message_client_authorization(golem_message: message.concents.
             error_code=ErrorCode.AUTH_CLIENT_AUTH_MESSAGE_MISSING,
         )
 
-    validate_public_key(golem_message.client_public_key, 'client_public_key')
+    validate_bytes_public_key(golem_message.client_public_key, 'client_public_key')
 
 
 def validate_all_messages_identical(golem_messages_list: List[message.Message]):
@@ -151,7 +165,7 @@ def validate_golem_message_signed_with_key(
 ):
     assert isinstance(golem_message, message.base.Message)
 
-    validate_public_key(public_key, 'public_key')
+    validate_bytes_public_key(public_key, 'public_key')
 
     try:
         golem_message.verify_signature(public_key)

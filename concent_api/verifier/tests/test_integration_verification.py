@@ -49,7 +49,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             self.compute_task_def['subtask_id'],
         )
         self.report_computed_task=self._get_deserialized_report_computed_task(
-            package_hash='sha1:540aoskdmfn7ed29810a2183f0ec1d39c9df3f4b',
+            package_hash='sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
             size=2,
             task_to_compute=self._get_deserialized_task_to_compute(
                 package_hash='sha1:230fb0cad8c7ed29810a2183f0ec1d39c9df3f4a',

@@ -32,6 +32,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'concent_api.middleware.HandleServerErrorMiddleware',  # this middleware is disabled in tests - check testing.py
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -299,3 +300,6 @@ CONCENT_FEATURES = []  # type: ignore
 
 # URL format: 'protocol://<user>:<password>@<hostname>:<port>/<virtual host>'
 # CELERY_BROKER_URL = ''
+
+# Debug setting for adding stack traces in HTTP500 responses
+#DEBUG_INFO_IN_ERROR_RESPONSES =

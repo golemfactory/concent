@@ -81,3 +81,4 @@ APP_LABEL_TO_DATABASE = {
     'database':     'control',
     'sessions':     'control',
 }
+DEFAULT_ERROR_MESSAGE = "Something went wrong, sorry"

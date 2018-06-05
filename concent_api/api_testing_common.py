@@ -26,8 +26,8 @@ from utils.testing_helpers import generate_ecc_key_pair
 (PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)  = generate_ecc_key_pair()
 (REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
-REQUESTOR_ETHEREUM_PUBLIC_KEY = b'F\xdei\xa1\xc0\x10\xc8M\xce\xaf\xc0p\r\x8e\x8f\xb1` \x8d\xf7=\xa6\xb6\xbazL\xbbY\xd6:\xd5\x06\x8dP\xe7#\xb9\xbb\xf8T\xc73\xebH\x7f2\xcav\xb1\xd8w\xde\xdb\x89\xf0\xddD\xa5\xbf\x030\xf3\x96;'
-PROVIDER_ETHEREUM_PUBLIC_KEY = b'\x05\xa7w\xc6\x9b\x89<\xf8Rz\xef\xc4AwN}\xa0\x0e{p\xc8\xa7AF\xfc\xd26\xc1)\xdbgp\x8b]9\xfd\xaa]\xd5H@?F\x14\xdbU\x8b\x93\x8d\xf1\xfc/{s3\x8c\xc7\x80-,\x9d\x194u\x8d'
+REQUESTOR_ETHEREUM_PUBLIC_KEY = '46de69a1c010c84dceafc0700d8e8fb160208df73da6b6ba7a4cbb59d63ad5068d50e723b9bbf854c733eb487f32ca76b1d877dedb89f0dd44a5bf0330f3963b'
+PROVIDER_ETHEREUM_PUBLIC_KEY = '05a777c69b893cf8527aefc441774e7da00e7b70c8a74146fcd236c129db67708b5d39fdaa5dd548403f4614db558b938df1fc2f7b73338cc7802d2c9d1934758d'
 
 
 class TestAssertionException(Exception):

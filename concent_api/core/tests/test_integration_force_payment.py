@@ -94,7 +94,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
                     task_id                         = '3',
-                    requestor_ethereum_public_key   = self._get_requestor_ethereum_public_key_different(),
+                    requestor_ethereum_public_key   = self._get_requestor_ethereum_hex_public_key_different(),
                 )
             )
         ]

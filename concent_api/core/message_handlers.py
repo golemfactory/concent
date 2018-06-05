@@ -659,7 +659,7 @@ def handle_send_force_payment(client_message: message.concents.ForcePayment) -> 
     task_to_compute = client_message.subtask_results_accepted_list[0].task_to_compute
     (requestor_eth_address, provider_eth_address) = get_clients_eth_accounts(task_to_compute)
     validate_ethereum_addresses(requestor_eth_address, provider_eth_address)
-    requestor_ethereum_public_key = task_to_compute.requestor_ethereum_public_key
+    requestor_ethereum_public_key = hex_to_bytes_convert(task_to_compute.requestor_ethereum_public_key)
 
     # Concent defines time T0 equal to oldest payment_ts from passed SubtaskResultAccepted messages from subtask_results_accepted_list.
     oldest_payments_ts = min(

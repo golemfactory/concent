@@ -37,8 +37,8 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         store_subtask(
             task_id=self.compute_task_def['task_id'],
             subtask_id=self.compute_task_def['subtask_id'],
-            provider_public_key=self.report_computed_task.task_to_compute.provider_public_key,
-            requestor_public_key=self.report_computed_task.task_to_compute.requestor_public_key,
+            provider_public_key=self.PROVIDER_PUBLIC_KEY,
+            requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.REPORTED,
             task_to_compute=self.report_computed_task.task_to_compute,
             report_computed_task=self.report_computed_task,

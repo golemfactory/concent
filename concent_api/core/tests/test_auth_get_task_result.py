@@ -152,14 +152,14 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             response,
             error_message='There was an exception when validating if golem_message {} is signed with public key {}'.format(
                 message.TaskToCompute.TYPE,
-                self.REQUESTOR_PUBLIC_KEY,
+                self.REQUESTOR_PUBLIC_KEY
             ),
             error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG
         )
 
         # 2.2.
         task_to_compute.sig = None
-        task_to_compute.requestor_public_key = self.REQUESTOR_PUBLIC_KEY
+        task_to_compute.requestor_public_key = self._get_requestor_hex_public_key()
         task_to_compute.provider_id = 'different_id'
         task_to_compute = self._sign_message(
             task_to_compute,

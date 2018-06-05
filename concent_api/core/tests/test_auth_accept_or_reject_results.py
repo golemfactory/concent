@@ -461,7 +461,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # 4.2.
         task_to_compute.sig = None
-        task_to_compute.requestor_public_key = self.DIFFERENT_REQUESTOR_PUBLIC_KEY
+        task_to_compute.requestor_public_key = self._get_diffrent_requestor_hex_public_key()
         task_to_compute = self._sign_message(
             task_to_compute,
             self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
@@ -494,7 +494,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # 4.3.
         task_to_compute.sig = None
-        task_to_compute.requestor_public_key = self.REQUESTOR_PUBLIC_KEY
+        task_to_compute.requestor_public_key = self._get_requestor_hex_public_key()
         task_to_compute.provider_id = 'different_id'
         task_to_compute = self._sign_message(
             task_to_compute,
@@ -532,7 +532,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # STEP 5: Requestor sends forces subtask results response via Concent with correct keys.
         # Request is processed correctly.
         task_to_compute.sig = None
-        task_to_compute.provider_id = self.PROVIDER_PUBLIC_KEY
+        task_to_compute.provider_id = self._get_provider_hex_public_key()
         task_to_compute = self._sign_message(
             task_to_compute,
             self.REQUESTOR_PRIVATE_KEY,
@@ -794,7 +794,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # 4.2.
         task_to_compute.sig = None
-        task_to_compute.requestor_public_key = self.DIFFERENT_REQUESTOR_PUBLIC_KEY
+        task_to_compute.requestor_public_key = self._get_diffrent_requestor_hex_public_key()
         task_to_compute = self._sign_message(
             task_to_compute,
             self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
@@ -827,7 +827,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # 4.3.
         task_to_compute.sig = None
-        task_to_compute.requestor_public_key = self.REQUESTOR_PUBLIC_KEY
+        task_to_compute.requestor_public_key = self._get_requestor_hex_public_key()
         task_to_compute.provider_id = 'different_id'
         task_to_compute = self._sign_message(
             task_to_compute,
@@ -865,7 +865,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # STEP 5: Requestor sends forces subtask results response via Concent with correct keys.
         # Request is processed correctly.
         task_to_compute.sig = None
-        task_to_compute.provider_id = self.PROVIDER_PUBLIC_KEY
+        task_to_compute.provider_id = self._get_provider_hex_public_key()
         task_to_compute = self._sign_message(
             task_to_compute,
             self.REQUESTOR_PRIVATE_KEY,

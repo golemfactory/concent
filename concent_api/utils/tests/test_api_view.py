@@ -13,6 +13,7 @@ from golem_messages                 import dump
 from golem_messages                 import load
 from golem_messages                 import message
 from golem_messages.factories       import tasks
+from golem_messages.utils import encode_hex
 
 from core.exceptions                import Http400
 from core.models                    import Client
@@ -196,8 +197,8 @@ class ApiViewTransactionTestCase(TransactionTestCase):
         compute_task_def['deadline'] = message_timestamp
         task_to_compute = tasks.TaskToComputeFactory(
             compute_task_def=compute_task_def,
-            requestor_public_key=REQUESTOR_PUBLIC_KEY,
-            provider_public_key=PROVIDER_PUBLIC_KEY,
+            requestor_public_key=encode_hex(REQUESTOR_PUBLIC_KEY),
+            provider_public_key=encode_hex(PROVIDER_PUBLIC_KEY),
             price=0,
         )
         task_to_compute = load(

@@ -66,7 +66,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
 
     def test_conductor_should_return_404_when_file_path_parameter_not_matching_url_pattern_is_used(self):
         response = self.client.get(
-            '/conductor/report-upload/blender/result/ef0dc1/ef0dc1.zzz523.arj',
+            '/conductor/report-upload/',
             content_type = 'application/octet-stream',
         )
 

@@ -646,7 +646,7 @@ def handle_send_force_payment(client_message: message.concents.ForcePayment) -> 
             reason = message.concents.ServiceRefused.REASON.InvalidRequest
         )
 
-    if not are_ids_unique_in_subtask_results_accepted_list(client_message.subtask_results_accepted_list):
+    if not are_items_unique([subtask_results_accepted.subtask_id for subtask_results_accepted in client_message.subtask_results_accepted_list]):
         return message.concents.ServiceRefused(
             reason = message.concents.ServiceRefused.REASON.DuplicateRequest
         )
@@ -1361,8 +1361,5 @@ def is_message_recieved_in_wrong_state(subtask_id, forbidden_states):
     ).exists()
 
 
-def are_ids_unique_in_subtask_results_accepted_list(subtask_results_accepted_list):
-    subtask_ids = []
-    for subtask_results_accepted in subtask_results_accepted_list:
-        subtask_ids.append(subtask_results_accepted.subtask_id + ':' + subtask_results_accepted.task_id)
-    return len(subtask_ids) == len(set(subtask_ids))
+def are_items_unique(items: list):
+    return len(items) == len(set(items))

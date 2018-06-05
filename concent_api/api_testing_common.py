@@ -5,12 +5,13 @@ import sys
 from freezegun import freeze_time
 
 from golem_messages.exceptions      import MessageError
-from golem_messages.message import ComputeTaskDef
+from golem_messages.factories.tasks import ComputeTaskDefFactory
+from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.message import Message
-from golem_messages.message import TaskToCompute
 from golem_messages.message.concents import ClientAuthorization
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
+from golem_messages.utils import encode_hex
 
 import datetime
 import json
@@ -298,6 +299,15 @@ def run_tests(objects, additional_arguments=None):
     print("END")
 
 
+def _get_provider_hex_public_key():
+    """ Returns provider hex public key """
+    return encode_hex(PROVIDER_PUBLIC_KEY)
+
+
+def _get_requestor_hex_public_key():
+    return encode_hex(REQUESTOR_PUBLIC_KEY)
+
+
 def create_signed_task_to_compute(
     task_id,
     subtask_id,
@@ -310,13 +320,14 @@ def create_signed_task_to_compute(
     price=0
 ):
     with freeze_time(timestamp):
-        compute_task_def = ComputeTaskDef()
-        compute_task_def['task_id'] = task_id
-        compute_task_def['subtask_id'] = subtask_id
-        compute_task_def['deadline'] = deadline
-        task_to_compute = TaskToCompute(
-            provider_public_key=provider_public_key if provider_public_key is not None else PROVIDER_PUBLIC_KEY,
-            requestor_public_key=requestor_public_key if requestor_public_key is not None else REQUESTOR_PUBLIC_KEY,
+        compute_task_def = ComputeTaskDefFactory(
+            task_id=task_id,
+            subtask_id=subtask_id,
+            deadline= deadline,
+        )
+        task_to_compute = TaskToComputeFactory(
+            provider_public_key=provider_public_key if provider_public_key is not None else _get_provider_hex_public_key(),
+            requestor_public_key=requestor_public_key if requestor_public_key is not None else _get_requestor_hex_public_key(),
             compute_task_def=compute_task_def,
             requestor_ethereum_public_key=requestor_ethereum_public_key,
             provider_ethereum_public_key=provider_ethereum_public_key,

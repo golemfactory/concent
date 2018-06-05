@@ -70,9 +70,9 @@ def validate_bytes_public_key(value, field_name):
 
 def validate_key_with_desired_parameters(
         key_name: str,
-        key_value,
-        expected_type: Union,
-        expected_lenght: int
+        key_value: Union[bytes, str],
+        expected_type,
+        expected_length: int
 ):
 
     if not isinstance(key_value, expected_type):
@@ -81,9 +81,9 @@ def validate_key_with_desired_parameters(
             error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE,
         )
 
-    if len(key_value) != expected_lenght:
+    if len(key_value) != expected_length:
         raise Http400(
-            "The length of {} must be exactly {} characters.".format(key_name, expected_lenght),
+            "The length of {} must be exactly {} characters.".format(key_name, expected_length),
             error_code=ErrorCode.MESSAGE_VALUE_WRONG_LENGTH,
         )
 

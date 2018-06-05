@@ -46,12 +46,13 @@ from utils.helpers import deserialize_message
 from utils.helpers import get_current_utc_timestamp
 from utils.helpers import parse_timestamp_to_utc_datetime
 from utils.helpers import sign_message
+from .utils import hex_to_bytes_convert
 
 
 def handle_send_force_report_computed_task(client_message):
     task_to_compute = client_message.report_computed_task.task_to_compute
-    provider_public_key = task_to_compute.provider_public_key
-    requestor_public_key = task_to_compute.requestor_public_key
+    provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
+    requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
 
     validate_task_to_compute(task_to_compute)
     validate_report_computed_task_time_window(client_message.report_computed_task)
@@ -104,8 +105,8 @@ def handle_send_force_report_computed_task(client_message):
 def handle_send_ack_report_computed_task(client_message):
     task_to_compute = client_message.report_computed_task.task_to_compute
     report_computed_task = client_message.report_computed_task
-    provider_public_key = task_to_compute.provider_public_key
-    requestor_public_key = task_to_compute.requestor_public_key
+    provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
+    requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
 
     validate_task_to_compute(task_to_compute)
     validate_golem_message_signed_with_key(
@@ -138,7 +139,7 @@ def handle_send_ack_report_computed_task(client_message):
                 error_code=ErrorCode.QUEUE_SUBTASK_ID_MISMATCH,
             )
 
-        if subtask.requestor.public_key_bytes != task_to_compute.requestor_public_key:
+        if subtask.requestor.public_key_bytes != requestor_public_key:
             raise Http400(
                 "Subtask requestor key does not match current client key. Can't accept your 'AckReportComputedTask'.",
                 error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH,
@@ -208,8 +209,8 @@ def handle_send_reject_report_computed_task(client_message):
     task_to_compute = client_message.task_to_compute
     validate_task_to_compute(task_to_compute)
 
-    provider_public_key = task_to_compute.provider_public_key
-    requestor_public_key = task_to_compute.requestor_public_key
+    provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
+    requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
 
     # Validate if TaskToCompute signed by the requestor.
     validate_golem_message_signed_with_key(
@@ -360,8 +361,8 @@ def handle_send_reject_report_computed_task(client_message):
 
 def handle_send_force_get_task_result(client_message: message.concents.ForceGetTaskResult) -> message.concents:
     task_to_compute = client_message.report_computed_task.task_to_compute
-    provider_public_key = task_to_compute.provider_public_key
-    requestor_public_key = task_to_compute.requestor_public_key
+    provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
+    requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
 
     validate_task_to_compute(task_to_compute)
     validate_golem_message_signed_with_key(
@@ -420,8 +421,8 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
 
 def handle_send_force_subtask_results(client_message: message.concents.ForceSubtaskResults):
     task_to_compute = client_message.ack_report_computed_task.report_computed_task.task_to_compute
-    provider_public_key = task_to_compute.provider_public_key
-    requestor_public_key = task_to_compute.requestor_public_key
+    provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
+    requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
 
     validate_task_to_compute(task_to_compute)
     validate_golem_message_signed_with_key(
@@ -524,8 +525,8 @@ def handle_send_force_subtask_results_response(client_message):
         response_type             = PendingResponse.ResponseType.SubtaskResultsRejected
 
     validate_task_to_compute(task_to_compute)
-    provider_public_key = task_to_compute.provider_public_key
-    requestor_public_key = task_to_compute.requestor_public_key
+    provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
+    requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
 
     validate_golem_message_signed_with_key(
         task_to_compute,
@@ -629,7 +630,6 @@ def get_clients_eth_accounts(task_to_compute: message.tasks.TaskToCompute):
 
     requestor_eth_address   = task_to_compute.requestor_ethereum_address
     provider_eth_address    = task_to_compute.provider_ethereum_address
-
     return (requestor_eth_address, provider_eth_address)
 
 
@@ -654,7 +654,7 @@ def handle_send_force_payment(client_message: message.concents.ForcePayment) -> 
     for subtask_results_accepted in client_message.subtask_results_accepted_list:
         validate_golem_message_signed_with_key(
             subtask_results_accepted.task_to_compute,
-            subtask_results_accepted.task_to_compute.requestor_public_key,
+            hex_to_bytes_convert(subtask_results_accepted.task_to_compute.requestor_public_key),
         )
     task_to_compute = client_message.subtask_results_accepted_list[0].task_to_compute
     (requestor_eth_address, provider_eth_address) = get_clients_eth_accounts(task_to_compute)
@@ -744,7 +744,7 @@ def handle_send_force_payment(client_message: message.concents.ForcePayment) -> 
 
         store_pending_message(
             response_type       = PendingResponse.ResponseType.ForcePaymentCommitted,
-            client_public_key   = task_to_compute.requestor_public_key,
+            client_public_key   = hex_to_bytes_convert(task_to_compute.requestor_public_key),
             queue               = PendingResponse.Queue.ReceiveOutOfBand,
             payment_message     = requestor_force_payment_commited
         )
@@ -1223,9 +1223,8 @@ def handle_send_subtask_results_verify(
     report_computed_task = subtask_results_rejected.report_computed_task
     task_to_compute = report_computed_task.task_to_compute
     compute_task_def = task_to_compute.compute_task_def
-
-    requestor_public_key = task_to_compute.requestor_public_key
-    provider_public_key = task_to_compute.provider_public_key
+    requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
+    provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
     current_time = get_current_utc_timestamp()
 
     validate_golem_message_subtask_results_rejected(subtask_results_rejected)

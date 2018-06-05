@@ -17,6 +17,7 @@ app.conf.task_create_missing_queues = True
 app.conf.task_routes = ([
     ('verifier.tasks.verification_result', {'queue': 'concent'}),
     ('conductor.tasks.blender_verification_request', {'queue': 'conductor'}),
+    ('conductor.tasks.upload_acknowledged', {'queue': 'conductor'}),
     ('verifier.tasks.blender_verification_order', {'queue': 'verifier'}),
 ],)
 app.conf.task_default_queue = 'non_existing'

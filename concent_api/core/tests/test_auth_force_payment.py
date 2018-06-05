@@ -37,10 +37,6 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 10:00:00",
                     deadline                        = "2018-02-05 10:00:10",
                     task_id                         = '2',
-                    requestor_public_key            = self.REQUESTOR_PUBLIC_KEY,
-                    requestor_ethereum_public_key   = self._get_requestor_ethereum_public_key(),
-                    provider_public_key             = self.PROVIDER_PUBLIC_KEY,
-                    provider_ethereum_public_key    = self._get_provider_ethereum_public_key(),
                     price                           = 15000,
                 )
             ),
@@ -51,10 +47,6 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
                     task_id                         = '3',
-                    requestor_public_key            = self.REQUESTOR_PUBLIC_KEY,
-                    requestor_ethereum_public_key   = self._get_requestor_ethereum_public_key(),
-                    provider_public_key             = self.PROVIDER_PUBLIC_KEY,
-                    provider_ethereum_public_key    = self._get_provider_ethereum_public_key(),
                     price                           = 7000,
                 )
             )

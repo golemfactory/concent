@@ -7,6 +7,7 @@ import time
 from freezegun import freeze_time
 
 from golem_messages import message
+from golem_messages.utils import encode_hex
 
 from utils.helpers import get_current_utc_timestamp, parse_timestamp_to_utc_datetime
 
@@ -239,7 +240,7 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
                         subtask_id=subtask_id + 'B',
                         deadline=current_time,
                         price=15000,
-                        requestor_ethereum_public_key=b'0' * GOLEM_PUBLIC_KEY_LENGTH
+                        requestor_ethereum_public_key=encode_hex(b'0' * GOLEM_PUBLIC_KEY_LENGTH)
                     )
                 )
             ]

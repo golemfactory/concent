@@ -6,6 +6,12 @@ from django.conf                    import settings
 from golem_messages                 import message
 from golem_messages.helpers         import maximum_download_time
 from golem_messages.helpers         import subtask_verification_time
+from golem_messages.utils import decode_hex
+
+from core.exceptions import Http400
+from utils.constants import ErrorCode
+from .constants import GOLEM_PUBLIC_KEY_LENGTH
+from .constants import GOLEM_PUBLIC_KEY_HEX_LENGTH
 
 
 def calculate_maximum_download_time(size: int, rate: int) -> int:
@@ -62,3 +68,19 @@ def calculate_subtask_verification_time(report_computed_task: message.ReportComp
         )
     else:
         return int(subtask_verification_time(report_computed_task).total_seconds())
+
+
+def hex_to_bytes_convert(client_public_key: str):
+    if not isinstance(client_public_key, str):
+        raise Http400(
+            "Client public key must be string",
+            error_code=ErrorCode.MESSAGE_VALUE_NOT_STRING
+        )
+    if not len(client_public_key) == GOLEM_PUBLIC_KEY_HEX_LENGTH:
+        raise Http400(
+            "Client public key must be length of 128 characters",
+            error_code=ErrorCode.MESSAGE_VALUE_WRONG_LENGTH
+        )
+    key_bytes = decode_hex(client_public_key)
+    assert len(key_bytes) == GOLEM_PUBLIC_KEY_LENGTH
+    return key_bytes

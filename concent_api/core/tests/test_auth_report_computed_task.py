@@ -35,8 +35,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 10:00:00"):
             self.deserialized_task_to_compute = self._get_deserialized_task_to_compute(
                 compute_task_def      = self.compute_task_def,
-                provider_public_key   = self.PROVIDER_PUBLIC_KEY,
-                requestor_public_key  = self.REQUESTOR_PUBLIC_KEY,
                 sign_with_private_key = self.REQUESTOR_PRIVATE_KEY,
             )
 
@@ -184,7 +182,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # 4.2.
         task_to_compute.sig = None
-        task_to_compute.requestor_public_key = self.DIFFERENT_REQUESTOR_PUBLIC_KEY
+        task_to_compute.requestor_public_key = self._get_diffrent_requestor_hex_public_key()
         task_to_compute = self._sign_message(
             task_to_compute,
             self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
@@ -213,7 +211,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # 4.3.
         task_to_compute.sig = None
-        task_to_compute.requestor_public_key = self.REQUESTOR_PUBLIC_KEY
+        task_to_compute.requestor_public_key = self._get_requestor_hex_public_key()
         task_to_compute.provider_id = 'different_id'
         task_to_compute = self._sign_message(
             task_to_compute,
@@ -473,7 +471,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # 4.2.
         task_to_compute.sig = None
-        task_to_compute.requestor_public_key = self.DIFFERENT_REQUESTOR_PUBLIC_KEY
+        task_to_compute.requestor_public_key = self._get_diffrent_requestor_hex_public_key()
         task_to_compute = self._sign_message(
             task_to_compute,
             self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
@@ -501,7 +499,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # 4.3.
         task_to_compute.sig = None
-        task_to_compute.requestor_public_key = self.REQUESTOR_PUBLIC_KEY
+        task_to_compute.requestor_public_key = self._get_requestor_hex_public_key()
         task_to_compute.provider_id = 'different_id'
         task_to_compute = self._sign_message(
             task_to_compute,
@@ -781,7 +779,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # 4.2.
         task_to_compute.sig = None
-        task_to_compute.requestor_public_key = self.DIFFERENT_REQUESTOR_PUBLIC_KEY
+        task_to_compute.requestor_public_key = self._get_diffrent_requestor_hex_public_key()
         task_to_compute = self._sign_message(
             task_to_compute,
             self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
@@ -809,7 +807,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # 4.3.
         task_to_compute.sig = None
-        task_to_compute.requestor_public_key = self.REQUESTOR_PUBLIC_KEY
+        task_to_compute.requestor_public_key = self._get_requestor_hex_public_key()
         task_to_compute.provider_id = 'different_id'
         task_to_compute = self._sign_message(
             task_to_compute,

@@ -21,6 +21,7 @@ from .models                        import PendingResponse
 @require_golem_message
 @handle_errors_and_responses(database_name='control')
 def send(_request, client_message, client_public_key):
+    assert isinstance(client_public_key, bytes) or client_public_key is None
     if client_public_key is not None:
         update_timed_out_subtasks(
             client_public_key = client_public_key,
@@ -40,6 +41,7 @@ def send(_request, client_message, client_public_key):
 @require_golem_auth_message
 @handle_errors_and_responses(database_name='control')
 def receive(_request, message, _client_public_key):
+    assert isinstance(message.client_public_key, bytes)
     update_timed_out_subtasks(
         client_public_key = message.client_public_key,
     )
@@ -55,6 +57,7 @@ def receive(_request, message, _client_public_key):
 @require_golem_auth_message
 @handle_errors_and_responses(database_name='control')
 def receive_out_of_band(_request, message, _client_public_key):
+    assert isinstance(message.client_public_key, bytes)
     update_timed_out_subtasks(
         client_public_key = message.client_public_key,
     )

@@ -17,6 +17,7 @@ from golem_messages         import message
 from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.message.base import Message
+from golem_messages.utils import encode_hex
 
 from core.models            import Client
 from core.models            import PendingResponse
@@ -72,25 +73,35 @@ class ConcentIntegrationTestCase(TestCase):
         """ Return requestor private ethereum key """
         return self.REQUESTOR_PRIV_ETH_KEY
 
-    def _get_requestor_ethereum_public_key(self):
+    def _get_requestor_ethereum_hex_public_key(self):
         """ Returns requestor ethereum public key encoded. """
-        return self.REQUESTOR_PUB_ETH_KEY
+        return encode_hex(self.REQUESTOR_PUB_ETH_KEY)
 
-    def _get_requestor_ethereum_public_key_different(self):
+    def _get_requestor_ethereum_hex_public_key_different(self):
         """ Returns requestor ethereum public key encoded. """
-        return self.DIFFERENT_REQUESTOR_PUB_ETH_KEY
+        return encode_hex(self.DIFFERENT_REQUESTOR_PUB_ETH_KEY)
 
     def _get_provider_ethereum_private_key(self):
         """ Returns provider ethereum private key """
         return self.PROVIDER_PRIV_ETH_KEY
 
-    def _get_provider_ethereum_public_key(self):
+    def _get_provider_ethereum_hex_public_key(self):
         """ Returns provider ethereum address """
-        return self.PROVIDER_PUB_ETH_KEY
+        return encode_hex(self.PROVIDER_PUB_ETH_KEY)
 
-    def _get_provider_ethereum_public_key_different(self):
+    def _get_provider_ethereum_hex_public_key_different(self):
         """ Returns provider ethereum diffrent address """
-        return self.DIFFERENT_PROVIDER_PUB_ETH_KEY
+        return encode_hex(self.DIFFERENT_PROVIDER_PUB_ETH_KEY)
+
+    def _get_provider_hex_public_key(self):
+        """ Returns provider hex public key """
+        return encode_hex(self.PROVIDER_PUBLIC_KEY)
+
+    def _get_requestor_hex_public_key(self):
+        return encode_hex(self.REQUESTOR_PUBLIC_KEY)
+
+    def _get_diffrent_requestor_hex_public_key(self):
+        return encode_hex(self.DIFFERENT_REQUESTOR_PUBLIC_KEY)
 
     def _sign_message(self, golem_message, client_private_key = None):
         return sign_message(
@@ -163,26 +174,30 @@ class ConcentIntegrationTestCase(TestCase):
                 deadline=deadline,
             )
         )
+        assert isinstance(requestor_id, str) or requestor_id is None
+        assert isinstance(requestor_public_key, str) or requestor_public_key is None
+        assert isinstance(provider_id, str) or provider_id is None
+        assert isinstance(provider_public_key, str) or provider_public_key is None
         with freeze_time(timestamp or self._get_timestamp_string()):
             task_to_compute = TaskToComputeFactory(
                 compute_task_def=compute_task_def,
                 requestor_id=(
-                    requestor_id if requestor_id is not None else self.REQUESTOR_PUBLIC_KEY
+                    requestor_id if requestor_id is not None else self._get_requestor_hex_public_key()
                 ),
                 requestor_public_key            = (
-                    requestor_public_key if requestor_public_key is not None else self.REQUESTOR_PUBLIC_KEY
+                    requestor_public_key if requestor_public_key is not None else self._get_requestor_hex_public_key()
                 ),
                 requestor_ethereum_public_key   = (
-                    requestor_ethereum_public_key if requestor_ethereum_public_key is not None else self._get_requestor_ethereum_public_key()
+                    requestor_ethereum_public_key if requestor_ethereum_public_key is not None else self._get_requestor_ethereum_hex_public_key()
                 ),
                 provider_id                     = (
-                    provider_id if provider_id is not None else self.PROVIDER_PUBLIC_KEY
+                    provider_id if provider_id is not None else self._get_provider_hex_public_key()
                 ),
                 provider_public_key             = (
-                    provider_public_key if provider_public_key is not None else self.PROVIDER_PUBLIC_KEY
+                    provider_public_key if provider_public_key is not None else self._get_provider_hex_public_key()
                 ),
                 provider_ethereum_public_key    = (
-                    provider_ethereum_public_key if provider_ethereum_public_key is not None else self._get_provider_ethereum_public_key()
+                    provider_ethereum_public_key if provider_ethereum_public_key is not None else self._get_provider_ethereum_hex_public_key()
                 ),
                 price=price,
                 package_hash=package_hash,

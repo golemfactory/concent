@@ -7,6 +7,7 @@ from freezegun import freeze_time
 
 from golem_messages import message
 from golem_messages.helpers import maximum_download_time
+from golem_messages.utils import encode_hex
 
 from utils.helpers import get_current_utc_timestamp
 
@@ -312,9 +313,9 @@ def test_case_2b_not_enough_funds(cluster_consts, cluster_url, test_id):
                         task_id=task_id,
                         subtask_id=subtask_id,
                         deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time),
-                        requestor_ethereum_public_key=b'0' * GOLEM_PUBLIC_KEY_LENGTH,
-                        provider_ethereum_public_key=b'1' * GOLEM_PUBLIC_KEY_LENGTH,
-                        price=10000,
+                        requestor_ethereum_public_key=encode_hex(b'0' * GOLEM_PUBLIC_KEY_LENGTH),
+                        provider_ethereum_public_key=encode_hex(b'1' * GOLEM_PUBLIC_KEY_LENGTH),
+                        price=0,
                     )
                 )
             )

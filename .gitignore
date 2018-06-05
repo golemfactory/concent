@@ -107,4 +107,4 @@ ENV/
 /RELEASE-VERSION
 
 # Version
-/concent_api/verifier-storage
+/concent_api/verifier_storage

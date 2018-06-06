@@ -465,11 +465,11 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(response)
         self._assert_stored_message_counter_not_increased()
 
-    def test_provider_send_force_payment_with_empty_subtask_results_accepted_list_concent_should_refuse(self):
+    def test_provider_send_force_payment_with_empty_subtask_results_accepted_list_concent_should_return_http_400(self):
         """
         Expected message exchange:
         Provider  -> Concent:    ForcePayment
-        Concent   -> Provider:   ServiceRefused
+        Concent   -> Provider:   HTTP 400
         """
         subtask_results_accepted_list = []
 
@@ -485,16 +485,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 content_type                        = 'application/octet-stream',
             )
 
-        self._test_response(
-            response,
-            status       = 200,
-            key          = self.PROVIDER_PRIVATE_KEY,
-            message_type = message.concents.ServiceRefused,
-            fields       = {
-                'reason':    message.concents.ServiceRefused.REASON.InvalidRequest,
-                'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
-            }
-        )
+        self._test_400_response(response)
         self._assert_stored_message_counter_not_increased()
 
     def test_provider_send_force_payment_with_empty_requestor_ethereum_public_key_concent_should_refuse(self):

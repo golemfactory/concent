@@ -54,10 +54,37 @@ class ApiViewTestCase(TestCase):
             "max_memory_size":      self.want_to_compute.max_memory_size,       # pylint: disable=no-member
             "num_cores":            self.want_to_compute.num_cores,             # pylint: disable=no-member
         }
+        deadline_offset = 10
+        message_timestamp = get_current_utc_timestamp() + deadline_offset
+        compute_task_def = tasks.ComputeTaskDefFactory(
+            task_id='8',
+            subtask_id='8',
+            deadline=message_timestamp,
+        )
+        task_to_compute = tasks.TaskToComputeFactory(
+            compute_task_def=compute_task_def,
+            requestor_public_key=encode_hex(REQUESTOR_PUBLIC_KEY),
+            provider_public_key=encode_hex(PROVIDER_PUBLIC_KEY),
+            price=0,
+        )
+        task_to_compute = load(
+            dump(
+                task_to_compute,
+                REQUESTOR_PRIVATE_KEY,
+                settings.CONCENT_PUBLIC_KEY,
+            ),
+            settings.CONCENT_PRIVATE_KEY,
+            REQUESTOR_PUBLIC_KEY,
+            check_time=False,
+        )
+
+        self.force_report_computed_task = message.ForceReportComputedTask()
+        self.force_report_computed_task.report_computed_task = message.tasks.ReportComputedTask()
+        self.force_report_computed_task.report_computed_task.task_to_compute = task_to_compute
 
     def test_api_view_should_return_golem_message_as_octet_stream(self):
         raw_message = dump(
-            self.want_to_compute,
+            self.force_report_computed_task,
             settings.CONCENT_PRIVATE_KEY,
             settings.CONCENT_PUBLIC_KEY,
         )
@@ -70,14 +97,12 @@ class ApiViewTestCase(TestCase):
             nonlocal decoded_message
             decoded_message = _message
             return None
-
         request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream', data = raw_message)
 
         dummy_view(request)                                                     # pylint: disable=no-value-for-parameter
 
-        message_to_test = message_to_dict(decoded_message)
-        self.assertIsInstance(decoded_message, message.WantToComputeTask)
-        self.assertEqual(message_to_test, self.message_to_view)
+        self.assertIsInstance(decoded_message, message.ForceReportComputedTask)
+        self.assertEqual(decoded_message, self.force_report_computed_task)
 
     def test_api_view_should_return_http_415_when_request_content_type_is_not_supported(self):
 
@@ -115,7 +140,7 @@ class ApiViewTestCase(TestCase):
         if not allowed HTTP method by view is used.
         """
         raw_message = dump(
-            self.want_to_compute,
+            self.force_report_computed_task,
             settings.CONCENT_PRIVATE_KEY,
             settings.CONCENT_PUBLIC_KEY,
         )

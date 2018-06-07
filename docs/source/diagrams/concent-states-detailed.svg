@@ -125,7 +125,7 @@
     </g>
     <g font-size="10px" stroke-linecap="butt" transform="matrix(1,0,0,1,449,-390)" text-rendering="geometricPrecision" font-family="'Arial'" shape-rendering="geometricPrecision" font-weight="bold" stroke-miterlimit="1.45">
       <text x="24.8458" xml:space="preserve" y="503.539" clip-path="url(#clipPath2)" stroke="none">timeout</text>
-      <text x="-23.6477" font-size="8px" y="514.5839" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">t = deadline + CMT</text>
+      <text x="-23.6477" font-size="8px" y="514.5839" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">t &gt; deadline + CMT</text>
     </g>
     <g stroke-linecap="butt" transform="matrix(1,0,0,1,449,-390)" fill="rgb(0,204,0)" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" stroke="rgb(0,204,0)" stroke-width="2" stroke-miterlimit="1.45">
       <path fill="none" d="M153.4869 468.1862 L282.1089 468.1862 L282.1089 550.8918 L165.5612 550.8918" clip-path="url(#clipPath2)"/>
@@ -191,7 +191,7 @@
     </g>
     <g font-size="10px" stroke-linecap="butt" transform="matrix(1,0,0,1,449,-390)" text-rendering="geometricPrecision" font-family="'Arial'" shape-rendering="geometricPrecision" font-weight="bold" stroke-miterlimit="1.45">
       <text x="299.075" xml:space="preserve" y="1075.4734" clip-path="url(#clipPath2)" stroke="none">timeout</text>
-      <text x="199.0205" font-size="8px" y="1089.6559" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">t = report + SVT + FAT + CMT</text>
+      <text x="199.0205" font-size="8px" y="1089.6559" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">t &gt; report + SVT + FAT + CMT</text>
     </g>
     <g stroke-linecap="butt" transform="matrix(1,0,0,1,449,-390)" fill="rgb(204,51,0)" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" stroke="rgb(204,51,0)" stroke-width="2" stroke-miterlimit="1.45">
       <path fill="none" d="M99.2645 963.5386 L99.2645 1005.7736" clip-path="url(#clipPath2)"/>
@@ -254,7 +254,7 @@
     </g>
     <g font-size="10px" stroke-linecap="butt" transform="matrix(1,0,0,1,449,-390)" text-rendering="geometricPrecision" font-family="'Arial'" shape-rendering="geometricPrecision" font-weight="bold" stroke-miterlimit="1.45">
       <text x="452.481" xml:space="preserve" y="665.2847" clip-path="url(#clipPath2)" stroke="none">timeout</text>
-      <text x="382.15" font-size="8px" y="681.3907" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">t = report + 2MDT + 3MAT + 4MMTT + CMT</text>
+      <text x="382.15" font-size="8px" y="681.3907" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">t &gt; report + 2MDT + 3MAT + 4MMTT + CMT</text>
     </g>
     <g stroke-linecap="butt" transform="matrix(1,0,0,1,449,-390)" fill="rgb(204,51,0)" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" stroke="rgb(204,51,0)" stroke-width="2" stroke-miterlimit="1.45">
       <path fill="none" d="M165.7645 1169.4911 L338.5045 1169.4911 M348.5045 1169.4911 L378.5045 1169.4911 M388.5045 1169.4911 L586.4017 1169.4911 L586.4017 1364.7885" clip-path="url(#clipPath2)"/>
@@ -262,7 +262,7 @@
     </g>
     <g font-size="10px" stroke-linecap="butt" transform="matrix(1,0,0,1,449,-390)" text-rendering="geometricPrecision" font-family="'Arial'" shape-rendering="geometricPrecision" font-weight="bold" stroke-miterlimit="1.45">
       <text x="208.0333" xml:space="preserve" y="1149.1019" clip-path="url(#clipPath2)" stroke="none">timeout</text>
-      <text x="186.3485" font-size="8px" y="1161.3007" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">t = rejection + AVCT</text>
+      <text x="186.3485" font-size="8px" y="1161.3007" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">t &gt; rejection + AVCT</text>
       <path fill="none" d="M99.2645 1203.9911 L99.2645 1247.2086" clip-path="url(#clipPath2)"/>
       <path d="M99.2645 1255.2086 L104.2645 1243.2086 L99.2645 1246.2086 L94.2645 1243.2086 Z" stroke="none" clip-path="url(#clipPath2)"/>
       <text x="12.7198" xml:space="preserve" y="1221.6823" clip-path="url(#clipPath2)" stroke="none">all files uploaded</text>
@@ -290,7 +290,7 @@
     </g>
     <g font-size="10px" stroke-linecap="butt" transform="matrix(1,0,0,1,449,-390)" text-rendering="geometricPrecision" font-family="'Arial'" shape-rendering="geometricPrecision" font-weight="bold" stroke-miterlimit="1.45">
       <text x="203.7303" xml:space="preserve" y="1323.9753" clip-path="url(#clipPath2)" stroke="none">timeout</text>
-      <text x="169.2713" font-size="8px" y="1336.8782" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">t = rejection + AVCT + SVT</text>
+      <text x="169.2713" font-size="8px" y="1336.8782" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">t &gt; rejection + AVCT + SVT</text>
     </g>
     <g text-rendering="geometricPrecision" shape-rendering="geometricPrecision" transform="matrix(1.8203,0,0,1.8203,61.5051,948.0055)" image-rendering="optimizeQuality">
       <image x="0" y="0" clip-path="url(#clipPath3)" width="276" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARQAAACLCAYAAACgN2ZbAAAArElEQVR42u3BMQEA&#10;AADCoPVPbQo/oAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&#10;AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&#10;AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&#10;AAAAAAAAAAAAAAAAAACAgwFYGQABE/gnnAAAAABJRU5ErkJggg==" height="139" preserveAspectRatio="none"/>

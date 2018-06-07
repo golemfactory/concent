@@ -133,8 +133,8 @@
       <path fill="rgb(204,51,0)" d="M462.0017 1323.5958 L467.6267 1310.0958 L462.0017 1313.4708 L456.3767 1310.0958 Z" stroke-width="2" clip-path="url(#clipPath2)" stroke="none"/>
       <path fill="none" d="M165.7645 1169.4911 L284.1046 1169.4911 M294.1046 1169.4911 L462.0017 1169.4911 L462.0017 1314.6045" stroke-width="2" clip-path="url(#clipPath2)" stroke="rgb(204,51,0)"/>
       <path fill="rgb(204,51,0)" d="M462.0017 1323.6045 L467.6267 1310.1045 L462.0017 1313.4795 L456.3767 1310.1045 Z" stroke-width="2" clip-path="url(#clipPath2)" stroke="none"/>
-      <path fill="none" d="M99.2645 1203.9911 L99.2645 1247.2086" clip-path="url(#clipPath2)"/>
-      <path d="M99.2645 1255.2086 L104.2645 1243.2086 L99.2645 1246.2086 L94.2645 1243.2086 Z" clip-path="url(#clipPath2)" stroke="none"/>
+      <path fill="none" d="M99.2645 1203.9911 L99.2645 1246.2086" stroke-width="2" clip-path="url(#clipPath2)" stroke="rgb(0,204,0)"/>
+      <path fill="rgb(0,204,0)" d="M99.2645 1255.2086 L104.8895 1241.7086 L99.2645 1245.0836 L93.6395 1241.7086 Z" stroke-width="2" clip-path="url(#clipPath2)" stroke="none"/>
       <path fill="none" d="M165.776 1289.7086 L213.7243 1289.7086" stroke-width="2" clip-path="url(#clipPath2)" stroke="rgb(0,204,0)"/>
       <path fill="rgb(0,204,0)" d="M222.7243 1289.7086 L209.2243 1284.0836 L212.5993 1289.7086 L209.2243 1295.3336 Z" stroke-width="2" clip-path="url(#clipPath2)" stroke="none"/>
       <path fill="none" d="M99.2645 1324.1879 L99.2645 1359.192 L386.5383 1359.192" stroke-width="2" clip-path="url(#clipPath2)" stroke="rgb(204,51,0)"/>

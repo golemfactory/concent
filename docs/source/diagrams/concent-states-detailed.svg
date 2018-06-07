@@ -263,8 +263,12 @@
     <g font-size="10px" stroke-linecap="butt" transform="matrix(1,0,0,1,449,-390)" text-rendering="geometricPrecision" font-family="'Arial'" shape-rendering="geometricPrecision" font-weight="bold" stroke-miterlimit="1.45">
       <text x="208.0333" xml:space="preserve" y="1149.1019" clip-path="url(#clipPath2)" stroke="none">timeout</text>
       <text x="186.3485" font-size="8px" y="1161.3007" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">t &gt; rejection + AVCT</text>
-      <path fill="none" d="M99.2645 1203.9911 L99.2645 1247.2086" clip-path="url(#clipPath2)"/>
-      <path d="M99.2645 1255.2086 L104.2645 1243.2086 L99.2645 1246.2086 L94.2645 1243.2086 Z" stroke="none" clip-path="url(#clipPath2)"/>
+    </g>
+    <g stroke-linecap="butt" transform="matrix(1,0,0,1,449,-390)" fill="rgb(0,204,0)" text-rendering="geometricPrecision" shape-rendering="geometricPrecision" stroke="rgb(0,204,0)" stroke-width="2" stroke-miterlimit="1.45">
+      <path fill="none" d="M99.2645 1203.9911 L99.2645 1246.2086" clip-path="url(#clipPath2)"/>
+      <path d="M99.2645 1255.2086 L104.8895 1241.7086 L99.2645 1245.0836 L93.6395 1241.7086 Z" clip-path="url(#clipPath2)" stroke="none"/>
+    </g>
+    <g font-size="10px" stroke-linecap="butt" transform="matrix(1,0,0,1,449,-390)" text-rendering="geometricPrecision" font-family="'Arial'" shape-rendering="geometricPrecision" font-weight="bold" stroke-miterlimit="1.45">
       <text x="12.7198" xml:space="preserve" y="1221.6823" clip-path="url(#clipPath2)" stroke="none">all files uploaded</text>
       <text x="-3.0677" font-size="8px" y="1233.7263" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">t &lt;= rejection + AVCT</text>
     </g>

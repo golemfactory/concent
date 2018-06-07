@@ -1,14 +1,11 @@
 import binascii
 from base64                         import b64decode
 from base64                         import b64encode
-import re
 from typing                         import Union
 
 from django.conf                    import settings
 from django.http                    import JsonResponse
 from django.core.handlers.wsgi      import WSGIRequest
-from django.core.validators         import URLValidator
-from django.core.exceptions         import ValidationError
 from django.urls                    import reverse
 from django.views.decorators.csrf   import csrf_exempt
 from django.views.decorators.http   import require_POST
@@ -19,15 +16,13 @@ from golem_messages.message         import FileTransferToken
 from golem_messages.message         import Message
 from golem_messages.shortcuts       import load
 
-from gatekeeper.enums               import HashingAlgorithm
+from core.exceptions import FileTransferTokenError
+from core.validation import validate_file_transfer_token
 from gatekeeper.utils               import gatekeeper_access_denied_response
 from utils                          import logging
 from utils.constants                import ErrorCode
 from utils.decorators import provides_concent_feature
-from utils.helpers                  import get_current_utc_timestamp
-
-
-VALID_SHA1_HASH_REGEX = re.compile(r"^[a-fA-F\d]{40}$")
+from utils.helpers import get_current_utc_timestamp
 
 
 @provides_concent_feature('gatekeeper')
@@ -176,27 +171,6 @@ def parse_headers(request: WSGIRequest, path_to_file: str, operation: FileTransf
             concent_client_public_key
     )
 
-    # Check ConcentFileTransferToken each field:
-    # -SIGNATURE
-    if not isinstance(loaded_golem_message.sig, bytes):
-        return gatekeeper_access_denied_response(
-            'Empty signature field in FileTransferToken message.',
-            operation,
-            ErrorCode.MESSAGE_SIGNATURE_MISSING,
-            path_to_file,
-            loaded_golem_message.subtask_id,
-            concent_client_public_key
-        )
-    # -DEADLINE
-    if not isinstance(loaded_golem_message.token_expiration_deadline, int):
-        return gatekeeper_access_denied_response(
-            'Wrong type of token_expiration_deadline field value.',
-            operation,
-            ErrorCode.MESSAGE_TOKEN_EXPIRATION_DEADLINE_WRONG_TYPE,
-            path_to_file,
-            loaded_golem_message.subtask_id,
-            concent_client_public_key
-        )
     current_time = get_current_utc_timestamp()
 
     if current_time > loaded_golem_message.token_expiration_deadline:
@@ -209,48 +183,18 @@ def parse_headers(request: WSGIRequest, path_to_file: str, operation: FileTransf
             concent_client_public_key
         )
 
-    # -STORAGE_CLUSTER_ADDRESS
-    if not isinstance(loaded_golem_message.storage_cluster_address, str):
-        return gatekeeper_access_denied_response(
-            'Wrong type of storage_cluster_address field value.',
-            operation,
-            ErrorCode.MESSAGE_STORAGE_CLUSTER_WRONG_TYPE,
-            path_to_file,
-            loaded_golem_message.subtask_id,
-            concent_client_public_key
-        )
-    url_validator = URLValidator()
     try:
-        url_validator(loaded_golem_message.storage_cluster_address)
-    except ValidationError:
+        validate_file_transfer_token(loaded_golem_message)
+    except FileTransferTokenError as exception:
         return gatekeeper_access_denied_response(
-            'storage_cluster_address is not a valid URL.',
+            exception.error_message,
             operation,
-            ErrorCode.MESSAGE_STORAGE_CLUSTER_INVALID_URL,
-            path_to_file,
-            loaded_golem_message.subtask_id,
-            concent_client_public_key
-        )
-    if loaded_golem_message.storage_cluster_address != settings.STORAGE_CLUSTER_ADDRESS:
-        return gatekeeper_access_denied_response(
-            'This token does not allow file transfers to/from the cluster you are trying to access.',
-            operation,
-            ErrorCode.MESSAGE_STORAGE_CLUSTER_WRONG_CLUSTER,
+            exception.error_code,
             path_to_file,
             loaded_golem_message.subtask_id,
             concent_client_public_key
         )
 
-    # -CLIENT_PUBLIC_KEY
-    if not isinstance(loaded_golem_message.authorized_client_public_key, bytes):
-        return gatekeeper_access_denied_response(
-            'Wrong type of authorized_client_public_key field value.',
-            operation,
-            ErrorCode.MESSAGE_AUTHORIZED_CLIENT_PUBLIC_KEY_WRONG_TYPE,
-            path_to_file,
-            loaded_golem_message.subtask_id,
-            concent_client_public_key
-        )
     authorized_client_public_key_base64 = (b64encode(loaded_golem_message.authorized_client_public_key)).decode('ascii')
     if concent_client_public_key != authorized_client_public_key_base64:
         return gatekeeper_access_denied_response(
@@ -277,143 +221,6 @@ def parse_headers(request: WSGIRequest, path_to_file: str, operation: FileTransf
             'Download requests must use GET or HEAD method.',
             operation,
             ErrorCode.MESSAGE_OPERATION_INVALID,
-            path_to_file,
-            loaded_golem_message.subtask_id,
-            concent_client_public_key
-        )
-
-    # -FILES
-    if not all(isinstance(file, dict) for file in loaded_golem_message.files):
-        return gatekeeper_access_denied_response(
-            'Wrong type of files field value.',
-            operation,
-            ErrorCode.MESSAGE_FILES_WRONG_TYPE,
-            path_to_file,
-            loaded_golem_message.subtask_id,
-            concent_client_public_key
-        )
-    transfer_token_paths_to_files = [file["path"] for file in loaded_golem_message.files]
-    if len(transfer_token_paths_to_files) != len(set(transfer_token_paths_to_files)):
-        return gatekeeper_access_denied_response(
-            'File paths in the token must be unique',
-            operation,
-            ErrorCode.MESSAGE_FILES_PATHS_NOT_UNIQUE,
-            path_to_file,
-            loaded_golem_message.subtask_id,
-            concent_client_public_key
-        )
-
-    if not all(isinstance(file["checksum"], str) for file in loaded_golem_message.files):
-        return gatekeeper_access_denied_response(
-            "'checksum' must be a string.",
-            operation,
-            ErrorCode.MESSAGE_FILES_CHECKSUM_WRONG_TYPE,
-            path_to_file,
-            loaded_golem_message.subtask_id,
-            concent_client_public_key
-        )
-    if any((len(file["checksum"]) == 0 or file["checksum"].isspace()) for file in loaded_golem_message.files):
-        return gatekeeper_access_denied_response(
-            "'checksum' cannot be blank or contain only whitespace.",
-            operation,
-            ErrorCode.MESSAGE_FILES_CHECKSUM_EMPTY,
-            path_to_file,
-            loaded_golem_message.subtask_id,
-            concent_client_public_key
-        )
-    if not all(":" in file["checksum"] for file in loaded_golem_message.files):
-        return gatekeeper_access_denied_response(
-            "'checksum' must consist of two parts separated with a semicolon.",
-            operation,
-            ErrorCode.MESSAGE_FILES_CHECKSUM_WRONG_FORMAT,
-            path_to_file,
-            loaded_golem_message.subtask_id,
-            concent_client_public_key
-        )
-    file_checksums = [tuple(file["checksum"].split(":")) for file in loaded_golem_message.files]
-    if not set(checksum_type for checksum_type, checksum in file_checksums).issubset(set(HashingAlgorithm._value2member_map_)):  # type: ignore
-        return gatekeeper_access_denied_response(
-            "One of the checksums is from an unsupported hashing algorithm.",
-            operation,
-            ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_ALGORITHM,
-            path_to_file,
-            loaded_golem_message.subtask_id,
-            concent_client_public_key
-        )
-
-    assert set(HashingAlgorithm) == {HashingAlgorithm.SHA1}, "If you add a new hashing algorithms, you need to add validations below."
-    if any(VALID_SHA1_HASH_REGEX.fullmatch(file_checksum[1]) is None for file_checksum in file_checksums):
-        return gatekeeper_access_denied_response(
-            "Invalid SHA1 hash.",
-            operation,
-            ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_SHA1_HASH,
-            path_to_file,
-            loaded_golem_message.subtask_id,
-            concent_client_public_key
-        )
-
-    file_sizes = [file["size"] for file in loaded_golem_message.files]
-    if any((file_size is None) for file_size in file_sizes):
-        return gatekeeper_access_denied_response(
-            "'size' must be an integer.",
-            operation,
-            ErrorCode.MESSAGE_FILES_SIZE_EMPTY,
-            path_to_file,
-            loaded_golem_message.subtask_id,
-            concent_client_public_key
-        )
-    for file_size in file_sizes:
-        try:
-            int(file_size)
-        except (ValueError, TypeError):
-            return gatekeeper_access_denied_response(
-                "'size' must be an integer.",
-                operation,
-                ErrorCode.MESSAGE_FILES_SIZE_WRONG_TYPE,
-                path_to_file,
-                loaded_golem_message.subtask_id,
-                concent_client_public_key
-            )
-
-    if any(int(file["size"]) < 0 for file in loaded_golem_message.files):
-        return gatekeeper_access_denied_response(
-            "'size' must not be negative.",
-            operation,
-            ErrorCode.MESSAGE_FILES_SIZE_NEGATIVE,
-            path_to_file,
-            loaded_golem_message.subtask_id,
-            concent_client_public_key
-        )
-
-    # Validate category in FileInfo
-    if not all('category' in file for file in loaded_golem_message.files):
-        return gatekeeper_access_denied_response(
-            "Missing 'category' field in FileInfo.",
-            operation,
-            ErrorCode.MESSAGE_FILES_CATEGORY_MISSING,
-            path_to_file,
-            loaded_golem_message.subtask_id,
-            concent_client_public_key
-        )
-
-    if not all(
-        isinstance(file['category'], FileTransferToken.FileInfo.Category) for file in loaded_golem_message.files
-    ):
-        return gatekeeper_access_denied_response(
-            "'category' field has invalid value.",
-            operation,
-            ErrorCode.MESSAGE_FILES_CATEGORY_INVALID,
-            path_to_file,
-            loaded_golem_message.subtask_id,
-            concent_client_public_key
-        )
-
-    categories = [file_info['category'] for file_info in loaded_golem_message.files]
-    if len(set(categories)) != len(categories):
-        return gatekeeper_access_denied_response(
-            "'category' field must be unique across FileInfo list.",
-            operation,
-            ErrorCode.MESSAGE_FILES_CATEGORY_NOT_UNIQUE,
             path_to_file,
             loaded_golem_message.subtask_id,
             concent_client_public_key

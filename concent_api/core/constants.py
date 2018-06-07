@@ -18,3 +18,6 @@ TASK_OWNER_KEY_LENGTH = 64
 
 # Regular expresion of allowed characters in task_id and subtask_id
 VALID_ID_REGEX = re.compile(r'[a-zA-Z0-9_-]*')
+
+# Regular expresion of allowed characters and length of checksum hash
+VALID_SHA1_HASH_REGEX = re.compile(r"^[a-fA-F\d]{40}$")

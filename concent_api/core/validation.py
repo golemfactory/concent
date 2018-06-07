@@ -1,14 +1,23 @@
 from typing import List
 from typing import Union
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
+
 from golem_messages                 import message
 from golem_messages.exceptions      import MessageError
+from golem_messages.message import FileTransferToken
 
 from core.constants                 import ETHEREUM_ADDRESS_LENGTH
 from core.constants                 import GOLEM_PUBLIC_KEY_LENGTH
 from core.constants                 import GOLEM_PUBLIC_KEY_HEX_LENGTH
 from core.constants                 import MESSAGE_TASK_ID_MAX_LENGTH
-from core.constants                 import VALID_ID_REGEX
-from core.exceptions                import Http400
+from core.constants import VALID_ID_REGEX
+from core.constants import VALID_SHA1_HASH_REGEX
+from core.exceptions import FileTransferTokenError
+from core.exceptions import Http400
+from core.utils import hex_to_bytes_convert
+from gatekeeper.enums import HashingAlgorithm
 from utils.constants                import ErrorCode
 
 
@@ -232,3 +241,130 @@ def validate_list_task_to_compute_ids(subtask_results_accepted_list):
     for task_to_compute in subtask_results_accepted_list:
         subtask_ids.append(task_to_compute.subtask_id + ':' + task_to_compute.task_id)
     return len(subtask_ids) == len(set(subtask_ids))
+
+
+def get_validated_client_public_key_from_client_message(golem_message: message.base.Message):
+    if isinstance(golem_message, message.concents.ForcePayment):
+        if (
+            isinstance(golem_message.subtask_results_accepted_list, list) and
+            len(golem_message.subtask_results_accepted_list) > 0
+        ):
+            task_to_compute = golem_message.subtask_results_accepted_list[0].task_to_compute
+        else:
+            raise Http400(
+                "subtask_results_accepted_list must be a list type and contains at least one message",
+                error_code=ErrorCode.MESSAGE_VALUE_WRONG_LENGTH,
+            )
+
+    elif isinstance(golem_message, message.tasks.TaskMessage):
+        task_to_compute = golem_message.task_to_compute
+    else:
+        raise Http400(
+            "Unknown message type",
+            error_code=ErrorCode.MESSAGE_UNKNOWN,
+        )
+
+    if task_to_compute is not None:
+        if isinstance(golem_message, (
+            message.ForceReportComputedTask,
+            message.concents.ForceSubtaskResults,
+            message.concents.ForcePayment,
+        )):
+            client_public_key = task_to_compute.provider_public_key
+            validate_hex_public_key(client_public_key, 'provider_public_key')
+        elif isinstance(golem_message, (
+            message.AckReportComputedTask,
+            message.RejectReportComputedTask,
+            message.concents.ForceGetTaskResult,
+            message.concents.ForceSubtaskResultsResponse,
+            message.concents.SubtaskResultsVerify,
+        )):
+            client_public_key = task_to_compute.requestor_public_key
+            validate_hex_public_key(client_public_key, 'requestor_public_key')
+        else:
+            raise Http400(
+                "Unknown message type",
+                error_code=ErrorCode.MESSAGE_UNKNOWN,
+            )
+
+        return hex_to_bytes_convert(client_public_key)
+
+    return None
+
+
+def validate_file_transfer_token(file_transfer_token: message.concents.FileTransferToken):
+    """
+    Function for check FileTransferToken each field, returns None when message is correct. In case of an error
+    returns tuple with custom error message and error code
+    """
+    # -SIGNATURE
+    if not isinstance(file_transfer_token.sig, bytes):
+        raise FileTransferTokenError('Empty signature field in FileTransferToken message.', ErrorCode.MESSAGE_SIGNATURE_MISSING)
+
+    # -DEADLINE
+    if not isinstance(file_transfer_token.token_expiration_deadline, int):
+        raise FileTransferTokenError('Wrong type of token_expiration_deadline field value.', ErrorCode.MESSAGE_TOKEN_EXPIRATION_DEADLINE_WRONG_TYPE)
+
+    # -STORAGE_CLUSTER_ADDRESS
+    if not isinstance(file_transfer_token.storage_cluster_address, str):
+        raise FileTransferTokenError('Wrong type of storage_cluster_address field value.', ErrorCode.MESSAGE_STORAGE_CLUSTER_WRONG_TYPE)
+
+    url_validator = URLValidator()
+    try:
+        url_validator(file_transfer_token.storage_cluster_address)
+    except ValidationError:
+        raise FileTransferTokenError('storage_cluster_address is not a valid URL.', ErrorCode.MESSAGE_STORAGE_CLUSTER_INVALID_URL)
+
+    if file_transfer_token.storage_cluster_address != settings.STORAGE_CLUSTER_ADDRESS:
+        raise FileTransferTokenError('This token does not allow file transfers to/from the cluster you are trying to access.', ErrorCode.MESSAGE_STORAGE_CLUSTER_WRONG_CLUSTER)
+
+    # -CLIENT_PUBLIC_KEY
+    if not isinstance(file_transfer_token.authorized_client_public_key, bytes):
+        raise FileTransferTokenError('Wrong type of authorized_client_public_key field value.', ErrorCode.MESSAGE_AUTHORIZED_CLIENT_PUBLIC_KEY_WRONG_TYPE)
+
+    # -FILES
+    if not all(isinstance(file, dict) for file in file_transfer_token.files):
+        raise FileTransferTokenError('Wrong type of files field value.', ErrorCode.MESSAGE_FILES_WRONG_TYPE)
+
+    transfer_token_paths_to_files = [file["path"] for file in file_transfer_token.files]
+    if len(transfer_token_paths_to_files) != len(set(transfer_token_paths_to_files)):
+        raise FileTransferTokenError('File paths in the token must be unique', ErrorCode.MESSAGE_FILES_PATHS_NOT_UNIQUE)
+
+    file_checksums = [file["checksum"] for file in file_transfer_token.files]
+    for file_checksum in file_checksums:
+        if not isinstance(file_checksum, str):
+            raise FileTransferTokenError("'checksum' must be a string.", ErrorCode.MESSAGE_FILES_CHECKSUM_WRONG_TYPE)
+
+        if len(file_checksum) == 0 or file_checksum.isspace():
+            raise FileTransferTokenError("'checksum' cannot be blank or contain only whitespace.", ErrorCode.MESSAGE_FILES_CHECKSUM_EMPTY)
+
+        if ":" not in file_checksum:
+            raise FileTransferTokenError("'checksum' must consist of two parts separated with a semicolon.", ErrorCode.MESSAGE_FILES_CHECKSUM_WRONG_FORMAT)
+
+        if not file_checksum.split(":")[0] == set(HashingAlgorithm._value2member_map_).pop():  # type: ignore
+            raise FileTransferTokenError("One of the checksums is from an unsupported hashing algorithm.", ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_ALGORITHM)
+
+        assert set(HashingAlgorithm) == {HashingAlgorithm.SHA1}, "If you add a new hashing algorithms, you need to add validations below."
+        if VALID_SHA1_HASH_REGEX.fullmatch(file_checksum.split(":")[1]) is None:
+            raise FileTransferTokenError("Invalid SHA1 hash.", ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_SHA1_HASH)
+
+    file_sizes = [file["size"] for file in file_transfer_token.files]
+    for file_size in file_sizes:
+        if file_size is None:
+            raise FileTransferTokenError("'size' must be an integer.", ErrorCode.MESSAGE_FILES_SIZE_EMPTY)
+
+        try:
+            int(file_size)
+        except (ValueError, TypeError):
+            raise FileTransferTokenError("'size' must be an integer.", ErrorCode.MESSAGE_FILES_SIZE_WRONG_TYPE)
+
+        if int(file_size) < 0:
+            raise FileTransferTokenError("'size' must not be negative.", ErrorCode.MESSAGE_FILES_SIZE_NEGATIVE)
+
+    # Validate category in FileInfo
+    assert all('category' in file for file in file_transfer_token.files)
+    assert all(isinstance(file['category'], FileTransferToken.FileInfo.Category) for file in file_transfer_token.files)
+
+    categories = [file_info['category'] for file_info in file_transfer_token.files]
+    if len(set(categories)) != len(categories):
+        raise FileTransferTokenError("'category' field must be unique across FileInfo list.", ErrorCode.MESSAGE_FILES_CATEGORY_NOT_UNIQUE)

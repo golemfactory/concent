@@ -15,7 +15,7 @@ class ConcentFeatureIsNotAvailable(Exception):
     pass
 
 
-class Http400(Exception):
+class ConcentBaseException(Exception):
 
     def __init__(self, error_message: Optional[str], error_code: ErrorCode) -> None:
         assert isinstance(error_message, (str, None))
@@ -23,3 +23,11 @@ class Http400(Exception):
         self.error_code = error_code
         self.error_message = '' if error_message is None else error_message
         super().__init__(error_message)
+
+
+class Http400(ConcentBaseException):
+    pass
+
+
+class FileTransferTokenError(ConcentBaseException):
+    pass

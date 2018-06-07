@@ -15,11 +15,12 @@ from golem_messages.exceptions      import MessageTooOldError
 from golem_messages.exceptions      import TimestampError
 
 from core.validation                import validate_golem_message_signed_with_key
+from core.validation import get_validated_client_public_key_from_client_message
 from core.exceptions                import ConcentInSoftShutdownMode
 from core.exceptions import ConcentFeatureIsNotAvailable
-from core.exceptions                import Http400
+from core.exceptions import Http400
+from core.exceptions import FileTransferTokenError
 
-from utils.helpers                  import get_validated_client_public_key_from_client_message
 from utils.helpers import join_messages
 from utils.shortcuts                import load_without_public_key
 
@@ -123,7 +124,7 @@ def handle_errors_and_responses(database_name):
                 response_from_view = view(request, client_message, client_public_key, *args, **kwargs)
                 if database_name is not None:
                     transaction.savepoint_commit(sid, using=database_name)
-            except Http400 as exception:
+            except (Http400, FileTransferTokenError) as exception:
                 logging.log_400_error(
                     view.__name__,
                     client_public_key,

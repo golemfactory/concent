@@ -18,6 +18,7 @@ from core.models import PendingResponse
 from core.models import Subtask
 from core.utils import calculate_maximum_download_time
 from core.utils import calculate_subtask_verification_time
+from core.validation import validate_file_transfer_token
 from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
 from utils import logging
 from utils.helpers import deserialize_message
@@ -199,6 +200,8 @@ def _create_file_transfer_token(
 
     file_transfer_token.files = files
     file_transfer_token = sign_message(file_transfer_token, settings.CONCENT_PRIVATE_KEY)
+
+    validate_file_transfer_token(file_transfer_token)
 
     return file_transfer_token
 

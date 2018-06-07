@@ -198,7 +198,7 @@
       <path d="M99.2645 1014.7736 L104.8895 1001.2736 L99.2645 1004.6486 L93.6395 1001.2736 Z" clip-path="url(#clipPath2)" stroke="none"/>
     </g>
     <g stroke-linecap="butt" font-size="10px" transform="matrix(1,0,0,1,449,-390)" fill="rgb(51,153,255)" text-rendering="geometricPrecision" font-family="'Arial'" shape-rendering="geometricPrecision" stroke="rgb(51,153,255)" font-weight="bold" stroke-miterlimit="1.45">
-      <text x="106.4255" xml:space="preserve" y="981.5843" clip-path="url(#clipPath2)" stroke="none">SubtaskResultsResponse</text>
+      <text x="106.4255" xml:space="preserve" y="981.5843" clip-path="url(#clipPath2)" stroke="none">ForceSubtaskResultsResponse</text>
     </g>
     <g font-size="8px" stroke-linecap="butt" transform="matrix(1,0,0,1,449,-390)" text-rendering="geometricPrecision" font-family="monospace" shape-rendering="geometricPrecision" stroke-miterlimit="1.45">
       <text x="106.7716" xml:space="preserve" y="1002.3605" clip-path="url(#clipPath2)" stroke="none">t &lt;= deadline + SVT + FAT + CMT</text>

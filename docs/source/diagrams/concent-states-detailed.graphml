@@ -1091,7 +1091,7 @@ VERIFICATION<y:LabelModel>
           <y:Path sx="0.0" sy="13.055254604550441" tx="0.0" ty="0.0"/>
           <y:LineStyle color="#CC3300" type="line" width="2.0"/>
           <y:Arrows source="none" target="standard"/>
-          <y:EdgeLabel alignment="center" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Arial" fontSize="10" fontStyle="bold" hasBackgroundColor="false" hasLineColor="false" height="15.171875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" preferredPlacement="anywhere" ratio="0.5" textColor="#3399FF" verticalTextPosition="bottom" visible="true" width="126.8173828125" x="5.160939436967851" y="6.992926734403909">SubtaskResultsResponse<y:LabelModel>
+          <y:EdgeLabel alignment="center" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Arial" fontSize="10" fontStyle="bold" hasBackgroundColor="false" hasLineColor="false" height="15.171875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" preferredPlacement="anywhere" ratio="0.5" textColor="#3399FF" verticalTextPosition="bottom" visible="true" width="154.048828125" x="5.160939436967851" y="6.992926734403909">ForceSubtaskResultsResponse<y:LabelModel>
               <y:SmartEdgeLabelModel autoRotationEnabled="false" defaultAngle="0.0" defaultDistance="10.0"/>
             </y:LabelModel>
             <y:ModelParameter>

@@ -41,12 +41,12 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         )
 
         self.source_package_path = get_storage_source_file_path(
-            self.compute_task_def['task_id'],
-            self.compute_task_def['subtask_id'],
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
         )
         self.result_package_path = get_storage_result_file_path(
-            self.compute_task_def['task_id'],
-            self.compute_task_def['subtask_id'],
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
         )
         self.report_computed_task=self._get_deserialized_report_computed_task(
             package_hash='sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',

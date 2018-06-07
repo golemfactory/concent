@@ -105,10 +105,16 @@ class FileTransferTokenCreationTest(TestCase):
         report_computed_task = ReportComputedTaskFactory()
         token = create_file_transfer_token_for_concent(
             subtask_id=report_computed_task.subtask_id,
-            source_package_path=get_storage_source_file_path(report_computed_task.task_id, report_computed_task.subtask_id),
+            source_package_path=get_storage_source_file_path(
+                subtask_id=report_computed_task.subtask_id,
+                task_id=report_computed_task.task_id,
+            ),
             source_size=report_computed_task.task_to_compute.size,
             source_package_hash=report_computed_task.task_to_compute.package_hash,
-            result_package_path=get_storage_result_file_path(report_computed_task.task_id, report_computed_task.subtask_id),
+            result_package_path=get_storage_result_file_path(
+                subtask_id=report_computed_task.subtask_id,
+                task_id=report_computed_task.task_id,
+            ),
             result_size=report_computed_task.size,
             result_package_hash=report_computed_task.package_hash,
             operation=FileTransferToken.Operation.download,

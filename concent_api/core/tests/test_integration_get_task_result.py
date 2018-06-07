@@ -125,7 +125,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:28"),
+            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -228,7 +228,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:29"),
+            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -301,7 +301,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"),
+            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -371,7 +371,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             'core.transfer_operations.request_upload_status',
             side_effect=request_upload_status_false_mock
         ) as request_upload_status_false_mock_function:
-            with freeze_time("2017-12-01 11:00:21"):
+            with freeze_time("2017-12-01 11:00:54"):
                 response_3 = self.client.post(
                     reverse('core:receive'),
                     data=self._create_requestor_auth_message(),
@@ -397,7 +397,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         message_from_concent = load(response_3.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
         self.assertIsInstance(message_from_concent,                             message.concents.ForceGetTaskResultFailed)
-        self.assertEqual(message_from_concent.timestamp,                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"))
+        self.assertEqual(message_from_concent.timestamp,                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:54"))
         self.assertEqual(message_from_concent.task_to_compute,                  deserialized_task_to_compute)
         self.assertEqual(message_from_concent.task_to_compute.compute_task_def, deserialized_task_to_compute.compute_task_def)   # pylint: disable=no-member
         self.assertEqual(
@@ -451,7 +451,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
-            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"),
+            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
         )
         self._test_undelivered_pending_responses(
@@ -478,7 +478,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
-            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"),
+            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
         )
 
@@ -487,7 +487,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             'core.transfer_operations.request_upload_status',
             side_effect=request_upload_status_false_mock
         ) as request_upload_status_false_mock_function:
-            with freeze_time("2017-12-01 11:00:21"):
+            with freeze_time("2017-12-01 11:00:54"):
                 response_3 = self.client.post(
                     reverse('core:receive'),
                     data=self._create_requestor_auth_message(),
@@ -513,7 +513,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         message_from_concent = load(response_3.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
         self.assertIsInstance(message_from_concent,                             message.concents.ForceGetTaskResultFailed)
-        self.assertEqual(message_from_concent.timestamp,                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"))
+        self.assertEqual(message_from_concent.timestamp,                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:54"))
         self.assertEqual(message_from_concent.task_to_compute,                  deserialized_task_to_compute)
         self.assertEqual(message_from_concent.task_to_compute.compute_task_def, deserialized_task_to_compute.compute_task_def)   # pylint: disable=no-member
         self.assertEqual(
@@ -572,7 +572,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"),
+            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -635,7 +635,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             'core.transfer_operations.request_upload_status',
             side_effect=request_upload_status_true_mock
         ) as request_upload_status_true_mock_function:
-            with freeze_time("2017-12-01 11:00:21"):
+            with freeze_time("2017-12-01 11:00:54"):
                 response_3 = self.client.post(
                     reverse('core:receive'),
                     data=self._create_requestor_auth_message(),
@@ -661,13 +661,13 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         message_from_concent = load(response_3.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
         self.assertIsInstance(message_from_concent,                                                         message.concents.ForceGetTaskResultDownload)
-        self.assertEqual(message_from_concent.timestamp,                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"))
+        self.assertEqual(message_from_concent.timestamp,                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:54"))
         self.assertEqual(message_from_concent.force_get_task_result.report_computed_task.task_to_compute,   deserialized_task_to_compute)
         self.assertIsInstance(message_from_concent.file_transfer_token,                                     message.FileTransferToken)
         self.assertEqual(message_from_concent.file_transfer_token.sig,                                      self._add_signature_to_message(message_from_concent.file_transfer_token, CONCENT_PRIVATE_KEY))
         self.assertEqual(message_from_concent.file_transfer_token.authorized_client_public_key, self.REQUESTOR_PUBLIC_KEY)
         self.assertEqual(message_from_concent.file_transfer_token.subtask_id,                               deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
-        self.assertEqual(message_from_concent.file_transfer_token.timestamp,                                self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"))
+        self.assertEqual(message_from_concent.file_transfer_token.timestamp,                                self._parse_iso_date_to_timestamp("2017-12-01 11:00:54"))
         self.assertEqual(message_from_concent.file_transfer_token.token_expiration_deadline,                self._parse_iso_date_to_timestamp("2017-12-01 11:30:00"))
         self.assertEqual(message_from_concent.file_transfer_token.operation, FileTransferToken.Operation.download)
 
@@ -725,7 +725,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"),
+            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -788,7 +788,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             'core.transfer_operations.request_upload_status',
             side_effect=request_upload_status_true_mock
         ) as request_upload_status_true_mock_function:
-            with freeze_time("2017-12-01 11:00:21"):
+            with freeze_time("2017-12-01 11:00:54"):
                 response_3 = self.client.post(
                     reverse('core:receive'),
                     data=self._create_requestor_auth_message(),
@@ -814,7 +814,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         message_from_concent = load(response_3.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
         self.assertIsInstance(message_from_concent,                                                                         message.concents.ForceGetTaskResultDownload)
-        self.assertEqual(message_from_concent.timestamp,                                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"))
+        self.assertEqual(message_from_concent.timestamp,                                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:54"))
         self.assertEqual(message_from_concent.file_transfer_token.sig,                                                      self._add_signature_to_message(message_from_concent.file_transfer_token, CONCENT_PRIVATE_KEY))
         self.assertEqual(message_from_concent.file_transfer_token.authorized_client_public_key, self.REQUESTOR_PUBLIC_KEY)
         self.assertEqual(message_from_concent.force_get_task_result.report_computed_task.task_to_compute,                   deserialized_task_to_compute)
@@ -879,7 +879,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"),
+            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -943,7 +943,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             'core.transfer_operations.request_upload_status',
             side_effect=request_upload_status_true_mock
         ) as request_upload_status_true_mock_function:
-            with freeze_time("2017-12-01 11:00:21"):
+            with freeze_time("2017-12-01 11:00:54"):
                 response_3 = self.client.post(
                     reverse('core:receive'),
                     data=self._create_requestor_auth_message(),
@@ -968,7 +968,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         message_from_concent = load(response_3.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
         self.assertIsInstance(message_from_concent,         message.concents.ForceGetTaskResultDownload)
-        self.assertEqual(message_from_concent.timestamp,    self._parse_iso_date_to_timestamp("2017-12-01 11:00:21"))
+        self.assertEqual(message_from_concent.timestamp,    self._parse_iso_date_to_timestamp("2017-12-01 11:00:54"))
 
         self.assertEqual(
             message_from_concent.force_get_task_result.report_computed_task.task_to_compute,
@@ -990,7 +990,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_from_concent.file_transfer_token.subtask_id, deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(
             message_from_concent.file_transfer_token.timestamp,
-            self._parse_iso_date_to_timestamp("2017-12-01 11:00:21")
+            self._parse_iso_date_to_timestamp("2017-12-01 11:00:54")
         )
         self.assertEqual(
             message_from_concent.file_transfer_token.token_expiration_deadline,

@@ -36,8 +36,14 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         super().setUp()
         self.task_id = "task1"
         self.subtask_id = "subtask1"
-        self.source_package_path = get_storage_source_file_path(self.subtask_id, self.task_id)
-        self.result_package_path = get_storage_result_file_path(self.subtask_id, self.task_id)
+        self.source_package_path = get_storage_source_file_path(
+            subtask_id=self.subtask_id,
+            task_id=self.task_id,
+        )
+        self.result_package_path = get_storage_result_file_path(
+            subtask_id=self.subtask_id,
+            task_id=self.task_id,
+        )
         self.report_computed_task = self._create_report_computed_task()
 
     def test_that_concent_responds_with_service_refused_when_verification_for_this_subtask_is_duplicated(self):
@@ -339,13 +345,13 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 'file_transfer_token': self._prepare_file_transfer_token(subtask_results_verify_time_str),
                 'file_transfer_token.files': [
                     message.FileTransferToken.FileInfo(
-                        path='blender/result/subtask1/subtask1.task1.zip',
+                        path='blender/result/task1/task1.subtask1.zip',
                         checksum='sha1:4452d71687b6bc2c9389c3349fdc17fbd73b833b',
                         size=1,
                         category=message.FileTransferToken.FileInfo.Category.results,
                     ),
                     message.FileTransferToken.FileInfo(
-                        path='blender/source/subtask1/subtask1.task1.zip',
+                        path='blender/source/task1/task1.subtask1.zip',
                         checksum='sha1:230fb0cad8c7ed29810a2183f0ec1d39c9df3f4a',
                         size=1,
                         category=message.FileTransferToken.FileInfo.Category.resources,

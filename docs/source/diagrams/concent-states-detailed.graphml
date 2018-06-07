@@ -924,11 +924,19 @@ VERIFICATION<y:LabelModel>
           </y:Path>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="standard"/>
-          <y:EdgeLabel alignment="center" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Arial" fontSize="10" fontStyle="bold" hasBackgroundColor="false" hasLineColor="false" height="15.171875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" preferredPlacement="anywhere" ratio="0.5" textColor="#FF9933" verticalTextPosition="bottom" visible="true" width="106.8173828125" x="60.320482228195885" y="674.5168483349769">SubtaskResultsVerify<y:LabelModel>
+          <y:EdgeLabel alignment="center" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Arial" fontSize="10" fontStyle="bold" hasBackgroundColor="false" hasLineColor="false" height="15.171875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" preferredPlacement="anywhere" ratio="0.5" textColor="#FF9933" verticalTextPosition="bottom" visible="true" width="106.8173828125" x="61.63737063556323" y="664.6401852797223">SubtaskResultsVerify<y:LabelModel>
               <y:SmartEdgeLabelModel autoRotationEnabled="false" defaultAngle="0.0" defaultDistance="10.0"/>
             </y:LabelModel>
             <y:ModelParameter>
-              <y:SmartEdgeLabelModelParameter angle="6.283185307179586" distance="17.999999999999545" distanceToCenter="true" position="left" ratio="0.3332830440463202" segment="-1"/>
+              <y:SmartEdgeLabelModelParameter angle="6.283185307179586" distance="27.876663055254053" distanceToCenter="true" position="left" ratio="0.33714218171363275" segment="-1"/>
+            </y:ModelParameter>
+            <y:PreferredPlacementDescriptor angle="0.0" angleOffsetOnRightSide="0" angleReference="absolute" angleRotationOnRightSide="co" distance="-1.0" frozen="true" placement="anywhere" side="anywhere" sideReference="relative_to_edge_flow"/>
+          </y:EdgeLabel>
+          <y:EdgeLabel alignment="center" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Monospaced" fontSize="8" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="13.3125" horizontalTextPosition="center" iconTextGap="4" modelName="custom" preferredPlacement="anywhere" ratio="0.5" textColor="#000000" verticalTextPosition="bottom" visible="true" width="162.94140625" x="36.57847450985258" y="679.5918652634709">rejection &lt; t &lt;= rejection + AVCT<y:LabelModel>
+              <y:SmartEdgeLabelModel autoRotationEnabled="false" defaultAngle="0.0" defaultDistance="10.0"/>
+            </y:LabelModel>
+            <y:ModelParameter>
+              <y:SmartEdgeLabelModelParameter angle="6.283185307179586" distance="13.854670571505398" distanceToCenter="true" position="left" ratio="0.3769407703204716" segment="-1"/>
             </y:ModelParameter>
             <y:PreferredPlacementDescriptor angle="0.0" angleOffsetOnRightSide="0" angleReference="absolute" angleRotationOnRightSide="co" distance="-1.0" frozen="true" placement="anywhere" side="anywhere" sideReference="relative_to_edge_flow"/>
           </y:EdgeLabel>
@@ -1206,6 +1214,14 @@ VERIFICATION<y:LabelModel>
             </y:ModelParameter>
             <y:PreferredPlacementDescriptor angle="0.0" angleOffsetOnRightSide="0" angleReference="absolute" angleRotationOnRightSide="co" distance="-1.0" frozen="true" placement="anywhere" side="anywhere" sideReference="relative_to_edge_flow"/>
           </y:EdgeLabel>
+          <y:EdgeLabel alignment="center" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Monospaced" fontSize="8" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="13.3125" horizontalTextPosition="center" iconTextGap="4" modelName="custom" preferredPlacement="anywhere" ratio="0.5" textColor="#000000" verticalTextPosition="bottom" visible="true" width="105.14453125" x="-119.7014071400906" y="30.939076517324565">t &lt;= rejection + AVCT<y:LabelModel>
+              <y:SmartEdgeLabelModel autoRotationEnabled="false" defaultAngle="0.0" defaultDistance="10.0"/>
+            </y:LabelModel>
+            <y:ModelParameter>
+              <y:SmartEdgeLabelModelParameter angle="6.283185307179586" distance="14.556877827058393" distanceToCenter="false" position="right" ratio="0.9295517207927048" segment="-1"/>
+            </y:ModelParameter>
+            <y:PreferredPlacementDescriptor angle="0.0" angleOffsetOnRightSide="0" angleReference="absolute" angleRotationOnRightSide="co" distance="-1.0" frozen="true" placement="anywhere" side="anywhere" sideReference="relative_to_edge_flow"/>
+          </y:EdgeLabel>
           <y:BendStyle smoothed="false"/>
         </y:PolyLineEdge>
       </data>
@@ -1248,11 +1264,19 @@ VERIFICATION<y:LabelModel>
           </y:Path>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="standard"/>
-          <y:EdgeLabel alignment="center" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Arial" fontSize="10" fontStyle="bold" hasBackgroundColor="false" hasLineColor="false" height="15.171875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" preferredPlacement="anywhere" ratio="0.5" textColor="#FF9933" verticalTextPosition="bottom" visible="true" width="106.8173828125" x="-137.4157176675244" y="-19.1859653041696">SubtaskResultsVerify<y:LabelModel>
+          <y:EdgeLabel alignment="center" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Arial" fontSize="10" fontStyle="bold" hasBackgroundColor="false" hasLineColor="false" height="15.171875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" preferredPlacement="anywhere" ratio="0.5" textColor="#FF9933" verticalTextPosition="bottom" visible="true" width="106.8173828125" x="-137.4157176675244" y="-33.013293581526">SubtaskResultsVerify<y:LabelModel>
               <y:SmartEdgeLabelModel autoRotationEnabled="false" defaultAngle="0.0" defaultDistance="10.0"/>
             </y:LabelModel>
             <y:ModelParameter>
-              <y:SmartEdgeLabelModelParameter angle="6.283185307179586" distance="11.600000000000056" distanceToCenter="true" position="right" ratio="0.26089367999380586" segment="0"/>
+              <y:SmartEdgeLabelModelParameter angle="6.283185307179586" distance="25.42732827735643" distanceToCenter="true" position="right" ratio="0.26089367999380586" segment="0"/>
+            </y:ModelParameter>
+            <y:PreferredPlacementDescriptor angle="0.0" angleOffsetOnRightSide="0" angleReference="absolute" angleRotationOnRightSide="co" distance="-1.0" frozen="true" placement="anywhere" side="anywhere" sideReference="relative_to_edge_flow"/>
+          </y:EdgeLabel>
+          <y:EdgeLabel alignment="center" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Monospaced" fontSize="8" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="13.3125" horizontalTextPosition="center" iconTextGap="4" modelName="custom" preferredPlacement="anywhere" ratio="0.5" textColor="#000000" verticalTextPosition="bottom" visible="true" width="162.94140625" x="-165.28809919345872" y="-18.219840101027557">rejection &lt; t &lt;= rejection + AVCT<y:LabelModel>
+              <y:SmartEdgeLabelModel autoRotationEnabled="false" defaultAngle="0.0" defaultDistance="10.0"/>
+            </y:LabelModel>
+            <y:ModelParameter>
+              <y:SmartEdgeLabelModelParameter angle="6.283185307179586" distance="11.563562296858104" distanceToCenter="true" position="right" ratio="0.07094460302729459" segment="0"/>
             </y:ModelParameter>
             <y:PreferredPlacementDescriptor angle="0.0" angleOffsetOnRightSide="0" angleReference="absolute" angleRotationOnRightSide="co" distance="-1.0" frozen="true" placement="anywhere" side="anywhere" sideReference="relative_to_edge_flow"/>
           </y:EdgeLabel>
@@ -1295,11 +1319,19 @@ VERIFICATION<y:LabelModel>
           </y:Path>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="standard"/>
-          <y:EdgeLabel alignment="center" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Arial" fontSize="10" fontStyle="bold" hasBackgroundColor="false" hasLineColor="false" height="15.171875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" preferredPlacement="anywhere" ratio="0.5" textColor="#FF9933" verticalTextPosition="bottom" visible="true" width="106.8173828125" x="-136.6171825112744" y="-19.985943358845816">SubtaskResultsVerify<y:LabelModel>
+          <y:EdgeLabel alignment="center" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Arial" fontSize="10" fontStyle="bold" hasBackgroundColor="false" hasLineColor="false" height="15.171875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" preferredPlacement="anywhere" ratio="0.5" textColor="#FF9933" verticalTextPosition="bottom" visible="true" width="106.8173828125" x="-131.3496288818053" y="-33.15482743251869">SubtaskResultsVerify<y:LabelModel>
               <y:SmartEdgeLabelModel autoRotationEnabled="false" defaultAngle="0.0" defaultDistance="10.0"/>
             </y:LabelModel>
             <y:ModelParameter>
-              <y:SmartEdgeLabelModelParameter angle="6.283185307179586" distance="12.399999999999972" distanceToCenter="true" position="right" ratio="0.25274075249399935" segment="0"/>
+              <y:SmartEdgeLabelModelParameter angle="6.283185307179586" distance="25.568884073672773" distanceToCenter="true" position="right" ratio="0.19905827394099468" segment="0"/>
+            </y:ModelParameter>
+            <y:PreferredPlacementDescriptor angle="0.0" angleOffsetOnRightSide="0" angleReference="absolute" angleRotationOnRightSide="co" distance="-1.0" frozen="true" placement="anywhere" side="anywhere" sideReference="relative_to_edge_flow"/>
+          </y:EdgeLabel>
+          <y:EdgeLabel alignment="center" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Monospaced" fontSize="8" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="13.3125" horizontalTextPosition="center" iconTextGap="4" modelName="custom" preferredPlacement="anywhere" ratio="0.5" textColor="#000000" verticalTextPosition="bottom" visible="true" width="162.94140625" x="-158.42009148394044" y="-17.191363117784135">rejection &lt; t &lt;= rejection + AVCT<y:LabelModel>
+              <y:SmartEdgeLabelModel autoRotationEnabled="false" defaultAngle="0.0" defaultDistance="10.0"/>
+            </y:LabelModel>
+            <y:ModelParameter>
+              <y:SmartEdgeLabelModelParameter angle="6.283185307179586" distance="10.535107258938174" distanceToCenter="true" position="right" ratio="-1.3168884073672729" segment="0"/>
             </y:ModelParameter>
             <y:PreferredPlacementDescriptor angle="0.0" angleOffsetOnRightSide="0" angleReference="absolute" angleRotationOnRightSide="co" distance="-1.0" frozen="true" placement="anywhere" side="anywhere" sideReference="relative_to_edge_flow"/>
           </y:EdgeLabel>
@@ -1316,11 +1348,19 @@ VERIFICATION<y:LabelModel>
           </y:Path>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="standard"/>
-          <y:EdgeLabel alignment="center" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Arial" fontSize="10" fontStyle="bold" hasBackgroundColor="false" hasLineColor="false" height="15.171875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" preferredPlacement="anywhere" ratio="0.5" textColor="#FF9933" verticalTextPosition="bottom" visible="true" width="106.8173828125" x="-147.20669182212228" y="8.014078000152494">SubtaskResultsVerify<y:LabelModel>
+          <y:EdgeLabel alignment="center" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Arial" fontSize="10" fontStyle="bold" hasBackgroundColor="false" hasLineColor="false" height="15.171875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" preferredPlacement="anywhere" ratio="0.5" textColor="#FF9933" verticalTextPosition="bottom" visible="true" width="106.8173828125" x="-137.98847297055127" y="7.355633796468965">SubtaskResultsVerify<y:LabelModel>
               <y:SmartEdgeLabelModel autoRotationEnabled="false" defaultAngle="0.0" defaultDistance="10.0"/>
             </y:LabelModel>
             <y:ModelParameter>
-              <y:SmartEdgeLabelModelParameter angle="6.283185307179586" distance="15.60000000000002" distanceToCenter="true" position="left" ratio="0.2988482350166473" segment="0"/>
+              <y:SmartEdgeLabelModelParameter angle="6.283185307179586" distance="14.941555796316624" distanceToCenter="true" position="left" ratio="0.20490389754888821" segment="0"/>
+            </y:ModelParameter>
+            <y:PreferredPlacementDescriptor angle="0.0" angleOffsetOnRightSide="0" angleReference="absolute" angleRotationOnRightSide="co" distance="-1.0" frozen="true" placement="anywhere" side="anywhere" sideReference="relative_to_edge_flow"/>
+          </y:EdgeLabel>
+          <y:EdgeLabel alignment="center" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Monospaced" fontSize="8" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="13.3125" horizontalTextPosition="center" iconTextGap="4" modelName="custom" preferredPlacement="anywhere" ratio="0.5" textColor="#000000" verticalTextPosition="bottom" visible="true" width="162.94140625" x="-161.47814756398532" y="21.94529962799629">rejection &lt; t &lt;= rejection + AVCT<y:LabelModel>
+              <y:SmartEdgeLabelModel autoRotationEnabled="false" defaultAngle="0.0" defaultDistance="10.0"/>
+            </y:LabelModel>
+            <y:ModelParameter>
+              <y:SmartEdgeLabelModelParameter angle="6.283185307179586" distance="28.60153412784396" distanceToCenter="true" position="left" ratio="-4.324078909353645" segment="0"/>
             </y:ModelParameter>
             <y:PreferredPlacementDescriptor angle="0.0" angleOffsetOnRightSide="0" angleReference="absolute" angleRotationOnRightSide="co" distance="-1.0" frozen="true" placement="anywhere" side="anywhere" sideReference="relative_to_edge_flow"/>
           </y:EdgeLabel>

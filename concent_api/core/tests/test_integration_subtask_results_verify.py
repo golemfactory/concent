@@ -76,7 +76,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self._test_response(
             response,
             status=200,
-            key=self.REQUESTOR_PRIVATE_KEY,
+            key=self.PROVIDER_PRIVATE_KEY,
             message_type=message.concents.ServiceRefused,
             fields={
                 'reason': message.concents.ServiceRefused.REASON.DuplicateRequest,
@@ -182,7 +182,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self._test_response(
             response,
             status=200,
-            key=self.REQUESTOR_PRIVATE_KEY,
+            key=self.PROVIDER_PRIVATE_KEY,
             message_type=message.concents.ServiceRefused,
             fields={
                 'reason': message.concents.ServiceRefused.REASON.InvalidRequest,
@@ -222,7 +222,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self._test_response(
             response,
             status=200,
-            key=self.REQUESTOR_PRIVATE_KEY,
+            key=self.PROVIDER_PRIVATE_KEY,
             message_type=message.concents.ServiceRefused,
             fields={
                 'reason': message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
@@ -254,7 +254,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self._test_response(
             response,
             status=200,
-            key=self.REQUESTOR_PRIVATE_KEY,
+            key=self.PROVIDER_PRIVATE_KEY,
             message_type=message.concents.ServiceRefused,
             fields={
                 'reason': message.concents.ServiceRefused.REASON.InvalidRequest,
@@ -287,7 +287,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self._test_response(
             response,
             status=200,
-            key=self.REQUESTOR_PRIVATE_KEY,
+            key=self.PROVIDER_PRIVATE_KEY,
             message_type=message.concents.ServiceRefused,
             fields={
                 'reason': message.concents.ServiceRefused.REASON.InvalidRequest,
@@ -332,7 +332,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self._test_response(
             response,
             status=200,
-            key=self.REQUESTOR_PRIVATE_KEY,
+            key=self.PROVIDER_PRIVATE_KEY,
             message_type=message.concents.AckSubtaskResultsVerify,
             fields={
                 'subtask_results_verify': self._prepare_subtask_results_verify(serialized_subtask_results_verify),
@@ -460,7 +460,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time(subtask_results_verify_time_str):
             file_transfer_token = create_file_transfer_token_for_golem_client(
                 self.report_computed_task,
-                self.REQUESTOR_PUBLIC_KEY,
+                self.PROVIDER_PUBLIC_KEY,
                 message.FileTransferToken.Operation.upload,
             )
         return file_transfer_token

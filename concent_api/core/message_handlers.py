@@ -1295,7 +1295,7 @@ def handle_send_subtask_results_verify(
         subtask_results_verify=subtask_results_verify,
         file_transfer_token=create_file_transfer_token_for_golem_client(
             report_computed_task,
-            requestor_public_key,
+            provider_public_key,
             FileTransferToken.Operation.upload,
         ),
     )

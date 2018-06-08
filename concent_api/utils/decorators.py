@@ -151,6 +151,7 @@ def handle_errors_and_responses(database_name):
                 logging.log_message_returned(
                     logger,
                     response_from_view,
+                    client_message,
                     client_public_key,
                 )
                 serialized_message = dump(

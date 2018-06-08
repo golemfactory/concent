@@ -1,4 +1,5 @@
 from functools                      import wraps
+from logging                        import getLogger
 
 from django.db                      import transaction
 from django.http                    import JsonResponse
@@ -25,6 +26,8 @@ from utils.helpers import join_messages
 from utils.shortcuts                import load_without_public_key
 
 from utils                          import logging
+
+logger = getLogger(__name__)
 
 
 def require_golem_auth_message(view):
@@ -126,6 +129,7 @@ def handle_errors_and_responses(database_name):
                     transaction.savepoint_commit(sid, using=database_name)
             except (Http400, FileTransferTokenError) as exception:
                 logging.log_400_error(
+                    logger,
                     view.__name__,
                     client_public_key,
                     client_message,
@@ -145,7 +149,9 @@ def handle_errors_and_responses(database_name):
             if isinstance(response_from_view, message.Message):
                 assert response_from_view.sig is None
                 logging.log_message_returned(
+                    logger,
                     response_from_view,
+                    client_message,
                     client_public_key,
                 )
                 serialized_message = dump(
@@ -158,6 +164,7 @@ def handle_errors_and_responses(database_name):
                 return JsonResponse(response_from_view, safe = False)
             elif isinstance(response_from_view, HttpResponseNotAllowed):
                 logging.log_message_not_allowed(
+                    logger,
                     view.__name__,
                     client_public_key,
                     request.method,
@@ -165,12 +172,14 @@ def handle_errors_and_responses(database_name):
                 return response_from_view
             elif isinstance(response_from_view, HttpResponse):
                 logging.log_message_accepted(
+                    logger,
                     client_message,
                     client_public_key,
                 )
                 return response_from_view
             elif response_from_view is None:
                 logging.log_empty_queue(
+                    logger,
                     view.__name__,
                     client_public_key,
                 )

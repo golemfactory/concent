@@ -20,15 +20,13 @@ def replace_element_to_unavailable_instead_of_none(log_function):
     return wrap
 
 
-@replace_element_to_unavailable_instead_of_none
 def log_message_returned(
     logger,
     response_message: Message,
-    client_message: Message,
     client_public_key: bytes
 ):
-    task_id = _get_field_value_from_messages_for_logging(MessageFields.task_id, response_message, client_message)
-    subtask_id = _get_field_value_from_messages_for_logging(MessageFields.subtask_id, response_message, client_message)
+    task_id = _get_field_value_from_messages_for_logging(MessageFields.task_id, response_message)
+    subtask_id = _get_field_value_from_messages_for_logging(MessageFields.subtask_id, response_message)
 
     logger.info('A message has been returned from `send/` -- MESSAGE_TYPE: {} -- TASK_ID: {} -- SUBTASK_ID: {} -- CLIENT PUBLIC KEY: {}'.format(
         type(response_message).__name__,
@@ -330,11 +328,12 @@ def log_operation_validation_failed(
 
 
 def _get_field_value_from_messages_for_logging(
-    field_name: Enum,
-    *args: Message
+    field_name: MessageFields,
+    message: Message
 )->str:
-    for message in args:
-        value = get_field_from_message(message, field_name.value) if message is not None else None
-        if value is not None:
-            return value
-    return 'UNAVAILABLE'
+    try:
+        return_value = get_field_from_message(message, field_name.value) if message is not None else None
+        return return_value if return_value is not None else 'UNAVAILABLE'
+    except AssertionError:
+        return 'UNAVAILABLE'
+

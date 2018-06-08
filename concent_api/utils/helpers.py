@@ -113,6 +113,7 @@ def sign_message(golem_message, priv_key):
 
 
 def get_storage_file_path(category, subtask_id, task_id):
+    assert subtask_id is not None and task_id is not None and category is not None
     return f'blender/{category}/{task_id}/{task_id}.{subtask_id}.zip'
 
 

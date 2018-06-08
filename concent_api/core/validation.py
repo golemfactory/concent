@@ -41,7 +41,6 @@ def validate_int_value(value):
             "Wrong type, expected non-negative integer but negative integer provided.",
             error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE,
         )
-    return value
 
 
 def validate_id_value(value, field_name):
@@ -114,7 +113,8 @@ def validate_task_to_compute(task_to_compute: message.TaskToCompute):
             "Invalid TaskToCompute",
             error_code=ErrorCode.MESSAGE_WRONG_FIELDS,
         )
-    task_to_compute.compute_task_def['deadline'] = validate_int_value(task_to_compute.compute_task_def['deadline'])
+
+    validate_int_value(task_to_compute.compute_task_def['deadline'])
 
     validate_id_value(task_to_compute.compute_task_def['task_id'], 'task_id')
     validate_id_value(task_to_compute.compute_task_def['subtask_id'], 'subtask_id')

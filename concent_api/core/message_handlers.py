@@ -85,7 +85,7 @@ def handle_send_force_report_computed_task(client_message):
         provider_public_key  = provider_public_key,
         requestor_public_key = requestor_public_key,
         state                = Subtask.SubtaskState.FORCING_REPORT,
-        next_deadline        = task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
+        next_deadline        = int(task_to_compute.compute_task_def['deadline']) + settings.CONCENT_MESSAGING_TIME,
         task_to_compute      = task_to_compute,
         report_computed_task = client_message.report_computed_task,
     )
@@ -405,7 +405,7 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
             requestor_public_key=requestor_public_key,
             state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             next_deadline=(
-                task_to_compute.compute_task_def['deadline'] +
+                int(task_to_compute.compute_task_def['deadline']) +
                 2 * maximum_download_time +
                 3 * settings.CONCENT_MESSAGING_TIME
             ),
@@ -461,11 +461,11 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
     )
 
     verification_deadline       = (
-        client_message.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def['deadline'] +
+        int(client_message.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def['deadline']) +
         calculate_subtask_verification_time(client_message.ack_report_computed_task.report_computed_task)
     )
     forcing_acceptance_deadline = (
-        client_message.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def['deadline'] +
+        int(client_message.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def['deadline']) +
         calculate_subtask_verification_time(client_message.ack_report_computed_task.report_computed_task) +
         settings.FORCE_ACCEPTANCE_TIME
     )

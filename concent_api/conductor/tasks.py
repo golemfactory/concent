@@ -3,9 +3,7 @@ import logging
 from celery import shared_task
 
 from core import tasks
-from core.models import Subtask
 from utils.decorators import provides_concent_feature
-from utils.helpers import deserialize_message
 from verifier.tasks import blender_verification_order
 from .models import BlenderSubtaskDefinition
 from .models import UploadReport
@@ -72,7 +70,13 @@ def blender_verification_request(
 
 
 @shared_task
-def upload_acknowledged(subtask_id: str):
+def upload_acknowledged(
+    subtask_id: str,
+    source_file_size: str,
+    source_package_hash: str,
+    result_file_size: str,
+    result_package_hash: str,
+):
     assert isinstance(subtask_id, str)
 
     try:
@@ -83,30 +87,18 @@ def upload_acknowledged(subtask_id: str):
         )
         return
 
-    try:
-        subtask = Subtask.objects.get(
-            subtask_id=subtask_id,
-        )
-    except Subtask.DoesNotExist:
-        logger.error(
-            f'Task `blender_verification_request` tried to get Subtask object with ID {subtask_id} but it does not exist.'
-        )
-        return
-
     verification_request.upload_acknowledged = True
     verification_request.full_clean()
     verification_request.save()
 
-    report_computed_task = deserialize_message(subtask.report_computed_task.data.tobytes())
-
     blender_verification_order.delay(
-        verification_request.subtask_id,
-        verification_request.source_package_path,
-        report_computed_task.task_to_compute.size,
-        report_computed_task.task_to_compute.package_hash,
-        verification_request.result_package_path,
-        report_computed_task.size,
-        report_computed_task.package_hash,
-        verification_request.blender_subtask_definition.output_format,
-        verification_request.blender_subtask_definition.scene_file,
+        subtask_id=verification_request.subtask_id,
+        source_package_path=verification_request.source_package_path,
+        source_size=source_file_size,
+        source_package_hash=source_package_hash,
+        result_package_path=verification_request.result_package_path,
+        result_size=result_file_size,
+        result_package_hash=result_package_hash,
+        output_format=verification_request.blender_subtask_definition.output_format,
+        scene_file=verification_request.blender_subtask_definition.scene_file,
     )

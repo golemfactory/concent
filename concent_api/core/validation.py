@@ -18,6 +18,7 @@ from core.exceptions import FileTransferTokenError
 from core.exceptions import Http400
 from core.utils import hex_to_bytes_convert
 from gatekeeper.enums import HashingAlgorithm
+from utils.helpers import join_messages
 from utils.constants                import ErrorCode
 
 
@@ -178,12 +179,16 @@ def validate_golem_message_signed_with_key(
 
     try:
         golem_message.verify_signature(public_key)
-    except MessageError:
-        raise Http400(
-            'There was an exception when validating if golem_message {} is signed with public key {}'.format(
+    except MessageError as exception:
+        error_message = join_messages(
+            'There was an exception when validating if golem_message {} is signed with public key {}.'.format(
                 golem_message.TYPE,
-                public_key
+                public_key,
             ),
+            str(exception)
+        )
+        raise Http400(
+            error_message,
             error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG,
         )
 

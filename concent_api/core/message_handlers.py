@@ -1255,7 +1255,6 @@ def handle_send_subtask_results_verify(
     compute_task_def = task_to_compute.compute_task_def
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
     provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
-    current_time = get_current_utc_timestamp()
 
     validate_golem_message_subtask_results_rejected(subtask_results_rejected)
     validate_golem_message_signed_with_key(
@@ -1266,10 +1265,14 @@ def handle_send_subtask_results_verify(
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.InvalidRequest,
         )
-    if not current_time <= subtask_results_rejected.timestamp + settings.ADDITIONAL_VERIFICATION_CALL_TIME:
+
+    verification_deadline = subtask_results_rejected.timestamp + settings.ADDITIONAL_VERIFICATION_CALL_TIME
+
+    if not subtask_results_rejected.timestamp < get_current_utc_timestamp() <= verification_deadline:
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.InvalidRequest,
         )
+
     if not is_signed_by_right_party(
         subtask_results_rejected,
         requestor_public_key,
@@ -1277,6 +1280,7 @@ def handle_send_subtask_results_verify(
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.InvalidRequest,
         )
+
     if Subtask.objects.filter(
         subtask_id=compute_task_def['subtask_id'],
         state__in=[
@@ -1287,6 +1291,7 @@ def handle_send_subtask_results_verify(
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
         )
+
     if is_message_recieved_in_wrong_state(
         compute_task_def['subtask_id'],
         [
@@ -1298,6 +1303,7 @@ def handle_send_subtask_results_verify(
             "SubtaskResultsVerify is not allowed in current state",
             error_code=ErrorCode.QUEUE_SUBTASK_STATE_TRANSITION_NOT_ALLOWED,
         )
+
     if not core.payments.base.is_account_status_positive(  # pylint: disable=no-value-for-parameter
         client_eth_address=task_to_compute.requestor_ethereum_address,
         pending_value=task_to_compute.price,

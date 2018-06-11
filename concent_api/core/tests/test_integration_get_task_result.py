@@ -101,7 +101,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
         deserialized_report_computed_task = self._get_deserialized_report_computed_task(
             task_to_compute = deserialized_task_to_compute,
-            timestamp       = "2017-12-01 11:00:08",
+            timestamp       = "2017-12-01 11:00:07",
         )
         serialized_force_get_task_result = self._get_serialized_force_get_task_result(
             report_computed_task    = deserialized_report_computed_task,
@@ -272,7 +272,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
         deserialized_report_computed_task = self._get_deserialized_report_computed_task(
             task_to_compute = deserialized_task_to_compute,
-            timestamp       = "2017-12-01 11:00:01",
+            timestamp       = "2017-12-01 11:00:00",
         )
         serialized_force_get_task_result = self._get_serialized_force_get_task_result(
             report_computed_task = deserialized_report_computed_task,
@@ -429,7 +429,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
         deserialized_report_computed_task = self._get_deserialized_report_computed_task(
             task_to_compute = deserialized_task_to_compute,
-            timestamp       = "2017-12-01 11:00:01",
+            timestamp       = "2017-12-01 11:00:00",
         )
         serialized_force_get_task_result = self._get_serialized_force_get_task_result(
             report_computed_task = deserialized_report_computed_task,
@@ -543,7 +543,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
         deserialized_report_computed_task = self._get_deserialized_report_computed_task(
             task_to_compute = deserialized_task_to_compute,
-            timestamp       = "2017-12-01 11:00:01",
+            timestamp       = "2017-12-01 11:00:00",
         )
         serialized_force_get_task_result = self._get_serialized_force_get_task_result(
             report_computed_task = deserialized_report_computed_task,
@@ -696,7 +696,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
         deserialized_report_computed_task = self._get_deserialized_report_computed_task(
             task_to_compute = deserialized_task_to_compute,
-            timestamp       = "2017-12-01 11:00:01",
+            timestamp       = "2017-12-01 11:00:00",
         )
         serialized_force_get_task_result = self._get_serialized_force_get_task_result(
             report_computed_task = deserialized_report_computed_task,
@@ -850,7 +850,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
         deserialized_report_computed_task = self._get_deserialized_report_computed_task(
             task_to_compute = deserialized_task_to_compute,
-            timestamp       = "2017-12-01 11:00:01",
+            timestamp       = "2017-12-01 11:00:00",
         )
         serialized_force_get_task_result = self._get_serialized_force_get_task_result(
             report_computed_task = deserialized_report_computed_task,

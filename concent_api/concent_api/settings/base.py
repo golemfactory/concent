@@ -286,6 +286,9 @@ STORAGE_CLUSTER_SSL_CERTIFICATE_PATH = ''
 # rendering results and any intermediate files.
 # VERIFIER_STORAGE_PATH = ''
 
+# A global constant defining the maximum time (in seconds) rendering a Blender project can take. Default: one week.
+BLENDER_MAX_RENDERING_TIME = 60 * 60 * 24 * 7
+
 CUSTOM_PROTOCOL_TIMES = False
 
 # Which components of this Django application should be enabled in this particular server instance.

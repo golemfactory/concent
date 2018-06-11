@@ -1,4 +1,5 @@
 from zipfile import BadZipFile
+from subprocess import SubprocessError
 import logging
 import os
 
@@ -32,6 +33,8 @@ from .constants import VERIFICATION_RESULT_SUBTASK_STATE_ACCEPTED_LOG_MESSAGE
 from .constants import VERIFICATION_RESULT_SUBTASK_STATE_FAILED_LOG_MESSAGE
 from .constants import VERIFICATION_RESULT_SUBTASK_STATE_UNEXPECTED_LOG_MESSAGE
 from .utils import clean_directory
+from .utils import delete_file
+from .utils import get_files_list_from_archive
 from .utils import prepare_storage_request_headers
 from .utils import run_blender
 from .utils import store_file_from_response_in_chunks
@@ -111,9 +114,6 @@ def blender_verification_order(
             )
             raise
 
-    # Verifier runs blender
-    run_blender()
-
     # Verifier unpacks the archive with project source.
     for file_path in (source_package_path, result_package_path):
         try:
@@ -128,6 +128,42 @@ def blender_verification_order(
                 ErrorCode.VERIFIIER_UNPACKING_ARCHIVE_FAILED.name
             )
             return
+
+    # Verifier runs blender process.
+    try:
+        completed_process = run_blender(
+            scene_file,
+            output_format,
+        )
+        logger.info(f'Blender process std_out: {completed_process.stdout}')
+        logger.info(f'Blender process std_err: {completed_process.stdout}')
+
+        # If Blender finishes with errors, verification ends here
+        # Verification_result informing about the error is sent to the work queue.
+        if completed_process.returncode != 0:
+            verification_result.delay(
+                subtask_id,
+                VerificationResult.ERROR,
+                str(completed_process.stderr),
+                'verifier.blender_verification_order.running_blender'
+            )
+            return
+    except SubprocessError as e:
+        verification_result.delay(
+            subtask_id,
+            VerificationResult.ERROR,
+            str(e),
+            'verifier.blender_verification_order.running_blender'
+        )
+        return
+
+    # Verifier deletes source files of the Blender project from its storage.
+    # At this point there must be source files in VERIFIER_STORAGE_PATH otherwise verification should fail before.
+    source_files_list = get_files_list_from_archive(
+        os.path.join(settings.VERIFIER_STORAGE_PATH, source_package_path)
+    )
+    for file_path in source_files_list + [source_package_path]:
+        delete_file(file_path)
 
     verification_result.delay(
         subtask_id,

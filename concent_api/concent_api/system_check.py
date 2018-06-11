@@ -176,6 +176,22 @@ def create_error_33_custom_protocol_times_is_false_and_settings_does_not_match_g
     )
 
 
+def create_error_19_max_rendering_time_is_not_defined():
+    return Error(
+        'BLENDER_MAX_RENDERING_TIME setting is not defined',
+        hint='Set BLENDER_MAX_RENDERING_TIME in your local_settings.py to a positive integer.',
+        id='concent.E019',
+    )
+
+
+def create_error_20_max_rendering_time_is_not_positive_integer():
+    return Error(
+        'BLENDER_MAX_RENDERING_TIME is not a positive integer',
+        hint='Set BLENDER_MAX_RENDERING_TIME in your local_settings.py to a positive integer.',
+        id='concent.E020',
+    )
+
+
 @register()
 def check_settings_concent_features(app_configs, **kwargs):  # pylint: disable=unused-argument
 
@@ -265,6 +281,21 @@ def check_settings_verifier_storage_path(app_configs = None, **kwargs):  # pylin
 
 
 @register()
+def check_settings_blender_max_rendering_time(app_configs, **kwargs):  # pylint: disable=unused-argument
+    if not hasattr(settings, 'BLENDER_MAX_RENDERING_TIME') and 'verifier' in settings.CONCENT_FEATURES:
+        return create_error_19_max_rendering_time_is_not_defined()
+
+    if (
+        hasattr(settings, 'BLENDER_MAX_RENDERING_TIME') and (
+            not isinstance(settings.BLENDER_MAX_RENDERING_TIME, int) or settings.BLENDER_MAX_RENDERING_TIME <= 0
+        )
+    ):
+        return create_error_20_max_rendering_time_is_not_positive_integer()
+
+    return []
+
+
+@register()
 def check_payment_backend(app_configs, **kwargs):  # pylint: disable=unused-argument
     if 'concent-api' in settings.CONCENT_FEATURES and (
         not hasattr(settings, 'PAYMENT_BACKEND') or
@@ -273,7 +304,7 @@ def check_payment_backend(app_configs, **kwargs):  # pylint: disable=unused-argu
         return [Error(
             'PAYMENT_BACKEND setting is not defined',
             hint = 'Set PAYMENT_BACKEND in your local_settings.py to the python module realizing payment API.',
-            id   = 'concent.E012',
+            id   = 'concent.E019',
         )]
 
     try:
@@ -282,7 +313,7 @@ def check_payment_backend(app_configs, **kwargs):  # pylint: disable=unused-argu
         return [Error(
             'PAYMENT_BACKEND settings is not a valid python module',
             hint = '{}'.format(error),
-            id   = 'concent.E011',
+            id   = 'concent.E020',
         )]
 
     return []

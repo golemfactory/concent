@@ -63,6 +63,20 @@ def blender_verification_order(
     assert (source_size and source_package_hash and source_package_path) and (result_size and result_package_hash and result_package_path)
     assert isinstance(subtask_id, str)
 
+    # this is a temporary hack - dummy verification which's result depends on subtask_id only
+    if settings.MOCK_VERIFICATION_ENABLED:
+        if subtask_id[-1] == 'm':
+            verification_result.delay(
+                subtask_id,
+                VerificationResult.MATCH.name,
+            )
+        else:
+            verification_result.delay(
+                subtask_id,
+                VerificationResult.MISMATCH.name,
+            )
+        return
+
     # Generate a FileTransferToken valid for a download of any file listed in the order.
     file_transfer_token = create_file_transfer_token_for_concent(
         subtask_id=subtask_id,

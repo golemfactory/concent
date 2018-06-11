@@ -82,6 +82,8 @@ CUSTOM_PROTOCOL_TIMES = True
 
 ADDITIONAL_VERIFICATION_CALL_TIME = 10
 
+MOCK_VERIFICATION_ENABLED = False
+
 # disable HandleServerErrorMiddleware in tests
 if MIDDLEWARE.index('concent_api.middleware.HandleServerErrorMiddleware') is not None:
     MIDDLEWARE.remove('concent_api.middleware.HandleServerErrorMiddleware')

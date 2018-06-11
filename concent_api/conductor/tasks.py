@@ -56,36 +56,36 @@ def blender_verification_request(
             verification_request=verification_request
         )
 
-    # The app checks if files indicated by source_package_path
-    # and result_package_path in the VerificationRequest have reports.
-    verification_request.refresh_from_db()
-
-    try:
-        subtask = Subtask.objects.get(
-            subtask_id = subtask_id,
-        )
-    except Subtask.DoesNotExist:
-        logger.error(f'Task `blender_verification_request` tried to get Subtask object with ID {subtask_id} but it does not exist.')
-        return
-
-    report_computed_task = deserialize_message(subtask.report_computed_task.data.tobytes())
-
-    if (
-        verification_request.upload_reports.filter(path=verification_request.source_package_path).exists() and
-        verification_request.upload_reports.filter(path=verification_request.result_package_path).exists()
-    ):
-        # If all expected files have been uploaded, the app sends blender_verification_order task to the work queue.
-        blender_verification_order.delay(
-            verification_request.subtask_id,
-            verification_request.source_package_path,
-            report_computed_task.task_to_compute.size,
-            report_computed_task.task_to_compute.package_hash,
-            verification_request.result_package_path,
-            report_computed_task.size,
-            report_computed_task.package_hash,
-            verification_request.blender_subtask_definition.output_format,
-            verification_request.blender_subtask_definition.scene_file,
-        )
+    # # The app checks if files indicated by source_package_path
+    # # and result_package_path in the VerificationRequest have reports.
+    # verification_request.refresh_from_db()
+    #
+    # try:
+    #     subtask = Subtask.objects.get(
+    #         subtask_id = subtask_id,
+    #     )
+    # except Subtask.DoesNotExist:
+    #     logger.error(f'Task `blender_verification_request` tried to get Subtask object with ID {subtask_id} but it does not exist.')
+    #     return
+    #
+    # report_computed_task = deserialize_message(subtask.report_computed_task.data.tobytes())
+    #
+    # if (
+    #     verification_request.upload_reports.filter(path=verification_request.source_package_path).exists() and
+    #     verification_request.upload_reports.filter(path=verification_request.result_package_path).exists()
+    # ):
+    #     # If all expected files have been uploaded, the app sends blender_verification_order task to the work queue.
+    #     blender_verification_order.delay(
+    #         verification_request.subtask_id,
+    #         verification_request.source_package_path,
+    #         report_computed_task.task_to_compute.size,
+    #         report_computed_task.task_to_compute.package_hash,
+    #         verification_request.result_package_path,
+    #         report_computed_task.size,
+    #         report_computed_task.package_hash,
+    #         verification_request.blender_subtask_definition.output_format,
+    #         verification_request.blender_subtask_definition.scene_file,
+    #     )
 
 
 @shared_task

@@ -1,6 +1,5 @@
 import mock
 
-from django.test    import override_settings
 from django.urls    import reverse
 
 from golem_messages import message
@@ -206,38 +205,3 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         verification_request = VerificationRequest.objects.first()
         self.assertEqual(verification_request.upload_reports.count(), 0)
         self.assertFalse(verification_request.upload_reports.filter(path=self.source_package_path).exists())
-
-    @override_settings(CELERY_TASK_ALWAYS_EAGER=True)
-    def test_blender_verification_request_task_should_schedule_verification_order_task_if_all_related_upload_requests_have_reports(self):
-        upload_report = UploadReport(
-            path=self.source_package_path,
-        )
-        upload_report.full_clean()
-        upload_report.save()
-
-        upload_report = UploadReport(
-            path=self.result_package_path,
-        )
-        upload_report.full_clean()
-        upload_report.save()
-
-        with mock.patch('conductor.tasks.blender_verification_order.delay') as mock_task:
-            blender_verification_request(
-                subtask_id=self.compute_task_def['subtask_id'],
-                source_package_path=self.source_package_path,
-                result_package_path=self.result_package_path,
-                output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
-                scene_file=self.scene_file,
-            )
-
-        mock_task.assert_called_with(
-            self.compute_task_def['subtask_id'],
-            self.source_package_path,
-            self.report_computed_task.task_to_compute.size,
-            self.report_computed_task.task_to_compute.package_hash,
-            self.result_package_path,
-            self.report_computed_task.size,  # pylint: disable=no-member
-            self.report_computed_task.package_hash,  # pylint: disable=no-member
-            BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
-            self.scene_file,
-        )

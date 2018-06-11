@@ -2,7 +2,7 @@ import logging
 
 from celery import shared_task
 
-from conductor.tasks import upload_acknowledged
+from conductor import tasks
 from core.models import PendingResponse
 from core.models import Subtask
 from core.payments import base
@@ -60,9 +60,7 @@ def upload_finished(subtask_id: str):
         subtask.save()
 
         # Add upload_acknowledged task to the work queue.
-        upload_acknowledged.delay(
-            subtask_id
-        )
+        tasks.upload_acknowledged.delay(subtask_id)
 
     # If it's ADDITIONAL VERIFICATION, ACCEPTED or FAILED, log a warning and ignore the notification.
     # Processing ends here. This means that it's a duplicate notification.

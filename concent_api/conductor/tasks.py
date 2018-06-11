@@ -2,6 +2,7 @@ import logging
 
 from celery import shared_task
 
+from core import tasks
 from core.models import Subtask
 from utils.decorators import provides_concent_feature
 from utils.helpers import deserialize_message
@@ -55,6 +56,19 @@ def blender_verification_request(
         ).update(
             verification_request=verification_request
         )
+
+    # The app checks if files indicated by source_package_path
+    # and result_package_path in the VerificationRequest have reports.
+    if (
+        verification_request.upload_reports.filter(path=verification_request.source_package_path).exists() and
+        verification_request.upload_reports.filter(path=verification_request.result_package_path).exists()
+    ):
+        # If all expected files have been uploaded, the app sends upload_finished task to the work queue.
+        tasks.upload_finished.delay(verification_request.subtask_id)
+
+        verification_request.upload_finished = True
+        verification_request.full_clean()
+        verification_request.save()
 
 
 @shared_task

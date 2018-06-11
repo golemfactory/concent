@@ -62,7 +62,7 @@ class UploadFinishedTaskTest(ConcentIntegrationTestCase):
 
     def test_that_scheduling_task_for_subtask_before_deadline_should_change_subtask_state_and_schedule_upload_acknowledged_task(self):
         with freeze_time(parse_timestamp_to_utc_datetime(self.subtask.next_deadline.timestamp() - 1)):
-            with mock.patch('core.tasks.upload_acknowledged.delay') as upload_acknowledged_delay_mock:
+            with mock.patch('core.tasks.tasks.upload_acknowledged.delay') as upload_acknowledged_delay_mock:
                 upload_finished(self.subtask.subtask_id)  # pylint: disable=no-value-for-parameter
 
         self.subtask.refresh_from_db()

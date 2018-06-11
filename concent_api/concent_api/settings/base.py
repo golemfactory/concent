@@ -306,3 +306,6 @@ CONCENT_FEATURES = []  # type: ignore
 
 # Debug setting for adding stack traces in HTTP500 responses
 #DEBUG_INFO_IN_ERROR_RESPONSES =
+
+# Temporary setting for enabling mock verification - the result of verification depends on subtask_id
+MOCK_VERIFICATION_ENABLED = True

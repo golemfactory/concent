@@ -81,6 +81,49 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_from_concent.reason,       message_from_concent.REASON.AcceptanceTimeLimitExceeded)
         self._assert_stored_message_counter_not_increased()
 
+    def test_that_requestor_forces_get_task_result_and_concent_should_immediately_sends_rejection_because_message_is_sent_too_early(self):
+        """
+        Tests if on requestor ForceGetTaskResult message Concent will return ForceGetTaskResultRejected
+        if message is sent to early.
+
+        Expected message exchange:
+        Requestor -> Concent:    ForceGetTaskResult
+        Concent   -> Requestor:  ForceGetTaskResultRejected
+        """
+
+        # STEP 1: Requestor forces get task result via Concent.
+        # Concent rejects request immediately when message is sent to early.
+        deserialized_task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp="2017-12-01 10:00:00",
+            deadline="2017-12-01 11:00:00",
+        )
+        deserialized_report_computed_task = self._get_deserialized_report_computed_task(
+            task_to_compute=deserialized_task_to_compute,
+            timestamp="2017-12-01 11:00:00",
+        )
+        serialized_force_get_task_result = self._get_serialized_force_get_task_result(
+            report_computed_task=deserialized_report_computed_task,
+            timestamp="2017-12-01 11:00:00",
+        )
+
+        with freeze_time("2017-12-01 10:59:59"):
+            response = self.client.post(
+                reverse('core:send'),
+                data=serialized_force_get_task_result,
+                content_type='application/octet-stream',
+            )
+
+        self._test_response(
+            response,
+            status=200,
+            key=self.REQUESTOR_PRIVATE_KEY,
+            message_type=message.concents.ForceGetTaskResultRejected,
+            fields={
+                'reason': message.concents.ForceGetTaskResultRejected.REASON.AcceptanceTimeLimitExceeded,
+            }
+        )
+        self._assert_stored_message_counter_not_increased()
+
     def test_requestor_forces_get_task_result_and_concent_immediately_sends_rejection_due_to_already_sent_message(self):
         """
         Tests if on requestor ForceGetTaskResult message Concent will return ForceGetTaskResultRejected

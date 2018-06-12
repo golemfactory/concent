@@ -9,11 +9,13 @@ from golem_messages.message.tasks import TaskToCompute
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
 from core.tests.utils import ConcentIntegrationTestCase
+from core.exceptions import HashingAlgorithmError
 from core.exceptions import Http400
 from core.validation import validate_all_messages_identical
 from core.validation import validate_ethereum_addresses
 from core.validation import validate_golem_message_subtask_results_rejected
 from core.validation import validate_id_value
+from core.validation import validate_secure_hash_algorithm
 from core.validation import validate_subtask_price_task_to_compute
 from utils.constants import ErrorCode
 
@@ -149,3 +151,21 @@ class TestValidateIdValue(TestCase):
             validate_id_value(incorrect_values, 'test')
         except Http400 as exception:
             self.assertEqual(exception.error_code, ErrorCode.MESSAGE_VALUE_WRONG_LENGTH)
+
+
+class TestInvalidHashAlgorithms(TestCase):
+
+    def test_that_validation_should_raise_exception_when_checksum_is_invalid(self):
+        invalid_values_with_expected_error_code = {
+            123456789: ErrorCode.MESSAGE_FILES_CHECKSUM_WRONG_TYPE,
+            '': ErrorCode.MESSAGE_FILES_CHECKSUM_EMPTY,
+            'sha14452d71687b6bc2c9389c3349fdc17fbd73b833b': ErrorCode.MESSAGE_FILES_CHECKSUM_WRONG_FORMAT,
+            'sha2:4452d71687b6bc2c9389c3349fdc17fbd73b833b': ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_ALGORITHM,
+            'sha1:xyz2d71687b6bc2c9389c3349fdc17fbd73b833b': ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_SHA1_HASH,
+            'sha1:': ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_SHA1_HASH,
+        }
+        for invalid_value, error_code in invalid_values_with_expected_error_code.items():
+            try:
+                validate_secure_hash_algorithm(invalid_value)
+            except HashingAlgorithmError as exception:
+                self.assertEqual(exception.error_code, error_code)

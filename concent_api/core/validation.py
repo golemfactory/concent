@@ -123,6 +123,7 @@ def validate_task_to_compute(task_to_compute: message.TaskToCompute):
 
     validate_hex_public_key(task_to_compute.provider_public_key, 'provider_public_key')
     validate_hex_public_key(task_to_compute.requestor_public_key, 'requestor_public_key')
+    validate_secure_hash_algorithm(task_to_compute.package_hash)
     validate_subtask_price_task_to_compute(task_to_compute)
 
 

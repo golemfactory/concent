@@ -14,3 +14,4 @@ celery
 django-constance[database]
 python-mimeparse
 scikit-image
+opencv-python

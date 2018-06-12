@@ -35,3 +35,7 @@ class FileTransferTokenError(ConcentBaseException):
 
 class HashingAlgorithmError(ConcentBaseException):
     pass
+
+
+class GolemMessageValidationError(ConcentBaseException):
+    pass

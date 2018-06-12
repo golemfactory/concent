@@ -165,7 +165,6 @@ class TestInvalidHashAlgorithms(TestCase):
             'sha1:': ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_SHA1_HASH,
         }
         for invalid_value, error_code in invalid_values_with_expected_error_code.items():
-            try:
+            with self.assertRaises(HashingAlgorithmError) as context:
                 validate_secure_hash_algorithm(invalid_value)
-            except HashingAlgorithmError as exception:
-                self.assertEqual(exception.error_code, error_code)
+            self.assertEqual(context.exception.error_code, error_code)

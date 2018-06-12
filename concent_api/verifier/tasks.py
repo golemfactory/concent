@@ -7,6 +7,8 @@ import os
 from celery import shared_task
 from golem_messages import message
 from requests import HTTPError
+from skimage.measure import compare_ssim
+import cv2
 
 from django.conf import settings
 
@@ -23,6 +25,7 @@ from .utils import clean_directory
 from .utils import delete_file
 from .utils import generate_blender_output_file_name
 from .utils import generate_upload_file_name
+from .utils import generate_verifier_storage_file_path
 from .utils import get_files_list_from_archive
 from .utils import prepare_storage_request_headers
 from .utils import run_blender
@@ -45,7 +48,7 @@ def blender_verification_order(
     result_size: int,
     result_package_hash: str,
     output_format: str,
-    scene_file: str,  # pylint: disable=unused-argument
+    scene_file: str,
 ):
     assert output_format in BlenderSubtaskDefinition.OutputFormat.__members__.keys()
     assert source_package_path != result_package_path
@@ -124,11 +127,11 @@ def blender_verification_order(
             unpack_archive(
                 os.path.basename(file_path)
             )
-        except (OSError, BadZipFile) as e:
+        except (OSError, BadZipFile) as exception:
             verification_result.delay(
                 subtask_id,
                 VerificationResult.ERROR.name,
-                str(e),
+                str(exception),
                 ErrorCode.VERIFIIER_UNPACKING_ARCHIVE_FAILED.name
             )
             return
@@ -149,7 +152,7 @@ def blender_verification_order(
                 subtask_id,
                 VerificationResult.ERROR,
                 str(completed_process.stderr),
-                'verifier.blender_verification_order.running_blender'
+                ErrorCode.VERIFIIER_RUNNING_BLENDER_FAILED.name
             )
             return
     except SubprocessError as exception:
@@ -157,14 +160,14 @@ def blender_verification_order(
             subtask_id,
             VerificationResult.ERROR,
             str(exception),
-            'verifier.blender_verification_order.running_blender'
+            ErrorCode.VERIFIIER_RUNNING_BLENDER_FAILED.name
         )
         return
 
     # Verifier deletes source files of the Blender project from its storage.
     # At this point there must be source files in VERIFIER_STORAGE_PATH otherwise verification should fail before.
     source_files_list = get_files_list_from_archive(
-        os.path.join(settings.VERIFIER_STORAGE_PATH, source_package_path)
+        generate_verifier_storage_file_path(source_package_path)
     )
     for file_path in source_files_list + [source_package_path]:
         delete_file(file_path)
@@ -175,10 +178,19 @@ def blender_verification_order(
     upload_file_content = None
 
     try:
-        with open(os.path.join(settings.VERIFIER_STORAGE_PATH, blender_output_file_name), 'r') as upload_file:
+        with open(generate_verifier_storage_file_path(blender_output_file_name), 'r') as upload_file:
             upload_file_content = upload_file.read()
     except OSError as exception:
         crash_logger.error(str(exception))
+    except MemoryError as exception:
+        logger.error(f'Loading result files into memory failed with: {exception}')
+        verification_result.delay(
+            subtask_id,
+            VerificationResult.ERROR,
+            str(exception),
+            ErrorCode.VERIFIIER_LOADING_FILES_INTO_MEMORY_FAILED.name
+        )
+        return
 
     if upload_file_content is not None:
         upload_file_size = len(upload_file_content)
@@ -200,10 +212,64 @@ def blender_verification_order(
             upload_file_transfer_token,
         )
 
-    # Delete the image from local storage.
-    delete_file(blender_output_file_name)
+    try:
+        result_files_list = get_files_list_from_archive(
+            generate_verifier_storage_file_path(result_package_path)
+        )
 
-    verification_result.delay(
-        subtask_id,
-        VerificationResult.MATCH.name,
-    )
+        image_1 = cv2.imread(  # pylint: disable=no-member
+            generate_verifier_storage_file_path(blender_output_file_name)
+        )
+        image_2 = cv2.imread(  # pylint: disable=no-member
+            generate_verifier_storage_file_path(result_files_list[0])
+        )
+    except MemoryError as exception:
+        logger.info(f'Loading result files into memory exceeded available memory and failed with: {exception}')
+        verification_result.delay(
+            subtask_id,
+            VerificationResult.ERROR,
+            str(exception),
+            ErrorCode.VERIFIIER_LOADING_FILES_INTO_MEMORY_FAILED.name
+        )
+        return
+
+    # If loading fails because of wrong path, cv2.imread does not raise any error but returns None.
+    if image_1 is None or image_2 is None:
+        logger.info('Loading files using opencv fails.')
+        verification_result.delay(
+            subtask_id,
+            VerificationResult.ERROR,
+            'Loading files using opencv fails.',
+            ErrorCode.VERIFIIER_LOADING_FILES_WITH_OPENCV_FAILED.name
+        )
+        return
+
+    # Compute SSIM for the image pair.
+    try:
+        ssim = compare_ssim(image_1, image_2)
+    except ValueError as exception:
+        logger.info(f'Computing SSIM fails with: {exception}')
+        verification_result.delay(
+            subtask_id,
+            VerificationResult.ERROR,
+            str(exception),
+            ErrorCode.VERIFIIER_COMPUTING_SSIM_FAILED.name
+        )
+        return
+
+    assert isinstance(ssim, float)
+
+    # Compare SSIM with VERIFIER_MIN_SSIM.
+    if ssim > settings.VERIFIER_MIN_SSIM:
+        verification_result.delay(
+            subtask_id,
+            VerificationResult.MATCH.name,
+        )
+    else:
+        verification_result.delay(
+            subtask_id,
+            VerificationResult.MISMATCH.name,
+        )
+
+    # Remove any files left in VERIFIER_STORAGE_PATH.
+    clean_directory(settings.VERIFIER_STORAGE_PATH)

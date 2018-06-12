@@ -104,3 +104,7 @@ def generate_blender_output_file_name(scene_file):
 
 def generate_upload_file_name(subtask_id, extension):
     return f'blender/verifier-output/{subtask_id}/{subtask_id}.{extension.lower()}'
+
+
+def generate_verifier_storage_file_path(file_name):
+    return os.path.join(settings.VERIFIER_STORAGE_PATH, file_name)

@@ -14,9 +14,10 @@ from core.constants                 import GOLEM_PUBLIC_KEY_HEX_LENGTH
 from core.constants                 import MESSAGE_TASK_ID_MAX_LENGTH
 from core.constants import VALID_ID_REGEX
 from core.constants import VALID_SHA1_HASH_REGEX
-from core.exceptions import HashingAlgorithmError
 from core.enums import HashingAlgorithm
 from core.exceptions import FileTransferTokenError
+from core.exceptions import GolemMessageValidationError
+from core.exceptions import HashingAlgorithmError
 from core.exceptions import Http400
 from core.utils import hex_to_bytes_convert
 from utils.helpers import join_messages
@@ -263,6 +264,11 @@ def get_validated_client_public_key_from_client_message(golem_message: message.b
             )
 
     elif isinstance(golem_message, message.tasks.TaskMessage):
+        if not golem_message.is_valid():
+            raise GolemMessageValidationError(
+                "Golem message invalid",
+                error_code=ErrorCode.MESSAGE_INVALID
+            )
         task_to_compute = golem_message.task_to_compute
     else:
         raise Http400(

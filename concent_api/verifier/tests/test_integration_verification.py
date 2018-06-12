@@ -1,4 +1,5 @@
 from subprocess import SubprocessError
+from zipfile import BadZipFile
 import io
 import mock
 
@@ -13,18 +14,9 @@ from utils.helpers import get_storage_result_file_path
 from utils.helpers import get_storage_source_file_path
 from utils.testing_helpers import generate_ecc_key_pair
 from ..tasks import blender_verification_order
-from ..utils import generate_blender_output_file_name
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
-
-
-def mock_store_file_from_response_in_chunks_raise_exception(_response, _file_path):
-    raise OSError
-
-
-def mock_unpack_archive_raise_exception(_file_path):
-    raise OSError
 
 
 def mock_run_blender(_scene_file, _output_format, script_file=''):  # pylint: disable=unused-argument
@@ -43,10 +35,6 @@ def mock_run_blender_with_error(_scene_file, _output_format, script_file=''):  #
         stderr = 'error'
 
     return CompletedProcessWithError()
-
-
-def mock_run_blender_raise_exception(_scene_file, _output_format, script_file=''):  # pylint: disable=unused-argument
-    raise SubprocessError
 
 
 @override_settings(
@@ -83,17 +71,19 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-    def test_that_blender_verification_order_should_download_two_files_and_call_verification_result_with_result_match(self):
+    def test_that_blender_verification_order_should_perform_full_verification_with_match_result(self):
         with mock.patch('verifier.tasks.clean_directory', autospec=True) as mock_clean_directory,\
             mock.patch('verifier.tasks.send_request_to_storage_cluster', autospec=True) as mock_send_request_to_storage_cluster,\
             mock.patch('verifier.tasks.store_file_from_response_in_chunks', autospec=True) as mock_store_file_from_response_in_chunks,\
             mock.patch('verifier.tasks.unpack_archive', autospec=True) as mock_unpack_archive,\
             mock.patch('core.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
             mock.patch('verifier.tasks.run_blender', mock_run_blender),\
-            mock.patch('verifier.tasks.get_files_list_from_archive') as mock_get_files_list_from_archive, \
-            mock.patch('builtins.open', autospec=True, return_value=io.StringIO('test')), \
             mock.patch('verifier.tasks.upload_file_to_storage_cluster', autospec=True), \
-            mock.patch('verifier.tasks.delete_file') as mock_delete_file:  # noqa: E125
+            mock.patch('builtins.open', autospec=True, side_effect=[io.StringIO('test'), io.StringIO('test')]), \
+            mock.patch('verifier.tasks.get_files_list_from_archive', return_value=['file_name']) as mock_get_files_list_from_archive, \
+            mock.patch('verifier.tasks.cv2.imread', autospec=True) as mock_imread, \
+            mock.patch('verifier.tasks.compare_ssim', return_value=1.0) as mock_compare_ssim, \
+            mock.patch('verifier.tasks.delete_file', autospec=True) as mock_delete_file:  # noqa: E125
             blender_verification_order(
                 subtask_id=self.compute_task_def['subtask_id'],
                 source_package_path=self.source_package_path,
@@ -108,24 +98,63 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
             )
 
-        mock_clean_directory.assert_called_once_with(settings.VERIFIER_STORAGE_PATH)
+        self.assertEqual(mock_clean_directory.call_count, 2)
         self.assertEqual(mock_send_request_to_storage_cluster.call_count, 2)
         self.assertEqual(mock_store_file_from_response_in_chunks.call_count, 2)
         self.assertEqual(mock_unpack_archive.call_count, 2)
-        mock_get_files_list_from_archive.assert_called_once()
-        mock_delete_file.assert_called_once_with(
-            generate_blender_output_file_name(self.compute_task_def['extra_data']['scene_file'])
-        )
+        self.assertEqual(mock_get_files_list_from_archive.call_count, 4)
+        self.assertEqual(mock_delete_file.call_count, 2)
+        self.assertEqual(mock_imread.call_count, 2)
         mock_verification_result.assert_called_once_with(
             self.compute_task_def['subtask_id'],
             VerificationResult.MATCH.name,
+        )
+        mock_compare_ssim.assert_called_once()
+
+    def test_that_blender_verification_order_should_perform_full_verification_with_mismatch_result(self):
+        with mock.patch('verifier.tasks.clean_directory', autospec=True) as mock_clean_directory,\
+            mock.patch('verifier.tasks.send_request_to_storage_cluster', autospec=True) as mock_send_request_to_storage_cluster,\
+            mock.patch('verifier.tasks.store_file_from_response_in_chunks', autospec=True) as mock_store_file_from_response_in_chunks,\
+            mock.patch('verifier.tasks.unpack_archive', autospec=True) as mock_unpack_archive,\
+            mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
+            mock.patch('verifier.tasks.run_blender', mock_run_blender), \
+            mock.patch('builtins.open', autospec=True, side_effect=[io.StringIO('test'), io.StringIO('test')]), \
+            mock.patch('verifier.tasks.get_files_list_from_archive', autospec=True, return_value=['file_name']) as mock_get_files_list_from_archive, \
+            mock.patch('verifier.tasks.cv2.imread', autospec=True) as mock_imread, \
+            mock.patch('verifier.tasks.compare_ssim', return_value=(settings.VERIFIER_MIN_SSIM - 0.1)) as mock_compare_ssim, \
+            mock.patch('verifier.tasks.delete_file', autospec=True) as mock_delete_file:  # noqa: E125
+            blender_verification_order(
+                subtask_id=self.compute_task_def['subtask_id'],
+                source_package_path=self.source_package_path,
+                source_size=self.report_computed_task.task_to_compute.size,
+                source_package_hash=self.report_computed_task.task_to_compute.package_hash,
+                result_package_path=self.result_package_path,
+                result_size=self.report_computed_task.size,  # pylint: disable=no-member
+                result_package_hash=self.report_computed_task.package_hash,  # pylint: disable=no-member  # pylint: disable=no-member
+                output_format=BlenderSubtaskDefinition.OutputFormat(
+                    self.compute_task_def['extra_data']['output_format']
+                ).name,
+                scene_file=self.compute_task_def['extra_data']['scene_file'],
+            )
+
+        self.assertEqual(mock_clean_directory.call_count, 2)
+        self.assertEqual(mock_send_request_to_storage_cluster.call_count, 2)
+        self.assertEqual(mock_store_file_from_response_in_chunks.call_count, 2)
+        self.assertEqual(mock_unpack_archive.call_count, 2)
+        self.assertEqual(mock_get_files_list_from_archive.call_count, 4)
+        self.assertEqual(mock_delete_file.call_count, 2)
+        self.assertEqual(mock_imread.call_count, 2)
+        mock_compare_ssim.assert_called_once()
+        mock_verification_result.assert_called_once_with(
+            self.compute_task_def['subtask_id'],
+            VerificationResult.MISMATCH.name,
         )
 
     def test_that_blender_verification_order_should_call_verification_result_with_result_error_if_download_fails(self):
         with mock.patch('verifier.tasks.clean_directory', autospec=True) as mock_clean_directory,\
             mock.patch('verifier.tasks.send_request_to_storage_cluster') as mock_send_request_to_storage_cluster,\
-            mock.patch('verifier.tasks.store_file_from_response_in_chunks', mock_store_file_from_response_in_chunks_raise_exception),\
-            mock.patch('core.tasks.verification_result.delay', autospec=True) as mock_verification_result:  # noqa: E125
+            mock.patch('core.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
+            mock.patch('verifier.tasks.store_file_from_response_in_chunks', autospec=True, side_effect=OSError('error')):  # noqa: E125
             blender_verification_order(
                 subtask_id=self.compute_task_def['subtask_id'],
                 source_package_path=self.source_package_path,
@@ -145,15 +174,16 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         mock_verification_result.assert_called_once_with(
             self.compute_task_def['subtask_id'],
             VerificationResult.ERROR.name,
-            '',
-            ErrorCode.VERIFIIER_FILE_DOWNLOAD_FAILED.name,
+            'error',
+            ErrorCode.VERIFIER_FILE_DOWNLOAD_FAILED.name,
         )
 
     def test_blender_verification_order_should_call_verification_result_with_result_error_if_unpacking_archive_fails(self):
         with mock.patch('verifier.tasks.clean_directory', autospec=True) as mock_clean_directory,\
             mock.patch('verifier.tasks.send_request_to_storage_cluster', autospec=True) as mock_send_request_to_storage_cluster,\
             mock.patch('verifier.tasks.store_file_from_response_in_chunks', autospec=True) as mock_store_file_from_response_in_chunks, \
-            mock.patch('verifier.tasks.unpack_archive', side_effect=OSError, autospec=True), \
+            mock.patch('verifier.tasks.unpack_archive', side_effect=BadZipFile, autospec=True), \
+            mock.patch('verifier.tasks.get_files_list_from_archive', return_value=['file_name']) as mock_get_files_list_from_archive, \
             mock.patch('core.tasks.verification_result.delay', autospec=True) as mock_verification_result:  # noqa: E125
             blender_verification_order(
                 subtask_id=self.compute_task_def['subtask_id'],
@@ -169,14 +199,15 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
             )
 
-        mock_clean_directory.assert_called_once_with(settings.VERIFIER_STORAGE_PATH)
         self.assertEqual(mock_send_request_to_storage_cluster.call_count, 2)
         self.assertEqual(mock_store_file_from_response_in_chunks.call_count, 2)
+        self.assertEqual(mock_get_files_list_from_archive.call_count, 2)
+        mock_clean_directory.assert_called_once_with(settings.VERIFIER_STORAGE_PATH)
         mock_verification_result.assert_called_once_with(
             self.compute_task_def['subtask_id'],
             VerificationResult.ERROR.name,
             '',
-            ErrorCode.VERIFIIER_UNPACKING_ARCHIVE_FAILED.name,
+            ErrorCode.VERIFIER_UNPACKING_ARCHIVE_FAILED.name,
         )
 
     def test_blender_verification_order_should_call_verification_result_with_result_error_if_running_subprocess_raise_exception(self):
@@ -184,8 +215,9 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('verifier.tasks.send_request_to_storage_cluster') as mock_send_request_to_storage_cluster, \
             mock.patch('verifier.tasks.store_file_from_response_in_chunks') as mock_store_file_from_response_in_chunks, \
             mock.patch('verifier.tasks.unpack_archive') as mock_unpack_archive, \
-            mock.patch('verifier.tasks.run_blender', mock_run_blender_raise_exception), \
-            mock.patch('core.tasks.verification_result.delay') as mock_verification_result:  # noqa: E125
+            mock.patch('core.tasks.verification_result.delay', autospec=True) as mock_verification_result, \
+            mock.patch('verifier.tasks.get_files_list_from_archive', return_value=['file_name']) as mock_get_files_list_from_archive, \
+            mock.patch('verifier.tasks.run_blender', autospec=True, side_effect=SubprocessError('error')):  # noqa: E125
             blender_verification_order(
                 subtask_id=self.compute_task_def['subtask_id'],
                 source_package_path=self.source_package_path,
@@ -200,18 +232,19 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
             )
 
+        self.assertEqual(mock_send_request_to_storage_cluster.call_count, 2)
+        self.assertEqual(mock_store_file_from_response_in_chunks.call_count, 2)
+        self.assertEqual(mock_unpack_archive.call_count, 2)
+        self.assertEqual(mock_get_files_list_from_archive.call_count, 2)
         mock_clean_directory.assert_called_once()
         mock_send_request_to_storage_cluster.assert_called()
-        self.assertEqual(mock_send_request_to_storage_cluster.call_count, 2)
         mock_store_file_from_response_in_chunks.assert_called()
-        self.assertEqual(mock_store_file_from_response_in_chunks.call_count, 2)
         mock_unpack_archive.assert_called()
-        self.assertEqual(mock_unpack_archive.call_count, 2)
         mock_verification_result.assert_called_once_with(
             self.compute_task_def['subtask_id'],
-            VerificationResult.ERROR,
-            '',
-            'verifier.blender_verification_order.running_blender',
+            VerificationResult.ERROR.name,
+            'error',
+            ErrorCode.VERIFIER_RUNNING_BLENDER_FAILED.name,
         )
 
     def test_blender_verification_order_should_call_verification_result_with_result_error_if_running_subprocess_return_non_zero_code(self):
@@ -220,7 +253,8 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('verifier.tasks.store_file_from_response_in_chunks') as mock_store_file_from_response_in_chunks, \
             mock.patch('verifier.tasks.unpack_archive') as mock_unpack_archive, \
             mock.patch('verifier.tasks.run_blender', mock_run_blender_with_error), \
-            mock.patch('core.tasks.verification_result.delay') as mock_verification_result:  # noqa: E125
+            mock.patch('verifier.tasks.get_files_list_from_archive', return_value=['file_name']) as mock_get_files_list_from_archive, \
+            mock.patch('core.tasks.verification_result.delay', autospec=True) as mock_verification_result:  # noqa: E125
             blender_verification_order(
                 subtask_id=self.compute_task_def['subtask_id'],
                 source_package_path=self.source_package_path,
@@ -235,16 +269,212 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
             )
 
+        self.assertEqual(mock_send_request_to_storage_cluster.call_count, 2)
+        self.assertEqual(mock_store_file_from_response_in_chunks.call_count, 2)
+        self.assertEqual(mock_unpack_archive.call_count, 2)
+        self.assertEqual(mock_get_files_list_from_archive.call_count, 2)
         mock_clean_directory.assert_called_once()
         mock_send_request_to_storage_cluster.assert_called()
-        self.assertEqual(mock_send_request_to_storage_cluster.call_count, 2)
         mock_store_file_from_response_in_chunks.assert_called()
-        self.assertEqual(mock_store_file_from_response_in_chunks.call_count, 2)
         mock_unpack_archive.assert_called()
-        self.assertEqual(mock_unpack_archive.call_count, 2)
         mock_verification_result.assert_called_once_with(
             self.compute_task_def['subtask_id'],
-            VerificationResult.ERROR,
+            VerificationResult.ERROR.name,
             'error',
-            'verifier.blender_verification_order.running_blender',
+            ErrorCode.VERIFIER_RUNNING_BLENDER_FAILED.name,
+        )
+
+    def test_blender_verification_order_should_call_verification_result_with_result_error_if_opening_first_file_raise_memory_error(self):
+        with mock.patch('verifier.tasks.clean_directory', autospec=True) as mock_clean_directory,\
+            mock.patch('verifier.tasks.send_request_to_storage_cluster', autospec=True) as mock_send_request_to_storage_cluster,\
+            mock.patch('verifier.tasks.store_file_from_response_in_chunks', autospec=True) as mock_store_file_from_response_in_chunks,\
+            mock.patch('verifier.tasks.unpack_archive', autospec=True) as mock_unpack_archive,\
+            mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
+            mock.patch('verifier.tasks.run_blender', mock_run_blender), \
+            mock.patch('builtins.open', autospec=True, side_effect=MemoryError('error')), \
+            mock.patch('verifier.tasks.get_files_list_from_archive', return_value=['file_name']) as mock_get_files_list_from_archive, \
+            mock.patch('verifier.tasks.delete_file') as mock_delete_file:  # noqa: E125
+            blender_verification_order(
+                subtask_id=self.compute_task_def['subtask_id'],
+                source_package_path=self.source_package_path,
+                source_size=self.report_computed_task.task_to_compute.size,
+                source_package_hash=self.report_computed_task.task_to_compute.package_hash,
+                result_package_path=self.result_package_path,
+                result_size=self.report_computed_task.size,  # pylint: disable=no-member
+                result_package_hash=self.report_computed_task.package_hash,  # pylint: disable=no-member  # pylint: disable=no-member
+                output_format=BlenderSubtaskDefinition.OutputFormat(
+                    self.compute_task_def['extra_data']['output_format']
+                ).name,
+                scene_file=self.compute_task_def['extra_data']['scene_file'],
+            )
+
+        self.assertEqual(mock_clean_directory.call_count, 1)
+        self.assertEqual(mock_send_request_to_storage_cluster.call_count, 2)
+        self.assertEqual(mock_store_file_from_response_in_chunks.call_count, 2)
+        self.assertEqual(mock_unpack_archive.call_count, 2)
+        self.assertEqual(mock_get_files_list_from_archive.call_count, 3)
+        self.assertEqual(mock_delete_file.call_count, 2)
+        mock_verification_result.assert_called_once_with(
+            self.compute_task_def['subtask_id'],
+            VerificationResult.ERROR.name,
+            'error',
+            ErrorCode.VERIFIER_LOADING_FILES_INTO_MEMORY_FAILED.name,
+        )
+
+    def test_blender_verification_order_should_continue_verification_if_opening_blender_output_file_raises_os_error(self):
+        with mock.patch('verifier.tasks.clean_directory', autospec=True) as mock_clean_directory,\
+            mock.patch('verifier.tasks.send_request_to_storage_cluster', autospec=True) as mock_send_request_to_storage_cluster,\
+            mock.patch('verifier.tasks.store_file_from_response_in_chunks', autospec=True) as mock_store_file_from_response_in_chunks,\
+            mock.patch('verifier.tasks.unpack_archive', autospec=True) as mock_unpack_archive,\
+            mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
+            mock.patch('verifier.tasks.run_blender', mock_run_blender), \
+            mock.patch('builtins.open', autospec=True, side_effect=OSError('error')), \
+            mock.patch('verifier.tasks.get_files_list_from_archive', return_value=['file_name']) as mock_get_files_list_from_archive, \
+            mock.patch('verifier.tasks.cv2.imread', autospec=True) as mock_imread, \
+            mock.patch('verifier.tasks.compare_ssim', return_value=1.0) as mock_compare_ssim, \
+            mock.patch('verifier.tasks.delete_file') as mock_delete_file:  # noqa: E125
+            blender_verification_order(
+                subtask_id=self.compute_task_def['subtask_id'],
+                source_package_path=self.source_package_path,
+                source_size=self.report_computed_task.task_to_compute.size,
+                source_package_hash=self.report_computed_task.task_to_compute.package_hash,
+                result_package_path=self.result_package_path,
+                result_size=self.report_computed_task.size,  # pylint: disable=no-member
+                result_package_hash=self.report_computed_task.package_hash,  # pylint: disable=no-member  # pylint: disable=no-member
+                output_format=BlenderSubtaskDefinition.OutputFormat(
+                    self.compute_task_def['extra_data']['output_format']
+                ).name,
+                scene_file=self.compute_task_def['extra_data']['scene_file'],
+            )
+
+        self.assertEqual(mock_clean_directory.call_count, 2)
+        self.assertEqual(mock_send_request_to_storage_cluster.call_count, 2)
+        self.assertEqual(mock_store_file_from_response_in_chunks.call_count, 2)
+        self.assertEqual(mock_unpack_archive.call_count, 2)
+        self.assertEqual(mock_get_files_list_from_archive.call_count, 4)
+        self.assertEqual(mock_delete_file.call_count, 2)
+        self.assertEqual(mock_imread.call_count, 2)
+        mock_verification_result.assert_called_once_with(
+            self.compute_task_def['subtask_id'],
+            VerificationResult.MATCH.name,
+        )
+        mock_compare_ssim.assert_called_once()
+
+    def test_blender_verification_order_should_call_verification_result_with_result_error_if_cv2_imread_raise_memory_error(self):
+        with mock.patch('verifier.tasks.clean_directory', autospec=True) as mock_clean_directory,\
+            mock.patch('verifier.tasks.send_request_to_storage_cluster', autospec=True) as mock_send_request_to_storage_cluster,\
+            mock.patch('verifier.tasks.store_file_from_response_in_chunks', autospec=True) as mock_store_file_from_response_in_chunks,\
+            mock.patch('verifier.tasks.unpack_archive', autospec=True) as mock_unpack_archive,\
+            mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
+            mock.patch('verifier.tasks.run_blender', mock_run_blender), \
+            mock.patch('builtins.open', autospec=True, side_effect=[io.StringIO('test'), io.StringIO('test')]), \
+            mock.patch('verifier.tasks.get_files_list_from_archive', autospec=True, return_value=['file_name']) as mock_get_files_list_from_archive, \
+            mock.patch('verifier.tasks.cv2.imread', autospec=True, side_effect=MemoryError('error')) as mock_imread, \
+            mock.patch('verifier.tasks.delete_file') as mock_delete_file:  # noqa: E125
+            blender_verification_order(
+                subtask_id=self.compute_task_def['subtask_id'],
+                source_package_path=self.source_package_path,
+                source_size=self.report_computed_task.task_to_compute.size,
+                source_package_hash=self.report_computed_task.task_to_compute.package_hash,
+                result_package_path=self.result_package_path,
+                result_size=self.report_computed_task.size,  # pylint: disable=no-member
+                result_package_hash=self.report_computed_task.package_hash,  # pylint: disable=no-member  # pylint: disable=no-member
+                output_format=BlenderSubtaskDefinition.OutputFormat(
+                    self.compute_task_def['extra_data']['output_format']
+                ).name,
+                scene_file=self.compute_task_def['extra_data']['scene_file'],
+            )
+
+        self.assertEqual(mock_clean_directory.call_count, 1)
+        self.assertEqual(mock_send_request_to_storage_cluster.call_count, 2)
+        self.assertEqual(mock_store_file_from_response_in_chunks.call_count, 2)
+        self.assertEqual(mock_unpack_archive.call_count, 2)
+        self.assertEqual(mock_get_files_list_from_archive.call_count, 4)
+        self.assertEqual(mock_delete_file.call_count, 2)
+        self.assertEqual(mock_imread.call_count, 1)
+        mock_verification_result.assert_called_once_with(
+            self.compute_task_def['subtask_id'],
+            VerificationResult.ERROR.name,
+            'error',
+            ErrorCode.VERIFIER_LOADING_FILES_INTO_MEMORY_FAILED.name,
+        )
+
+    def test_blender_verification_order_should_call_verification_result_with_result_error_if_cv2_imread_returns_none(self):
+        with mock.patch('verifier.tasks.clean_directory', autospec=True) as mock_clean_directory,\
+            mock.patch('verifier.tasks.send_request_to_storage_cluster', autospec=True) as mock_send_request_to_storage_cluster,\
+            mock.patch('verifier.tasks.store_file_from_response_in_chunks', autospec=True) as mock_store_file_from_response_in_chunks,\
+            mock.patch('verifier.tasks.unpack_archive', autospec=True) as mock_unpack_archive,\
+            mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
+            mock.patch('verifier.tasks.run_blender', mock_run_blender), \
+            mock.patch('builtins.open', autospec=True, side_effect=[io.StringIO('test'), io.StringIO('test')]), \
+            mock.patch('verifier.tasks.get_files_list_from_archive', autospec=True, return_value=['file_name']) as mock_get_files_list_from_archive, \
+            mock.patch('verifier.tasks.cv2.imread', autospec=True, side_effect=[None, None]) as mock_imread, \
+            mock.patch('verifier.tasks.delete_file') as mock_delete_file:  # noqa: E125
+            blender_verification_order(
+                subtask_id=self.compute_task_def['subtask_id'],
+                source_package_path=self.source_package_path,
+                source_size=self.report_computed_task.task_to_compute.size,
+                source_package_hash=self.report_computed_task.task_to_compute.package_hash,
+                result_package_path=self.result_package_path,
+                result_size=self.report_computed_task.size,  # pylint: disable=no-member
+                result_package_hash=self.report_computed_task.package_hash,  # pylint: disable=no-member  # pylint: disable=no-member
+                output_format=BlenderSubtaskDefinition.OutputFormat(
+                    self.compute_task_def['extra_data']['output_format']
+                ).name,
+                scene_file=self.compute_task_def['extra_data']['scene_file'],
+            )
+
+        self.assertEqual(mock_clean_directory.call_count, 1)
+        self.assertEqual(mock_send_request_to_storage_cluster.call_count, 2)
+        self.assertEqual(mock_store_file_from_response_in_chunks.call_count, 2)
+        self.assertEqual(mock_unpack_archive.call_count, 2)
+        self.assertEqual(mock_get_files_list_from_archive.call_count, 4)
+        self.assertEqual(mock_delete_file.call_count, 2)
+        self.assertEqual(mock_imread.call_count, 2)
+        mock_verification_result.assert_called_once_with(
+            self.compute_task_def['subtask_id'],
+            VerificationResult.ERROR.name,
+            'Loading files using OpenCV fails.',
+            ErrorCode.VERIFIER_LOADING_FILES_WITH_OPENCV_FAILED.name,
+        )
+
+    def test_blender_verification_order_should_call_verification_result_with_result_error_if_compare_ssim_raise_value_error(self):
+        with mock.patch('verifier.tasks.clean_directory', autospec=True) as mock_clean_directory,\
+            mock.patch('verifier.tasks.send_request_to_storage_cluster', autospec=True) as mock_send_request_to_storage_cluster,\
+            mock.patch('verifier.tasks.store_file_from_response_in_chunks', autospec=True) as mock_store_file_from_response_in_chunks,\
+            mock.patch('verifier.tasks.unpack_archive', autospec=True) as mock_unpack_archive,\
+            mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
+            mock.patch('verifier.tasks.run_blender', mock_run_blender), \
+            mock.patch('builtins.open', autospec=True, side_effect=[io.StringIO('test'), io.StringIO('test')]), \
+            mock.patch('verifier.tasks.get_files_list_from_archive', return_value=['file_name']) as mock_get_files_list_from_archive, \
+            mock.patch('verifier.tasks.cv2.imread', autospec=True) as mock_imread, \
+            mock.patch('verifier.tasks.compare_ssim', side_effect=ValueError('error')) as mock_compare_ssim, \
+            mock.patch('verifier.tasks.delete_file', autospec=True) as mock_delete_file:  # noqa: E125
+            blender_verification_order(
+                subtask_id=self.compute_task_def['subtask_id'],
+                source_package_path=self.source_package_path,
+                source_size=self.report_computed_task.task_to_compute.size,
+                source_package_hash=self.report_computed_task.task_to_compute.package_hash,
+                result_package_path=self.result_package_path,
+                result_size=self.report_computed_task.size,  # pylint: disable=no-member
+                result_package_hash=self.report_computed_task.package_hash,  # pylint: disable=no-member  # pylint: disable=no-member
+                output_format=BlenderSubtaskDefinition.OutputFormat(
+                    self.compute_task_def['extra_data']['output_format']
+                ).name,
+                scene_file=self.compute_task_def['extra_data']['scene_file'],
+            )
+
+        self.assertEqual(mock_clean_directory.call_count, 1)
+        self.assertEqual(mock_send_request_to_storage_cluster.call_count, 2)
+        self.assertEqual(mock_store_file_from_response_in_chunks.call_count, 2)
+        self.assertEqual(mock_unpack_archive.call_count, 2)
+        self.assertEqual(mock_get_files_list_from_archive.call_count, 4)
+        self.assertEqual(mock_delete_file.call_count, 2)
+        self.assertEqual(mock_imread.call_count, 2)
+        mock_compare_ssim.assert_called_once()
+        mock_verification_result.assert_called_once_with(
+            self.compute_task_def['subtask_id'],
+            VerificationResult.ERROR.name,
+            'error',
+            ErrorCode.VERIFIER_COMPUTING_SSIM_FAILED.name,
         )

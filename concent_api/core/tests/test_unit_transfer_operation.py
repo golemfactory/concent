@@ -143,6 +143,26 @@ class FileTransferTokenCreationTest(TestCase):
                 )
                 self.assertTrue(upload_token.timestamp > upload_token.token_expiration_deadline)
 
+    def test_that_download_file_transfer_token_for_golem_client_is_created_with_deadline_as_float(self):
+        with freeze_time(self.time):
+            self.report_computed_task.task_to_compute.compute_task_def['deadline'] += 0.999999
+            download_token = create_file_transfer_token_for_golem_client(
+                self.report_computed_task,
+                self.authorized_client_public_key,
+                FileTransferToken.Operation.download
+            )
+            self.assertIsInstance(download_token.token_expiration_deadline, int)
+
+    def test_that_upload_file_transfer_token_for_golem_client_is_created_with_deadline_as_string(self):
+        with freeze_time(self.time):
+            self.report_computed_task.task_to_compute.compute_task_def['deadline'] = str(self.report_computed_task.task_to_compute.compute_task_def['deadline'])
+            upload_token = create_file_transfer_token_for_golem_client(
+                self.report_computed_task,
+                self.authorized_client_public_key,
+                FileTransferToken.Operation.upload
+            )
+            self.assertIsInstance(upload_token.token_expiration_deadline, int)
+
     def _get_deadline_exceeded_time_for_upload_token(self):
         return self.time + datetime.timedelta(
             seconds=10 + self.deadline + 1

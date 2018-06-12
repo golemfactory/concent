@@ -1,0 +1,38 @@
+{% extends "admin/base.html" %}
+
+{% load static %}
+{% load admin_tags %}
+{% block extrastyle %}
+    <link rel="stylesheet" type="text/css" href="{% static '/admin/css/soft_shutdown.css' %}"/>
+{% endblock %}
+
+{% block messages %}
+
+    {% get_shutdown_mode_state as is_shutdown_mode_enabled %}
+    {% if is_shutdown_mode_enabled and has_permission %}
+
+        {% get_result_uploaded_subtasks_amount as result_uploaded_subtasks_amount %}
+        {% get_active_subtasks_amount as active_subtasks_amount %}
+        {% get_active_subtasks_status as active_subtasks_status %}
+        {% result_uploaded_subtasks_status as result_uploaded_subtasks_status %}
+
+        <div class="shutdown_mode
+        {% if active_subtasks_status %}active_subtasks_status
+        {% elif result_uploaded_subtasks_status %}result_uploaded_subtasks_status
+        {% else %}shut_down
+        {% endif %}">
+            {% if active_subtasks_status %}
+                <div class="shutdown_info"><span>Shutting down.</span></div>
+                {% include "admin/active_subtasks.html" %}
+                {% include "admin/passive_subtasks.html" %}
+            {% elif result_uploaded_subtasks_status %}
+                <div class="shutdown_info">Shutting down.</div>
+                {% include "admin/passive_subtasks.html" %}
+            {% else %}
+                <div class="shutdown_info"><span>Concent can be shut down.</span></div>
+            {% endif %}
+        </div>
+
+    {% endif %}
+    {{ block.super }}
+{% endblock messages %}

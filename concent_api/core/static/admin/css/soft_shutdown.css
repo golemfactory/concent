@@ -1,0 +1,45 @@
+/*
+    django admin soft_shutdown style
+*/
+
+.shutdown_mode {
+    display: flex;
+    align-items: center;
+    padding-top: 0.7em;
+    padding-bottom: 0.7em;
+}
+
+.active_subtasks_status {
+    background: #ad5a5a;
+    color: #e6f0f5;
+}
+
+.result_uploaded_subtasks_status {
+    background: #ad8c47;
+    color: #e6f0f5;
+}
+
+.shut_down {
+    background: #98ad5a;
+    color: #e6f0f5
+}
+
+.active_subtasks {
+    margin-left: 0.3em;
+}
+
+.passive_subtasks {
+    margin-left: 0.3em;
+}
+
+.line_decorator {
+    width: 2px;
+    height: 1.4em;
+    margin-left: 2.5em;
+    background-color: #ffffff;
+    opacity: 0.3;
+}
+
+.shutdown_info {
+    margin-left: 3em;
+}

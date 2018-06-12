@@ -40,19 +40,23 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
     @freeze_time("2017-11-17 10:00:00")
     def setUp(self):
         super().setUp()
-        self.stored_message_counter         = 0
-        self.message_timestamp              = get_current_utc_timestamp()  # 1510912800
-        self.compute_task_def               = message.ComputeTaskDef()
-        self.compute_task_def['task_id']    = '8'
-        self.compute_task_def['subtask_id'] = '8'
-        self.compute_task_def['deadline']   = self.message_timestamp
-        self.task_to_compute                = self._get_deserialized_task_to_compute(
+        self.stored_message_counter = 0
+        self.message_timestamp = get_current_utc_timestamp()  # 1510912800
+        self.compute_task_def = self._get_deserialized_compute_task_def(
+            task_id='8',
+            subtask_id='8',
+            deadline=self.message_timestamp
+        )
+        self.task_to_compute = self._get_deserialized_task_to_compute(
             compute_task_def = self.compute_task_def,
         )
+        self.report_computed_task = self._get_deserialized_report_computed_task(
+            task_to_compute = self.task_to_compute
+        )
+        self.correct_golem_data = self._get_deserialized_force_report_computed_task(
+            report_computed_task=self.report_computed_task
+        )
 
-        self.correct_golem_data                                         = message.ForceReportComputedTask()
-        self.correct_golem_data.report_computed_task                    = message.tasks.ReportComputedTask()
-        self.correct_golem_data.report_computed_task.task_to_compute    = self.task_to_compute
         self.want_to_compute = message.WantToComputeTask(
             node_name           = 1,
             task_id             = 2,
@@ -111,10 +115,10 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         task_to_compute.compute_task_def['deadline'] = self.message_timestamp - 1   # pylint: disable=no-member
         task_to_compute.sig = None
         task_to_compute = self._sign_message(task_to_compute)
-        report_computed_task = message.tasks.ReportComputedTask(
+        report_computed_task = self._get_deserialized_report_computed_task(
             task_to_compute = task_to_compute
         )
-        correct_golem_data = message.ForceReportComputedTask(
+        correct_golem_data = self._get_deserialized_force_report_computed_task(
             report_computed_task = report_computed_task)
 
         response = self.client.post(
@@ -139,19 +143,18 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
     def test_send_should_accept_valid_message_with_non_numeric_task_id(self):
         assert StoredMessage.objects.count() == 0
 
-        compute_task_def = message.ComputeTaskDef()
-        compute_task_def['task_id']     = 'ABC00XYZ'
-        compute_task_def['subtask_id']  = 'ABC00XYZ'
-        compute_task_def['deadline']    = self.message_timestamp
+        compute_task_def = self._get_deserialized_compute_task_def(
+            task_id='ABC00XYZ',
+            subtask_id='ABC00XYZ',
+            deadline=self.message_timestamp
+        )
         task_to_compute                 = self._get_deserialized_task_to_compute(
             compute_task_def=compute_task_def,
         )
-
-        report_computed_task = message.tasks.ReportComputedTask(
+        report_computed_task = self._get_deserialized_report_computed_task(
             task_to_compute = task_to_compute
         )
-
-        correct_golem_data = message.ForceReportComputedTask(
+        correct_golem_data = self._get_deserialized_force_report_computed_task(
             report_computed_task = report_computed_task,
         )
 
@@ -317,15 +320,14 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
     def test_send_reject_message_save_as_receive_out_of_band_status(self):
         assert StoredMessage.objects.count() == 0
 
-        correct_golem_data                                         = message.ForceReportComputedTask()
-        correct_golem_data.report_computed_task                    = message.tasks.ReportComputedTask(
+        self.correct_golem_data.report_computed_task = self._get_deserialized_report_computed_task(
             task_to_compute = self.cannot_compute_task.task_to_compute  # pylint: disable=no-member
         )
 
         force_response = self.client.post(
             reverse('core:send'),
             data = dump(
-                correct_golem_data,
+                self.correct_golem_data,
                 PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY),
             content_type                        = 'application/octet-stream',

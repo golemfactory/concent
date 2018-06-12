@@ -236,10 +236,12 @@ class ApiViewTransactionTestCase(TransactionTestCase):
             REQUESTOR_PUBLIC_KEY,
             check_time=False,
         )
-
-        self.force_report_computed_task = message.ForceReportComputedTask()
-        self.force_report_computed_task.report_computed_task = message.tasks.ReportComputedTask()
-        self.force_report_computed_task.report_computed_task.task_to_compute = task_to_compute
+        report_computed_task = tasks.ReportComputedTaskFactory(
+            task_to_compute=task_to_compute
+        )
+        self.force_report_computed_task = message.ForceReportComputedTask(
+            report_computed_task=report_computed_task
+        )
 
     def test_api_view_should_rollback_changes_on_500_error(self):
 

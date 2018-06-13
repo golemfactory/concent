@@ -5,12 +5,12 @@ from django.conf import settings
 from django.test import override_settings
 
 from conductor.models import BlenderSubtaskDefinition
+from core.constants import VerificationResult
 from core.tests.utils import ConcentIntegrationTestCase
 from utils.constants import ErrorCode
 from utils.helpers import get_storage_result_file_path
 from utils.helpers import get_storage_source_file_path
 from utils.testing_helpers import generate_ecc_key_pair
-from ..constants import VerificationResult
 from ..tasks import blender_verification_order
 
 
@@ -86,7 +86,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('verifier.tasks.send_request_to_storage_cluster', autospec=True) as mock_send_request_to_storage_cluster,\
             mock.patch('verifier.tasks.store_file_from_response_in_chunks', autospec=True) as mock_store_file_from_response_in_chunks,\
             mock.patch('verifier.tasks.unpack_archive', autospec=True) as mock_unpack_archive,\
-            mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
+            mock.patch('core.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
             mock.patch('verifier.tasks.run_blender', mock_run_blender),\
             mock.patch('verifier.tasks.get_files_list_from_archive') as mock_get_files_list_from_archive,\
             mock.patch('verifier.tasks.delete_file') as mock_delete_file:  # noqa: E125
@@ -119,7 +119,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         with mock.patch('verifier.tasks.clean_directory', autospec=True) as mock_clean_directory,\
             mock.patch('verifier.tasks.send_request_to_storage_cluster') as mock_send_request_to_storage_cluster,\
             mock.patch('verifier.tasks.store_file_from_response_in_chunks', mock_store_file_from_response_in_chunks_raise_exception),\
-            mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result:  # noqa: E125
+            mock.patch('core.tasks.verification_result.delay', autospec=True) as mock_verification_result:  # noqa: E125
             blender_verification_order(
                 subtask_id=self.compute_task_def['subtask_id'],
                 source_package_path=self.source_package_path,
@@ -148,7 +148,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('verifier.tasks.send_request_to_storage_cluster', autospec=True) as mock_send_request_to_storage_cluster,\
             mock.patch('verifier.tasks.store_file_from_response_in_chunks', autospec=True) as mock_store_file_from_response_in_chunks, \
             mock.patch('verifier.tasks.unpack_archive', side_effect=OSError, autospec=True), \
-            mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result:  # noqa: E125
+            mock.patch('core.tasks.verification_result.delay', autospec=True) as mock_verification_result:  # noqa: E125
             blender_verification_order(
                 subtask_id=self.compute_task_def['subtask_id'],
                 source_package_path=self.source_package_path,
@@ -179,7 +179,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('verifier.tasks.store_file_from_response_in_chunks') as mock_store_file_from_response_in_chunks, \
             mock.patch('verifier.tasks.unpack_archive') as mock_unpack_archive, \
             mock.patch('verifier.tasks.run_blender', mock_run_blender_raise_exception), \
-            mock.patch('verifier.tasks.verification_result.delay') as mock_verification_result:  # noqa: E125
+            mock.patch('core.tasks.verification_result.delay') as mock_verification_result:  # noqa: E125
             blender_verification_order(
                 subtask_id=self.compute_task_def['subtask_id'],
                 source_package_path=self.source_package_path,
@@ -214,7 +214,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('verifier.tasks.store_file_from_response_in_chunks') as mock_store_file_from_response_in_chunks, \
             mock.patch('verifier.tasks.unpack_archive') as mock_unpack_archive, \
             mock.patch('verifier.tasks.run_blender', mock_run_blender_with_error), \
-            mock.patch('verifier.tasks.verification_result.delay') as mock_verification_result:  # noqa: E125
+            mock.patch('core.tasks.verification_result.delay') as mock_verification_result:  # noqa: E125
             blender_verification_order(
                 subtask_id=self.compute_task_def['subtask_id'],
                 source_package_path=self.source_package_path,

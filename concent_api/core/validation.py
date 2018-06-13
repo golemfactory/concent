@@ -15,10 +15,10 @@ from core.constants                 import MESSAGE_TASK_ID_MAX_LENGTH
 from core.constants import VALID_ID_REGEX
 from core.constants import VALID_SHA1_HASH_REGEX
 from core.exceptions import HashingAlgorithmError
+from core.enums import HashingAlgorithm
 from core.exceptions import FileTransferTokenError
 from core.exceptions import Http400
 from core.utils import hex_to_bytes_convert
-from gatekeeper.enums import HashingAlgorithm
 from utils.helpers import join_messages
 from utils.constants                import ErrorCode
 

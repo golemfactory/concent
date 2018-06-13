@@ -1,7 +1,11 @@
+from logging import getLogger
+
 from django.http import JsonResponse
 from golem_messages.message import FileTransferToken
 
 from utils import logging
+
+logger = getLogger(__name__)
 
 
 def gatekeeper_access_denied_response(
@@ -21,6 +25,7 @@ def gatekeeper_access_denied_response(
     }
 
     logging.log_operation_validation_failed(
+        logger,
         operation.capitalize(),
         message,
         error_code.value,

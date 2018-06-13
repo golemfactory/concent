@@ -1,6 +1,7 @@
 import datetime
 
 from base64 import b64encode
+from logging import getLogger
 from typing import Optional
 
 import requests
@@ -26,6 +27,8 @@ from utils.helpers import get_current_utc_timestamp
 from utils.helpers import get_storage_result_file_path
 from utils.helpers import get_storage_source_file_path
 from utils.helpers import sign_message
+
+logger = getLogger(__name__)
 
 
 def verify_file_status(
@@ -57,6 +60,7 @@ def verify_file_status(
                 subtask             = subtask,
             )
             logging.log_file_status(
+                logger,
                 subtask.task_id,
                 subtask.subtask_id,
                 subtask.requestor.public_key_bytes,
@@ -92,18 +96,12 @@ def store_pending_message(
         )
         payment_committed_message.full_clean()
         payment_committed_message.save()
-        task_id = None
-        subtask_id = None
-    else:
-        task_id = subtask.task_id
-        subtask_id = subtask.subtask_id
 
     logging.log_new_pending_response(
+        logger,
         response_type.name,
         queue.name,
-        task_id,
-        subtask_id,
-        client.public_key_bytes,
+        subtask
     )
 
 

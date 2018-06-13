@@ -1,4 +1,6 @@
 from base64                     import b64encode
+from logging import getLogger
+
 from django.db.models           import Q
 from django.utils               import timezone
 
@@ -10,6 +12,8 @@ from core.transfer_operations   import verify_file_status
 from utils.helpers              import deserialize_message
 from utils.helpers              import get_current_utc_timestamp
 from utils                      import logging
+
+logger = getLogger(__name__)
 
 
 def update_timed_out_subtasks(
@@ -99,7 +103,8 @@ def update_timed_out_subtasks(
             )
 
     logging.log_changes_in_subtask_states(
-        b64encode(client_public_key),
+        logger,
+        client_public_key,
         clients_subtask_list.count(),
     )
 
@@ -109,6 +114,7 @@ def update_subtask_state(
     state,
 ):
     logging.log_change_subtask_state_name(
+        logger,
         subtask.state,
         state,
     )

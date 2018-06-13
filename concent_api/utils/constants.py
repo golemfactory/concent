@@ -59,3 +59,8 @@ class ErrorCode(enum.Enum):
     SUBTASK_DUPLICATE_REQUEST                                           = 'subtask.duplicate_request'
     VERIFIIER_FILE_DOWNLOAD_FAILED                                      = 'verifier.file_download_failed'
     VERIFIIER_UNPACKING_ARCHIVE_FAILED                                  = 'verifier.unpacking_archive_failed'
+
+
+class MessageIdField(enum.Enum):
+    TASK_ID = 'task_id'
+    SUBTASK_ID = 'subtask_id'

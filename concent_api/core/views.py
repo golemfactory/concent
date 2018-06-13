@@ -1,3 +1,4 @@
+from logging import getLogger
 from django.conf                    import settings
 from django.http                    import JsonResponse
 from django.views.decorators.csrf   import csrf_exempt
@@ -14,6 +15,8 @@ from utils.decorators               import require_golem_auth_message
 from utils.decorators               import require_golem_message
 from .models                        import PendingResponse
 
+logger = getLogger(__name__)
+
 
 @provides_concent_feature('concent-api')
 @csrf_exempt
@@ -28,6 +31,7 @@ def send(_request, client_message, client_public_key):
         )
 
     logging.log_message_received(
+        logger,
         client_message,
         client_public_key,
     )

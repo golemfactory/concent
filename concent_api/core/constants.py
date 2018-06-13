@@ -1,3 +1,4 @@
+from enum import IntEnum
 import re
 
 
@@ -21,3 +22,30 @@ VALID_ID_REGEX = re.compile(r'[a-zA-Z0-9_-]*')
 
 # Regular expresion of allowed characters and length of checksum hash
 VALID_SHA1_HASH_REGEX = re.compile(r"^[a-fA-F\d]{40}$")
+
+CELERY_LOCKED_SUBTASK_DELAY = 60
+
+MAXIMUM_VERIFICATION_RESULT_TASK_RETRIES = 3
+
+
+VERIFICATION_RESULT_SUBTASK_STATE_ACCEPTED_LOG_MESSAGE = (
+    'Verification has timed out and a client has already asked about the result '
+    'or verification result for subtask with ID {} must have been already processed.'
+)
+
+
+VERIFICATION_RESULT_SUBTASK_STATE_FAILED_LOG_MESSAGE = (
+    'Verification result for subtask with ID {} must have been already processed.'
+)
+
+
+VERIFICATION_RESULT_SUBTASK_STATE_UNEXPECTED_LOG_MESSAGE = (
+    'Subtask with ID {} is in state {} '
+    'instead in states ACCEPTED, FAILED or ADDITIONAL_VERIFICATION while handling verification result.'
+)
+
+
+class VerificationResult(IntEnum):
+    MATCH       = 0
+    MISMATCH    = 1
+    ERROR       = 2

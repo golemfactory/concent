@@ -23,18 +23,18 @@ def upload_finished(subtask_id: str):
         logging.error(f'Task `upload_finished` tried to get Subtask object with ID {subtask_id} but it does not exist.')
         return
 
+    report_computed_task = deserialize_message(subtask.report_computed_task.data.tobytes())
+
     # Check subtask state, if it's VERIFICATION FILE TRANSFER, proceed with the task.
     if subtask.state_enum == Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER:
 
         # If subtask is past the deadline, processes the timeout.
         if subtask.next_deadline.timestamp() < get_current_utc_timestamp():
-            task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
-
             # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
             base.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
-                requestor_eth_address=task_to_compute.requestor_ethereum_address,
-                provider_eth_address=task_to_compute.provider_ethereum_address,
-                value=task_to_compute.price,
+                requestor_eth_address=report_computed_task.task_to_compute.requestor_ethereum_address,
+                provider_eth_address=report_computed_task.task_to_compute.provider_ethereum_address,
+                value=report_computed_task.task_to_compute.price,
                 payment_ts=get_current_utc_timestamp(),
             )
 
@@ -60,7 +60,13 @@ def upload_finished(subtask_id: str):
         subtask.save()
 
         # Add upload_acknowledged task to the work queue.
-        tasks.upload_acknowledged.delay(subtask_id)
+        tasks.upload_acknowledged.delay(
+            subtask_id=subtask_id,
+            source_file_size=report_computed_task.task_to_compute.size,
+            source_package_hash=report_computed_task.task_to_compute.package_hash,
+            result_file_size=report_computed_task.size,
+            result_package_hash=report_computed_task.package_hash,
+        )
 
     # If it's ADDITIONAL VERIFICATION, ACCEPTED or FAILED, log a warning and ignore the notification.
     # Processing ends here. This means that it's a duplicate notification.

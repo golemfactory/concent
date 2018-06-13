@@ -20,6 +20,9 @@ class UploadFinishedTaskTest(ConcentIntegrationTestCase):
     def setUp(self):
         super().setUp()
         self.task_to_compute = self._get_deserialized_task_to_compute(task_id='1', subtask_id='8', )
+        self.report_computed_task = self._get_deserialized_report_computed_task(
+            task_to_compute=self.task_to_compute,
+        )
         self.subtask = store_subtask(
             task_id='1',
             subtask_id='8',
@@ -28,9 +31,7 @@ class UploadFinishedTaskTest(ConcentIntegrationTestCase):
             state=Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
             next_deadline=get_current_utc_timestamp() + settings.CONCENT_MESSAGING_TIME,
             task_to_compute=self.task_to_compute,
-            report_computed_task=self._get_deserialized_report_computed_task(
-                subtask_id='8',
-            )
+            report_computed_task=self.report_computed_task
         )
 
     def test_that_scheduling_task_for_subtask_with_accepted_or_failed_or_additional_verification_state_should_log_warning_and_finish_task(self):
@@ -67,7 +68,13 @@ class UploadFinishedTaskTest(ConcentIntegrationTestCase):
 
         self.subtask.refresh_from_db()
         self.assertEqual(self.subtask.state_enum, Subtask.SubtaskState.ADDITIONAL_VERIFICATION)
-        upload_acknowledged_delay_mock.assert_called_once_with(self.subtask.subtask_id)
+        upload_acknowledged_delay_mock.assert_called_once_with(
+            subtask_id=self.subtask.subtask_id,
+            source_file_size=self.report_computed_task.task_to_compute.size,
+            source_package_hash=self.report_computed_task.task_to_compute.package_hash,
+            result_file_size=self.report_computed_task.size,
+            result_package_hash=self.report_computed_task.package_hash,
+        )
 
     def test_that_scheduling_task_for_subtask_after_deadline_should_process_timeout(self):
         datetime = parse_timestamp_to_utc_datetime(get_current_utc_timestamp() + settings.CONCENT_MESSAGING_TIME + 1)

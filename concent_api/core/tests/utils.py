@@ -129,7 +129,8 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_report_computed_task(
         self,
-        subtask_id: str = '1',
+        subtask_id: str = '2',
+        task_id: str = '1',
         task_to_compute = None,
         size: int = 1,
         package_hash: str = 'sha1:4452d71687b6bc2c9389c3349fdc17fbd73b833b',
@@ -139,7 +140,10 @@ class ConcentIntegrationTestCase(TestCase):
         with freeze_time(timestamp or self._get_timestamp_string()):
             report_computed_task = ReportComputedTaskFactory(
                 task_to_compute=(
-                    task_to_compute or self._get_deserialized_task_to_compute(subtask_id=subtask_id)
+                    task_to_compute or self._get_deserialized_task_to_compute(
+                        subtask_id=subtask_id,
+                        task_id=task_id,
+                    )
                 ),
                 package_hash=package_hash,
                 size=size,

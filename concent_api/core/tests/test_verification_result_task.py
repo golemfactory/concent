@@ -10,19 +10,19 @@ from freezegun import freeze_time
 from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 
+from core.constants import VerificationResult
+from core.constants import VERIFICATION_RESULT_SUBTASK_STATE_ACCEPTED_LOG_MESSAGE
+from core.constants import VERIFICATION_RESULT_SUBTASK_STATE_FAILED_LOG_MESSAGE
+from core.constants import VERIFICATION_RESULT_SUBTASK_STATE_UNEXPECTED_LOG_MESSAGE
 from core.message_handlers import store_subtask
 from core.models import PendingResponse
 from core.models import Subtask
+from core.tasks import verification_result
 from core.tests.utils import ConcentIntegrationTestCase
 from utils.constants import ErrorCode
 from utils.helpers import get_current_utc_timestamp
 from utils.helpers import parse_timestamp_to_utc_datetime
 from utils.testing_helpers  import generate_ecc_key_pair
-from verifier.constants import VerificationResult
-from verifier.constants import VERIFICATION_RESULT_SUBTASK_STATE_ACCEPTED_LOG_MESSAGE
-from verifier.constants import VERIFICATION_RESULT_SUBTASK_STATE_FAILED_LOG_MESSAGE
-from verifier.constants import VERIFICATION_RESULT_SUBTASK_STATE_UNEXPECTED_LOG_MESSAGE
-from verifier.tasks import verification_result
 
 
 @override_settings(
@@ -53,7 +53,7 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
     def test_that_quering_for_subtask_with_accepted_state_should_log_warning_and_finish_task(self):
         Subtask.objects.filter(subtask_id=self.subtask.subtask_id).update(state=Subtask.SubtaskState.ACCEPTED.name)  # pylint: disable=no-member
 
-        with mock.patch('verifier.tasks.logger.warning') as logging_warning_mock:
+        with mock.patch('core.tasks.logger.warning') as logging_warning_mock:
             verification_result(  # pylint: disable=no-value-for-parameter
                 self.subtask.subtask_id,
                 VerificationResult.MATCH.name,
@@ -66,7 +66,7 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
     def test_that_quering_for_subtask_with_failed_state_should_log_error_and_finish_task(self):
         Subtask.objects.filter(subtask_id=self.subtask.subtask_id).update(state=Subtask.SubtaskState.FAILED.name)  # pylint: disable=no-member
 
-        with mock.patch('verifier.tasks.logger.warning') as logging_warning_mock:
+        with mock.patch('core.tasks.logger.warning') as logging_warning_mock:
             verification_result(  # pylint: disable=no-value-for-parameter
                 self.subtask.subtask_id,
                 VerificationResult.MATCH.name,
@@ -79,7 +79,7 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
     def test_that_quering_for_subtask_with_other_than_additional_verification_state_should_log_error_and_finish_task(self):
         Subtask.objects.filter(subtask_id=self.subtask.subtask_id).update(state=Subtask.SubtaskState.REPORTED.name)  # pylint: disable=no-member
 
-        with mock.patch('verifier.tasks.logger.error') as logging_error_mock:
+        with mock.patch('core.tasks.logger.error') as logging_error_mock:
             verification_result(  # pylint: disable=no-value-for-parameter
                 self.subtask.subtask_id,
                 VerificationResult.MATCH.name,
@@ -108,7 +108,7 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
 
     def test_that_verification_result_error_should_add_pending_messages_subtask_results_settled_and_change_subtask_state_to_accepted(self):
         with freeze_time(parse_timestamp_to_utc_datetime(get_current_utc_timestamp())):
-            with mock.patch('verifier.tasks.logger.info') as logging_info_mock:
+            with mock.patch('core.tasks.logger.info') as logging_info_mock:
                 verification_result(  # pylint: disable=no-value-for-parameter
                     self.subtask.subtask_id,
                     VerificationResult.ERROR.name,
@@ -186,7 +186,7 @@ class VerifierVerificationResultTaskTransactionTest(TransactionTestCase):
         )
 
     def test_that_verification_result_querying_locked_row_should_reschedule_task(self):
-        with mock.patch('verifier.tasks.Subtask.objects.select_for_update', side_effect=DatabaseError()):
+        with mock.patch('core.tasks.Subtask.objects.select_for_update', side_effect=DatabaseError()):
             # Exception is raised because task is executed directly as a function.
             with self.assertRaises(Retry):
                 verification_result(  # pylint: disable=no-value-for-parameter

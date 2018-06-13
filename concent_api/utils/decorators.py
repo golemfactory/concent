@@ -25,6 +25,9 @@ from core.exceptions import HashingAlgorithmError
 from core.exceptions import Http400
 
 from utils.helpers import join_messages
+from utils.logging import get_json_from_message_without_redundant_fields_for_logging
+from utils.logging import log_message_received_in_endpoint
+from utils.logging import log_json_message
 from utils.shortcuts                import load_without_public_key
 
 from utils                          import logging
@@ -135,6 +138,8 @@ def handle_errors_and_responses(database_name):
                     view.__name__,
                     client_public_key,
                     client_message,
+                    exception.error_code,
+                    exception.error_message
                 )
                 if database_name is not None:
                     transaction.savepoint_rollback(sid, using=database_name)
@@ -147,7 +152,11 @@ def handle_errors_and_responses(database_name):
                 )
             except ConcentInSoftShutdownMode:
                 transaction.savepoint_rollback(sid, using=database_name)
-                return JsonResponse({'error': 'Concent is in soft shutdown mode.'}, status=503)
+
+                json_response = JsonResponse({'error': 'Concent is in soft shutdown mode.'}, status=503)
+                log_json_message(logger, json_response)
+                return json_response
+
             if isinstance(response_from_view, message.Message):
                 assert response_from_view.sig is None
                 logging.log_message_returned(
@@ -162,7 +171,10 @@ def handle_errors_and_responses(database_name):
                 )
                 return HttpResponse(serialized_message, content_type = 'application/octet-stream')
             elif isinstance(response_from_view, dict):
-                return JsonResponse(response_from_view, safe = False)
+
+                json_response = JsonResponse(response_from_view, safe = False)
+                log_json_message(logger, json_response)
+                return json_response
             elif isinstance(response_from_view, HttpResponseNotAllowed):
                 logging.log_message_not_allowed(
                     logger,
@@ -186,8 +198,16 @@ def handle_errors_and_responses(database_name):
                 )
                 return HttpResponse("", status = 204)
             elif isinstance(response_from_view, bytes):
+                logging.log_string_message(
+                    logger,
+                    'Response from core.views - Response is bytes instance'
+                )
                 return HttpResponse(response_from_view)
 
+            logging.log_string_message(
+                logger,
+                'Invalid response from core.views type'
+            )
             assert False, "Invalid response type"
             raise Exception("Invalid response type")
 
@@ -212,3 +232,25 @@ def provides_concent_feature(concent_feature: str):
             return _function(*args, **kwargs)
         return wrapper
     return decorator
+
+
+def log_communication(view):
+
+    @wraps(view)
+    def wrapper(request, golem_message, client_public_key):
+
+        application_name_and_endpoint = request.resolver_match.view_name
+        content_type = request.META['CONTENT_TYPE'] if 'CONTENT_TYPE' in request.META.keys() else None
+        message_type = golem_message.__class__.__name__ if golem_message is not None else '-not available'
+
+        task_id = golem_message.task_id if 'task_id' in dir(golem_message) else '-not available'
+        subtask_id = golem_message.subtask_id if 'subtask_id' in dir(golem_message) else '-not available'
+
+        json_message_to_log = get_json_from_message_without_redundant_fields_for_logging(golem_message)
+        log_message_received_in_endpoint(logger, application_name_and_endpoint, message_type, client_public_key, content_type, task_id, subtask_id)
+        log_json_message(logger, json_message_to_log)
+
+        response_from_view = view(request,  golem_message, client_public_key)
+
+        return response_from_view
+    return wrapper

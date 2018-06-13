@@ -10,6 +10,7 @@ from core.message_handlers          import handle_messages_from_database
 from core.subtask_helpers           import update_timed_out_subtasks
 from utils                          import logging
 from utils.decorators import handle_errors_and_responses
+from utils.decorators import log_communication
 from utils.decorators import provides_concent_feature
 from utils.decorators               import require_golem_auth_message
 from utils.decorators               import require_golem_message
@@ -23,6 +24,7 @@ logger = getLogger(__name__)
 @require_POST
 @require_golem_message
 @handle_errors_and_responses(database_name='control')
+@log_communication
 def send(_request, client_message, client_public_key):
     assert isinstance(client_public_key, bytes) or client_public_key is None
     if client_public_key is not None:

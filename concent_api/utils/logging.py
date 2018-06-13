@@ -1,7 +1,10 @@
+import json
+from base64 import b64encode
 from logging import Logger
 from typing import Optional
 
 from golem_messages.message import FileTransferToken
+from golem_messages.message import TaskToCompute
 from golem_messages.message.base import Message
 
 from core.models import Subtask
@@ -59,7 +62,7 @@ def log_message_accepted(
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
     logger.info(
-        f"The message has been accepted for further processing -- MESSAGE_TYPE: {_get_message_type(message)} -- "
+        f"Response from views. The message has been accepted for further processing -- MESSAGE_TYPE: {_get_message_type(message)} -- "
         f"TASK_ID: {task_id} -- "
         f"SUBTASK_ID: {subtask_id} -- "
         f"CLIENT PUBLIC KEY: {client_public_key}"
@@ -114,13 +117,17 @@ def log_400_error(
     logger: Logger,
     endpoint: str,
     client_public_key: bytes,
-    message: Message
+    message: Message,
+    error_code: str,
+    error_message: str
 ):
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
     logger.info(
         f"Error 400 has been returned from `{endpoint}()` -- "
         f"MESSAGE_TYPE: {_get_message_type(message)} -- "
+        f"ERROR CODE: {error_code} -- "
+        f"ERROR MESSAGE: {error_message} -- "
         f"TASK_ID: '{task_id}' -- "
         f"SUBTASK_ID: '{subtask_id}' -- "
         f"CLIENT PUBLIC KEY: {client_public_key}"
@@ -325,6 +332,42 @@ def log_operation_validation_failed(
     )
 
 
+@replace_element_to_unavailable_instead_of_none
+def log_message_received_in_endpoint(
+    logger,
+    application_and_endpoint: str,
+    message_type: str,
+    client_public_key: bytes,
+    content_type: str,
+    task_id: str,
+    subtask_id: str
+
+):
+
+    logger.info(
+        f'A message has been received in `{application_and_endpoint}/`. '
+        f'Message type: {message_type}. '
+        f'TASK_ID: {task_id}. '
+        f'SUBTASK_ID:{subtask_id}. '
+        f'CLIENT_PUBLIC_KEY: {client_public_key}. '
+        f'Content type: {content_type}. '
+    )
+
+
+def log_json_message(
+    logger,
+    message: json
+):
+    logger.info(message)
+
+
+def log_string_message(
+    logger,
+    message: str
+):
+    logger.info(message)
+
+
 def _get_field_value_from_messages_for_logging(
     field_name: MessageIdField,
     message: Message
@@ -337,3 +380,59 @@ def _get_message_type(
     message: Message
 ) -> str:
     return type(message).__name__ if isinstance(message, Message) else '-not available- '
+
+
+def is_redundant_callable_or_golem_messages_field(golem_message, field_name):
+    return False if isinstance(getattr(golem_message, field_name), Message) else callable(getattr(golem_message, field_name))
+
+
+def get_json_from_message_without_redundant_fields_for_logging(
+    golem_message: Message,
+) -> json:
+
+    dictionary_to_serialize = serialize_message_to_dictionary(golem_message)
+
+    for field in dir(golem_message):
+        if isinstance(getattr(golem_message, field), TaskToCompute):
+            task_to_compute_dictionary = serialize_message_to_dictionary(getattr(golem_message, field))
+            dictionary_to_serialize.update({field: task_to_compute_dictionary})
+
+    return json.dumps(dictionary_to_serialize, indent=4)
+
+
+def serialize_message_to_dictionary(
+    golem_message: Message,
+)->dict:
+
+    fields_to_serialize = [f for f in dir(golem_message) if not f.startswith('_') and not f.isupper() and not is_redundant_callable_or_golem_messages_field(golem_message, f)]
+
+    golem_messages_instances = []
+
+    for field_name in fields_to_serialize:
+        if isinstance(getattr(golem_message, field_name), TaskToCompute):
+            fields_to_serialize.remove(field_name)
+
+        elif isinstance(getattr(golem_message, field_name), Message):
+            golem_messages_instances.append(getattr(golem_message, field_name))
+            fields_to_serialize.remove(field_name)
+
+    dict_to_serialize = {field_name: _get_field_value_and_encode_if_bytes_from_message(field_name, golem_message)
+                         for field_name in fields_to_serialize}
+
+    for attached_message in golem_messages_instances:
+        new_dict = serialize_message_to_dictionary(attached_message)
+        dict_to_serialize.update({attached_message.__class__.__name__: new_dict})
+
+    return dict_to_serialize
+
+
+def _get_field_value_and_encode_if_bytes_from_message(
+    field_name: str,
+    golem_message: Message
+)->str:
+    value = get_field_from_message(golem_message, field_name)
+
+    if isinstance(value, bytes):
+        value = b64encode(value)
+
+    return str(value)

@@ -882,23 +882,27 @@ def handle_messages_from_database(
         if pending_response.subtask.ack_report_computed_task is not None:
             ack_report_computed_task = deserialize_message(pending_response.subtask.ack_report_computed_task.data.tobytes())
             response_to_client = message.concents.ForceReportComputedTaskResponse(
-                ack_report_computed_task = ack_report_computed_task,
+                ack_report_computed_task=ack_report_computed_task,
+                reason=message.concents.ForceReportComputedTaskResponse.REASON.AckFromRequestor,
             )
             mark_message_as_delivered_and_log(pending_response, response_to_client)
             return response_to_client
 
         elif pending_response.subtask.reject_report_computed_task is not None:
             reject_report_computed_task = deserialize_message(pending_response.subtask.reject_report_computed_task.data.tobytes())
-            response_to_client          = message.concents.ForceReportComputedTaskResponse(
-                reject_report_computed_task = reject_report_computed_task,
+            response_to_client = message.concents.ForceReportComputedTaskResponse(
+                reject_report_computed_task=reject_report_computed_task,
+                reason=message.concents.ForceReportComputedTaskResponse.REASON.RejectFromRequestor,
             )
             if reject_report_computed_task.reason == message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded:
-
                 ack_report_computed_task = message.AckReportComputedTask(
-                    report_computed_task = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes()),
+                    report_computed_task=deserialize_message(pending_response.subtask.report_computed_task.data.tobytes()),
                 )
                 sign_message(ack_report_computed_task, settings.CONCENT_PRIVATE_KEY)
-                response_to_client.ack_report_computed_task = ack_report_computed_task
+                response_to_client = message.concents.ForceReportComputedTaskResponse(
+                    ack_report_computed_task=ack_report_computed_task,
+                    reason=message.concents.ForceReportComputedTaskResponse.REASON.ConcentAck,
+                )
             mark_message_as_delivered_and_log(pending_response, response_to_client)
             return response_to_client
         else:
@@ -907,7 +911,8 @@ def handle_messages_from_database(
             )
             sign_message(ack_report_computed_task, settings.CONCENT_PRIVATE_KEY)
             response_to_client = message.concents.ForceReportComputedTaskResponse(
-                ack_report_computed_task = ack_report_computed_task,
+                ack_report_computed_task=ack_report_computed_task,
+                reason=message.concents.ForceReportComputedTaskResponse.REASON.ConcentAck,
             )
             mark_message_as_delivered_and_log(pending_response, response_to_client)
             return response_to_client

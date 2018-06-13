@@ -223,13 +223,15 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_response(
             response_4,
-            status          = 200,
-            key             = self.PROVIDER_PRIVATE_KEY,
-            message_type    = message.concents.ForceReportComputedTaskResponse,
-            fields          = {
-                'timestamp':                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
-                'ack_report_computed_task.timestamp':                           self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
-                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ForceReportComputedTaskResponse,
+            fields={
+                'reason': message.concents.ForceReportComputedTaskResponse.REASON.AckFromRequestor,
+                'timestamp': self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
+                'reject_report_computed_task': None,
+                'ack_report_computed_task.timestamp': self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -394,13 +396,16 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_response(
             response_4,
-            status          = 200,
-            key             = self.PROVIDER_PRIVATE_KEY,
-            message_type    = message.concents.ForceReportComputedTaskResponse,
-            fields          = {
-                'timestamp':                                                                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
-                'reject_report_computed_task.timestamp':                                            self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
-                'reject_report_computed_task.cannot_compute_task.task_to_compute.timestamp':        self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ForceReportComputedTaskResponse,
+            fields={
+                'reason': message.concents.ForceReportComputedTaskResponse.REASON.RejectFromRequestor,
+                'timestamp': self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
+                'ack_report_computed_task': None,
+                'reject_report_computed_task.timestamp': self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'reject_report_computed_task.cannot_compute_task.task_to_compute.timestamp': self._parse_iso_date_to_timestamp(
+                    "2017-12-01 10:00:00"),
                 'reject_report_computed_task.cannot_compute_task.task_to_compute.compute_task_def': compute_task_def,
             }
         )
@@ -571,14 +576,18 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_response(
             response_4,
-            status          = 200,
-            key             = self.PROVIDER_PRIVATE_KEY,
-            message_type    = message.concents.ForceReportComputedTaskResponse,
-            fields          = {
-                'timestamp':                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
-                'ack_report_computed_task.timestamp':                           self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
-                'ack_report_computed_task.report_computed_task.task_to_compute.timestamp':           self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
-                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ForceReportComputedTaskResponse,
+            fields={
+                'reason': message.concents.ForceReportComputedTaskResponse.REASON.ConcentAck,
+                'timestamp': self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
+                'reject_report_computed_task': None,
+                'ack_report_computed_task.timestamp': self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
+                'ack_report_computed_task.report_computed_task.task_to_compute.timestamp': self._parse_iso_date_to_timestamp(
+                    "2017-12-01 10:00:00"
+                ),
+                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': compute_task_def,
             },
             nested_message_verifiable_by={
                 'ack_report_computed_task': CONCENT_PUBLIC_KEY,
@@ -720,14 +729,18 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_response(
             response_3,
-            status          = 200,
-            key             = self.PROVIDER_PRIVATE_KEY,
-            message_type    = message.concents.ForceReportComputedTaskResponse,
-            fields          = {
-                'timestamp':                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
-                'ack_report_computed_task.timestamp':                           self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
-                'ack_report_computed_task.report_computed_task.task_to_compute.timestamp':           self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
-                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ForceReportComputedTaskResponse,
+            fields={
+                'reason': message.concents.ForceReportComputedTaskResponse.REASON.ConcentAck,
+                'timestamp': self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+                'reject_report_computed_task': None,
+                'ack_report_computed_task.timestamp': self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+                'ack_report_computed_task.report_computed_task.task_to_compute.timestamp': self._parse_iso_date_to_timestamp(
+                    "2017-12-01 10:00:00"
+                ),
+                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': compute_task_def,
             },
             nested_message_verifiable_by={
                 'ack_report_computed_task': CONCENT_PUBLIC_KEY,
@@ -2173,13 +2186,16 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_response(
             response_4,
-            status       = 200,
-            key          = self.PROVIDER_PRIVATE_KEY,
-            message_type = message.concents.ForceReportComputedTaskResponse,
-            fields = {
-                'timestamp':                                                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:30"),
-                'ack_report_computed_task.timestamp':                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
-                'ack_report_computed_task.report_computed_task.task_to_compute.timestamp':        self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ForceReportComputedTaskResponse,
+            fields={
+                'reason': message.concents.ForceReportComputedTaskResponse.REASON.AckFromRequestor,
+                'timestamp': self._parse_iso_date_to_timestamp("2017-12-01 11:00:30"),
+                'reject_report_computed_task': None,
+                'ack_report_computed_task.timestamp': self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'ack_report_computed_task.report_computed_task.task_to_compute.timestamp': self._parse_iso_date_to_timestamp(
+                    "2017-12-01 10:00:00"),
                 'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': compute_task_def,
             }
         )
@@ -2197,7 +2213,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # Concent   -> Requestor:  MessageForceReportComputedTask
         # Requestor -> Concent:    MessageAckReportComputedTask
         # Concent   -> Provider:   MessageAckReportComputedTask
-        # Concent   -> Provider:   MessageAckReportComputedTask
+        # Concent   -> Provider:   HTTP204
         """
 
         # STEP 1: Provider forces computed task report via Concent
@@ -2341,14 +2357,18 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_response(
             response_4,
-            status          = 200,
-            key             = self.PROVIDER_PRIVATE_KEY,
-            message_type    = message.concents.ForceReportComputedTaskResponse,
-            fields          = {
-                'timestamp':                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
-                'ack_report_computed_task.timestamp':                           self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
-                'ack_report_computed_task.report_computed_task.task_to_compute.timestamp':           self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
-                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ForceReportComputedTaskResponse,
+            fields={
+                'reason': message.concents.ForceReportComputedTaskResponse.REASON.AckFromRequestor,
+                'timestamp': self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
+                'reject_report_computed_task': None,
+                'ack_report_computed_task.timestamp': self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'ack_report_computed_task.report_computed_task.task_to_compute.timestamp': self._parse_iso_date_to_timestamp(
+                    "2017-12-01 10:00:00"
+                ),
+                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': compute_task_def,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -2370,10 +2390,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
     def test_provider_forces_computed_task_report_and_tries_to_receive_ack_before_requestor_have_a_chance_to_respond_concent_should_return_http_204(self):
         # Expected message exchange:
         # Provider  -> Concent:    MessageForceReportComputedTask
-        # Concent   -> Provider:   HTTP 202
         # Concent   -> Provider:   HTTP 204
         # Concent   -> Requestor:  MessageForceReportComputedTask
-        # Requestor -> Concent:    no response
         # Concent   -> Provider:   HTTP 204
 
         # STEP 1: Provider forces computed task report via Concent
@@ -2647,7 +2665,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             key=self.PROVIDER_PRIVATE_KEY,
             message_type=message.concents.ForceReportComputedTaskResponse,
             fields={
+                'reason': message.concents.ForceReportComputedTaskResponse.REASON.RejectFromRequestor,
                 'timestamp': self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
+                'ack_report_computed_task': None,
                 'reject_report_computed_task.timestamp': self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
                 'reject_report_computed_task.task_failure.task_to_compute.timestamp': self._parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
                 'reject_report_computed_task.task_failure.task_to_compute.compute_task_def': compute_task_def,
@@ -2808,14 +2828,17 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_response(
             response_4,
-            status          = 200,
-            key             = self.PROVIDER_PRIVATE_KEY,
-            message_type    = message.concents.ForceReportComputedTaskResponse,
-            fields          = {
-                'timestamp':                                                    self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
-                'ack_report_computed_task.timestamp':                           self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
-                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def':    task_to_compute.compute_task_def,
-                'ack_report_computed_task.report_computed_task.timestamp': self._parse_iso_date_to_timestamp("2017-12-01 10:58:00")
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ForceReportComputedTaskResponse,
+            fields={
+                'reason': message.concents.ForceReportComputedTaskResponse.REASON.AckFromRequestor,
+                'timestamp': self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
+                'reject_report_computed_task': None,
+                'ack_report_computed_task.timestamp': self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': task_to_compute.compute_task_def,
+                'ack_report_computed_task.report_computed_task.timestamp': self._parse_iso_date_to_timestamp(
+                    "2017-12-01 10:58:00")
             }
         )
         self._assert_stored_message_counter_not_increased()

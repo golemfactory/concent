@@ -27,10 +27,11 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
     def setUp(self):
         super().setUp()
-        self.compute_task_def               = message.ComputeTaskDef()
-        self.compute_task_def['task_id']    = '1'
-        self.compute_task_def['subtask_id'] = '8'
-        self.compute_task_def['deadline']   = int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
+        self.compute_task_def = self._get_deserialized_compute_task_def(
+            task_id='1',
+            subtask_id='8',
+            deadline=int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
+        )
 
         with freeze_time("2017-12-01 10:00:00"):
             self.deserialized_task_to_compute = self._get_deserialized_task_to_compute(
@@ -39,13 +40,18 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
 
         with freeze_time("2017-12-01 10:59:00"):
-            self.report_computed_task = message.tasks.ReportComputedTask(
+            self.report_computed_task = self._get_deserialized_report_computed_task(
                 task_to_compute = self.deserialized_task_to_compute
             )
-            self.force_report_computed_task = message.ForceReportComputedTask()
+            self.force_report_computed_task = self._get_deserialized_force_report_computed_task(
+                report_computed_task=self.report_computed_task
+            )
 
-        self.force_report_computed_task.report_computed_task = self.report_computed_task
-        self.serialized_force_report_computed_task = dump(self.force_report_computed_task, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
+        self.serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp="2017-12-01 11:01:00",
+            force_report_computed_task=self.force_report_computed_task,
+            provider_private_key=self.PROVIDER_PRIVATE_KEY
+        )
 
     def test_provider_forces_computed_task_report_and_requestor_sends_acknowledgement_should_work_only_with_correct_keys(self):
         """

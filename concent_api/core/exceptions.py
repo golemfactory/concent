@@ -31,3 +31,11 @@ class Http400(ConcentBaseException):
 
 class FileTransferTokenError(ConcentBaseException):
     pass
+
+
+class HashingAlgorithmError(ConcentBaseException):
+    pass
+
+
+class GolemMessageValidationError(ConcentBaseException):
+    pass

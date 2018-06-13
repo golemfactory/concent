@@ -15,7 +15,7 @@ app.config_from_object('django.conf:settings', namespace = 'CELERY')
 
 app.conf.task_create_missing_queues = True
 app.conf.task_routes = ([
-    ('verifier.tasks.verification_result', {'queue': 'concent'}),
+    ('core.tasks.verification_result', {'queue': 'concent'}),
     ('core.tasks.upload_finished', {'queue': 'concent'}),
     ('conductor.tasks.blender_verification_request', {'queue': 'conductor'}),
     ('conductor.tasks.upload_acknowledged', {'queue': 'conductor'}),

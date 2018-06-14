@@ -129,6 +129,10 @@ def handle_send_ack_report_computed_task(client_message):
         task_to_compute,
         requestor_public_key,
     )
+    validate_golem_message_signed_with_key(
+        report_computed_task,
+        requestor_public_key,
+    )
 
     if get_current_utc_timestamp() <= task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
         try:

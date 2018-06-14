@@ -5,9 +5,8 @@ import sys
 
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.message.tasks import AckReportComputedTask
-from golem_messages.message         import ForceReportComputedTask
+from golem_messages.message import ForceReportComputedTask
 from golem_messages.message.concents import ForceReportComputedTaskResponse
-from golem_messages.message.tasks   import ReportComputedTask
 
 from common.helpers import get_current_utc_timestamp
 from common.helpers import sign_message
@@ -40,8 +39,9 @@ def force_report_computed_task(task_to_compute):
 
 def ack_report_computed_task(task_to_compute):
     ack_report_computed_task = AckReportComputedTask()
-    ack_report_computed_task.report_computed_task = ReportComputedTask()
+    ack_report_computed_task.report_computed_task = ReportComputedTaskFactory()
     ack_report_computed_task.report_computed_task.task_to_compute = task_to_compute
+    sign_message(ack_report_computed_task.report_computed_task, REQUESTOR_PRIVATE_KEY)
     return ack_report_computed_task
 
 

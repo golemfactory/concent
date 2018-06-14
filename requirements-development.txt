@@ -8,6 +8,7 @@ flake8
 requests
 coverage
 tblib
+pytest-django
 
 # Force the latest version of pylint pyflakes and pep8. There are numerous issues with older versions.
 pylint        >= 1.9.2

@@ -1,5 +1,6 @@
 from base64                     import b64encode
 from logging import getLogger
+from typing import Optional
 
 from django.db.models           import Q
 from django.utils               import timezone
@@ -11,6 +12,7 @@ from core.transfer_operations   import store_pending_message
 from core.transfer_operations   import verify_file_status
 from utils.helpers              import deserialize_message
 from utils.helpers              import get_current_utc_timestamp
+from utils.helpers import parse_timestamp_to_utc_datetime
 from utils                      import logging
 
 logger = getLogger(__name__)
@@ -112,14 +114,15 @@ def update_timed_out_subtasks(
 def update_subtask_state(
     subtask,
     state,
+    next_deadline: Optional[int] = None
 ):
     logging.log_change_subtask_state_name(
         logger,
         subtask.state,
         state,
     )
-    subtask.state    = state
-    subtask.next_deadline = None
+    subtask.state = state
+    subtask.next_deadline = None if next_deadline is None else parse_timestamp_to_utc_datetime(next_deadline)
     subtask.full_clean()
     subtask.save()
 

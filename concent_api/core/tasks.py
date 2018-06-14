@@ -3,6 +3,7 @@ import logging
 from celery import shared_task
 from mypy.types import Optional
 
+from django.conf import settings
 from django.db import DatabaseError
 from django.db import transaction
 
@@ -67,9 +68,11 @@ def upload_finished(subtask_id: str):
             return
 
         # Change subtask state to ADDITIONAL VERIFICATION.
-        subtask.state = Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name  # pylint: disable=no-member
-        subtask.full_clean()
-        subtask.save()
+        update_subtask_state(
+            subtask=subtask,
+            state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name,  # pylint: disable=no-member
+            next_deadline=int(subtask.next_deadline.timestamp()) + settings.SUBTASK_VERIFICATION_TIME
+        )
 
         # Add upload_acknowledged task to the work queue.
         tasks.upload_acknowledged.delay(

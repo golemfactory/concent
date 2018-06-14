@@ -138,6 +138,7 @@ class ConcentIntegrationTestCase(TestCase):
         size: int = 1,
         package_hash: str = 'sha1:4452d71687b6bc2c9389c3349fdc17fbd73b833b',
         timestamp: Optional[str] = None,
+        sign_with_private_key = None,
     ):
         """ Returns ReportComputedTask deserialized. """
         with freeze_time(timestamp or self._get_timestamp_string()):
@@ -150,6 +151,10 @@ class ConcentIntegrationTestCase(TestCase):
                 ),
                 package_hash=package_hash,
                 size=size,
+            )
+            report_computed_task = self._sign_message(
+                report_computed_task,
+                sign_with_private_key if sign_with_private_key is not None else self.PROVIDER_PRIVATE_KEY,
             )
         return report_computed_task
 

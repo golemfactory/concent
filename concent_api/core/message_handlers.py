@@ -64,6 +64,10 @@ def handle_send_force_report_computed_task(client_message):
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
 
     validate_secure_hash_algorithm(client_message.report_computed_task.package_hash)
+    validate_golem_message_signed_with_key(
+        client_message.report_computed_task,
+        provider_public_key,
+    )
     validate_task_to_compute(task_to_compute)
     validate_report_computed_task_time_window(client_message.report_computed_task)
     validate_golem_message_signed_with_key(

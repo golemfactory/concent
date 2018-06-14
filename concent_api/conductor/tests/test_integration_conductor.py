@@ -167,6 +167,49 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         verification_request.refresh_from_db()
         self.assertTrue(verification_request.upload_finished)
 
+    def test_conductor_should_not_schedule_verification_order_task_if_it_was_already_scheduled_for_given_verification(self):
+        verification_request = self._prepare_verification_request_with_blender_subtask_definition()
+
+        upload_report = UploadReport(
+            path=verification_request.result_package_path,
+            verification_request=verification_request,
+        )
+        upload_report.full_clean()
+        upload_report.save()
+
+        with mock.patch('conductor.views.upload_finished.delay') as mock_task:
+            response = self.client.get(
+                reverse(
+                    'conductor:report-upload',
+                    kwargs={
+                        'file_path': self.source_package_path
+                    }
+                ),
+                content_type='application/octet-stream',
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(UploadReport.objects.count(), 2)
+
+            mock_task.assert_called_once_with(self.compute_task_def['subtask_id'])
+
+            verification_request.refresh_from_db()
+            self.assertTrue(verification_request.upload_finished)
+
+            response = self.client.get(
+                reverse(
+                    'conductor:report-upload',
+                    kwargs={
+                        'file_path': self.source_package_path
+                    }
+                ),
+                content_type='application/octet-stream',
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(UploadReport.objects.count(), 3)
+            self.assertEqual(mock_task.call_count, 1)
+
     def test_blender_verification_request_task_should_create_verification_request_and_blender_subtask_definition(self):
         blender_verification_request(
             subtask_id=self.compute_task_def['subtask_id'],

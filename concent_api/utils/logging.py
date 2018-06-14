@@ -1,15 +1,21 @@
 import json
 from base64 import b64encode
 from logging import Logger
+from typing import Any
+from typing import Dict
 from typing import Optional
+from typing import Union
 
+from django.http import JsonResponse
 from golem_messages.message import FileTransferToken
-from golem_messages.message import TaskToCompute
 from golem_messages.message.base import Message
 
 from core.models import Subtask
 from utils.constants import MessageIdField
 from utils.helpers import get_field_from_message
+from utils.helpers import join_messages
+
+MessageAsDict = Dict[str, Union[str, Dict[str, Any]]]
 
 
 def replace_element_to_unavailable_instead_of_none(log_function):
@@ -21,11 +27,7 @@ def replace_element_to_unavailable_instead_of_none(log_function):
 
 
 @replace_element_to_unavailable_instead_of_none
-def log_message_received(
-    logger: Logger,
-    message: Message,
-    client_public_key: bytes
-):
+def log_message_received(logger: Logger, message: Message, client_public_key: bytes):
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
     logger.info(
@@ -40,13 +42,14 @@ def log_message_received(
 def log_message_returned(
     logger: Logger,
     response_message: Message,
-    client_public_key: bytes
+    client_public_key: bytes,
+    endpoint: str
 ):
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, response_message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, response_message)
 
     logger.info(
-        f"A message has been returned from `send/` -- MESSAGE_TYPE: {_get_message_type(response_message)} -- "
+        f"A message has been returned from `{endpoint}` -- MESSAGE_TYPE: {_get_message_type(response_message)} -- "
         f"TASK_ID: {task_id} -- "
         f"SUBTASK_ID: {subtask_id} -- "
         f"CLIENT PUBLIC KEY: {client_public_key}"
@@ -54,11 +57,7 @@ def log_message_returned(
 
 
 @replace_element_to_unavailable_instead_of_none
-def log_message_accepted(
-    logger: Logger,
-    message: Message,
-    client_public_key: bytes
-):
+def log_message_accepted(logger: Logger, message: Message, client_public_key: bytes):
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
     logger.info(
@@ -70,11 +69,7 @@ def log_message_accepted(
 
 
 @replace_element_to_unavailable_instead_of_none
-def log_message_added_to_queue(
-    logger: Logger,
-    message: Message,
-    client_public_key: bytes
-):
+def log_message_added_to_queue(logger: Logger, message: Message, client_public_key: bytes):
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
     logger.info(
@@ -204,11 +199,7 @@ def log_stored_message_added_to_subtask(
     )
 
 
-def log_changes_in_subtask_states(
-    logger: Logger,
-    client_public_key: bytes,
-    count: int
-):
+def log_changes_in_subtask_states(logger: Logger, client_public_key: bytes, count: int):
     assert isinstance(count, int)
     logger.info(
         f'{count} {"subtask changed its" if count == 1 else "subtasks changed their"} state -- '
@@ -216,11 +207,7 @@ def log_changes_in_subtask_states(
     )
 
 
-def log_change_subtask_state_name(
-    logger: Logger,
-    old_state: str,
-    new_state: str
-):
+def log_change_subtask_state_name(logger: Logger, old_state: str, new_state: str):
     logger.info(f'Subtask changed its state from {old_state} to {new_state}')
 
 
@@ -278,11 +265,7 @@ def log_file_status(
     )
 
 
-def log_request_received(
-    logger: Logger,
-    path_to_file: str,
-    operation: FileTransferToken.Operation
-):
+def log_request_received(logger: Logger, path_to_file: str, operation: FileTransferToken.Operation):
     logger.info(f"{operation.capitalize()} request received. Path to file: '{path_to_file}'")
 
 
@@ -338,85 +321,53 @@ def log_message_received_in_endpoint(
     application_and_endpoint: str,
     message_type: str,
     client_public_key: bytes,
-    content_type: str,
-    task_id: str,
-    subtask_id: str
-
+    content_type: Optional[str] = None,
+    task_id: Optional[str] = None,
+    subtask_id: Optional[str] = None
 ):
-
     logger.info(
-        f'A message has been received in `{application_and_endpoint}/`. '
-        f'Message type: {message_type}. '
-        f'TASK_ID: {task_id}. '
-        f'SUBTASK_ID:{subtask_id}. '
-        f'CLIENT_PUBLIC_KEY: {client_public_key}. '
-        f'Content type: {content_type}. '
+        f'A message has been received in `{application_and_endpoint}/` '
+        f'Message type: {message_type} '
+        f'{"TASK_ID:" + task_id if task_id is not None else ""}'
+        f'{" SUBTASK_ID: "  + subtask_id if subtask_id is not None else ""} '
+        f'CLIENT_PUBLIC_KEY: {client_public_key} '
+        f'{"Content type:" + content_type if content_type is not None else ""} '
     )
 
 
-def log_json_message(
-    logger,
-    message: json
-):
+def log_json_message(logger: Logger, message: JsonResponse):
     logger.info(message)
 
 
-def log_string_message(
-    logger,
-    message: str
-):
-    logger.info(message)
+def log_string_message(logger: Logger, *messages_to_log: str):
+    logger.info(join_messages(messages_to_log))
 
 
-def _get_field_value_from_messages_for_logging(
-    field_name: MessageIdField,
-    message: Message
-) -> str:
+def _get_field_value_from_messages_for_logging(field_name: MessageIdField, message: Message) -> str:
     value = get_field_from_message(message, field_name.value) if isinstance(message, Message) else '-not available- '
     return value if value is not None else '-not available- '
 
 
-def _get_message_type(
-    message: Message
-) -> str:
+def _get_message_type(message: Message) -> str:
     return type(message).__name__ if isinstance(message, Message) else '-not available- '
 
 
-def is_redundant_callable_or_golem_messages_field(golem_message, field_name):
-    return False if isinstance(getattr(golem_message, field_name), Message) else callable(getattr(golem_message, field_name))
-
-
-def get_json_from_message_without_redundant_fields_for_logging(
-    golem_message: Message,
-) -> json:
-
+def get_json_from_message_without_redundant_fields_for_logging(golem_message: Message) -> JsonResponse:
     dictionary_to_serialize = serialize_message_to_dictionary(golem_message)
-
-    for field in dir(golem_message):
-        if isinstance(getattr(golem_message, field), TaskToCompute):
-            task_to_compute_dictionary = serialize_message_to_dictionary(getattr(golem_message, field))
-            dictionary_to_serialize.update({field: task_to_compute_dictionary})
-
     return json.dumps(dictionary_to_serialize, indent=4)
 
 
-def serialize_message_to_dictionary(
-    golem_message: Message,
-)->dict:
-
-    fields_to_serialize = [f for f in dir(golem_message) if not f.startswith('_') and not f.isupper() and not is_redundant_callable_or_golem_messages_field(golem_message, f)]
+def serialize_message_to_dictionary(golem_message: Message) -> MessageAsDict:
+    fields_to_serialize = [f for f in golem_message.__slots__]
 
     golem_messages_instances = []
 
     for field_name in fields_to_serialize:
-        if isinstance(getattr(golem_message, field_name), TaskToCompute):
-            fields_to_serialize.remove(field_name)
-
-        elif isinstance(getattr(golem_message, field_name), Message):
+        if isinstance(getattr(golem_message, field_name), Message):
             golem_messages_instances.append(getattr(golem_message, field_name))
             fields_to_serialize.remove(field_name)
 
-    dict_to_serialize = {field_name: _get_field_value_and_encode_if_bytes_from_message(field_name, golem_message)
+    dict_to_serialize: MessageAsDict = {field_name: _get_field_value_and_encode_if_bytes_from_message(field_name, golem_message)
                          for field_name in fields_to_serialize}
 
     for attached_message in golem_messages_instances:
@@ -426,13 +377,10 @@ def serialize_message_to_dictionary(
     return dict_to_serialize
 
 
-def _get_field_value_and_encode_if_bytes_from_message(
-    field_name: str,
-    golem_message: Message
-)->str:
+def _get_field_value_and_encode_if_bytes_from_message(field_name: str, golem_message: Message) -> str:
     value = get_field_from_message(golem_message, field_name)
 
     if isinstance(value, bytes):
-        value = b64encode(value)
+        value = b64encode(value).decode("ascii")
 
     return str(value)

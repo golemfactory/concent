@@ -3,6 +3,7 @@
 import os
 import sys
 
+from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.message.tasks import AckReportComputedTask
 from golem_messages.message         import ForceReportComputedTask
 from golem_messages.message.concents import ForceReportComputedTaskResponse
@@ -28,7 +29,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
 
 def force_report_computed_task(task_to_compute):
-    report_computed_task = ReportComputedTask()
+    report_computed_task = ReportComputedTaskFactory()
     report_computed_task.task_to_compute = task_to_compute
     sign_message(report_computed_task, PROVIDER_PRIVATE_KEY)
 

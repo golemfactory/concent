@@ -1,6 +1,7 @@
 from django.db.models import Q
 from django.http.response import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 
 from core.tasks import upload_finished
 from utils.decorators import provides_concent_feature
@@ -9,6 +10,7 @@ from .models import VerificationRequest
 
 
 @provides_concent_feature('conductor-urls')
+@require_POST
 @csrf_exempt
 def report_upload(_request, file_path):
 

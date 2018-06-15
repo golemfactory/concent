@@ -64,7 +64,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         return verification_request
 
     def test_conductor_should_return_404_when_file_path_parameter_not_matching_url_pattern_is_used(self):
-        response = self.client.get(
+        response = self.client.post(
             '/conductor/report-upload/',
             content_type = 'application/octet-stream',
         )
@@ -72,7 +72,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_conductor_should_create_upload_report(self):
-        response = self.client.get(
+        response = self.client.post(
             reverse(
                 'conductor:report-upload',
                 kwargs={
@@ -92,7 +92,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
     def test_conductor_should_create_upload_report_and_link_to_related_verification_request(self):
         verification_request = self._prepare_verification_request_with_blender_subtask_definition()
 
-        response = self.client.get(
+        response = self.client.post(
             reverse(
                 'conductor:report-upload',
                 kwargs={
@@ -118,7 +118,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         verification_request.full_clean()
         verification_request.save()
 
-        response = self.client.get(
+        response = self.client.post(
             reverse(
                 'conductor:report-upload',
                 kwargs={
@@ -146,7 +146,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         upload_report.save()
 
         with mock.patch('conductor.views.upload_finished.delay') as mock_task:
-            response = self.client.get(
+            response = self.client.post(
                 reverse(
                     'conductor:report-upload',
                     kwargs={

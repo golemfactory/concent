@@ -389,6 +389,10 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
     provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
 
+    validate_golem_message_signed_with_key(
+        client_message.report_computed_task,
+        provider_public_key,
+    )
     validate_task_to_compute(task_to_compute)
     validate_golem_message_signed_with_key(
         task_to_compute,

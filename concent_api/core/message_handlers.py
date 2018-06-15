@@ -994,7 +994,8 @@ def handle_messages_from_database(
     elif pending_response.response_type == PendingResponse.ResponseType.SubtaskResultsSettled.name:  # pylint: disable=no-member
         task_to_compute = deserialize_message(pending_response.subtask.task_to_compute.data.tobytes())
         response_to_client = message.concents.SubtaskResultsSettled(
-            task_to_compute = task_to_compute,
+            origin=message.concents.SubtaskResultsSettled.Origin.ResultsRejected,
+            task_to_compute=task_to_compute,
         )
         mark_message_as_delivered_and_log(pending_response, response_to_client)
         return response_to_client
@@ -1014,6 +1015,15 @@ def handle_messages_from_database(
             response_to_client = message.concents.ForceSubtaskResultsResponse(
                 subtask_results_rejected=deserialize_message(subtask_results_rejected.data.tobytes(), )
             )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
+
+    elif pending_response.response_type == PendingResponse.ResponseType.SubtaskResultsRejected.name:  # pylint: disable=no-member
+        report_computed_task = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
+        response_to_client = message.tasks.SubtaskResultsRejected(
+            reason=message.tasks.SubtaskResultsRejected.REASON.ConcentResourcesFailure,
+            report_computed_task=report_computed_task
+        )
         mark_message_as_delivered_and_log(pending_response, response_to_client)
         return response_to_client
 

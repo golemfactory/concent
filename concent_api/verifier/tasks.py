@@ -103,8 +103,13 @@ def blender_verification_order(
     # Remove any files from VERIFIER_STORAGE_PATH.
     clean_directory(settings.VERIFIER_STORAGE_PATH)
 
+    package_paths_to_downloaded_file_names = {
+        source_package_path: f'source_{os.path.basename(source_package_path)}',
+        result_package_path: f'result_{os.path.basename(result_package_path)}',
+    }
+
     # Download all the files listed in the message from the storage server to local storage.
-    for file_path in (source_package_path, result_package_path):
+    for file_path, download_file_name in package_paths_to_downloaded_file_names.items():
         try:
             file_transfer_token.sig = None
             cluster_response = send_request_to_storage_cluster(
@@ -116,7 +121,7 @@ def blender_verification_order(
                 cluster_response,
                 os.path.join(
                     settings.VERIFIER_STORAGE_PATH,
-                    os.path.basename(file_path),
+                    download_file_name,
                 )
             )
         except (OSError, HTTPError) as exception:
@@ -163,7 +168,7 @@ def blender_verification_order(
             )
 
     # Verifier unpacks the archive with project source.
-    for file_path in (source_package_path, result_package_path):
+    for file_path, download_file_name in package_paths_to_downloaded_file_names.items():
         try:
             unpack_archive(
                 os.path.basename(file_path)
@@ -222,7 +227,7 @@ def blender_verification_order(
     source_files_list = get_files_list_from_archive(
         generate_verifier_storage_file_path(source_package_path)
     )
-    for file_path in source_files_list + [source_package_path]:
+    for file_path in source_files_list + [package_paths_to_downloaded_file_names[source_package_path]]:
         delete_file(file_path)
     log_string_message(
         logger,

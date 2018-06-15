@@ -104,6 +104,9 @@ class ConcentIntegrationTestCase(TestCase):
     def _get_requestor_hex_public_key(self):
         return encode_hex(self.REQUESTOR_PUBLIC_KEY)
 
+    def _get_diffrent_provider_hex_public_key(self):
+        return encode_hex(self.DIFFERENT_PROVIDER_PUBLIC_KEY)
+
     def _get_diffrent_requestor_hex_public_key(self):
         return encode_hex(self.DIFFERENT_REQUESTOR_PUBLIC_KEY)
 
@@ -225,7 +228,8 @@ class ConcentIntegrationTestCase(TestCase):
         deadline        = None,
         subtask_id      = '1',
         report_computed_task = None,
-        task_to_compute = None
+        task_to_compute = None,
+        sign_with_private_key = None,
     ):
         """ Returns AckReportComputedTask deserialized. """
         with freeze_time(timestamp or self._get_timestamp_string()):
@@ -243,6 +247,11 @@ class ConcentIntegrationTestCase(TestCase):
                     )
                 )
             )
+            if sign_with_private_key is not None:
+                ack_report_computed_task = self._sign_message(
+                    ack_report_computed_task,
+                    sign_with_private_key,
+                )
         return ack_report_computed_task
 
     def _get_serialized_ack_report_computed_task(

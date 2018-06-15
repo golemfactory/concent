@@ -71,7 +71,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2018-02-05 10:00:20",
                 subtask_id      = "xxyyzz",
-                task_to_compute = task_to_compute
+                task_to_compute = task_to_compute,
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 
@@ -164,7 +165,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
             timestamp = "2018-02-05 10:00:30",
             ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
-                task_to_compute=task_to_compute
+                task_to_compute=task_to_compute,
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 
@@ -226,7 +228,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2018-03-05 10:00:15",
                 subtask_id      = "2",
-                task_to_compute = task_to_compute
+                task_to_compute = task_to_compute,
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 
@@ -269,7 +272,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     timestamp   = "2018-03-05 10:00:00",
                     deadline    = "2018-03-05 10:00:10",
                     task_id     = '2',
-                )
+                ),
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 
@@ -332,7 +336,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2018-02-05 10:00:20",
                 subtask_id      = "xxyyzz",
-                task_to_compute = task_to_compute
+                task_to_compute = task_to_compute,
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 
@@ -434,7 +439,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2018-02-05 10:00:20",
                 subtask_id      = "xxyyzz",
-                task_to_compute = task_to_compute
+                task_to_compute = task_to_compute,
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 
@@ -579,7 +585,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2018-02-05 10:00:20",
                 subtask_id      = "xxyyzz",
-                task_to_compute = task_to_compute
+                task_to_compute = task_to_compute,
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 
@@ -742,7 +749,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2018-02-05 10:00:20",
                 subtask_id      = "xxyyzz",
-                task_to_compute = task_to_compute
+                task_to_compute = task_to_compute,
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 
@@ -1067,7 +1075,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2018-02-05 10:00:20",
                 subtask_id      = "xxyyzz",
-                task_to_compute = task_to_compute
+                task_to_compute = task_to_compute,
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 
@@ -1363,7 +1372,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2018-02-05 10:00:25",
                 subtask_id      = "xxyyzz",
-                task_to_compute = task_to_compute
+                task_to_compute = task_to_compute,
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 
@@ -1541,7 +1551,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2018-02-05 10:00:25",
                 subtask_id      = "xxyyzz",
-                task_to_compute = task_to_compute
+                task_to_compute = task_to_compute,
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 

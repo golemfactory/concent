@@ -9,6 +9,7 @@ from core.message_handlers import store_subtask
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
 from utils.helpers import get_current_utc_timestamp
+from ..exceptions import VerificationRequestAlreadyAcknowledgedError
 
 
 class CoreTaskTestCase(ConcentIntegrationTestCase):
@@ -95,3 +96,17 @@ class CoreTaskTestCase(ConcentIntegrationTestCase):
             'Task `upload_acknowledged` tried to get VerificationRequest object with ID non_existing_subtask_id but it '
             'does not exist.'
         )
+
+    def test_that_upload_acknowledged_task_should_raise_exception_when_verification_request_is_already_acknowledged(self):
+        self.verification_request.upload_acknowledged = True
+        self.verification_request.full_clean()
+        self.verification_request.save()
+
+        with self.assertRaises(VerificationRequestAlreadyAcknowledgedError):
+            upload_acknowledged(
+                subtask_id=self.report_computed_task.subtask_id,
+                source_file_size=self.report_computed_task.task_to_compute.size,
+                source_package_hash=self.report_computed_task.task_to_compute.package_hash,
+                result_file_size=self.report_computed_task.size,
+                result_package_hash=self.report_computed_task.package_hash,
+            )

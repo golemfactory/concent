@@ -178,7 +178,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         upload_report.save()
 
         with mock.patch('conductor.views.upload_finished.delay') as mock_task:
-            response = self.client.get(
+            response = self.client.post(
                 reverse(
                     'conductor:report-upload',
                     kwargs={
@@ -196,7 +196,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
             verification_request.refresh_from_db()
             self.assertTrue(verification_request.upload_finished)
 
-            response = self.client.get(
+            response = self.client.post(
                 reverse(
                     'conductor:report-upload',
                     kwargs={

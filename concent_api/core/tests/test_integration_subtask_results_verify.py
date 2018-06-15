@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import mock
 from django.conf import settings
 from django.test import override_settings
@@ -407,6 +409,8 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         To achieve changing state by working queue mechanism, a duplicated SubtaskResultsVerify is being sent.
 
         Provider -> Concent: SubtaskResultsVerify
+        Concent  -> Provider: SubtaskResultsSettled
+        Concent  -> Requestor: SubtaskResultsSettled
         """
 
         with freeze_time("2018-04-01 10:30:00"):
@@ -468,29 +472,97 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_response(
             response_2,
-            status          = 200,
-            key             = self.REQUESTOR_PRIVATE_KEY,
-            message_type    = message.concents.SubtaskResultsSettled,
-            fields          = {
+            status=200,
+            key=self.REQUESTOR_PRIVATE_KEY,
+            message_type=message.concents.SubtaskResultsSettled,
+            fields={
+                'origin': message.concents.SubtaskResultsSettled.Origin.ResultsRejected,
                 'task_to_compute': self.report_computed_task.task_to_compute,
             }
         )
 
         response_3 = self.client.post(
             reverse('core:receive_out_of_band'),
-            data         = self._create_provider_auth_message(),
-            content_type = 'application/octet-stream',
+            data=self._create_provider_auth_message(),
+            content_type='application/octet-stream',
         )
 
         self._test_response(
             response_3,
-            status          = 200,
-            key             = self.PROVIDER_PRIVATE_KEY,
-            message_type    = message.concents.SubtaskResultsSettled,
-            fields          = {
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.SubtaskResultsSettled,
+            fields={
+                'origin': message.concents.SubtaskResultsSettled.Origin.ResultsRejected,
                 'task_to_compute': self.report_computed_task.task_to_compute,
             }
         )
+
+    def test_that_concent_should_change_subtask_state_to_failed_if_files_were_not_uploaded_on_time(self):
+        """
+        Provider -> Concent: SubtaskResultsVerify
+        Concent -> Provider: SubtaskResultsRejected
+        Concent -> Requester: SubtaskResultsRejected
+        """
+
+        # given
+        (serialized_subtask_results_verify,
+         subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify()
+        subtask_results_verify_date_time = self._create_datetime_from_string(subtask_results_verify_time_str)
+
+        # when
+        with mock.patch("core.message_handlers.core.payments.base.is_account_status_positive", autospec=True, return_value=True):
+            with mock.patch("core.message_handlers.send_blender_verification_request", autospec=True):
+                with freeze_time(subtask_results_verify_date_time):
+                    ack_subtask_results_verify = self.client.post(
+                        reverse('core:send'),
+                        data=serialized_subtask_results_verify,
+                        content_type='application/octet-stream',
+                    )
+
+                    self._test_response(
+                        ack_subtask_results_verify,
+                        status=200,
+                        key=self.PROVIDER_PRIVATE_KEY,
+                        message_type=message.concents.AckSubtaskResultsVerify,
+                    )
+
+        too_late = subtask_results_verify_date_time + timedelta(seconds=settings.ADDITIONAL_VERIFICATION_CALL_TIME)
+        with freeze_time(too_late):
+            response_2 = self.client.post(
+                reverse('core:receive_out_of_band'),
+                data=self._create_requestor_auth_message(),
+                content_type='application/octet-stream',
+            )
+
+            response_3 = self.client.post(
+                reverse('core:receive_out_of_band'),
+                data=self._create_provider_auth_message(),
+                content_type='application/octet-stream',
+            )
+
+            # then
+            self._test_response(
+                response_2,
+                status=200,
+                key=self.REQUESTOR_PRIVATE_KEY,
+                message_type=message.tasks.SubtaskResultsRejected,
+                fields={
+                    'reason': message.tasks.SubtaskResultsRejected.REASON.ConcentResourcesFailure,
+                    'report_computed_task': self.report_computed_task,
+                }
+            )
+
+            self._test_response(
+                response_3,
+                status=200,
+                key=self.PROVIDER_PRIVATE_KEY,
+                message_type=message.tasks.SubtaskResultsRejected,
+                fields={
+                    'reason': message.tasks.SubtaskResultsRejected.REASON.ConcentResourcesFailure,
+                    'report_computed_task': self.report_computed_task,
+                }
+            )
 
     def _prepare_subtask_results_verify(self, serialized_subtask_results_verify):
         subtask_results_verify = load(

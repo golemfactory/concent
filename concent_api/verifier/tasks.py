@@ -177,6 +177,7 @@ def blender_verification_order(
 
     upload_file_content = None
 
+    # Read Blender output file.
     try:
         with open(generate_verifier_storage_file_path(blender_output_file_name), 'r') as upload_file:
             upload_file_content = upload_file.read()
@@ -192,6 +193,7 @@ def blender_verification_order(
         )
         return
 
+    # If reading Blender output file has not failed, upload it to storage cluster.
     if upload_file_content is not None:
         upload_file_size = len(upload_file_content)
         upload_file_checksum = 'sha1:' + hashlib.sha1(upload_file_content.encode()).hexdigest()
@@ -212,6 +214,7 @@ def blender_verification_order(
             upload_file_transfer_token,
         )
 
+    # Read both files with OpenCV.
     try:
         result_files_list = get_files_list_from_archive(
             generate_verifier_storage_file_path(result_package_path)

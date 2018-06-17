@@ -48,7 +48,7 @@ class TestStorageServerInternalAddressCheck(TestCase):
         CONCENT_FEATURES=[],
         VERIFIER_MIN_SSIM=None,
     )
-    def test_that_verifier_min_ssim_set_will_not_produce_error_when_verifier_is_none_in_available_concent_features(self):
+    def test_that_verifier_min_ssim_set_will_not_produce_error_when_verifier_is_not_in_available_concent_features(self):
         errors = check_verifier_min_ssim()
 
         self.assertEqual(errors, [])

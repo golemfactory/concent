@@ -58,12 +58,12 @@ class ErrorCode(enum.Enum):
     QUEUE_WRONG_STATE                                                   = 'queue.wrong_state'
     REQUEST_BODY_NOT_EMPTY                                              = 'request_body.not_empty'
     SUBTASK_DUPLICATE_REQUEST                                           = 'subtask.duplicate_request'
-    VERIFIIER_COMPUTING_SSIM_FAILED                                     = 'verifier.computing_ssim_failed'
-    VERIFIIER_FILE_DOWNLOAD_FAILED                                      = 'verifier.file_download_failed'
-    VERIFIIER_LOADING_FILES_INTO_MEMORY_FAILED                          = 'verifier.loading_files_into_memory_failed'
-    VERIFIIER_LOADING_FILES_WITH_OPENCV_FAILED                          = 'verifier.loading_files_with_opencv_failed'
-    VERIFIIER_RUNNING_BLENDER_FAILED                                    = 'verifier.running_blender_failed'
-    VERIFIIER_UNPACKING_ARCHIVE_FAILED                                  = 'verifier.unpacking_archive_failed'
+    VERIFIER_COMPUTING_SSIM_FAILED                                     = 'verifier.computing_ssim_failed'
+    VERIFIER_FILE_DOWNLOAD_FAILED                                      = 'verifier.file_download_failed'
+    VERIFIER_LOADING_FILES_INTO_MEMORY_FAILED                          = 'verifier.loading_files_into_memory_failed'
+    VERIFIER_LOADING_FILES_WITH_OPENCV_FAILED                          = 'verifier.loading_files_with_opencv_failed'
+    VERIFIER_RUNNING_BLENDER_FAILED                                    = 'verifier.running_blender_failed'
+    VERIFIER_UNPACKING_ARCHIVE_FAILED                                  = 'verifier.unpacking_archive_failed'
 
 
 class MessageIdField(enum.Enum):

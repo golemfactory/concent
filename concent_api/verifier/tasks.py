@@ -108,7 +108,7 @@ def blender_verification_order(
                 subtask_id,
                 VerificationResult.ERROR.name,
                 str(exception),
-                ErrorCode.VERIFIIER_FILE_DOWNLOAD_FAILED.name
+                ErrorCode.VERIFIER_FILE_DOWNLOAD_FAILED.name
             )
             return
         except Exception as exception:
@@ -117,7 +117,7 @@ def blender_verification_order(
                 subtask_id,
                 VerificationResult.ERROR.name,
                 str(exception),
-                ErrorCode.VERIFIIER_FILE_DOWNLOAD_FAILED.name
+                ErrorCode.VERIFIER_FILE_DOWNLOAD_FAILED.name
             )
             raise
 
@@ -132,7 +132,7 @@ def blender_verification_order(
                 subtask_id,
                 VerificationResult.ERROR.name,
                 str(exception),
-                ErrorCode.VERIFIIER_UNPACKING_ARCHIVE_FAILED.name
+                ErrorCode.VERIFIER_UNPACKING_ARCHIVE_FAILED.name
             )
             return
 
@@ -152,7 +152,7 @@ def blender_verification_order(
                 subtask_id,
                 VerificationResult.ERROR,
                 str(completed_process.stderr),
-                ErrorCode.VERIFIIER_RUNNING_BLENDER_FAILED.name
+                ErrorCode.VERIFIER_RUNNING_BLENDER_FAILED.name
             )
             return
     except SubprocessError as exception:
@@ -160,7 +160,7 @@ def blender_verification_order(
             subtask_id,
             VerificationResult.ERROR,
             str(exception),
-            ErrorCode.VERIFIIER_RUNNING_BLENDER_FAILED.name
+            ErrorCode.VERIFIER_RUNNING_BLENDER_FAILED.name
         )
         return
 
@@ -175,13 +175,12 @@ def blender_verification_order(
     blender_output_file_name = generate_blender_output_file_name(scene_file)
     upload_file_name = generate_upload_file_name(subtask_id, output_format)
 
-    upload_file_content = None
-
     # Read Blender output file.
     try:
         with open(generate_verifier_storage_file_path(blender_output_file_name), 'r') as upload_file:
             upload_file_content = upload_file.read()
     except OSError as exception:
+        upload_file_content = None
         crash_logger.error(str(exception))
     except MemoryError as exception:
         logger.error(f'Loading result files into memory failed with: {exception}')
@@ -189,7 +188,7 @@ def blender_verification_order(
             subtask_id,
             VerificationResult.ERROR,
             str(exception),
-            ErrorCode.VERIFIIER_LOADING_FILES_INTO_MEMORY_FAILED.name
+            ErrorCode.VERIFIER_LOADING_FILES_INTO_MEMORY_FAILED.name
         )
         return
 
@@ -232,18 +231,18 @@ def blender_verification_order(
             subtask_id,
             VerificationResult.ERROR,
             str(exception),
-            ErrorCode.VERIFIIER_LOADING_FILES_INTO_MEMORY_FAILED.name
+            ErrorCode.VERIFIER_LOADING_FILES_INTO_MEMORY_FAILED.name
         )
         return
 
     # If loading fails because of wrong path, cv2.imread does not raise any error but returns None.
     if image_1 is None or image_2 is None:
-        logger.info('Loading files using opencv fails.')
+        logger.info('Loading files using OpenCV fails.')
         verification_result.delay(
             subtask_id,
             VerificationResult.ERROR,
-            'Loading files using opencv fails.',
-            ErrorCode.VERIFIIER_LOADING_FILES_WITH_OPENCV_FAILED.name
+            'Loading files using OpenCV fails.',
+            ErrorCode.VERIFIER_LOADING_FILES_WITH_OPENCV_FAILED.name
         )
         return
 
@@ -256,14 +255,14 @@ def blender_verification_order(
             subtask_id,
             VerificationResult.ERROR,
             str(exception),
-            ErrorCode.VERIFIIER_COMPUTING_SSIM_FAILED.name
+            ErrorCode.VERIFIER_COMPUTING_SSIM_FAILED.name
         )
         return
 
     assert isinstance(ssim, float)
 
     # Compare SSIM with VERIFIER_MIN_SSIM.
-    if ssim > settings.VERIFIER_MIN_SSIM:
+    if settings.VERIFIER_MIN_SSIM < ssim:
         verification_result.delay(
             subtask_id,
             VerificationResult.MATCH.name,

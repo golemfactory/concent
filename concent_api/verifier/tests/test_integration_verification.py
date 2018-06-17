@@ -173,7 +173,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             self.compute_task_def['subtask_id'],
             VerificationResult.ERROR.name,
             'error',
-            ErrorCode.VERIFIIER_FILE_DOWNLOAD_FAILED.name,
+            ErrorCode.VERIFIER_FILE_DOWNLOAD_FAILED.name,
         )
 
     def test_blender_verification_order_should_call_verification_result_with_result_error_if_unpacking_archive_fails(self):
@@ -203,7 +203,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             self.compute_task_def['subtask_id'],
             VerificationResult.ERROR.name,
             '',
-            ErrorCode.VERIFIIER_UNPACKING_ARCHIVE_FAILED.name,
+            ErrorCode.VERIFIER_UNPACKING_ARCHIVE_FAILED.name,
         )
 
     def test_blender_verification_order_should_call_verification_result_with_result_error_if_running_subprocess_raise_exception(self):
@@ -238,7 +238,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             self.compute_task_def['subtask_id'],
             VerificationResult.ERROR,
             'error',
-            ErrorCode.VERIFIIER_RUNNING_BLENDER_FAILED.name,
+            ErrorCode.VERIFIER_RUNNING_BLENDER_FAILED.name,
         )
 
     def test_blender_verification_order_should_call_verification_result_with_result_error_if_running_subprocess_return_non_zero_code(self):
@@ -273,7 +273,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             self.compute_task_def['subtask_id'],
             VerificationResult.ERROR,
             'error',
-            ErrorCode.VERIFIIER_RUNNING_BLENDER_FAILED.name,
+            ErrorCode.VERIFIER_RUNNING_BLENDER_FAILED.name,
         )
 
     def test_blender_verification_order_should_call_verification_result_with_result_error_if_opening_first_file_raise_memory_error(self):
@@ -310,10 +310,10 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             self.compute_task_def['subtask_id'],
             VerificationResult.ERROR,
             'error',
-            ErrorCode.VERIFIIER_LOADING_FILES_INTO_MEMORY_FAILED.name,
+            ErrorCode.VERIFIER_LOADING_FILES_INTO_MEMORY_FAILED.name,
         )
 
-    def test_blender_verification_order_should_continue_verification_if_opening_first_file_raise_os_error(self):
+    def test_blender_verification_order_should_continue_verification_if_opening_blender_output_file_raises_os_error(self):
         with mock.patch('verifier.tasks.clean_directory', autospec=True) as mock_clean_directory,\
             mock.patch('verifier.tasks.send_request_to_storage_cluster', autospec=True) as mock_send_request_to_storage_cluster,\
             mock.patch('verifier.tasks.store_file_from_response_in_chunks', autospec=True) as mock_store_file_from_response_in_chunks,\
@@ -388,7 +388,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             self.compute_task_def['subtask_id'],
             VerificationResult.ERROR,
             'error',
-            ErrorCode.VERIFIIER_LOADING_FILES_INTO_MEMORY_FAILED.name,
+            ErrorCode.VERIFIER_LOADING_FILES_INTO_MEMORY_FAILED.name,
         )
 
     def test_blender_verification_order_should_call_verification_result_with_result_error_if_cv2_imread_returns_none(self):
@@ -426,8 +426,8 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         mock_verification_result.assert_called_once_with(
             self.compute_task_def['subtask_id'],
             VerificationResult.ERROR,
-            'Loading files using opencv fails.',
-            ErrorCode.VERIFIIER_LOADING_FILES_WITH_OPENCV_FAILED.name,
+            'Loading files using OpenCV fails.',
+            ErrorCode.VERIFIER_LOADING_FILES_WITH_OPENCV_FAILED.name,
         )
 
     def test_blender_verification_order_should_call_verification_result_with_result_error_if_compare_ssim_raise_value_error(self):
@@ -468,5 +468,5 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             self.compute_task_def['subtask_id'],
             VerificationResult.ERROR,
             'error',
-            ErrorCode.VERIFIIER_COMPUTING_SSIM_FAILED.name,
+            ErrorCode.VERIFIER_COMPUTING_SSIM_FAILED.name,
         )

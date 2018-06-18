@@ -14,6 +14,7 @@ from core.exceptions                import Http400
 from core.tests.utils               import ConcentIntegrationTestCase
 from utils.constants                import ErrorCode
 from utils.decorators               import handle_errors_and_responses
+from utils.decorators import log_task_errors
 from utils.decorators               import require_golem_auth_message
 from utils.testing_helpers          import generate_ecc_key_pair
 
@@ -229,3 +230,16 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code, 405)
         self.assertEqual(len(response.content), 0)
+
+    def test_log_task_errors(self):
+        @log_task_errors
+        def task():
+            raise Exception('test')
+
+        with mock.patch('utils.decorators.traceback.format_exc') as mock_format_exc:
+            with mock.patch('utils.decorators.crash_logger.error') as mock_error:
+                with self.assertRaises(Exception):
+                    task()
+
+        mock_format_exc.assert_called_once()
+        mock_error.assert_called_once()

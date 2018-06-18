@@ -1,5 +1,6 @@
 from functools                      import wraps
 from logging                        import getLogger
+import traceback
 
 from django.db                      import transaction
 from django.http                    import JsonResponse
@@ -33,6 +34,7 @@ from utils.shortcuts                import load_without_public_key
 from utils                          import logging
 
 logger = getLogger(__name__)
+crash_logger = getLogger('concent.crash')
 
 
 def require_golem_auth_message(view):
@@ -275,4 +277,18 @@ def log_communication(view):
         log_json_message(logger, json_message_to_log)
         response_from_view = view(request,  golem_message, client_public_key)
         return response_from_view
+    return wrapper
+
+
+def log_task_errors(task):
+
+    @wraps(task)
+    def wrapper(*args, **kwargs):
+        try:
+            return task(*args, **kwargs)
+        except Exception as exception:
+            crash_logger.error(
+                f'Exception occurred while executing task {task.__name__}: {exception}, Traceback: {traceback.format_exc()}'
+            )
+            raise
     return wrapper

@@ -725,9 +725,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Exptected message exchange:
         Provider    -> Concent:     ForceSubtaskResults
         Concent     -> Requestor:   ForceSubtaskResults
-        Requestor   -> Concent:     SubtaskResultsRejected
+        Requestor   -> Concent:     ForceSubtaskResultsResponse (with SubtaskResultsRejected)
         Concent     -> Requestor:   HTTP 202
-        Concent     -> Provider:    SubtaskResultsRejected
+        Concent     -> Provider:    ForceSubtaskResultsResponse (with SubtaskResultsRejected)
         """
 
         task_to_compute = self._get_deserialized_task_to_compute(
@@ -848,18 +848,18 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             },
         )
         self._test_last_stored_messages(
-            expected_messages = [
+            expected_messages=[
                 message.tasks.SubtaskResultsRejected,
             ],
-            task_id         = '2',
-            subtask_id      = 'xxyyzz',
-            timestamp       = "2018-02-05 10:00:44"
+            task_id='2',
+            subtask_id='xxyyzz',
+            timestamp="2018-02-05 10:00:44"
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = 'xxyyzz',
-            client_public_key                  = self._get_encoded_provider_public_key(),
-            expected_pending_responses_receive = [
-                PendingResponse.ResponseType.SubtaskResultsRejected,
+            subtask_id='xxyyzz',
+            client_public_key=self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive=[
+                PendingResponse.ResponseType.ForceSubtaskResultsResponse,
             ]
         )
 

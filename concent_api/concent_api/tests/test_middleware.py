@@ -291,14 +291,14 @@ class TestDetermineReturnType(unittest.TestCase):
 
         self.assertEqual(return_type, "text/html")
 
-    def test_that_order_matters_when_no_weight_is_given(self):
+    def test_that_order_doest_not_matter_when_no_weight_is_given(self):
         request_headers = {
             "HTTP_ACCEPT": "text/html, application/json"
         }
 
         return_type = determine_return_type(request_headers)
 
-        self.assertEqual(return_type, "text/html")
+        self.assertEqual(return_type, "application/json")
 
     def test_that_weight_determines_return_type(self):
         request_headers = {
@@ -317,3 +317,12 @@ class TestDetermineReturnType(unittest.TestCase):
         return_type = determine_return_type(request_headers)
 
         self.assertEqual(return_type, "")
+
+    def test_that_with_wildcard_accept_header_value_in_request_json_is_used(self):
+        request_headers = {
+            "HTTP_ACCEPT": '*/*'
+        }
+
+        return_type = determine_return_type(request_headers)
+
+        self.assertEqual(return_type, "application/json")

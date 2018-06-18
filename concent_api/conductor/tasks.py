@@ -1,5 +1,7 @@
 import logging
 from celery import shared_task
+from django.db import transaction
+
 from core import tasks
 from utils.constants import ErrorCode
 from utils.decorators import log_task_errors
@@ -19,6 +21,7 @@ logger = logging.getLogger(__name__)
 @shared_task
 @provides_concent_feature('conductor-worker')
 @log_task_errors
+@transaction.atomic(using='storage')
 def blender_verification_request(
     subtask_id:             str,
     source_package_path:    str,
@@ -89,6 +92,7 @@ def blender_verification_request(
 
 @shared_task
 @log_task_errors
+@transaction.atomic(using='storage')
 def upload_acknowledged(
     subtask_id: str,
     source_file_size: str,

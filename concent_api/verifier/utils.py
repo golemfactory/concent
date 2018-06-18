@@ -63,11 +63,11 @@ def run_blender(scene_file, output_format, script_file=''):
             "-b", f"{scene_file}",
             "-y",  # enable scripting by default
             "-P", f"{script_file}",
-            "-o", f"{settings.VERIFIER_STORAGE_PATH}/{scene_file}_out",
+            "-o", generate_blender_output_file_name(scene_file),
             "-noaudio",
             "-F", f"{output_format.upper()}",
-            "-t", f"{1}",  # cpu_count
-            "-f", f"{1}",  # frame
+            "-t", "1",  # cpu_count
+            "-f", "1",  # frame
         ],
         timeout=settings.BLENDER_MAX_RENDERING_TIME,
         stdout=subprocess.PIPE,

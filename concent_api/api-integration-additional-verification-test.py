@@ -9,6 +9,7 @@ from freezegun import freeze_time
 from golem_messages import message
 
 from utils.helpers import get_current_utc_timestamp
+from utils.helpers import upload_file_to_storage_cluster
 from api_testing_common import api_request
 from api_testing_common import assert_condition
 from api_testing_common import count_fails
@@ -21,7 +22,6 @@ from api_testing_common import REQUESTOR_PRIVATE_KEY
 from api_testing_common import REQUESTOR_PUBLIC_KEY
 from api_testing_common import run_tests
 from api_testing_common import timestamp_to_isoformat
-from api_testing_common import upload_file_to_storage_cluster
 
 import requests
 
@@ -125,8 +125,6 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):
         ack_subtask_results_verify.file_transfer_token,
         PROVIDER_PRIVATE_KEY,
         PROVIDER_PUBLIC_KEY,
-        CONCENT_PUBLIC_KEY,
-        STORAGE_CLUSTER_ADDRESS,
     )
     assert_condition(response.status_code, 200, 'File has not been stored on cluster')
     print('\nUploaded file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(
@@ -141,8 +139,6 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):
         ack_subtask_results_verify.file_transfer_token,
         PROVIDER_PRIVATE_KEY,
         PROVIDER_PUBLIC_KEY,
-        CONCENT_PUBLIC_KEY,
-        STORAGE_CLUSTER_ADDRESS,
     )
     assert_condition(response.status_code, 200, 'File has not been stored on cluster')
     print('\nUploaded file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(
@@ -354,7 +350,6 @@ def test_case_5_test_requestor_status_account_negative(cluster_consts, cluster_u
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
-        from concent_api.settings import STORAGE_CLUSTER_ADDRESS
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file=sys.stderr)

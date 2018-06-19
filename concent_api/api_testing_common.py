@@ -319,8 +319,8 @@ def create_signed_task_to_compute(
     requestor_ethereum_public_key=None,
     provider_ethereum_public_key=None,
     price=0,
-    size=0,
-    package_hash=None,
+    size=1,
+    package_hash='sha1:57786d92d1a6f7eaaba1c984db5e108c68b03f0d',
 ):
     with freeze_time(timestamp):
         compute_task_def = ComputeTaskDefFactory(

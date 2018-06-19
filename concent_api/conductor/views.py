@@ -1,12 +1,19 @@
+from logging import getLogger
+
 from django.db.models import Q
 from django.http.response import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from golem_messages.message import FileTransferToken
 
 from core.tasks import upload_finished
 from utils.decorators import provides_concent_feature
+from utils.logging import log_request_received
+from utils.logging import log_string_message
 from .models import UploadReport
 from .models import VerificationRequest
+
+logger = getLogger(__name__)
 
 
 @provides_concent_feature('conductor-urls')
@@ -14,6 +21,7 @@ from .models import VerificationRequest
 @csrf_exempt
 def report_upload(_request, file_path):
 
+    log_request_received(logger,  file_path, FileTransferToken.Operation.upload)
     # If there's a corresponding VerificationRequest, the load it and link it to UploadReport.
     try:
         verification_request = VerificationRequest.objects.get(
@@ -44,5 +52,12 @@ def report_upload(_request, file_path):
         verification_request.upload_finished = True
         verification_request.full_clean()
         verification_request.save()
+
+        log_string_message(
+            logger, 'All expected files have been uploaded',
+            f'Subtask ID: {verification_request.subtask_id} ' 
+            f'Result package path: {verification_request.result_package_path} ' 
+            f'Source package path: {verification_request.source_package_path} '
+        )
 
     return HttpResponse()

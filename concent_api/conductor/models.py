@@ -77,6 +77,9 @@ class BlenderSubtaskDefinition(Model):
     # Relative path to the .blend file inside the source package.
     scene_file = CharField(max_length=MESSAGE_PATH_LENGTH)
 
+    # Relative path to the Python script to be executed by Blender.
+    blender_crop_script = CharField(max_length=MESSAGE_PATH_LENGTH)
+
     # Indicates when Conductor has received the request.
     created_at = DateTimeField(default=timezone.now)
 

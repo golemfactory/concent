@@ -9,6 +9,8 @@ from core.message_handlers import store_subtask
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
 from utils.helpers import get_current_utc_timestamp
+from utils.helpers import get_storage_result_file_path
+from utils.helpers import get_storage_source_file_path
 from ..exceptions import VerificationRequestAlreadyAcknowledgedError
 
 
@@ -18,14 +20,17 @@ class CoreTaskTestCase(ConcentIntegrationTestCase):
 
     def setUp(self):
         super().setUp()
-        self.source_package_path = 'blender/source/ef0dc1/ef0dc1.zzz523.zip'
-        self.result_package_path = 'blender/result/ef0dc1/ef0dc1.zzz523.zip'
-        self.scene_file = 'blender/scene/ef0dc1/ef0dc1.zzz523.zip'
-
-        self.report_computed_task = self._get_deserialized_report_computed_task(
-            task_id='ef0dc1',
-            subtask_id='zzz523'
+        self.task_to_compute = self._get_deserialized_task_to_compute()
+        self.compute_task_def = self.task_to_compute.compute_task_def
+        self.source_package_path = get_storage_source_file_path(
+            self.task_to_compute.subtask_id,
+            self.task_to_compute.task_id,
         )
+        self.result_package_path = get_storage_result_file_path(
+            self.task_to_compute.subtask_id,
+            self.task_to_compute.task_id,
+        )
+        self.report_computed_task = self._get_deserialized_report_computed_task(task_to_compute=self.task_to_compute)
 
         self.verification_request = VerificationRequest(
             subtask_id=self.report_computed_task.subtask_id,
@@ -38,7 +43,8 @@ class CoreTaskTestCase(ConcentIntegrationTestCase):
         blender_subtask_definition = BlenderSubtaskDefinition(
             verification_request=self.verification_request,
             output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
-            scene_file=self.scene_file,
+            scene_file=self.compute_task_def['extra_data']['scene_file'],
+            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
         )
         blender_subtask_definition.full_clean()
         blender_subtask_definition.save()
@@ -77,6 +83,7 @@ class CoreTaskTestCase(ConcentIntegrationTestCase):
             result_package_hash=self.report_computed_task.package_hash,
             output_format=self.verification_request.blender_subtask_definition.output_format,
             scene_file=self.verification_request.blender_subtask_definition.scene_file,
+            blender_crop_script=self.verification_request.blender_subtask_definition.blender_crop_script,
         )
 
     def test_that_upload_acknowledged_task_should_log_error_when_verification_request_with_given_subtask_id_does_not_exist(self):

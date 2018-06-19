@@ -1,7 +1,6 @@
 import argparse
 import random
 import sys
-from base64 import b64encode
 
 from freezegun import freeze_time
 
@@ -344,29 +343,3 @@ def create_signed_task_to_compute(
         )
         sign_message(task_to_compute, REQUESTOR_PRIVATE_KEY)
         return task_to_compute
-
-
-def upload_file_to_storage_cluster(
-    file_content,
-    file_path,
-    upload_token,
-    private_key,
-    public_key,
-    content_public_key,
-    storage_cluster_address,
-):
-    dumped_upload_token = dump(upload_token, None, content_public_key)
-    b64_encoded_token = b64encode(dumped_upload_token).decode()
-    headers = {
-        'Authorization': 'Golem ' + b64_encoded_token,
-        'Concent-Auth': b64encode(
-            create_client_auth_message(private_key, public_key, content_public_key)).decode(),
-        'Concent-Upload-Path': file_path,
-        'Content-Type': 'application/octet-stream'
-    }
-    return requests.post(
-        "{}upload/".format(storage_cluster_address),
-        headers=headers,
-        data=file_content,
-        verify=False
-    )

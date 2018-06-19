@@ -22,7 +22,6 @@ from api_testing_common import REQUESTOR_PRIVATE_KEY
 from api_testing_common import REQUESTOR_PUBLIC_KEY
 from api_testing_common import run_tests
 from api_testing_common import timestamp_to_isoformat
-from api_testing_common import upload_file_to_storage_cluster
 
 import requests
 

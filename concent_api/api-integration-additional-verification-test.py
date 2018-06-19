@@ -115,6 +115,7 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):  #
             report_computed_task_package_hash=result_file_checksum,
             task_to_compute_size=source_file_size,
             task_to_compute_package_hash=source_file_checksum,
+            script_src='# This template is rendered by\n# apps.blender.resources.scenefileeditor.generate_blender_crop_file(),\n# written to tempfile and passed as arg to blender.\nimport bpy\n\nclass EngineWarning(bpy.types.Operator):\n    bl_idname = "wm.engine_warning"\n    bl_label = "Inform about not supported rendering engine"\n\n    def execute(self, context):\n        self.report({"ERROR"}, "Engine " + bpy.context.scene.render.engine + \\\n                               " not supported by Golem")\n        return {"FINISHED"}\n\nclass ShowInformation(bpy.types.Operator):\n    bl_idname = "wm.scene_information"\n    bl_label = "Inform user about scene settings"\n\n\n    def execute(self, context):\n        self.report({"INFO"}, "Resolution: " +\n                              str(bpy.context.scene.render.resolution_x) +\n                               " x " +\n                               str(bpy.context.scene.render.resolution_y))\n        self.report({"INFO"}, "File format: " +\n                               str(bpy.context.scene.render.file_extension))\n        self.report({"INFO"}, "Filepath: " +\n                              str(bpy.context.scene.render.filepath))\n        self.report({"INFO"}, "Frames: " +\n                              str(bpy.context.scene.frame_start) + "-" +\n                              str(bpy.context.scene.frame_end) + ";" +\n                              str(bpy.context.scene.frame_step))\n\n        return {"FINISHED"}\n\n\nbpy.utils.register_class(EngineWarning)\nengine = bpy.context.scene.render.engine\nif engine not in ("BLENDER_RENDER", "CYCLES"):\n    bpy.ops.wm.engine_warning()\n\nbpy.utils.register_class(ShowInformation)\nbpy.ops.wm.scene_information()\n\n\nfor scene in bpy.data.scenes:\n\n    scene.render.tile_x = 0\n    scene.render.tile_y = 0\n    scene.render.resolution_x = 1024\n    scene.render.resolution_y = 768\n    scene.render.resolution_percentage = 100\n    scene.render.use_border = True\n    scene.render.use_crop_to_border = True\n    scene.render.border_max_x = 1.0\n    scene.render.border_min_x = 0.0\n    scene.render.border_min_y = 0.0\n    scene.render.border_max_y = 1.0\n    scene.render.use_compositing = bool(False)\n\n#and check if additional files aren\'t missing\nbpy.ops.file.report_missing_files()\n',
         ),
         headers = {
             'Content-Type': 'application/octet-stream',
@@ -348,6 +349,109 @@ def test_case_5_test_requestor_status_account_negative(cluster_consts, cluster_u
         },
         expected_status=200,
         expected_message_type=message.concents.ServiceRefused.TYPE,
+        expected_content_type='application/octet-stream',
+    )
+
+
+@count_fails
+def test_case_6_test_without_script_src_in(cluster_consts, cluster_url, test_id):  # pylint: disable=unused-argument
+    current_time = get_current_utc_timestamp()
+    (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'without_script_src')
+
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(current_dir, 'tests_resources', 'source.zip'), 'rb') as archive:
+        source_file_content = archive.read()
+    with open(os.path.join(current_dir, 'tests_resources', 'result.zip'), 'rb') as archive:
+        result_file_content = archive.read()
+
+    result_file_size = len(result_file_content)
+    source_file_size = len(source_file_content)
+    result_file_checksum = 'sha1:' + hashlib.sha1(result_file_content).hexdigest()
+    source_file_checksum = 'sha1:' + hashlib.sha1(source_file_content).hexdigest()
+
+    ack_subtask_results_verify = api_request(
+        cluster_url,
+        'send',
+        PROVIDER_PRIVATE_KEY,
+        CONCENT_PUBLIC_KEY,
+        get_subtask_results_verify(
+            task_id,
+            subtask_id,
+            current_time,
+            reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
+            report_computed_task_size=result_file_size,
+            report_computed_task_package_hash=result_file_checksum,
+            task_to_compute_size=source_file_size,
+            task_to_compute_package_hash=source_file_checksum,
+        ),
+        headers = {
+            'Content-Type': 'application/octet-stream',
+        },
+        expected_status=200,
+        expected_message_type=message.concents.AckSubtaskResultsVerify.TYPE,
+        expected_content_type='application/octet-stream',
+    )
+
+    response = upload_file_to_storage_cluster(
+        result_file_content,
+        ack_subtask_results_verify.file_transfer_token.files[0]['path'],
+        ack_subtask_results_verify.file_transfer_token,
+        PROVIDER_PRIVATE_KEY,
+        PROVIDER_PUBLIC_KEY,
+        CONCENT_PUBLIC_KEY,
+        STORAGE_CLUSTER_ADDRESS,
+    )
+    assert_condition(response.status_code, 200, 'File has not been stored on cluster')
+    print('\nUploaded file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(
+        task_id,
+        result_file_checksum,
+        result_file_size
+    ))
+
+    response = upload_file_to_storage_cluster(
+        source_file_content,
+        ack_subtask_results_verify.file_transfer_token.files[1]['path'],
+        ack_subtask_results_verify.file_transfer_token,
+        PROVIDER_PRIVATE_KEY,
+        PROVIDER_PUBLIC_KEY,
+        CONCENT_PUBLIC_KEY,
+        STORAGE_CLUSTER_ADDRESS,
+    )
+    assert_condition(response.status_code, 200, 'File has not been stored on cluster')
+    print('\nUploaded file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(
+        task_id,
+        source_file_checksum,
+        source_file_size
+    ))
+
+    # Adding 10 seconds to time sleep makes us sure that subtask is after deadline.
+    time.sleep(CALCULATED_VERIFICATION_TIME * (ADDITIONAL_VERIFICATION_TIME_MULTIPLIER / BLENDER_THREADS))
+
+    api_request(
+        cluster_url,
+        'receive-out-of-band',
+        REQUESTOR_PRIVATE_KEY,
+        CONCENT_PUBLIC_KEY,
+        create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
+        headers = {
+            'Content-Type': 'application/octet-stream',
+        },
+        expected_status=200,
+        expected_message_type=message.concents.SubtaskResultsSettled.TYPE,
+        expected_content_type='application/octet-stream',
+    )
+
+    api_request(
+        cluster_url,
+        'receive-out-of-band',
+        PROVIDER_PRIVATE_KEY,
+        CONCENT_PUBLIC_KEY,
+        create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
+        headers = {
+            'Content-Type': 'application/octet-stream',
+        },
+        expected_status=200,
+        expected_message_type=message.concents.SubtaskResultsSettled.TYPE,
         expected_content_type='application/octet-stream',
     )
 

@@ -47,29 +47,18 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
 
     def setUp(self):
         super().setUp()
-        self.compute_task_def = self._get_deserialized_compute_task_def(
-            task_id='ef0dc1',
-            subtask_id='zzz523',
-        )
-
+        self.task_to_compute = self._get_deserialized_task_to_compute()
+        self.compute_task_def = self.task_to_compute.compute_task_def
         self.source_package_path = get_storage_source_file_path(
-            task_id=self.compute_task_def['task_id'],
-            subtask_id=self.compute_task_def['subtask_id'],
+            self.task_to_compute.subtask_id,
+            self.task_to_compute.task_id,
         )
         self.result_package_path = get_storage_result_file_path(
-            task_id=self.compute_task_def['task_id'],
-            subtask_id=self.compute_task_def['subtask_id'],
-        )
-        self.report_computed_task=self._get_deserialized_report_computed_task(
-            package_hash='sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
-            size=2,
-            task_to_compute=self._get_deserialized_task_to_compute(
-                package_hash='sha1:230fb0cad8c7ed29810a2183f0ec1d39c9df3f4a',
-                size=1,
-                compute_task_def=self.compute_task_def
-            )
+            self.task_to_compute.subtask_id,
+            self.task_to_compute.task_id,
         )
         self.frames = [1]
+        self.report_computed_task = self._get_deserialized_report_computed_task(task_to_compute=self.task_to_compute)
 
         self.subtask_id = self.compute_task_def['subtask_id']
         self.scene_file = self.compute_task_def['extra_data']['scene_file']
@@ -137,7 +126,8 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             verification_deadline=self._get_verification_deadline_as_timestamp(
                 get_current_utc_timestamp(),
                 self.report_computed_task.task_to_compute,
-            )
+            ),
+            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
         )
         self.assertEqual(mock_delete_source_files.call_count, 1)
         self.assertEqual(mock_get_files_list_from_archive.call_count, 1)
@@ -176,7 +166,8 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             verification_deadline=self._get_verification_deadline_as_timestamp(
                 get_current_utc_timestamp(),
                 self.report_computed_task.task_to_compute,
-            )
+            ),
+            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
         )
         self.assertEqual(mock_delete_source_files.call_count, 1)
         self.assertEqual(mock_parse_result_files_with_frames.call_count, 1)
@@ -200,7 +191,6 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 )
             ) as mock_download_archives_from_storage, \
             mock.patch('core.tasks.verification_result.delay', autospec=True) as mock_verification_result:  # noqa: E129
-
             self._send_blender_verification_order()
 
         self.assertEqual(mock_download_archives_from_storage.call_count, 1)
@@ -222,7 +212,6 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 )
             ),  \
             mock.patch('core.tasks.verification_result.delay', autospec=True) as mock_verification_result:  # noqa: E125
-
             self._send_blender_verification_order()
 
         self.assertEqual(mock_download_archives_from_storage.call_count, 1)
@@ -320,7 +309,8 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             verification_deadline=self._get_verification_deadline_as_timestamp(
                 get_current_utc_timestamp(),
                 self.report_computed_task.task_to_compute,
-            )
+            ),
+            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
         )
         self.assertEqual(mock_delete_source_files.call_count, 1)
         self.assertEqual(mock_try_to_upload_file.call_count, 1)
@@ -367,7 +357,8 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             verification_deadline=self._get_verification_deadline_as_timestamp(
                 get_current_utc_timestamp(),
                 self.report_computed_task.task_to_compute,
-            )
+            ),
+            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
         )
         self.assertEqual(mock_delete_source_files.call_count, 1)
         self.assertEqual(mock_try_to_upload_file.call_count, 1)
@@ -405,6 +396,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 get_current_utc_timestamp(),
                 self.report_computed_task.task_to_compute,
             ),
+            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
         )
         self.assertEqual(mock_delete_source_files.call_count, 1)
         self.assertEqual(mock_get_files_list_from_archive.call_count, 1)
@@ -459,4 +451,5 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 self.report_computed_task.task_to_compute,
             ),
             frames=frames if frames is not None else self.frames,
+            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
         )

@@ -339,7 +339,8 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             verification_deadline=self._get_verification_deadline_as_timestamp(
                 self._parse_iso_date_to_timestamp(self.subtask_result_rejected_time_str),
                 self.task_to_compute,
-            )
+            ),
+            blender_crop_script=self.report_computed_task.task_to_compute.compute_task_def['extra_data']['script_src'],
         )
 
         # then

@@ -94,7 +94,8 @@ class VerifierVerificationIntegrationTest(TestCase):
                 output_format=self.output_format,
                 scene_file=self.scene_file,
                 subtask_id=self.subtask_id,
-                verification_deadline=None
+                verification_deadline=None,
+                blender_crop_script=None,
             )
             self.assertEqual(self.correct_parsed_all_files, parsed_files_to_compare)
             self.assertEqual(self.correct_blender_output_file_name_list, blender_output_file_name_list)

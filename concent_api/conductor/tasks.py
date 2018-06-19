@@ -18,11 +18,12 @@ logger = logging.getLogger(__name__)
 @shared_task
 @provides_concent_feature('conductor-worker')
 def blender_verification_request(
-    subtask_id:             str,
-    source_package_path:    str,
-    result_package_path:    str,
-    output_format:          str,
-    scene_file:             str,
+    subtask_id: str,
+    source_package_path: str,
+    result_package_path: str,
+    output_format: str,
+    scene_file: str,
+    blender_crop_script: str,
 ):
     assert isinstance(output_format, str)
 
@@ -43,6 +44,7 @@ def blender_verification_request(
         verification_request=verification_request,
         output_format=BlenderSubtaskDefinition.OutputFormat[output_format].name,
         scene_file=scene_file,
+        blender_crop_script=blender_crop_script,
     )
     blender_subtask_definition.full_clean()
     blender_subtask_definition.save()
@@ -112,4 +114,5 @@ def upload_acknowledged(
         result_package_hash=result_package_hash,
         output_format=verification_request.blender_subtask_definition.output_format,
         scene_file=verification_request.blender_subtask_definition.scene_file,
+        blender_crop_script=verification_request.blender_subtask_definition.blender_crop_script,
     )

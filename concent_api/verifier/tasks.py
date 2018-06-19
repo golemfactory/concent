@@ -49,6 +49,7 @@ def blender_verification_order(
     result_package_hash: str,
     output_format: str,
     scene_file: str,
+    blender_crop_script: str,
 ):
     assert output_format in BlenderSubtaskDefinition.OutputFormat.__members__.keys()
     assert source_package_path != result_package_path
@@ -141,6 +142,7 @@ def blender_verification_order(
         completed_process = run_blender(
             scene_file,
             output_format,
+            blender_crop_script,
         )
         logger.info(f'Blender process std_out: {completed_process.stdout}')
         logger.info(f'Blender process std_err: {completed_process.stdout}')

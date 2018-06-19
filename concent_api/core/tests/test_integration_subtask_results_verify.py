@@ -374,6 +374,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             result_package_path=self.result_package_path,
             output_format=self.report_computed_task.task_to_compute.compute_task_def['extra_data']['output_format'],
             scene_file=self.report_computed_task.task_to_compute.compute_task_def['extra_data']['scene_file'],
+            blender_crop_script=self.report_computed_task.task_to_compute.compute_task_def['extra_data']['script_src'],
         )
 
         # then

@@ -2,11 +2,11 @@ import mock
 
 from django.urls    import reverse
 
-from golem_messages import message
-
 from core.message_handlers import store_subtask
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
+from utils.helpers import get_storage_result_file_path
+from utils.helpers import get_storage_source_file_path
 from ..models       import BlenderSubtaskDefinition
 from ..models       import UploadReport
 from ..models       import VerificationRequest
@@ -19,19 +19,17 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
 
     def setUp(self):
         super().setUp()
-        self.source_package_path = 'blender/source/ef0dc1/ef0dc1.zzz523.zip'
-        self.result_package_path = 'blender/result/ef0dc1/ef0dc1.zzz523.zip'
-        self.scene_file = 'blender/scene/ef0dc1/ef0dc1.zzz523.zip'
-
-        self.compute_task_def = message.ComputeTaskDef()
-        self.compute_task_def['task_id'] = 'ef0dc1'
-        self.compute_task_def['subtask_id'] = 'zzz523'
-
-        self.report_computed_task=self._get_deserialized_report_computed_task(
-            task_to_compute=self._get_deserialized_task_to_compute(
-                compute_task_def=self.compute_task_def
-            )
+        self.task_to_compute = self._get_deserialized_task_to_compute()
+        self.compute_task_def = self.task_to_compute.compute_task_def
+        self.source_package_path = get_storage_source_file_path(
+            self.task_to_compute.subtask_id,
+            self.task_to_compute.task_id,
         )
+        self.result_package_path = get_storage_result_file_path(
+            self.task_to_compute.subtask_id,
+            self.task_to_compute.task_id,
+        )
+        self.report_computed_task = self._get_deserialized_report_computed_task(task_to_compute=self.task_to_compute)
 
         store_subtask(
             task_id=self.compute_task_def['task_id'],
@@ -56,7 +54,8 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         blender_subtask_definition = BlenderSubtaskDefinition(
             verification_request=verification_request,
             output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
-            scene_file=self.scene_file,
+            scene_file=self.compute_task_def['extra_data']['scene_file'],
+            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
         )
         blender_subtask_definition.full_clean()
         blender_subtask_definition.save()
@@ -216,7 +215,8 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
             source_package_path=self.source_package_path,
             result_package_path=self.result_package_path,
             output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
-            scene_file=self.scene_file,
+            scene_file=self.compute_task_def['extra_data']['scene_file'],
+            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
         )
 
         self.assertEqual(VerificationRequest.objects.count(), 1)
@@ -226,7 +226,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(verification_request.source_package_path, self.source_package_path)
         self.assertEqual(verification_request.result_package_path, self.result_package_path)
         self.assertEqual(verification_request.blender_subtask_definition.output_format, BlenderSubtaskDefinition.OutputFormat.JPG.name)  # pylint: disable=no-member
-        self.assertEqual(verification_request.blender_subtask_definition.scene_file, self.scene_file)
+        self.assertEqual(verification_request.blender_subtask_definition.scene_file, self.compute_task_def['extra_data']['scene_file'])
 
     def test_blender_verification_request_task_should_not_link_upload_requests_to_unrelated_upload_reports(self):
         upload_report = UploadReport(
@@ -240,7 +240,8 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
             source_package_path=self.source_package_path,
             result_package_path=self.result_package_path,
             output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
-            scene_file=self.scene_file,
+            scene_file=self.compute_task_def['extra_data']['scene_file'],
+            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
         )
 
         self.assertEqual(VerificationRequest.objects.count(), 1)
@@ -268,7 +269,8 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
                 source_package_path=self.source_package_path,
                 result_package_path=self.result_package_path,
                 output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
-                scene_file=self.scene_file,
+                scene_file=self.compute_task_def['extra_data']['scene_file'],
+                blender_crop_script=self.compute_task_def['extra_data']['script_src'],
             )
 
         mock_task.assert_called_with(self.compute_task_def['subtask_id'])

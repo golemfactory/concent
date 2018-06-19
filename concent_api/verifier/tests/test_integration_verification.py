@@ -47,27 +47,17 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
 
     def setUp(self):
         super().setUp()
-        self.compute_task_def = self._get_deserialized_compute_task_def(
-            task_id='ef0dc1',
-            subtask_id='zzz523',
-        )
+        self.task_to_compute = self._get_deserialized_task_to_compute()
+        self.compute_task_def = self.task_to_compute.compute_task_def
         self.source_package_path = get_storage_source_file_path(
-            task_id=self.compute_task_def['task_id'],
-            subtask_id=self.compute_task_def['subtask_id'],
+            self.task_to_compute.subtask_id,
+            self.task_to_compute.task_id,
         )
         self.result_package_path = get_storage_result_file_path(
-            task_id=self.compute_task_def['task_id'],
-            subtask_id=self.compute_task_def['subtask_id'],
+            self.task_to_compute.subtask_id,
+            self.task_to_compute.task_id,
         )
-        self.report_computed_task=self._get_deserialized_report_computed_task(
-            package_hash='sha1:95a0f391c7ad86686ab1366bcd519ba5ab3cce89',
-            size=2,
-            task_to_compute=self._get_deserialized_task_to_compute(
-                package_hash='sha1:230fb0cad8c7ed29810a2183f0ec1d39c9df3f4a',
-                size=1,
-                compute_task_def=self.compute_task_def
-            )
-        )
+        self.report_computed_task = self._get_deserialized_report_computed_task(task_to_compute=self.task_to_compute)
 
     def test_that_blender_verification_order_should_perform_full_verification_with_match_result(self):
         with mock.patch('verifier.tasks.clean_directory', autospec=True) as mock_clean_directory,\
@@ -94,6 +84,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                     self.compute_task_def['extra_data']['output_format']
                 ).name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
+                blender_crop_script=self.compute_task_def['extra_data']['script_src'],
             )
 
         self.assertEqual(mock_clean_directory.call_count, 2)
@@ -133,6 +124,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                     self.compute_task_def['extra_data']['output_format']
                 ).name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
+                blender_crop_script=self.compute_task_def['extra_data']['script_src'],
             )
 
         self.assertEqual(mock_clean_directory.call_count, 2)
@@ -165,6 +157,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                     self.compute_task_def['extra_data']['output_format']
                 ).name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
+                blender_crop_script=self.compute_task_def['extra_data']['script_src'],
             )
 
         mock_clean_directory.assert_called_once_with(settings.VERIFIER_STORAGE_PATH)
@@ -194,6 +187,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                     self.compute_task_def['extra_data']['output_format']
                 ).name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
+                blender_crop_script=self.compute_task_def['extra_data']['script_src'],
             )
 
         mock_clean_directory.assert_called_once_with(settings.VERIFIER_STORAGE_PATH)
@@ -225,6 +219,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                     self.compute_task_def['extra_data']['output_format']
                 ).name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
+                blender_crop_script=self.compute_task_def['extra_data']['script_src'],
             )
 
         mock_clean_directory.assert_called_once()
@@ -260,6 +255,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                     self.compute_task_def['extra_data']['output_format']
                 ).name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
+                blender_crop_script=self.compute_task_def['extra_data']['script_src'],
             )
 
         mock_clean_directory.assert_called_once()
@@ -298,6 +294,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                     self.compute_task_def['extra_data']['output_format']
                 ).name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
+                blender_crop_script=self.compute_task_def['extra_data']['script_src'],
             )
 
         self.assertEqual(mock_clean_directory.call_count, 1)
@@ -337,6 +334,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                     self.compute_task_def['extra_data']['output_format']
                 ).name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
+                blender_crop_script=self.compute_task_def['extra_data']['script_src'],
             )
 
         self.assertEqual(mock_clean_directory.call_count, 2)
@@ -375,6 +373,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                     self.compute_task_def['extra_data']['output_format']
                 ).name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
+                blender_crop_script=self.compute_task_def['extra_data']['script_src'],
             )
 
         self.assertEqual(mock_clean_directory.call_count, 1)
@@ -414,6 +413,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                     self.compute_task_def['extra_data']['output_format']
                 ).name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
+                blender_crop_script=self.compute_task_def['extra_data']['script_src'],
             )
 
         self.assertEqual(mock_clean_directory.call_count, 1)
@@ -454,6 +454,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                     self.compute_task_def['extra_data']['output_format']
                 ).name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
+                blender_crop_script=self.compute_task_def['extra_data']['script_src'],
             )
 
         self.assertEqual(mock_clean_directory.call_count, 1)

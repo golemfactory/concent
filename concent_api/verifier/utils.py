@@ -273,7 +273,7 @@ def render_image(frame_number, output_format, scene_file, subtask_id, verificati
             output_format,
             frame_number,
             verification_deadline,
-            blender_crop_script,
+            blender_script_file_name,
         )
         # If Blender finishes with errors, verification ends here
         # Verification_result informing about the error is sent to the work queue.

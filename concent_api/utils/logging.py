@@ -335,12 +335,38 @@ def log_message_received_in_endpoint(
     )
 
 
+@replace_element_to_unavailable_instead_of_none
+def log_blender_verification_order_starts(
+    logger,
+    subtask_id: str,
+    source_package_path: str,
+    source_size: int,
+    source_package_hash: str,
+    result_package_path: str,
+    result_size: int,
+    result_package_hash: str,
+    output_format: str,
+    scene_file: str
+):
+    logger.info(
+        f'Blender_verification_order_starts. SUBTASK_ID: {subtask_id} '
+        f'Source_package_path {source_package_path} '
+        f'Source_size: {source_size} '
+        f'Source_package_hash: {source_package_hash} '
+        f'Result_package_path: {result_package_path} '
+        f'Result_size: {result_size} '
+        f'Result_package_hash: {result_package_hash} '
+        f'Output_format: {output_format} '
+        f'Scene_file: {scene_file} '
+    )
+
+
 def log_json_message(logger: Logger, message: JsonResponse):
     logger.info(message)
 
 
 def log_string_message(logger: Logger, *messages_to_log: str):
-    logger.info(join_messages(messages_to_log))
+    logger.info(str(join_messages(messages_to_log))[2:-3])
 
 
 def _get_field_value_from_messages_for_logging(field_name: MessageIdField, message: Message) -> str:

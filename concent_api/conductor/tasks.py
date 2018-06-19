@@ -1,11 +1,10 @@
 import logging
-
 from celery import shared_task
-
 from core import tasks
 from utils.constants import ErrorCode
 from utils.decorators import log_task_errors
 from utils.decorators import provides_concent_feature
+from utils.logging import log_error_message
 from utils.logging import log_string_message
 from verifier.tasks import blender_verification_order
 from .exceptions import VerificationRequestAlreadyAcknowledgedError
@@ -29,11 +28,11 @@ def blender_verification_request(
 ):
     log_string_message(
         logger,
-        f'Blender verification request starts. SUBTASK_ID: {subtask_id} ',
-        f'Source_package_path {source_package_path} ',
-        f'Result_package_path: {result_package_path} ',
-        f'Output_format: {output_format} ',
-        f'Scene_file: {scene_file} '
+        f'Blender verification request starts. SUBTASK_ID: {subtask_id}',
+        f'Source_package_path {source_package_path}',
+        f'Result_package_path: {result_package_path}',
+        f'Output_format: {output_format}',
+        f'Scene_file: {scene_file}'
     )
     assert isinstance(output_format, str)
 
@@ -76,9 +75,9 @@ def blender_verification_request(
     ):
         log_string_message(
             logger, 'All expected files have been uploaded',
-            f'Subtask ID: {verification_request.subtask_id} '
-            f'Result package path: {verification_request.result_package_path} '
-            f'Source package path: {verification_request.source_package_path} '
+            f'Subtask ID: {verification_request.subtask_id}'
+            f'Result package path: {verification_request.result_package_path}'
+            f'Source package path: {verification_request.source_package_path}'
         )
         # If all expected files have been uploaded, the app sends upload_finished task to the work queue.
         tasks.upload_finished.delay(verification_request.subtask_id)
@@ -99,18 +98,18 @@ def upload_acknowledged(
 ):
     log_string_message(
         logger,
-        f'Upload acknowledgment starts. SUBTASK_ID: {subtask_id} ',
-        f'Source_file_size {source_file_size} ',
-        f'Source_package_hash: {source_package_hash} ',
-        f'Result_file_size: {result_file_size} ',
-        f'Result_package_hash: {result_package_hash} '
+        f'Upload acknowledgment starts. SUBTASK_ID: {subtask_id}',
+        f'Source_file_size {source_file_size}',
+        f'Source_package_hash: {source_package_hash}',
+        f'Result_file_size: {result_file_size}',
+        f'Result_package_hash: {result_package_hash}'
     )
     assert isinstance(subtask_id, str)
 
     try:
         verification_request = VerificationRequest.objects.get(subtask_id=subtask_id)
     except VerificationRequest.DoesNotExist:
-        log_string_message(
+        log_error_message(
             logger,
             f'Task `upload_acknowledged` tried to get VerificationRequest object with ID {subtask_id} but it does not exist.'
         )
@@ -139,4 +138,12 @@ def upload_acknowledged(
         result_package_hash=result_package_hash,
         output_format=verification_request.blender_subtask_definition.output_format,
         scene_file=verification_request.blender_subtask_definition.scene_file,
+    )
+    log_string_message(
+        logger,
+        f'Upload acknowledgment finished. SUBTASK_ID: {subtask_id}',
+        f'Source_file_size {source_file_size}',
+        f'Source_package_hash: {source_package_hash}',
+        f'Result_file_size: {result_file_size}',
+        f'Result_package_hash: {result_package_hash}'
     )

@@ -49,6 +49,7 @@ def blender_verification_order(
     scene_file: str,
     verification_deadline: int,
     frames: List[int],
+    blender_crop_script: str,
 ):
     log_string_message(
         logger,
@@ -142,6 +143,7 @@ def blender_verification_order(
         scene_file=scene_file,
         subtask_id=subtask_id,
         verification_deadline=verification_deadline,
+        blender_crop_script=blender_crop_script,
     )
 
     delete_source_files(package_paths_to_downloaded_archive_names[source_package_path])

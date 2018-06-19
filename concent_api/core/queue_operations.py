@@ -19,6 +19,7 @@ def send_blender_verification_request(compute_task_def: ComputeTaskDef, verifica
     output_format = compute_task_def['extra_data']['output_format']
     scene_file = compute_task_def['extra_data']['scene_file']
     frames = compute_task_def['extra_data']['frames']
+    blender_crop_script = compute_task_def['extra_data']['script_src']
     blender_verification_request.delay(
         subtask_id=subtask_id,
         source_package_path=source_package_path,
@@ -27,4 +28,5 @@ def send_blender_verification_request(compute_task_def: ComputeTaskDef, verifica
         scene_file=scene_file,
         verification_deadline=verification_deadline,
         frames=frames,
+        blender_crop_script=blender_crop_script,
     )

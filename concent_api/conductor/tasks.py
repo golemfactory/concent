@@ -35,7 +35,8 @@ def blender_verification_request(
     output_format: str,
     scene_file: str,
     verification_deadline: int,
-    frames: List[int]
+    frames: List[int],
+    blender_crop_script: str,
 ):
     log_string_message(
         logger,
@@ -62,6 +63,7 @@ def blender_verification_request(
         verification_deadline=verification_deadline,
         output_format=output_format,
         scene_file=scene_file,
+        blender_crop_script=blender_crop_script,
     )
 
     store_frames(
@@ -154,7 +156,8 @@ def upload_acknowledged(
         output_format=verification_request.blender_subtask_definition.output_format,
         scene_file=verification_request.blender_subtask_definition.scene_file,
         verification_deadline=int(verification_request.verification_deadline.timestamp()),
-        frames=frames
+        frames=frames,
+        blender_crop_script=verification_request.blender_subtask_definition.blender_crop_script,
     )
     log_string_message(
         logger,
@@ -173,6 +176,7 @@ def store_verification_request_and_blender_subtask_definition(
     output_format: str,
     scene_file: str,
     verification_deadline: int,
+    blender_crop_script: str,
 ):
     verification_request = VerificationRequest(
         subtask_id=subtask_id,
@@ -187,6 +191,7 @@ def store_verification_request_and_blender_subtask_definition(
         verification_request=verification_request,
         output_format=BlenderSubtaskDefinition.OutputFormat[output_format].name,
         scene_file=scene_file,
+        blender_crop_script=blender_crop_script,
     )
     blender_subtask_definition.full_clean()
     blender_subtask_definition.save()

@@ -76,7 +76,7 @@ def run_blender(
     output_format: str,
     frame_number: int,
     verification_deadline: int,
-    script_file: str=''
+    script_file: str,
 ) -> subprocess.CompletedProcess:
     output_format = adjust_format_name(output_format)
     return subprocess.run(
@@ -262,7 +262,7 @@ def delete_source_files(source_archive_name):
         delete_file(file_path)
 
 
-def render_image(frame_number, output_format, scene_file, subtask_id, verification_deadline):
+def render_image(frame_number, output_format, scene_file, subtask_id, verification_deadline, blender_crop_script):
     # Verifier runs blender process.
     try:
         completed_process = run_blender(
@@ -270,6 +270,7 @@ def render_image(frame_number, output_format, scene_file, subtask_id, verificati
             output_format,
             frame_number,
             verification_deadline,
+            blender_crop_script,
         )
         # If Blender finishes with errors, verification ends here
         # Verification_result informing about the error is sent to the work queue.
@@ -382,10 +383,11 @@ def render_images_by_frames(
     scene_file: str,
     subtask_id: str,
     verification_deadline: int,
+    blender_crop_script: str,
 ):
     blender_output_file_name_list = []
     for frame_number in frames:
-        render_image(frame_number, output_format, scene_file, subtask_id, verification_deadline)
+        render_image(frame_number, output_format, scene_file, subtask_id, verification_deadline, blender_crop_script)
         blender_out_file_name = generate_full_blender_output_file_name(scene_file, frame_number, output_format.lower())
         blender_output_file_name_list.append(blender_out_file_name)
         parsed_files_to_compare[frame_number].append(blender_out_file_name)

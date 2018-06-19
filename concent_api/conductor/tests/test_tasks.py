@@ -1,7 +1,6 @@
 import mock
-
+from mock import patch
 from django.conf import settings
-
 from conductor.models import BlenderSubtaskDefinition
 from conductor.models import VerificationRequest
 from conductor.tasks import upload_acknowledged
@@ -79,20 +78,22 @@ class CoreTaskTestCase(ConcentIntegrationTestCase):
             scene_file=self.verification_request.blender_subtask_definition.scene_file,
         )
 
-    def test_that_upload_acknowledged_task_should_log_error_when_verification_request_with_given_subtask_id_does_not_exist(self):
-        with mock.patch('conductor.tasks.logging.error') as mock_logging_error:
-            upload_acknowledged(
-                subtask_id='non_existing_subtask_id',
-                source_file_size=self.report_computed_task.task_to_compute.size,
-                source_package_hash=self.report_computed_task.task_to_compute.package_hash,
-                result_file_size=self.report_computed_task.size,
-                result_package_hash=self.report_computed_task.package_hash,
-            )
+    @patch("conductor.tasks.log_error_message")
+    @patch("conductor.tasks.logger")
+    def test_that_upload_acknowledged_task_should_log_error_when_verification_request_with_given_subtask_id_does_not_exist(self, mock_logger, mock_logging_error):
+        upload_acknowledged(
+            subtask_id='non_existing_subtask_id',
+            source_file_size=self.report_computed_task.task_to_compute.size,
+            source_package_hash=self.report_computed_task.task_to_compute.package_hash,
+            result_file_size=self.report_computed_task.size,
+            result_package_hash=self.report_computed_task.package_hash,
+        )
 
         self.verification_request.refresh_from_db()
 
         self.assertFalse(self.verification_request.upload_acknowledged)
         mock_logging_error.assert_called_once_with(
+            mock_logger,
             'Task `upload_acknowledged` tried to get VerificationRequest object with ID non_existing_subtask_id but it '
             'does not exist.'
         )

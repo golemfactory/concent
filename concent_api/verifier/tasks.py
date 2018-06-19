@@ -19,7 +19,7 @@ from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
 from utils.constants import ErrorCode
 from utils.decorators import log_task_errors
 from utils.decorators import provides_concent_feature
-from utils.logging import log_blender_verification_order_starts, log_string_message
+from utils.logging import log_string_message
 from utils.helpers import upload_file_to_storage_cluster
 from .utils import clean_directory
 from .utils import delete_file
@@ -52,15 +52,15 @@ def blender_verification_order(
 ):
     log_string_message(
         logger,
-        f'Blender_verification_order_starts. SUBTASK_ID: {subtask_id} ',
-        f'Source_package_path {source_package_path} ',
-        f'Source_size: {source_size} ',
-        f'Source_package_hash: {source_package_hash} ',
-        f'Result_package_path: {result_package_path} ',
-        f'Result_size: {result_size} ',
-        f'Result_package_hash: {result_package_hash} ',
-        f'Output_format: {output_format} ',
-        f'Scene_file: {scene_file} '
+        f'Blender_verification_order_starts. SUBTASK_ID: {subtask_id}.',
+        f'Source_package_path: {source_package_path}.',
+        f'Source_size: {source_size}.',
+        f'Source_package_hash: {source_package_hash}.',
+        f'Result_package_path: {result_package_path}.',
+        f'Result_size: {result_size}.',
+        f'Result_package_hash: {result_package_hash}.',
+        f'Output_format: {output_format}.',
+        f'Scene_file: {scene_file}.'
     )
 
     assert output_format in BlenderSubtaskDefinition.OutputFormat.__members__.keys()
@@ -70,21 +70,17 @@ def blender_verification_order(
     assert isinstance(subtask_id, str)
 
     # this is a temporary hack - dummy verification which's result depends on subtask_id only
+
     if settings.MOCK_VERIFICATION_ENABLED:
+        result = VerificationResult.MATCH.name if subtask_id[-1] == 'm' else VerificationResult.MISMATCH.name
         if subtask_id[-1] == 'm':
             verification_result.delay(
                 subtask_id,
-                VerificationResult.MATCH.name,
+                result,
             )
-        else:
-            verification_result.delay(
-                subtask_id,
-                VerificationResult.MISMATCH.name,
-            )
-        result = str(VerificationResult.MATCH if subtask_id[-1] == 'm' else VerificationResult.MISMATCH)
         log_string_message(
             logger,
-            'Temporary hack, verification result depends on subtask_id only - SUBTASK_ID: ' +subtask_id+'. Result: '+result
+            f'Temporary hack, verification result depends on subtask_id only - SUBTASK_ID: {subtask_id}. Result: {result}'
         )
         return
 
@@ -180,10 +176,10 @@ def blender_verification_order(
             log_string_message(
                 logger,
                 'Blender finished with errors',
-                'SUBTASK_ID: ' + subtask_id,
-                'Returncode: ' + str(completed_process.returncode),
-                'stderr: ' + str(completed_process.stderr),
-                'stdout: ' + str(completed_process.stdout)
+                f'SUBTASK_ID: {subtask_id}.'
+                f'Returncode: {str(completed_process.returncode)}.'
+                f'stderr: {str(completed_process.stderr)}.'
+                f'stdout: {str(completed_process.stdout)}.'
             )
             verification_result.delay(
                 subtask_id,
@@ -211,7 +207,7 @@ def blender_verification_order(
         delete_file(file_path)
     log_string_message(
         logger,
-        f'Blender finished successfully. SUBTASK_ID {subtask_id}. '
+        f'Blender finished successfully. SUBTASK_ID: {subtask_id}.'
         f'VerificationResult: {VerificationResult.MATCH.name}'
     )
 

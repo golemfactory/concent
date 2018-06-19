@@ -50,17 +50,17 @@ def blender_verification_order(
     output_format: str,
     scene_file: str,  # pylint: disable=unused-argument
 ):
-    log_blender_verification_order_starts(
+    log_string_message(
         logger,
-        subtask_id,
-        source_package_path,
-        source_size,
-        source_package_hash,
-        result_package_path,
-        result_size,
-        result_package_hash,
-        output_format,
-        scene_file
+        f'Blender_verification_order_starts. SUBTASK_ID: {subtask_id} ',
+        f'Source_package_path {source_package_path} ',
+        f'Source_size: {source_size} ',
+        f'Source_package_hash: {source_package_hash} ',
+        f'Result_package_path: {result_package_path} ',
+        f'Result_size: {result_size} ',
+        f'Result_package_hash: {result_package_hash} ',
+        f'Output_format: {output_format} ',
+        f'Scene_file: {scene_file} '
     )
 
     assert output_format in BlenderSubtaskDefinition.OutputFormat.__members__.keys()

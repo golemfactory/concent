@@ -56,7 +56,7 @@ def store_file_from_response_in_chunks(response: requests.Response, file_path: s
             f.write(chunk)
 
 
-def run_blender(scene_file, output_format, script_file=''):
+def run_blender(scene_file, output_format, script_file):
     return subprocess.run(
         [
             "blender",

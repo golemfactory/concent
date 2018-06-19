@@ -14,6 +14,7 @@ from core.models import Subtask
 from core.payments import base
 from core.subtask_helpers import update_subtask_state
 from core.transfer_operations import store_pending_message
+from utils.decorators import log_task_errors
 from utils.decorators import provides_concent_feature
 from utils.helpers import deserialize_message
 from utils.helpers import get_current_utc_timestamp
@@ -29,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task
+@log_task_errors
 def upload_finished(subtask_id: str):
     try:
         subtask = Subtask.objects.get(subtask_id=subtask_id)
@@ -104,6 +106,7 @@ def upload_finished(subtask_id: str):
 @shared_task(bind=True)
 @provides_concent_feature('concent-worker')
 @transaction.atomic(using='control')
+@log_task_errors
 def verification_result(
     self,
     subtask_id: str,

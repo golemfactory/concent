@@ -4,6 +4,7 @@ from celery import shared_task
 
 from core import tasks
 from utils.constants import ErrorCode
+from utils.decorators import log_task_errors
 from utils.decorators import provides_concent_feature
 from verifier.tasks import blender_verification_order
 from .exceptions import VerificationRequestAlreadyAcknowledgedError
@@ -17,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 @shared_task
 @provides_concent_feature('conductor-worker')
+@log_task_errors
 def blender_verification_request(
     subtask_id:             str,
     source_package_path:    str,
@@ -72,6 +74,7 @@ def blender_verification_request(
 
 
 @shared_task
+@log_task_errors
 def upload_acknowledged(
     subtask_id: str,
     source_file_size: str,

@@ -19,6 +19,7 @@ from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
 from utils.constants import ErrorCode
 from utils.decorators import log_task_errors
 from utils.decorators import provides_concent_feature
+from utils.logging import log_string_message
 from utils.helpers import upload_file_to_storage_cluster
 from .utils import clean_directory
 from .utils import delete_file
@@ -49,6 +50,19 @@ def blender_verification_order(
     output_format: str,
     scene_file: str,  # pylint: disable=unused-argument
 ):
+    log_string_message(
+        logger,
+        f'Blender_verification_order_starts. SUBTASK_ID: {subtask_id}.',
+        f'Source_package_path: {source_package_path}.',
+        f'Source_size: {source_size}.',
+        f'Source_package_hash: {source_package_hash}.',
+        f'Result_package_path: {result_package_path}.',
+        f'Result_size: {result_size}.',
+        f'Result_package_hash: {result_package_hash}.',
+        f'Output_format: {output_format}.',
+        f'Scene_file: {scene_file}.'
+    )
+
     assert output_format in BlenderSubtaskDefinition.OutputFormat.__members__.keys()
     assert source_package_path != result_package_path
     assert source_package_hash != result_package_hash
@@ -56,17 +70,18 @@ def blender_verification_order(
     assert isinstance(subtask_id, str)
 
     # this is a temporary hack - dummy verification which's result depends on subtask_id only
+
     if settings.MOCK_VERIFICATION_ENABLED:
+        result = VerificationResult.MATCH.name if subtask_id[-1] == 'm' else VerificationResult.MISMATCH.name
         if subtask_id[-1] == 'm':
             verification_result.delay(
                 subtask_id,
-                VerificationResult.MATCH.name,
+                result,
             )
-        else:
-            verification_result.delay(
-                subtask_id,
-                VerificationResult.MISMATCH.name,
-            )
+        log_string_message(
+            logger,
+            f'Temporary hack, verification result depends on subtask_id only - SUBTASK_ID: {subtask_id}. Result: {result}'
+        )
         return
 
     # Generate a FileTransferToken valid for a download of any file listed in the order.
@@ -102,7 +117,11 @@ def blender_verification_order(
             )
 
         except (OSError, HTTPError) as exception:
-            logger.info(f'blender_verification_order for SUBTASK_ID {subtask_id} failed with error {exception}.')
+            log_string_message(
+                logger,
+                f'blender_verification_order for SUBTASK_ID {subtask_id} failed with error {exception}.'
+                f'ErrorCode: {ErrorCode.VERIFIIER_FILE_DOWNLOAD_FAILED.name}'
+            )
             verification_result.delay(
                 subtask_id,
                 VerificationResult.ERROR.name,
@@ -111,7 +130,11 @@ def blender_verification_order(
             )
             return
         except Exception as exception:
-            logger.info(f'blender_verification_order for SUBTASK_ID {subtask_id} failed with error {exception}.')
+            log_string_message(
+                logger,
+                f'blender_verification_order for SUBTASK_ID {subtask_id} failed with error {exception}.'
+                f'ErrorCode: {ErrorCode.VERIFIIER_FILE_DOWNLOAD_FAILED.name}'
+            )
             verification_result.delay(
                 subtask_id,
                 VerificationResult.ERROR.name,
@@ -127,6 +150,12 @@ def blender_verification_order(
                 os.path.basename(file_path)
             )
         except (OSError, BadZipFile) as e:
+            log_string_message(
+                logger,
+                f'Verifier failed to unpack the archive with project source with error {e} '
+                f'SUBTASK_ID {subtask_id}. '
+                f'ErrorCode: {ErrorCode.VERIFIIER_UNPACKING_ARCHIVE_FAILED.name}'
+            )
             verification_result.delay(
                 subtask_id,
                 VerificationResult.ERROR.name,
@@ -141,12 +170,17 @@ def blender_verification_order(
             scene_file,
             output_format,
         )
-        logger.info(f'Blender process std_out: {completed_process.stdout}')
-        logger.info(f'Blender process std_err: {completed_process.stdout}')
-
         # If Blender finishes with errors, verification ends here
         # Verification_result informing about the error is sent to the work queue.
         if completed_process.returncode != 0:
+            log_string_message(
+                logger,
+                'Blender finished with errors',
+                f'SUBTASK_ID: {subtask_id}.'
+                f'Returncode: {str(completed_process.returncode)}.'
+                f'stderr: {str(completed_process.stderr)}.'
+                f'stdout: {str(completed_process.stdout)}.'
+            )
             verification_result.delay(
                 subtask_id,
                 VerificationResult.ERROR,
@@ -155,6 +189,7 @@ def blender_verification_order(
             )
             return
     except SubprocessError as exception:
+        log_string_message(logger, f'Blender finished with errors. Error: {exception} SUBTASK_ID {subtask_id}')
         verification_result.delay(
             subtask_id,
             VerificationResult.ERROR,
@@ -170,6 +205,11 @@ def blender_verification_order(
     )
     for file_path in source_files_list + [source_package_path]:
         delete_file(file_path)
+    log_string_message(
+        logger,
+        f'Blender finished successfully. SUBTASK_ID: {subtask_id}.'
+        f'VerificationResult: {VerificationResult.MATCH.name}'
+    )
 
     blender_output_file_name = generate_blender_output_file_name(scene_file)
     upload_file_name = generate_upload_file_name(subtask_id, output_format)

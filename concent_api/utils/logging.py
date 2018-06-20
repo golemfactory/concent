@@ -1,5 +1,4 @@
 import json
-from base64 import b64encode
 from logging import Logger
 from typing import Any
 from typing import Dict
@@ -9,11 +8,11 @@ from typing import Union
 from django.http import JsonResponse
 from golem_messages.message import FileTransferToken
 from golem_messages.message.base import Message
+from golem_messages.utils import encode_hex
 
 from core.models import Subtask
 from utils.constants import MessageIdField
 from utils.helpers import get_field_from_message
-from utils.helpers import join_messages
 
 MessageAsDict = Dict[str, Union[str, Dict[str, Any]]]
 
@@ -34,7 +33,7 @@ def log_message_received(logger: Logger, message: Message, client_public_key: by
         f'A message has been received in `send/` -- MESSAGE_TYPE: {_get_message_type(message)} -- '
         f'TASK_ID: {task_id} -- '
         f'SUBTASK_ID: {subtask_id} -- '
-        f'CLIENT PUBLIC KEY: {client_public_key}'
+        f'CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)}'
     )
 
 
@@ -52,7 +51,7 @@ def log_message_returned(
         f"A message has been returned from `{endpoint}` -- MESSAGE_TYPE: {_get_message_type(response_message)} -- "
         f"TASK_ID: {task_id} -- "
         f"SUBTASK_ID: {subtask_id} -- "
-        f"CLIENT PUBLIC KEY: {client_public_key}"
+        f"CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)}"
     )
 
 
@@ -64,7 +63,7 @@ def log_message_accepted(logger: Logger, message: Message, client_public_key: by
         f"Response from views. The message has been accepted for further processing -- MESSAGE_TYPE: {_get_message_type(message)} -- "
         f"TASK_ID: {task_id} -- "
         f"SUBTASK_ID: {subtask_id} -- "
-        f"CLIENT PUBLIC KEY: {client_public_key}"
+        f"CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)}"
     )
 
 
@@ -76,7 +75,7 @@ def log_message_added_to_queue(logger: Logger, message: Message, client_public_k
         f"A new message has been added to queue -- MESSAGE_TYPE: {_get_message_type(message)} -- "
         f"TASK_ID: {task_id} -- "
         f"SUBTASK_ID: {subtask_id} -- "
-        f"CLIENT PUBLIC KEY: {client_public_key}"
+        f"CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)}"
     )
 
 
@@ -93,7 +92,7 @@ def log_timeout(
         f"A deadline has been exceeded -- MESSAGE_TYPE: {_get_message_type(message)} -- "
         f"TASK_ID: {task_id} -- "
         f"SUBTASK_ID: {subtask_id} -- "
-        f"CLIENT PUBLIC KEY: {client_public_key} -- "
+        f"CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)} -- "
         f"TIMEOUT: {deadline}"
     )
 
@@ -104,7 +103,8 @@ def log_empty_queue(
     endpoint: str,
     client_public_key: bytes
 ):
-    logger.info(f"A message queue is empty in `{endpoint}()` -- CLIENT PUBLIC KEY: {client_public_key}")
+    logger.info(f"A message queue is empty in `{endpoint}()` -- "
+                f"CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)}")
 
 
 @replace_element_to_unavailable_instead_of_none
@@ -125,7 +125,7 @@ def log_400_error(
         f"ERROR MESSAGE: {error_message} -- "
         f"TASK_ID: '{task_id}' -- "
         f"SUBTASK_ID: '{subtask_id}' -- "
-        f"CLIENT PUBLIC KEY: {client_public_key}"
+        f"CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)}"
     )
 
 
@@ -136,7 +136,8 @@ def log_message_not_allowed(
     client_public_key: bytes,
     method: str
 ):
-    logger.info(f"Endpoint {endpoint} does not allow HTTP method {method} -- CLIENT PUBLIC KEY: {client_public_key}")
+    logger.info(f"Endpoint {endpoint} does not allow HTTP method {method} -- "
+        f"CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)}")
 
 
 @replace_element_to_unavailable_instead_of_none
@@ -154,8 +155,8 @@ def log_subtask_stored(
         f"NEXT_DEADLINE: {next_deadline} -- "
         f"TASK_ID: {task_id} -- "
         f"SUBTASK_ID: {subtask_id} -- "
-        f"PROVIDER PUBLIC KEY: {provider_public_key} -- "
-        f"REQUESTOR PUBLIC KEY: {requestor_public_key}"
+        f"PROVIDER PUBLIC KEY: {_convert_bytes_to_hex(provider_public_key)} "
+        f"REQUESTOR PUBLIC KEY: {_convert_bytes_to_hex(requestor_public_key)}"
     )
 
 
@@ -174,8 +175,8 @@ def log_subtask_updated(
         f"NEXT_DEADLINE: {next_deadline} -- "
         f"TASK_ID: {task_id} -- "
         f"SUBTASK_ID: {subtask_id} -- "
-        f"PROVIDER PUBLIC KEY: {provider_public_key} -- "
-        f"REQUESTOR PUBLIC KEY: {requestor_public_key}"
+        f"PROVIDER PUBLIC KEY: {_convert_bytes_to_hex(provider_public_key)} "
+        f"REQUESTOR PUBLIC KEY: {_convert_bytes_to_hex(requestor_public_key)}"
     )
 
 
@@ -186,16 +187,17 @@ def log_stored_message_added_to_subtask(
     subtask_id: str,
     state: str,
     stored_message:  Message,
-    provider_public_key: bytes,
-    requestor_public_key: bytes
+    provider_id: str,
+    requestor_is: str
 ):
     logger.info(
         f"A stored message has beed added to subtask -- STATE: {state} "
         f"TASK_ID: {task_id} "
         f"SUBTASK_ID: {subtask_id} "
         f"STORED_MESSAGE_TYPE: {_get_message_type(stored_message)} "
-        f"TYPE: { stored_message.TYPE} PROVIDER PUBLIC KEY: {provider_public_key} "
-        f"REQUESTOR PUBLIC KEY: {requestor_public_key}"
+        f"TYPE: { stored_message.TYPE} "
+        f"PROVIDER PUBLIC KEY: {provider_id} "
+        f"REQUESTOR PUBLIC KEY: {requestor_is}"
     )
 
 
@@ -203,7 +205,7 @@ def log_changes_in_subtask_states(logger: Logger, client_public_key: bytes, coun
     assert isinstance(count, int)
     logger.info(
         f'{count} {"subtask changed its" if count == 1 else "subtasks changed their"} state -- '
-        f'CLIENT PUBLIC KEY: {client_public_key}'
+        f'CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)}'
     )
 
 
@@ -225,8 +227,8 @@ def log_new_pending_response(
         f'New pending response in {queue_name} endpoint RESPONSE_TYPE: {response_type} '
         f'TASK_ID: {task_id} '
         f'SUBTASK_ID: {subtask_id} '
-        f'PROVIDER PUBLIC KEY: {provider_key} '
-        f'REQUESTOR PUBLIC KEY {requestor_key}'
+        f'PROVIDER PUBLIC KEY: {_convert_bytes_to_hex(provider_key)} '
+        f'REQUESTOR PUBLIC KEY {_convert_bytes_to_hex(requestor_key)}'
     )
 
 
@@ -245,7 +247,7 @@ def log_receive_message_from_database(
         f' RESPONSE_TYPE: {response_type} '
         f'TASK_ID: {task_id} '
         f'SUBTASK_ID: {subtask_id} '
-        f'CLIENT PUBLIC KEY: {client_public_key}'
+        f'CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)}'
     )
 
 
@@ -260,8 +262,8 @@ def log_file_status(
     logger.info(
         f'File assigned to TASK_ID: {task_id} '
         f'SUBTASK_ID: {subtask_id} is already uploaded. -- '
-        f'REQUESTOR PUBLIC KEY: {requestor_public_key} -- '
-        f'PROVIDER PUBLIC KEY {provider_public_key}'
+        f'REQUESTOR PUBLIC KEY: {_convert_bytes_to_hex(requestor_public_key)} '
+        f'PROVIDER PUBLIC KEY {_convert_bytes_to_hex(provider_public_key)}'
     )
 
 
@@ -275,12 +277,15 @@ def log_message_under_validation(
     operation: FileTransferToken.Operation,
     message_type: str,
     file_path: str,
-    subtask_id: bytes,
+    subtask_id: str,
     public_key: bytes
 ):
+
+    assert isinstance(subtask_id, str)
     logger.info(
         f"{operation.capitalize()} request will be validated. Message type: '{message_type}'. "
-        f"File: '{file_path}', with subtask_id '{subtask_id}'. Client public key: '{public_key}'"
+        f"File: '{file_path}', with subtask_id '{subtask_id}'. "
+        f"Client public key: '{_convert_bytes_to_hex(public_key)}'"
     )
 
 
@@ -295,7 +300,8 @@ def log_message_successfully_validated(
 ):
     logger.info(
         f"{operation.capitalize()} request passed all validations. Message type: '{message_type}'. "
-        f"File: '{file_path}', with subtask_id '{subtask_id}'. Client public key: '{public_key}'"
+        f"File: '{file_path}', with subtask_id '{subtask_id}'. "
+        f"Client public key: '{_convert_bytes_to_hex(public_key)}'"
     )
 
 
@@ -330,7 +336,7 @@ def log_message_received_in_endpoint(
         f'Message type: {message_type} '
         f'{"TASK_ID:" + task_id if task_id is not None else ""}'
         f'{" SUBTASK_ID: "  + subtask_id if subtask_id is not None else ""} '
-        f'CLIENT_PUBLIC_KEY: {client_public_key} '
+        f'CLIENT_PUBLIC_KEY: {_convert_bytes_to_hex(client_public_key)} '
         f'{"Content type:" + content_type if content_type is not None else ""} '
     )
 
@@ -340,7 +346,13 @@ def log_json_message(logger: Logger, message: JsonResponse):
 
 
 def log_string_message(logger: Logger, *messages_to_log: str):
-    logger.info(join_messages(messages_to_log))
+    assert (None not in messages_to_log and '' not in messages_to_log)
+    logger.info(' '.join(messages_to_log))
+
+
+def log_error_message(logger: Logger, *messages_to_log: str):
+    assert (None not in messages_to_log and '' not in messages_to_log)
+    logger.error(' '.join(messages_to_log))
 
 
 def _get_field_value_from_messages_for_logging(field_name: MessageIdField, message: Message) -> str:
@@ -379,8 +391,13 @@ def serialize_message_to_dictionary(golem_message: Message) -> MessageAsDict:
 
 def _get_field_value_and_encode_if_bytes_from_message(field_name: str, golem_message: Message) -> str:
     value = get_field_from_message(golem_message, field_name)
-
     if isinstance(value, bytes):
-        value = b64encode(value).decode("ascii")
-
+        value = encode_hex(value)
     return str(value)
+
+
+def _convert_bytes_to_hex(client_key_bytes: bytes) -> str:
+    if isinstance(client_key_bytes, bytes):
+        return encode_hex(client_key_bytes)
+    else:
+        return str(client_key_bytes)

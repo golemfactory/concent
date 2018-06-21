@@ -865,3 +865,7 @@ class ConcentIntegrationTestCase(TestCase):
         subtask = Subtask.objects.get(subtask_id = report_computed_task.subtask_id)
         stored_report_computed_task = message.Message.deserialize(subtask.report_computed_task.data.tobytes(), decrypt_func = None, check_time = False)
         self.assertEqual(stored_report_computed_task, report_computed_task)
+
+    @staticmethod
+    def _create_datetime_from_string(date_time_str):
+        return datetime.datetime.strptime(date_time_str, "%Y-%m-%d %H:%M:%S")

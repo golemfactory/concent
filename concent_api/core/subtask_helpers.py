@@ -75,6 +75,25 @@ def update_timed_out_subtasks(
                 queue               = PendingResponse.Queue.ReceiveOutOfBand,
                 subtask             = subtask,
             )
+        elif subtask.state == Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER.name:  # pylint: disable=no-member
+            locked_subtask = Subtask.objects.select_for_update().get(pk=subtask.pk)
+
+            update_subtask_state(
+                subtask=locked_subtask,
+                state=Subtask.SubtaskState.FAILED.name,  # pylint: disable=no-member
+            )
+            store_pending_message(
+                response_type=PendingResponse.ResponseType.SubtaskResultsRejected,
+                client_public_key=locked_subtask.provider.public_key_bytes,
+                queue=PendingResponse.Queue.ReceiveOutOfBand,
+                subtask=locked_subtask,
+            )
+            store_pending_message(
+                response_type=PendingResponse.ResponseType.SubtaskResultsRejected,
+                client_public_key=locked_subtask.requestor.public_key_bytes,
+                queue=PendingResponse.Queue.ReceiveOutOfBand,
+                subtask=locked_subtask,
+            )
         elif subtask.state == Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name:  # pylint: disable=no-member
             locked_subtask = Subtask.objects.select_for_update().get(pk=subtask.pk)
             task_to_compute = deserialize_message(locked_subtask.task_to_compute.data.tobytes())

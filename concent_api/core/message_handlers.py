@@ -425,6 +425,7 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
         set_next_deadline=True,
         report_computed_task=client_message.report_computed_task,
         task_to_compute=task_to_compute,
+        force_get_task_result=client_message,
     )
     store_pending_message(
         response_type       = PendingResponse.ResponseType.ForceGetTaskResultUpload,
@@ -786,19 +787,20 @@ def handle_unsupported_golem_messages_type(client_message):
 
 
 def store_subtask(
-    task_id:                        str,
-    subtask_id:                     str,
-    provider_public_key:            bytes,
-    requestor_public_key:           bytes,
-    state:                          Subtask.SubtaskState,
-    next_deadline:                  Optional[int],
-    task_to_compute:                message.TaskToCompute,
-    report_computed_task:           message.ReportComputedTask,
-    ack_report_computed_task:       Optional[message.AckReportComputedTask]        = None,
-    reject_report_computed_task:    Optional[message.RejectReportComputedTask]     = None,
-    subtask_results_accepted:       Optional[message.tasks.SubtaskResultsAccepted] = None,
-    subtask_results_rejected:       Optional[message.tasks.SubtaskResultsRejected] = None,
-):
+    task_id: str,
+    subtask_id: str,
+    provider_public_key: bytes,
+    requestor_public_key: bytes,
+    state: Subtask.SubtaskState,
+    next_deadline: Optional[int],
+    task_to_compute: message.TaskToCompute,
+    report_computed_task: message.ReportComputedTask,
+    ack_report_computed_task: Optional[message.AckReportComputedTask] = None,
+    reject_report_computed_task: Optional[message.RejectReportComputedTask] = None,
+    subtask_results_accepted: Optional[message.tasks.SubtaskResultsAccepted] = None,
+    subtask_results_rejected: Optional[message.tasks.SubtaskResultsRejected] = None,
+    force_get_task_result: Optional[message.concents.ForceGetTaskResult] = None,
+) -> Subtask:
     """
     Validates and stores subtask and its data in Subtask table.
     Stores related messages in StoredMessage table and adds relation to newly created subtask.
@@ -829,10 +831,11 @@ def store_subtask(
 
     set_subtask_messages(
         subtask,
-        ack_report_computed_task    = ack_report_computed_task,
-        reject_report_computed_task = reject_report_computed_task,
-        subtask_results_accepted    = subtask_results_accepted,
-        subtask_results_rejected    = subtask_results_rejected,
+        ack_report_computed_task=ack_report_computed_task,
+        reject_report_computed_task=reject_report_computed_task,
+        subtask_results_accepted=subtask_results_accepted,
+        subtask_results_rejected=subtask_results_rejected,
+        force_get_task_result=force_get_task_result,
     )
 
     subtask.full_clean()
@@ -950,35 +953,31 @@ def handle_messages_from_database(
         return response_to_client
 
     elif pending_response.response_type == PendingResponse.ResponseType.ForceGetTaskResultUpload.name:  # pylint: disable=no-member
-        report_computed_task    = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
-        file_transfer_token     = create_file_transfer_token_for_golem_client(
-            report_computed_task,
+        force_get_task_result = deserialize_message(pending_response.subtask.force_get_task_result.data.tobytes())
+        file_transfer_token = create_file_transfer_token_for_golem_client(
+            force_get_task_result.report_computed_task,
             client_public_key,
             FileTransferToken.Operation.upload,
         )
 
         response_to_client = message.concents.ForceGetTaskResultUpload(
-            file_transfer_token     = file_transfer_token,
-            force_get_task_result   = message.concents.ForceGetTaskResult(
-                report_computed_task = report_computed_task,
-            )
+            file_transfer_token=file_transfer_token,
+            force_get_task_result=force_get_task_result,
         )
         mark_message_as_delivered_and_log(pending_response, response_to_client)
         return response_to_client
 
     elif pending_response.response_type == PendingResponse.ResponseType.ForceGetTaskResultDownload.name:  # pylint: disable=no-member
-        report_computed_task    = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
-        file_transfer_token     = create_file_transfer_token_for_golem_client(
-            report_computed_task,
+        force_get_task_result = deserialize_message(pending_response.subtask.force_get_task_result.data.tobytes())
+        file_transfer_token  = create_file_transfer_token_for_golem_client(
+            force_get_task_result.report_computed_task,
             client_public_key,
             FileTransferToken.Operation.download,
         )
 
         response_to_client = message.concents.ForceGetTaskResultDownload(
-            file_transfer_token     = file_transfer_token,
-            force_get_task_result   = message.concents.ForceGetTaskResult(
-                report_computed_task = report_computed_task,
-            )
+            file_transfer_token=file_transfer_token,
+            force_get_task_result=force_get_task_result,
         )
         mark_message_as_delivered_and_log(pending_response, response_to_client)
         return response_to_client
@@ -1067,17 +1066,18 @@ def mark_message_as_delivered_and_log(undelivered_message, log_message):
 
 
 def update_subtask(
-    subtask:                        Subtask,
-    state:                          Subtask.SubtaskState,
-    next_deadline:                  int                                  = None,
-    set_next_deadline:              bool                                 = False,
-    task_to_compute:                message.TaskToCompute                = None,
-    report_computed_task:           message.ReportComputedTask           = None,
-    ack_report_computed_task:       message.AckReportComputedTask        = None,
-    reject_report_computed_task:    message.RejectReportComputedTask     = None,
-    subtask_results_accepted:       message.tasks.SubtaskResultsAccepted = None,
-    subtask_results_rejected:       message.tasks.SubtaskResultsRejected = None,
-):
+    subtask: Subtask,
+    state: Subtask.SubtaskState,
+    next_deadline: Optional[int] = None,
+    set_next_deadline: Optional[bool] = False,
+    task_to_compute: Optional[message.TaskToCompute] = None,
+    report_computed_task: Optional[message.ReportComputedTask] = None,
+    ack_report_computed_task: Optional[message.AckReportComputedTask] = None,
+    reject_report_computed_task: Optional[message.RejectReportComputedTask] = None,
+    subtask_results_accepted: Optional[message.tasks.SubtaskResultsAccepted] = None,
+    subtask_results_rejected: Optional[message.tasks.SubtaskResultsRejected] = None,
+    force_get_task_result: Optional[message.concents.ForceGetTaskResult] = None,
+)->Subtask:
     """
     Validates and updates subtask and its data.
     Stores related messages in StoredMessage table and adds relation to newly created subtask.
@@ -1089,12 +1089,13 @@ def update_subtask(
 
     set_subtask_messages(
         subtask,
-        task_to_compute             = task_to_compute,
-        report_computed_task        = report_computed_task,
-        ack_report_computed_task    = ack_report_computed_task,
-        reject_report_computed_task = reject_report_computed_task,
-        subtask_results_accepted    = subtask_results_accepted,
-        subtask_results_rejected    = subtask_results_rejected,
+        task_to_compute=task_to_compute,
+        report_computed_task=report_computed_task,
+        ack_report_computed_task=ack_report_computed_task,
+        reject_report_computed_task=reject_report_computed_task,
+        subtask_results_accepted=subtask_results_accepted,
+        subtask_results_rejected=subtask_results_rejected,
+        force_get_task_result=force_get_task_result
     )
 
     if set_next_deadline:
@@ -1128,25 +1129,27 @@ def update_subtask(
 
 
 def set_subtask_messages(
-    subtask:                        Subtask,
-    task_to_compute:                message.TaskToCompute                       = None,
-    report_computed_task:           message.ReportComputedTask                  = None,
-    ack_report_computed_task:       message.AckReportComputedTask      = None,
-    reject_report_computed_task:    message.RejectReportComputedTask   = None,
-    subtask_results_accepted:       message.tasks.SubtaskResultsAccepted        = None,
-    subtask_results_rejected:       message.tasks.SubtaskResultsRejected        = None,
-):
+    subtask: Subtask,
+    task_to_compute: Optional[message.TaskToCompute] = None,
+    report_computed_task: Optional[message.ReportComputedTask] = None,
+    ack_report_computed_task: Optional[message.AckReportComputedTask] = None,
+    reject_report_computed_task: Optional[message.RejectReportComputedTask] = None,
+    subtask_results_accepted: Optional[message.tasks.SubtaskResultsAccepted] = None,
+    subtask_results_rejected: Optional[message.tasks.SubtaskResultsRejected] = None,
+    force_get_task_result: Optional[message.concents.ForceGetTaskResult] = None
+) -> None:
     """
     Stores and adds relation of passed StoredMessages to given subtask.
     If the message name is not present in kwargs, it doesn't do anything with it.
     """
     subtask_messages_to_set = {
-        'task_to_compute':              task_to_compute,
-        'report_computed_task':         report_computed_task,
-        'ack_report_computed_task':     ack_report_computed_task,
-        'reject_report_computed_task':  reject_report_computed_task,
-        'subtask_results_accepted':     subtask_results_accepted,
-        'subtask_results_rejected':     subtask_results_rejected,
+        'task_to_compute': task_to_compute,
+        'report_computed_task': report_computed_task,
+        'ack_report_computed_task': ack_report_computed_task,
+        'reject_report_computed_task': reject_report_computed_task,
+        'subtask_results_accepted': subtask_results_accepted,
+        'subtask_results_rejected': subtask_results_rejected,
+        'force_get_task_result': force_get_task_result
     }
 
     assert set(subtask_messages_to_set).issubset({f.name for f in Subtask._meta.get_fields()})
@@ -1180,20 +1183,21 @@ def set_subtask_messages(
 
 
 def store_or_update_subtask(
-    task_id:                        str,
-    subtask_id:                     str,
-    provider_public_key:            bytes,
-    requestor_public_key:           bytes,
-    state:                          Subtask.SubtaskState,
-    next_deadline:                  int                                  = None,
-    set_next_deadline:              bool                                 = False,
-    task_to_compute:                message.TaskToCompute                = None,
-    report_computed_task:           message.ReportComputedTask           = None,
-    ack_report_computed_task:       message.AckReportComputedTask        = None,
-    reject_report_computed_task:    message.RejectReportComputedTask     = None,
-    subtask_results_accepted:       message.tasks.SubtaskResultsAccepted = None,
-    subtask_results_rejected:       message.tasks.SubtaskResultsRejected = None,
-):
+    task_id: str,
+    subtask_id: str,
+    provider_public_key: bytes,
+    requestor_public_key: bytes,
+    state: Subtask.SubtaskState,
+    next_deadline: Optional[int] = None,
+    set_next_deadline: Optional[bool] = False,
+    task_to_compute: Optional[message.TaskToCompute] = None,
+    report_computed_task: Optional[message.ReportComputedTask] = None,
+    ack_report_computed_task: Optional[message.AckReportComputedTask] = None,
+    reject_report_computed_task: Optional[message.RejectReportComputedTask] = None,
+    subtask_results_accepted: Optional[message.tasks.SubtaskResultsAccepted] = None,
+    subtask_results_rejected: Optional[message.tasks.SubtaskResultsRejected] = None,
+    force_get_task_result: Optional[message.concents.ForceGetTaskResult] = None,
+) -> Subtask:
     try:
         subtask = Subtask.objects.get(
             subtask_id = subtask_id,
@@ -1208,31 +1212,33 @@ def store_or_update_subtask(
                 deserialize_message(subtask.task_to_compute.data.tobytes()),
             ])
         subtask = update_subtask(
-            subtask                         = subtask,
-            state                           = state,
-            next_deadline                   = next_deadline,
-            set_next_deadline               = set_next_deadline,
-            task_to_compute                 = task_to_compute,
-            report_computed_task            = report_computed_task,
-            ack_report_computed_task        = ack_report_computed_task,
-            reject_report_computed_task     = reject_report_computed_task,
-            subtask_results_accepted        = subtask_results_accepted,
-            subtask_results_rejected        = subtask_results_rejected,
+            subtask=subtask,
+            state=state,
+            next_deadline=next_deadline,
+            set_next_deadline=set_next_deadline,
+            task_to_compute=task_to_compute,
+            report_computed_task=report_computed_task,
+            ack_report_computed_task=ack_report_computed_task,
+            reject_report_computed_task=reject_report_computed_task,
+            subtask_results_accepted=subtask_results_accepted,
+            subtask_results_rejected= subtask_results_rejected,
+            force_get_task_result=force_get_task_result,
         )
     else:
         subtask = store_subtask(
-            task_id                         = task_id,
-            subtask_id                      = subtask_id,
-            provider_public_key             = provider_public_key,
-            requestor_public_key            = requestor_public_key,
-            state                           = state,
-            next_deadline                   = next_deadline,
-            task_to_compute                 = task_to_compute,
-            report_computed_task            = report_computed_task,
-            ack_report_computed_task        = ack_report_computed_task,
-            reject_report_computed_task     = reject_report_computed_task,
-            subtask_results_accepted        = subtask_results_accepted,
-            subtask_results_rejected        = subtask_results_rejected,
+            task_id=task_id,
+            subtask_id=subtask_id,
+            provider_public_key=provider_public_key,
+            requestor_public_key=requestor_public_key,
+            state=state,
+            next_deadline=next_deadline,
+            task_to_compute=task_to_compute,
+            report_computed_task=report_computed_task,
+            ack_report_computed_task=ack_report_computed_task,
+            reject_report_computed_task=reject_report_computed_task,
+            subtask_results_accepted=subtask_results_accepted,
+            subtask_results_rejected=subtask_results_rejected,
+            force_get_task_result=force_get_task_result,
         )
     return subtask
 

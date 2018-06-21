@@ -86,20 +86,21 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code, 200)
 
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
             subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            expected_nested_messages = {'task_to_compute', 'report_computed_task', 'force_get_task_result'},
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
             expected_messages = [
                 message.tasks.TaskToCompute,
                 message.tasks.ReportComputedTask,
+                message.concents.ForceGetTaskResult,
             ],
             task_id         = '1',
             subtask_id      = '8',
@@ -281,20 +282,21 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        200)
 
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
             task_id                  = '99',
             subtask_id               = '8',
             subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            expected_nested_messages = {'task_to_compute', 'report_computed_task', 'force_get_task_result'},
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
             expected_messages = [
                 message.tasks.TaskToCompute,
                 message.tasks.ReportComputedTask,
+                message.concents.ForceGetTaskResult,
             ],
             task_id         = '99',
             subtask_id      = '8',
@@ -375,7 +377,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         # Test ForceGetTaskResult message
 
         self.assertIsInstance(message_force_get_task_result,                                 message.concents.ForceGetTaskResult)
-        self.assertEqual(message_force_get_task_result.timestamp,                            self._parse_iso_date_to_timestamp("2017-12-01 11:00:02"))
+        self.assertEqual(message_force_get_task_result.timestamp,                            self._parse_iso_date_to_timestamp("2017-12-01 11:00:01"))
         self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute, deserialized_force_get_task_result.report_computed_task.task_to_compute)
         self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def, deserialized_force_get_task_result.report_computed_task.task_to_compute.compute_task_def)
         self.assertEqual(
@@ -519,20 +521,21 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,      200)
 
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
             task_id='99',
             subtask_id='8',
             subtask_state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'report_computed_task', 'force_get_task_result'},
             next_deadline=self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
             expected_messages = [
                 message.tasks.TaskToCompute,
                 message.tasks.ReportComputedTask,
+                message.concents.ForceGetTaskResult,
             ],
             task_id         = '99',
             subtask_id      = '8',
@@ -616,7 +619,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertIsInstance(message_force_get_task_result, message.concents.ForceGetTaskResult)
         self.assertEqual(
             message_force_get_task_result.timestamp,
-            self._parse_iso_date_to_timestamp("2017-12-01 11:00:03")
+            self._parse_iso_date_to_timestamp("2017-12-01 11:00:01")
         )
         self.assertEqual(
             message_force_get_task_result.report_computed_task.task_to_compute,
@@ -764,20 +767,21 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,      200)
 
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
             task_id='99',
             subtask_id='8',
             subtask_state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'report_computed_task', 'force_get_task_result'},
             next_deadline=self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
             expected_messages = [
                 message.tasks.TaskToCompute,
                 message.tasks.ReportComputedTask,
+                message.concents.ForceGetTaskResult,
             ],
             task_id         = '99',
             subtask_id      = '8',
@@ -859,7 +863,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         # Test ForceGetTaskResult message
 
         self.assertIsInstance(message_force_get_task_result,      message.concents.ForceGetTaskResult)
-        self.assertEqual(message_force_get_task_result.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:02"))
+        self.assertEqual(message_force_get_task_result.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:01"))
         self.assertEqual(
             message_force_get_task_result.report_computed_task.task_to_compute,
             deserialized_force_get_task_result.report_computed_task.task_to_compute
@@ -998,20 +1002,21 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,      200)
 
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
             task_id                  = '99',
             subtask_id               = '8',
             subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            expected_nested_messages = {'task_to_compute', 'report_computed_task', 'force_get_task_result'},
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
             expected_messages = [
                 message.tasks.TaskToCompute,
                 message.tasks.ReportComputedTask,
+                message.concents.ForceGetTaskResult,
             ],
             task_id         = '99',
             subtask_id      = '8',
@@ -1087,7 +1092,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # Test ForceGetTaskResult message
         self.assertIsInstance(message_force_get_task_result,                                 message.concents.ForceGetTaskResult)
-        self.assertEqual(message_force_get_task_result.timestamp,                            self._parse_iso_date_to_timestamp("2017-12-01 11:00:02"))
+        self.assertEqual(message_force_get_task_result.timestamp,                            self._parse_iso_date_to_timestamp("2017-12-01 11:00:01"))
         self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute, deserialized_task_to_compute)
         self.assertEqual(
             message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def,

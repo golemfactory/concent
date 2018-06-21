@@ -10,13 +10,14 @@ from utils.testing_helpers  import generate_ecc_key_pair
 
 
 @override_settings(
-    CONCENT_PRIVATE_KEY       = CONCENT_PRIVATE_KEY,
-    CONCENT_PUBLIC_KEY        = CONCENT_PUBLIC_KEY,
-    CONCENT_MESSAGING_TIME    = 1,  # seconds
-    FORCE_ACCEPTANCE_TIME     = 2,  # seconds
-    MINIMUM_UPLOAD_RATE       = 4,  # bits per second
-    DOWNLOAD_LEADIN_TIME      = 6,  # seconds
-    PAYMENT_DUE_TIME          = 5,  # seconds
+    CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+    CONCENT_MESSAGING_TIME=1,  # seconds
+    FORCE_ACCEPTANCE_TIME=2,  # seconds
+    MINIMUM_UPLOAD_RATE=4,  # bits per second
+    DOWNLOAD_LEADIN_TIME=6,  # seconds
+    PAYMENT_DUE_TIME=5,  # seconds
+    ADDITIONAL_VERIFICATION_CALL_TIME=7,  # seconds
 )
 class ProtocolConstantsTest(ConcentIntegrationTestCase):
 
@@ -26,11 +27,12 @@ class ProtocolConstantsTest(ConcentIntegrationTestCase):
         """
 
         protocol_constants_settings = {
-            'CONCENT_MESSAGING_TIME':       settings.CONCENT_MESSAGING_TIME,
-            'FORCE_ACCEPTANCE_TIME':        settings.FORCE_ACCEPTANCE_TIME,
-            'MINIMUM_UPLOAD_RATE':          settings.MINIMUM_UPLOAD_RATE,
-            'DOWNLOAD_LEADIN_TIME':         settings.DOWNLOAD_LEADIN_TIME,
-            'PAYMENT_DUE_TIME':             settings.PAYMENT_DUE_TIME,
+            'CONCENT_MESSAGING_TIME': settings.CONCENT_MESSAGING_TIME,
+            'FORCE_ACCEPTANCE_TIME': settings.FORCE_ACCEPTANCE_TIME,
+            'MINIMUM_UPLOAD_RATE': settings.MINIMUM_UPLOAD_RATE,
+            'DOWNLOAD_LEADIN_TIME': settings.DOWNLOAD_LEADIN_TIME,
+            'PAYMENT_DUE_TIME': settings.PAYMENT_DUE_TIME,
+            'ADDITIONAL_VERIFICATION_CALL_TIME': settings.ADDITIONAL_VERIFICATION_CALL_TIME
         }
 
         expected_protocol_constants = {name.lower(): value for name, value in protocol_constants_settings.items()}

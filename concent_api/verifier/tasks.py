@@ -17,6 +17,7 @@ from core.transfer_operations import create_file_transfer_token_for_concent
 from core.transfer_operations import send_request_to_storage_cluster
 from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
 from utils.constants import ErrorCode
+from utils.decorators import log_task_errors
 from utils.decorators import provides_concent_feature
 from utils.helpers import upload_file_to_storage_cluster
 from .utils import clean_directory
@@ -36,6 +37,7 @@ logger = logging.getLogger(__name__)
 
 @shared_task
 @provides_concent_feature('verifier')
+@log_task_errors
 def blender_verification_order(
     subtask_id: str,
     source_package_path: str,

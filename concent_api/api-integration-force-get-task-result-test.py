@@ -37,12 +37,13 @@ def get_force_get_task_result(task_id, subtask_id, current_time, cluster_consts,
         price=0,
     )
 
-    report_computed_task = message.ReportComputedTask(
-        task_to_compute=task_to_compute,
-        size=size,
-        package_hash=package_hash,
-        subtask_id=subtask_id,
-    )
+    with freeze_time(timestamp_to_isoformat(current_time - 1)):
+        report_computed_task = message.ReportComputedTask(
+            task_to_compute=task_to_compute,
+            size=size,
+            package_hash=package_hash,
+            subtask_id=subtask_id,
+        )
 
     with freeze_time(timestamp_to_isoformat(current_time)):
         force_get_task_result = message.concents.ForceGetTaskResult(

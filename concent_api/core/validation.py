@@ -14,10 +14,12 @@ from core.constants                 import GOLEM_PUBLIC_KEY_HEX_LENGTH
 from core.constants                 import MESSAGE_TASK_ID_MAX_LENGTH
 from core.constants import VALID_ID_REGEX
 from core.constants import VALID_SHA1_HASH_REGEX
+from core.enums import HashingAlgorithm
 from core.exceptions import FileTransferTokenError
+from core.exceptions import GolemMessageValidationError
+from core.exceptions import HashingAlgorithmError
 from core.exceptions import Http400
 from core.utils import hex_to_bytes_convert
-from gatekeeper.enums import HashingAlgorithm
 from utils.helpers import join_messages
 from utils.constants                import ErrorCode
 
@@ -121,6 +123,7 @@ def validate_task_to_compute(task_to_compute: message.TaskToCompute):
 
     validate_hex_public_key(task_to_compute.provider_public_key, 'provider_public_key')
     validate_hex_public_key(task_to_compute.requestor_public_key, 'requestor_public_key')
+    validate_secure_hash_algorithm(task_to_compute.package_hash)
     validate_subtask_price_task_to_compute(task_to_compute)
 
 
@@ -262,6 +265,11 @@ def get_validated_client_public_key_from_client_message(golem_message: message.b
             )
 
     elif isinstance(golem_message, message.tasks.TaskMessage):
+        if not golem_message.is_valid():
+            raise GolemMessageValidationError(
+                "Golem message invalid",
+                error_code=ErrorCode.MESSAGE_INVALID
+            )
         task_to_compute = golem_message.task_to_compute
     else:
         raise Http400(
@@ -337,21 +345,10 @@ def validate_file_transfer_token(file_transfer_token: message.concents.FileTrans
 
     file_checksums = [file["checksum"] for file in file_transfer_token.files]
     for file_checksum in file_checksums:
-        if not isinstance(file_checksum, str):
-            raise FileTransferTokenError("'checksum' must be a string.", ErrorCode.MESSAGE_FILES_CHECKSUM_WRONG_TYPE)
-
-        if len(file_checksum) == 0 or file_checksum.isspace():
-            raise FileTransferTokenError("'checksum' cannot be blank or contain only whitespace.", ErrorCode.MESSAGE_FILES_CHECKSUM_EMPTY)
-
-        if ":" not in file_checksum:
-            raise FileTransferTokenError("'checksum' must consist of two parts separated with a semicolon.", ErrorCode.MESSAGE_FILES_CHECKSUM_WRONG_FORMAT)
-
-        if not file_checksum.split(":")[0] == set(HashingAlgorithm._value2member_map_).pop():  # type: ignore
-            raise FileTransferTokenError("One of the checksums is from an unsupported hashing algorithm.", ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_ALGORITHM)
-
-        assert set(HashingAlgorithm) == {HashingAlgorithm.SHA1}, "If you add a new hashing algorithms, you need to add validations below."
-        if VALID_SHA1_HASH_REGEX.fullmatch(file_checksum.split(":")[1]) is None:
-            raise FileTransferTokenError("Invalid SHA1 hash.", ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_SHA1_HASH)
+        try:
+            validate_secure_hash_algorithm(file_checksum)
+        except HashingAlgorithmError as exception:
+            raise FileTransferTokenError(exception.error_message, exception.error_code)
 
     file_sizes = [file["size"] for file in file_transfer_token.files]
     for file_size in file_sizes:
@@ -373,3 +370,36 @@ def validate_file_transfer_token(file_transfer_token: message.concents.FileTrans
     categories = [file_info['category'] for file_info in file_transfer_token.files]
     if len(set(categories)) != len(categories):
         raise FileTransferTokenError("'category' field must be unique across FileInfo list.", ErrorCode.MESSAGE_FILES_CATEGORY_NOT_UNIQUE)
+
+
+def validate_secure_hash_algorithm(checksum: str):
+    if not isinstance(checksum, str):
+        raise HashingAlgorithmError(
+            "'checksum' must be a string.",
+            ErrorCode.MESSAGE_FILES_CHECKSUM_WRONG_TYPE
+        )
+
+    if len(checksum) == 0 or checksum.isspace():
+        raise HashingAlgorithmError(
+            "'checksum' cannot be blank or contain only whitespace.",
+            ErrorCode.MESSAGE_FILES_CHECKSUM_EMPTY
+        )
+
+    if ":" not in checksum:
+        raise HashingAlgorithmError(
+            "checksum must be in format of: '<ALGORITHM>:<HASH>'.",
+            ErrorCode.MESSAGE_FILES_CHECKSUM_WRONG_FORMAT
+        )
+
+    if not checksum.split(":")[0] in HashingAlgorithm.values():
+        raise HashingAlgorithmError(
+            f"Checksum {checksum} comes from an unsupported hashing algorithm.",
+            ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_ALGORITHM
+        )
+
+    assert set(HashingAlgorithm) == {HashingAlgorithm.SHA1}, "If you add a new hashing algorithms, you need to add validations below."
+    if VALID_SHA1_HASH_REGEX.fullmatch(checksum.split(":")[1]) is None:
+        raise HashingAlgorithmError(
+            "Invalid SHA1 hash.",
+            ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_SHA1_HASH
+        )

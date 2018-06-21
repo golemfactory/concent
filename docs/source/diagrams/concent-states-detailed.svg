@@ -116,7 +116,7 @@
       <text x="-23.6477" font-size="8px" y="514.5839" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">t = deadline + CMT</text>
       <path fill="none" d="M-366.8832 482.6835 L-366.8832 688.6212 L24.7287 688.6212" clip-path="url(#clipPath2)"/>
       <path d="M32.7287 688.6212 L20.7287 683.6212 L23.7287 688.6212 L20.7287 693.6212 Z" stroke="none" clip-path="url(#clipPath2)"/>
-      <text fill="rgb(51,153,255)" x="-304.8937" xml:space="preserve" y="661.288" clip-path="url(#clipPath2)" stroke="none">ForgeGetTaskResult</text>
+      <text fill="rgb(51,153,255)" x="-304.5321" xml:space="preserve" y="661.288" clip-path="url(#clipPath2)" stroke="none">ForceGetTaskResult</text>
       <text x="-355.3831" font-size="8px" y="677.8154" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">report + MDT &lt; t &lt; report + MDT + MAT + 2MMTT</text>
       <path fill="none" d="M99.2645 602.9037 L99.2645 646.1212" clip-path="url(#clipPath2)"/>
       <path d="M99.2645 654.1212 L104.2645 642.1212 L99.2645 645.1212 L94.2645 642.1212 Z" stroke="none" clip-path="url(#clipPath2)"/>

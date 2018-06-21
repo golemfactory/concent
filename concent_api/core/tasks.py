@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 
 @shared_task
 @log_task_errors
+@transaction.atomic(using='control')
 def upload_finished(subtask_id: str):
     try:
         subtask = Subtask.objects.get(subtask_id=subtask_id)

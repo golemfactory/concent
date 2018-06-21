@@ -218,7 +218,7 @@
       <text x="-17.8242" xml:space="preserve" y="1110.7692" clip-path="url(#clipPath2)" stroke="none">SubtaskResultsVerify</text>
     </g>
     <g font-size="8px" stroke-linecap="butt" transform="matrix(1,0,0,1,449,-390)" text-rendering="geometricPrecision" font-family="monospace" shape-rendering="geometricPrecision" stroke-miterlimit="1.45">
-      <text x="-18.4369" xml:space="preserve" y="1124.1385" clip-path="url(#clipPath2)" stroke="none">t &lt;= rejection + AVCT</text>
+      <text x="-76.2337" xml:space="preserve" y="1124.1385" clip-path="url(#clipPath2)" stroke="none">rejection &lt; t &lt;= rejection + AVCT</text>
       <path fill="none" d="M32.7629 568.4037 L-123.7684 568.4037 L-123.7684 683.6212 M-123.7684 693.6212 L-123.7684 911.8334 M-123.7684 921.8334 L-123.7684 1156.1581 L29.9665 1156.1581" clip-path="url(#clipPath2)"/>
       <path d="M37.9665 1156.1581 L25.9665 1151.1581 L28.9665 1156.1581 L25.9665 1161.1581 Z" stroke="none" clip-path="url(#clipPath2)"/>
     </g>

@@ -54,7 +54,9 @@ class ConcentVersionMiddleware(object):
 
 def determine_return_type(request_meta):
     try:
-        preferred_types = ['application/json', 'text/html']
+        # The list of preferred mime-types should be sorted in order of increasing desirability,
+        # in case of a situation where there is a tie.
+        preferred_types = ['text/html', 'application/json']
         if "HTTP_ACCEPT" in request_meta:
             return best_match(preferred_types, request_meta['HTTP_ACCEPT'])
         return "application/json"

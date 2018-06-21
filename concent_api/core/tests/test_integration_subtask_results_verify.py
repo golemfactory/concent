@@ -196,6 +196,46 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         )
         self._assert_stored_message_counter_not_increased()
 
+    def test_that_concent_responds_with_service_refused_when_request_arrives_too_early(self):
+        """
+        Provider -> Concent: SubtaskResultsVerify
+        Concent -> Provider: ServiceRefused (InvalidRequest)
+        """
+        # given
+        serialized_subtask_results_verify = self._get_serialized_subtask_results_verify(
+            subtask_results_verify=self._get_deserialized_subtask_results_verify(
+                timestamp="2018-04-01 10:30:00",
+                subtask_results_rejected=self._get_deserialized_subtask_results_rejected(
+                    reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
+                    timestamp="2018-04-01 10:30:00",
+                    report_computed_task=self._get_deserialized_report_computed_task(
+                        timestamp="2018-04-01 10:01:00",
+                        subtask_id=self.subtask_id,
+                    ),
+                )
+            )
+        )
+
+        # when
+        with freeze_time("2018-04-01 10:29:59"):
+            response = self.client.post(
+                reverse('core:send'),
+                data=serialized_subtask_results_verify,
+                content_type='application/octet-stream',
+            )
+
+        # then
+        self._test_response(
+            response,
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ServiceRefused,
+            fields={
+                'reason': message.concents.ServiceRefused.REASON.InvalidRequest,
+            }
+        )
+        self._assert_stored_message_counter_not_increased()
+
     def test_that_concent_reponds_with_too_small_requestor_deposit_when_requestor_doesnt_have_funds(self):
         """
         Provider -> Concent: SubtaskResultsVerify

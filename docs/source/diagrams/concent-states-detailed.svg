@@ -160,7 +160,7 @@
     </g>
     <g font-size="10px" stroke-linecap="butt" transform="matrix(1,0,0,1,449,-390)" text-rendering="geometricPrecision" font-family="'Arial'" shape-rendering="geometricPrecision" font-weight="bold" stroke-miterlimit="1.45">
       <text x="105.5006" xml:space="preserve" y="744.1967" clip-path="url(#clipPath2)" stroke="none">all files uploaded</text>
-      <text x="104.167" font-size="8px" y="758.2656" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">t &gt;= deadline + 2MDT + 3CMT</text>
+      <text x="104.167" font-size="8px" y="758.2656" clip-path="url(#clipPath2)" font-family="monospace" stroke="none" font-weight="normal" xml:space="preserve">t &lt;= deadline + 2MDT + 3CMT</text>
       <path fill="none" d="M-366.8832 482.6849 L-366.8832 916.8334 L29.0653 916.8334" clip-path="url(#clipPath2)"/>
       <path d="M37.0653 916.8334 L25.0653 911.8334 L28.0653 916.8334 L25.0653 921.8334 Z" stroke="none" clip-path="url(#clipPath2)"/>
       <text fill="rgb(255,153,51)" x="-307.3788" xml:space="preserve" y="894.3002" clip-path="url(#clipPath2)" stroke="none">ForceSubtaskResults</text>

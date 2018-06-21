@@ -13,6 +13,7 @@ from golem_messages.utils import encode_hex
 from core.models import Subtask
 from utils.constants import MessageIdField
 from utils.helpers import get_field_from_message
+from utils.helpers import join_messages
 
 MessageAsDict = Dict[str, Union[str, Dict[str, Any]]]
 
@@ -346,13 +347,11 @@ def log_json_message(logger: Logger, message: JsonResponse):
 
 
 def log_string_message(logger: Logger, *messages_to_log: str):
-    assert (None not in messages_to_log and '' not in messages_to_log)
-    logger.info(' '.join(messages_to_log))
+    logger.info(join_messages(*messages_to_log))
 
 
 def log_error_message(logger: Logger, *messages_to_log: str):
-    assert (None not in messages_to_log and '' not in messages_to_log)
-    logger.error(' '.join(messages_to_log))
+    logger.error(join_messages(*messages_to_log))
 
 
 def _get_field_value_from_messages_for_logging(field_name: MessageIdField, message: Message) -> str:

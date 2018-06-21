@@ -96,3 +96,11 @@ def delete_file(file_path):
             os.unlink(file_path)
     except OSError as exception:
         logger.warning(f'File with path {file_path} was not deleted, exception: {exception}')
+
+
+def generate_blender_output_file_name(scene_file):
+    return f'{settings.VERIFIER_STORAGE_PATH}/out_{scene_file}'
+
+
+def generate_upload_file_name(subtask_id, extension):
+    return f'blender/verifier-output/{subtask_id}/{subtask_id}.{extension.lower()}'

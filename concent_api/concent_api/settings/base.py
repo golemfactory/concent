@@ -223,6 +223,12 @@ LOGGING = {
             'level':     'DEBUG',
             'propagate': True,
         },
+        'concent.crash': {
+            # Level is DEBUG because we're leaving filtering up to the handler.
+            'handlers':  ['sentry'],
+            'level':     'DEBUG',
+            'propagate': True,
+        },
     },
 }
 

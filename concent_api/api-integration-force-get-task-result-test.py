@@ -9,6 +9,7 @@ from golem_messages import message
 
 from utils.helpers import get_current_utc_timestamp
 from utils.helpers import get_storage_result_file_path
+from utils.helpers import upload_file_to_storage_cluster
 from api_testing_common import api_request
 from api_testing_common import assert_condition
 from api_testing_common import count_fails
@@ -21,7 +22,6 @@ from api_testing_common import REQUESTOR_PRIVATE_KEY
 from api_testing_common import REQUESTOR_PUBLIC_KEY
 from api_testing_common import run_tests
 from api_testing_common import timestamp_to_isoformat
-from api_testing_common import upload_file_to_storage_cluster
 
 import requests
 
@@ -107,8 +107,6 @@ def test_case_1_test_for_existing_file(cluster_consts, cluster_url, test_id):
         force_get_task_result_upload.file_transfer_token,
         PROVIDER_PRIVATE_KEY,
         PROVIDER_PUBLIC_KEY,
-        CONCENT_PUBLIC_KEY,
-        STORAGE_CLUSTER_ADDRESS,
     )
 
     assert_condition(response.status_code, 200, 'File has not been stored on cluster')
@@ -189,7 +187,6 @@ def test_case_2_test_for_non_existing_file(cluster_consts, cluster_url, test_id)
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
-        from concent_api.settings import STORAGE_CLUSTER_ADDRESS
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file=sys.stderr)

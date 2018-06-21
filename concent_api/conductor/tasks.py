@@ -3,8 +3,10 @@ import logging
 from celery import shared_task
 
 from core import tasks
+from utils.constants import ErrorCode
 from utils.decorators import provides_concent_feature
 from verifier.tasks import blender_verification_order
+from .exceptions import VerificationRequestAlreadyAcknowledgedError
 from .models import BlenderSubtaskDefinition
 from .models import UploadReport
 from .models import VerificationRequest
@@ -87,9 +89,18 @@ def upload_acknowledged(
         )
         return
 
-    verification_request.upload_acknowledged = True
-    verification_request.full_clean()
-    verification_request.save()
+    if verification_request.upload_acknowledged is True:
+        logging.error(
+            f'Task `upload_acknowledged` scheduled but VerificationRequest with with ID {subtask_id} is already acknowledged.'
+        )
+        raise VerificationRequestAlreadyAcknowledgedError(
+            f'Task `upload_acknowledged` scheduled but VerificationRequest with with ID {subtask_id} is already acknowledged.',
+            ErrorCode.CONDUCTOR_VERIFICATION_REQUEST_ALREADY_ACKNOWLEDGED
+        )
+    else:
+        verification_request.upload_acknowledged = True
+        verification_request.full_clean()
+        verification_request.save()
 
     blender_verification_order.delay(
         subtask_id=verification_request.subtask_id,

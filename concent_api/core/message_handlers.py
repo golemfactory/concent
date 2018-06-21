@@ -532,17 +532,15 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
 
 def handle_send_force_subtask_results_response(client_message):
     if isinstance(client_message.subtask_results_accepted, message.tasks.SubtaskResultsAccepted):
-        task_to_compute           = client_message.subtask_results_accepted.task_to_compute
-        subtask_results_accepted  = client_message.subtask_results_accepted
-        subtask_results_rejected  = None
-        state                     = Subtask.SubtaskState.ACCEPTED
-        response_type             = PendingResponse.ResponseType.ForceSubtaskResultsResponse
+        task_to_compute = client_message.subtask_results_accepted.task_to_compute
+        subtask_results_accepted = client_message.subtask_results_accepted
+        subtask_results_rejected = None
+        state = Subtask.SubtaskState.ACCEPTED
     else:
-        task_to_compute           = client_message.subtask_results_rejected.report_computed_task.task_to_compute
-        subtask_results_accepted  = None
-        subtask_results_rejected  = client_message.subtask_results_rejected
-        state                     = Subtask.SubtaskState.REJECTED
-        response_type             = PendingResponse.ResponseType.SubtaskResultsRejected
+        task_to_compute = client_message.subtask_results_rejected.report_computed_task.task_to_compute
+        subtask_results_accepted = None
+        subtask_results_rejected = client_message.subtask_results_rejected
+        state = Subtask.SubtaskState.REJECTED
 
     validate_task_to_compute(task_to_compute)
     provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
@@ -602,10 +600,10 @@ def handle_send_force_subtask_results_response(client_message):
         subtask_results_rejected    = subtask_results_rejected,
     )
     store_pending_message(
-        response_type       = response_type,
-        client_public_key   = provider_public_key,
-        queue               = PendingResponse.Queue.Receive,
-        subtask             = subtask,
+        response_type=(PendingResponse.ResponseType.ForceSubtaskResultsResponse),
+        client_public_key=provider_public_key,
+        queue=PendingResponse.Queue.Receive,
+        subtask=subtask,
     )
     logging.log_message_added_to_queue(
         logger,
@@ -1002,18 +1000,20 @@ def handle_messages_from_database(
         return response_to_client
 
     elif pending_response.response_type == PendingResponse.ResponseType.ForceSubtaskResultsResponse.name:  # pylint: disable=no-member
-        subtask_results_accepted = deserialize_message(pending_response.subtask.subtask_results_accepted.data.tobytes())
-        response_to_client = message.concents.ForceSubtaskResultsResponse(
-            subtask_results_accepted = subtask_results_accepted,
-        )
-        mark_message_as_delivered_and_log(pending_response, response_to_client)
-        return response_to_client
+        subtask_results_accepted = pending_response.subtask.subtask_results_accepted
+        subtask_results_rejected = pending_response.subtask.subtask_results_rejected
 
-    elif pending_response.response_type == PendingResponse.ResponseType.SubtaskResultsRejected.name:  # pylint: disable=no-member
-        subtask_results_rejected = deserialize_message(pending_response.subtask.subtask_results_rejected.data.tobytes())
-        response_to_client = message.concents.ForceSubtaskResultsResponse(
-            subtask_results_rejected = subtask_results_rejected,
-        )
+        assert (subtask_results_rejected is None and subtask_results_accepted is not None) or \
+               (subtask_results_accepted is None and subtask_results_rejected is not None)
+
+        if subtask_results_accepted is not None:
+            response_to_client = message.concents.ForceSubtaskResultsResponse(
+                subtask_results_accepted=deserialize_message(subtask_results_accepted.data.tobytes()),
+            )
+        else:
+            response_to_client = message.concents.ForceSubtaskResultsResponse(
+                subtask_results_rejected=deserialize_message(subtask_results_rejected.data.tobytes(), )
+            )
         mark_message_as_delivered_and_log(pending_response, response_to_client)
         return response_to_client
 

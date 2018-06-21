@@ -636,14 +636,14 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Provider should receive it from Concent if correct keys are used.
 
         Exptected message exchange:
-        Provider                  -> Concent:                   ForceSubtaskResults
-        Concent                   -> Provider:                  HTTP 202
-        Concent                   -> WrongRequestor/Provider:   HTTP 204
-        Concent                   -> Requestor:                 ForceSubtaskResults
-        WrongRequestor/Provider   -> Concent:                   SubtaskResultsRejected
-        Concent                   -> Requestor:                 HTTP 202
-        Concent                   -> WrongProvider/Requestor:   HTTP 204
-        Concent                   -> Provider:                  SubtaskResultsRejected
+        Provider                  -> Concent:                 ForceSubtaskResults
+        Concent                   -> Provider:                HTTP 202
+        Concent                   -> WrongRequestor/Provider: HTTP 204
+        Concent                   -> Requestor:               ForceSubtaskResults
+        WrongRequestor/Provider   -> Concent:                 HTTP 400
+        Requestor                 -> Concent:                 ForceSubtaskResultsResponse (with SubtaskResultsRejected)
+        Concent                   -> WrongProvider/Requestor: HTTP 204
+        Concent                   -> Provider:                ForceSubtaskResultsResponse (with SubtaskResultsRejected)
         """
 
         task_to_compute = self._get_deserialized_task_to_compute(
@@ -894,12 +894,12 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._assert_stored_message_counter_increased(increased_by=1)
         self._test_subtask_state(
-            task_id                      = '2',
-            subtask_id                   = 'xxyyzz',
-            subtask_state                = Subtask.SubtaskState.REJECTED,
-            provider_key                 = self._get_encoded_provider_public_key(),
-            requestor_key                = self._get_encoded_requestor_public_key(),
-            expected_nested_messages     = {
+            task_id='2',
+            subtask_id='xxyyzz',
+            subtask_state=Subtask.SubtaskState.REJECTED,
+            provider_key=self._get_encoded_provider_public_key(),
+            requestor_key=self._get_encoded_requestor_public_key(),
+            expected_nested_messages={
                 'task_to_compute',
                 'report_computed_task',
                 'ack_report_computed_task',
@@ -907,18 +907,18 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             },
         )
         self._test_last_stored_messages(
-            expected_messages = [
+            expected_messages=[
                 message.tasks.SubtaskResultsRejected,
             ],
-            task_id         = '2',
-            subtask_id      = 'xxyyzz',
-            timestamp       = "2018-02-05 10:00:44"
+            task_id='2',
+            subtask_id='xxyyzz',
+            timestamp="2018-02-05 10:00:44"
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = 'xxyyzz',
-            client_public_key                  = self._get_encoded_provider_public_key(),
-            expected_pending_responses_receive = [
-                PendingResponse.ResponseType.SubtaskResultsRejected,
+            subtask_id='xxyyzz',
+            client_public_key=self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive=[
+                PendingResponse.ResponseType.ForceSubtaskResultsResponse,
             ]
         )
 

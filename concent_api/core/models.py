@@ -20,6 +20,7 @@ from golem_messages         import message
 from core.exceptions        import ConcentInSoftShutdownMode
 from utils.fields           import Base64Field
 from utils.fields           import ChoiceEnum
+from utils.helpers import deserialize_message
 
 from .constants             import TASK_OWNER_KEY_LENGTH
 from .constants             import ETHEREUM_ADDRESS_LENGTH
@@ -182,6 +183,10 @@ class Subtask(Model):
         'subtask_results_rejected': {
             SubtaskState.REJECTED,
         },
+        'force_get_task_result': {
+            SubtaskState.FORCING_RESULT_TRANSFER,
+            SubtaskState.RESULT_UPLOADED,
+        }
     }
 
     # Defines in which states given related message must be None.
@@ -208,6 +213,10 @@ class Subtask(Model):
             SubtaskState.RESULT_UPLOADED,
             SubtaskState.FORCING_ACCEPTANCE,
         },
+        'force_get_task_result': {
+            SubtaskState.FORCING_REPORT,
+            SubtaskState.REPORTED,
+        }
     }
 
     # Defines related golem message for related stored messages
@@ -218,6 +227,7 @@ class Subtask(Model):
         'reject_report_computed_task':  message.RejectReportComputedTask,
         'subtask_results_accepted':     message.tasks.SubtaskResultsAccepted,
         'subtask_results_rejected':     message.tasks.SubtaskResultsRejected,
+        'force_get_task_result':        message.concents.ForceGetTaskResult,
     }
 
     assert set(MESSAGE_FOR_FIELD) == set(REQUIRED_RELATED_MESSAGES_IN_STATES)
@@ -298,10 +308,11 @@ class Subtask(Model):
     # Related messages
     task_to_compute = OneToOneField(StoredMessage, related_name='subtasks_for_task_to_compute')
     report_computed_task = OneToOneField(StoredMessage, related_name='subtasks_for_report_computed_task')
-    ack_report_computed_task    = OneToOneField(StoredMessage, blank = True, null = True, related_name = 'subtasks_for_ack_report_computed_task')
-    reject_report_computed_task = OneToOneField(StoredMessage, blank = True, null = True, related_name = 'subtasks_for_reject_report_computed_task')
-    subtask_results_accepted    = OneToOneField(StoredMessage, blank = True, null = True, related_name = 'subtasks_for_subtask_results_accepted')
-    subtask_results_rejected    = OneToOneField(StoredMessage, blank = True, null = True, related_name = 'subtasks_for_subtask_results_rejected')
+    ack_report_computed_task = OneToOneField(StoredMessage, blank=True, null=True, related_name='subtasks_for_ack_report_computed_task')
+    reject_report_computed_task = OneToOneField(StoredMessage, blank=True, null=True, related_name='subtasks_for_reject_report_computed_task')
+    subtask_results_accepted = OneToOneField(StoredMessage, blank=True, null=True, related_name='subtasks_for_subtask_results_accepted')
+    subtask_results_rejected = OneToOneField(StoredMessage, blank=True, null=True, related_name='subtasks_for_subtask_results_rejected')
+    force_get_task_result = OneToOneField(StoredMessage, blank=True, null=True, related_name='subtasks_for_force_get_task_result')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -385,6 +396,20 @@ class Subtask(Model):
                         self.state,
                     )
                 })
+
+        if isinstance(self.report_computed_task.data, bytes):
+            deserialized_report_computed_task = deserialize_message(self.report_computed_task.data)
+        else:
+            deserialized_report_computed_task = deserialize_message(self.report_computed_task.data.tobytes())  # pylint: disable=no-member
+
+        # If available, the report_computed_task nested in force_get_task_result must match report_computed_task.
+        if (
+            self.force_get_task_result is not None and
+            deserialize_message(self.force_get_task_result.data).report_computed_task != deserialized_report_computed_task
+        ):
+            raise ValidationError({
+                'force_get_task_result': "ReportComputedTask nested in ForceGetTaskResult must match Subtask's ReportComputedTask."
+            })
 
     @property
     def state_enum(self):

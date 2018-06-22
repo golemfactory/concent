@@ -160,20 +160,21 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         assert response.status_code == 200
 
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
             subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            expected_nested_messages = {'task_to_compute', 'report_computed_task', 'force_get_task_result'},
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
             expected_messages = [
                 message.tasks.TaskToCompute,
                 message.tasks.ReportComputedTask,
+                message.concents.ForceGetTaskResult,
             ],
             task_id         = '1',
             subtask_id      = '8',
@@ -263,20 +264,21 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertIsInstance(message_from_concent,         message.concents.AckForceGetTaskResult)
         self.assertEqual(message_from_concent.timestamp,    self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"))
 
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',
             subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            expected_nested_messages = {'task_to_compute', 'report_computed_task', 'force_get_task_result'},
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
             expected_messages = [
                 message.tasks.TaskToCompute,
                 message.tasks.ReportComputedTask,
+                message.concents.ForceGetTaskResult,
             ],
             task_id         = '1',
             subtask_id      = '8',
@@ -336,20 +338,21 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response_1.status_code, 200)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
             task_id                  = '99',
             subtask_id               = '8',
             subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            expected_nested_messages = {'task_to_compute', 'report_computed_task', 'force_get_task_result'},
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
             expected_messages = [
                 message.tasks.TaskToCompute,
                 message.tasks.ReportComputedTask,
+                message.concents.ForceGetTaskResult,
             ],
             task_id         = '99',
             subtask_id      = '8',
@@ -385,7 +388,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(message_from_concent.timestamp,            self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
         self.assertIsInstance(message_force_get_task_result,        message.concents.ForceGetTaskResult)
-        self.assertEqual(message_force_get_task_result.timestamp,   self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
+        self.assertEqual(message_force_get_task_result.timestamp,   self._parse_iso_date_to_timestamp("2017-12-01 11:00:01"))
         self.assertEqual(
             message_force_get_task_result.report_computed_task.task_to_compute,
             deserialized_force_get_task_result.report_computed_task.task_to_compute
@@ -487,7 +490,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response_1.status_code, 200)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
             task_id                  = '99',
             subtask_id               = '8',
@@ -495,7 +498,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            expected_nested_messages = {'task_to_compute', 'report_computed_task', 'force_get_task_result'},
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',
@@ -607,20 +610,21 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response_1.status_code, 200)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
             task_id                  = '99',
             subtask_id               = '8',
             subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            expected_nested_messages = {'task_to_compute', 'report_computed_task', 'force_get_task_result'},
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
             expected_messages = [
                 message.tasks.TaskToCompute,
                 message.tasks.ReportComputedTask,
+                message.concents.ForceGetTaskResult,
             ],
             task_id         = '99',
             subtask_id      = '8',
@@ -649,7 +653,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(message_from_concent.timestamp,            self._parse_iso_date_to_timestamp("2017-12-01 11:00:06"))
         self.assertIsInstance(message_force_get_task_result,        message.concents.ForceGetTaskResult)
-        self.assertEqual(message_force_get_task_result.timestamp,   self._parse_iso_date_to_timestamp("2017-12-01 11:00:06"))
+        self.assertEqual(message_force_get_task_result.timestamp,   self._parse_iso_date_to_timestamp("2017-12-01 11:00:01"))
         self.assertEqual(
             message_force_get_task_result.report_computed_task.task_to_compute,
             deserialized_force_get_task_result.report_computed_task.task_to_compute,
@@ -760,20 +764,21 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response_1.status_code, 200)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
             task_id                  = '99',
             subtask_id               = '8',
             subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            expected_nested_messages = {'task_to_compute', 'report_computed_task', 'force_get_task_result'},
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
             expected_messages = [
                 message.tasks.TaskToCompute,
                 message.tasks.ReportComputedTask,
+                message.concents.ForceGetTaskResult,
             ],
             task_id         = '99',
             subtask_id      = '8',
@@ -802,7 +807,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(message_from_concent.timestamp,            self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
         self.assertIsInstance(message_force_get_task_result,        message.concents.ForceGetTaskResult)
-        self.assertEqual(message_force_get_task_result.timestamp,   self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
+        self.assertEqual(message_force_get_task_result.timestamp,   self._parse_iso_date_to_timestamp("2017-12-01 11:00:01"))
         self.assertEqual(
             message_force_get_task_result.report_computed_task.task_to_compute,
             deserialized_force_get_task_result.report_computed_task.task_to_compute
@@ -914,20 +919,21 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response_1.status_code, 200)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
             task_id                  = '99',
             subtask_id               = '8',
             subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            expected_nested_messages = {'task_to_compute', 'report_computed_task', 'force_get_task_result'},
             next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
             expected_messages = [
                 message.tasks.TaskToCompute,
                 message.tasks.ReportComputedTask,
+                message.concents.ForceGetTaskResult,
             ],
             task_id         = '99',
             subtask_id      = '8',
@@ -963,7 +969,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(message_from_concent.timestamp,                                                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
         self.assertIsInstance(message_force_get_task_result,                                                    message.concents.ForceGetTaskResult)
-        self.assertEqual(message_force_get_task_result.timestamp,                                               self._parse_iso_date_to_timestamp("2017-12-01 11:00:12"))
+        self.assertEqual(message_force_get_task_result.timestamp,                                               self._parse_iso_date_to_timestamp("2017-12-01 11:00:01"))
         self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute,                    deserialized_task_to_compute)
         self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def,   deserialized_task_to_compute.compute_task_def)   # pylint: disable=no-member
         self.assertEqual(

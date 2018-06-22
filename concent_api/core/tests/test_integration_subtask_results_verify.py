@@ -15,14 +15,14 @@ from core.models import PendingResponse
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
 from core.transfer_operations import create_file_transfer_token_for_golem_client
-from utils.constants import ErrorCode
-from utils.helpers import get_current_utc_timestamp
-from utils.helpers import get_storage_result_file_path
-from utils.helpers import get_storage_scene_file_path
-from utils.helpers import get_storage_source_file_path
-from utils.helpers import parse_timestamp_to_utc_datetime
-from utils.helpers import sign_message
-from utils.testing_helpers import generate_ecc_key_pair
+from common.constants import ErrorCode
+from common.helpers import get_current_utc_timestamp
+from common.helpers import get_storage_result_file_path
+from common.helpers import get_storage_scene_file_path
+from common.helpers import get_storage_source_file_path
+from common.helpers import parse_timestamp_to_utc_datetime
+from common.helpers import sign_message
+from common.testing_helpers import generate_ecc_key_pair
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 

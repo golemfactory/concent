@@ -8,9 +8,9 @@ from core.models import PendingResponse
 from core.models import Subtask
 from core.tasks import upload_finished
 from core.tests.utils import ConcentIntegrationTestCase
-from utils.helpers import get_current_utc_timestamp
-from utils.helpers import parse_datetime_to_timestamp
-from utils.helpers import parse_timestamp_to_utc_datetime
+from common.helpers import get_current_utc_timestamp
+from common.helpers import parse_datetime_to_timestamp
+from common.helpers import parse_timestamp_to_utc_datetime
 
 
 class UploadFinishedTaskTest(ConcentIntegrationTestCase):

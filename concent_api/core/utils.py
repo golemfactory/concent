@@ -9,7 +9,7 @@ from golem_messages.helpers         import subtask_verification_time
 from golem_messages.utils import decode_hex
 
 from core.exceptions import Http400
-from utils.constants import ErrorCode
+from common.constants import ErrorCode
 from .constants import GOLEM_PUBLIC_KEY_LENGTH
 from .constants import GOLEM_PUBLIC_KEY_HEX_LENGTH
 

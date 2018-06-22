@@ -14,10 +14,10 @@ from core.transfer_operations import create_file_transfer_token_for_concent
 from core.transfer_operations import create_file_transfer_token_for_golem_client
 from core.transfer_operations import request_upload_status
 from core.utils import calculate_maximum_download_time
-from utils.helpers import get_storage_source_file_path
-from utils.helpers import get_storage_result_file_path
-from utils.helpers import parse_datetime_to_timestamp
-from utils.testing_helpers import generate_ecc_key_pair
+from common.helpers import get_storage_source_file_path
+from common.helpers import get_storage_result_file_path
+from common.helpers import parse_datetime_to_timestamp
+from common.testing_helpers import generate_ecc_key_pair
 
 
 def mock_send_request_to_cluster_correct_response(_headers, _request_http):

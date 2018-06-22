@@ -17,7 +17,7 @@ from core.validation import validate_golem_message_subtask_results_rejected
 from core.validation import validate_id_value
 from core.validation import validate_secure_hash_algorithm
 from core.validation import validate_subtask_price_task_to_compute
-from utils.constants import ErrorCode
+from common.constants import ErrorCode
 
 
 def mocked_message_with_price(price):

@@ -7,9 +7,9 @@ from django.views.decorators.http import require_POST
 from golem_messages.message import FileTransferToken
 
 from core.tasks import upload_finished
-from utils.decorators import provides_concent_feature
-from utils.logging import log_request_received
-from utils.logging import log_string_message
+from common.decorators import provides_concent_feature
+from common.logging import log_request_received
+from common.logging import log_string_message
 from .models import UploadReport
 from .models import VerificationRequest
 

@@ -18,11 +18,11 @@ from core.tasks import verification_result
 from core.transfer_operations import create_file_transfer_token_for_concent
 from core.transfer_operations import send_request_to_storage_cluster
 from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
-from utils.constants import ErrorCode
-from utils.decorators import log_task_errors
-from utils.decorators import provides_concent_feature
-from utils.logging import log_string_message
-from utils.helpers import upload_file_to_storage_cluster
+from common.constants import ErrorCode
+from common.decorators import log_task_errors
+from common.decorators import provides_concent_feature
+from common.logging import log_string_message
+from common.helpers import upload_file_to_storage_cluster
 from .exceptions import VerificationError
 from .utils import clean_directory
 from .utils import delete_file
@@ -52,7 +52,7 @@ def blender_verification_order(
     result_size: int,
     result_package_hash: str,
     output_format: str,
-    scene_file: str,  # pylint: disable=unused-argument
+    scene_file: str,
 ):
     log_string_message(
         logger,
@@ -160,11 +160,12 @@ def blender_verification_order(
             verification_result.delay(
                 subtask_id,
                 VerificationResult.ERROR.name,
-                'One of the files which are supposed to be unpacked from {package_file_path} already exists.',
+                f'One of the files which are supposed to be unpacked from {package_file_path} already exists.',
                 ErrorCode.VERIFIER_UNPACKING_ARCHIVE_FAILED.name
             )
-            raise VerificationError(
-                'One of the files which are supposed to be unpacked from {package_file_path} already exists.'
+            raise VerificationError(  # TODO: write a test for this case
+                f'One of the files which are supposed to be unpacked from {package_file_path} already exists.',
+                ErrorCode.VERIFIER_UNPACKING_ARCHIVE_FAILED.name,
             )
 
     # Verifier unpacks the archive with project source.

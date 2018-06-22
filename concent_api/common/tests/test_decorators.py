@@ -12,11 +12,11 @@ from golem_messages                 import message
 
 from core.exceptions                import Http400
 from core.tests.utils               import ConcentIntegrationTestCase
-from utils.constants                import ErrorCode
-from utils.decorators               import handle_errors_and_responses
-from utils.decorators import log_task_errors
-from utils.decorators               import require_golem_auth_message
-from utils.testing_helpers          import generate_ecc_key_pair
+from common.constants                import ErrorCode
+from common.decorators               import handle_errors_and_responses
+from common.decorators import log_task_errors
+from common.decorators               import require_golem_auth_message
+from common.testing_helpers          import generate_ecc_key_pair
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
@@ -126,7 +126,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream', data = self._create_provider_auth_message())
 
         with mock.patch(
-            'utils.decorators.load_without_public_key',
+            'common.decorators.load_without_public_key',
             side_effect=_mock_raise_http400
         ) as _mock_raise_http400_function:
             response = dummy_view_require_golem_auth_message(request)  # pylint: disable=no-value-for-parameter
@@ -236,8 +236,8 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         def task():
             raise Exception('test')
 
-        with mock.patch('utils.decorators.traceback.format_exc') as mock_format_exc:
-            with mock.patch('utils.decorators.crash_logger.error') as mock_error:
+        with mock.patch('common.decorators.traceback.format_exc') as mock_format_exc:
+            with mock.patch('common.decorators.crash_logger.error') as mock_error:
                 with self.assertRaises(Exception):
                     task()
 

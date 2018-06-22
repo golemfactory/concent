@@ -11,8 +11,8 @@ from golem_messages         import message
 from core.tests.utils       import ConcentIntegrationTestCase
 from core.models            import PendingResponse
 from core.models            import Subtask
-from utils.constants        import ErrorCode
-from utils.testing_helpers  import generate_ecc_key_pair
+from common.constants        import ErrorCode
+from common.testing_helpers  import generate_ecc_key_pair
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()

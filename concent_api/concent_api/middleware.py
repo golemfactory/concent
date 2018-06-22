@@ -13,7 +13,7 @@ from mimeparse import best_match
 
 from golem_messages import __version__
 from concent_api.constants import DEFAULT_ERROR_MESSAGE
-from utils.constants import ErrorCode
+from common.constants import ErrorCode
 
 
 class GolemMessagesVersionMiddleware(object):

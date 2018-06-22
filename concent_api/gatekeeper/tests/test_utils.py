@@ -6,8 +6,8 @@ from django.test                    import TestCase
 from golem_messages.message         import FileTransferToken
 
 from gatekeeper.utils               import gatekeeper_access_denied_response
-from utils.constants                import ErrorCode
-from utils.testing_helpers          import generate_ecc_key_pair
+from common.constants                import ErrorCode
+from common.testing_helpers          import generate_ecc_key_pair
 
 
 class GatekeeperAccessDeniedResponseTest(TestCase):

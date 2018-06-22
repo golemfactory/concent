@@ -21,12 +21,12 @@ from core.utils import calculate_maximum_download_time
 from core.utils import calculate_subtask_verification_time
 from core.validation import validate_file_transfer_token
 from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
-from utils import logging
-from utils.helpers import deserialize_message
-from utils.helpers import get_current_utc_timestamp
-from utils.helpers import get_storage_result_file_path
-from utils.helpers import get_storage_source_file_path
-from utils.helpers import sign_message
+from common import logging
+from common.helpers import deserialize_message
+from common.helpers import get_current_utc_timestamp
+from common.helpers import get_storage_result_file_path
+from common.helpers import get_storage_source_file_path
+from common.helpers import sign_message
 
 logger = getLogger(__name__)
 

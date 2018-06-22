@@ -25,13 +25,13 @@ from core.exceptions import GolemMessageValidationError
 from core.exceptions import HashingAlgorithmError
 from core.exceptions import Http400
 
-from utils.helpers import join_messages
-from utils.logging import get_json_from_message_without_redundant_fields_for_logging
-from utils.logging import log_json_message
-from utils.logging import log_message_received_in_endpoint
-from utils.logging import log_string_message
-from utils.shortcuts                import load_without_public_key
-from utils                          import logging
+from common.helpers import join_messages
+from common.logging import get_json_from_message_without_redundant_fields_for_logging
+from common.logging import log_json_message
+from common.logging import log_message_received_in_endpoint
+from common.logging import log_string_message
+from common.shortcuts                import load_without_public_key
+from common                          import logging
 
 logger = getLogger(__name__)
 crash_logger = getLogger('concent.crash')

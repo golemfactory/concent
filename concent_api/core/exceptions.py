@@ -1,6 +1,6 @@
 from mypy.types import Optional
 
-from utils.constants import ErrorCode
+from common.constants import ErrorCode
 
 
 class UnexpectedResponse(Exception):

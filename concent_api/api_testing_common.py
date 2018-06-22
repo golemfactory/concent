@@ -20,8 +20,8 @@ import http.client
 
 from protocol_constants import get_protocol_constants
 from protocol_constants import print_protocol_constants
-from utils.helpers import sign_message
-from utils.testing_helpers import generate_ecc_key_pair
+from common.helpers import sign_message
+from common.testing_helpers import generate_ecc_key_pair
 
 (PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)  = generate_ecc_key_pair()
 (REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()

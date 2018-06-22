@@ -7,10 +7,10 @@ from golem_messages import load
 from golem_messages import message
 from golem_messages.factories import tasks
 
-from utils.logging import Message
-from utils.logging import serialize_message_to_dictionary
-from utils.logging import replace_element_to_unavailable_instead_of_none
-from utils.testing_helpers import generate_ecc_key_pair
+from common.logging import Message
+from common.logging import serialize_message_to_dictionary
+from common.logging import replace_element_to_unavailable_instead_of_none
+from common.testing_helpers import generate_ecc_key_pair
 
 
 (PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)  = generate_ecc_key_pair()

@@ -2,7 +2,7 @@ from enum import Enum
 
 from golem_sci.blockshelper import BlocksHelper
 from core.constants import ETHEREUM_ADDRESS_LENGTH
-from utils.singleton import ConcentRPC
+from common.singleton import ConcentRPC
 
 
 def get_list_of_payments(

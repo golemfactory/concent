@@ -42,12 +42,12 @@ from core.validation import validate_golem_message_subtask_results_rejected
 from core.validation import validate_report_computed_task_time_window
 from core.validation import validate_secure_hash_algorithm
 from core.validation import validate_task_to_compute
-from utils import logging
-from utils.constants import ErrorCode
-from utils.helpers import deserialize_message
-from utils.helpers import get_current_utc_timestamp
-from utils.helpers import parse_timestamp_to_utc_datetime
-from utils.helpers import sign_message
+from common import logging
+from common.constants import ErrorCode
+from common.helpers import deserialize_message
+from common.helpers import get_current_utc_timestamp
+from common.helpers import parse_timestamp_to_utc_datetime
+from common.helpers import sign_message
 from .utils import hex_to_bytes_convert
 
 logger = getLogger(__name__)

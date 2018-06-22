@@ -10,10 +10,10 @@ from core.models                import Subtask
 import core.payments.base
 from core.transfer_operations   import store_pending_message
 from core.transfer_operations   import verify_file_status
-from utils.helpers              import deserialize_message
-from utils.helpers              import get_current_utc_timestamp
-from utils.helpers import parse_timestamp_to_utc_datetime
-from utils                      import logging
+from common.helpers              import deserialize_message
+from common.helpers              import get_current_utc_timestamp
+from common.helpers import parse_timestamp_to_utc_datetime
+from common                      import logging
 
 logger = getLogger(__name__)
 

@@ -1,5 +1,5 @@
 from django.conf import settings
-from utils.testing_helpers import generate_ecc_key_pair
+from common.testing_helpers import generate_ecc_key_pair
 
 DEFAULT_KEY_LENGTH = 64
 

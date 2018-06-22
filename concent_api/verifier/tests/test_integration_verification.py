@@ -78,7 +78,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('verifier.tasks.unpack_archive', autospec=True) as mock_unpack_archive,\
             mock.patch('core.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
             mock.patch('verifier.tasks.run_blender', mock_run_blender),\
-            mock.patch('verifier.tasks.upload_file_to_storage_cluster', autospec=True), \
+            mock.patch('verifier.tasks.upload_file_to_storage_cluster', autospec=True) as mock_upload_file, \
             mock.patch('builtins.open', autospec=True, side_effect=[io.StringIO('test'), io.StringIO('test')]), \
             mock.patch('verifier.tasks.get_files_list_from_archive', return_value=['file_name']) as mock_get_files_list_from_archive, \
             mock.patch('verifier.tasks.cv2.imread', autospec=True) as mock_imread, \
@@ -105,6 +105,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(mock_get_files_list_from_archive.call_count, 4)
         self.assertEqual(mock_delete_file.call_count, 2)
         self.assertEqual(mock_imread.call_count, 2)
+        self.assertEqual(mock_upload_file.call_count, 1)
         mock_verification_result.assert_called_once_with(
             self.compute_task_def['subtask_id'],
             VerificationResult.MATCH.name,
@@ -118,6 +119,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('verifier.tasks.unpack_archive', autospec=True) as mock_unpack_archive,\
             mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
             mock.patch('verifier.tasks.run_blender', mock_run_blender), \
+            mock.patch('verifier.tasks.upload_file_to_storage_cluster', autospec=True) as mock_upload_file, \
             mock.patch('builtins.open', autospec=True, side_effect=[io.StringIO('test'), io.StringIO('test')]), \
             mock.patch('verifier.tasks.get_files_list_from_archive', autospec=True, return_value=['file_name']) as mock_get_files_list_from_archive, \
             mock.patch('verifier.tasks.cv2.imread', autospec=True) as mock_imread, \
@@ -144,6 +146,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(mock_get_files_list_from_archive.call_count, 4)
         self.assertEqual(mock_delete_file.call_count, 2)
         self.assertEqual(mock_imread.call_count, 2)
+        self.assertEqual(mock_upload_file.call_count, 1)
         mock_compare_ssim.assert_called_once()
         mock_verification_result.assert_called_once_with(
             self.compute_task_def['subtask_id'],
@@ -367,6 +370,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('verifier.tasks.unpack_archive', autospec=True) as mock_unpack_archive,\
             mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
             mock.patch('verifier.tasks.run_blender', mock_run_blender), \
+            mock.patch('verifier.tasks.upload_file_to_storage_cluster', autospec=True) as mock_upload_file, \
             mock.patch('builtins.open', autospec=True, side_effect=[io.StringIO('test'), io.StringIO('test')]), \
             mock.patch('verifier.tasks.get_files_list_from_archive', autospec=True, return_value=['file_name']) as mock_get_files_list_from_archive, \
             mock.patch('verifier.tasks.cv2.imread', autospec=True, side_effect=MemoryError('error')) as mock_imread, \
@@ -392,6 +396,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(mock_get_files_list_from_archive.call_count, 4)
         self.assertEqual(mock_delete_file.call_count, 2)
         self.assertEqual(mock_imread.call_count, 1)
+        self.assertEqual(mock_upload_file.call_count, 1)
         mock_verification_result.assert_called_once_with(
             self.compute_task_def['subtask_id'],
             VerificationResult.ERROR.name,
@@ -406,6 +411,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('verifier.tasks.unpack_archive', autospec=True) as mock_unpack_archive,\
             mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
             mock.patch('verifier.tasks.run_blender', mock_run_blender), \
+            mock.patch('verifier.tasks.upload_file_to_storage_cluster', autospec=True) as mock_upload_file, \
             mock.patch('builtins.open', autospec=True, side_effect=[io.StringIO('test'), io.StringIO('test')]), \
             mock.patch('verifier.tasks.get_files_list_from_archive', autospec=True, return_value=['file_name']) as mock_get_files_list_from_archive, \
             mock.patch('verifier.tasks.cv2.imread', autospec=True, side_effect=[None, None]) as mock_imread, \
@@ -431,6 +437,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(mock_get_files_list_from_archive.call_count, 4)
         self.assertEqual(mock_delete_file.call_count, 2)
         self.assertEqual(mock_imread.call_count, 2)
+        self.assertEqual(mock_upload_file.call_count, 1)
         mock_verification_result.assert_called_once_with(
             self.compute_task_def['subtask_id'],
             VerificationResult.ERROR.name,
@@ -445,6 +452,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('verifier.tasks.unpack_archive', autospec=True) as mock_unpack_archive,\
             mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
             mock.patch('verifier.tasks.run_blender', mock_run_blender), \
+            mock.patch('verifier.tasks.upload_file_to_storage_cluster', autospec=True) as mock_upload_file, \
             mock.patch('builtins.open', autospec=True, side_effect=[io.StringIO('test'), io.StringIO('test')]), \
             mock.patch('verifier.tasks.get_files_list_from_archive', return_value=['file_name']) as mock_get_files_list_from_archive, \
             mock.patch('verifier.tasks.cv2.imread', autospec=True) as mock_imread, \
@@ -471,6 +479,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(mock_get_files_list_from_archive.call_count, 4)
         self.assertEqual(mock_delete_file.call_count, 2)
         self.assertEqual(mock_imread.call_count, 2)
+        self.assertEqual(mock_upload_file.call_count, 1)
         mock_compare_ssim.assert_called_once()
         mock_verification_result.assert_called_once_with(
             self.compute_task_def['subtask_id'],

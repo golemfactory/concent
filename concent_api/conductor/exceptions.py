@@ -1,4 +1,4 @@
-from core.exceptions import ConcentBaseException
+from common.exceptions import ConcentBaseException
 
 
 class VerificationRequestAlreadyAcknowledgedError(ConcentBaseException):

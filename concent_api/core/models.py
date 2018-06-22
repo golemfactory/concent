@@ -17,7 +17,7 @@ from django.utils           import timezone
 from constance              import config
 from golem_messages         import message
 
-from core.exceptions        import ConcentInSoftShutdownMode
+from common.exceptions import ConcentInSoftShutdownMode
 from common.fields           import Base64Field
 from common.fields           import ChoiceEnum
 from common.helpers import deserialize_message

@@ -1,4 +1,5 @@
+from common.exceptions import ConcentBaseException
 
 
-class VerificationError(Exception):
+class VerificationError(ConcentBaseException):
     pass

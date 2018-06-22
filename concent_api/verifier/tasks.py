@@ -165,7 +165,7 @@ def blender_verification_order(
             )
             raise VerificationError(  # TODO: write a test for this case
                 f'One of the files which are supposed to be unpacked from {package_file_path} already exists.',
-                ErrorCode.VERIFIER_UNPACKING_ARCHIVE_FAILED.name,
+                ErrorCode.VERIFIER_UNPACKING_ARCHIVE_FAILED,
             )
 
     # Verifier unpacks the archive with project source.

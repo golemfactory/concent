@@ -20,8 +20,8 @@ from core.exceptions import GolemMessageValidationError
 from core.exceptions import HashingAlgorithmError
 from core.exceptions import Http400
 from core.utils import hex_to_bytes_convert
-from utils.helpers import join_messages
-from utils.constants                import ErrorCode
+from common.helpers import join_messages
+from common.constants                import ErrorCode
 
 
 def validate_int_value(value):

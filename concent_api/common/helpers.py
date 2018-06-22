@@ -16,7 +16,7 @@ from golem_messages.exceptions      import MessageError
 from golem_messages.shortcuts import dump
 
 from core.exceptions                import Http400
-from utils.constants                import ErrorCode
+from common.constants                import ErrorCode
 
 
 def is_base64(data: str) -> bool:

@@ -9,7 +9,7 @@ from golem_messages import message
 from golem_messages.helpers import maximum_download_time
 from golem_messages.utils import encode_hex
 
-from utils.helpers import get_current_utc_timestamp
+from common.helpers import get_current_utc_timestamp
 
 from api_testing_common import api_request
 from api_testing_common import count_fails

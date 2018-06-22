@@ -7,7 +7,7 @@ from conductor.tasks import upload_acknowledged
 from core.message_handlers import store_subtask
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
-from utils.helpers import get_current_utc_timestamp
+from common.helpers import get_current_utc_timestamp
 from ..exceptions import VerificationRequestAlreadyAcknowledgedError
 
 

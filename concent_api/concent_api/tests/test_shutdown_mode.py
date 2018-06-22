@@ -13,8 +13,8 @@ from core.message_handlers      import store_subtask
 from core.models                import PendingResponse
 from core.models                import Subtask
 from core.tests.utils           import ConcentIntegrationTestCase
-from utils.helpers              import get_current_utc_timestamp
-from utils.testing_helpers      import generate_ecc_key_pair
+from common.helpers              import get_current_utc_timestamp
+from common.testing_helpers      import generate_ecc_key_pair
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()

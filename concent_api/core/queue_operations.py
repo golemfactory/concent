@@ -1,6 +1,6 @@
 from conductor.tasks import blender_verification_request
-from utils.helpers import get_storage_result_file_path
-from utils.helpers import get_storage_source_file_path
+from common.helpers import get_storage_result_file_path
+from common.helpers import get_storage_source_file_path
 
 
 def send_blender_verification_request(compute_task_def):

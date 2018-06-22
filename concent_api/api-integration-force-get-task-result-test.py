@@ -7,9 +7,9 @@ from freezegun import freeze_time
 
 from golem_messages import message
 
-from utils.helpers import get_current_utc_timestamp
-from utils.helpers import get_storage_result_file_path
-from utils.helpers import upload_file_to_storage_cluster
+from common.helpers import get_current_utc_timestamp
+from common.helpers import get_storage_result_file_path
+from common.helpers import upload_file_to_storage_cluster
 from api_testing_common import api_request
 from api_testing_common import assert_condition
 from api_testing_common import count_fails

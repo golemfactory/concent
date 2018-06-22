@@ -9,10 +9,10 @@ from django.test import override_settings
 from conductor.models import BlenderSubtaskDefinition
 from core.constants import VerificationResult
 from core.tests.utils import ConcentIntegrationTestCase
-from utils.constants import ErrorCode
-from utils.helpers import get_storage_result_file_path
-from utils.helpers import get_storage_source_file_path
-from utils.testing_helpers import generate_ecc_key_pair
+from common.constants import ErrorCode
+from common.helpers import get_storage_result_file_path
+from common.helpers import get_storage_source_file_path
+from common.testing_helpers import generate_ecc_key_pair
 from ..tasks import blender_verification_order
 
 
@@ -116,7 +116,8 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         with mock.patch('verifier.tasks.clean_directory', autospec=True) as mock_clean_directory,\
             mock.patch('verifier.tasks.send_request_to_storage_cluster', autospec=True) as mock_send_request_to_storage_cluster,\
             mock.patch('verifier.tasks.store_file_from_response_in_chunks', autospec=True) as mock_store_file_from_response_in_chunks,\
-            mock.patch('verifier.tasks.unpack_archive', autospec=True) as mock_unpack_archive,\
+            mock.patch('verifier.tasks.unpack_archive', autospec=True) as mock_unpack_archive, \
+            mock.patch('verifier.tasks.upload_file_to_storage_cluster', autospec=True) as mock_upload_file_to_storage_cluster, \
             mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
             mock.patch('verifier.tasks.run_blender', mock_run_blender), \
             mock.patch('verifier.tasks.upload_file_to_storage_cluster', autospec=True) as mock_upload_file, \
@@ -143,6 +144,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(mock_send_request_to_storage_cluster.call_count, 2)
         self.assertEqual(mock_store_file_from_response_in_chunks.call_count, 2)
         self.assertEqual(mock_unpack_archive.call_count, 2)
+        self.assertEqual(mock_upload_file_to_storage_cluster.call_count, 1)
         self.assertEqual(mock_get_files_list_from_archive.call_count, 4)
         self.assertEqual(mock_delete_file.call_count, 2)
         self.assertEqual(mock_imread.call_count, 2)
@@ -367,7 +369,8 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         with mock.patch('verifier.tasks.clean_directory', autospec=True) as mock_clean_directory,\
             mock.patch('verifier.tasks.send_request_to_storage_cluster', autospec=True) as mock_send_request_to_storage_cluster,\
             mock.patch('verifier.tasks.store_file_from_response_in_chunks', autospec=True) as mock_store_file_from_response_in_chunks,\
-            mock.patch('verifier.tasks.unpack_archive', autospec=True) as mock_unpack_archive,\
+            mock.patch('verifier.tasks.unpack_archive', autospec=True) as mock_unpack_archive, \
+            mock.patch('verifier.tasks.upload_file_to_storage_cluster', autospec=True) as mock_upload_file_to_storage_cluster, \
             mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
             mock.patch('verifier.tasks.run_blender', mock_run_blender), \
             mock.patch('verifier.tasks.upload_file_to_storage_cluster', autospec=True) as mock_upload_file, \
@@ -393,6 +396,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(mock_send_request_to_storage_cluster.call_count, 2)
         self.assertEqual(mock_store_file_from_response_in_chunks.call_count, 2)
         self.assertEqual(mock_unpack_archive.call_count, 2)
+        self.assertEqual(mock_upload_file_to_storage_cluster.call_count, 1)
         self.assertEqual(mock_get_files_list_from_archive.call_count, 4)
         self.assertEqual(mock_delete_file.call_count, 2)
         self.assertEqual(mock_imread.call_count, 1)
@@ -408,7 +412,8 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         with mock.patch('verifier.tasks.clean_directory', autospec=True) as mock_clean_directory,\
             mock.patch('verifier.tasks.send_request_to_storage_cluster', autospec=True) as mock_send_request_to_storage_cluster,\
             mock.patch('verifier.tasks.store_file_from_response_in_chunks', autospec=True) as mock_store_file_from_response_in_chunks,\
-            mock.patch('verifier.tasks.unpack_archive', autospec=True) as mock_unpack_archive,\
+            mock.patch('verifier.tasks.unpack_archive', autospec=True) as mock_unpack_archive, \
+            mock.patch('verifier.tasks.upload_file_to_storage_cluster', autospec=True) as mock_upload_file_to_storage_cluster, \
             mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
             mock.patch('verifier.tasks.run_blender', mock_run_blender), \
             mock.patch('verifier.tasks.upload_file_to_storage_cluster', autospec=True) as mock_upload_file, \
@@ -434,6 +439,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(mock_send_request_to_storage_cluster.call_count, 2)
         self.assertEqual(mock_store_file_from_response_in_chunks.call_count, 2)
         self.assertEqual(mock_unpack_archive.call_count, 2)
+        self.assertEqual(mock_upload_file_to_storage_cluster.call_count, 1)
         self.assertEqual(mock_get_files_list_from_archive.call_count, 4)
         self.assertEqual(mock_delete_file.call_count, 2)
         self.assertEqual(mock_imread.call_count, 2)
@@ -450,6 +456,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('verifier.tasks.send_request_to_storage_cluster', autospec=True) as mock_send_request_to_storage_cluster,\
             mock.patch('verifier.tasks.store_file_from_response_in_chunks', autospec=True) as mock_store_file_from_response_in_chunks,\
             mock.patch('verifier.tasks.unpack_archive', autospec=True) as mock_unpack_archive,\
+            mock.patch('verifier.tasks.upload_file_to_storage_cluster', autospec=True) as mock_upload_file_to_storage_cluster,\
             mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
             mock.patch('verifier.tasks.run_blender', mock_run_blender), \
             mock.patch('verifier.tasks.upload_file_to_storage_cluster', autospec=True) as mock_upload_file, \
@@ -476,6 +483,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(mock_send_request_to_storage_cluster.call_count, 2)
         self.assertEqual(mock_store_file_from_response_in_chunks.call_count, 2)
         self.assertEqual(mock_unpack_archive.call_count, 2)
+        self.assertEqual(mock_upload_file_to_storage_cluster.call_count, 1)
         self.assertEqual(mock_get_files_list_from_archive.call_count, 4)
         self.assertEqual(mock_delete_file.call_count, 2)
         self.assertEqual(mock_imread.call_count, 2)

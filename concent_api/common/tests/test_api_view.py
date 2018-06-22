@@ -17,11 +17,11 @@ from golem_messages.utils import encode_hex
 
 from core.exceptions                import Http400
 from core.models                    import Client
-from utils.constants                import ErrorCode
-from utils.decorators               import require_golem_message
-from utils.decorators               import handle_errors_and_responses
-from utils.helpers                  import get_current_utc_timestamp
-from utils.testing_helpers          import generate_ecc_key_pair
+from common.constants                import ErrorCode
+from common.decorators               import require_golem_message
+from common.decorators               import handle_errors_and_responses
+from common.helpers                  import get_current_utc_timestamp
+from common.testing_helpers          import generate_ecc_key_pair
 
 
 (CONCENT_PRIVATE_KEY,   CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()

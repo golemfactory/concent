@@ -8,12 +8,12 @@ from django.views.decorators.http   import require_GET
 from core.message_handlers          import handle_message
 from core.message_handlers          import handle_messages_from_database
 from core.subtask_helpers           import update_timed_out_subtasks
-from utils                          import logging
-from utils.decorators import handle_errors_and_responses
-from utils.decorators import log_communication
-from utils.decorators import provides_concent_feature
-from utils.decorators               import require_golem_auth_message
-from utils.decorators               import require_golem_message
+from common                          import logging
+from common.decorators import handle_errors_and_responses
+from common.decorators import log_communication
+from common.decorators import provides_concent_feature
+from common.decorators               import require_golem_auth_message
+from common.decorators               import require_golem_message
 from .models                        import PendingResponse
 
 logger = getLogger(__name__)

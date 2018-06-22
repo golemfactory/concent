@@ -11,9 +11,9 @@ from golem_messages import helpers
 from core.tests.utils import ConcentIntegrationTestCase
 from core.utils import calculate_maximum_download_time
 from core.utils import calculate_subtask_verification_time
-from utils.helpers import get_current_utc_timestamp
-from utils.helpers import parse_timestamp_to_utc_datetime
-from utils.testing_helpers import generate_ecc_key_pair
+from common.helpers import get_current_utc_timestamp
+from common.helpers import parse_timestamp_to_utc_datetime
+from common.testing_helpers import generate_ecc_key_pair
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 

@@ -274,6 +274,10 @@ def blender_verification_order(
             upload_file_content,
             upload_file_name,
             upload_file_transfer_token,
+            settings.CONCENT_PRIVATE_KEY,
+            settings.CONCENT_PUBLIC_KEY,
+            settings.CONCENT_PUBLIC_KEY,
+            settings.STORAGE_CLUSTER_ADDRESS,
         )
 
     # Read both files with OpenCV.

@@ -125,6 +125,8 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):
         ack_subtask_results_verify.file_transfer_token,
         PROVIDER_PRIVATE_KEY,
         PROVIDER_PUBLIC_KEY,
+        CONCENT_PUBLIC_KEY,
+        STORAGE_CLUSTER_ADDRESS,
     )
     assert_condition(response.status_code, 200, 'File has not been stored on cluster')
     print('\nUploaded file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(
@@ -139,6 +141,8 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):
         ack_subtask_results_verify.file_transfer_token,
         PROVIDER_PRIVATE_KEY,
         PROVIDER_PUBLIC_KEY,
+        CONCENT_PUBLIC_KEY,
+        STORAGE_CLUSTER_ADDRESS,
     )
     assert_condition(response.status_code, 200, 'File has not been stored on cluster')
     print('\nUploaded file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(
@@ -229,7 +233,7 @@ def test_case_3_test_for_invalid_time(cluster_consts, cluster_url, test_id):
         get_subtask_results_verify(
             task_id,
             subtask_id,
-            current_time - 2 * cluster_consts.additional_verification_call_time,
+            current_time - cluster_consts.additional_verification_call_time,
             cluster_consts,
             reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
             report_computed_task_size=file_size,
@@ -350,6 +354,7 @@ def test_case_5_test_requestor_status_account_negative(cluster_consts, cluster_u
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
+        from concent_api.settings import STORAGE_CLUSTER_ADDRESS
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file=sys.stderr)

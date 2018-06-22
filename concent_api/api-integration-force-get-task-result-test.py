@@ -107,6 +107,8 @@ def test_case_1_test_for_existing_file(cluster_consts, cluster_url, test_id):
         force_get_task_result_upload.file_transfer_token,
         PROVIDER_PRIVATE_KEY,
         PROVIDER_PUBLIC_KEY,
+        CONCENT_PUBLIC_KEY,
+        STORAGE_CLUSTER_ADDRESS,
     )
 
     assert_condition(response.status_code, 200, 'File has not been stored on cluster')
@@ -187,6 +189,7 @@ def test_case_2_test_for_non_existing_file(cluster_consts, cluster_url, test_id)
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
+        from concent_api.settings import STORAGE_CLUSTER_ADDRESS
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file=sys.stderr)

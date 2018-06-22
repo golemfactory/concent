@@ -143,10 +143,12 @@ def upload_file_to_storage_cluster(
     file_content: str,
     file_path: str,
     upload_token: message.concents.FileTransferToken,
-    client_public_key: Optional[bytes] = None,
     client_private_key: Optional[bytes] = None,
+    client_public_key: Optional[bytes] = None,
+    content_public_key: Optional[bytes] = None,
+    storage_cluster_address: Optional[str] = None,
 ) -> requests.Response:
-    dumped_upload_token = dump(upload_token, None, settings.CONCENT_PUBLIC_KEY)
+    dumped_upload_token = dump(upload_token, None, content_public_key if content_public_key is not None else settings.CONCENT_PUBLIC_KEY)
     base64_encoded_token = base64.b64encode(dumped_upload_token).decode()
     headers = {
         'Authorization': 'Golem ' + base64_encoded_token,
@@ -165,7 +167,7 @@ def upload_file_to_storage_cluster(
         'Content-Type': 'application/octet-stream'
     }
     return requests.post(
-        "{}upload/".format(settings.STORAGE_CLUSTER_ADDRESS),
+        f"{storage_cluster_address if storage_cluster_address is not None else settings.STORAGE_CLUSTER_ADDRESS}upload/",
         headers=headers,
         data=file_content,
         verify=False

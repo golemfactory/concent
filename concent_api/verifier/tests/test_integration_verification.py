@@ -15,7 +15,6 @@ from common.helpers import get_storage_source_file_path
 from common.testing_helpers import generate_ecc_key_pair
 from ..tasks import blender_verification_order
 
-
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
@@ -83,6 +82,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('verifier.tasks.get_files_list_from_archive', return_value=['file_name']) as mock_get_files_list_from_archive, \
             mock.patch('verifier.tasks.cv2.imread', autospec=True) as mock_imread, \
             mock.patch('verifier.tasks.compare_ssim', return_value=1.0) as mock_compare_ssim, \
+            mock.patch('verifier.tasks.are_image_sizes_and_color_channels_equal', return_value=True), \
             mock.patch('verifier.tasks.delete_file', autospec=True) as mock_delete_file:  # noqa: E125
             blender_verification_order(
                 subtask_id=self.compute_task_def['subtask_id'],
@@ -124,6 +124,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('verifier.tasks.get_files_list_from_archive', autospec=True, return_value=['file_name']) as mock_get_files_list_from_archive, \
             mock.patch('verifier.tasks.cv2.imread', autospec=True) as mock_imread, \
             mock.patch('verifier.tasks.compare_ssim', return_value=(settings.VERIFIER_MIN_SSIM - 0.1)) as mock_compare_ssim, \
+            mock.patch('verifier.tasks.are_image_sizes_and_color_channels_equal', return_value=True), \
             mock.patch('verifier.tasks.delete_file', autospec=True) as mock_delete_file:  # noqa: E125
             blender_verification_order(
                 subtask_id=self.compute_task_def['subtask_id'],
@@ -335,6 +336,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('verifier.tasks.get_files_list_from_archive', return_value=['file_name']) as mock_get_files_list_from_archive, \
             mock.patch('verifier.tasks.cv2.imread', autospec=True) as mock_imread, \
             mock.patch('verifier.tasks.compare_ssim', return_value=1.0) as mock_compare_ssim, \
+            mock.patch('verifier.tasks.are_image_sizes_and_color_channels_equal', return_value=True), \
             mock.patch('verifier.tasks.delete_file') as mock_delete_file:  # noqa: E125
             blender_verification_order(
                 subtask_id=self.compute_task_def['subtask_id'],
@@ -415,6 +417,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('builtins.open', autospec=True, side_effect=[io.StringIO('test'), io.StringIO('test')]), \
             mock.patch('verifier.tasks.get_files_list_from_archive', autospec=True, return_value=['file_name']) as mock_get_files_list_from_archive, \
             mock.patch('verifier.tasks.cv2.imread', autospec=True, side_effect=[None, None]) as mock_imread, \
+            mock.patch('verifier.tasks.are_image_sizes_and_color_channels_equal', return_value=True), \
             mock.patch('verifier.tasks.delete_file') as mock_delete_file:  # noqa: E125
             blender_verification_order(
                 subtask_id=self.compute_task_def['subtask_id'],
@@ -457,6 +460,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('verifier.tasks.get_files_list_from_archive', return_value=['file_name']) as mock_get_files_list_from_archive, \
             mock.patch('verifier.tasks.cv2.imread', autospec=True) as mock_imread, \
             mock.patch('verifier.tasks.compare_ssim', side_effect=ValueError('error')) as mock_compare_ssim, \
+            mock.patch('verifier.tasks.are_image_sizes_and_color_channels_equal', return_value=True), \
             mock.patch('verifier.tasks.delete_file', autospec=True) as mock_delete_file:  # noqa: E125
             blender_verification_order(
                 subtask_id=self.compute_task_def['subtask_id'],

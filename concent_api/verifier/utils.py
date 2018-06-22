@@ -10,6 +10,7 @@ from django.conf import settings
 
 from golem_messages import message
 from golem_messages.shortcuts import dump
+from numpy.core.records import ndarray
 
 from .constants import UNPACK_CHUNK_SIZE
 
@@ -108,3 +109,7 @@ def generate_upload_file_name(subtask_id, extension):
 
 def generate_verifier_storage_file_path(file_name):
     return os.path.join(settings.VERIFIER_STORAGE_PATH, file_name)
+
+
+def are_image_sizes_and_color_channels_equal(image1: ndarray, image2: ndarray) -> bool:
+    return image1.shape == image2.shape

@@ -160,11 +160,12 @@ def blender_verification_order(
             verification_result.delay(
                 subtask_id,
                 VerificationResult.ERROR.name,
-                'One of the files which are supposed to be unpacked from {package_file_path} already exists.',
+                f'One of the files which are supposed to be unpacked from {package_file_path} already exists.',
                 ErrorCode.VERIFIER_UNPACKING_ARCHIVE_FAILED.name
             )
-            raise VerificationError(
-                'One of the files which are supposed to be unpacked from {package_file_path} already exists.'
+            raise VerificationError(  # TODO: write a test for this case
+                f'One of the files which are supposed to be unpacked from {package_file_path} already exists.',
+                ErrorCode.ErrorCode.VERIFIER_UNPACKING_ARCHIVE_FAILED.name,
             )
 
     # Verifier unpacks the archive with project source.

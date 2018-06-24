@@ -7,11 +7,11 @@ from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 
 from core.exceptions                import Http400
+from core.message_handlers import handle_validating_if_list_of_golem_messages_is_signed_with_key
 from core.validation                import validate_all_messages_identical
 from core.validation                import validate_golem_message_client_authorization
-from core.validation                import validate_golem_message_signed_with_key
-from common.shortcuts                import load_without_public_key
-from common.testing_helpers          import generate_ecc_key_pair
+from common.shortcuts               import load_without_public_key
+from common.testing_helpers         import generate_ecc_key_pair
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)       = generate_ecc_key_pair()
@@ -105,7 +105,7 @@ class ValidateGolemMessageClientAuthorizationUnitTest(TestCase):
 
 class ValidateGolemMessageSignedWithKeyUnitTest(TestCase):
 
-    def test_validate_golem_message_signed_with_key_should_not_raise_error_if_correct_message_and_key_is_used(self):
+    def test_handle_validating_if_list_of_golem_messages_is_signed_with_key_should_not_raise_error_if_correct_message_and_key_is_used(self):
         task_to_compute = tasks.TaskToComputeFactory()
 
         dumped_task_to_compute = dump(task_to_compute, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -115,14 +115,14 @@ class ValidateGolemMessageSignedWithKeyUnitTest(TestCase):
         assert task_to_compute.SIGN is not False
 
         try:
-            validate_golem_message_signed_with_key(
-                task_to_compute,
+            handle_validating_if_list_of_golem_messages_is_signed_with_key(
                 CONCENT_PUBLIC_KEY,
+                task_to_compute,
             )
         except Http400:
             self.fail()
 
-    def test_validate_golem_message_signed_with_key_should_raise_error_if_incorrect_message_and_key_is_used(self):
+    def test_handle_validating_if_list_of_golem_messages_is_signed_with_key_should_raise_error_if_incorrect_message_and_key_is_used(self):
         task_to_compute = tasks.TaskToComputeFactory()
 
         dumped_task_to_compute = dump(task_to_compute, CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -132,9 +132,9 @@ class ValidateGolemMessageSignedWithKeyUnitTest(TestCase):
         assert task_to_compute.SIGN is not False
 
         with self.assertRaises(Http400):
-            validate_golem_message_signed_with_key(
-                task_to_compute,
+            handle_validating_if_list_of_golem_messages_is_signed_with_key(
                 REQUESTOR_PUBLIC_KEY,
+                task_to_compute,
             )
 
 

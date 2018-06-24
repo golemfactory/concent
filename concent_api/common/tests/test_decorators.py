@@ -114,14 +114,25 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', json.loads(response.content))
 
-    def test_require_golem_auth_message_should_return_json_response_if_get_http_400(self):
+    def test_require_golem_auth_message_should_return_json_response_http_400_when_auth_message_is_signed_with_wrong_key(self):
 
-        request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream', data = self._create_provider_auth_message())
+        request = self.request_factory.post(
+            "/dummy-url/",
+            content_type='application/octet-stream',
+            data=self._create_client_auth_message(
+                self.PROVIDER_PRIVATE_KEY,
+                self.REQUESTOR_PUBLIC_KEY,
+            )
+        )
 
         response = dummy_view_require_golem_auth_message(request)  # pylint: disable=no-value-for-parameter
 
         self.assertEqual(response.status_code, 400)
-        self.assertIn('error', json.loads(response.content))
+
+        content = json.loads(response.content)
+        self.assertIn('error', content)
+        self.assertIn('error_code', content)
+        self.assertEqual(content['error_code'], ErrorCode.MESSAGE_SIGNATURE_WRONG.value)
 
     def test_handle_errors_and_responses_should_return_http_response_with_serialized_message(self):
 

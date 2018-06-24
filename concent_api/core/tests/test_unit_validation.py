@@ -3,6 +3,7 @@ from unittest import TestCase
 import mock
 from django.test import override_settings
 
+from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.message.tasks import ReportComputedTask
 from golem_messages.message.tasks import SubtaskResultsRejected
 from golem_messages.message.tasks import TaskToCompute
@@ -183,15 +184,16 @@ class TestAreEthereumAddressesAndKeysUnique(ConcentIntegrationTestCase):
     def setUp(self):
         super().setUp()
 
-        self.task_to_compute_1 = mock.Mock(spec_set=TaskToCompute)
-        self.task_to_compute_1.requestor_ethereum_address = encode_hex(self.REQUESTOR_PUBLIC_KEY)
-        self.task_to_compute_1.requestor_ethereum_public_key = encode_hex(self.REQUESTOR_PUB_ETH_KEY)
-        self.task_to_compute_1.requestor_public_key = encode_hex(self.REQUESTOR_PUBLIC_KEY)
-
-        self.task_to_compute_2 = mock.Mock(spec_set=TaskToCompute)
-        self.task_to_compute_2.requestor_ethereum_address = encode_hex(self.REQUESTOR_PUBLIC_KEY)
-        self.task_to_compute_2.requestor_ethereum_public_key = encode_hex(self.REQUESTOR_PUB_ETH_KEY)
-        self.task_to_compute_2.requestor_public_key = encode_hex(self.REQUESTOR_PUBLIC_KEY)
+        self.task_to_compute_1 = TaskToComputeFactory(
+            requestor_ethereum_address=encode_hex(self.REQUESTOR_PUBLIC_KEY),
+            requestor_ethereum_public_key=encode_hex(self.REQUESTOR_PUB_ETH_KEY),
+            requestor_public_key=encode_hex(self.REQUESTOR_PUBLIC_KEY),
+        )
+        self.task_to_compute_2 = TaskToComputeFactory(
+            requestor_ethereum_address=encode_hex(self.REQUESTOR_PUBLIC_KEY),
+            requestor_ethereum_public_key=encode_hex(self.REQUESTOR_PUB_ETH_KEY),
+            requestor_public_key=encode_hex(self.REQUESTOR_PUBLIC_KEY),
+        )
 
     def create_subtask_results_accepted_list(self, task_to_compute_1, task_to_compute_2) -> list:
         subtask_results_accepted_list = [
@@ -212,8 +214,11 @@ class TestAreEthereumAddressesAndKeysUnique(ConcentIntegrationTestCase):
         self.assertTrue(result)
 
     def test_that_if_different_ethereum_addresses_are_given_method_should_return_false(self):
+        self.task_to_compute_2 = mock.Mock(spec_set=TaskToCompute)
         self.task_to_compute_2.requestor_ethereum_address = encode_hex(self.DIFFERENT_REQUESTOR_PUBLIC_KEY)
-        subtask_results_accepted_list = self.create_subtask_results_accepted_list(self.task_to_compute_1, self.task_to_compute_2)
+        self.task_to_compute_2.requestor_ethereum_public_key = encode_hex(self.REQUESTOR_PUB_ETH_KEY)
+        self.task_to_compute_2.requestor_public_key = encode_hex(self.REQUESTOR_PUBLIC_KEY)
+        subtask_results_accepted_list = [self.task_to_compute_1, self.task_to_compute_2]
         result = are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_results_accepted_list)
         self.assertFalse(result)
 

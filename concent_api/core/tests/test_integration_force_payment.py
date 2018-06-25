@@ -179,8 +179,10 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             key          = self.PROVIDER_PRIVATE_KEY,
             message_type = message.concents.ForcePaymentRejected,
             fields       = {
-                'reason':    message.concents.ForcePaymentRejected.REASON.TimestampError,
+                'reason': message.concents.ForcePaymentRejected.REASON.TimestampError,
                 'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:09"),
+                'force_payment.timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:19"),
+                'force_payment.subtask_results_accepted_list': subtask_results_accepted_list,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -247,6 +249,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             fields       = {
                 'reason':    message.concents.ForcePaymentRejected.REASON.TimestampError,
                 'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+                'force_payment.timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+                'force_payment.subtask_results_accepted_list': subtask_results_accepted_list,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -314,6 +318,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             fields       = {
                 'reason':    message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,
                 'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+                'force_payment.timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+                'force_payment.subtask_results_accepted_list': subtask_results_accepted_list,
             }
         )
         self._assert_stored_message_counter_not_increased()

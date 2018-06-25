@@ -711,7 +711,8 @@ def handle_send_force_payment(client_message: message.concents.ForcePayment) -> 
 
     if T1_is_bigger_than_payments_ts or acceptance_time_overdue:
         return message.concents.ForcePaymentRejected(
-            reason = message.concents.ForcePaymentRejected.REASON.TimestampError
+            force_payment=client_message,
+            reason=message.concents.ForcePaymentRejected.REASON.TimestampError,
         )
 
     # Concent gets list of forced payments from payment API where T0 <= payment_ts + PAYMENT_DUE_TIME.
@@ -736,7 +737,8 @@ def handle_send_force_payment(client_message: message.concents.ForcePayment) -> 
 
     if amount_pending <= 0:
         return message.concents.ForcePaymentRejected(
-            reason = message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound
+            force_payment=client_message,
+            reason=message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,
         )
     elif amount_pending > 0:
         core.payments.base.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter

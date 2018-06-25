@@ -1258,13 +1258,17 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent     -> Provider:    HTTP 400
         """
 
-        serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-            timestamp                   = "2018-02-05 10:00:15",
-            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
-                subtask_id      = "20sd",
-                task_to_compute = message.CannotComputeTask()
+        # This has to be done manually, otherwise will fail when signing ReportComputedTask
+        with freeze_time("2018-02-05 10:00:15"):
+            serialized_force_subtask_results = self._get_serialized_force_subtask_results(
+                ack_report_computed_task = message.AckReportComputedTask(
+                    report_computed_task=(
+                        message.ReportComputedTask(
+                            task_to_compute=message.CannotComputeTask()
+                        )
+                    )
+                )
             )
-        )
 
         with freeze_time("2018-02-05 10:00:30"):
             response_1 = self.client.post(

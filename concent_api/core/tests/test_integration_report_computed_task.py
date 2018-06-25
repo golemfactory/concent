@@ -1878,7 +1878,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # This has to be done manually, otherwise will fail when signing ReportComputedTask
         with freeze_time("2017-12-01 11:00:05"):
             serialized_ack_report_computed_task = self._get_serialized_ack_report_computed_task(
-                ack_report_computed_task=message.AckReportComputedTask(
+                ack_report_computed_task = message.AckReportComputedTask(
                     report_computed_task=(
                         message.ReportComputedTask(
                             task_to_compute=cannot_compute_task

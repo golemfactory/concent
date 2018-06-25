@@ -118,14 +118,17 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ack_report_computed_task = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2018-02-05 10:00:15",
                 subtask_id      = "xxyyzz",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp   = "2018-02-05 10:00:00",
-                    deadline    = "2018-02-05 10:00:10",
-                    task_id     = "2",
-                    subtask_id  = "xxyyzz",
-                    provider_public_key=self._get_diffrent_provider_hex_public_key(),
-                    requestor_public_key=self._get_diffrent_requestor_hex_public_key(),
-                    sign_with_private_key=self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
+                report_computed_task=self._get_deserialized_report_computed_task(
+                    task_to_compute=self._get_deserialized_task_to_compute(
+                        timestamp="2018-02-05 10:00:00",
+                        deadline="2018-02-05 10:00:10",
+                        task_id="2",
+                        subtask_id="xxyyzz",
+                        provider_public_key=self._get_diffrent_provider_hex_public_key(),
+                        requestor_public_key=self._get_diffrent_requestor_hex_public_key(),
+                        sign_with_private_key=self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
+                    ),
+                    sign_with_private_key=self.DIFFERENT_PROVIDER_PRIVATE_KEY,
                 ),
                 sign_with_private_key=self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
             ),
@@ -480,6 +483,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 timestamp       = "2018-02-05 10:00:43",
                 payment_ts      = "2018-02-05 10:00:44",
                 task_to_compute = task_to_compute,
+                sign_with_private_key=self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
             )
         )
 
@@ -814,6 +818,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 timestamp       = "2018-02-05 10:00:43",
                 payment_ts      = "2018-02-05 10:00:44",
                 task_to_compute = task_to_compute,
+                sign_with_private_key=self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
             )
         )
 

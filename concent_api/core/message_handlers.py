@@ -698,15 +698,17 @@ def handle_send_force_payment(
             reason = message.concents.ServiceRefused.REASON.DuplicateRequest
         )
 
-    for subtask_results_accepted in client_message.subtask_results_accepted_list:
-        handle_validating_if_list_of_golem_messages_is_signed_with_key(
-            hex_to_bytes_convert(subtask_results_accepted.task_to_compute.requestor_public_key),
-            subtask_results_accepted.task_to_compute,
-        )
     task_to_compute = client_message.subtask_results_accepted_list[0].task_to_compute
+    requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
     (requestor_eth_address, provider_eth_address) = get_clients_eth_accounts(task_to_compute)
     validate_ethereum_addresses(requestor_eth_address, provider_eth_address)
     requestor_ethereum_public_key = hex_to_bytes_convert(task_to_compute.requestor_ethereum_public_key)
+
+    handle_validating_if_list_of_golem_messages_is_signed_with_key(
+        requestor_public_key,
+        *client_message.subtask_results_accepted_list,
+        *[subtask_results_accepted.task_to_compute for subtask_results_accepted in client_message.subtask_results_accepted_list],
+    )
 
     # Concent defines time T0 equal to oldest payment_ts from passed SubtaskResultAccepted messages from subtask_results_accepted_list.
     oldest_payments_ts = min(
@@ -793,7 +795,7 @@ def handle_send_force_payment(
 
         store_pending_message(
             response_type       = PendingResponse.ResponseType.ForcePaymentCommitted,
-            client_public_key   = hex_to_bytes_convert(task_to_compute.requestor_public_key),
+            client_public_key   = requestor_public_key,
             queue               = PendingResponse.Queue.ReceiveOutOfBand,
             payment_message     = requestor_force_payment_commited
         )

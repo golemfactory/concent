@@ -8,7 +8,6 @@ from celery import shared_task
 from golem_messages import message
 from requests import HTTPError
 from skimage.measure import compare_ssim
-import cv2
 
 from django.conf import settings
 
@@ -34,6 +33,12 @@ from .utils import prepare_storage_request_headers
 from .utils import run_blender
 from .utils import store_file_from_response_in_chunks
 from .utils import unpack_archive
+
+
+# OpenCV is imported conditionally because it requires OpenCV package installed in the system to work,
+# which is not installed on Concent instances without verifier.
+if 'verifier' in settings.CONCENT_FEATURES:
+    import cv2
 
 
 crash_logger = logging.getLogger('concent.crash')

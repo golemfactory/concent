@@ -263,6 +263,9 @@ def delete_source_files(source_archive_name):
 
 
 def render_image(frame_number, output_format, scene_file, subtask_id, verification_deadline, blender_crop_script):
+    # Verifier stores Blender crop script to a file.
+    blender_script_file_name = store_blender_script_file(subtask_id, blender_crop_script)
+
     # Verifier runs blender process.
     try:
         completed_process = run_blender(
@@ -430,3 +433,12 @@ def compare_all_rendered_images_with_user_results_files(parsed_files_to_compare:
 
         ssim_list.append(compare_images(image_1, image_2, subtask_id))
     return ssim_list
+
+
+def store_blender_script_file(subtask_id, blender_crop_script):
+    """ Writes content of the Blender crop script to python script file. """
+    blender_script_file_name = f'blender_crop_script_{subtask_id}.py'
+    with open(generate_verifier_storage_file_path(blender_script_file_name), 'x') as blender_script_file:
+        blender_script_file.write(blender_crop_script)
+
+    return blender_script_file_name

@@ -13,6 +13,7 @@ from common.constants import ErrorCode
 from common.helpers import get_storage_result_file_path
 from common.helpers import get_storage_source_file_path
 from common.testing_helpers import generate_ecc_key_pair
+from verifier.exceptions import VerificationError
 from ..tasks import blender_verification_order
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
@@ -155,10 +156,15 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         )
 
     def test_that_blender_verification_order_should_call_verification_result_with_result_error_if_download_fails(self):
-        with mock.patch('verifier.tasks.clean_directory', autospec=True) as mock_clean_directory,\
-            mock.patch('verifier.tasks.send_request_to_storage_cluster') as mock_send_request_to_storage_cluster,\
-            mock.patch('core.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
-            mock.patch('verifier.tasks.store_file_from_response_in_chunks', autospec=True, side_effect=OSError('error')):  # noqa: E125
+        with mock.patch(
+                'verifier.tasks.download_archives_from_storage',
+                side_effect=VerificationError(
+                    'error',
+                    ErrorCode.VERIFIER_FILE_DOWNLOAD_FAILED,
+                    self.compute_task_def['subtask_id']
+                )
+            ) as mock_download_archives_from_storage, \
+            mock.patch('core.tasks.verification_result.delay', autospec=True) as mock_verification_result:  # noqa: E125
             blender_verification_order(
                 subtask_id=self.compute_task_def['subtask_id'],
                 source_package_path=self.source_package_path,
@@ -173,8 +179,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
             )
 
-        mock_clean_directory.assert_called_once_with(settings.VERIFIER_STORAGE_PATH)
-        mock_send_request_to_storage_cluster.assert_called_once()
+        mock_download_archives_from_storage.assert_called_once()
         mock_verification_result.assert_called_once_with(
             self.compute_task_def['subtask_id'],
             VerificationResult.ERROR.name,

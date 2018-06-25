@@ -7,7 +7,6 @@ import os
 
 from celery import shared_task
 from golem_messages import message
-from requests import HTTPError
 from skimage.measure import compare_ssim
 
 from django.conf import settings
@@ -23,6 +22,7 @@ from common.decorators import log_task_errors
 from common.decorators import provides_concent_feature
 from common.logging import log_string_message
 from common.helpers import upload_file_to_storage_cluster
+from verifier.decorators import handle_verification_errors
 from .exceptions import VerificationError
 from .utils import are_image_sizes_and_color_channels_equal
 from .utils import clean_directory
@@ -48,6 +48,7 @@ def import_cv2():
 
 @shared_task
 @provides_concent_feature('verifier')
+@handle_verification_errors
 @log_task_errors
 def blender_verification_order(
     subtask_id: str,
@@ -106,73 +107,18 @@ def blender_verification_order(
         operation=message.FileTransferToken.Operation.download,
     )
 
-    # Remove any files from VERIFIER_STORAGE_PATH.
-    clean_directory(settings.VERIFIER_STORAGE_PATH)
-
     package_paths_to_downloaded_file_names = {
         source_package_path: f'source_{os.path.basename(source_package_path)}',
         result_package_path: f'result_{os.path.basename(result_package_path)}',
     }
 
-    # Download all the files listed in the message from the storage server to local storage.
-    for file_path, download_file_name in package_paths_to_downloaded_file_names.items():
-        try:
-            file_transfer_token.sig = None
-            cluster_response = send_request_to_storage_cluster(
-                prepare_storage_request_headers(file_transfer_token),
-                settings.STORAGE_CLUSTER_ADDRESS + CLUSTER_DOWNLOAD_PATH + file_path,
-                method='get',
-            )
-            store_file_from_response_in_chunks(
-                cluster_response,
-                os.path.join(
-                    settings.VERIFIER_STORAGE_PATH,
-                    download_file_name,
-                )
-            )
-        except (OSError, HTTPError) as exception:
-            log_string_message(
-                logger,
-                f'blender_verification_order for SUBTASK_ID {subtask_id} failed with error {exception}.'
-                f'ErrorCode: {ErrorCode.VERIFIER_FILE_DOWNLOAD_FAILED.name}'
-            )
-            verification_result.delay(
-                subtask_id,
-                VerificationResult.ERROR.name,
-                str(exception),
-                ErrorCode.VERIFIER_FILE_DOWNLOAD_FAILED.name
-            )
-            return
-        except Exception as exception:
-            log_string_message(
-                logger,
-                f'blender_verification_order for SUBTASK_ID {subtask_id} failed with error {exception}.'
-                f'ErrorCode: {ErrorCode.VERIFIER_FILE_DOWNLOAD_FAILED.name}'
-            )
-            verification_result.delay(
-                subtask_id,
-                VerificationResult.ERROR.name,
-                str(exception),
-                ErrorCode.VERIFIER_FILE_DOWNLOAD_FAILED.name
-            )
-            raise
+    download_archives_from_storage(
+        file_transfer_token,
+        subtask_id,
+        package_paths_to_downloaded_file_names
+    )
 
-    # If any file which is supposed to be unpacked from archives already exists, finish with error and raise exception.
-    for package_file_path in (source_package_path, result_package_path):
-        package_files_list = get_files_list_from_archive(
-            generate_verifier_storage_file_path(package_file_path)
-        )
-        if list(set(os.listdir(settings.VERIFIER_STORAGE_PATH)).intersection(package_files_list)):
-            verification_result.delay(
-                subtask_id,
-                VerificationResult.ERROR.name,
-                f'One of the files which are supposed to be unpacked from {package_file_path} already exists.',
-                ErrorCode.VERIFIER_UNPACKING_ARCHIVE_FAILED.name
-            )
-            raise VerificationError(  # TODO: write a test for this case
-                f'One of the files which are supposed to be unpacked from {package_file_path} already exists.',
-                ErrorCode.VERIFIER_UNPACKING_ARCHIVE_FAILED,
-            )
+    validate_downloaded_archives(result_package_path, source_package_path, subtask_id)
 
     # Verifier unpacks the archive with project source.
     for file_path, download_file_name in package_paths_to_downloaded_file_names.items():
@@ -367,3 +313,76 @@ def blender_verification_order(
 
     # Remove any files left in VERIFIER_STORAGE_PATH.
     clean_directory(settings.VERIFIER_STORAGE_PATH)
+
+
+def validate_downloaded_archives(result_package_path, source_package_path, subtask_id):
+    # If any file which is supposed to be unpacked from archives already exists, finish with error and raise exception.
+    for package_file_path in (source_package_path, result_package_path):
+        package_files_list = get_files_list_from_archive(
+            generate_verifier_storage_file_path(package_file_path)
+        )
+        if list(set(os.listdir(settings.VERIFIER_STORAGE_PATH)).intersection(package_files_list)):
+            verification_result.delay(
+                subtask_id,
+                VerificationResult.ERROR.name,
+                f'One of the files which are supposed to be unpacked from {package_file_path} already exists.',
+                ErrorCode.VERIFIER_UNPACKING_ARCHIVE_FAILED.name
+            )
+            raise VerificationError(  # TODO: write a test for this case
+                f'One of the files which are supposed to be unpacked from {package_file_path} already exists.',
+                ErrorCode.ErrorCode.VERIFIER_UNPACKING_ARCHIVE_FAILED.name,
+                subtask_id
+            )
+
+
+def download_archives_from_storage(file_transfer_token, subtask_id, package_paths_to_downloaded_file_names):
+    # Remove any files from VERIFIER_STORAGE_PATH.
+    clean_directory(settings.VERIFIER_STORAGE_PATH)
+
+    # Download all the files listed in the message from the storage server to local storage.
+    for file_path, download_file_name in package_paths_to_downloaded_file_names.items():
+        try:
+            file_transfer_token.sig = None
+            cluster_response = send_request_to_storage_cluster(
+                prepare_storage_request_headers(file_transfer_token),
+                settings.STORAGE_CLUSTER_ADDRESS + CLUSTER_DOWNLOAD_PATH + file_path,
+                method='get',
+            )
+            store_file_from_response_in_chunks(
+                cluster_response,
+                os.path.join(
+                    settings.VERIFIER_STORAGE_PATH,
+                    download_file_name,
+                )
+            )
+        # except (OSError, HTTPError) as exception:
+        #     log_string_message(
+        #         logger,
+        #         f'blender_verification_order for SUBTASK_ID {subtask_id} failed with error {exception}.'
+        #         f'ErrorCode: {ErrorCode.VERIFIER_FILE_DOWNLOAD_FAILED.name}'
+        #     )
+        #     verification_result.delay(
+        #         subtask_id,
+        #         VerificationResult.ERROR.name,
+        #         str(exception),
+        #         ErrorCode.VERIFIER_FILE_DOWNLOAD_FAILED.name
+        #     )
+        #     raise
+        except Exception as exception:
+            log_string_message(
+                logger,
+                f'blender_verification_order for SUBTASK_ID {subtask_id} failed with error {exception}.'
+                f'ErrorCode: {ErrorCode.VERIFIER_FILE_DOWNLOAD_FAILED.name}'
+            )
+            # verification_result.delay(
+            #     subtask_id,
+            #     VerificationResult.ERROR.name,
+            #     str(exception),
+            #     ErrorCode.VERIFIER_FILE_DOWNLOAD_FAILED.name
+            # )
+            raise VerificationError(
+                str(exception),
+                ErrorCode.VERIFIER_FILE_DOWNLOAD_FAILED,
+                subtask_id=subtask_id,
+            )
+    return package_paths_to_downloaded_file_names

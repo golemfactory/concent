@@ -166,8 +166,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 3: Requestor accepts computed task via Concent
         report_computed_task_from_requestor = self._get_deserialized_report_computed_task(
-            timestamp = "2017-12-01 10:55:00",
-            task_to_compute = task_to_compute,
+            timestamp="2017-12-01 10:55:00",
+            task_to_compute=task_to_compute,
+            sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
         )
         serialized_ack_report_computed_task = self._get_serialized_ack_report_computed_task(
             timestamp = "2017-12-01 11:00:05",

@@ -46,8 +46,8 @@ def subtask_results_accepted(timestamp = None, payment_ts = None, task_to_comput
     with freeze_time(timestamp):
         return sign_message(
             message.tasks.SubtaskResultsAccepted(
-                payment_ts      = payment_ts,
-                task_to_compute = task_to_compute
+                payment_ts=payment_ts,
+                task_to_compute=task_to_compute
             ),
             REQUESTOR_PRIVATE_KEY,
         )

@@ -55,11 +55,11 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces subtask results via Concent.
         # Request is processed correctly.
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-            timestamp                   = "2018-02-05 10:00:30",
-            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
-                timestamp       = "2018-02-05 10:00:20",
-                subtask_id      = "xxyyzz",
-                task_to_compute = task_to_compute,
+            timestamp="2018-02-05 10:00:30",
+            ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
+                timestamp="2018-02-05 10:00:20",
+                subtask_id="xxyyzz",
+                task_to_compute=task_to_compute,
                 sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
@@ -144,11 +144,11 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_response(
             response,
-            status       = 200,
-            key          = self.DIFFERENT_PROVIDER_PRIVATE_KEY,
-            message_type = message.concents.ServiceRefused,
-            fields       = {
-                'reason':    message.concents.ServiceRefused.REASON.DuplicateRequest,
+            status=200,
+            key=self.DIFFERENT_PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ServiceRefused,
+            fields={
+                'reason': message.concents.ServiceRefused.REASON.DuplicateRequest,
                 'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 10:00:31"),
             }
         )
@@ -205,11 +205,11 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces subtask results via Concent.
         # Request is processed correctly.
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-            timestamp                   = "2018-02-05 10:00:30",
-            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
-                timestamp       = "2018-02-05 10:00:20",
-                subtask_id      = "xxyyzz",
-                task_to_compute = task_to_compute,
+            timestamp="2018-02-05 10:00:30",
+            ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
+                timestamp="2018-02-05 10:00:20",
+                subtask_id="xxyyzz",
+                task_to_compute=task_to_compute,
                 sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )

@@ -794,10 +794,10 @@ def handle_send_force_payment(
         )
 
         store_pending_message(
-            response_type       = PendingResponse.ResponseType.ForcePaymentCommitted,
-            client_public_key   = requestor_public_key,
-            queue               = PendingResponse.Queue.ReceiveOutOfBand,
-            payment_message     = requestor_force_payment_commited
+            response_type=PendingResponse.ResponseType.ForcePaymentCommitted,
+            client_public_key=requestor_public_key,
+            queue=PendingResponse.Queue.ReceiveOutOfBand,
+            payment_message=requestor_force_payment_commited
         )
 
         provider_force_payment_commited.sig = None

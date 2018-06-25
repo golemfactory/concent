@@ -83,7 +83,7 @@ def report_computed_task(timestamp = None, task_to_compute = None):
     with freeze_time(timestamp):
         return sign_message(
             message.tasks.ReportComputedTask(
-                task_to_compute = task_to_compute,
+                task_to_compute=task_to_compute,
                 size=REPORT_COMPUTED_TASK_SIZE,
             ),
             PROVIDER_PRIVATE_KEY,

@@ -196,7 +196,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 11:00:05"):
             ack_report_computed_task = message.AckReportComputedTask(
-                report_computed_task = self._get_deserialized_report_computed_task(
+                report_computed_task=self._get_deserialized_report_computed_task(
                     task_to_compute=task_to_compute,
                 )
             )

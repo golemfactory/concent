@@ -8,7 +8,6 @@ from celery import shared_task
 from golem_messages import message
 from requests import HTTPError
 from skimage.measure import compare_ssim
-import cv2
 
 from django.conf import settings
 
@@ -38,6 +37,11 @@ from .utils import unpack_archive
 
 crash_logger = logging.getLogger('concent.crash')
 logger = logging.getLogger(__name__)
+
+
+def import_cv2():
+    import cv2
+    return cv2
 
 
 @shared_task
@@ -285,6 +289,12 @@ def blender_verification_order(
         result_files_list = get_files_list_from_archive(
             generate_verifier_storage_file_path(result_package_path)
         )
+
+        # OpenCV is imported here because it requires OpenCV package installed in the system to work,
+        # which is not installed on Concent instances without verifier.
+        # However, this is not imported directly here because we need to mock this in tests, which might be run on
+        # the environment without OpenCV package installed in the system.
+        cv2 = import_cv2()
 
         image_1 = cv2.imread(  # pylint: disable=no-member
             generate_verifier_storage_file_path(blender_output_file_name)

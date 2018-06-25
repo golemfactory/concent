@@ -5,6 +5,8 @@ import functools
 import mock
 
 import dateutil.parser
+from numpy import ndarray
+
 from django.conf import settings
 from django.shortcuts import reverse
 from django.test import TestCase
@@ -869,3 +871,14 @@ class ConcentIntegrationTestCase(TestCase):
     @staticmethod
     def _create_datetime_from_string(date_time_str):
         return datetime.datetime.strptime(date_time_str, "%Y-%m-%d %H:%M:%S")
+
+    def _prepare_cv2_mock(self, desired_behaviour='image'):  # pylint: disable=no-self-use
+        mocked_cv2 = mock.Mock()
+        mocked_cv2.imread = mock.Mock()
+        if desired_behaviour == 'image':
+            mocked_cv2.imread.return_value = ndarray((1024, 768, 3))
+        elif desired_behaviour == 'none':
+            mocked_cv2.imread.return_value = None
+        elif desired_behaviour == 'exception':
+            mocked_cv2.imread.side_effect = MemoryError('error')
+        return mocked_cv2

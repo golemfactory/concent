@@ -66,7 +66,7 @@ def get_subtask_results_verify(
         report_computed_task.get_short_hash()
     )
 
-    with freeze_time(timestamp_to_isoformat(current_time - 10)):
+    with freeze_time(timestamp_to_isoformat(current_time - cluster_consts.additional_verification_call_time / 2)):
         subtask_results_rejected = message.tasks.SubtaskResultsRejected(
             reason=reason,
             report_computed_task=report_computed_task,
@@ -151,7 +151,8 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):
         source_file_size_2
     ))
 
-    time.sleep(10)
+    #  Adding 5 seconds to time sleep makes us sure that subtask is after deadline
+    time.sleep(cluster_consts.additional_verification_call_time + 5)
 
     api_request(
         cluster_url,

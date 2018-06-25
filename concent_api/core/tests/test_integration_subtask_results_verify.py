@@ -21,17 +21,18 @@ from common.helpers import get_storage_result_file_path
 from common.helpers import get_storage_scene_file_path
 from common.helpers import get_storage_source_file_path
 from common.helpers import parse_timestamp_to_utc_datetime
-from common.helpers import sign_message
 from common.testing_helpers import generate_ecc_key_pair
+
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
 @override_settings(
-    CONCENT_PRIVATE_KEY  = CONCENT_PRIVATE_KEY,
-    CONCENT_PUBLIC_KEY   = CONCENT_PUBLIC_KEY,
-    MINIMUM_UPLOAD_RATE  = 1,     # bits per second
-    DOWNLOAD_LEADIN_TIME = 10,    # seconds
+    CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+    MINIMUM_UPLOAD_RATE=1,  # bits per second
+    DOWNLOAD_LEADIN_TIME=10,  # seconds
+    ADDITIONAL_VERIFICATION_CALL_TIME=10  # seconds
 )
 class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
     def setUp(self):
@@ -184,46 +185,6 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 content_type='application/octet-stream',
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
                 HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
-            )
-
-        # then
-        self._test_response(
-            response,
-            status=200,
-            key=self.PROVIDER_PRIVATE_KEY,
-            message_type=message.concents.ServiceRefused,
-            fields={
-                'reason': message.concents.ServiceRefused.REASON.InvalidRequest,
-            }
-        )
-        self._assert_stored_message_counter_not_increased()
-
-    def test_that_concent_responds_with_service_refused_when_request_arrives_too_early(self):
-        """
-        Provider -> Concent: SubtaskResultsVerify
-        Concent -> Provider: ServiceRefused (InvalidRequest)
-        """
-        # given
-        serialized_subtask_results_verify = self._get_serialized_subtask_results_verify(
-            subtask_results_verify=self._get_deserialized_subtask_results_verify(
-                timestamp="2018-04-01 10:30:00",
-                subtask_results_rejected=self._get_deserialized_subtask_results_rejected(
-                    reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-                    timestamp="2018-04-01 10:30:00",
-                    report_computed_task=self._get_deserialized_report_computed_task(
-                        timestamp="2018-04-01 10:01:00",
-                        subtask_id=self.subtask_id,
-                    ),
-                )
-            )
-        )
-
-        # when
-        with freeze_time("2018-04-01 10:29:59"):
-            response = self.client.post(
-                reverse('core:send'),
-                data=serialized_subtask_results_verify,
-                content_type='application/octet-stream',
             )
 
         # then
@@ -426,7 +387,6 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             )
             self._assert_stored_message_counter_increased(2)
 
-        with freeze_time(parse_timestamp_to_utc_datetime(subtask.next_deadline.timestamp() + 1)):
             serialized_subtask_results_verify = self._get_serialized_subtask_results_verify(
                 subtask_results_verify=self._get_deserialized_subtask_results_verify(
                     subtask_results_rejected=self._get_deserialized_subtask_results_rejected(
@@ -436,6 +396,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 )
             )
 
+        with freeze_time(parse_timestamp_to_utc_datetime(subtask.next_deadline.timestamp() + 1)):
             response = self.client.post(
                 reverse('core:send'),
                 data=serialized_subtask_results_verify,
@@ -594,12 +555,12 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             reason=reason_of_rejection,
             timestamp=subtask_result_rejected_time_str,
             report_computed_task=self.report_computed_task,
+            sign_with_private_key=key,
         )
         subtask_results_verify_time_str = self._add_time_offset_to_date(
             subtask_result_rejected_time_str,
             time_offset
         )
-        sign_message(subtask_results_rejected, key or self.REQUESTOR_PRIVATE_KEY)
 
         subtask_results_verify = self._get_deserialized_subtask_results_verify(
             timestamp=subtask_results_verify_time_str,

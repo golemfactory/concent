@@ -1310,6 +1310,11 @@ def handle_send_subtask_results_verify(
         requestor_public_key,
         task_to_compute,
     )
+    handle_validating_if_list_of_golem_messages_is_signed_with_key(
+        provider_public_key,
+        report_computed_task,
+    )
+
     if subtask_results_rejected.reason != SubtaskResultsRejected.REASON.VerificationNegative:
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.InvalidRequest,
@@ -1317,7 +1322,7 @@ def handle_send_subtask_results_verify(
 
     verification_deadline = subtask_results_rejected.timestamp + settings.ADDITIONAL_VERIFICATION_CALL_TIME
 
-    if not get_current_utc_timestamp() <= verification_deadline:
+    if verification_deadline < get_current_utc_timestamp():
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.InvalidRequest,
         )
@@ -1341,7 +1346,7 @@ def handle_send_subtask_results_verify(
             reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
         )
 
-    if is_message_recieved_in_wrong_state(
+    if is_subtask_in_wrong_state(
         compute_task_def['subtask_id'],
         [
             Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
@@ -1425,7 +1430,7 @@ def handle_message(client_message):
         return handle_unsupported_golem_messages_type(client_message)
 
 
-def is_message_recieved_in_wrong_state(subtask_id, forbidden_states):
+def is_subtask_in_wrong_state(subtask_id, forbidden_states):
     return Subtask.objects.filter(
         subtask_id=subtask_id,
         state__in=forbidden_states

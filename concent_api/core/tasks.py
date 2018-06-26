@@ -14,11 +14,11 @@ from core.models import Subtask
 from core.payments import base
 from core.subtask_helpers import update_subtask_state
 from core.transfer_operations import store_pending_message
-from utils.decorators import log_task_errors
-from utils.decorators import provides_concent_feature
-from utils.helpers import deserialize_message
-from utils.helpers import get_current_utc_timestamp
-from utils.helpers import parse_timestamp_to_utc_datetime
+from common.decorators import log_task_errors
+from common.decorators import provides_concent_feature
+from common.helpers import deserialize_message
+from common.helpers import get_current_utc_timestamp
+from common.helpers import parse_timestamp_to_utc_datetime
 from .constants import CELERY_LOCKED_SUBTASK_DELAY
 from .constants import MAXIMUM_VERIFICATION_RESULT_TASK_RETRIES
 from .constants import VERIFICATION_RESULT_SUBTASK_STATE_ACCEPTED_LOG_MESSAGE

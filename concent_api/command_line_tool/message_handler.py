@@ -10,8 +10,8 @@ from golem_messages.message.concents import ForceSubtaskResults
 import pathmagic  # noqa: F401  # pylint: disable=unused-import
 from api_testing_common import create_client_auth_message
 from api_testing_common import print_golem_message
-from utils.helpers import get_field_from_message
-from utils.helpers import sign_message
+from common.helpers import get_field_from_message
+from common.helpers import sign_message
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 

@@ -17,10 +17,10 @@ from django.utils           import timezone
 from constance              import config
 from golem_messages         import message
 
-from core.exceptions        import ConcentInSoftShutdownMode
-from utils.fields           import Base64Field
-from utils.fields           import ChoiceEnum
-from utils.helpers import deserialize_message
+from common.exceptions import ConcentInSoftShutdownMode
+from common.fields           import Base64Field
+from common.fields           import ChoiceEnum
+from common.helpers import deserialize_message
 
 from .constants             import TASK_OWNER_KEY_LENGTH
 from .constants             import ETHEREUM_ADDRESS_LENGTH

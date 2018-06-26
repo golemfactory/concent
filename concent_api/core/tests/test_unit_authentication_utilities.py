@@ -10,8 +10,8 @@ from core.exceptions                import Http400
 from core.validation                import validate_all_messages_identical
 from core.validation                import validate_golem_message_client_authorization
 from core.validation                import validate_golem_message_signed_with_key
-from utils.shortcuts                import load_without_public_key
-from utils.testing_helpers          import generate_ecc_key_pair
+from common.shortcuts                import load_without_public_key
+from common.testing_helpers          import generate_ecc_key_pair
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)       = generate_ecc_key_pair()

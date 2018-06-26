@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 from django.db import migrations, models
 import django.db.models.deletion
 import django.utils.timezone
-import utils.fields
+import common.fields
 
 
 class Migration(migrations.Migration):
@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
             name='Client',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('public_key', utils.fields.Base64Field(db_column='public_key', max_length=64, unique=True)),
+                ('public_key', common.fields.Base64Field(db_column='public_key', max_length=64, unique=True)),
             ],
         ),
         migrations.CreateModel(

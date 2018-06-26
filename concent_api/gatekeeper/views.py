@@ -20,10 +20,10 @@ from golem_messages.shortcuts       import load
 from core.exceptions import FileTransferTokenError
 from core.validation import validate_file_transfer_token
 from gatekeeper.utils               import gatekeeper_access_denied_response
-from utils                          import logging
-from utils.constants                import ErrorCode
-from utils.decorators import provides_concent_feature
-from utils.helpers import get_current_utc_timestamp
+from common                          import logging
+from common.constants                import ErrorCode
+from common.decorators import provides_concent_feature
+from common.helpers import get_current_utc_timestamp
 
 
 logger = getLogger(__name__)

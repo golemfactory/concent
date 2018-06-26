@@ -10,7 +10,7 @@ from golem_messages.message import FileTransferToken
 from core.tests.utils       import ConcentIntegrationTestCase
 from core.models            import PendingResponse
 from core.models            import Subtask
-from utils.testing_helpers  import generate_ecc_key_pair
+from common.testing_helpers  import generate_ecc_key_pair
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()

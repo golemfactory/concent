@@ -5,11 +5,11 @@ from django.utils           import timezone
 
 from golem_messages         import message
 
-from utils.helpers          import join_messages
-from utils.helpers          import parse_datetime_to_timestamp
-from utils.helpers          import parse_timestamp_to_utc_datetime
-from utils.helpers          import sign_message
-from utils.testing_helpers  import generate_ecc_key_pair
+from common.helpers          import join_messages
+from common.helpers          import parse_datetime_to_timestamp
+from common.helpers          import parse_timestamp_to_utc_datetime
+from common.helpers          import sign_message
+from common.testing_helpers  import generate_ecc_key_pair
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 

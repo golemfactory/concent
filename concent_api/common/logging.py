@@ -11,9 +11,9 @@ from golem_messages.message.base import Message
 from golem_messages.utils import encode_hex
 
 from core.models import Subtask
-from utils.constants import MessageIdField
-from utils.helpers import get_field_from_message
-from utils.helpers import join_messages
+from common.constants import MessageIdField
+from common.helpers import get_field_from_message
+from common.helpers import join_messages
 
 MessageAsDict = Dict[str, Union[str, Dict[str, Any]]]
 

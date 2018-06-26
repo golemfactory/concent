@@ -5,7 +5,7 @@ from django.urls                    import reverse
 from golem_messages.shortcuts       import dump
 from golem_messages                 import message
 
-from utils.testing_helpers  import generate_ecc_key_pair
+from common.testing_helpers  import generate_ecc_key_pair
 
 
 (CONCENT_PRIVATE_KEY,   CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()

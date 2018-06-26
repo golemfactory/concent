@@ -11,9 +11,9 @@ from golem_messages.message         import FileTransferToken
 from golem_messages.factories.concents import FileTransferTokenFactory
 
 from core.tests.utils               import ConcentIntegrationTestCase
-from utils.constants                import ErrorCode
-from utils.helpers                  import get_current_utc_timestamp
-from utils.helpers                  import get_storage_result_file_path
+from common.constants                import ErrorCode
+from common.helpers                  import get_current_utc_timestamp
+from common.helpers                  import get_storage_result_file_path
 
 
 @override_settings(

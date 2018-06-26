@@ -9,8 +9,8 @@ from golem_messages.message         import ForceReportComputedTask
 from golem_messages.message.concents import ForceReportComputedTaskResponse
 from golem_messages.message.tasks   import ReportComputedTask
 
-from utils.helpers import get_current_utc_timestamp
-from utils.helpers import sign_message
+from common.helpers import get_current_utc_timestamp
+from common.helpers import sign_message
 
 from api_testing_common import api_request
 from api_testing_common import count_fails

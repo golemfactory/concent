@@ -3,7 +3,7 @@ from logging import getLogger
 from django.http import JsonResponse
 from golem_messages.message import FileTransferToken
 
-from utils import logging
+from common import logging
 
 logger = getLogger(__name__)
 

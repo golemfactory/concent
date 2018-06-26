@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from utils.admin    import ModelAdminReadOnlyMixin
+from common.admin    import ModelAdminReadOnlyMixin
 from .models        import PendingResponse
 from .models        import StoredMessage
 from .models        import Subtask

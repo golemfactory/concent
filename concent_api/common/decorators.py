@@ -16,22 +16,22 @@ from golem_messages.exceptions      import MessageFromFutureError
 from golem_messages.exceptions      import MessageTooOldError
 from golem_messages.exceptions      import TimestampError
 
-from core.validation                import validate_golem_message_signed_with_key
-from core.validation import get_validated_client_public_key_from_client_message
-from core.exceptions                import ConcentInSoftShutdownMode
-from core.exceptions import ConcentFeatureIsNotAvailable
+from common.exceptions import ConcentFeatureIsNotAvailable
+from common.exceptions import ConcentInSoftShutdownMode
+from common.helpers import join_messages
+from common import logging
+from common.logging import get_json_from_message_without_redundant_fields_for_logging
+from common.logging import log_400_error
+from common.logging import log_json_message
+from common.logging import log_message_received_in_endpoint
+from common.logging import log_string_message
+from common.shortcuts                import load_without_public_key
 from core.exceptions import FileTransferTokenError
 from core.exceptions import GolemMessageValidationError
 from core.exceptions import HashingAlgorithmError
 from core.exceptions import Http400
-
-from utils.helpers import join_messages
-from utils.logging import get_json_from_message_without_redundant_fields_for_logging
-from utils.logging import log_json_message
-from utils.logging import log_message_received_in_endpoint
-from utils.logging import log_string_message
-from utils.shortcuts                import load_without_public_key
-from utils                          import logging
+from core.validation import get_validated_client_public_key_from_client_message
+from core.validation import validate_golem_message_signed_with_key
 
 logger = getLogger(__name__)
 crash_logger = getLogger('concent.crash')
@@ -167,7 +167,7 @@ def handle_errors_and_responses(database_name):
                 if database_name is not None:
                     transaction.savepoint_commit(sid, using=database_name)
             except (Http400, FileTransferTokenError, HashingAlgorithmError, GolemMessageValidationError) as exception:
-                logging.log_400_error(
+                log_400_error(
                     logger,
                     view.__name__,
                     client_public_key,

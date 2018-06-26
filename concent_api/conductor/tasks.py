@@ -3,11 +3,11 @@ from celery import shared_task
 from django.db import transaction
 
 from core import tasks
-from utils.constants import ErrorCode
-from utils.decorators import log_task_errors
-from utils.decorators import provides_concent_feature
-from utils.logging import log_error_message
-from utils.logging import log_string_message
+from common.constants import ErrorCode
+from common.decorators import log_task_errors
+from common.decorators import provides_concent_feature
+from common.logging import log_error_message
+from common.logging import log_string_message
 from verifier.tasks import blender_verification_order
 from .exceptions import VerificationRequestAlreadyAcknowledgedError
 from .models import BlenderSubtaskDefinition

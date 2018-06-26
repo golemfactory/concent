@@ -9,8 +9,8 @@ from core.constants         import ETHEREUM_ADDRESS_LENGTH
 from core.models            import Subtask
 from core.models            import PendingResponse
 from core.tests.utils       import ConcentIntegrationTestCase
-from utils.constants        import ErrorCode
-from utils.testing_helpers  import generate_ecc_key_pair
+from common.constants        import ErrorCode
+from common.testing_helpers  import generate_ecc_key_pair
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()

@@ -8,7 +8,7 @@ from django.db.models import OneToOneField
 from django.utils import timezone
 
 from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
-from utils.fields import ChoiceEnum
+from common.fields import ChoiceEnum
 from .constants import MESSAGE_PATH_LENGTH
 
 

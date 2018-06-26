@@ -25,10 +25,10 @@ from core.models            import PendingResponse
 from core.models            import StoredMessage
 from core.models            import Subtask
 
-from utils.helpers          import sign_message
-from utils.helpers          import get_current_utc_timestamp
-from utils.testing_helpers  import generate_ecc_key_pair
-from utils.testing_helpers  import generate_priv_and_pub_eth_account_key
+from common.helpers          import sign_message
+from common.helpers          import get_current_utc_timestamp
+from common.testing_helpers  import generate_ecc_key_pair
+from common.testing_helpers  import generate_priv_and_pub_eth_account_key
 
 
 class ConcentIntegrationTestCase(TestCase):

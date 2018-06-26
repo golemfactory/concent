@@ -319,7 +319,7 @@ class Subtask(Model):
         self._current_state_name = None
 
     def __repr__(self):
-        return f"Subtask: task_id={self.task_id}, subtak_id={self.subtask_id}, state={self.state_enum}"
+        return f"Subtask: task_id={self.task_id}, subtask_id={self.subtask_id}, state={self.state_enum}"
 
     @classmethod
     def from_db(cls, db, field_names, values):

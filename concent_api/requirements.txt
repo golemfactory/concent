@@ -10,8 +10,9 @@ requests
 mock
 raven
 mypy
-celery
+celery >= 4.0
 django-constance[database]
 python-mimeparse
 scikit-image
 opencv-python
+factory-boy

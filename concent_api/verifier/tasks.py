@@ -24,6 +24,7 @@ from common.decorators import provides_concent_feature
 from common.logging import log_string_message
 from common.helpers import upload_file_to_storage_cluster
 from .exceptions import VerificationError
+from .utils import are_image_sizes_and_color_channels_equal
 from .utils import clean_directory
 from .utils import delete_file
 from .utils import generate_blender_output_file_name
@@ -300,6 +301,18 @@ def blender_verification_order(
             VerificationResult.ERROR.name,
             str(exception),
             ErrorCode.VERIFIER_LOADING_FILES_INTO_MEMORY_FAILED.name
+        )
+        return
+
+    if not are_image_sizes_and_color_channels_equal(image_1, image_2):
+        log_string_message(
+            logger,
+            f'Blender verification failed. Sizes in pixels of images are not equal. SUBTASK_ID: {subtask_id}.'
+            f'VerificationResult: {VerificationResult.MISMATCH.name}'
+        )
+        verification_result.delay(
+            subtask_id,
+            VerificationResult.MISMATCH.name,
         )
         return
 

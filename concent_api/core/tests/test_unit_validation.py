@@ -1,13 +1,18 @@
 from unittest import TestCase
 
 import mock
+from django.test import override_settings
 
 from golem_messages.message.tasks import ReportComputedTask
 from golem_messages.message.tasks import SubtaskResultsRejected
 from golem_messages.message.tasks import TaskToCompute
+from golem_messages.utils import encode_hex
+from common.constants import ErrorCode
+from common.testing_helpers import generate_ecc_key_pair
 
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
+from core.message_handlers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
 from core.tests.utils import ConcentIntegrationTestCase
 from core.exceptions import HashingAlgorithmError
 from core.exceptions import Http400
@@ -17,7 +22,9 @@ from core.validation import validate_golem_message_subtask_results_rejected
 from core.validation import validate_id_value
 from core.validation import validate_secure_hash_algorithm
 from core.validation import validate_subtask_price_task_to_compute
-from common.constants import ErrorCode
+
+
+(CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
 def mocked_message_with_price(price):
@@ -168,3 +175,56 @@ class TestInvalidHashAlgorithms(TestCase):
             with self.assertRaises(HashingAlgorithmError) as context:
                 validate_secure_hash_algorithm(invalid_value)
             self.assertEqual(context.exception.error_code, error_code)
+
+
+@override_settings(CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY)
+class TestAreEthereumAddressesAndKeysUnique(ConcentIntegrationTestCase):
+
+    def setUp(self):
+        super().setUp()
+
+        self.task_to_compute_1 = mock.Mock(spec_set=TaskToCompute)
+        self.task_to_compute_1.requestor_ethereum_address = encode_hex(self.REQUESTOR_PUBLIC_KEY)
+        self.task_to_compute_1.requestor_ethereum_public_key = encode_hex(self.REQUESTOR_PUB_ETH_KEY)
+        self.task_to_compute_1.requestor_public_key = encode_hex(self.REQUESTOR_PUBLIC_KEY)
+
+        self.task_to_compute_2 = mock.Mock(spec_set=TaskToCompute)
+        self.task_to_compute_2.requestor_ethereum_address = encode_hex(self.REQUESTOR_PUBLIC_KEY)
+        self.task_to_compute_2.requestor_ethereum_public_key = encode_hex(self.REQUESTOR_PUB_ETH_KEY)
+        self.task_to_compute_2.requestor_public_key = encode_hex(self.REQUESTOR_PUBLIC_KEY)
+
+    def create_subtask_results_accepted_list(self, task_to_compute_1, task_to_compute_2) -> list:
+        subtask_results_accepted_list = [
+            self._get_deserialized_subtask_results_accepted(
+                payment_ts="2018-02-05 12:00:16",
+                task_to_compute=task_to_compute_1
+            ),
+            self._get_deserialized_subtask_results_accepted(
+                payment_ts="2018-02-05 12:00:16",
+                task_to_compute=task_to_compute_2
+            ),
+        ]
+        return subtask_results_accepted_list
+
+    def test_that_if_the_same_values_given_method_should_return_true(self):
+        subtask_results_accepted_list = self.create_subtask_results_accepted_list(self.task_to_compute_1, self.task_to_compute_2)
+        result = are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_results_accepted_list)
+        self.assertTrue(result)
+
+    def test_that_if_different_ethereum_addresses_are_given_method_should_return_false(self):
+        self.task_to_compute_2.requestor_ethereum_address = encode_hex(self.DIFFERENT_REQUESTOR_PUBLIC_KEY)
+        subtask_results_accepted_list = self.create_subtask_results_accepted_list(self.task_to_compute_1, self.task_to_compute_2)
+        result = are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_results_accepted_list)
+        self.assertFalse(result)
+
+    def test_that_if_different_ethereum_public_keys_are_given_method_should_return_false(self):
+        self.task_to_compute_2.requestor_ethereum_public_key = encode_hex(self.DIFFERENT_REQUESTOR_PUB_ETH_KEY)
+        subtask_results_accepted_list = self.create_subtask_results_accepted_list(self.task_to_compute_1, self.task_to_compute_2)
+        result = are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_results_accepted_list)
+        self.assertFalse(result)
+
+    def test_that_if_different_public_keys_are_given_method_should_return_false(self):
+        self.task_to_compute_2.requestor_public_key = encode_hex(self.DIFFERENT_REQUESTOR_PUBLIC_KEY)
+        subtask_results_accepted_list = self.create_subtask_results_accepted_list(self.task_to_compute_1, self.task_to_compute_2)
+        result = are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_results_accepted_list)
+        self.assertFalse(result)

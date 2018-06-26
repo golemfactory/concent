@@ -44,8 +44,10 @@ def report_upload(_request, file_path):
         verification_request.blender_subtask_definition is not None and
         verification_request.upload_reports.filter(path=verification_request.source_package_path).exists() and
         verification_request.upload_reports.filter(path=verification_request.result_package_path).exists() and
-        verification_request.upload_reports.count() == 2
+        verification_request.upload_reports.filter(path=file_path).count() == 1
     ):
+        assert file_path in [verification_request.source_package_path, verification_request.result_package_path]
+
         # If all expected files have been uploaded, the app sends upload_finished task to the work queue.
         upload_finished.delay(verification_request.subtask_id)
 

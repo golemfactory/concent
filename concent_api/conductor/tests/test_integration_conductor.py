@@ -210,6 +210,82 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
             self.assertEqual(UploadReport.objects.count(), 3)
             self.assertEqual(mock_task.call_count, 1)
 
+    def test_that_conductor_should_schedule_verification_order_task_if_uploaded_file_path_was_not_existing_before_and_other_requirements_are_met(self):
+        verification_request = self._prepare_verification_request_with_blender_subtask_definition()
+
+        upload_report = UploadReport(
+            path=verification_request.result_package_path,
+            verification_request=verification_request,
+        )
+        upload_report.full_clean()
+        upload_report.save()
+
+        with mock.patch('conductor.views.upload_finished.delay') as mock_task:
+            response = self.client.post(
+                reverse(
+                    'conductor:report-upload',
+                    kwargs={
+                        'file_path': self.result_package_path
+                    }
+                ),
+                content_type='application/octet-stream',
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(UploadReport.objects.count(), 2)
+
+            mock_task.assert_not_called()
+
+            verification_request.refresh_from_db()
+            self.assertFalse(verification_request.upload_finished)
+
+            response = self.client.post(
+                reverse(
+                    'conductor:report-upload',
+                    kwargs={
+                        'file_path': self.source_package_path
+                    }
+                ),
+                content_type='application/octet-stream',
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(UploadReport.objects.count(), 3)
+
+            mock_task.assert_called_once_with(self.compute_task_def['subtask_id'])
+
+            verification_request.refresh_from_db()
+            self.assertTrue(verification_request.upload_finished)
+
+    def test_that_conductor_should_not_schedule_verification_order_task_if_same_file_was_uploaded_again(self):
+        verification_request = self._prepare_verification_request_with_blender_subtask_definition()
+
+        upload_report = UploadReport(
+            path=verification_request.result_package_path,
+            verification_request=verification_request,
+        )
+        upload_report.full_clean()
+        upload_report.save()
+
+        with mock.patch('conductor.views.upload_finished.delay') as mock_task:
+            response = self.client.post(
+                reverse(
+                    'conductor:report-upload',
+                    kwargs={
+                        'file_path': self.result_package_path
+                    }
+                ),
+                content_type='application/octet-stream',
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(UploadReport.objects.count(), 2)
+
+            mock_task.assert_not_called()
+
+            verification_request.refresh_from_db()
+            self.assertFalse(verification_request.upload_finished)
+
     def test_blender_verification_request_task_should_create_verification_request_and_blender_subtask_definition(self):
         blender_verification_request(
             subtask_id=self.compute_task_def['subtask_id'],

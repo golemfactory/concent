@@ -402,7 +402,7 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
         maximum_download_time
     )
 
-    if not client_message.report_computed_task.timestamp < get_current_utc_timestamp() <= force_get_task_result_deadline:
+    if not get_current_utc_timestamp() <= force_get_task_result_deadline:
         logging.log_timeout(
             logger,
             client_message,
@@ -1288,7 +1288,7 @@ def handle_send_subtask_results_verify(
 
     verification_deadline = subtask_results_rejected.timestamp + settings.ADDITIONAL_VERIFICATION_CALL_TIME
 
-    if not subtask_results_rejected.timestamp < get_current_utc_timestamp() <= verification_deadline:
+    if not get_current_utc_timestamp() <= verification_deadline:
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.InvalidRequest,
         )

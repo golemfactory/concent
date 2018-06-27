@@ -88,7 +88,7 @@ def validate_key_with_desired_parameters(
 
     if not isinstance(key_value, expected_type):
         raise Http400(
-            "{} must be {}.".format(key_name, str(expected_type)),
+            f"{key_name} must be {expected_type.__name__}.",
             error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE,
         )
 
@@ -184,10 +184,7 @@ def validate_golem_message_signed_with_key(
         golem_message.verify_signature(public_key)
     except MessageError as exception:
         error_message = join_messages(
-            'There was an exception when validating if golem_message {} is signed with public key {}.'.format(
-                golem_message.TYPE,
-                public_key,
-            ),
+            f'There was an exception when validating if golem_message {golem_message.__class__.__name__} is signed with public key {public_key}.',
             str(exception)
         )
         raise Http400(

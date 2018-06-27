@@ -530,7 +530,7 @@ class ConcentIntegrationTestCase(TestCase):
         task_id: str = '1',
         subtask_id: str = '2',
         deadline = None,
-        extra_data: set = None,
+        extra_data: dict = None,
         short_description: str = 'path_root: /home/dariusz/Documents/tasks/resources, start_task: 6, end_task: 6...',
         working_directory: str = '.',
         performance: float = 829.7531773625524,

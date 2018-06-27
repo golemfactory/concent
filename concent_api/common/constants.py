@@ -28,6 +28,8 @@ class ErrorCode(enum.Enum):
     MESSAGE_FILES_SIZE_NEGATIVE                                         = 'message.files.size.negative'
     MESSAGE_FILES_SIZE_WRONG_TYPE                                       = 'message.files.size.wrong_type'
     MESSAGE_FILES_WRONG_TYPE                                            = 'message.files.wrong_type'
+    MESSAGE_FRAME_WRONG_TYPE                                            = 'message.frames.wrong_type'
+    MESSAGE_FRAME_VALUE_NOT_POSITIVE_INTEGER                            = 'message.frames.value_not_positive_integer'
     MESSAGE_INVALID                                                     = 'message.invalid'
     MESSAGE_OPERATION_INVALID                                           = 'message.operation.invalid'
     MESSAGE_SIGNATURE_MISSING                                           = 'message.signature.missing'

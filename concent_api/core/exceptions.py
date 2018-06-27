@@ -19,3 +19,7 @@ class HashingAlgorithmError(ConcentBaseException):
 
 class GolemMessageValidationError(ConcentBaseException):
     pass
+
+
+class FrameNumberValidationError(ConcentBaseException):
+    pass

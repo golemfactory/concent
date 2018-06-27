@@ -19,6 +19,7 @@ from core.constants import VALID_ID_REGEX
 from core.constants import VALID_SHA1_HASH_REGEX
 from core.enums import HashingAlgorithm
 from core.exceptions import FileTransferTokenError
+from core.exceptions import FrameNumberValidationError
 from core.exceptions import GolemMessageValidationError
 from core.exceptions import HashingAlgorithmError
 from core.exceptions import Http400
@@ -129,6 +130,7 @@ def validate_task_to_compute(task_to_compute: message.TaskToCompute):
     validate_hex_public_key(task_to_compute.requestor_public_key, 'requestor_public_key')
     validate_secure_hash_algorithm(task_to_compute.package_hash)
     validate_subtask_price_task_to_compute(task_to_compute)
+    validate_frames(task_to_compute.compute_task_def['extra_data']['frames'])
 
 
 def validate_report_computed_task_time_window(report_computed_task):
@@ -411,3 +413,24 @@ def validate_secure_hash_algorithm(checksum: str):
             "Invalid SHA1 hash.",
             ErrorCode.MESSAGE_FILES_CHECKSUM_INVALID_SHA1_HASH
         )
+
+
+def validate_frames(frames_list: List[int]):
+    if not isinstance(frames_list, list) or not len(frames_list) > 0:
+        raise FrameNumberValidationError(
+            'TaskToCompute must contain list of frames.',
+            ErrorCode.MESSAGE_FRAME_WRONG_TYPE
+        )
+
+    for frame in frames_list:
+        if not isinstance(frame, int):
+            raise FrameNumberValidationError(
+                'Frame must be integer',
+                ErrorCode.MESSAGE_FRAME_VALUE_NOT_POSITIVE_INTEGER
+            )
+
+        if not frame > 0:
+            raise FrameNumberValidationError(
+                'Frame number must be grater than 0',
+                ErrorCode.MESSAGE_FRAME_VALUE_NOT_POSITIVE_INTEGER
+            )

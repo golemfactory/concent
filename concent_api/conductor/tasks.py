@@ -47,22 +47,14 @@ def blender_verification_request(
 
     # The app creates a new instance of VerificationRequest in the database
     # and a BlenderSubtaskDefinition instance associated with it.
-    verification_request = VerificationRequest(
+    verification_request = store_verification_request_and_blender_subtask_definition(
         subtask_id=subtask_id,
         source_package_path=source_package_path,
         result_package_path=result_package_path,
-        verification_deadline=parse_timestamp_to_utc_datetime(verification_deadline),
-    )
-    verification_request.full_clean()
-    verification_request.save()
-
-    blender_subtask_definition = BlenderSubtaskDefinition(
-        verification_request=verification_request,
-        output_format=BlenderSubtaskDefinition.OutputFormat[output_format].name,
+        verification_deadline=verification_deadline,
+        output_format=output_format,
         scene_file=scene_file,
     )
-    blender_subtask_definition.full_clean()
-    blender_subtask_definition.save()
 
     # If there are already UploadReports corresponding to some files, the app links them with the VerificationRequest
     # by setting the value of the foreign key in UploadReport.
@@ -156,3 +148,31 @@ def upload_acknowledged(
         f'Result_file_size: {result_file_size}',
         f'Result_package_hash: {result_package_hash}'
     )
+
+
+def store_verification_request_and_blender_subtask_definition(
+    subtask_id: str,
+    source_package_path: str,
+    result_package_path: str,
+    output_format: str,
+    scene_file: str,
+    verification_deadline: int,
+):
+    verification_request = VerificationRequest(
+        subtask_id=subtask_id,
+        source_package_path=source_package_path,
+        result_package_path=result_package_path,
+        verification_deadline=parse_timestamp_to_utc_datetime(verification_deadline),
+    )
+    verification_request.full_clean()
+    verification_request.save()
+
+    blender_subtask_definition = BlenderSubtaskDefinition(
+        verification_request=verification_request,
+        output_format=BlenderSubtaskDefinition.OutputFormat[output_format].name,
+        scene_file=scene_file,
+    )
+    blender_subtask_definition.full_clean()
+    blender_subtask_definition.save()
+
+    return verification_request

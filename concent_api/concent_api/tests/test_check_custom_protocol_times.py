@@ -12,7 +12,7 @@ from concent_api.system_check import create_error_32_custom_protocol_times_has_w
 from concent_api.system_check import create_error_33_custom_protocol_times_is_false_and_settings_does_not_match_golem_messages_constants
 
 
-class TestConcentsTimeSettingsCheck(TestCase):
+class TestCustomProtocolTimesCheck(TestCase):
 
     def test_that_check_custom_protocol_times_should_not_return_error_if_settings_match_golem_messages_constants(self):
         errors = check_custom_protocol_times()

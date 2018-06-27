@@ -1384,7 +1384,10 @@ def handle_send_subtask_results_verify(
         subtask_results_rejected=subtask_results_rejected,
     )
 
-    send_blender_verification_request(compute_task_def)
+    send_blender_verification_request(
+        compute_task_def,
+        verification_deadline,
+    )
 
     ack_subtask_results_verify = message.concents.AckSubtaskResultsVerify(
         subtask_results_verify=subtask_results_verify,

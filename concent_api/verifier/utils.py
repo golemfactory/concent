@@ -5,16 +5,15 @@ import os
 import subprocess
 import zipfile
 
-import requests
-
 from django.conf import settings
 from golem_messages import message
 from golem_messages.shortcuts import dump
 from numpy.core.records import ndarray
 from skimage.measure import compare_ssim
-
+import requests
 
 from common.constants import ErrorCode
+from common.helpers import get_current_utc_timestamp
 from common.helpers import upload_file_to_storage_cluster
 from common.logging import log_string_message
 from core.constants import VerificationResult
@@ -22,7 +21,6 @@ from core.tasks import verification_result
 from core.transfer_operations import create_file_transfer_token_for_concent, send_request_to_storage_cluster
 from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
 from verifier.exceptions import VerificationError
-
 from .constants import UNPACK_CHUNK_SIZE
 
 
@@ -69,7 +67,13 @@ def store_file_from_response_in_chunks(response: requests.Response, file_path: s
             f.write(chunk)
 
 
-def run_blender(scene_file, output_format, frame_number, script_file=''):
+def run_blender(
+    scene_file: str,
+    output_format: str,
+    frame_number: int,
+    verification_deadline: int,
+    script_file: str=''
+) -> subprocess.CompletedProcess:
     output_format = adjust_format_name(output_format)
     return subprocess.run(
         [
@@ -83,9 +87,9 @@ def run_blender(scene_file, output_format, frame_number, script_file=''):
             "-t", f"{settings.BLENDER_THREADS}",  # cpu_count
             "-f", f"{frame_number}",  # frame
         ],
-        timeout=settings.BLENDER_MAX_RENDERING_TIME,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        timeout=(verification_deadline - get_current_utc_timestamp()),
     )
 
 
@@ -256,13 +260,14 @@ def delete_source_files(source_archive_name):
         delete_file(file_path)
 
 
-def render_image(frame_number, output_format, scene_file, subtask_id):
+def render_image(frame_number, output_format, scene_file, subtask_id, verification_deadline):
     # Verifier runs blender process.
     try:
         completed_process = run_blender(
             scene_file,
             output_format,
             frame_number,
+            verification_deadline,
         )
         # If Blender finishes with errors, verification ends here
         # Verification_result informing about the error is sent to the work queue.

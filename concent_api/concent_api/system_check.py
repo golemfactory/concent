@@ -54,7 +54,7 @@ def create_error_18_invalid_setting_type(setting, value):
 
 def create_error_19_if_minimum_upload_rate_is_not_set():
     return Error(
-        f"MINIMUM_UPLOAD_RATE is not set",
+        "MINIMUM_UPLOAD_RATE is not set",
         hint="MINIMUM_UPLOAD_RATE must be set to integer greater or equal to 1",
         id="concent.E019",
     )
@@ -62,7 +62,7 @@ def create_error_19_if_minimum_upload_rate_is_not_set():
 
 def create_error_20_if_minimum_upload_rate_has_wrong_value():
     return Error(
-        f"MINIMUM_UPLOAD_RATE has wrong value",
+        "MINIMUM_UPLOAD_RATE has wrong value",
         hint="MINIMUM_UPLOAD_RATE must be set to integer greater or equal to 1",
         id="concent.E020",
     )
@@ -70,7 +70,7 @@ def create_error_20_if_minimum_upload_rate_has_wrong_value():
 
 def create_error_21_if_download_leadin_time_is_not_set():
     return Error(
-        f"DOWNLOAD_LEADIN_TIME is not set",
+        "DOWNLOAD_LEADIN_TIME is not set",
         hint="DOWNLOAD_LEADIN_TIME must be set to non-negative integer",
         id="concent.E021",
     )
@@ -78,7 +78,7 @@ def create_error_21_if_download_leadin_time_is_not_set():
 
 def create_error_22_if_download_leadin_time_has_wrong_value():
     return Error(
-        f"DOWNLOAD_LEADIN_TIME has wrong value",
+        "DOWNLOAD_LEADIN_TIME has wrong value",
         hint="DOWNLOAD_LEADIN_TIME must be set to non-negative integer",
         id="concent.E022",
     )
@@ -210,7 +210,7 @@ def create_error_32_verifier_min_ssim_is_set():
 
 def create_error_31_verifier_min_ssim_has_wrong_type():
     return Error(
-        f"VERIFIER_MIN_SSIM has wrong type",
+        "VERIFIER_MIN_SSIM has wrong type",
         hint=f"VERIFIER_MIN_SSIM must be set to float.",
         id="concent.E033",
     )
@@ -218,9 +218,25 @@ def create_error_31_verifier_min_ssim_has_wrong_type():
 
 def create_error_32_verifier_min_ssim_has_wrong_value(verifier_min_ssim):
     return Error(
-        f"VERIFIER_MIN_SSIM has wrong value",
+        "VERIFIER_MIN_SSIM has wrong value",
         hint=f"VERIFIER_MIN_SSIM must be have value between -1 and 1. Currently it has {verifier_min_ssim}.",
         id="concent.E034",
+    )
+
+
+def create_error_34_additional_verification_time_multiplier_is_not_defined():
+    return Error(
+        "ADDITIONAL_VERIFICATION_TIME_MULTIPLIER is not defined",
+        hint="Set ADDITIONAL_VERIFICATION_TIME_MULTIPLIER in your base.py to a float.",
+        id="concent.E034",
+    )
+
+
+def create_error_35_additional_verification_time_multiplier_has_wrong_type(additional_verification_time_multiplier_type):
+    return Error(
+        "ADDITIONAL_VERIFICATION_TIME_MULTIPLIER has wrong type",
+        hint=f"ADDITIONAL_VERIFICATION_TIME_MULTIPLIER must be float instead of {additional_verification_time_multiplier_type}.",
+        id="concent.E035",
     )
 
 
@@ -471,5 +487,17 @@ def check_verifier_min_ssim(app_configs=None, **kwargs):  # pylint: disable=unus
             return [create_error_31_verifier_min_ssim_has_wrong_type()]
         if not -1 <= settings.VERIFIER_MIN_SSIM <= 1:
             return [create_error_32_verifier_min_ssim_has_wrong_value(settings.VERIFIER_MIN_SSIM)]
+
+    return []
+
+
+@register()
+def check_additional_verification_time_multiplier(app_configs=None, **kwargs):  # pylint: disable=unused-argument
+    if not hasattr(settings, 'ADDITIONAL_VERIFICATION_TIME_MULTIPLIER'):
+        return [create_error_34_additional_verification_time_multiplier_is_not_defined()]
+    if not isinstance(settings.ADDITIONAL_VERIFICATION_TIME_MULTIPLIER, float):
+        return [create_error_35_additional_verification_time_multiplier_has_wrong_type(
+            type(settings.ADDITIONAL_VERIFICATION_TIME_MULTIPLIER)
+        )]
 
     return []

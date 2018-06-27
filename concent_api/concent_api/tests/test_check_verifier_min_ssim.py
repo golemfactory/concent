@@ -7,7 +7,7 @@ from concent_api.system_check   import create_error_32_verifier_min_ssim_has_wro
 from concent_api.system_check   import check_verifier_min_ssim
 
 
-class TestStorageServerInternalAddressCheck(TestCase):
+class TestVerifierMinSSIMCheck(TestCase):
 
     @override_settings(
         CONCENT_FEATURES=[],

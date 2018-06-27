@@ -180,7 +180,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(
             response,
             error_message='There was an exception when validating if golem_message {} is signed with public key {}'.format(
-                message.TaskToCompute.TYPE,
+                message.TaskToCompute.__name__,
                 self.REQUESTOR_PUBLIC_KEY,
             ),
             error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG,
@@ -469,7 +469,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(
             response,
             error_message='There was an exception when validating if golem_message {} is signed with public key {}'.format(
-                message.TaskToCompute.TYPE,
+                message.TaskToCompute.__name__,
                 self.REQUESTOR_PUBLIC_KEY,
             ),
             error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG,
@@ -777,7 +777,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(
             response,
             error_message='There was an exception when validating if golem_message {} is signed with public key {}'.format(
-                message.TaskToCompute.TYPE,
+                message.TaskToCompute.__name__,
                 self.REQUESTOR_PUBLIC_KEY,
             ),
             error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG,

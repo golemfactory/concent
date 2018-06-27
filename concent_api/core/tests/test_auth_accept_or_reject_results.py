@@ -452,7 +452,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(
             response,
             error_message = 'There was an exception when validating if golem_message {} is signed with public key {}'.format(
-                message.TaskToCompute.TYPE,
+                message.TaskToCompute.__name__,
                 self.REQUESTOR_PUBLIC_KEY,
             ),
             error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG
@@ -486,7 +486,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(
             response,
             error_message = "Subtask requestor key does not match current client key.  Can't accept your '{}'.".format(
-                message.concents.ForceSubtaskResultsResponse.TYPE,
+                message.concents.ForceSubtaskResultsResponse.__name__,
             ),
             error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH
         )
@@ -785,7 +785,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(
             response,
             error_message = 'There was an exception when validating if golem_message {} is signed with public key {}'.format(
-                message.TaskToCompute.TYPE,
+                message.TaskToCompute.__name__,
                 self.REQUESTOR_PUBLIC_KEY,
             ),
             error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG
@@ -819,7 +819,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(
             response,
             error_message = "Subtask requestor key does not match current client key.  Can't accept your '{}'.".format(
-                message.concents.ForceSubtaskResultsResponse.TYPE,
+                message.concents.ForceSubtaskResultsResponse.__name__,
             ),
             error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH
         )

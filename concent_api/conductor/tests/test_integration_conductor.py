@@ -4,6 +4,7 @@ from django.urls    import reverse
 
 from golem_messages import message
 
+from common.helpers import get_current_utc_timestamp
 from core.message_handlers import store_subtask
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
@@ -49,6 +50,10 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
             subtask_id=self.compute_task_def['subtask_id'],
             source_package_path=self.source_package_path,
             result_package_path=self.result_package_path,
+            verification_deadline=self._get_verification_deadline_as_datetime(
+                get_current_utc_timestamp(),
+                self.report_computed_task.task_to_compute,
+            ),
         )
         verification_request.full_clean()
         verification_request.save()
@@ -113,7 +118,11 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         verification_request = VerificationRequest(
             subtask_id='1',
             source_package_path='blender/source/bad/bad.bad.zip',
-            result_package_path='blender/result/bad/bad.bad.zip'
+            result_package_path='blender/result/bad/bad.bad.zip',
+            verification_deadline=self._get_verification_deadline_as_datetime(
+                get_current_utc_timestamp(),
+                self.report_computed_task.task_to_compute,
+            ),
         )
         verification_request.full_clean()
         verification_request.save()
@@ -293,6 +302,10 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
             result_package_path=self.result_package_path,
             output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
             scene_file=self.scene_file,
+            verification_deadline=self._get_verification_deadline_as_timestamp(
+                get_current_utc_timestamp(),
+                self.report_computed_task.task_to_compute,
+            ),
         )
 
         self.assertEqual(VerificationRequest.objects.count(), 1)
@@ -317,6 +330,10 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
             result_package_path=self.result_package_path,
             output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
             scene_file=self.scene_file,
+            verification_deadline=self._get_verification_deadline_as_timestamp(
+                get_current_utc_timestamp(),
+                self.report_computed_task.task_to_compute,
+            ),
         )
 
         self.assertEqual(VerificationRequest.objects.count(), 1)
@@ -345,6 +362,10 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
                 result_package_path=self.result_package_path,
                 output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
                 scene_file=self.scene_file,
+                verification_deadline=self._get_verification_deadline_as_timestamp(
+                    get_current_utc_timestamp(),
+                    self.report_computed_task.task_to_compute,
+                ),
             )
 
         mock_task.assert_called_with(self.compute_task_def['subtask_id'])

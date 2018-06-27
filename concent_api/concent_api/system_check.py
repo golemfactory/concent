@@ -176,22 +176,6 @@ def create_error_33_custom_protocol_times_is_false_and_settings_does_not_match_g
     )
 
 
-def create_error_19_max_rendering_time_is_not_defined():
-    return Error(
-        'BLENDER_MAX_RENDERING_TIME setting is not defined',
-        hint='Set BLENDER_MAX_RENDERING_TIME in your local_settings.py to a positive integer.',
-        id='concent.E019',
-    )
-
-
-def create_error_20_max_rendering_time_is_not_positive_integer():
-    return Error(
-        'BLENDER_MAX_RENDERING_TIME is not a positive integer',
-        hint='Set BLENDER_MAX_RENDERING_TIME in your local_settings.py to a positive integer.',
-        id='concent.E020',
-    )
-
-
 def create_error_31_verifier_min_ssim_is_not_set():
     return Error(
         'VERIFIER_MIN_SSIM setting is not defined but `verifier` Concent feature is on',
@@ -324,21 +308,6 @@ def check_settings_verifier_storage_path(app_configs = None, **kwargs):  # pylin
             return [create_error_29_verifier_storage_path_is_does_not_exists()]
         if not os.access(settings.VERIFIER_STORAGE_PATH, os.W_OK):
             return [create_error_30_verifier_storage_path_is_not_accessible()]
-
-    return []
-
-
-@register()
-def check_settings_blender_max_rendering_time(app_configs, **kwargs):  # pylint: disable=unused-argument
-    if not hasattr(settings, 'BLENDER_MAX_RENDERING_TIME') and 'verifier' in settings.CONCENT_FEATURES:
-        return create_error_19_max_rendering_time_is_not_defined()
-
-    if (
-        hasattr(settings, 'BLENDER_MAX_RENDERING_TIME') and (
-            not isinstance(settings.BLENDER_MAX_RENDERING_TIME, int) or settings.BLENDER_MAX_RENDERING_TIME <= 0
-        )
-    ):
-        return create_error_20_max_rendering_time_is_not_positive_integer()
 
     return []
 

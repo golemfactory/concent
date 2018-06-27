@@ -72,7 +72,7 @@ def handle_send_force_report_computed_task(client_message):
         subtask_id = client_message.report_computed_task.task_to_compute.compute_task_def['subtask_id'],
     ).exists():
         raise Http400(
-            "{} is already being processed for this task.".format(client_message.__class__.__name__),
+            "{} is already being processed for this task.".format(type(client_message).__name__),
             error_code=ErrorCode.SUBTASK_DUPLICATE_REQUEST,
         )
 
@@ -560,26 +560,19 @@ def handle_send_force_subtask_results_response(client_message):
         )
     except Subtask.DoesNotExist:
         raise Http400(
-            "'ForceSubtaskResults' for this subtask has not been initiated yet. Can't accept your '{}'.".format(
-                client_message.__class__.__name__
-            ),
+            f"ForceSubtaskResults for this subtask has not been initiated yet. Can't accept your {type(client_message).__name__}.",
             error_code=ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED,
         )
 
     if subtask.state_enum != Subtask.SubtaskState.FORCING_ACCEPTANCE:
         raise Http400(
-            "Subtask state is {} instead of FORCING_ACCEPTANCE. Can't accept your '{}'.".format(
-                subtask.state,
-                client_message.__class__.__name__,
-            ),
+            f"Subtask state is {subtask.state} instead of FORCING_ACCEPTANCE. Can't accept your '{type(client_message).__name__}'.",
             error_code=ErrorCode.QUEUE_WRONG_STATE,
         )
 
     if subtask.requestor.public_key_bytes != requestor_public_key:
         raise Http400(
-            "Subtask requestor key does not match current client key.  Can't accept your '{}'.".format(
-                client_message.__class__.__name__
-            ),
+            f"Subtask requestor key does not match current client key.  Can't accept your '{type(client_message).__name__}'.",
             error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH,
         )
 
@@ -780,7 +773,7 @@ def handle_send_force_payment(client_message: message.concents.ForcePayment) -> 
 def handle_unsupported_golem_messages_type(client_message):
     if hasattr(client_message, 'TYPE'):
         raise Http400(
-            "This message type ({}) is either not supported or cannot be submitted to Concent.".format(client_message.__class__.__name__),
+            f"This message type ({type(client_message).__name__}) is either not supported or cannot be submitted to Concent.",
             error_code=ErrorCode.MESSAGE_UNEXPECTED,
         )
     else:

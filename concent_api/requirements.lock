@@ -41,6 +41,7 @@ pbkdf2==1.3
 pbr==4.0.4
 Pillow==5.1.0
 psycopg2==2.7.5
+psycopg2-binary==2.7.5
 pycparser==2.18
 pycryptodome==3.6.3
 pyelliptic==1.5.10

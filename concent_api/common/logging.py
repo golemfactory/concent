@@ -354,7 +354,7 @@ def log_error_message(logger: Logger, *messages_to_log: str):
     logger.error(join_messages(*messages_to_log))
 
 
-def _get_field_value_from_messages_for_logging(field_name: MessageIdField, message: Message) -> str:
+def _get_field_value_from_messages_for_logging(field_name: MessageIdField, message: Message) -> Union[str, Dict[str, str]]:
     value = get_field_from_message(message, field_name.value) if isinstance(message, Message) else '-not available- '
     return value if value is not None else '-not available- '
 

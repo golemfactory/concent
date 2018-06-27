@@ -1,4 +1,5 @@
 from subprocess import SubprocessError
+from typing import Optional  # noqa flake8 F401 issue  # pylint: disable=unused-import
 from zipfile import BadZipFile
 import hashlib
 import logging
@@ -247,7 +248,7 @@ def blender_verification_order(
     # Read Blender output file.
     try:
         with open(generate_verifier_storage_file_path(blender_output_file_name), 'r') as upload_file:
-            upload_file_content = upload_file.read()
+            upload_file_content = upload_file.read()  # type: Optional[str]
     except OSError as exception:
         upload_file_content = None
         crash_logger.error(str(exception))

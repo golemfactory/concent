@@ -702,7 +702,7 @@ def handle_send_force_payment(client_message: message.concents.ForcePayment) -> 
         youngest_transaction = max(transaction.closure_time for transaction in list_of_transactions)
 
         # Concent checks if all passed SubtaskResultAccepted messages from subtask_results_accepted_list have payment_ts < T1
-        T1_is_bigger_than_payments_ts = any(youngest_transaction > subtask_results_accepted.payment_ts for subtask_results_accepted in client_message.subtask_results_accepted_list)
+        T1_is_bigger_than_payments_ts = any(youngest_transaction > subtask_results_accepted.payment_ts for subtask_results_accepted in client_message.subtask_results_accepted_list)  # type: Optional[bool]
     else:
         T1_is_bigger_than_payments_ts = None
 
@@ -859,8 +859,8 @@ def store_subtask(
 
 
 def handle_messages_from_database(
-    client_public_key:  bytes                   = None,
-    response_type:      PendingResponse.Queue   = None,
+    client_public_key: bytes,
+    response_type: PendingResponse.Queue,
 ):
     assert client_public_key    not in ['', None]
 
@@ -1016,7 +1016,7 @@ def handle_messages_from_database(
             )
         else:
             response_to_client = message.concents.ForceSubtaskResultsResponse(
-                subtask_results_rejected=deserialize_message(subtask_results_rejected.data.tobytes(), )
+                subtask_results_rejected=deserialize_message(subtask_results_rejected.data.tobytes()),  # type: ignore
             )
         mark_message_as_delivered_and_log(pending_response, response_to_client)
         return response_to_client

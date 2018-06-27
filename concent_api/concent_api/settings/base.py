@@ -94,7 +94,7 @@ DATABASES = {
         # Wrap each request in a transactions and rolled back on failure by default
         'ATOMIC_REQUESTS': True,
     }
-}  # type: Dict[Dict]
+}  # type: Dict[str, Dict]
 
 DATABASE_ROUTERS = ['concent_api.database_router.DatabaseRouter']
 

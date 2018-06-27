@@ -43,6 +43,7 @@ from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
 from core.transfer_operations import store_pending_message
 from core.transfer_operations import create_file_transfer_token_for_golem_client
+from core.utils import calculate_additional_verification_call_time
 from core.utils import calculate_maximum_download_time
 from core.utils import calculate_subtask_verification_time
 from core.validation import is_golem_message_signed_with_key
@@ -1320,7 +1321,11 @@ def handle_send_subtask_results_verify(
             reason=message.concents.ServiceRefused.REASON.InvalidRequest,
         )
 
-    verification_deadline = subtask_results_rejected.timestamp + settings.ADDITIONAL_VERIFICATION_CALL_TIME
+    verification_deadline = calculate_additional_verification_call_time(
+        subtask_results_rejected.timestamp,
+        compute_task_def['deadline'],
+        task_to_compute.timestamp,
+    )
 
     if verification_deadline < get_current_utc_timestamp():
         return message.concents.ServiceRefused(
@@ -1372,7 +1377,7 @@ def handle_send_subtask_results_verify(
         provider_public_key=provider_public_key,
         requestor_public_key=requestor_public_key,
         state=Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
-        next_deadline=subtask_results_rejected.timestamp + settings.ADDITIONAL_VERIFICATION_CALL_TIME,
+        next_deadline=verification_deadline,
         set_next_deadline=True,
         task_to_compute=task_to_compute,
         report_computed_task=report_computed_task,

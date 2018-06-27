@@ -1,5 +1,6 @@
 import logging
 from celery import shared_task
+from typing import List
 from django.db import transaction
 
 from core import tasks
@@ -12,6 +13,7 @@ from common.logging import log_string_message
 from verifier.tasks import blender_verification_order
 from .exceptions import VerificationRequestAlreadyAcknowledgedError
 from .models import BlenderSubtaskDefinition
+from .models import Frame
 from .models import UploadReport
 from .models import VerificationRequest
 
@@ -30,6 +32,7 @@ def blender_verification_request(
     output_format: str,
     scene_file: str,
     verification_deadline: int,
+    frames: List[int]
 ):
     log_string_message(
         logger,
@@ -37,8 +40,10 @@ def blender_verification_request(
         f'Source_package_path {source_package_path}',
         f'Result_package_path: {result_package_path}',
         f'Output_format: {output_format}',
-        f'Scene_file: {scene_file}'
+        f'Scene_file: {scene_file}',
+        f'Frames: {frames}',
     )
+    assert isinstance(frames, list)
     assert isinstance(output_format, str)
     assert isinstance(verification_deadline, int)
 
@@ -47,13 +52,18 @@ def blender_verification_request(
 
     # The app creates a new instance of VerificationRequest in the database
     # and a BlenderSubtaskDefinition instance associated with it.
-    verification_request = store_verification_request_and_blender_subtask_definition(
+    (verification_request, blender_subtask_definition) = store_verification_request_and_blender_subtask_definition(
         subtask_id=subtask_id,
         source_package_path=source_package_path,
         result_package_path=result_package_path,
         verification_deadline=verification_deadline,
         output_format=output_format,
         scene_file=scene_file,
+    )
+
+    store_frames(
+        blender_subtask_definition=blender_subtask_definition,
+        frame_list=frames,
     )
 
     # If there are already UploadReports corresponding to some files, the app links them with the VerificationRequest
@@ -175,4 +185,17 @@ def store_verification_request_and_blender_subtask_definition(
     blender_subtask_definition.full_clean()
     blender_subtask_definition.save()
 
-    return verification_request
+    return (verification_request, blender_subtask_definition)
+
+
+def store_frames(
+    blender_subtask_definition: BlenderSubtaskDefinition,
+    frame_list: List[int],
+):
+    for frame in frame_list:
+        store_frame = Frame(
+            blender_subtask_definition=blender_subtask_definition,
+            number=frame,
+        )
+        store_frame.full_clean()
+        store_frame.save()

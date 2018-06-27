@@ -79,7 +79,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('core.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
             mock.patch('verifier.tasks.run_blender', mock_run_blender),\
             mock.patch('verifier.tasks.upload_file_to_storage_cluster', autospec=True) as mock_upload_file, \
-            mock.patch('builtins.open', autospec=True, side_effect=[io.StringIO('test'), io.StringIO('test')]), \
+            mock.patch('builtins.open', autospec=True, side_effect=[io.BytesIO(b'test'), io.BytesIO(b'test')]), \
             mock.patch('verifier.tasks.get_files_list_from_archive', return_value=['file_name']) as mock_get_files_list_from_archive, \
             mock.patch('verifier.tasks.compare_ssim', return_value=1.0) as mock_compare_ssim, \
             mock.patch('verifier.tasks.are_image_sizes_and_color_channels_equal', return_value=True), \
@@ -99,7 +99,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
             )
 
-        self.assertEqual(mock_clean_directory.call_count, 2)
+        self.assertEqual(mock_clean_directory.call_count, 1)
         self.assertEqual(mock_send_request_to_storage_cluster.call_count, 2)
         self.assertEqual(mock_store_file_from_response_in_chunks.call_count, 2)
         self.assertEqual(mock_unpack_archive.call_count, 2)
@@ -121,7 +121,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('verifier.tasks.upload_file_to_storage_cluster', autospec=True) as mock_upload_file_to_storage_cluster, \
             mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
             mock.patch('verifier.tasks.run_blender', mock_run_blender), \
-            mock.patch('builtins.open', autospec=True, side_effect=[io.StringIO('test'), io.StringIO('test')]), \
+            mock.patch('builtins.open', autospec=True, side_effect=[io.BytesIO(b'test'), io.BytesIO(b'test')]), \
             mock.patch('verifier.tasks.get_files_list_from_archive', autospec=True, return_value=['file_name']) as mock_get_files_list_from_archive, \
             mock.patch('verifier.tasks.compare_ssim', return_value=(settings.VERIFIER_MIN_SSIM - 0.1)) as mock_compare_ssim, \
             mock.patch('verifier.tasks.are_image_sizes_and_color_channels_equal', return_value=True), \
@@ -141,7 +141,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
             )
 
-        self.assertEqual(mock_clean_directory.call_count, 2)
+        self.assertEqual(mock_clean_directory.call_count, 1)
         self.assertEqual(mock_send_request_to_storage_cluster.call_count, 2)
         self.assertEqual(mock_store_file_from_response_in_chunks.call_count, 2)
         self.assertEqual(mock_unpack_archive.call_count, 2)
@@ -357,7 +357,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
             )
 
-        self.assertEqual(mock_clean_directory.call_count, 2)
+        self.assertEqual(mock_clean_directory.call_count, 1)
         self.assertEqual(mock_send_request_to_storage_cluster.call_count, 2)
         self.assertEqual(mock_store_file_from_response_in_chunks.call_count, 2)
         self.assertEqual(mock_unpack_archive.call_count, 2)
@@ -378,7 +378,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('verifier.tasks.upload_file_to_storage_cluster', autospec=True) as mock_upload_file_to_storage_cluster, \
             mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
             mock.patch('verifier.tasks.run_blender', mock_run_blender), \
-            mock.patch('builtins.open', autospec=True, side_effect=[io.StringIO('test'), io.StringIO('test')]), \
+            mock.patch('builtins.open', autospec=True, side_effect=[io.BytesIO(b'test'), io.BytesIO(b'test')]), \
             mock.patch('verifier.tasks.get_files_list_from_archive', autospec=True, return_value=['file_name']) as mock_get_files_list_from_archive, \
             mock.patch('verifier.tasks.delete_file') as mock_delete_file, \
             mock.patch('verifier.tasks.import_cv2', return_value=self._prepare_cv2_mock('exception')) as mock_import_cv2:  # noqa: E125
@@ -419,7 +419,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('verifier.tasks.upload_file_to_storage_cluster', autospec=True) as mock_upload_file_to_storage_cluster, \
             mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
             mock.patch('verifier.tasks.run_blender', mock_run_blender), \
-            mock.patch('builtins.open', autospec=True, side_effect=[io.StringIO('test'), io.StringIO('test')]), \
+            mock.patch('builtins.open', autospec=True, side_effect=[io.BytesIO(b'test'), io.BytesIO(b'test')]), \
             mock.patch('verifier.tasks.get_files_list_from_archive', autospec=True, return_value=['file_name']) as mock_get_files_list_from_archive, \
             mock.patch('verifier.tasks.are_image_sizes_and_color_channels_equal', return_value=True), \
             mock.patch('verifier.tasks.delete_file') as mock_delete_file, \
@@ -461,7 +461,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('verifier.tasks.upload_file_to_storage_cluster', autospec=True) as mock_upload_file_to_storage_cluster,\
             mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
             mock.patch('verifier.tasks.run_blender', mock_run_blender), \
-            mock.patch('builtins.open', autospec=True, side_effect=[io.StringIO('test'), io.StringIO('test')]), \
+            mock.patch('builtins.open', autospec=True, side_effect=[io.BytesIO(b'test'), io.BytesIO(b'test')]), \
             mock.patch('verifier.tasks.get_files_list_from_archive', return_value=['file_name']) as mock_get_files_list_from_archive, \
             mock.patch('verifier.tasks.compare_ssim', side_effect=ValueError('error')) as mock_compare_ssim, \
             mock.patch('verifier.tasks.are_image_sizes_and_color_channels_equal', return_value=True), \

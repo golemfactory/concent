@@ -52,24 +52,24 @@ def prepare_storage_request_headers(file_transfer_token: message.FileTransferTok
 
 
 def store_file_from_response_in_chunks(response: requests.Response, file_path: str):
-    with open(file_path, 'x') as f:
+    with open(file_path, 'xb') as f:
         for chunk in response.iter_content():
             f.write(chunk)
 
 
-def run_blender(scene_file, output_format, script_file=''):
+def run_blender(scene_file, output_format, frame_number, script_file=''):
     output_format = adjust_format_name(output_format)
     return subprocess.run(
         [
             "blender",
-            "-b", f"{scene_file}",
+            "-b", f"{generate_verifier_storage_file_path(scene_file)}",
             "-y",  # enable scripting by default
             "-P", f"{script_file}",
-            "-o", generate_blender_output_file_name(scene_file),
+            "-o", f"{generate_base_blender_output_file_name(scene_file)}",
             "-noaudio",
-            "-F", f"{output_format.upper()}",
+            "-F", f"{output_format}",
             "-t", "1",  # cpu_count
-            "-f", "1",  # frame
+            "-f", f"{frame_number}",  # frame
         ],
         timeout=settings.BLENDER_MAX_RENDERING_TIME,
         stdout=subprocess.PIPE,
@@ -98,7 +98,7 @@ def unpack_archive(file_path):
 
 def get_files_list_from_archive(file_path):
     """ Returns list of files from given zip archive. """
-    return zipfile.ZipFile.namelist(file_path)
+    return zipfile.ZipFile(file_path).namelist()
 
 
 def delete_file(file_path):
@@ -110,11 +110,16 @@ def delete_file(file_path):
         logger.warning(f'File with path {file_path} was not deleted, exception: {exception}')
 
 
-def generate_blender_output_file_name(scene_file):
-    return f'{settings.VERIFIER_STORAGE_PATH}/out_{scene_file}'
+def generate_full_blender_output_file_name(scene_file, frame_number, output_format):
+    base_blender_output_file_name = generate_base_blender_output_file_name(scene_file)
+    return f'{base_blender_output_file_name}{frame_number:>04}.{output_format}'
 
 
-def generate_upload_file_name(subtask_id, extension):
+def generate_base_blender_output_file_name(scene_file):
+    return f'{settings.VERIFIER_STORAGE_PATH}/out_{scene_file}_'
+
+
+def generate_upload_file_path(subtask_id, extension):
     return f'blender/verifier-output/{subtask_id}/{subtask_id}.{extension.lower()}'
 
 

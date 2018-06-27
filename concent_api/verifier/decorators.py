@@ -1,8 +1,11 @@
 from functools import wraps
 
+from django.conf import settings
+
 from core.constants import VerificationResult
 from core.tasks import verification_result
 from verifier.exceptions import VerificationError
+from verifier.utils import clean_directory
 
 
 def handle_verification_errors(task):
@@ -17,4 +20,7 @@ def handle_verification_errors(task):
                 exception.error_message,
                 exception.error_code.name
             )
+        finally:
+            # Remove any files left in VERIFIER_STORAGE_PATH.
+            clean_directory(settings.VERIFIER_STORAGE_PATH)
     return wrapper

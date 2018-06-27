@@ -93,9 +93,9 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 result_package_path=self.result_package_path,
                 result_size=self.report_computed_task.size,  # pylint: disable=no-member
                 result_package_hash=self.report_computed_task.package_hash,  # pylint: disable=no-member  # pylint: disable=no-member
-                output_format=BlenderSubtaskDefinition.OutputFormat(
+                output_format=BlenderSubtaskDefinition.OutputFormat[
                     self.compute_task_def['extra_data']['output_format']
-                ).name,
+                ].name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
             )
 
@@ -135,9 +135,9 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 result_package_path=self.result_package_path,
                 result_size=self.report_computed_task.size,  # pylint: disable=no-member
                 result_package_hash=self.report_computed_task.package_hash,  # pylint: disable=no-member  # pylint: disable=no-member
-                output_format=BlenderSubtaskDefinition.OutputFormat(
+                output_format=BlenderSubtaskDefinition.OutputFormat[
                     self.compute_task_def['extra_data']['output_format']
-                ).name,
+                ].name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
             )
 
@@ -173,9 +173,9 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 result_package_path=self.result_package_path,
                 result_size=self.report_computed_task.size,  # pylint: disable=no-member
                 result_package_hash=self.report_computed_task.package_hash,  # pylint: disable=no-member
-                output_format=BlenderSubtaskDefinition.OutputFormat(
+                output_format=BlenderSubtaskDefinition.OutputFormat[
                     self.compute_task_def['extra_data']['output_format']
-                ).name,
+                ].name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
             )
 
@@ -202,9 +202,9 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 result_package_path=self.result_package_path,
                 result_size=self.report_computed_task.size,  # pylint: disable=no-member
                 result_package_hash=self.report_computed_task.package_hash,  # pylint: disable=no-member
-                output_format=BlenderSubtaskDefinition.OutputFormat(
+                output_format=BlenderSubtaskDefinition.OutputFormat[
                     self.compute_task_def['extra_data']['output_format']
-                ).name,
+                ].name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
             )
 
@@ -235,9 +235,9 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 result_package_path=self.result_package_path,
                 result_size=self.report_computed_task.size,  # pylint: disable=no-member
                 result_package_hash=self.report_computed_task.package_hash,  # pylint: disable=no-member
-                output_format=BlenderSubtaskDefinition.OutputFormat(
+                output_format=BlenderSubtaskDefinition.OutputFormat[
                     self.compute_task_def['extra_data']['output_format']
-                ).name,
+                ].name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
             )
 
@@ -272,9 +272,9 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 result_package_path=self.result_package_path,
                 result_size=self.report_computed_task.size,  # pylint: disable=no-member
                 result_package_hash=self.report_computed_task.package_hash,  # pylint: disable=no-member
-                output_format=BlenderSubtaskDefinition.OutputFormat(
+                output_format=BlenderSubtaskDefinition.OutputFormat[
                     self.compute_task_def['extra_data']['output_format']
-                ).name,
+                ].name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
             )
 
@@ -311,9 +311,9 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 result_package_path=self.result_package_path,
                 result_size=self.report_computed_task.size,  # pylint: disable=no-member
                 result_package_hash=self.report_computed_task.package_hash,  # pylint: disable=no-member  # pylint: disable=no-member
-                output_format=BlenderSubtaskDefinition.OutputFormat(
+                output_format=BlenderSubtaskDefinition.OutputFormat[
                     self.compute_task_def['extra_data']['output_format']
-                ).name,
+                ].name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
             )
 
@@ -351,9 +351,9 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 result_package_path=self.result_package_path,
                 result_size=self.report_computed_task.size,  # pylint: disable=no-member
                 result_package_hash=self.report_computed_task.package_hash,  # pylint: disable=no-member  # pylint: disable=no-member
-                output_format=BlenderSubtaskDefinition.OutputFormat(
+                output_format=BlenderSubtaskDefinition.OutputFormat[
                     self.compute_task_def['extra_data']['output_format']
-                ).name,
+                ].name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
             )
 
@@ -390,9 +390,9 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 result_package_path=self.result_package_path,
                 result_size=self.report_computed_task.size,  # pylint: disable=no-member
                 result_package_hash=self.report_computed_task.package_hash,  # pylint: disable=no-member  # pylint: disable=no-member
-                output_format=BlenderSubtaskDefinition.OutputFormat(
+                output_format=BlenderSubtaskDefinition.OutputFormat[
                     self.compute_task_def['extra_data']['output_format']
-                ).name,
+                ].name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
             )
 
@@ -432,9 +432,9 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 result_package_path=self.result_package_path,
                 result_size=self.report_computed_task.size,  # pylint: disable=no-member
                 result_package_hash=self.report_computed_task.package_hash,  # pylint: disable=no-member  # pylint: disable=no-member
-                output_format=BlenderSubtaskDefinition.OutputFormat(
+                output_format=BlenderSubtaskDefinition.OutputFormat[
                     self.compute_task_def['extra_data']['output_format']
-                ).name,
+                ].name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
             )
 
@@ -475,9 +475,9 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 result_package_path=self.result_package_path,
                 result_size=self.report_computed_task.size,  # pylint: disable=no-member
                 result_package_hash=self.report_computed_task.package_hash,  # pylint: disable=no-member  # pylint: disable=no-member
-                output_format=BlenderSubtaskDefinition.OutputFormat(
+                output_format=BlenderSubtaskDefinition.OutputFormat[
                     self.compute_task_def['extra_data']['output_format']
-                ).name,
+                ].name,
                 scene_file=self.compute_task_def['extra_data']['scene_file'],
             )
 

@@ -221,6 +221,7 @@ def try_to_upload_blender_output_file(blender_output_file_name, output_format, s
                 result_size=len(upload_file_content),
                 result_package_hash=upload_file_checksum,
                 operation=message.FileTransferToken.Operation.upload,
+                internal_call=True,
             )
 
             # Upload the image.

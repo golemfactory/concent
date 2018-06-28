@@ -262,9 +262,6 @@ MINIMUM_UPLOAD_RATE = constants.DEFAULT_UPLOAD_RATE
 # A global constant defining the download timeout margin independent from the size of the result.
 DOWNLOAD_LEADIN_TIME = int(constants.DOWNLOAD_LEADIN_TIME.total_seconds())
 
-# A global constant defining the length of the time window within which a provider can ask concent for verifying subtask results
-ADDITIONAL_VERIFICATION_CALL_TIME = 4 * 3600  # 4 hours
-
 # A global constant defining the lenght of the time window within which a requestor must pay
 PAYMENT_DUE_TIME = int(constants.PDT.total_seconds())
 

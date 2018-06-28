@@ -1,7 +1,6 @@
 from datetime import timedelta
 
 import mock
-from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse
 from freezegun import freeze_time
@@ -66,8 +65,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
-            next_deadline=self._parse_iso_date_to_timestamp(
-                subtask_results_verify_time_str) + settings.ADDITIONAL_VERIFICATION_CALL_TIME,
+            next_deadline=self._parse_iso_date_to_timestamp(subtask_results_verify_time_str) + (self.compute_task_def['deadline'] - self.task_to_compute.timestamp),
             task_to_compute=self.report_computed_task.task_to_compute,
             report_computed_task=self.report_computed_task,
         )
@@ -383,7 +381,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 provider_public_key=self.PROVIDER_PUBLIC_KEY,
                 requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
                 state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
-                next_deadline=get_current_utc_timestamp() + settings.ADDITIONAL_VERIFICATION_CALL_TIME,
+                next_deadline=get_current_utc_timestamp() + (self.compute_task_def['deadline'] - self.task_to_compute.timestamp),
                 task_to_compute=self.report_computed_task.task_to_compute,
                 report_computed_task=self.report_computed_task,
             )
@@ -550,9 +548,12 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
     def _create_serialized_subtask_results_verify(
         self,
         reason_of_rejection=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-        time_offset=settings.ADDITIONAL_VERIFICATION_CALL_TIME / 2,
+        time_offset=None,
         key=None,
     ):
+        if time_offset is None:
+            time_offset = (self.compute_task_def['deadline'] - self.task_to_compute.timestamp)
+
         subtask_result_rejected_time_str = "2018-04-01 10:30:00"
         subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
             reason=reason_of_rejection,

@@ -64,13 +64,13 @@ def handle_send_force_report_computed_task(client_message):
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
 
     validate_secure_hash_algorithm(client_message.report_computed_task.package_hash)
-    handle_validating_if_list_of_golem_messages_is_signed_with_key(
+    validate_that_golem_messages_are_signed_with_key(
         provider_public_key,
         client_message.report_computed_task,
     )
     validate_task_to_compute(task_to_compute)
     validate_report_computed_task_time_window(client_message.report_computed_task)
-    handle_validating_if_list_of_golem_messages_is_signed_with_key(
+    validate_that_golem_messages_are_signed_with_key(
         requestor_public_key,
         task_to_compute,
     )
@@ -125,7 +125,7 @@ def handle_send_ack_report_computed_task(client_message):
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
 
     validate_task_to_compute(task_to_compute)
-    handle_validating_if_list_of_golem_messages_is_signed_with_key(
+    validate_that_golem_messages_are_signed_with_key(
         requestor_public_key,
         task_to_compute,
         report_computed_task,
@@ -232,7 +232,7 @@ def handle_send_reject_report_computed_task(client_message):
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
 
     # Validate if TaskToCompute signed by the requestor.
-    handle_validating_if_list_of_golem_messages_is_signed_with_key(
+    validate_that_golem_messages_are_signed_with_key(
         requestor_public_key,
         task_to_compute,
     )
@@ -246,7 +246,7 @@ def handle_send_reject_report_computed_task(client_message):
                 error_code=ErrorCode.MESSAGE_INVALID,
             )
         validate_task_to_compute(client_message.cannot_compute_task.task_to_compute)
-        handle_validating_if_list_of_golem_messages_is_signed_with_key(
+        validate_that_golem_messages_are_signed_with_key(
             provider_public_key,
             client_message.cannot_compute_task,
         )
@@ -260,7 +260,7 @@ def handle_send_reject_report_computed_task(client_message):
                 error_code=ErrorCode.MESSAGE_INVALID,
             )
         validate_task_to_compute(client_message.task_failure.task_to_compute)
-        handle_validating_if_list_of_golem_messages_is_signed_with_key(
+        validate_that_golem_messages_are_signed_with_key(
             provider_public_key,
             client_message.task_failure,
         )
@@ -386,12 +386,12 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
     provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
 
-    handle_validating_if_list_of_golem_messages_is_signed_with_key(
+    validate_that_golem_messages_are_signed_with_key(
         provider_public_key,
         client_message.report_computed_task,
     )
     validate_task_to_compute(task_to_compute)
-    handle_validating_if_list_of_golem_messages_is_signed_with_key(
+    validate_that_golem_messages_are_signed_with_key(
         requestor_public_key,
         task_to_compute,
     )
@@ -459,12 +459,12 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
 
     validate_task_to_compute(task_to_compute)
-    handle_validating_if_list_of_golem_messages_is_signed_with_key(
+    validate_that_golem_messages_are_signed_with_key(
         requestor_public_key,
         client_message.ack_report_computed_task,
         task_to_compute,
     )
-    handle_validating_if_list_of_golem_messages_is_signed_with_key(
+    validate_that_golem_messages_are_signed_with_key(
         provider_public_key,
         report_computed_task,
     )
@@ -557,7 +557,7 @@ def handle_send_force_subtask_results_response(client_message):
     provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
 
-    handle_validating_if_list_of_golem_messages_is_signed_with_key(
+    validate_that_golem_messages_are_signed_with_key(
         requestor_public_key,
         task_to_compute,
     )
@@ -566,7 +566,7 @@ def handle_send_force_subtask_results_response(client_message):
         subtask_results_accepted = client_message.subtask_results_accepted
         subtask_results_rejected = None
         state = Subtask.SubtaskState.ACCEPTED
-        handle_validating_if_list_of_golem_messages_is_signed_with_key(
+        validate_that_golem_messages_are_signed_with_key(
             requestor_public_key,
             subtask_results_accepted,
         )
@@ -575,11 +575,11 @@ def handle_send_force_subtask_results_response(client_message):
         subtask_results_accepted = None
         subtask_results_rejected = client_message.subtask_results_rejected
         state = Subtask.SubtaskState.REJECTED
-        handle_validating_if_list_of_golem_messages_is_signed_with_key(
+        validate_that_golem_messages_are_signed_with_key(
             requestor_public_key,
             subtask_results_rejected,
         )
-        handle_validating_if_list_of_golem_messages_is_signed_with_key(
+        validate_that_golem_messages_are_signed_with_key(
             provider_public_key,
             subtask_results_rejected.report_computed_task,
         )
@@ -704,7 +704,7 @@ def handle_send_force_payment(
     validate_ethereum_addresses(requestor_eth_address, provider_eth_address)
     requestor_ethereum_public_key = hex_to_bytes_convert(task_to_compute.requestor_ethereum_public_key)
 
-    handle_validating_if_list_of_golem_messages_is_signed_with_key(
+    validate_that_golem_messages_are_signed_with_key(
         requestor_public_key,
         *client_message.subtask_results_accepted_list,
         *[subtask_results_accepted.task_to_compute for subtask_results_accepted in client_message.subtask_results_accepted_list],
@@ -1306,11 +1306,11 @@ def handle_send_subtask_results_verify(
     provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
 
     validate_golem_message_subtask_results_rejected(subtask_results_rejected)
-    handle_validating_if_list_of_golem_messages_is_signed_with_key(
+    validate_that_golem_messages_are_signed_with_key(
         requestor_public_key,
         task_to_compute,
     )
-    handle_validating_if_list_of_golem_messages_is_signed_with_key(
+    validate_that_golem_messages_are_signed_with_key(
         provider_public_key,
         report_computed_task,
     )
@@ -1441,7 +1441,7 @@ def are_items_unique(items: list):
     return len(items) == len(set(items))
 
 
-def handle_validating_if_list_of_golem_messages_is_signed_with_key(
+def validate_that_golem_messages_are_signed_with_key(
     public_key: bytes,
     *golem_messages: message.base.Message,
 ) -> None:

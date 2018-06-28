@@ -14,11 +14,14 @@ from django.utils import timezone
 
 from constance import config
 
-from golem_sci.events import BatchTransferEvent
-from golem_sci.events import ForcedPaymentEvent
 from golem_messages import message
 from golem_messages.message import FileTransferToken
+from golem_messages.message.concents import ForcePaymentCommitted
+from golem_messages.message.concents import ForcePaymentRejected
+from golem_messages.message.concents import ServiceRefused
 from golem_messages.message.tasks import SubtaskResultsRejected
+from golem_sci.events import BatchTransferEvent
+from golem_sci.events import ForcedPaymentEvent
 
 from common.constants import ErrorCode
 from common.exceptions import ConcentInSoftShutdownMode
@@ -37,7 +40,7 @@ from core.models import Subtask
 import core.payments.base
 from core.payments.sci_backend import TransactionType
 from core.queue_operations import send_blender_verification_request
-from core.subtask_helpers import verify_message_subtask_results_accepted
+from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
 from core.transfer_operations import store_pending_message
 from core.transfer_operations import create_file_transfer_token_for_golem_client
 from core.utils import calculate_maximum_download_time
@@ -648,15 +651,17 @@ def get_clients_eth_accounts(task_to_compute: message.tasks.TaskToCompute):
     return (requestor_eth_address, provider_eth_address)
 
 
-def handle_send_force_payment(client_message: message.concents.ForcePayment) -> message.concents.ForcePaymentCommitted:  # pylint: disable=inconsistent-return-statements
+def handle_send_force_payment(
+    client_message: message.concents.ForcePayment
+) -> Union[ServiceRefused, ForcePaymentRejected, ForcePaymentCommitted]:
 
     # Concent should not accept payment requests in soft shutdown mode.
     if config.SOFT_SHUTDOWN_MODE is True:
         raise ConcentInSoftShutdownMode
 
-    current_time            = get_current_utc_timestamp()
+    current_time = get_current_utc_timestamp()
 
-    if not verify_message_subtask_results_accepted(client_message.subtask_results_accepted_list):
+    if not are_keys_and_addresses_unique_in_message_subtask_results_accepted(client_message.subtask_results_accepted_list):
         return message.concents.ServiceRefused(
             reason = message.concents.ServiceRefused.REASON.InvalidRequest
         )
@@ -733,7 +738,7 @@ def handle_send_force_payment(client_message: message.concents.ForcePayment) -> 
             force_payment=client_message,
             reason=message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,
         )
-    elif amount_pending > 0:
+    else:
         core.payments.base.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
             requestor_eth_address   = requestor_eth_address,
             provider_eth_address    = provider_eth_address,

@@ -1,9 +1,11 @@
 from base64                     import b64encode
 from logging import getLogger
+from typing import List
 from typing import Optional
 
 from django.db.models           import Q
 from django.utils               import timezone
+from golem_messages.message.tasks import SubtaskResultsAccepted
 
 from core.models                import PendingResponse
 from core.models                import Subtask
@@ -146,11 +148,14 @@ def update_subtask_state(
     subtask.save()
 
 
-def verify_message_subtask_results_accepted(subtask_results_accepted_list: dict) -> bool:
-    """
-    function verify if all requestor public key and ethereum public key
-    in subtask_reesults_accepted_list are the same
-    """
-    verify_public_key           = len(set(subtask_results_accepted.task_to_compute.requestor_public_key             for subtask_results_accepted in subtask_results_accepted_list)) == 1
-    verify_ethereum_public_key  = len(set(subtask_results_accepted.task_to_compute.requestor_ethereum_public_key    for subtask_results_accepted in subtask_results_accepted_list)) == 1
-    return bool(verify_public_key is True and verify_ethereum_public_key is True)
+def are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_results_accepted_list: List[SubtaskResultsAccepted]) -> bool:
+
+    unique_public_keys = set(subtask_results_accepted.task_to_compute.requestor_public_key for subtask_results_accepted in subtask_results_accepted_list)
+    unique_ethereum_addresses = set(subtask_results_accepted.task_to_compute.requestor_ethereum_address for subtask_results_accepted in subtask_results_accepted_list)
+    unique_ethereum_public_keys = set(subtask_results_accepted.task_to_compute.requestor_ethereum_public_key for subtask_results_accepted in subtask_results_accepted_list)
+
+    is_public_key_unique = (len(unique_public_keys) == 1)
+    is_ethereum_address_unique = (len(unique_ethereum_addresses) == 1)
+    is_ethereum_public_key_unique = (len(unique_ethereum_public_keys) == 1)
+
+    return is_public_key_unique and is_ethereum_address_unique and is_ethereum_public_key_unique

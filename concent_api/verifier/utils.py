@@ -232,7 +232,7 @@ def try_to_upload_blender_output_file(blender_output_file_name, output_format, s
                 settings.CONCENT_PRIVATE_KEY,
                 settings.CONCENT_PUBLIC_KEY,
                 settings.CONCENT_PUBLIC_KEY,
-                settings.STORAGE_CLUSTER_ADDRESS,
+                settings.STORAGE_SERVER_INTERNAL_ADDRESS,
             )
     except OSError as exception:
         crash_logger.error(str(exception))

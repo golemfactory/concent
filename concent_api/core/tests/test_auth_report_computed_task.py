@@ -164,7 +164,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 11:00:05"):
             ack_report_computed_task = message.AckReportComputedTask(
-                report_computed_task = message.ReportComputedTask(
+                report_computed_task=self._get_deserialized_report_computed_task(
                     task_to_compute=self.deserialized_task_to_compute,
                 )
             )
@@ -191,13 +191,13 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute.requestor_public_key = self._get_diffrent_requestor_hex_public_key()
         task_to_compute = self._sign_message(
             task_to_compute,
-            self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
+            self.REQUESTOR_PRIVATE_KEY,
         )
 
         with freeze_time("2017-12-01 11:00:05"):
             ack_report_computed_task = message.AckReportComputedTask(
-                report_computed_task = message.ReportComputedTask(
-                    task_to_compute = task_to_compute,
+                report_computed_task=self._get_deserialized_report_computed_task(
+                    task_to_compute=task_to_compute,
                 )
             )
         serialized_ack_report_computed_task = dump(ack_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -211,8 +211,11 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_400_response(
             response,
-            error_message = "Subtask requestor key does not match current client key. Can't accept your 'AckReportComputedTask'.",
-            error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH,
+            error_message='There was an exception when validating if golem_message {} is signed with public key {}'.format(
+                message.TaskToCompute.__name__,
+                self.DIFFERENT_REQUESTOR_PUBLIC_KEY,
+            ),
+            error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG,
         )
 
         # 4.3.
@@ -224,11 +227,14 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             self.REQUESTOR_PRIVATE_KEY,
         )
 
+        report_computed_task_from_requestor = self._get_deserialized_report_computed_task(
+            timestamp="2017-12-01 10:55:00",
+            task_to_compute=task_to_compute,
+            sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
+        )
         with freeze_time("2017-12-01 11:00:05"):
             ack_report_computed_task = message.AckReportComputedTask(
-                report_computed_task=message.ReportComputedTask(
-                    task_to_compute=task_to_compute,
-                )
+                report_computed_task=report_computed_task_from_requestor,
             )
         serialized_ack_report_computed_task = dump(ack_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
@@ -259,11 +265,14 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             self.REQUESTOR_PRIVATE_KEY,
         )
 
+        report_computed_task_from_requestor = self._get_deserialized_report_computed_task(
+            timestamp="2017-12-01 10:55:00",
+            task_to_compute=self.deserialized_task_to_compute,
+            sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
+        )
         with freeze_time("2017-12-01 11:00:05"):
             ack_report_computed_task = message.AckReportComputedTask(
-                report_computed_task = message.ReportComputedTask(
-                    task_to_compute = self.deserialized_task_to_compute,
-                )
+                report_computed_task=report_computed_task_from_requestor
             )
         serialized_ack_report_computed_task = dump(ack_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 

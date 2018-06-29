@@ -16,6 +16,7 @@ from golem_messages.exceptions      import MessageFromFutureError
 from golem_messages.exceptions      import MessageTooOldError
 from golem_messages.exceptions      import TimestampError
 
+from common.constants import ErrorCode
 from common.exceptions import ConcentFeatureIsNotAvailable
 from common.exceptions import ConcentInSoftShutdownMode
 from common.helpers import join_messages
@@ -25,13 +26,14 @@ from common.logging import log_400_error
 from common.logging import log_json_message
 from common.logging import log_message_received_in_endpoint
 from common.logging import log_string_message
-from common.shortcuts                import load_without_public_key
+from common.shortcuts import load_without_public_key
 from core.exceptions import FileTransferTokenError
 from core.exceptions import GolemMessageValidationError
 from core.exceptions import HashingAlgorithmError
 from core.exceptions import Http400
 from core.validation import get_validated_client_public_key_from_client_message
-from core.validation import validate_golem_message_signed_with_key
+from core.validation import is_golem_message_signed_with_key
+
 
 logger = getLogger(__name__)
 crash_logger = getLogger('concent.crash')
@@ -52,25 +54,31 @@ def require_golem_auth_message(view):
             try:
                 auth_message = load_without_public_key(request.body)
                 if isinstance(auth_message, message.concents.ClientAuthorization):
-                    validate_golem_message_signed_with_key(auth_message, auth_message.client_public_key)
-                    log_message_received_in_endpoint(
-                        logger,
-                        request.resolver_match.view_name if request.resolver_match is not None else None,
-                        auth_message.__class__.__name__,
-                        auth_message.client_public_key
-                    )
+                    if is_golem_message_signed_with_key(
+                        auth_message.client_public_key,
+                        auth_message,
+                    ):
+                        log_message_received_in_endpoint(
+                            logger,
+                            request.resolver_match.view_name if request.resolver_match is not None else None,
+                            auth_message.__class__.__name__,
+                            auth_message.client_public_key
+                        )
+                    else:
+                        log_string_message(
+                            logger,
+                            f'ClientAuthorization message is not signed with public key {auth_message.client_public_key}.',
+                        )
+                        return JsonResponse(
+                            {
+                                'error': f'ClientAuthorization message is not signed with public key {auth_message.client_public_key}.',
+                                'error_code': ErrorCode.MESSAGE_SIGNATURE_WRONG.value,
+                            },
+                            status=400
+                        )
                 else:
                     log_string_message(logger, 'error: Client Authentication message not included')
                     return JsonResponse({'error': 'Client Authentication message not included'}, status = 400)
-            except Http400 as exception:
-                log_string_message(logger, f"error_code: {exception.error_code.value} error: {exception.error_message} ")
-                return JsonResponse(
-                    {
-                        'error': f'{exception.error_message}',
-                        'error_code': exception.error_code.value,
-                    },
-                    status=400
-                )
             except FieldError as exception:
                 log_string_message(logger, 'Golem Message contains wrong fields.', exception.__class__.__name__)
                 return JsonResponse({'error': join_messages('Golem Message contains wrong fields.', str(exception))}, status = 400)

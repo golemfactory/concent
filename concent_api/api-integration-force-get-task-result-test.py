@@ -6,10 +6,12 @@ import hashlib
 from freezegun import freeze_time
 
 from golem_messages import message
+from golem_messages.factories.tasks import ReportComputedTaskFactory
 
 from common.helpers import get_current_utc_timestamp
 from common.helpers import get_storage_result_file_path
 from common.helpers import upload_file_to_storage_cluster
+from common.helpers import sign_message
 from api_testing_common import api_request
 from api_testing_common import assert_condition
 from api_testing_common import count_fails
@@ -37,12 +39,13 @@ def get_force_get_task_result(task_id, subtask_id, current_time, cluster_consts,
     )
 
     with freeze_time(timestamp_to_isoformat(current_time - 1)):
-        report_computed_task = message.ReportComputedTask(
+        report_computed_task = ReportComputedTaskFactory(
             task_to_compute=task_to_compute,
             size=size,
             package_hash=package_hash,
             subtask_id=subtask_id,
         )
+        sign_message(report_computed_task, PROVIDER_PRIVATE_KEY)
 
     with freeze_time(timestamp_to_isoformat(current_time)):
         force_get_task_result = message.concents.ForceGetTaskResult(

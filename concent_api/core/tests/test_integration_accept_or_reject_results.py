@@ -67,11 +67,12 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces subtask results via Concent.
         # Request is processed correctly.
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-            timestamp                   = "2018-02-05 10:00:30",
-            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
-                timestamp       = "2018-02-05 10:00:20",
-                subtask_id      = "xxyyzz",
-                task_to_compute = task_to_compute
+            timestamp="2018-02-05 10:00:30",
+            ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
+                timestamp="2018-02-05 10:00:20",
+                subtask_id="xxyyzz",
+                task_to_compute=task_to_compute,
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 
@@ -164,7 +165,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
             timestamp = "2018-02-05 10:00:30",
             ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
-                task_to_compute=task_to_compute
+                task_to_compute=task_to_compute,
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 
@@ -222,11 +224,12 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # Concent return ForceSubtaskResultRejected because message from Provider was sent too soon.
 
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-            timestamp                   = "2018-03-05 10:00:24",
-            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
-                timestamp       = "2018-03-05 10:00:15",
-                subtask_id      = "2",
-                task_to_compute = task_to_compute
+            timestamp="2018-03-05 10:00:24",
+            ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
+                timestamp="2018-03-05 10:00:15",
+                subtask_id="2",
+                task_to_compute=task_to_compute,
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 
@@ -269,7 +272,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     timestamp   = "2018-03-05 10:00:00",
                     deadline    = "2018-03-05 10:00:10",
                     task_id     = '2',
-                )
+                ),
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 
@@ -328,11 +332,12 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-            timestamp                   = "2018-02-05 10:00:30",
-            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
-                timestamp       = "2018-02-05 10:00:20",
-                subtask_id      = "xxyyzz",
-                task_to_compute = task_to_compute
+            timestamp="2018-02-05 10:00:30",
+            ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
+                timestamp="2018-02-05 10:00:20",
+                subtask_id="xxyyzz",
+                task_to_compute=task_to_compute,
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 
@@ -430,11 +435,12 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-            timestamp                   = "2018-02-05 10:00:30",
-            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
-                timestamp       = "2018-02-05 10:00:20",
-                subtask_id      = "xxyyzz",
-                task_to_compute = task_to_compute
+            timestamp="2018-02-05 10:00:30",
+            ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
+                timestamp="2018-02-05 10:00:20",
+                subtask_id="xxyyzz",
+                task_to_compute=task_to_compute,
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 
@@ -575,11 +581,12 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-            timestamp                   = "2018-02-05 10:00:30",
-            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
-                timestamp       = "2018-02-05 10:00:20",
-                subtask_id      = "xxyyzz",
-                task_to_compute = task_to_compute
+            timestamp="2018-02-05 10:00:30",
+            ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
+                timestamp="2018-02-05 10:00:20",
+                subtask_id="xxyyzz",
+                task_to_compute=task_to_compute,
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 
@@ -738,11 +745,12 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-            timestamp                   = "2018-02-05 10:00:30",
-            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
-                timestamp       = "2018-02-05 10:00:20",
-                subtask_id      = "xxyyzz",
-                task_to_compute = task_to_compute
+            timestamp="2018-02-05 10:00:30",
+            ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
+                timestamp="2018-02-05 10:00:20",
+                subtask_id="xxyyzz",
+                task_to_compute=task_to_compute,
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 
@@ -1063,11 +1071,12 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-            timestamp                   = "2018-02-05 10:00:30",
-            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
-                timestamp       = "2018-02-05 10:00:20",
-                subtask_id      = "xxyyzz",
-                task_to_compute = task_to_compute
+            timestamp="2018-02-05 10:00:30",
+            ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
+                timestamp="2018-02-05 10:00:20",
+                subtask_id="xxyyzz",
+                task_to_compute=task_to_compute,
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 
@@ -1249,13 +1258,17 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent     -> Provider:    HTTP 400
         """
 
-        serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-            timestamp                   = "2018-02-05 10:00:15",
-            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
-                subtask_id      = "20sd",
-                task_to_compute = message.CannotComputeTask()
+        # This has to be done manually, otherwise will fail when signing ReportComputedTask
+        with freeze_time("2018-02-05 10:00:15"):
+            serialized_force_subtask_results = self._get_serialized_force_subtask_results(
+                ack_report_computed_task = message.AckReportComputedTask(
+                    report_computed_task=(
+                        message.ReportComputedTask(
+                            task_to_compute=message.CannotComputeTask()
+                        )
+                    )
+                )
             )
-        )
 
         with freeze_time("2018-02-05 10:00:30"):
             response_1 = self.client.post(
@@ -1359,11 +1372,12 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-            timestamp                   = "2018-02-05 10:00:30",
-            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
-                timestamp       = "2018-02-05 10:00:25",
-                subtask_id      = "xxyyzz",
-                task_to_compute = task_to_compute
+            timestamp="2018-02-05 10:00:30",
+            ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
+                timestamp="2018-02-05 10:00:25",
+                subtask_id="xxyyzz",
+                task_to_compute=task_to_compute,
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 
@@ -1537,11 +1551,12 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-            timestamp                   = "2018-02-05 10:00:30",
-            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
-                timestamp       = "2018-02-05 10:00:25",
-                subtask_id      = "xxyyzz",
-                task_to_compute = task_to_compute
+            timestamp="2018-02-05 10:00:30",
+            ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
+                timestamp="2018-02-05 10:00:25",
+                subtask_id="xxyyzz",
+                task_to_compute=task_to_compute,
+                sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
 

@@ -239,6 +239,16 @@ class ApiViewTransactionTestCase(TransactionTestCase):
         report_computed_task = tasks.ReportComputedTaskFactory(
             task_to_compute=task_to_compute
         )
+        report_computed_task = load(
+            dump(
+                report_computed_task,
+                PROVIDER_PRIVATE_KEY,
+                settings.CONCENT_PUBLIC_KEY,
+            ),
+            settings.CONCENT_PRIVATE_KEY,
+            PROVIDER_PUBLIC_KEY,
+            check_time=False,
+        )
         self.force_report_computed_task = message.ForceReportComputedTask(
             report_computed_task=report_computed_task
         )

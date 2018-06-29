@@ -1,3 +1,4 @@
+from logging import getLogger
 from typing import List
 from typing import Union
 from django.conf import settings
@@ -8,6 +9,8 @@ from golem_messages                 import message
 from golem_messages.exceptions      import MessageError
 from golem_messages.message import FileTransferToken
 
+from common.constants import ErrorCode
+from common.logging import log_error_message
 from core.constants                 import ETHEREUM_ADDRESS_LENGTH
 from core.constants                 import GOLEM_PUBLIC_KEY_LENGTH
 from core.constants                 import GOLEM_PUBLIC_KEY_HEX_LENGTH
@@ -20,8 +23,9 @@ from core.exceptions import GolemMessageValidationError
 from core.exceptions import HashingAlgorithmError
 from core.exceptions import Http400
 from core.utils import hex_to_bytes_convert
-from common.helpers import join_messages
-from common.constants                import ErrorCode
+
+
+logger = getLogger(__name__)
 
 
 def validate_int_value(value):
@@ -172,25 +176,32 @@ def validate_all_messages_identical(golem_messages_list: List[message.Message]):
                 )
 
 
-def validate_golem_message_signed_with_key(
-    golem_message: message.base.Message,
+def is_golem_message_signed_with_key(
     public_key: bytes,
-):
+    golem_message: message.base.Message,
+) -> bool:
+    """
+    Validates if given Golem message is signed with given public key.
+
+    :param golem_message: Instance of golem_messages.base.Message object.
+    :param public_key: Client public key in bytes.
+    :return: True if given Golem message is signed with given public key, otherwise False.
+    """
     assert isinstance(golem_message, message.base.Message)
 
     validate_bytes_public_key(public_key, 'public_key')
 
     try:
-        golem_message.verify_signature(public_key)
+        is_valid = golem_message.verify_signature(public_key)
     except MessageError as exception:
-        error_message = join_messages(
-            f'There was an exception when validating if golem_message {golem_message.__class__.__name__} is signed with public key {public_key}.',
-            str(exception)
+        is_valid = False
+        log_error_message(
+            logger,
+            f'There was an exception when validating if golem_message {golem_message.__class__.__name__} is signed '
+            f'with public key {public_key}, exception: {exception}.'
         )
-        raise Http400(
-            error_message,
-            error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG,
-        )
+
+    return is_valid
 
 
 def validate_golem_message_subtask_results_rejected(subtask_results_rejected: message.tasks.SubtaskResultsRejected):

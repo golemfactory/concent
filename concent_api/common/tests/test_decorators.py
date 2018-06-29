@@ -22,13 +22,6 @@ from common.testing_helpers          import generate_ecc_key_pair
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
 
 
-def _mock_raise_http400(_):
-    raise Http400(
-        'dummy http400',
-        error_code=ErrorCode.MESSAGE_UNEXPECTED,
-    )
-
-
 @require_golem_auth_message
 def dummy_view_require_golem_auth_message(_request, message, _client_public_key):  # pylint: disable=redefined-outer-name
     return message
@@ -121,20 +114,25 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', json.loads(response.content))
 
-    def test_require_golem_auth_message_should_return_json_response_if_get_http_400(self):
+    def test_require_golem_auth_message_should_return_json_response_http_400_when_auth_message_is_signed_with_wrong_key(self):
 
-        request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream', data = self._create_provider_auth_message())
+        request = self.request_factory.post(
+            "/dummy-url/",
+            content_type='application/octet-stream',
+            data=self._create_client_auth_message(
+                self.PROVIDER_PRIVATE_KEY,
+                self.REQUESTOR_PUBLIC_KEY,
+            )
+        )
 
-        with mock.patch(
-            'common.decorators.load_without_public_key',
-            side_effect=_mock_raise_http400
-        ) as _mock_raise_http400_function:
-            response = dummy_view_require_golem_auth_message(request)  # pylint: disable=no-value-for-parameter
-
-        _mock_raise_http400_function.assert_called()
+        response = dummy_view_require_golem_auth_message(request)  # pylint: disable=no-value-for-parameter
 
         self.assertEqual(response.status_code, 400)
-        self.assertIn('error', json.loads(response.content))
+
+        content = json.loads(response.content)
+        self.assertIn('error', content)
+        self.assertIn('error_code', content)
+        self.assertEqual(content['error_code'], ErrorCode.MESSAGE_SIGNATURE_WRONG.value)
 
     def test_handle_errors_and_responses_should_return_http_response_with_serialized_message(self):
 

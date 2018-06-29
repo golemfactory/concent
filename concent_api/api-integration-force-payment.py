@@ -9,7 +9,9 @@ from freezegun import freeze_time
 from golem_messages import message
 from golem_messages.utils import encode_hex
 
-from common.helpers import get_current_utc_timestamp, parse_timestamp_to_utc_datetime
+from common.helpers import get_current_utc_timestamp
+from common.helpers import parse_timestamp_to_utc_datetime
+from common.helpers import sign_message
 
 from api_testing_common import api_request
 from api_testing_common import count_fails
@@ -42,9 +44,12 @@ def force_payment(timestamp = None, subtask_results_accepted_list = None):
 
 def subtask_results_accepted(timestamp = None, payment_ts = None, task_to_compute = None):
     with freeze_time(timestamp):
-        return message.tasks.SubtaskResultsAccepted(
-            payment_ts      = payment_ts,
-            task_to_compute = task_to_compute
+        return sign_message(
+            message.tasks.SubtaskResultsAccepted(
+                payment_ts=payment_ts,
+                task_to_compute=task_to_compute
+            ),
+            REQUESTOR_PRIVATE_KEY,
         )
 
 

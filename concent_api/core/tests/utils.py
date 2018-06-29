@@ -104,6 +104,9 @@ class ConcentIntegrationTestCase(TestCase):
     def _get_requestor_hex_public_key(self):
         return encode_hex(self.REQUESTOR_PUBLIC_KEY)
 
+    def _get_diffrent_provider_hex_public_key(self):
+        return encode_hex(self.DIFFERENT_PROVIDER_PUBLIC_KEY)
+
     def _get_diffrent_requestor_hex_public_key(self):
         return encode_hex(self.DIFFERENT_REQUESTOR_PUBLIC_KEY)
 
@@ -138,6 +141,7 @@ class ConcentIntegrationTestCase(TestCase):
         size: int = 1,
         package_hash: str = 'sha1:4452d71687b6bc2c9389c3349fdc17fbd73b833b',
         timestamp: Optional[str] = None,
+        sign_with_private_key = None,
     ):
         """ Returns ReportComputedTask deserialized. """
         with freeze_time(timestamp or self._get_timestamp_string()):
@@ -151,6 +155,10 @@ class ConcentIntegrationTestCase(TestCase):
                 package_hash=package_hash,
                 size=size,
             )
+        report_computed_task = self._sign_message(
+            report_computed_task,
+            sign_with_private_key if sign_with_private_key is not None else self.PROVIDER_PRIVATE_KEY,
+        )
         return report_computed_task
 
     def _get_deserialized_task_to_compute(
@@ -208,10 +216,10 @@ class ConcentIntegrationTestCase(TestCase):
                 package_hash=package_hash,
                 size=size,
             )
-            task_to_compute = self._sign_message(
-                task_to_compute,
-                sign_with_private_key,
-            )
+        task_to_compute = self._sign_message(
+            task_to_compute,
+            sign_with_private_key,
+        )
         return task_to_compute
 
     def _get_deserialized_ack_report_computed_task(
@@ -220,14 +228,15 @@ class ConcentIntegrationTestCase(TestCase):
         deadline        = None,
         subtask_id      = '1',
         report_computed_task = None,
-        task_to_compute = None
+        task_to_compute = None,
+        sign_with_private_key = None,
     ):
         """ Returns AckReportComputedTask deserialized. """
         with freeze_time(timestamp or self._get_timestamp_string()):
             ack_report_computed_task = message.AckReportComputedTask(
-                report_computed_task = (
-                    report_computed_task if report_computed_task is not None else message.ReportComputedTask(
-                        task_to_compute = (
+                report_computed_task=(
+                    report_computed_task if report_computed_task is not None else self._get_deserialized_report_computed_task(
+                        task_to_compute=(
                             task_to_compute or
                             self._get_deserialized_task_to_compute(
                                 timestamp = timestamp,
@@ -237,6 +246,11 @@ class ConcentIntegrationTestCase(TestCase):
                         ),
                     )
                 )
+            )
+        if sign_with_private_key is not None:
+            ack_report_computed_task = self._sign_message(
+                ack_report_computed_task,
+                sign_with_private_key,
             )
         return ack_report_computed_task
 
@@ -443,6 +457,7 @@ class ConcentIntegrationTestCase(TestCase):
         timestamp           = None,
         task_to_compute     = None,
         payment_ts          = None,
+        sign_with_private_key=None,
     ):
         """ Return SubtaskResultsAccepted deserialized """
         with freeze_time(timestamp or self._get_timestamp_string()):
@@ -453,6 +468,10 @@ class ConcentIntegrationTestCase(TestCase):
                     self._parse_iso_date_to_timestamp(self._get_timestamp_string())
                 )
             )
+        subtask_results_accepted = self._sign_message(
+            subtask_results_accepted,
+            sign_with_private_key if sign_with_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
+        )
         return subtask_results_accepted
 
     def _get_serialized_subtask_results_accepted(
@@ -484,10 +503,11 @@ class ConcentIntegrationTestCase(TestCase):
         timestamp               = None,
         reason                  = None,
         report_computed_task    = None,
+        sign_with_private_key=None,
     ):
         """ Return SubtaskResultsRejected deserialized """
         with freeze_time(timestamp or self._get_timestamp_string()):
-            return message.tasks.SubtaskResultsRejected(
+            subtask_results_rejected = message.tasks.SubtaskResultsRejected(
                 reason = (
                     reason or
                     message.tasks.SubtaskResultsRejected.REASON.VerificationNegative
@@ -500,6 +520,11 @@ class ConcentIntegrationTestCase(TestCase):
                     )
                 ),
             )
+        subtask_results_rejected = self._sign_message(
+            subtask_results_rejected,
+            sign_with_private_key if sign_with_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
+        )
+        return subtask_results_rejected
 
     def _get_serialized_subtask_results_rejected(
         self,

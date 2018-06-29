@@ -20,6 +20,7 @@ from common.constants import ErrorCode
 from common.helpers import get_current_utc_timestamp
 from common.helpers import upload_file_to_storage_cluster
 from common.logging import log_string_message
+from conductor.models import BlenderSubtaskDefinition
 from core.constants import VerificationResult
 from core.tasks import verification_result
 from core.transfer_operations import create_file_transfer_token_for_concent, send_request_to_storage_cluster
@@ -395,7 +396,7 @@ def parse_result_files_with_frames(frames: List[int], result_files_list: List[st
 def render_images_by_frames(
     parsed_files_to_compare: Dict[int, List[str]],
     frames: List[int],
-    output_format: str,
+    output_format: BlenderSubtaskDefinition.OutputFormat,
     scene_file: str,
     subtask_id: str,
     verification_deadline: int,
@@ -403,16 +404,21 @@ def render_images_by_frames(
 ):
     blender_output_file_name_list = []
     for frame_number in frames:
-        render_image(frame_number, output_format, scene_file, subtask_id, verification_deadline, blender_crop_script)
-        blender_out_file_name = generate_full_blender_output_file_name(scene_file, frame_number, output_format.lower())
+        render_image(frame_number, output_format.name, scene_file, subtask_id, verification_deadline, blender_crop_script)
+        blender_out_file_name = generate_full_blender_output_file_name(scene_file, frame_number, output_format.name.lower())
         blender_output_file_name_list.append(blender_out_file_name)
         parsed_files_to_compare[frame_number].append(blender_out_file_name)
     return (blender_output_file_name_list, parsed_files_to_compare)
 
 
-def upload_blender_output_file(frames: List[int], blender_output_file_name_list: List[str], output_format: str, subtask_id: str):
+def upload_blender_output_file(
+    frames: List[int],
+    blender_output_file_name_list: List[str],
+    output_format: BlenderSubtaskDefinition.OutputFormat,
+    subtask_id: str
+):
     for (frame_number, blender_output_file_name) in zip(frames, blender_output_file_name_list):
-        try_to_upload_blender_output_file(blender_output_file_name, output_format, subtask_id, frame_number)
+        try_to_upload_blender_output_file(blender_output_file_name, output_format.name, subtask_id, frame_number)
 
 
 def ensure_enough_result_files_provided(frames: List[int], result_files_list: List[str], subtask_id: str):

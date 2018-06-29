@@ -1,8 +1,13 @@
+from logging import getLogger
+
 from golem_messages.message.tasks import ComputeTaskDef
 
+from conductor.models import BlenderSubtaskDefinition
 from conductor.tasks import blender_verification_request
 from common.helpers import get_storage_result_file_path
 from common.helpers import get_storage_source_file_path
+
+logger = getLogger(__name__)
 
 
 def send_blender_verification_request(compute_task_def: ComputeTaskDef, verification_deadline: int) -> None:
@@ -16,7 +21,7 @@ def send_blender_verification_request(compute_task_def: ComputeTaskDef, verifica
         subtask_id=subtask_id,
         task_id=task_id,
     )
-    output_format = compute_task_def['extra_data']['output_format']
+    output_format = BlenderSubtaskDefinition.OutputFormat[compute_task_def['extra_data']['output_format'].upper()]
     scene_file = compute_task_def['extra_data']['scene_file']
     frames = compute_task_def['extra_data']['frames']
     blender_crop_script = compute_task_def['extra_data'].get('script_src')

@@ -32,7 +32,7 @@ def blender_verification_request(
     subtask_id: str,
     source_package_path: str,
     result_package_path: str,
-    output_format: str,
+    output_format: int,
     scene_file: str,
     verification_deadline: int,
     frames: List[int],
@@ -50,11 +50,9 @@ def blender_verification_request(
         f'With blender_crop_script: {bool(blender_crop_script)}',
     )
     validate_frames(frames)
-    assert isinstance(output_format, str)
     assert isinstance(verification_deadline, int)
-
-    output_format = output_format.upper()
-    assert output_format in BlenderSubtaskDefinition.OutputFormat.__members__.keys()
+    assert isinstance(output_format, int)
+    output_format = BlenderSubtaskDefinition.OutputFormat(output_format)
 
     # The app creates a new instance of VerificationRequest in the database
     # and a BlenderSubtaskDefinition instance associated with it.
@@ -175,7 +173,7 @@ def store_verification_request_and_blender_subtask_definition(
     subtask_id: str,
     source_package_path: str,
     result_package_path: str,
-    output_format: str,
+    output_format: BlenderSubtaskDefinition.OutputFormat,
     scene_file: str,
     verification_deadline: int,
     blender_crop_script: Optional[str],
@@ -191,7 +189,7 @@ def store_verification_request_and_blender_subtask_definition(
 
     blender_subtask_definition = BlenderSubtaskDefinition(
         verification_request=verification_request,
-        output_format=BlenderSubtaskDefinition.OutputFormat[output_format].name,
+        output_format=output_format,
         scene_file=scene_file,
         blender_crop_script=blender_crop_script,
     )

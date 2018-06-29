@@ -23,6 +23,7 @@ from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.message.base import Message
 from golem_messages.utils import encode_hex
 
+from conductor.models import BlenderSubtaskDefinition
 from core.models            import Client
 from core.models            import PendingResponse
 from core.models            import StoredMessage
@@ -588,7 +589,7 @@ class ConcentIntegrationTestCase(TestCase):
                 'end_task': 6,
                 'frames': frames if frames is not None else [1],
                 'outfilebasename': 'Heli-cycles(3)',
-                'output_format': 'PNG',
+                'output_format': BlenderSubtaskDefinition.OutputFormat.PNG,
                 'path_root': '/home/dariusz/Documents/tasks/resources',
                 'scene_file': '/golem/resources/scene-Helicopter-27-internal.blend',
                 'script_src': '# This template is rendered by',

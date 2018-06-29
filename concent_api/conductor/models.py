@@ -1,16 +1,20 @@
+from enum import IntEnum
+
 from django.core.validators import ValidationError
 from django.db.models import BooleanField
 from django.db.models import CharField
 from django.db.models import DateTimeField
 from django.db.models import ForeignKey
+from django.db.models import IntegerField
 from django.db.models import Model
 from django.db.models import OneToOneField
+
 from django.db.models import PositiveIntegerField
 from django.db.models import TextField
 from django.utils import timezone
 
+from common.fields import IntegerEnum
 from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
-from common.fields import ChoiceEnum
 from .constants import MESSAGE_PATH_LENGTH
 
 
@@ -54,10 +58,10 @@ class BlenderSubtaskDefinition(Model):
     For each VerificationRequest there must be exactly one BlenderSubtaskDefinition in the database.
     """
 
-    class OutputFormat(ChoiceEnum):
-        JPG = 'jpg'
-        PNG = 'png'
-        EXR = 'exr'
+    class OutputFormat(IntEnum):
+        JPG = 1
+        PNG = 2
+        EXR = 3
 
     # Foreign key to VerificationRequest. Can't be NULL and must be unique.
     verification_request = OneToOneField(VerificationRequest, unique=True, related_name='blender_subtask_definition')
@@ -65,7 +69,7 @@ class BlenderSubtaskDefinition(Model):
     # Type of the output image to be produced by Blender. This determines the file extensions.
     # Only formats supported by Blender should be allowed here.
     # This value is passed to Blender using the -F command-line option.
-    output_format = CharField(max_length=32, choices=OutputFormat.choices())
+    output_format = IntegerField(choices=IntegerEnum.choices())
 
     # Relative path to the .blend file inside the source package.
     scene_file = CharField(max_length=MESSAGE_PATH_LENGTH)

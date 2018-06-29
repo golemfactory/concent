@@ -28,6 +28,9 @@ class VerificationRequest(Model):
     # True when `upload_acknowledged` task for this subtask has already been processed.
     upload_acknowledged = BooleanField(default=False)
 
+    # Deadline on additional verification for related Subtask.
+    verification_deadline = DateTimeField()
+
     def clean(self):
         super().clean()
 

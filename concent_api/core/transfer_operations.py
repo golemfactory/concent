@@ -114,7 +114,6 @@ def create_file_transfer_token_for_concent(
     source_package_path: Optional[str] = None,
     source_size: Optional[int] = None,
     source_package_hash: Optional[str] = None,
-    internal_call: bool = False,
 ) -> FileTransferToken:
     return _create_file_transfer_token(
         subtask_id=subtask_id,
@@ -126,8 +125,7 @@ def create_file_transfer_token_for_concent(
         result_package_hash=result_package_hash,
         authorized_client_public_key=settings.CONCENT_PUBLIC_KEY,
         operation=operation,
-        token_expiration_deadline=get_current_utc_timestamp() + calculate_maximum_download_time(result_size, settings.MINIMUM_UPLOAD_RATE),
-        internal_call=internal_call,
+        token_expiration_deadline=get_current_utc_timestamp() + calculate_maximum_download_time(result_size, settings.MINIMUM_UPLOAD_RATE)
     )
 
 
@@ -169,7 +167,6 @@ def _create_file_transfer_token(
     source_size: Optional[int] = None,
     source_package_hash: Optional[str] = None,
     token_expiration_deadline: Optional[int] = None,
-    internal_call: bool = False,
 ) -> FileTransferToken:
 
     assert (source_size and source_package_hash and source_package_path) or (result_size and result_package_hash and result_package_path)
@@ -178,11 +175,11 @@ def _create_file_transfer_token(
     assert operation in [FileTransferToken.Operation.download, FileTransferToken.Operation.upload]
 
     file_transfer_token = FileTransferToken(
-        token_expiration_deadline=token_expiration_deadline,
-        storage_cluster_address=settings.STORAGE_CLUSTER_ADDRESS if not internal_call else settings.STORAGE_SERVER_INTERNAL_ADDRESS,
-        authorized_client_public_key=authorized_client_public_key,
-        operation=operation,
-        subtask_id=subtask_id
+        token_expiration_deadline       = token_expiration_deadline,
+        storage_cluster_address         = settings.STORAGE_CLUSTER_ADDRESS,
+        authorized_client_public_key    = authorized_client_public_key,
+        operation                       = operation,
+        subtask_id                      = subtask_id
     )
     files = []
     if result_package_path and result_package_hash and result_size:

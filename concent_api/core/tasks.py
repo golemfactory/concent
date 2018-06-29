@@ -3,10 +3,14 @@ import logging
 from celery import shared_task
 from mypy.types import Optional
 
-from django.conf import settings
 from django.db import DatabaseError
 from django.db import transaction
 
+from common.decorators import log_task_errors
+from common.decorators import provides_concent_feature
+from common.helpers import deserialize_message
+from common.helpers import get_current_utc_timestamp
+from common.helpers import parse_timestamp_to_utc_datetime
 from conductor import tasks
 from core.constants import VerificationResult
 from core.models import PendingResponse
@@ -14,11 +18,7 @@ from core.models import Subtask
 from core.payments import base
 from core.subtask_helpers import update_subtask_state
 from core.transfer_operations import store_pending_message
-from common.decorators import log_task_errors
-from common.decorators import provides_concent_feature
-from common.helpers import deserialize_message
-from common.helpers import get_current_utc_timestamp
-from common.helpers import parse_timestamp_to_utc_datetime
+from core.utils import calculate_subtask_verification_time
 from .constants import CELERY_LOCKED_SUBTASK_DELAY
 from .constants import MAXIMUM_VERIFICATION_RESULT_TASK_RETRIES
 from .constants import VERIFICATION_RESULT_SUBTASK_STATE_ACCEPTED_LOG_MESSAGE
@@ -74,7 +74,7 @@ def upload_finished(subtask_id: str):
         update_subtask_state(
             subtask=subtask,
             state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name,  # pylint: disable=no-member
-            next_deadline=int(subtask.next_deadline.timestamp()) + settings.SUBTASK_VERIFICATION_TIME
+            next_deadline=int(subtask.next_deadline.timestamp()) + calculate_subtask_verification_time(report_computed_task)
         )
 
         # Add upload_acknowledged task to the work queue.

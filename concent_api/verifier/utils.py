@@ -335,7 +335,7 @@ def download_archives_from_storage(file_transfer_token, subtask_id, package_path
             file_transfer_token.sig = None
             cluster_response = send_request_to_storage_cluster(
                 prepare_storage_request_headers(file_transfer_token),
-                settings.STORAGE_CLUSTER_ADDRESS + CLUSTER_DOWNLOAD_PATH + file_path,
+                settings.STORAGE_SERVER_INTERNAL_ADDRESS + CLUSTER_DOWNLOAD_PATH + file_path,
                 method='get',
             )
             path_to_store = os.path.join(settings.VERIFIER_STORAGE_PATH, download_file_name)

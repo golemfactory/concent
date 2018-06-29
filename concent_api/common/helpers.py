@@ -140,7 +140,7 @@ def join_messages(*messages):
 
 
 def upload_file_to_storage_cluster(
-    file_content: str,
+    file_content: bytes,
     file_path: str,
     upload_token: message.concents.FileTransferToken,
     client_private_key: Optional[bytes] = None,

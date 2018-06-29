@@ -88,12 +88,16 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):
     current_time = get_current_utc_timestamp()
     (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'existing_file')
 
-    result_file_content_1 = task_id
-    source_file_content_2 = subtask_id
-    result_file_size_1 = len(result_file_content_1)
-    source_file_size_2 = len(source_file_content_2)
-    result_file_check_sum_1 = 'sha1:' + hashlib.sha1(result_file_content_1.encode()).hexdigest()
-    source_file_check_sum_2 = 'sha1:' + hashlib.sha1(source_file_content_2.encode()).hexdigest()
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(current_dir, 'tests_resources', 'source.zip'), 'rb') as archive:
+        source_file_content = archive.read()
+    with open(os.path.join(current_dir, 'tests_resources', 'result.zip'), 'rb') as archive:
+        result_file_content = archive.read()
+
+    result_file_size = len(result_file_content)
+    source_file_size = len(source_file_content)
+    result_file_checksum = 'sha1:' + hashlib.sha1(result_file_content).hexdigest()
+    source_file_checksum = 'sha1:' + hashlib.sha1(source_file_content).hexdigest()
 
     ack_subtask_results_verify = api_request(
         cluster_url,
@@ -106,10 +110,10 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):
             current_time,
             cluster_consts,
             reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-            report_computed_task_size=result_file_size_1,
-            report_computed_task_package_hash=result_file_check_sum_1,
-            task_to_compute_size=source_file_size_2,
-            task_to_compute_package_hash=source_file_check_sum_2,
+            report_computed_task_size=result_file_size,
+            report_computed_task_package_hash=result_file_checksum,
+            task_to_compute_size=source_file_size,
+            task_to_compute_package_hash=source_file_checksum,
         ),
         headers = {
             'Content-Type': 'application/octet-stream',
@@ -120,7 +124,7 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):
     )
 
     response = upload_file_to_storage_cluster(
-        result_file_content_1,
+        result_file_content,
         ack_subtask_results_verify.file_transfer_token.files[0]['path'],
         ack_subtask_results_verify.file_transfer_token,
         PROVIDER_PRIVATE_KEY,
@@ -131,12 +135,12 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):
     assert_condition(response.status_code, 200, 'File has not been stored on cluster')
     print('\nUploaded file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(
         task_id,
-        result_file_check_sum_1,
-        result_file_size_1
+        result_file_checksum,
+        result_file_size
     ))
 
     response = upload_file_to_storage_cluster(
-        source_file_content_2,
+        source_file_content,
         ack_subtask_results_verify.file_transfer_token.files[1]['path'],
         ack_subtask_results_verify.file_transfer_token,
         PROVIDER_PRIVATE_KEY,
@@ -147,8 +151,8 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):
     assert_condition(response.status_code, 200, 'File has not been stored on cluster')
     print('\nUploaded file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(
         task_id,
-        source_file_check_sum_2,
-        source_file_size_2
+        source_file_checksum,
+        source_file_size
     ))
 
     #  Adding 5 seconds to time sleep makes us sure that subtask is after deadline

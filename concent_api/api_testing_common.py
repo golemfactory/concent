@@ -328,7 +328,7 @@ def create_signed_task_to_compute(
             deadline= deadline,
             extra_data={
                 'output_format': 'jpg',
-                'scene_file': 'test.jpg',
+                'scene_file': 'golem-header-light.blend',
             }
         )
         task_to_compute = TaskToComputeFactory(

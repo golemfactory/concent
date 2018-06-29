@@ -50,21 +50,9 @@ class BlenderSubtaskDefinition(Model):
     """
 
     class OutputFormat(ChoiceEnum):
-        JPG  = 'jpg'
-        JPEG = 'jpeg'
-        BMP  = 'bmp'
-        SGI  = 'sgi'
-        RGB  = 'rgb'
-        BW   = 'bw'
-        PNG  = 'PNG'
-        JP2  = 'jp2'
-        JP2C = 'jp2c'
-        TGA  = 'tga'
-        CIN  = 'cin'
-        DPX  = 'dpx'
-        HDR  = 'hdr'
-        TIF  = 'tif'
-        TIFF = 'tiff'
+        JPG = 'jpg'
+        PNG = 'png'
+        EXR = 'exr'
 
     # Foreign key to VerificationRequest. Can't be NULL and must be unique.
     verification_request = OneToOneField(VerificationRequest, unique=True, related_name='blender_subtask_definition')

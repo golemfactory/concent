@@ -1,10 +1,11 @@
-from django.test                import override_settings
-from django.conf                import settings
-from django.test                import TestCase
+from django.test import override_settings
+from django.conf import settings
+from django.test import TestCase
 
-from concent_api.system_check   import create_error_26_storage_server_internal_address_is_not_set
-from concent_api.system_check   import create_error_27_storage_server_internal_address_is_not_valid_url
-from concent_api.system_check   import check_settings_storage_server_internal_address
+from concent_api.system_check import check_settings_storage_server_internal_address
+from concent_api.system_check import create_error_26_storage_server_internal_address_is_not_set
+from concent_api.system_check import create_error_27_storage_server_internal_address_is_not_valid_url
+from concent_api.system_check import create_error_37_storage_server_internal_address_does_not_end_with_slash
 
 
 class TestStorageServerInternalAddressCheck(TestCase):
@@ -54,6 +55,18 @@ class TestStorageServerInternalAddressCheck(TestCase):
             'verifier'
         ],
         STORAGE_SERVER_INTERNAL_ADDRESS='http://golem.network'
+    )
+    def test_that_storage_server_internal_address_non_ending_with_slash_will_produce_error(self):
+        errors = check_settings_storage_server_internal_address()
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0], create_error_37_storage_server_internal_address_does_not_end_with_slash())
+
+    @override_settings(
+        CONCENT_FEATURES=[
+            'verifier'
+        ],
+        STORAGE_SERVER_INTERNAL_ADDRESS='http://golem.network/'
     )
     def test_that_storage_server_internal_address_as_valid_url_will_not_produce_error(self):
         errors = check_settings_storage_server_internal_address()

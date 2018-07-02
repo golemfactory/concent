@@ -2,18 +2,23 @@ import datetime
 import mock
 
 from django.conf import settings
+from django.core.management import BaseCommand
+from django.db import connection
 from django.test import override_settings
 from django.test import TestCase
 
 from golem_messages import constants
 from golem_messages import helpers
 
+from core.message_handlers import store_or_update_subtask
+from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
 from core.utils import calculate_maximum_download_time
 from core.utils import calculate_subtask_verification_time
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.testing_helpers import generate_ecc_key_pair
+from common.testing_helpers import generate_priv_and_pub_eth_account_key
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
@@ -120,3 +125,40 @@ class CalculateSubtaskVerificationTimeTestCase(ConcentIntegrationTestCase):
                 calculate_subtask_verification_time(report_computed_task),
                 int(helpers.subtask_verification_time(report_computed_task).total_seconds())
             )
+
+
+class StoreOrUpdateSubtaskTest(ConcentIntegrationTestCase):
+
+    def __init__(self, task_id, subtask_id):
+        super().__init__()
+        (self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
+        (self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
+        (self.PROVIDER_PRIV_ETH_KEY, self.PROVIDER_PUB_ETH_KEY) = generate_priv_and_pub_eth_account_key()
+        (self.REQUESTOR_PRIV_ETH_KEY, self.REQUESTOR_PUB_ETH_KEY) = generate_priv_and_pub_eth_account_key()
+        self.report_computed_task = self._get_deserialized_report_computed_task(
+            task_id=task_id,
+            subtask_id=subtask_id
+        )
+
+    def run_store_or_update_subtask(self):
+        store_or_update_subtask(
+            task_id=self.report_computed_task.task_to_compute.compute_task_def['task_id'],
+            subtask_id=self.report_computed_task.task_to_compute.compute_task_def['subtask_id'],
+            provider_public_key=self.PROVIDER_PUBLIC_KEY,
+            requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
+            state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
+            next_deadline=get_current_utc_timestamp() + settings.CONCENT_MESSAGING_TIME,
+            task_to_compute=self.report_computed_task.task_to_compute,
+            report_computed_task=self.report_computed_task,
+        )
+
+
+class DatabaseHandler(BaseCommand):   # pylint: disable=abstract-method
+
+    def deactivate_communication_with_database(self):  # pylint: disable=abstract-method, no-self-use
+        cursor = connection.cursor()
+        database_name = f"{settings.DATABASES['control']['NAME']}"
+
+        cursor.execute(
+            "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity "
+            "WHERE pg_stat_activity.datname = %s AND pid <> pg_backend_pid();", [database_name])

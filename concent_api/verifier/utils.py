@@ -80,7 +80,7 @@ def run_blender(scene_file, output_format, frame_number, script_file=''):
             "-o", f"{generate_base_blender_output_file_name(scene_file)}",
             "-noaudio",
             "-F", f"{output_format}",
-            "-t", "1",  # cpu_count
+            "-t", f"{settings.BLENDER_THREADS}",  # cpu_count
             "-f", f"{frame_number}",  # frame
         ],
         timeout=settings.BLENDER_MAX_RENDERING_TIME,

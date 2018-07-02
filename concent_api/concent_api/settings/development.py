@@ -29,7 +29,7 @@ CONCENT_FEATURES = [
 # URL format: 'protocol://<user>:<password>@<hostname>:<port>/<virtual host>'
 CELERY_BROKER_URL = 'amqp://localhost:5672'
 
-STORAGE_CLUSTER_ADDRESS = 'http://devel.concent.golem.network/'
+STORAGE_CLUSTER_ADDRESS = 'http://127.0.0.1:8001/'
 
 GETH_ADDRESS = 'http://localhost:8545'
 

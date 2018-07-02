@@ -1,7 +1,10 @@
 import hashlib
 from base64 import b64encode
+from typing import Dict
+from typing import List
 import logging
 import os
+import re
 import subprocess
 import zipfile
 
@@ -21,6 +24,7 @@ from core.tasks import verification_result
 from core.transfer_operations import create_file_transfer_token_for_concent, send_request_to_storage_cluster
 from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
 from verifier.exceptions import VerificationError
+from verifier.exceptions import VerificationMismatch
 from .constants import UNPACK_CHUNK_SIZE
 
 
@@ -132,11 +136,11 @@ def generate_full_blender_output_file_name(scene_file, frame_number, output_form
 
 
 def generate_base_blender_output_file_name(scene_file):
-    return f'{settings.VERIFIER_STORAGE_PATH}/out_{scene_file}_'
+    return os.path.join(settings.VERIFIER_STORAGE_PATH, f'out_{scene_file}_')
 
 
-def generate_upload_file_path(subtask_id, extension):
-    return f'blender/verifier-output/{subtask_id}/{subtask_id}.{extension.lower()}'
+def generate_upload_file_path(subtask_id, extension, frame_number):
+    return f'blender/verifier-output/{subtask_id}/{subtask_id}_{frame_number:>04}.{extension.lower()}'
 
 
 def generate_verifier_storage_file_path(file_name):
@@ -164,33 +168,31 @@ def compare_images(image_1, image_2, subtask_id):
             subtask_id,
         )
     assert isinstance(ssim, float)
+    return ssim
+
+
+def compare_minimum_ssim_with_results(ssim_list, subtask_id):
     # Compare SSIM with VERIFIER_MIN_SSIM.
-    if settings.VERIFIER_MIN_SSIM < ssim:
+    if settings.VERIFIER_MIN_SSIM < min(ssim_list):
         verification_result.delay(
             subtask_id,
             VerificationResult.MATCH.name,
         )
+        return
     else:
-        verification_result.delay(
-            subtask_id,
-            VerificationResult.MISMATCH.name,
-        )
+        raise VerificationMismatch(subtask_id=subtask_id)
 
 
-def load_images(blender_output_file_name, result_archive_name, subtask_id):
+def load_images(blender_output_file_name, result_file, subtask_id):
     # Read both files with OpenCV.
     cv2 = import_cv2()
     try:
-        result_files_list = get_files_list_from_archive(
-            generate_verifier_storage_file_path(result_archive_name)
-        )
         image_1 = cv2.imread(  # pylint: disable=no-member
             generate_verifier_storage_file_path(blender_output_file_name)
         )
 
-        result_file_path_from_archive = generate_verifier_storage_file_path(result_files_list[0])  # TODO: What if list is longer?
         image_2 = cv2.imread(  # pylint: disable=no-member
-            result_file_path_from_archive
+            result_file
         )
     except MemoryError as exception:
         logger.info(f'Loading result files into memory exceeded available memory and failed with: {exception}')
@@ -210,8 +212,8 @@ def load_images(blender_output_file_name, result_archive_name, subtask_id):
     return image_1, image_2
 
 
-def try_to_upload_blender_output_file(blender_output_file_name, output_format, subtask_id):
-    upload_file_path = generate_upload_file_path(subtask_id, output_format)
+def try_to_upload_blender_output_file(blender_output_file_name, output_format, subtask_id, frame_number):
+    upload_file_path = generate_upload_file_path(subtask_id, output_format, frame_number)
     # Read Blender output file.
     try:
         with open(generate_verifier_storage_file_path(blender_output_file_name), 'rb') as upload_file:
@@ -359,3 +361,70 @@ def download_archives_from_storage(file_transfer_token, subtask_id, package_path
                 ErrorCode.VERIFIER_FILE_DOWNLOAD_FAILED,
                 subtask_id=subtask_id,
             )
+
+
+def parse_result_files_with_frames(frames: List[int], result_files_list: List[str], output_format: str):
+    frames_to_result_files_map = {}  # type: Dict[int, List[str]]
+    for frame_number in frames:
+        for result_file_name in result_files_list:
+            if (
+                re.search(f'_{frame_number:>04}.{output_format.lower()}$', result_file_name) is not None and
+                result_file_name not in frames_to_result_files_map.values()
+            ):
+                frames_to_result_files_map[frame_number] = [generate_verifier_storage_file_path(result_file_name)]
+    return frames_to_result_files_map
+
+
+def render_images_by_frames(
+    parsed_files_to_compare: Dict[int, List[str]],
+    frames: List[int],
+    output_format: str,
+    scene_file: str,
+    subtask_id: str,
+    verification_deadline: int,
+):
+    blender_output_file_name_list = []
+    for frame_number in frames:
+        render_image(frame_number, output_format, scene_file, subtask_id, verification_deadline)
+        blender_out_file_name = generate_full_blender_output_file_name(scene_file, frame_number, output_format.lower())
+        blender_output_file_name_list.append(blender_out_file_name)
+        parsed_files_to_compare[frame_number].append(blender_out_file_name)
+    return (blender_output_file_name_list, parsed_files_to_compare)
+
+
+def upload_blender_output_file(frames: List[int], blender_output_file_name_list: List[str], output_format: str, subtask_id: str):
+    for (frame_number, blender_output_file_name) in zip(frames, blender_output_file_name_list):
+        try_to_upload_blender_output_file(blender_output_file_name, output_format, subtask_id, frame_number)
+
+
+def ensure_enough_result_files_provided(frames: List[int], result_files_list: List[str], subtask_id: str):
+    if len(frames) > len(result_files_list):
+        raise VerificationMismatch(subtask_id=subtask_id)
+
+    elif len(frames) < len(result_files_list):
+        logger.warning(f'There is more result files than frames to render')
+
+
+def ensure_frames_have_related_files_to_compare(frames: List[int], parsed_files_to_compare: Dict[int, List[str]], subtask_id: str):
+    if len(frames) != len(parsed_files_to_compare):
+        raise VerificationMismatch(subtask_id=subtask_id)
+
+
+def compare_all_rendered_images_with_user_results_files(parsed_files_to_compare: Dict[int, List[str]], subtask_id: str):
+    ssim_list = []
+    for (result_file, blender_output_file_name) in parsed_files_to_compare.values():
+        image_1, image_2 = load_images(
+            blender_output_file_name,
+            result_file,
+            subtask_id
+        )
+        if not are_image_sizes_and_color_channels_equal(image_1, image_2):
+            log_string_message(
+                logger,
+                f'Blender verification failed. Sizes in pixels of images are not equal. SUBTASK_ID: {subtask_id}.'
+                f'VerificationResult: {VerificationResult.MISMATCH.name}'
+            )
+            raise VerificationMismatch(subtask_id=subtask_id)
+
+        ssim_list.append(compare_images(image_1, image_2, subtask_id))
+    return ssim_list

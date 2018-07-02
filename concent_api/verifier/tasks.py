@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import List
 
 from celery import shared_task
 from golem_messages import message
@@ -13,24 +14,28 @@ from core.transfer_operations import create_file_transfer_token_for_concent
 from common.decorators import log_task_errors
 from common.decorators import provides_concent_feature
 from common.logging import log_string_message
-from verifier.decorators import handle_verification_errors
-from verifier.utils import compare_images
+from verifier.decorators import handle_verification_results
 from verifier.utils import delete_source_files
 from verifier.utils import download_archives_from_storage
-from verifier.utils import load_images
-from verifier.utils import render_image
-from verifier.utils import try_to_upload_blender_output_file
 from verifier.utils import unpack_archives
 from verifier.utils import validate_downloaded_archives
-from .utils import are_image_sizes_and_color_channels_equal
-from .utils import generate_full_blender_output_file_name
+from .utils import compare_all_rendered_images_with_user_results_files
+from .utils import compare_minimum_ssim_with_results
+from .utils import ensure_enough_result_files_provided
+from .utils import ensure_frames_have_related_files_to_compare
+from .utils import get_files_list_from_archive
+from .utils import generate_verifier_storage_file_path
+from .utils import parse_result_files_with_frames
+from .utils import render_images_by_frames
+from .utils import upload_blender_output_file
+
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task
 @provides_concent_feature('verifier')
-@handle_verification_errors
+@handle_verification_results
 @log_task_errors
 def blender_verification_order(
     subtask_id: str,
@@ -43,6 +48,7 @@ def blender_verification_order(
     output_format: str,
     scene_file: str,
     verification_deadline: int,
+    frames: List[int],
 ):
     log_string_message(
         logger,
@@ -54,7 +60,8 @@ def blender_verification_order(
         f'Result_size: {result_size}.',
         f'Result_package_hash: {result_package_hash}.',
         f'Output_format: {output_format}.',
-        f'Scene_file: {scene_file}.'
+        f'Scene_file: {scene_file}.',
+        f'Frames: {frames}.'
     )
 
     assert output_format in BlenderSubtaskDefinition.OutputFormat.__members__.keys()
@@ -106,29 +113,49 @@ def blender_verification_order(
 
     unpack_archives(package_paths_to_downloaded_archive_names.values(), subtask_id)
 
-    frame_number = 1
-    render_image(frame_number, output_format, scene_file, subtask_id, verification_deadline)
+    result_files_list = get_files_list_from_archive(
+        generate_verifier_storage_file_path(package_paths_to_downloaded_archive_names[result_package_path])
+    )
+
+    ensure_enough_result_files_provided(
+        frames=frames,
+        result_files_list=result_files_list,
+        subtask_id=subtask_id,
+    )
+
+    parsed_files_to_compare = parse_result_files_with_frames(
+        frames=frames,
+        result_files_list=result_files_list,
+        output_format=output_format,
+    )
+
+    ensure_frames_have_related_files_to_compare(
+        frames=frames,
+        parsed_files_to_compare=parsed_files_to_compare,
+        subtask_id=subtask_id,
+    )
+
+    (blender_output_file_name_list, parsed_files_to_compare) = render_images_by_frames(
+        parsed_files_to_compare=parsed_files_to_compare,
+        frames=frames,
+        output_format=output_format,
+        scene_file=scene_file,
+        subtask_id=subtask_id,
+        verification_deadline=verification_deadline,
+    )
 
     delete_source_files(package_paths_to_downloaded_archive_names[source_package_path])
 
-    blender_output_file_name = generate_full_blender_output_file_name(scene_file, frame_number, output_format.lower())
-    try_to_upload_blender_output_file(blender_output_file_name, output_format, subtask_id)
-
-    image_1, image_2 = load_images(
-        blender_output_file_name,
-        package_paths_to_downloaded_archive_names[result_package_path],
-        subtask_id
+    upload_blender_output_file(
+        frames=frames,
+        blender_output_file_name_list=blender_output_file_name_list,
+        output_format=output_format,
+        subtask_id=subtask_id,
     )
-    if not are_image_sizes_and_color_channels_equal(image_1, image_2):
-        log_string_message(
-            logger,
-            f'Blender verification failed. Sizes in pixels of images are not equal. SUBTASK_ID: {subtask_id}.'
-            f'VerificationResult: {VerificationResult.MISMATCH.name}'
-        )
-        verification_result.delay(
-            subtask_id,
-            VerificationResult.MISMATCH.name,
-        )
-        return
 
-    compare_images(image_1, image_2, subtask_id)
+    ssim_list = compare_all_rendered_images_with_user_results_files(
+        parsed_files_to_compare=parsed_files_to_compare,
+        subtask_id=subtask_id,
+    )
+
+    compare_minimum_ssim_with_results(ssim_list, subtask_id)

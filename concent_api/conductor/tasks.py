@@ -1,9 +1,12 @@
 import logging
-from celery import shared_task
 from typing import List
+
+from celery import shared_task
+
 from django.db import transaction
 
 from core import tasks
+from core.validation import validate_frames
 from common.constants import ErrorCode
 from common.decorators import log_task_errors
 from common.decorators import provides_concent_feature
@@ -43,7 +46,7 @@ def blender_verification_request(
         f'Scene_file: {scene_file}',
         f'Frames: {frames}',
     )
-    assert isinstance(frames, list)
+    validate_frames(frames)
     assert isinstance(output_format, str)
     assert isinstance(verification_deadline, int)
 
@@ -138,6 +141,8 @@ def upload_acknowledged(
         verification_request.full_clean()
         verification_request.save()
 
+    frames = filter_frames_by_blender_subtask_verification(verification_request.blender_subtask_definition)
+
     blender_verification_order.delay(
         subtask_id=verification_request.subtask_id,
         source_package_path=verification_request.source_package_path,
@@ -149,6 +154,7 @@ def upload_acknowledged(
         output_format=verification_request.blender_subtask_definition.output_format,
         scene_file=verification_request.blender_subtask_definition.scene_file,
         verification_deadline=int(verification_request.verification_deadline.timestamp()),
+        frames=frames
     )
     log_string_message(
         logger,
@@ -199,3 +205,7 @@ def store_frames(
         )
         store_frame.full_clean()
         store_frame.save()
+
+
+def filter_frames_by_blender_subtask_definition(blender_subtask_definition: BlenderSubtaskDefinition):
+    return list(Frame.objects.filter(blender_subtask_definition=blender_subtask_definition).values_list('number', flat=True))

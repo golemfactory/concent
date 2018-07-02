@@ -27,6 +27,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.compute_task_def = message.ComputeTaskDef()
         self.compute_task_def['task_id'] = 'ef0dc1'
         self.compute_task_def['subtask_id'] = 'zzz523'
+        self.compute_task_def['extra_data'] = {'frames': [1]}
 
         self.report_computed_task=self._get_deserialized_report_computed_task(
             task_to_compute=self._get_deserialized_task_to_compute(
@@ -297,6 +298,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
 
     def test_blender_verification_request_task_should_create_verification_request_and_blender_subtask_definition(self):
         blender_verification_request(
+            frames=self.compute_task_def['extra_data']['frames'],
             subtask_id=self.compute_task_def['subtask_id'],
             source_package_path=self.source_package_path,
             result_package_path=self.result_package_path,
@@ -325,6 +327,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         upload_report.save()
 
         blender_verification_request(
+            frames=self.compute_task_def['extra_data']['frames'],
             subtask_id=self.compute_task_def['subtask_id'],
             source_package_path=self.source_package_path,
             result_package_path=self.result_package_path,
@@ -357,6 +360,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
 
         with mock.patch('conductor.tasks.tasks.upload_finished.delay') as mock_task:
             blender_verification_request(
+                frames=self.compute_task_def['extra_data']['frames'],
                 subtask_id=self.compute_task_def['subtask_id'],
                 source_package_path=self.source_package_path,
                 result_package_path=self.result_package_path,

@@ -141,7 +141,7 @@ def upload_acknowledged(
         verification_request.full_clean()
         verification_request.save()
 
-    frames = filter_frames_by_blender_subtask_verification(verification_request.blender_subtask_definition)
+    frames = filter_frames_by_blender_subtask_definition(verification_request.blender_subtask_definition)
 
     blender_verification_order.delay(
         subtask_id=verification_request.subtask_id,

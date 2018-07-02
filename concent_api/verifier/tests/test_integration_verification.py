@@ -69,6 +69,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 compute_task_def=self.compute_task_def
             )
         )
+        self.frames = [1]
 
         self.subtask_id = self.compute_task_def['subtask_id']
         self.scene_file = self.compute_task_def['extra_data']['scene_file']
@@ -79,16 +80,25 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.loaded_images = (self.mock_image1, self.mock_image2)
         self.mock_verification_result = mock.create_autospec(spec=verification_result, spec_set=True)
 
+    def mocked_parse_result_files_with_frames(self):
+        mocked_dict = {}
+        for frame in self.frames:
+            mocked_dict[frame] = (str(frame), str(frame))
+        return mocked_dict
+
     def test_that_blender_verification_order_should_perform_full_verification_with_match_result(self):
         with mock.patch('verifier.tasks.download_archives_from_storage', autospec=True) as mock_download_archives_from_storage,\
             mock.patch('verifier.tasks.validate_downloaded_archives', autospec=True) as mock_validate_downloaded_archives, \
             mock.patch('verifier.tasks.unpack_archives', autospec=True) as mock_unpack_archives, \
-            mock.patch('verifier.tasks.render_image', autospec=True) as mock_render_image, \
+            mock.patch('verifier.tasks.get_files_list_from_archive', autospec=True, side_effect=[self.frames]) as mock_get_files_list_from_archive, \
+            mock.patch('verifier.tasks.parse_result_files_with_frames', autospec=True, return_value=self.mocked_parse_result_files_with_frames()) as mock_parse_result_files_with_frames, \
+            mock.patch('verifier.tasks.render_images_by_frames', autospec=True) as mock_render_image, \
             mock.patch('verifier.tasks.delete_source_files', autospec=True) as mock_delete_source_files, \
-            mock.patch('verifier.tasks.try_to_upload_blender_output_file', autospec=True) as mock_try_to_upload_file, \
+            mock.patch('verifier.tasks.upload_blender_output_file', autospec=True) as mock_try_to_upload_file, \
             mock.patch('verifier.tasks.load_images', autospec=True, return_value=self.loaded_images) as mock_load_images, \
             mock.patch('verifier.tasks.are_image_sizes_and_color_channels_equal', return_value=True) as mock_are_image_sizes_and_color_channels_equal, \
-            mock.patch('verifier.tasks.compare_images', side_effect=self._compare_images_positive) as mock_compare_images:  # noqa: E125
+            mock.patch('verifier.tasks.compare_images', side_effect=self._compare_images_positive) as mock_compare_images, \
+            mock.patch('verifier.tasks.compare_minimum_ssim_with_results') as compare_minimum_ssim_with_results:  # noqa: E125
 
             self._send_blender_verification_order()
 
@@ -96,17 +106,21 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(mock_validate_downloaded_archives.call_count, 1)
         self.assertEqual(mock_unpack_archives.call_count, 1)
         mock_render_image.assert_called_once_with(
-            1,
-            self.output_format,
-            self.scene_file,
-            self.subtask_id,
-            self._get_verification_deadline_as_timestamp(
+            frames=self.frames,
+            parsed_files_to_compare=self.mocked_parse_result_files_with_frames(),
+            output_format=self.output_format,
+            scene_file=self.scene_file,
+            subtask_id=self.subtask_id,
+            verification_deadline=self._get_verification_deadline_as_timestamp(
                 get_current_utc_timestamp(),
                 self.report_computed_task.task_to_compute,
             )
         )
         self.assertEqual(mock_delete_source_files.call_count, 1)
+        self.assertEqual(mock_get_files_list_from_archive.call_count, 1)
         self.assertEqual(mock_try_to_upload_file.call_count, 1)
+        self.assertEqual(compare_minimum_ssim_with_results.call_count, 1)
+        self.assertEqual(mock_parse_result_files_with_frames.call_count, 1)
         self.assertEqual(mock_load_images.call_count, 1)
         mock_are_image_sizes_and_color_channels_equal.assert_called_once_with(*self.loaded_images)
         mock_compare_images.assert_called_once_with(self.mock_image1, self.mock_image2, self.subtask_id)
@@ -119,12 +133,15 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         with mock.patch('verifier.tasks.download_archives_from_storage', autospec=True) as mock_download_archives_from_storage, \
             mock.patch('verifier.tasks.validate_downloaded_archives', autospec=True) as mock_validate_downloaded_archives, \
             mock.patch('verifier.tasks.unpack_archives', autospec=True) as mock_unpack_archives, \
-            mock.patch('verifier.tasks.render_image', autospec=True) as mock_render_image, \
+            mock.patch('verifier.tasks.get_files_list_from_archive', autospec=True, side_effect=[self.frames]) as mock_get_files_list_from_archive, \
+            mock.patch('verifier.tasks.parse_result_files_with_frames', autospec=True, return_value=self.mocked_parse_result_files_with_frames()) as mock_parse_result_files_with_frames, \
+            mock.patch('verifier.tasks.render_images_by_frames', autospec=True) as mock_render_image, \
             mock.patch('verifier.tasks.delete_source_files', autospec=True) as mock_delete_source_files, \
-            mock.patch('verifier.tasks.try_to_upload_blender_output_file', autospec=True) as mock_try_to_upload_file, \
+            mock.patch('verifier.tasks.upload_blender_output_file', autospec=True) as mock_try_to_upload_file, \
             mock.patch('verifier.tasks.load_images', autospec=True, return_value=self.loaded_images) as mock_load_images, \
             mock.patch('verifier.tasks.are_image_sizes_and_color_channels_equal', return_value=True) as mock_are_image_sizes_and_color_channels_equal, \
-            mock.patch('verifier.tasks.compare_images', side_effect=self._compare_images_negative) as mock_compare_images:  # noqa: E125
+            mock.patch('verifier.tasks.compare_images', side_effect=self._compare_images_negative) as mock_compare_images, \
+            mock.patch('verifier.tasks.compare_minimum_ssim_with_results') as compare_minimum_ssim_with_results:  # noqa: E125
 
             self._send_blender_verification_order()
 
@@ -132,18 +149,23 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(mock_validate_downloaded_archives.call_count, 1)
         self.assertEqual(mock_unpack_archives.call_count, 1)
         mock_render_image.assert_called_once_with(
-            1,
-            self.output_format,
-            self.scene_file,
-            self.subtask_id,
-            self._get_verification_deadline_as_timestamp(
+            frames=self.frames,
+            parsed_files_to_compare=self.mocked_parse_result_files_with_frames(),
+            output_format=self.output_format,
+            scene_file=self.scene_file,
+            subtask_id=self.subtask_id,
+            verification_deadline=self._get_verification_deadline_as_timestamp(
                 get_current_utc_timestamp(),
                 self.report_computed_task.task_to_compute,
             )
         )
         self.assertEqual(mock_delete_source_files.call_count, 1)
+        self.assertEqual(mock_parse_result_files_with_frames.call_count, 1)
         self.assertEqual(mock_try_to_upload_file.call_count, 1)
         self.assertEqual(mock_load_images.call_count, 1)
+        self.assertEqual(mock_get_files_list_from_archive.call_count, 1)
+        self.assertEqual(compare_minimum_ssim_with_results.call_count, 1)
+        self.assertEqual(mock_are_image_sizes_and_color_channels_equal.call_count, 1)
         mock_are_image_sizes_and_color_channels_equal.assert_called_once_with(*self.loaded_images)
         mock_compare_images.assert_called_once_with(self.mock_image1, self.mock_image2, self.subtask_id)
         self.mock_verification_result.assert_called_once_with(
@@ -161,7 +183,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                     self.compute_task_def['subtask_id']
                 )
             ) as mock_download_archives_from_storage, \
-            mock.patch('core.tasks.verification_result.delay', autospec=True) as mock_verification_result:  # noqa: E125
+            mock.patch('core.tasks.verification_result.delay', autospec=True) as mock_verification_result:  # noqa: E129
 
             self._send_blender_verification_order()
 
@@ -220,9 +242,11 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         with mock.patch('verifier.tasks.download_archives_from_storage', autospec=True) as mock_download_archives_from_storage, \
             mock.patch('verifier.tasks.validate_downloaded_archives', autospec=True) as mock_validate_downloaded_archives, \
             mock.patch('verifier.tasks.unpack_archives', autospec=True) as mock_unpack_archives, \
+            mock.patch('verifier.tasks.get_files_list_from_archive', autospec=True, side_effect=[self.frames]) as mock_get_files_list_from_archive, \
+            mock.patch('verifier.tasks.parse_result_files_with_frames', autospec=True, return_value=self.mocked_parse_result_files_with_frames()) as mock_parse_result_files_with_frames, \
             mock.patch('core.tasks.verification_result.delay', autospec=True) as mock_verification_result, \
             mock.patch(
-                'verifier.tasks.render_image',
+                'verifier.tasks.render_images_by_frames',
                 side_effect=VerificationError(
                     'error',
                     ErrorCode.VERIFIER_RUNNING_BLENDER_FAILED,
@@ -234,6 +258,8 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(mock_download_archives_from_storage.call_count, 1)
         self.assertEqual(mock_validate_downloaded_archives.call_count, 1)
+        self.assertEqual(mock_get_files_list_from_archive.call_count, 1)
+        self.assertEqual(mock_parse_result_files_with_frames.call_count, 1)
         self.assertEqual(mock_unpack_archives.call_count, 1)
         mock_verification_result.assert_called_once_with(
             self.subtask_id,
@@ -246,9 +272,11 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         with mock.patch('verifier.tasks.download_archives_from_storage', autospec=True) as mock_download_archives_from_storage, \
             mock.patch('verifier.tasks.validate_downloaded_archives', autospec=True) as mock_validate_downloaded_archives, \
             mock.patch('verifier.tasks.unpack_archives', autospec=True) as mock_unpack_archives, \
-            mock.patch('verifier.tasks.render_image', autospec=True) as mock_render_image, \
+            mock.patch('verifier.tasks.get_files_list_from_archive', autospec=True, side_effect=[self.frames]) as mock_get_files_list_from_archive, \
+            mock.patch('verifier.tasks.parse_result_files_with_frames', autospec=True, return_value=self.mocked_parse_result_files_with_frames()) as mock_parse_result_files_with_frames, \
+            mock.patch('verifier.tasks.render_images_by_frames', autospec=True) as mock_render_image, \
             mock.patch('verifier.tasks.delete_source_files', autospec=True) as mock_delete_source_files, \
-            mock.patch('verifier.tasks.try_to_upload_blender_output_file', autospec=True) as mock_try_to_upload_file, \
+            mock.patch('verifier.tasks.upload_blender_output_file', autospec=True) as mock_try_to_upload_file, \
             mock.patch(
                 'verifier.tasks.load_images',
                 autospec=True,
@@ -263,14 +291,17 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             self._send_blender_verification_order()
 
         self.assertEqual(mock_download_archives_from_storage.call_count, 1)
+        self.assertEqual(mock_parse_result_files_with_frames.call_count, 1)
         self.assertEqual(mock_validate_downloaded_archives.call_count, 1)
+        self.assertEqual(mock_get_files_list_from_archive.call_count, 1)
         self.assertEqual(mock_unpack_archives.call_count, 1)
         mock_render_image.assert_called_once_with(
-            1,
-            self.output_format,
-            self.scene_file,
-            self.subtask_id,
-            self._get_verification_deadline_as_timestamp(
+            frames=self.frames,
+            parsed_files_to_compare=self.mocked_parse_result_files_with_frames(),
+            output_format=self.output_format,
+            scene_file=self.scene_file,
+            subtask_id=self.subtask_id,
+            verification_deadline=self._get_verification_deadline_as_timestamp(
                 get_current_utc_timestamp(),
                 self.report_computed_task.task_to_compute,
             )
@@ -288,9 +319,11 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         with mock.patch('verifier.tasks.download_archives_from_storage', autospec=True) as mock_download_archives_from_storage, \
             mock.patch('verifier.tasks.validate_downloaded_archives', autospec=True) as mock_validate_downloaded_archives, \
             mock.patch('verifier.tasks.unpack_archives', autospec=True) as mock_unpack_archives, \
-            mock.patch('verifier.tasks.render_image', autospec=True) as mock_render_image, \
+            mock.patch('verifier.tasks.get_files_list_from_archive', autospec=True, side_effect=[self.frames]) as mock_get_files_list_from_archive, \
+            mock.patch('verifier.tasks.parse_result_files_with_frames', autospec=True, return_value=self.mocked_parse_result_files_with_frames()) as mock_parse_result_files_with_frames, \
+            mock.patch('verifier.tasks.render_images_by_frames', autospec=True) as mock_render_image, \
             mock.patch('verifier.tasks.delete_source_files', autospec=True) as mock_delete_source_files, \
-            mock.patch('verifier.tasks.try_to_upload_blender_output_file', autospec=True) as mock_try_to_upload_file, \
+            mock.patch('verifier.tasks.upload_blender_output_file', autospec=True) as mock_try_to_upload_file, \
             mock.patch('verifier.tasks.load_images', autospec=True, return_value=self.loaded_images) as mock_load_images, \
             mock.patch('verifier.tasks.are_image_sizes_and_color_channels_equal', return_value=True) as mock_are_image_sizes_and_color_channels_equal, \
             mock.patch(
@@ -307,14 +340,17 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             self._send_blender_verification_order()
 
         self.assertEqual(mock_download_archives_from_storage.call_count, 1)
+        self.assertEqual(mock_parse_result_files_with_frames.call_count, 1)
         self.assertEqual(mock_validate_downloaded_archives.call_count, 1)
+        self.assertEqual(mock_get_files_list_from_archive.call_count, 1)
         self.assertEqual(mock_unpack_archives.call_count, 1)
         mock_render_image.assert_called_once_with(
-            1,
-            self.output_format,
-            self.scene_file,
-            self.subtask_id,
-            self._get_verification_deadline_as_timestamp(
+            frames=self.frames,
+            parsed_files_to_compare=self.mocked_parse_result_files_with_frames(),
+            output_format=self.output_format,
+            scene_file=self.scene_file,
+            subtask_id=self.subtask_id,
+            verification_deadline=self._get_verification_deadline_as_timestamp(
                 get_current_utc_timestamp(),
                 self.report_computed_task.task_to_compute,
             )
@@ -359,4 +395,5 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 get_current_utc_timestamp(),
                 self.report_computed_task.task_to_compute,
             ),
+            frames=self.frames,
         )

@@ -1,7 +1,6 @@
 from datetime import timedelta
 
 import mock
-from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse
 from freezegun import freeze_time
@@ -32,7 +31,9 @@ from common.testing_helpers import generate_ecc_key_pair
     CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
     MINIMUM_UPLOAD_RATE=1,  # bits per second
     DOWNLOAD_LEADIN_TIME=10,  # seconds
-    ADDITIONAL_VERIFICATION_CALL_TIME=10  # seconds
+    ADDITIONAL_VERIFICATION_CALL_TIME=10,  # seconds
+    ADDITIONAL_VERIFICATION_TIME_MULTIPLIER=1,
+    BLENDER_THREADS=1,
 )
 class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
     def setUp(self):
@@ -64,8 +65,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
-            next_deadline=self._parse_iso_date_to_timestamp(
-                subtask_results_verify_time_str) + settings.ADDITIONAL_VERIFICATION_CALL_TIME,
+            next_deadline=self._parse_iso_date_to_timestamp(subtask_results_verify_time_str) + (self.compute_task_def['deadline'] - self.task_to_compute.timestamp),
             task_to_compute=self.report_computed_task.task_to_compute,
             report_computed_task=self.report_computed_task,
         )
@@ -175,7 +175,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         # given
         (serialized_subtask_results_verify,
          subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify(
-            time_offset=settings.ADDITIONAL_VERIFICATION_CALL_TIME + 1)
+            time_offset=(self.compute_task_def['deadline'] - self.task_to_compute.timestamp) + 1)
 
         # when
         with freeze_time(subtask_results_verify_time_str):
@@ -381,22 +381,23 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 provider_public_key=self.PROVIDER_PUBLIC_KEY,
                 requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
                 state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
-                next_deadline=get_current_utc_timestamp() + settings.ADDITIONAL_VERIFICATION_CALL_TIME,
+                next_deadline=get_current_utc_timestamp() + (self.compute_task_def['deadline'] - self.task_to_compute.timestamp),
                 task_to_compute=self.report_computed_task.task_to_compute,
                 report_computed_task=self.report_computed_task,
             )
             self._assert_stored_message_counter_increased(2)
 
-            serialized_subtask_results_verify = self._get_serialized_subtask_results_verify(
-                subtask_results_verify=self._get_deserialized_subtask_results_verify(
-                    subtask_results_rejected=self._get_deserialized_subtask_results_rejected(
-                        reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-                        report_computed_task=self.report_computed_task,
-                    )
-                )
+            subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
+                reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
+                report_computed_task=self.report_computed_task,
             )
 
         with freeze_time(parse_timestamp_to_utc_datetime(subtask.next_deadline.timestamp() + 1)):
+            serialized_subtask_results_verify = self._get_serialized_subtask_results_verify(
+                subtask_results_verify=self._get_deserialized_subtask_results_verify(
+                    subtask_results_rejected=subtask_results_rejected
+                )
+            )
             response = self.client.post(
                 reverse('core:send'),
                 data=serialized_subtask_results_verify,
@@ -488,7 +489,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                         message_type=message.concents.AckSubtaskResultsVerify,
                     )
 
-        too_late = subtask_results_verify_date_time + timedelta(seconds=settings.ADDITIONAL_VERIFICATION_CALL_TIME)
+        too_late = subtask_results_verify_date_time + timedelta((self.compute_task_def['deadline'] - self.task_to_compute.timestamp))
         with freeze_time(too_late):
             response_2 = self.client.post(
                 reverse('core:receive_out_of_band'),
@@ -547,9 +548,12 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
     def _create_serialized_subtask_results_verify(
         self,
         reason_of_rejection=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-        time_offset=settings.ADDITIONAL_VERIFICATION_CALL_TIME / 2,
+        time_offset=None,
         key=None,
     ):
+        if time_offset is None:
+            time_offset = (self.compute_task_def['deadline'] - self.task_to_compute.timestamp)
+
         subtask_result_rejected_time_str = "2018-04-01 10:30:00"
         subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
             reason=reason_of_rejection,
@@ -573,7 +577,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
 
     def _create_report_computed_task(self):
         time_str = "2018-04-01 10:00:00"
-        compute_task_def = self._get_deserialized_compute_task_def(
+        self.compute_task_def = self._get_deserialized_compute_task_def(
             deadline=self._add_time_offset_to_date(time_str, 3600),
             task_id=self.task_id,
             subtask_id=self.subtask_id,
@@ -589,14 +593,14 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 'total_tasks': 8
             }
         )
-        task_to_compute = self._get_deserialized_task_to_compute(
+        self.task_to_compute = self._get_deserialized_task_to_compute(
             timestamp=time_str,
-            compute_task_def=compute_task_def,
+            compute_task_def=self.compute_task_def,
         )
 
         report_computed_task = self._get_deserialized_report_computed_task(
             timestamp="2018-04-01 10:01:00",
             subtask_id=self.subtask_id,
-            task_to_compute=task_to_compute
+            task_to_compute=self.task_to_compute
         )
         return report_computed_task

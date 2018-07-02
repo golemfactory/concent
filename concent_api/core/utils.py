@@ -70,6 +70,23 @@ def calculate_subtask_verification_time(report_computed_task: message.ReportComp
         return int(subtask_verification_time(report_computed_task).total_seconds())
 
 
+def calculate_additional_verification_call_time(
+    subtask_results_rejected_timestamp: int,
+    task_to_compute_deadline: int,
+    task_to_compute_timestamp: int,
+) -> int:
+    """
+    Calculates additional verification deadline using:
+    * SubtaskResultRejected timestamp,
+    * TaskToCompute deadline,
+    * TaskToCompute timestamp.
+    """
+    return subtask_results_rejected_timestamp + int(
+        (task_to_compute_deadline - task_to_compute_timestamp) *
+        (settings.ADDITIONAL_VERIFICATION_TIME_MULTIPLIER / settings.BLENDER_THREADS)
+    )
+
+
 def hex_to_bytes_convert(client_public_key: str):
     if not isinstance(client_public_key, str):
         raise Http400(

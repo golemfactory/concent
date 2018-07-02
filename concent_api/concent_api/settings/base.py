@@ -262,9 +262,6 @@ MINIMUM_UPLOAD_RATE = constants.DEFAULT_UPLOAD_RATE
 # A global constant defining the download timeout margin independent from the size of the result.
 DOWNLOAD_LEADIN_TIME = int(constants.DOWNLOAD_LEADIN_TIME.total_seconds())
 
-# A global constant defining the length of the time window within which a provider can ask concent for verifying subtask results
-ADDITIONAL_VERIFICATION_CALL_TIME = 4 * 3600  # 4 hours
-
 # A global constant defining the lenght of the time window within which a requestor must pay
 PAYMENT_DUE_TIME = int(constants.PDT.total_seconds())
 
@@ -301,6 +298,10 @@ CUSTOM_PROTOCOL_TIMES = False
 # failed verification (i.e. the images are considered different).
 VERIFIER_MIN_SSIM = 0.94
 
+# A global constant defining how many times ADDITIONAL_VERIFICATION_TIME is multiplied to provide enought time for
+# completing verification.
+ADDITIONAL_VERIFICATION_TIME_MULTIPLIER = 2.0
+
 # Which components of this Django application should be enabled in this particular server instance.
 # The application is basically a bunch of services with totally different responsibilites that share a lot of code.
 # In a typical setup each instance has only one or two features enabled. Some of them provide public APIs, others are
@@ -319,3 +320,6 @@ CONCENT_FEATURES = []  # type: ignore
 
 # Temporary setting for enabling mock verification - the result of verification depends on subtask_id
 MOCK_VERIFICATION_ENABLED = True
+
+# Verifier setting defining number of threads used by Blender
+BLENDER_THREADS = 1

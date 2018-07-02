@@ -6,7 +6,7 @@ from concent_api.system_check import create_error_25_atomic_requests_not_set_for
 from concent_api.system_check import check_atomic_requests
 
 
-class TestStorageClusterCertificatePathCheck(TestCase):
+class TestAtomicRequestsCheck(TestCase):
 
     @override_settings(
         DATABASES=''

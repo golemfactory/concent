@@ -27,6 +27,9 @@ import requests
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
+CALCULATED_VERIFICATION_TIME = 5  # seconds
+
+
 #  TODO NEGATIVE TEST CASES
 
 
@@ -34,7 +37,6 @@ def get_subtask_results_verify(
     task_id,
     subtask_id,
     current_time,
-    cluster_consts,
     reason,
     report_computed_task_size,
     report_computed_task_package_hash,
@@ -47,7 +49,7 @@ def get_subtask_results_verify(
     task_to_compute = create_signed_task_to_compute(
         task_id=task_id,
         subtask_id=subtask_id,
-        deadline=current_time + cluster_consts.additional_verification_call_time,
+        deadline=current_time + CALCULATED_VERIFICATION_TIME,
         price=price if price is not None else 1,
         size=task_to_compute_size,
         package_hash=task_to_compute_package_hash,
@@ -66,7 +68,7 @@ def get_subtask_results_verify(
         report_computed_task.get_short_hash()
     )
 
-    with freeze_time(timestamp_to_isoformat(current_time - cluster_consts.additional_verification_call_time / 2)):
+    with freeze_time(timestamp_to_isoformat(current_time - 1)):
         subtask_results_rejected = message.tasks.SubtaskResultsRejected(
             reason=reason,
             report_computed_task=report_computed_task,
@@ -84,7 +86,7 @@ def get_subtask_results_verify(
 
 
 @count_fails
-def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):
+def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
     (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'existing_file')
 
@@ -108,7 +110,6 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):
             task_id,
             subtask_id,
             current_time,
-            cluster_consts,
             reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
             report_computed_task_size=result_file_size,
             report_computed_task_package_hash=result_file_checksum,
@@ -155,8 +156,8 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):
         source_file_size
     ))
 
-    #  Adding 5 seconds to time sleep makes us sure that subtask is after deadline
-    time.sleep(cluster_consts.additional_verification_call_time + 5)
+    # Adding 10 seconds to time sleep makes us sure that subtask is after deadline.
+    time.sleep(CALCULATED_VERIFICATION_TIME * (ADDITIONAL_VERIFICATION_TIME_MULTIPLIER / BLENDER_THREADS))
 
     api_request(
         cluster_url,
@@ -188,7 +189,7 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):
 
 
 @count_fails
-def test_case_2_test_for_resources_failure_reason(cluster_consts, cluster_url, test_id):
+def test_case_2_test_for_resources_failure_reason(cluster_consts, cluster_url, test_id):  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
     (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'existing_file')
 
@@ -205,7 +206,6 @@ def test_case_2_test_for_resources_failure_reason(cluster_consts, cluster_url, t
             task_id,
             subtask_id,
             current_time,
-            cluster_consts,
             reason=message.tasks.SubtaskResultsRejected.REASON.ResourcesFailure,
             report_computed_task_size=file_size,
             report_computed_task_package_hash=file_check_sum,
@@ -222,7 +222,7 @@ def test_case_2_test_for_resources_failure_reason(cluster_consts, cluster_url, t
 
 
 @count_fails
-def test_case_3_test_for_invalid_time(cluster_consts, cluster_url, test_id):
+def test_case_3_test_for_invalid_time(cluster_consts, cluster_url, test_id):  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
     (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'existing_file')
 
@@ -238,8 +238,7 @@ def test_case_3_test_for_invalid_time(cluster_consts, cluster_url, test_id):
         get_subtask_results_verify(
             task_id,
             subtask_id,
-            current_time - cluster_consts.additional_verification_call_time,
-            cluster_consts,
+            current_time - (CALCULATED_VERIFICATION_TIME * (ADDITIONAL_VERIFICATION_TIME_MULTIPLIER / BLENDER_THREADS)),
             reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
             report_computed_task_size=file_size,
             report_computed_task_package_hash=file_check_sum,
@@ -256,7 +255,7 @@ def test_case_3_test_for_invalid_time(cluster_consts, cluster_url, test_id):
 
 
 @count_fails
-def test_case_4_test_for_duplicated_request(cluster_consts, cluster_url, test_id):
+def test_case_4_test_for_duplicated_request(cluster_consts, cluster_url, test_id):  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
     (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'existing_file')
 
@@ -276,7 +275,6 @@ def test_case_4_test_for_duplicated_request(cluster_consts, cluster_url, test_id
             task_id,
             subtask_id,
             current_time,
-            cluster_consts,
             reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
             report_computed_task_size=result_file_size_1,
             report_computed_task_package_hash=result_file_check_sum_1,
@@ -300,7 +298,6 @@ def test_case_4_test_for_duplicated_request(cluster_consts, cluster_url, test_id
             task_id,
             subtask_id,
             current_time,
-            cluster_consts,
             reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
             report_computed_task_size=result_file_size_1,
             report_computed_task_package_hash=result_file_check_sum_1,
@@ -317,7 +314,7 @@ def test_case_4_test_for_duplicated_request(cluster_consts, cluster_url, test_id
 
 
 @count_fails
-def test_case_5_test_requestor_status_account_negative(cluster_consts, cluster_url, test_id):
+def test_case_5_test_requestor_status_account_negative(cluster_consts, cluster_url, test_id):  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
     (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'existing_file')
 
@@ -337,7 +334,6 @@ def test_case_5_test_requestor_status_account_negative(cluster_consts, cluster_u
             task_id,
             subtask_id,
             current_time,
-            cluster_consts,
             reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
             report_computed_task_size=result_file_size_1,
             report_computed_task_package_hash=result_file_check_sum_1,
@@ -360,6 +356,8 @@ if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
         from concent_api.settings import STORAGE_CLUSTER_ADDRESS
+        from concent_api.settings import ADDITIONAL_VERIFICATION_TIME_MULTIPLIER
+        from concent_api.settings import BLENDER_THREADS
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file=sys.stderr)

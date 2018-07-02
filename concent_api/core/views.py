@@ -83,6 +83,5 @@ def protocol_constants(_request):
             'minimum_upload_rate': settings.MINIMUM_UPLOAD_RATE,
             'download_leadin_time': settings.DOWNLOAD_LEADIN_TIME,
             'payment_due_time': settings.PAYMENT_DUE_TIME,
-            'additional_verification_call_time': settings.ADDITIONAL_VERIFICATION_CALL_TIME,
         }
     )

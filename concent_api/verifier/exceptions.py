@@ -14,3 +14,13 @@ class VerificationError(ConcentBaseException):
         super().__init__(error_message, error_code)
         assert isinstance(subtask_id, str)
         self.subtask_id = subtask_id
+
+
+class VerificationMismatch(Exception):
+    def __init__(
+        self,
+        subtask_id: str,
+    ) -> None:
+        super().__init__()
+        assert isinstance(subtask_id, str)
+        self.subtask_id = subtask_id

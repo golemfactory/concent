@@ -224,6 +224,38 @@ def create_error_35_additional_verification_time_multiplier_has_wrong_type(addit
     )
 
 
+def create_error_36_storage_cluster_address_does_not_end_with_slash():
+    return Error(
+        "STORAGE_CLUSTER_ADDRESS must end with '/'",
+        hint=f"STORAGE_CLUSTER_ADDRESS must end with '/'.",
+        id="concent.E036",
+    )
+
+
+def create_error_37_storage_server_internal_address_does_not_end_with_slash():
+    return Error(
+        "STORAGE_SERVER_INTERNAL_ADDRESS must end with '/'",
+        hint=f"STORAGE_SERVER_INTERNAL_ADDRESS must end with '/'.",
+        id="concent.E037",
+    )
+
+
+def create_error_38_storage_cluster_address_is_not_valid_url(error):
+    return Error(
+        'STORAGE_CLUSTER_ADDRESS is not a valid URL',
+        hint=f'{error}',
+        id='concent.E038',
+    )
+
+
+def create_error_39_storage_server_internal_address_is_not_set():
+    return Error(
+        'STORAGE_CLUSTER_ADDRESS setting is not defined',
+        hint='Set STORAGE_CLUSTER_ADDRESS in your local_settings.py to the address of a Concent storage cluster that offers the /upload/ and /download/ endpoints.',
+        id='concent.E039',
+    )
+
+
 @register()
 def check_settings_concent_features(app_configs, **kwargs):  # pylint: disable=unused-argument
 
@@ -261,39 +293,35 @@ def check_settings_concent_features(app_configs, **kwargs):  # pylint: disable=u
 
 
 @register()
-def check_settings_storage_cluster_address(app_configs, **kwargs):  # pylint: disable=unused-argument
+def check_settings_storage_cluster_address(app_configs=None, **kwargs):  # pylint: disable=unused-argument
     if not hasattr(settings, 'STORAGE_CLUSTER_ADDRESS') and 'gatekeeper' in settings.CONCENT_FEATURES:
-        return [Error(
-            'STORAGE_CLUSTER_ADDRESS setting is not defined',
-            hint = 'Set STORAGE_CLUSTER_ADDRESS in your local_settings.py to the address of a Concent storage cluster that offers the /upload/ and /download/ endpoints.',
-            id   = 'concent.E010',
-        )]
+        return [create_error_39_storage_server_internal_address_is_not_set()]
 
     if hasattr(settings, 'STORAGE_CLUSTER_ADDRESS'):
-        url_validator = URLValidator(schemes = ['http', 'https'])
+        url_validator = URLValidator(schemes=['http', 'https'])
         try:
             url_validator(settings.STORAGE_CLUSTER_ADDRESS)
         except ValidationError as error:
-            return [Error(
-                'STORAGE_CLUSTER_ADDRESS is not a valid URL',
-                hint = '{}'.format(error),
-                id   = 'concent.E011',
-            )]
+            return [create_error_38_storage_cluster_address_is_not_valid_url(error)]
+        if not settings.STORAGE_CLUSTER_ADDRESS.endswith('/'):
+            return [create_error_36_storage_cluster_address_does_not_end_with_slash()]
 
     return []
 
 
 @register()
-def check_settings_storage_server_internal_address(app_configs = None, **kwargs):  # pylint: disable=unused-argument
+def check_settings_storage_server_internal_address(app_configs=None, **kwargs):  # pylint: disable=unused-argument
     if not hasattr(settings, 'STORAGE_SERVER_INTERNAL_ADDRESS') and 'verifier' in settings.CONCENT_FEATURES:
         return [create_error_26_storage_server_internal_address_is_not_set()]
 
     if hasattr(settings, 'STORAGE_SERVER_INTERNAL_ADDRESS'):
-        url_validator = URLValidator(schemes = ['http', 'https'])
+        url_validator = URLValidator(schemes=['http', 'https'])
         try:
             url_validator(settings.STORAGE_SERVER_INTERNAL_ADDRESS)
         except ValidationError as error:
             return [create_error_27_storage_server_internal_address_is_not_valid_url(error)]
+        if not settings.STORAGE_SERVER_INTERNAL_ADDRESS.endswith('/'):
+            return [create_error_37_storage_server_internal_address_does_not_end_with_slash()]
 
     return []
 

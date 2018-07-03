@@ -42,6 +42,7 @@ def blender_verification_order(
     result_package_hash: str,
     output_format: str,
     scene_file: str,
+    verification_deadline: int,
 ):
     log_string_message(
         logger,
@@ -61,6 +62,7 @@ def blender_verification_order(
     assert source_package_hash != result_package_hash
     assert (source_size and source_package_hash and source_package_path) and (result_size and result_package_hash and result_package_path)
     assert isinstance(subtask_id, str)
+    assert isinstance(verification_deadline, int)
 
     # this is a temporary hack - dummy verification which's result depends on subtask_id only
 
@@ -105,7 +107,7 @@ def blender_verification_order(
     unpack_archives(package_paths_to_downloaded_archive_names.values(), subtask_id)
 
     frame_number = 1
-    render_image(frame_number, output_format, scene_file, subtask_id)
+    render_image(frame_number, output_format, scene_file, subtask_id, verification_deadline)
 
     delete_source_files(package_paths_to_downloaded_archive_names[source_package_path])
 

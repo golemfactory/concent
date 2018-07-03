@@ -11,7 +11,7 @@ from common.helpers import get_current_utc_timestamp
 from ..exceptions import VerificationRequestAlreadyAcknowledgedError
 
 
-class CoreTaskTestCase(ConcentIntegrationTestCase):
+class ConductorTaskTestCase(ConcentIntegrationTestCase):
 
     multi_db = True
 
@@ -30,6 +30,10 @@ class CoreTaskTestCase(ConcentIntegrationTestCase):
             subtask_id=self.report_computed_task.subtask_id,
             source_package_path=self.source_package_path,
             result_package_path=self.result_package_path,
+            verification_deadline=self._get_verification_deadline_as_datetime(
+                get_current_utc_timestamp(),
+                self.report_computed_task.task_to_compute,
+            )
         )
         self.verification_request.full_clean()
         self.verification_request.save()
@@ -76,6 +80,10 @@ class CoreTaskTestCase(ConcentIntegrationTestCase):
             result_package_hash=self.report_computed_task.package_hash,
             output_format=self.verification_request.blender_subtask_definition.output_format,
             scene_file=self.verification_request.blender_subtask_definition.scene_file,
+            verification_deadline=self._get_verification_deadline_as_timestamp(
+                get_current_utc_timestamp(),
+                self.report_computed_task.task_to_compute,
+            ),
         )
 
     @patch("conductor.tasks.log_error_message")

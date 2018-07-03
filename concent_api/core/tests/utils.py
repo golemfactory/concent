@@ -27,9 +27,11 @@ from core.models            import Client
 from core.models            import PendingResponse
 from core.models            import StoredMessage
 from core.models            import Subtask
+from core.utils import calculate_additional_verification_call_time
 
 from common.helpers          import sign_message
 from common.helpers          import get_current_utc_timestamp
+from common.helpers          import parse_timestamp_to_utc_datetime
 from common.testing_helpers  import generate_ecc_key_pair
 from common.testing_helpers  import generate_priv_and_pub_eth_account_key
 
@@ -908,3 +910,26 @@ class ConcentIntegrationTestCase(TestCase):
         elif desired_behaviour == 'exception':
             mocked_cv2.imread.side_effect = MemoryError('error')
         return mocked_cv2
+
+    def _get_verification_deadline_as_datetime(
+        self,
+        subtask_results_rejected_timestamp: int,
+        task_to_compute: message.tasks.TaskToCompute,
+    ) -> datetime.datetime:
+        return parse_timestamp_to_utc_datetime(
+            self._get_verification_deadline_as_timestamp(
+                subtask_results_rejected_timestamp,
+                task_to_compute,
+            )
+        )
+
+    @staticmethod
+    def _get_verification_deadline_as_timestamp(
+        subtask_results_rejected_timestamp: int,
+        task_to_compute: message.tasks.TaskToCompute,
+    ) -> int:
+        return calculate_additional_verification_call_time(
+            subtask_results_rejected_timestamp,
+            task_to_compute.compute_task_def['deadline'],
+            task_to_compute.timestamp,
+        )

@@ -31,7 +31,6 @@ from common.testing_helpers import generate_ecc_key_pair
     CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
     MINIMUM_UPLOAD_RATE=1,  # bits per second
     DOWNLOAD_LEADIN_TIME=10,  # seconds
-    ADDITIONAL_VERIFICATION_CALL_TIME=10,  # seconds
     ADDITIONAL_VERIFICATION_TIME_MULTIPLIER=1,
     BLENDER_THREADS=1,
 )
@@ -40,6 +39,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         super().setUp()
         self.task_id = "task1"
         self.subtask_id = "subtask1"
+        self.subtask_result_rejected_time_str = "2018-04-01 10:30:00"
         self.source_package_path = get_storage_source_file_path(
             subtask_id=self.subtask_id,
             task_id=self.task_id,
@@ -335,6 +335,10 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             result_package_path=self.result_package_path,
             output_format=self.report_computed_task.task_to_compute.compute_task_def['extra_data']['output_format'],
             scene_file=self.report_computed_task.task_to_compute.compute_task_def['extra_data']['scene_file'],
+            verification_deadline=self._get_verification_deadline_as_timestamp(
+                self._parse_iso_date_to_timestamp(self.subtask_result_rejected_time_str),
+                self.task_to_compute,
+            )
         )
 
         # then
@@ -554,15 +558,14 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         if time_offset is None:
             time_offset = (self.compute_task_def['deadline'] - self.task_to_compute.timestamp)
 
-        subtask_result_rejected_time_str = "2018-04-01 10:30:00"
         subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
             reason=reason_of_rejection,
-            timestamp=subtask_result_rejected_time_str,
+            timestamp=self.subtask_result_rejected_time_str,
             report_computed_task=self.report_computed_task,
             sign_with_private_key=key,
         )
         subtask_results_verify_time_str = self._add_time_offset_to_date(
-            subtask_result_rejected_time_str,
+            self.subtask_result_rejected_time_str,
             time_offset
         )
 

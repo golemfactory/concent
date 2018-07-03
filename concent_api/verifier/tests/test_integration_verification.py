@@ -3,14 +3,15 @@ import mock
 from django.test import override_settings
 from numpy.core.multiarray import ndarray
 
+from common.constants import ErrorCode
+from common.helpers import get_current_utc_timestamp
+from common.helpers import get_storage_result_file_path
+from common.helpers import get_storage_source_file_path
+from common.testing_helpers import generate_ecc_key_pair
 from conductor.models import BlenderSubtaskDefinition
 from core.constants import VerificationResult
 from core.tasks import verification_result
 from core.tests.utils import ConcentIntegrationTestCase
-from common.constants import ErrorCode
-from common.helpers import get_storage_result_file_path
-from common.helpers import get_storage_source_file_path
-from common.testing_helpers import generate_ecc_key_pair
 from verifier.exceptions import VerificationError
 from ..tasks import blender_verification_order
 
@@ -94,7 +95,16 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(mock_download_archives_from_storage.call_count, 1)
         self.assertEqual(mock_validate_downloaded_archives.call_count, 1)
         self.assertEqual(mock_unpack_archives.call_count, 1)
-        mock_render_image.assert_called_once_with(1, self.output_format, self.scene_file, self.subtask_id)
+        mock_render_image.assert_called_once_with(
+            1,
+            self.output_format,
+            self.scene_file,
+            self.subtask_id,
+            self._get_verification_deadline_as_timestamp(
+                get_current_utc_timestamp(),
+                self.report_computed_task.task_to_compute,
+            )
+        )
         self.assertEqual(mock_delete_source_files.call_count, 1)
         self.assertEqual(mock_try_to_upload_file.call_count, 1)
         self.assertEqual(mock_load_images.call_count, 1)
@@ -121,7 +131,16 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(mock_download_archives_from_storage.call_count, 1)
         self.assertEqual(mock_validate_downloaded_archives.call_count, 1)
         self.assertEqual(mock_unpack_archives.call_count, 1)
-        mock_render_image.assert_called_once_with(1, self.output_format, self.scene_file, self.subtask_id)
+        mock_render_image.assert_called_once_with(
+            1,
+            self.output_format,
+            self.scene_file,
+            self.subtask_id,
+            self._get_verification_deadline_as_timestamp(
+                get_current_utc_timestamp(),
+                self.report_computed_task.task_to_compute,
+            )
+        )
         self.assertEqual(mock_delete_source_files.call_count, 1)
         self.assertEqual(mock_try_to_upload_file.call_count, 1)
         self.assertEqual(mock_load_images.call_count, 1)
@@ -246,7 +265,16 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(mock_download_archives_from_storage.call_count, 1)
         self.assertEqual(mock_validate_downloaded_archives.call_count, 1)
         self.assertEqual(mock_unpack_archives.call_count, 1)
-        mock_render_image.assert_called_once_with(1, self.output_format, self.scene_file, self.subtask_id)
+        mock_render_image.assert_called_once_with(
+            1,
+            self.output_format,
+            self.scene_file,
+            self.subtask_id,
+            self._get_verification_deadline_as_timestamp(
+                get_current_utc_timestamp(),
+                self.report_computed_task.task_to_compute,
+            )
+        )
         self.assertEqual(mock_delete_source_files.call_count, 1)
         self.assertEqual(mock_try_to_upload_file.call_count, 1)
         mock_verification_result.assert_called_once_with(
@@ -281,7 +309,16 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(mock_download_archives_from_storage.call_count, 1)
         self.assertEqual(mock_validate_downloaded_archives.call_count, 1)
         self.assertEqual(mock_unpack_archives.call_count, 1)
-        mock_render_image.assert_called_once_with(1, self.output_format, self.scene_file, self.subtask_id)
+        mock_render_image.assert_called_once_with(
+            1,
+            self.output_format,
+            self.scene_file,
+            self.subtask_id,
+            self._get_verification_deadline_as_timestamp(
+                get_current_utc_timestamp(),
+                self.report_computed_task.task_to_compute,
+            )
+        )
         self.assertEqual(mock_delete_source_files.call_count, 1)
         self.assertEqual(mock_try_to_upload_file.call_count, 1)
         self.assertEqual(mock_load_images.call_count, 1)
@@ -318,4 +355,8 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 self.output_format
             ].name,
             scene_file=self.scene_file,
+            verification_deadline=self._get_verification_deadline_as_timestamp(
+                get_current_utc_timestamp(),
+                self.report_computed_task.task_to_compute,
+            ),
         )

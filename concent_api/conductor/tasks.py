@@ -6,6 +6,7 @@ from core import tasks
 from common.constants import ErrorCode
 from common.decorators import log_task_errors
 from common.decorators import provides_concent_feature
+from common.helpers import parse_timestamp_to_utc_datetime
 from common.logging import log_error_message
 from common.logging import log_string_message
 from verifier.tasks import blender_verification_order
@@ -23,11 +24,12 @@ logger = logging.getLogger(__name__)
 @log_task_errors
 @transaction.atomic(using='storage')
 def blender_verification_request(
-    subtask_id:             str,
-    source_package_path:    str,
-    result_package_path:    str,
-    output_format:          str,
-    scene_file:             str,
+    subtask_id: str,
+    source_package_path: str,
+    result_package_path: str,
+    output_format: str,
+    scene_file: str,
+    verification_deadline: int,
 ):
     log_string_message(
         logger,
@@ -38,6 +40,7 @@ def blender_verification_request(
         f'Scene_file: {scene_file}'
     )
     assert isinstance(output_format, str)
+    assert isinstance(verification_deadline, int)
 
     output_format = output_format.upper()
     assert output_format in BlenderSubtaskDefinition.OutputFormat.__members__.keys()
@@ -48,6 +51,7 @@ def blender_verification_request(
         subtask_id=subtask_id,
         source_package_path=source_package_path,
         result_package_path=result_package_path,
+        verification_deadline=parse_timestamp_to_utc_datetime(verification_deadline),
     )
     verification_request.full_clean()
     verification_request.save()
@@ -142,6 +146,7 @@ def upload_acknowledged(
         result_package_hash=result_package_hash,
         output_format=verification_request.blender_subtask_definition.output_format,
         scene_file=verification_request.blender_subtask_definition.scene_file,
+        verification_deadline=int(verification_request.verification_deadline.timestamp()),
     )
     log_string_message(
         logger,

@@ -6,6 +6,7 @@ from django.db.models import ForeignKey
 from django.db.models import Model
 from django.db.models import OneToOneField
 from django.db.models import PositiveIntegerField
+from django.db.models import TextField
 from django.utils import timezone
 
 from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
@@ -68,6 +69,9 @@ class BlenderSubtaskDefinition(Model):
 
     # Relative path to the .blend file inside the source package.
     scene_file = CharField(max_length=MESSAGE_PATH_LENGTH)
+
+    # Source code of the Python script to be executed by Blender.
+    blender_crop_script = TextField()
 
     # Indicates when Conductor has received the request.
     created_at = DateTimeField(default=timezone.now)

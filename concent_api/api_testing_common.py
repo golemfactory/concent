@@ -320,6 +320,7 @@ def create_signed_task_to_compute(
     price=0,
     size=1,
     package_hash='sha1:57786d92d1a6f7eaaba1c984db5e108c68b03f0d',
+    script_src=None,
 ):
     with freeze_time(timestamp):
         compute_task_def = ComputeTaskDefFactory(
@@ -329,9 +330,12 @@ def create_signed_task_to_compute(
             extra_data={
                 'output_format': 'png',
                 'scene_file': 'golem-header-light.blend',
-                'frames': [1, 2, 3]
+                'frames': [1],
+                'script_src': script_src,
             }
         )
+        if script_src is not None:
+            compute_task_def['extra_data']['script_src'] = script_src
         task_to_compute = TaskToComputeFactory(
             provider_public_key=provider_public_key if provider_public_key is not None else _get_provider_hex_public_key(),
             requestor_public_key=requestor_public_key if requestor_public_key is not None else _get_requestor_hex_public_key(),

@@ -8,6 +8,8 @@ from core.message_handlers import store_subtask
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
 from common.helpers import get_current_utc_timestamp
+from common.helpers import get_storage_result_file_path
+from common.helpers import get_storage_source_file_path
 from ..exceptions import VerificationRequestAlreadyAcknowledgedError
 
 
@@ -17,14 +19,17 @@ class ConductorTaskTestCase(ConcentIntegrationTestCase):
 
     def setUp(self):
         super().setUp()
-        self.source_package_path = 'blender/source/ef0dc1/ef0dc1.zzz523.zip'
-        self.result_package_path = 'blender/result/ef0dc1/ef0dc1.zzz523.zip'
-        self.scene_file = 'blender/scene/ef0dc1/ef0dc1.zzz523.zip'
-
-        self.report_computed_task = self._get_deserialized_report_computed_task(
-            task_id='ef0dc1',
-            subtask_id='zzz523'
+        self.task_to_compute = self._get_deserialized_task_to_compute()
+        self.compute_task_def = self.task_to_compute.compute_task_def
+        self.source_package_path = get_storage_source_file_path(
+            self.task_to_compute.subtask_id,
+            self.task_to_compute.task_id,
         )
+        self.result_package_path = get_storage_result_file_path(
+            self.task_to_compute.subtask_id,
+            self.task_to_compute.task_id,
+        )
+        self.report_computed_task = self._get_deserialized_report_computed_task(task_to_compute=self.task_to_compute)
 
         self.verification_request = VerificationRequest(
             subtask_id=self.report_computed_task.subtask_id,
@@ -41,7 +46,8 @@ class ConductorTaskTestCase(ConcentIntegrationTestCase):
         blender_subtask_definition = BlenderSubtaskDefinition(
             verification_request=self.verification_request,
             output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
-            scene_file=self.scene_file,
+            scene_file=self.compute_task_def['extra_data']['scene_file'],
+            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
         )
         blender_subtask_definition.full_clean()
         blender_subtask_definition.save()
@@ -86,6 +92,7 @@ class ConductorTaskTestCase(ConcentIntegrationTestCase):
                 get_current_utc_timestamp(),
                 self.report_computed_task.task_to_compute,
             ),
+            blender_crop_script=self.verification_request.blender_subtask_definition.blender_crop_script,
         )
         mock_frames_filtering.assert_called_once()
 

@@ -2,6 +2,7 @@ import os
 
 from mypy.types import Dict  # noqa # pylint: disable=unused-import
 
+from django.conf.locale.en import formats
 from golem_messages import constants
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -132,6 +133,9 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
+
+# Works as datetime format in django-admin.
+formats.DATETIME_FORMAT = 'Y-m-d H:i:s'  # '2018-07-04 23:57:59'
 
 
 # Static files (CSS, JavaScript, Images)

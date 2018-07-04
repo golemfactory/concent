@@ -144,6 +144,7 @@ class ConcentIntegrationTestCase(TestCase):
         package_hash: str = 'sha1:4452d71687b6bc2c9389c3349fdc17fbd73b833b',
         timestamp: Optional[str] = None,
         sign_with_private_key = None,
+        frames: Optional[List[int]] = None
     ):
         """ Returns ReportComputedTask deserialized. """
         with freeze_time(timestamp or self._get_timestamp_string()):
@@ -152,6 +153,7 @@ class ConcentIntegrationTestCase(TestCase):
                     task_to_compute or self._get_deserialized_task_to_compute(
                         subtask_id=subtask_id,
                         task_id=task_id,
+                        frames=frames if frames is not None else [1]
                     )
                 ),
                 package_hash=package_hash,
@@ -180,6 +182,7 @@ class ConcentIntegrationTestCase(TestCase):
         package_hash: str = 'sha1:230fb0cad8c7ed29810a2183f0ec1d39c9df3f4a',
         sign_with_private_key = None,
         size=1,
+        frames: Optional[List[int]] = None
     ):
         """ Returns TaskToCompute deserialized. """
         compute_task_def = (
@@ -187,6 +190,7 @@ class ConcentIntegrationTestCase(TestCase):
                 task_id=task_id,
                 subtask_id=subtask_id,
                 deadline=deadline,
+                frames=frames if frames is not None else [1],
             )
         )
         assert isinstance(requestor_id, str) or requestor_id is None
@@ -562,6 +566,7 @@ class ConcentIntegrationTestCase(TestCase):
         working_directory: str = '.',
         performance: float = 829.7531773625524,
         docker_images: List[set] = None,
+        frames: Optional[List[int]] = None
     ):
         compute_task_def = ComputeTaskDefFactory(
             task_id=task_id,
@@ -581,7 +586,7 @@ class ConcentIntegrationTestCase(TestCase):
         if extra_data is None:
             compute_task_def['extra_data'] = {
                 'end_task': 6,
-                'frames': [1],
+                'frames': frames if frames is not None else [1],
                 'outfilebasename': 'Heli-cycles(3)',
                 'output_format': 'PNG',
                 'path_root': '/home/dariusz/Documents/tasks/resources',

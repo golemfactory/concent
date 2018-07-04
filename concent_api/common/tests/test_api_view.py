@@ -220,6 +220,9 @@ class ApiViewTransactionTestCase(TransactionTestCase):
         compute_task_def['task_id'] = '8'
         compute_task_def['subtask_id'] = '8'
         compute_task_def['deadline'] = message_timestamp
+        compute_task_def['extra_data'] = {
+            'frames': [1],
+        }
         task_to_compute = tasks.TaskToComputeFactory(
             compute_task_def=compute_task_def,
             requestor_public_key=encode_hex(REQUESTOR_PUBLIC_KEY),

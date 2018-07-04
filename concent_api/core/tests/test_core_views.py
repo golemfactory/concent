@@ -71,6 +71,9 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         compute_task_def['task_id'] = '8'
         compute_task_def['subtask_id'] = '8'
         compute_task_def['deadline'] = self.message_timestamp + 600
+        compute_task_def['extra_data'] = {
+            'frames': [1],
+        }
         task_to_compute = self._get_deserialized_task_to_compute(
             compute_task_def = compute_task_def
         )
@@ -459,12 +462,14 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             0,
             False,
         ]
-
         for i, deadline in enumerate(valid_values):
             StoredMessage.objects.all().delete()
             compute_task_def['task_id']     = str(i)
             compute_task_def['subtask_id']  = str(i)
             compute_task_def['deadline']    = deadline
+            compute_task_def['extra_data'] = {
+                'frames': [1],
+            }
 
             deserialized_task_to_compute = self._get_deserialized_task_to_compute(
                 compute_task_def     = compute_task_def,

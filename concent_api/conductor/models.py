@@ -5,6 +5,7 @@ from django.db.models import DateTimeField
 from django.db.models import ForeignKey
 from django.db.models import Model
 from django.db.models import OneToOneField
+from django.db.models import PositiveIntegerField
 from django.utils import timezone
 
 from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
@@ -86,3 +87,19 @@ class UploadReport(Model):
 
     # Indicates when conductor has been notified about the upload.
     created_at      = DateTimeField(default=timezone.now)
+
+
+class Frame(Model):
+    """
+    Every frame which needs to be render by Concent must be stored in this model
+    For one BlenderSubtaskDefinition can be a lot Frame objects; BlenderSubtaskDefinition must be unique with Frame
+    """
+
+    blender_subtask_definition = ForeignKey(BlenderSubtaskDefinition, related_name='frames')
+
+    number = PositiveIntegerField()
+
+    class Meta:
+        unique_together = (
+            ('blender_subtask_definition', 'number'),
+        )

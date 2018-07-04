@@ -58,7 +58,8 @@ class ConductorTaskTestCase(ConcentIntegrationTestCase):
             report_computed_task=self.report_computed_task,
         )
 
-        with mock.patch('conductor.tasks.blender_verification_order.delay') as mock_blender_verification_order:
+        with mock.patch('conductor.tasks.blender_verification_order.delay') as mock_blender_verification_order, \
+            mock.patch('conductor.tasks.filter_frames_by_blender_subtask_definition', return_value=[1]) as mock_frames_filtering:  # noqa: E125
             upload_acknowledged(
                 subtask_id=self.report_computed_task.subtask_id,
                 source_file_size=self.report_computed_task.task_to_compute.size,
@@ -71,6 +72,7 @@ class ConductorTaskTestCase(ConcentIntegrationTestCase):
 
         self.assertTrue(self.verification_request.upload_acknowledged)
         mock_blender_verification_order.assert_called_once_with(
+            frames=[1],
             subtask_id=self.verification_request.subtask_id,
             source_package_path=self.verification_request.source_package_path,
             source_size=self.report_computed_task.task_to_compute.size,
@@ -85,6 +87,7 @@ class ConductorTaskTestCase(ConcentIntegrationTestCase):
                 self.report_computed_task.task_to_compute,
             ),
         )
+        mock_frames_filtering.assert_called_once()
 
     @patch("conductor.tasks.log_error_message")
     @patch("conductor.tasks.logger")

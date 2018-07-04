@@ -330,6 +330,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             pending_value=0,
         )
         send_verification_request_mock.assert_called_once_with(
+            frames=[1],
             subtask_id=self.subtask_id,
             source_package_path=self.source_package_path,
             result_package_path=self.result_package_path,

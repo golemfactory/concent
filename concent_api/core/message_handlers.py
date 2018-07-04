@@ -1305,7 +1305,6 @@ def handle_send_subtask_results_verify(
     compute_task_def = task_to_compute.compute_task_def
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
     provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
-
     validate_golem_message_subtask_results_rejected(subtask_results_rejected)
     validate_that_golem_messages_are_signed_with_key(
         requestor_public_key,

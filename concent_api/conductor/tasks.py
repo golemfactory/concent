@@ -1,8 +1,12 @@
 import logging
+from typing import List
+
 from celery import shared_task
+
 from django.db import transaction
 
 from core import tasks
+from core.validation import validate_frames
 from common.constants import ErrorCode
 from common.decorators import log_task_errors
 from common.decorators import provides_concent_feature
@@ -12,6 +16,7 @@ from common.logging import log_string_message
 from verifier.tasks import blender_verification_order
 from .exceptions import VerificationRequestAlreadyAcknowledgedError
 from .models import BlenderSubtaskDefinition
+from .models import Frame
 from .models import UploadReport
 from .models import VerificationRequest
 
@@ -30,6 +35,7 @@ def blender_verification_request(
     output_format: str,
     scene_file: str,
     verification_deadline: int,
+    frames: List[int]
 ):
     log_string_message(
         logger,
@@ -37,8 +43,10 @@ def blender_verification_request(
         f'Source_package_path {source_package_path}',
         f'Result_package_path: {result_package_path}',
         f'Output_format: {output_format}',
-        f'Scene_file: {scene_file}'
+        f'Scene_file: {scene_file}',
+        f'Frames: {frames}',
     )
+    validate_frames(frames)
     assert isinstance(output_format, str)
     assert isinstance(verification_deadline, int)
 
@@ -47,22 +55,19 @@ def blender_verification_request(
 
     # The app creates a new instance of VerificationRequest in the database
     # and a BlenderSubtaskDefinition instance associated with it.
-    verification_request = VerificationRequest(
+    (verification_request, blender_subtask_definition) = store_verification_request_and_blender_subtask_definition(
         subtask_id=subtask_id,
         source_package_path=source_package_path,
         result_package_path=result_package_path,
-        verification_deadline=parse_timestamp_to_utc_datetime(verification_deadline),
-    )
-    verification_request.full_clean()
-    verification_request.save()
-
-    blender_subtask_definition = BlenderSubtaskDefinition(
-        verification_request=verification_request,
-        output_format=BlenderSubtaskDefinition.OutputFormat[output_format].name,
+        verification_deadline=verification_deadline,
+        output_format=output_format,
         scene_file=scene_file,
     )
-    blender_subtask_definition.full_clean()
-    blender_subtask_definition.save()
+
+    store_frames(
+        blender_subtask_definition=blender_subtask_definition,
+        frame_list=frames,
+    )
 
     # If there are already UploadReports corresponding to some files, the app links them with the VerificationRequest
     # by setting the value of the foreign key in UploadReport.
@@ -136,6 +141,8 @@ def upload_acknowledged(
         verification_request.full_clean()
         verification_request.save()
 
+    frames = filter_frames_by_blender_subtask_definition(verification_request.blender_subtask_definition)
+
     blender_verification_order.delay(
         subtask_id=verification_request.subtask_id,
         source_package_path=verification_request.source_package_path,
@@ -147,6 +154,7 @@ def upload_acknowledged(
         output_format=verification_request.blender_subtask_definition.output_format,
         scene_file=verification_request.blender_subtask_definition.scene_file,
         verification_deadline=int(verification_request.verification_deadline.timestamp()),
+        frames=frames
     )
     log_string_message(
         logger,
@@ -156,3 +164,48 @@ def upload_acknowledged(
         f'Result_file_size: {result_file_size}',
         f'Result_package_hash: {result_package_hash}'
     )
+
+
+def store_verification_request_and_blender_subtask_definition(
+    subtask_id: str,
+    source_package_path: str,
+    result_package_path: str,
+    output_format: str,
+    scene_file: str,
+    verification_deadline: int,
+):
+    verification_request = VerificationRequest(
+        subtask_id=subtask_id,
+        source_package_path=source_package_path,
+        result_package_path=result_package_path,
+        verification_deadline=parse_timestamp_to_utc_datetime(verification_deadline),
+    )
+    verification_request.full_clean()
+    verification_request.save()
+
+    blender_subtask_definition = BlenderSubtaskDefinition(
+        verification_request=verification_request,
+        output_format=BlenderSubtaskDefinition.OutputFormat[output_format].name,
+        scene_file=scene_file,
+    )
+    blender_subtask_definition.full_clean()
+    blender_subtask_definition.save()
+
+    return (verification_request, blender_subtask_definition)
+
+
+def store_frames(
+    blender_subtask_definition: BlenderSubtaskDefinition,
+    frame_list: List[int],
+):
+    for frame in frame_list:
+        store_frame = Frame(
+            blender_subtask_definition=blender_subtask_definition,
+            number=frame,
+        )
+        store_frame.full_clean()
+        store_frame.save()
+
+
+def filter_frames_by_blender_subtask_definition(blender_subtask_definition: BlenderSubtaskDefinition):
+    return list(Frame.objects.filter(blender_subtask_definition=blender_subtask_definition).values_list('number', flat=True))

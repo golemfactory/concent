@@ -15,12 +15,14 @@ from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
 from core.message_handlers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
 from core.tests.utils import ConcentIntegrationTestCase
+from core.exceptions import FrameNumberValidationError
 from core.exceptions import HashingAlgorithmError
 from core.exceptions import Http400
 from core.validation import validate_all_messages_identical
 from core.validation import validate_ethereum_addresses
 from core.validation import validate_golem_message_subtask_results_rejected
 from core.validation import validate_id_value
+from core.validation import validate_frames
 from core.validation import validate_secure_hash_algorithm
 from core.validation import validate_subtask_price_task_to_compute
 
@@ -233,3 +235,36 @@ class TestAreEthereumAddressesAndKeysUnique(ConcentIntegrationTestCase):
         subtask_results_accepted_list = self.create_subtask_results_accepted_list(self.task_to_compute_1, self.task_to_compute_2)
         result = are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_results_accepted_list)
         self.assertFalse(result)
+
+
+class TestFramesListValidaation(TestCase):
+
+    def test_that_list_of_ints_is_valid(self):
+        try:
+            validate_frames([1, 2])
+        except Exception:  # pylint: disable=broad-except
+            self.fail()
+
+    def test_that_if_frames_is_not_a_list_of_ints_method_should_raise_exception(self):
+        with self.assertRaises(FrameNumberValidationError):
+            validate_frames({'1': 1})
+
+        with self.assertRaises(FrameNumberValidationError):
+            validate_frames((1, 2))
+
+    def test_that_if_frames_are_not_grater_than_0_method_should_raise_exception(self):
+        with self.assertRaises(FrameNumberValidationError):
+            validate_frames([-1, 1])
+
+        with self.assertRaises(FrameNumberValidationError):
+            validate_frames([0, 1])
+
+    def test_that_if_frames_are_not_one_after_the_other_method_should_pass(self):
+        try:
+            validate_frames([1, 3, 5])
+        except Exception:  # pylint: disable=broad-except
+            self.fail()
+
+    def test_that_if_frames_are_not_integers_method_should_raise_exception(self):
+        with self.assertRaises(FrameNumberValidationError):
+            validate_frames(['1', '2'])

@@ -19,7 +19,6 @@ from core.models import PendingResponse
 from core.models import Subtask
 from core.utils import calculate_maximum_download_time
 from core.utils import calculate_subtask_verification_time
-from core.validation import validate_file_transfer_token
 from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
 from common import logging
 from common.helpers import deserialize_message
@@ -27,6 +26,7 @@ from common.helpers import get_current_utc_timestamp
 from common.helpers import get_storage_result_file_path
 from common.helpers import get_storage_source_file_path
 from common.helpers import sign_message
+from common.validations import validate_file_transfer_token
 
 logger = getLogger(__name__)
 

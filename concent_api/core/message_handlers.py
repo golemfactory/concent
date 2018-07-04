@@ -29,6 +29,7 @@ from common.helpers import deserialize_message
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.helpers import sign_message
+from common.validations import validate_secure_hash_algorithm
 from common import logging
 
 from core.exceptions import Http400
@@ -51,7 +52,6 @@ from core.validation import validate_all_messages_identical
 from core.validation import validate_ethereum_addresses
 from core.validation import validate_golem_message_subtask_results_rejected
 from core.validation import validate_report_computed_task_time_window
-from core.validation import validate_secure_hash_algorithm
 from core.validation import validate_task_to_compute
 
 from .utils import hex_to_bytes_convert

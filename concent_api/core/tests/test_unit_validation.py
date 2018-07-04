@@ -10,6 +10,7 @@ from golem_messages.message.tasks import TaskToCompute
 from golem_messages.utils import encode_hex
 from common.constants import ErrorCode
 from common.testing_helpers import generate_ecc_key_pair
+from common.validations import validate_secure_hash_algorithm
 
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
@@ -23,7 +24,6 @@ from core.validation import validate_ethereum_addresses
 from core.validation import validate_golem_message_subtask_results_rejected
 from core.validation import validate_id_value
 from core.validation import validate_frames
-from core.validation import validate_secure_hash_algorithm
 from core.validation import validate_subtask_price_task_to_compute
 
 

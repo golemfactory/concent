@@ -27,7 +27,7 @@ import requests
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
-CALCULATED_VERIFICATION_TIME = 10  # seconds
+CALCULATED_VERIFICATION_TIME = 25  # seconds
 
 
 #  TODO NEGATIVE TEST CASES

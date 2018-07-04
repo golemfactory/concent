@@ -9,6 +9,7 @@ from typing import Union
 
 from django.conf import settings
 from django.core.mail import mail_admins
+from django.db import transaction
 from django.http import HttpResponse
 from django.utils import timezone
 
@@ -53,6 +54,7 @@ from core.validation import validate_golem_message_subtask_results_rejected
 from core.validation import validate_report_computed_task_time_window
 from core.validation import validate_secure_hash_algorithm
 from core.validation import validate_task_to_compute
+from verifier.decorators import ensure_retry_of_locked_calls
 
 from .utils import hex_to_bytes_convert
 
@@ -1214,6 +1216,8 @@ def set_subtask_messages(
             )
 
 
+@ensure_retry_of_locked_calls
+@transaction.atomic(using='control')
 def store_or_update_subtask(
     task_id: str,
     subtask_id: str,
@@ -1231,8 +1235,8 @@ def store_or_update_subtask(
     force_get_task_result: Optional[message.concents.ForceGetTaskResult] = None,
 ) -> Subtask:
     try:
-        subtask = Subtask.objects.get(
-            subtask_id = subtask_id,
+        subtask = Subtask.objects.select_for_update(nowait=True).get(
+            subtask_id=subtask_id,
         )
     except Subtask.DoesNotExist:
         subtask = None

@@ -9,6 +9,10 @@ class Http400(ConcentBaseException):
     pass
 
 
+class Http500(ConcentBaseException):
+    pass
+
+
 class FileTransferTokenError(ConcentBaseException):
     pass
 

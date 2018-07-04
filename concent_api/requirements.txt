@@ -16,3 +16,9 @@ python-mimeparse
 scikit-image
 opencv-python
 factory-boy
+coverage
+tblib
+pytest
+pytest-django
+pytest-xdist
+pytest-cov

@@ -7,6 +7,9 @@ display_usage(){
     printf " run_tests [-p || --pattern =<tests pattern>] [-n || --multicore =<number of cores to use>]\n"
 }
 
+PATTERN=.
+MODULE=.
+
 for argument in "$@"
 do
     if [[ ( $argument == "--help") ||  $argument == "-h" ]]; then
@@ -16,11 +19,15 @@ do
     case $argument in
         -p=*|--pattern=*)
             PATTERN="${argument#*=}"
-            TEST_RUNNER_EXTRA_ARGUMENTS+=" --pattern=\"$PATTERN\""
+            MODULE=${PATTERN%%::*}      # remove ::* (node specification)
+            MODULE=${MODULE/\/tests/}   # substitute "/tests" with ""
+            MODULE=${MODULE/test_/}     # substitute "test_" with ""
+            MODULE=${MODULE/.py/}       # substitute ".py" with ""
+            MODULE=${MODULE/\//.}       # substitute each  "/" with "."
         ;;
         -n=*|--multicore=*)
             NUMBER_OF_CORES="${argument#*=}"
-            TEST_RUNNER_EXTRA_ARGUMENTS+=" --parallel=$NUMBER_OF_CORES"
+            TEST_RUNNER_EXTRA_ARGUMENTS+=" -n $NUMBER_OF_CORES"
         ;;
         *)
             display_usage
@@ -28,12 +35,12 @@ do
         ;;
     esac
 done
+
 cd concent_api/
-coverage run                                    \
-    --rcfile ../coverage-config                 \
-    --source '.'                                \
-    manage.py test                              \
-        --settings concent_api.settings.testing \
-        ${TEST_RUNNER_EXTRA_ARGUMENTS}
-coverage report --show-missing
+pytest                              \
+    --cov-report term-missing       \
+    --cov-config ../coverage-config \
+    --cov=$MODULE $PATTERN          \
+    ${TEST_RUNNER_EXTRA_ARGUMENTS}
+rm .coverage
 cd ..

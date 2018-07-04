@@ -2,7 +2,7 @@ import logging
 from typing import List
 
 from celery import shared_task
-
+from mypy.types import Optional
 from django.db import transaction
 
 from core import tasks
@@ -36,7 +36,7 @@ def blender_verification_request(
     scene_file: str,
     verification_deadline: int,
     frames: List[int],
-    blender_crop_script: str,
+    blender_crop_script: Optional[str],
 ):
     log_string_message(
         logger,
@@ -46,6 +46,8 @@ def blender_verification_request(
         f'Output_format: {output_format}',
         f'Scene_file: {scene_file}',
         f'Frames: {frames}',
+        f'Verification_deadline: {verification_deadline}',
+        f'With blender_crop_script: {bool(blender_crop_script)}',
     )
     validate_frames(frames)
     assert isinstance(output_format, str)
@@ -176,7 +178,7 @@ def store_verification_request_and_blender_subtask_definition(
     output_format: str,
     scene_file: str,
     verification_deadline: int,
-    blender_crop_script: str,
+    blender_crop_script: Optional[str],
 ):
     verification_request = VerificationRequest(
         subtask_id=subtask_id,

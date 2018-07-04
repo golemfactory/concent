@@ -4,6 +4,7 @@ from typing import List
 
 from celery import shared_task
 from golem_messages import message
+from mypy.types import Optional
 
 from django.conf import settings
 
@@ -49,7 +50,7 @@ def blender_verification_order(
     scene_file: str,
     verification_deadline: int,
     frames: List[int],
-    blender_crop_script: str,
+    blender_crop_script: Optional[str],
 ):
     log_string_message(
         logger,

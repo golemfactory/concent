@@ -11,6 +11,7 @@ import zipfile
 from django.conf import settings
 from golem_messages import message
 from golem_messages.shortcuts import dump
+from mypy.types import Optional
 from numpy.core.records import ndarray
 from skimage.measure import compare_ssim
 import requests
@@ -76,21 +77,30 @@ def run_blender(
     output_format: str,
     frame_number: int,
     verification_deadline: int,
-    script_file: str,
+    script_file: Optional[str],
 ) -> subprocess.CompletedProcess:
     output_format = adjust_format_name(output_format)
-    return subprocess.run(
-        [
-            "blender",
-            "-b", f"{generate_verifier_storage_file_path(scene_file)}",
+
+    blender_command = [
+        "blender",
+        "-b", f"{generate_verifier_storage_file_path(scene_file)}",
+    ]
+
+    if script_file is not None:
+        blender_command += [
             "-y",  # enable scripting by default
-            "-P", f"{script_file}",
-            "-o", f"{generate_base_blender_output_file_name(scene_file)}",
-            "-noaudio",
-            "-F", f"{output_format}",
-            "-t", f"{settings.BLENDER_THREADS}",  # cpu_count
-            "-f", f"{frame_number}",  # frame
-        ],
+            "-P", f"{generate_verifier_storage_file_path(script_file)}",
+        ]
+
+    blender_command += [
+        "-o", f"{generate_base_blender_output_file_name(scene_file)}",
+        "-noaudio",
+        "-F", f"{output_format}",
+        "-t", f"{settings.BLENDER_THREADS}",  # cpu_count
+        "-f", f"{frame_number}",  # frame
+    ]
+    return subprocess.run(
+        blender_command,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         timeout=(verification_deadline - get_current_utc_timestamp()),
@@ -262,9 +272,12 @@ def delete_source_files(source_archive_name):
         delete_file(file_path)
 
 
-def render_image(frame_number, output_format, scene_file, subtask_id, verification_deadline, blender_crop_script):
+def render_image(frame_number, output_format, scene_file, subtask_id, verification_deadline, blender_crop_script=None):
     # Verifier stores Blender crop script to a file.
-    blender_script_file_name = store_blender_script_file(subtask_id, blender_crop_script)
+    if blender_crop_script is not None:
+        blender_script_file_name = store_blender_script_file(subtask_id, blender_crop_script)
+    else:
+        blender_script_file_name = None
 
     # Verifier runs blender process.
     try:
@@ -386,7 +399,7 @@ def render_images_by_frames(
     scene_file: str,
     subtask_id: str,
     verification_deadline: int,
-    blender_crop_script: str,
+    blender_crop_script: Optional[str],
 ):
     blender_output_file_name_list = []
     for frame_number in frames:

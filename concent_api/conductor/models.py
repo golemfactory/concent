@@ -71,7 +71,7 @@ class BlenderSubtaskDefinition(Model):
     scene_file = CharField(max_length=MESSAGE_PATH_LENGTH)
 
     # Source code of the Python script to be executed by Blender.
-    blender_crop_script = TextField()
+    blender_crop_script = TextField(blank=True, null=True)
 
     # Indicates when Conductor has received the request.
     created_at = DateTimeField(default=timezone.now)

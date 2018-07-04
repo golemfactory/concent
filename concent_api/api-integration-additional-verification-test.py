@@ -45,6 +45,7 @@ def get_subtask_results_verify(
     requestor_ethereum_public_key=None,
     provider_ethereum_public_key=None,
     price=1,
+    script_src=None,
 ):
     task_to_compute = create_signed_task_to_compute(
         task_id=task_id,
@@ -54,7 +55,8 @@ def get_subtask_results_verify(
         size=task_to_compute_size,
         package_hash=task_to_compute_package_hash,
         requestor_ethereum_public_key=requestor_ethereum_public_key,
-        provider_ethereum_public_key=provider_ethereum_public_key
+        provider_ethereum_public_key=provider_ethereum_public_key,
+        script_src=script_src,
     )
 
     report_computed_task = message.ReportComputedTask(

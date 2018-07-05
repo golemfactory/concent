@@ -590,7 +590,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 'end_task': 6,
                 'frames': [1],
                 'outfilebasename': 'Heli-cycles(3)',
-                'output_format': 'jpg',  # pylint: disable=no-member
+                'output_format': 'jpg',
                 'path_root': '/home/dariusz/Documents/tasks/resources',
                 'scene_file': get_storage_scene_file_path(self.subtask_id, self.task_id),
                 'script_src': '# This template is rendered by',

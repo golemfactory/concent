@@ -22,7 +22,7 @@ from core.utils import hex_to_bytes_convert
 logger = getLogger(__name__)
 
 
-def validate_int_value(value):
+def validate_value_is_int_convertible_and_positive(value):
     """
     Checks if value is an integer. If not, tries to cast it to an integer.
     Then checks if value is non-negative.
@@ -36,19 +36,11 @@ def validate_int_value(value):
                 "Wrong type, expected a value that can be converted to an integer.",
                 error_code=ErrorCode.MESSAGE_VALUE_NOT_INTEGER,
             )
-    if value < 0:
-        raise ConcentValidationError(
-            "Wrong type, expected non-negative integer but negative integer provided.",
-            error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE,
-        )
+    validate_positive_integer_value(value)
 
 
 def validate_id_value(value, field_name):
-    if not isinstance(value, str):
-        raise ConcentValidationError(
-            "{} must be string.".format(field_name),
-            error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE,
-        )
+    validate_expected_value_type(value, field_name, str)
 
     if value == '':
         raise ConcentValidationError(
@@ -83,12 +75,7 @@ def validate_key_with_desired_parameters(
         expected_type,
         expected_length: int
 ):
-
-    if not isinstance(key_value, expected_type):
-        raise ConcentValidationError(
-            f"{key_name} must be {expected_type.__name__}.",
-            error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE,
-        )
+    validate_expected_value_type(key_value, key_name, expected_type)
 
     if len(key_value) != expected_length:
         raise ConcentValidationError(
@@ -114,7 +101,7 @@ def validate_task_to_compute(task_to_compute: message.TaskToCompute):
             error_code=ErrorCode.MESSAGE_WRONG_FIELDS,
         )
 
-    validate_int_value(task_to_compute.compute_task_def['deadline'])
+    validate_value_is_int_convertible_and_positive(task_to_compute.compute_task_def['deadline'])
 
     validate_id_value(task_to_compute.compute_task_def['task_id'], 'task_id')
     validate_id_value(task_to_compute.compute_task_def['subtask_id'], 'subtask_id')
@@ -122,7 +109,7 @@ def validate_task_to_compute(task_to_compute: message.TaskToCompute):
     validate_hex_public_key(task_to_compute.provider_public_key, 'provider_public_key')
     validate_hex_public_key(task_to_compute.requestor_public_key, 'requestor_public_key')
     validate_secure_hash_algorithm(task_to_compute.package_hash)
-    validate_subtask_price_task_to_compute(task_to_compute)
+    validate_positive_integer_value(task_to_compute.price)
     validate_frames(task_to_compute.compute_task_def['extra_data']['frames'])
 
 
@@ -198,43 +185,19 @@ def validate_golem_message_subtask_results_rejected(subtask_results_rejected: me
     validate_task_to_compute(subtask_results_rejected.report_computed_task.task_to_compute)
 
 
-def validate_subtask_price_task_to_compute(task_to_compute: message.tasks.TaskToCompute):
-    if not isinstance(task_to_compute.price, int):
-        raise ConcentValidationError(
-            "Price must be a integer",
-            error_code=ErrorCode.MESSAGE_VALUE_NOT_INTEGER,
-        )
-    if task_to_compute.price < 0:
-        raise ConcentValidationError(
-            "Price cannot be a negative value",
-            error_code=ErrorCode.MESSAGE_VALUE_NEGATIVE,
-        )
-
-
 def validate_ethereum_addresses(requestor_ethereum_address, provider_ethereum_address):
-    if not isinstance(requestor_ethereum_address, str):
-        raise ConcentValidationError(
-            "Requestor's ethereum address must be a string",
-            error_code=ErrorCode.MESSAGE_VALUE_NOT_STRING,
-        )
-
-    if not isinstance(provider_ethereum_address, str):
-        raise ConcentValidationError(
-            "Provider's ethereum address must be a string",
-            error_code=ErrorCode.MESSAGE_VALUE_NOT_STRING,
-        )
-
-    if not len(requestor_ethereum_address) == ETHEREUM_ADDRESS_LENGTH:
-        raise ConcentValidationError(
-            f"Requestor's ethereum address must contains exactly {ETHEREUM_ADDRESS_LENGTH} characters ",
-            error_code=ErrorCode.MESSAGE_VALUE_WRONG_LENGTH,
-        )
-
-    if not len(provider_ethereum_address) == ETHEREUM_ADDRESS_LENGTH:
-        raise ConcentValidationError(
-            f"Provider's ethereum address must contains exactly {ETHEREUM_ADDRESS_LENGTH} characters ",
-            error_code=ErrorCode.MESSAGE_VALUE_WRONG_LENGTH,
-        )
+    validate_key_with_desired_parameters(
+        'requestor_ethereum_address',
+        requestor_ethereum_address,
+        str,
+        ETHEREUM_ADDRESS_LENGTH
+    )
+    validate_key_with_desired_parameters(
+        'provider_ethereum_address',
+        provider_ethereum_address,
+        str,
+        ETHEREUM_ADDRESS_LENGTH
+    )
 
 
 def get_validated_client_public_key_from_client_message(golem_message: message.base.Message):
@@ -310,3 +273,25 @@ def validate_frames(frames_list: List[int]):
                 'Frame number must be grater than 0',
                 ErrorCode.MESSAGE_FRAME_VALUE_NOT_POSITIVE_INTEGER
             )
+
+
+def validate_expected_value_type(
+    value,
+    value_name: str,
+    expected_type,
+):
+    if not isinstance(value, expected_type):
+        raise ConcentValidationError(
+            f"{value_name} must be {expected_type.__name__}.",
+            error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE,
+        )
+
+
+def validate_positive_integer_value(value):
+    validate_expected_value_type(value, 'value', int)
+
+    if value < 0:
+        raise ConcentValidationError(
+            "Value cannot be an negative value",
+            error_code=ErrorCode.MESSAGE_VALUE_NEGATIVE,
+        )

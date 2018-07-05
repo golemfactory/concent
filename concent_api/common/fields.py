@@ -60,3 +60,10 @@ class ChoiceEnum(enum.Enum):
     @classmethod
     def choices(cls):
         return tuple((x.name, x.value) for x in cls)
+
+
+class IntegerEnum(enum.IntEnum):
+
+    @classmethod
+    def choices(cls):
+        return ((item.value, item.name.replace('_', ' ')) for item in cls)

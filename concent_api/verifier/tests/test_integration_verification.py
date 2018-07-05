@@ -351,7 +351,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         mock_render_image.assert_called_once_with(
             frames=self.frames,
             parsed_files_to_compare=self.mocked_parse_result_files_with_frames(),
-            output_format=self.output_format,
+            output_format=BlenderSubtaskDefinition.OutputFormat(self.output_format),
             scene_file=self.scene_file,
             subtask_id=self.subtask_id,
             verification_deadline=self._get_verification_deadline_as_timestamp(
@@ -442,9 +442,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             result_package_path=self.result_package_path,
             result_size=self.report_computed_task.size,  # pylint: disable=no-member
             result_package_hash=self.report_computed_task.package_hash,  # pylint: disable=no-member  # pylint: disable=no-member
-            output_format=BlenderSubtaskDefinition.OutputFormat[
-                self.output_format
-            ].name,
+            output_format=self.output_format,
             scene_file=self.scene_file,
             verification_deadline=self._get_verification_deadline_as_timestamp(
                 get_current_utc_timestamp(),

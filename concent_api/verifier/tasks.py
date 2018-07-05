@@ -46,7 +46,7 @@ def blender_verification_order(
     result_package_path: str,
     result_size: int,
     result_package_hash: str,
-    output_format: str,
+    output_format: int,
     scene_file: str,
     verification_deadline: int,
     frames: List[int],
@@ -66,7 +66,9 @@ def blender_verification_order(
         f'Frames: {frames}.'
     )
 
-    assert output_format in BlenderSubtaskDefinition.OutputFormat.__members__.keys()
+    assert isinstance(output_format, int)
+    output_format = BlenderSubtaskDefinition.OutputFormat(output_format)
+
     assert source_package_path != result_package_path
     assert source_package_hash != result_package_hash
     assert (source_size and source_package_hash and source_package_path) and (result_size and result_package_hash and result_package_path)
@@ -128,7 +130,7 @@ def blender_verification_order(
     parsed_files_to_compare = parse_result_files_with_frames(
         frames=frames,
         result_files_list=result_files_list,
-        output_format=output_format,
+        output_format=output_format.name
     )
 
     ensure_frames_have_related_files_to_compare(

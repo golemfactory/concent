@@ -4,6 +4,7 @@ from mock import mock
 from django.test import override_settings
 from numpy.core.records import ndarray
 
+from conductor.models import BlenderSubtaskDefinition
 from core.constants import VerificationResult
 from verifier.exceptions import VerificationMismatch
 from verifier.utils import are_image_sizes_and_color_channels_equal
@@ -22,7 +23,7 @@ class VerifierVerificationIntegrationTest(TestCase):
         super().setUp()
         self.frames = [1, 2]
         self.result_files_list = ['result_0001.png', 'result_0002.png']
-        self.output_format = 'PNG'
+        self.output_format = BlenderSubtaskDefinition.OutputFormat['PNG']
         self.parsed_files_to_compare = {
             1: ['/tmp/result_0001.png'],
             2: ['/tmp/result_0002.png'],
@@ -72,7 +73,7 @@ class VerifierVerificationIntegrationTest(TestCase):
         parsed_files_to_compare = parse_result_files_with_frames(
             frames=self.frames,
             result_files_list=self.result_files_list,
-            output_format=self.output_format,
+            output_format=self.output_format.name,
         )
 
         self.assertEqual(parsed_files_to_compare, self.parsed_files_to_compare)
@@ -81,7 +82,7 @@ class VerifierVerificationIntegrationTest(TestCase):
         parsed_files_to_compare = parse_result_files_with_frames(
             frames=self.frames,
             result_files_list=self.result_files_list,
-            output_format='JPG',
+            output_format=BlenderSubtaskDefinition.OutputFormat['JPG'].name,
         )
 
         self.assertEqual(parsed_files_to_compare, {})

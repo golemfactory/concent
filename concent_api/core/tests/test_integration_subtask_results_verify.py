@@ -334,7 +334,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             subtask_id=self.subtask_id,
             source_package_path=self.source_package_path,
             result_package_path=self.result_package_path,
-            output_format=self.report_computed_task.task_to_compute.compute_task_def['extra_data']['output_format'],
+            output_format=BlenderSubtaskDefinition.OutputFormat[self.report_computed_task.task_to_compute.compute_task_def['extra_data']['output_format'].upper()],
             scene_file=self.report_computed_task.task_to_compute.compute_task_def['extra_data']['scene_file'],
             verification_deadline=self._get_verification_deadline_as_timestamp(
                 self._parse_iso_date_to_timestamp(self.subtask_result_rejected_time_str),
@@ -590,7 +590,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 'end_task': 6,
                 'frames': [1],
                 'outfilebasename': 'Heli-cycles(3)',
-                'output_format': BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
+                'output_format': 'jpg',
                 'path_root': '/home/dariusz/Documents/tasks/resources',
                 'scene_file': get_storage_scene_file_path(self.subtask_id, self.task_id),
                 'script_src': '# This template is rendered by',

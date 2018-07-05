@@ -58,7 +58,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
 
         blender_subtask_definition = BlenderSubtaskDefinition(
             verification_request=verification_request,
-            output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
+            output_format=BlenderSubtaskDefinition.OutputFormat.JPG,
             scene_file=self.compute_task_def['extra_data']['scene_file'],
             blender_crop_script=self.compute_task_def['extra_data']['script_src'],
         )
@@ -300,8 +300,8 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
             subtask_id=self.compute_task_def['subtask_id'],
             source_package_path=self.source_package_path,
             result_package_path=self.result_package_path,
-            output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
-            scene_file = self.compute_task_def['extra_data']['scene_file'],
+            output_format=BlenderSubtaskDefinition.OutputFormat.JPG,
+            scene_file=self.compute_task_def['extra_data']['scene_file'],
             verification_deadline=self._get_verification_deadline_as_timestamp(
                 get_current_utc_timestamp(),
                 self.report_computed_task.task_to_compute,
@@ -315,7 +315,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(verification_request.subtask_id,  self.compute_task_def['subtask_id'])
         self.assertEqual(verification_request.source_package_path, self.source_package_path)
         self.assertEqual(verification_request.result_package_path, self.result_package_path)
-        self.assertEqual(verification_request.blender_subtask_definition.output_format, BlenderSubtaskDefinition.OutputFormat.JPG.name)  # pylint: disable=no-member
+        self.assertEqual(verification_request.blender_subtask_definition.output_format, BlenderSubtaskDefinition.OutputFormat.JPG.value)
         self.assertEqual(verification_request.blender_subtask_definition.scene_file, self.compute_task_def['extra_data']['scene_file'])
 
     def test_blender_verification_request_task_should_not_link_upload_requests_to_unrelated_upload_reports(self):
@@ -330,7 +330,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
             subtask_id=self.compute_task_def['subtask_id'],
             source_package_path=self.source_package_path,
             result_package_path=self.result_package_path,
-            output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
+            output_format=BlenderSubtaskDefinition.OutputFormat.JPG,
             scene_file = self.compute_task_def['extra_data']['scene_file'],
             verification_deadline=self._get_verification_deadline_as_timestamp(
                 get_current_utc_timestamp(),
@@ -364,7 +364,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
                 subtask_id=self.compute_task_def['subtask_id'],
                 source_package_path=self.source_package_path,
                 result_package_path=self.result_package_path,
-                output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
+                output_format=BlenderSubtaskDefinition.OutputFormat.JPG,
                 scene_file = self.compute_task_def['extra_data']['scene_file'],
                 verification_deadline=self._get_verification_deadline_as_timestamp(
                     get_current_utc_timestamp(),

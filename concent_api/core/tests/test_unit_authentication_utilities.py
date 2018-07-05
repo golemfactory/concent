@@ -6,12 +6,13 @@ from golem_messages.factories       import tasks
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 
-from core.exceptions                import Http400
-from core.message_handlers import validate_that_golem_messages_are_signed_with_key
-from core.validation                import validate_all_messages_identical
-from common.shortcuts               import load_without_public_key
-from common.testing_helpers         import generate_ecc_key_pair
+from common.exceptions import ConcentValidationError
+from common.shortcuts import load_without_public_key
+from common.testing_helpers import generate_ecc_key_pair
 
+from core.exceptions import Http400
+from core.message_handlers import validate_that_golem_messages_are_signed_with_key
+from core.validation import validate_all_messages_identical
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)       = generate_ecc_key_pair()
 (REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY)   = generate_ecc_key_pair()
@@ -144,7 +145,7 @@ class ValidateListOfIdenticalTaskToComputeUnitTest(TestCase):
             ),
         ]
 
-        with self.assertRaises(Http400):
+        with self.assertRaises(ConcentValidationError):
             validate_all_messages_identical(
                 list_of_not_identical_task_to_compute
             )

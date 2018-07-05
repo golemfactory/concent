@@ -9,6 +9,7 @@ from golem_messages.message.tasks import SubtaskResultsRejected
 from golem_messages.message.tasks import TaskToCompute
 from golem_messages.utils import encode_hex
 from common.constants import ErrorCode
+from common.exceptions import ConcentValidationError
 from common.testing_helpers import generate_ecc_key_pair
 from common.validations import validate_secure_hash_algorithm
 
@@ -18,7 +19,6 @@ from core.message_handlers import are_keys_and_addresses_unique_in_message_subta
 from core.tests.utils import ConcentIntegrationTestCase
 from core.exceptions import FrameNumberValidationError
 from core.exceptions import HashingAlgorithmError
-from core.exceptions import Http400
 from core.validation import validate_all_messages_identical
 from core.validation import validate_ethereum_addresses
 from core.validation import validate_golem_message_subtask_results_rejected
@@ -38,43 +38,43 @@ def mocked_message_with_price(price):
 
 class TestValidateGolemMessageSubtaskResultsRejected(TestCase):
     def test_that_exception_is_raised_when_subtask_results_rejected_is_of_wrong_type(self):
-        with self.assertRaises(Http400):
+        with self.assertRaises(ConcentValidationError):
             validate_golem_message_subtask_results_rejected(None)
 
     def test_that_exception_is_raised_when_subtask_results_rejected_contains_invalid_task_to_compute(self):
         report_computed_task = ReportComputedTask(task_to_compute=TaskToCompute())
         subtask_results_rejected = SubtaskResultsRejected(report_computed_task=report_computed_task)
-        with self.assertRaises(Http400):
+        with self.assertRaises(ConcentValidationError):
             validate_golem_message_subtask_results_rejected(subtask_results_rejected)
 
 
 class ValidatorsTest(TestCase):
     def test_that_function_raises_http400_when_ethereum_addres_has_wrong_type(self):
-        with self.assertRaises(Http400):
+        with self.assertRaises(ConcentValidationError):
             validate_ethereum_addresses(int('1' * ETHEREUM_ADDRESS_LENGTH), 'a' * ETHEREUM_ADDRESS_LENGTH)
 
-        with self.assertRaises(Http400):
+        with self.assertRaises(ConcentValidationError):
             validate_ethereum_addresses('a' * ETHEREUM_ADDRESS_LENGTH, int('1' * ETHEREUM_ADDRESS_LENGTH))
 
-        with self.assertRaises(Http400):
+        with self.assertRaises(ConcentValidationError):
             validate_ethereum_addresses(int('1' * ETHEREUM_ADDRESS_LENGTH), int('1' * ETHEREUM_ADDRESS_LENGTH))
 
     def test_that_function_raises_http400_when_ethereum_addres_has_wrong_length(self):
-        with self.assertRaises(Http400):
+        with self.assertRaises(ConcentValidationError):
             validate_ethereum_addresses('a' * 5, 'b' * 5)
 
-        with self.assertRaises(Http400):
+        with self.assertRaises(ConcentValidationError):
             validate_ethereum_addresses('a' * 5, 'b' * ETHEREUM_ADDRESS_LENGTH)
 
-        with self.assertRaises(Http400):
+        with self.assertRaises(ConcentValidationError):
             validate_ethereum_addresses('a' * ETHEREUM_ADDRESS_LENGTH, 'b' * 5)
 
     def test_that_function_raise_http400_when_price_is_not_int(self):
-        with self.assertRaises(Http400):
+        with self.assertRaises(ConcentValidationError):
             validate_subtask_price_task_to_compute(mocked_message_with_price('5'))
 
     def test_that_function_raise_http400_when_price_is_negative(self):
-        with self.assertRaises(Http400):
+        with self.assertRaises(ConcentValidationError):
             validate_subtask_price_task_to_compute(mocked_message_with_price(-5))
 
     def test_that_function_will_not_return_anything_when_price_is_zero(self):  # pylint: disable=no-self-use
@@ -102,7 +102,7 @@ class TestValidateAllMessagesIdentical(ConcentIntegrationTestCase):
 
     def test_that_function_raise_http400_when_any_slot_will_be_different_in_messages(self):
         different_report_computed_task = self._get_deserialized_report_computed_task(size = 10)
-        with self.assertRaises(Http400):
+        with self.assertRaises(ConcentValidationError):
             validate_all_messages_identical([self.report_computed_task, different_report_computed_task])
 
 
@@ -135,7 +135,7 @@ class TestValidateIdValue(TestCase):
         for value in incorrect_values:
             try:
                 validate_id_value(value, 'test')
-            except Http400 as exception:
+            except ConcentValidationError as exception:
                 self.assertEqual(exception.error_code, ErrorCode.MESSAGE_VALUE_NOT_ALLOWED)
 
     def test_that_function_should_raise_exception_when_value_is_not_a_string(self):
@@ -143,7 +143,7 @@ class TestValidateIdValue(TestCase):
 
         try:
             validate_id_value(incorrect_values, 'test')
-        except Http400 as exception:
+        except ConcentValidationError as exception:
             self.assertEqual(exception.error_code, ErrorCode.MESSAGE_VALUE_WRONG_TYPE)
 
     def test_that_function_should_raise_exception_when_value_is_blank(self):
@@ -151,7 +151,7 @@ class TestValidateIdValue(TestCase):
 
         try:
             validate_id_value(incorrect_values, 'test')
-        except Http400 as exception:
+        except ConcentValidationError as exception:
             self.assertEqual(exception.error_code, ErrorCode.MESSAGE_VALUE_BLANK)
 
     def test_that_function_should_raise_exception_when_value_is_too_long(self):
@@ -159,7 +159,7 @@ class TestValidateIdValue(TestCase):
 
         try:
             validate_id_value(incorrect_values, 'test')
-        except Http400 as exception:
+        except ConcentValidationError as exception:
             self.assertEqual(exception.error_code, ErrorCode.MESSAGE_VALUE_WRONG_LENGTH)
 
 

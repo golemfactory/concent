@@ -25,6 +25,7 @@ from golem_sci.events import ForcedPaymentEvent
 
 from common.constants import ErrorCode
 from common.exceptions import ConcentInSoftShutdownMode
+from common.exceptions import ConcentValidationError
 from common.helpers import deserialize_message
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
@@ -179,7 +180,7 @@ def handle_send_ack_report_computed_task(client_message):
                 report_computed_task,
                 deserialize_message(subtask.report_computed_task.data.tobytes()),
             ])
-        except Http400:
+        except ConcentValidationError:
             new_report_computed_task = report_computed_task
 
         subtask = update_subtask(

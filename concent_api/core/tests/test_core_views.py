@@ -73,6 +73,8 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         compute_task_def['deadline'] = self.message_timestamp + 600
         compute_task_def['extra_data'] = {
             'frames': [1],
+            'output_format': 'PNG',
+            'scene_file': 'kitten.blend',
         }
         task_to_compute = self._get_deserialized_task_to_compute(
             compute_task_def = compute_task_def
@@ -469,6 +471,8 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             compute_task_def['deadline']    = deadline
             compute_task_def['extra_data'] = {
                 'frames': [1],
+                'output_format': 'PNG',
+                'scene_file': 'kitten.blend',
             }
 
             deserialized_task_to_compute = self._get_deserialized_task_to_compute(

@@ -101,16 +101,12 @@ def validate_task_to_compute(task_to_compute: message.TaskToCompute):
             error_code=ErrorCode.MESSAGE_WRONG_FIELDS,
         )
 
-    validate_value_is_int_convertible_and_positive(task_to_compute.compute_task_def['deadline'])
-
-    validate_id_value(task_to_compute.compute_task_def['task_id'], 'task_id')
-    validate_id_value(task_to_compute.compute_task_def['subtask_id'], 'subtask_id')
+    validate_compute_task_def(task_to_compute.compute_task_def)
 
     validate_hex_public_key(task_to_compute.provider_public_key, 'provider_public_key')
     validate_hex_public_key(task_to_compute.requestor_public_key, 'requestor_public_key')
     validate_secure_hash_algorithm(task_to_compute.package_hash)
     validate_positive_integer_value(task_to_compute.price)
-    validate_frames(task_to_compute.compute_task_def['extra_data']['frames'])
 
 
 def validate_report_computed_task_time_window(report_computed_task):
@@ -295,3 +291,36 @@ def validate_positive_integer_value(value):
             "Value cannot be an negative value",
             error_code=ErrorCode.MESSAGE_VALUE_NEGATIVE,
         )
+
+
+def validate_compute_task_def(compute_task_def: message.tasks.ComputeTaskDef) -> None:
+    string_fields = ["output_format", "scene_file"]
+    other_mandatory_fields = ["frames"]
+
+    validate_value_is_int_convertible_and_positive(compute_task_def['deadline'])
+
+    validate_id_value(compute_task_def['task_id'], 'task_id')
+    validate_id_value(compute_task_def['subtask_id'], 'subtask_id')
+
+    extra_data = compute_task_def.get("extra_data")
+    if extra_data is None:
+        raise ConcentValidationError(
+            "'extra_data' is missing in ComputeTaskDef",
+            ErrorCode.MESSAGE_INVALID
+        )
+
+    for mandatory_data in string_fields + other_mandatory_fields:
+        if mandatory_data not in extra_data:
+            raise ConcentValidationError(
+                f"{mandatory_data} is missing in ComputeTaskDef",
+                ErrorCode.MESSAGE_INVALID
+            )
+
+    validate_frames(extra_data["frames"])
+
+    for string_field in string_fields:
+        if not isinstance(extra_data[string_field], str):
+            raise ConcentValidationError(
+                f"{string_field} should be string",
+                ErrorCode.MESSAGE_VALUE_NOT_STRING
+            )

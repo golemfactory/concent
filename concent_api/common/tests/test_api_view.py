@@ -222,6 +222,8 @@ class ApiViewTransactionTestCase(TransactionTestCase):
         compute_task_def['deadline'] = message_timestamp
         compute_task_def['extra_data'] = {
             'frames': [1],
+            'output_format': 'PNG',
+            'scene_file': 'kitten.blend',
         }
         task_to_compute = tasks.TaskToComputeFactory(
             compute_task_def=compute_task_def,

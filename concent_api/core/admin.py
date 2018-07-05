@@ -89,6 +89,24 @@ class PendingResponseAdmin(ModelAdminReadOnlyMixin, admin.ModelAdmin):
     get_client_public_key.short_description = 'Client public key'  # type: ignore
 
 
+class StoredMessageAdmin(ModelAdminReadOnlyMixin, admin.ModelAdmin):
+
+    list_display = [
+        'type',
+        'task_id',
+        'subtask_id',
+        'timestamp',
+    ]
+    list_filter = (
+        'type',
+    )
+    search_fields = [
+        'type',
+        'task_id',
+        'subtask_id',
+    ]
+
+
 admin.site.register(PendingResponse, PendingResponseAdmin)
-admin.site.register(StoredMessage)
+admin.site.register(StoredMessage, StoredMessageAdmin)
 admin.site.register(Subtask, SubtaskAdmin)

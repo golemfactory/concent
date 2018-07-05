@@ -136,16 +136,6 @@ def validate_report_computed_task_time_window(report_computed_task):
         )
 
 
-def validate_golem_message_client_authorization(golem_message: message.concents.ClientAuthorization):
-    if not isinstance(golem_message, message.concents.ClientAuthorization):
-        raise Http400(
-            'Expected ClientAuthorization.',
-            error_code=ErrorCode.AUTH_CLIENT_AUTH_MESSAGE_MISSING,
-        )
-
-    validate_bytes_public_key(golem_message.client_public_key, 'client_public_key')
-
-
 def validate_all_messages_identical(golem_messages_list: List[message.Message]):
     assert isinstance(golem_messages_list, list)
     assert len(golem_messages_list) >= 1
@@ -245,13 +235,6 @@ def validate_ethereum_addresses(requestor_ethereum_address, provider_ethereum_ad
             f"Provider's ethereum address must contains exactly {ETHEREUM_ADDRESS_LENGTH} characters ",
             error_code=ErrorCode.MESSAGE_VALUE_WRONG_LENGTH,
         )
-
-
-def validate_list_task_to_compute_ids(subtask_results_accepted_list):
-    subtask_ids = []
-    for task_to_compute in subtask_results_accepted_list:
-        subtask_ids.append(task_to_compute.subtask_id + ':' + task_to_compute.task_id)
-    return len(subtask_ids) == len(set(subtask_ids))
 
 
 def get_validated_client_public_key_from_client_message(golem_message: message.base.Message):

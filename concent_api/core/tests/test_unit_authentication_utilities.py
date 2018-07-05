@@ -9,7 +9,6 @@ from golem_messages.shortcuts       import load
 from core.exceptions                import Http400
 from core.message_handlers import validate_that_golem_messages_are_signed_with_key
 from core.validation                import validate_all_messages_identical
-from core.validation                import validate_golem_message_client_authorization
 from common.shortcuts               import load_without_public_key
 from common.testing_helpers         import generate_ecc_key_pair
 
@@ -58,49 +57,6 @@ class LoadWithoutPublicKeyUnitTest(TestCase):
         )
 
         self.assertEqual(loaded_task_to_compute_with_utility_function, loaded_task_to_compute_with_golem_messages_load)
-
-
-class ValidateGolemMessageClientAuthorizationUnitTest(TestCase):
-
-    def test_validate_golem_message_client_authorization_should_not_raise_error_if_correct_message_is_used(self):
-        client_authorization = message.concents.ClientAuthorization(
-            client_public_key = CONCENT_PUBLIC_KEY
-        )
-
-        try:
-            validate_golem_message_client_authorization(client_authorization)
-        except Http400:
-            self.fail()
-
-    def test_validate_golem_message_client_authorization_should_raise_400_error_when_wrong_message_is_used(self):
-        ping = message.Ping()
-
-        with self.assertRaises(Http400):
-            validate_golem_message_client_authorization(ping)
-
-    def test_validate_golem_message_client_authorization_should_raise_400_error_when_public_key_is_not_string(self):
-        client_authorization = message.concents.ClientAuthorization(
-            client_public_key = 111
-        )
-
-        with self.assertRaises(Http400):
-            validate_golem_message_client_authorization(client_authorization)
-
-    def test_validate_golem_message_client_authorization_should_raise_400_error_when_public_key_is_not_bytes(self):
-        client_authorization = message.concents.ClientAuthorization(
-            client_public_key = 'key'
-        )
-
-        with self.assertRaises(Http400):
-            validate_golem_message_client_authorization(client_authorization)
-
-    def test_validate_golem_message_client_authorization_should_raise_400_error_when_public_key_length_is_wrong(self):
-        client_authorization = message.concents.ClientAuthorization(
-            client_public_key = CONCENT_PUBLIC_KEY[:-1]
-        )
-
-        with self.assertRaises(Http400):
-            validate_golem_message_client_authorization(client_authorization)
 
 
 class ValidateGolemMessageSignedWithKeyUnitTest(TestCase):

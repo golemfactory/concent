@@ -3,6 +3,7 @@ from django.test            import override_settings
 from django.urls            import reverse
 from freezegun              import freeze_time
 from golem_messages         import message
+from golem_messages.utils import decode_hex
 
 from core.constants         import ETHEREUM_ADDRESS_LENGTH
 from core.models            import PendingResponse
@@ -434,6 +435,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp':      self._parse_iso_date_to_timestamp("2018-02-05 12:00:21"),
                 'amount_pending': amount_pending,
                 'amount_paid':    amount_paid,
+                'task_owner_key': decode_hex(task_to_compute.requestor_ethereum_public_key),
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -697,6 +699,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp':      self._parse_iso_date_to_timestamp("2018-02-05 12:00:21"),
                 'amount_pending': 25000,
                 'amount_paid':    0,
+                'task_owner_key': decode_hex(task_to_compute.requestor_ethereum_public_key),
             }
         )
         self._assert_stored_message_counter_not_increased()

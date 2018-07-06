@@ -1,8 +1,11 @@
 from unittest import TestCase
-
+from assertpy import assert_that
 import mock
+import pytest
+
 from django.test import override_settings
 
+from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.message.tasks import ReportComputedTask
 from golem_messages.message.tasks import SubtaskResultsRejected
@@ -20,6 +23,7 @@ from core.tests.utils import ConcentIntegrationTestCase
 from core.exceptions import FrameNumberValidationError
 from core.exceptions import HashingAlgorithmError
 from core.validation import validate_all_messages_identical
+from core.validation import validate_compute_task_def
 from core.validation import validate_ethereum_addresses
 from core.validation import validate_golem_message_subtask_results_rejected
 from core.validation import validate_id_value
@@ -262,3 +266,56 @@ class TestFramesListValidaation(TestCase):
     def test_that_if_frames_are_not_integers_method_should_raise_exception(self):
         with self.assertRaises(FrameNumberValidationError):
             validate_frames(['1', '2'])
+
+
+class TestValidateComputeTaskDef(object):
+    compute_task_def = None
+
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.compute_task_def = ComputeTaskDefFactory()
+        self.compute_task_def["extra_data"] = {
+            "output_format": "PNG",
+            "scene_file": "nice_photo.blend",
+            "frames": [1, 2, 3],
+        }
+
+    def test_that_valid_compute_task_def_doesnt_raise_any_exception(self):
+        try:
+            validate_compute_task_def(self.compute_task_def)
+        except Exception as exception:  # pylint: disable=broad-except
+            assert False, f"Unexpected exception has been raised: {str(exception)}"
+
+    def test_that_mising_extra_data_causes_message_validation_error(self):
+        del self.compute_task_def['extra_data']
+        with pytest.raises(ConcentValidationError) as exception_wrapper:
+            validate_compute_task_def(self.compute_task_def)
+        assert_that(exception_wrapper.value.error_message).contains(f"extra_data")
+        assert_that(exception_wrapper.value.error_code).is_equal_to(ErrorCode.MESSAGE_INVALID)
+
+    @pytest.mark.parametrize(
+        "missing_data", [
+            "output_format",
+            "scene_file",
+            "frames",
+        ]
+    )
+    def test_that_missing_entries_in_extra_data_causes_message_validation_error(self, missing_data):
+        del self.compute_task_def["extra_data"][missing_data]
+        with pytest.raises(ConcentValidationError) as exception_wrapper:
+            validate_compute_task_def(self.compute_task_def)
+        assert_that(exception_wrapper.value.error_message).contains(f"{missing_data}")
+        assert_that(exception_wrapper.value.error_code).is_equal_to(ErrorCode.MESSAGE_INVALID)
+
+    @pytest.mark.parametrize(
+        "value_with_wrong_type", [
+            "output_format",
+            "scene_file",
+        ]
+    )
+    def test_that_wrong_field_types_causes_message_validation_error(self, value_with_wrong_type):
+        self.compute_task_def["extra_data"][value_with_wrong_type] = mock.sentinel.wrongtype
+        with pytest.raises(ConcentValidationError) as exception_wrapper:
+            validate_compute_task_def(self.compute_task_def)
+        assert_that(exception_wrapper.value.error_message).contains(f"{value_with_wrong_type}")
+        assert_that(exception_wrapper.value.error_code).is_equal_to(ErrorCode.MESSAGE_VALUE_NOT_STRING)

@@ -1066,7 +1066,7 @@ def handle_messages_from_database(
 
         response_to_client = message.concents.ForcePaymentCommitted(
             payment_ts              = datetime.datetime.timestamp(payment_message.payment_ts),
-            task_owner_key          = payment_message.task_owner_key,
+            task_owner_key          = payment_message.task_owner_key.tobytes(),
             provider_eth_account    = payment_message.provider_eth_account,
             amount_paid             = payment_message.amount_paid,
             amount_pending          = payment_message.amount_pending,

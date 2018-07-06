@@ -145,7 +145,7 @@ def delete_file(file_path: str) -> None:
 
 def generate_full_blender_output_file_name(scene_file: str, frame_number: int, output_format: str) -> str:
     base_blender_output_file_name = generate_base_blender_output_file_name(scene_file)
-    return f'{base_blender_output_file_name}{frame_number:>04}.{output_format}'
+    return f'{base_blender_output_file_name}{frame_number:>04}.{output_format.lower()}'
 
 
 def generate_base_blender_output_file_name(scene_file: str) -> str:
@@ -410,7 +410,7 @@ def render_images_by_frames(
     blender_output_file_name_list = []
     for frame_number in frames:
         render_image(frame_number, output_format, scene_file, subtask_id, verification_deadline, blender_crop_script)
-        blender_out_file_name = generate_full_blender_output_file_name(scene_file, frame_number, output_format.lower())
+        blender_out_file_name = generate_full_blender_output_file_name(scene_file, frame_number, output_format)
         blender_output_file_name_list.append(blender_out_file_name)
         parsed_files_to_compare[frame_number].append(blender_out_file_name)
     return (blender_output_file_name_list, parsed_files_to_compare)

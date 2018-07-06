@@ -1,22 +1,34 @@
 from unittest import TestCase
 
+from assertpy import assert_that
+import pytest
 from mock import mock
+from django.conf import settings
 from django.test import override_settings
+from numpy import ones
+from numpy import zeros
 from numpy.core.records import ndarray
 
 from core.constants import VerificationResult
+from verifier.exceptions import VerificationError
 from verifier.exceptions import VerificationMismatch
+from verifier.utils import adjust_format_name
 from verifier.utils import are_image_sizes_and_color_channels_equal
 from verifier.utils import compare_all_rendered_images_with_user_results_files
+from verifier.utils import compare_images
 from verifier.utils import compare_minimum_ssim_with_results
+from verifier.utils import ensure_enough_result_files_provided
+from verifier.utils import ensure_frames_have_related_files_to_compare
+from verifier.utils import generate_base_blender_output_file_name
+from verifier.utils import generate_full_blender_output_file_name
+from verifier.utils import generate_upload_file_path
+from verifier.utils import generate_verifier_storage_file_path
 from verifier.utils import render_images_by_frames
 from verifier.utils import parse_result_files_with_frames
 from verifier.utils import upload_blender_output_file
-from verifier.utils import ensure_enough_result_files_provided
-from verifier.utils import ensure_frames_have_related_files_to_compare
 
 
-class VerifierVerificationIntegrationTest(TestCase):
+class VerifierUtilsTest(TestCase):
 
     def setUp(self):
         super().setUp()
@@ -55,6 +67,9 @@ class VerifierVerificationIntegrationTest(TestCase):
             (self.image, self.image),
             (self.image, self.image),
         ]
+        self.image_ones = ones(shape=(1920, 1080, 3), dtype='uint8')
+        self.image_zeros = zeros(shape=(1920, 1080, 3), dtype='uint8')
+        self.image_diffrent_size = zeros(shape=(1080, 1920, 3), dtype='uint8')
 
     def test_that_are_image_sizes_and_color_channels_equal_should_return_false_if_sizes_in_pixels_are_not_equal(self):
         result = are_image_sizes_and_color_channels_equal(self.image, self.image_diffrent_size)
@@ -199,3 +214,83 @@ class VerifierVerificationIntegrationTest(TestCase):
                 self.subtask_id,
                 VerificationResult.MATCH.name,
             )
+
+    def test_that_for_the_same_images_metod_produces_ssim_equal_one(self):
+        ssim = compare_images(self.image_ones, self.image_ones, 'subtask_id')
+        self.assertEqual(ssim, 1.0)
+
+    @override_settings(
+        VERIFIER_MIN_SSIM=0.95
+    )
+    def test_that_for_different_images_calculated_ssim_is_below_min(self):
+        ssim = compare_images(self.image_ones, self.image_zeros, 'subtask_id')
+        self.assertTrue(ssim < settings.VERIFIER_MIN_SSIM)
+
+    def test_that_method_raise_verification_error_when_images_have_diffrent_sizes(self):
+        with self.assertRaises(VerificationError):
+            compare_images(self.image_ones, self.image_diffrent_size, 'subtask_id')
+
+
+class TestGenerateFilePathMethods():
+
+    @pytest.mark.parametrize(('storage_path', 'file_name', 'expected'), [
+        ('tmp/', 'test_file.png', 'tmp/test_file.png'),
+        ('tmp', 'test_file.png', 'tmp/test_file.png'),
+    ])  # pylint: disable=no-self-use
+    def test_that_method_returns_correct_verifier_storage_file_path(self, storage_path, file_name, expected):
+        with override_settings(VERIFIER_STORAGE_PATH=storage_path):
+            verifier_storage_file_path = generate_verifier_storage_file_path(file_name=file_name)
+
+            assert_that(verifier_storage_file_path).is_equal_to(expected)
+
+    @pytest.mark.parametrize(('subtask_id', 'extension', 'frame_number', 'expected'), [
+        ('subtask_id', 'PNG', '22', 'blender/verifier-output/subtask_id/subtask_id_0022.png'),
+        ('subtask_id', 'PNG', 22, 'blender/verifier-output/subtask_id/subtask_id_0022.png'),
+    ])  # pylint: disable=no-self-use
+    def test_that_method_returns_correct_upload_file_path(self, subtask_id, extension, frame_number, expected):
+        upload_file_path = generate_upload_file_path(
+            subtask_id=subtask_id,
+            extension=extension,
+            frame_number=frame_number,
+        )
+
+        assert_that(upload_file_path).is_equal_to(expected)
+
+    @pytest.mark.parametrize(('storage_path', 'scene_file', 'expected'), [
+        ('tmp/', 'test_scene_file', 'tmp/out_test_scene_file_'),
+        ('tmp', 'test_scene_file', 'tmp/out_test_scene_file_'),
+    ])  # pylint: disable=no-self-use
+    def test_that_method_returns_correct_base_blender_output_file_name(self, storage_path, scene_file, expected):
+        with override_settings(VERIFIER_STORAGE_PATH=storage_path):
+            blender_output_file_name = generate_base_blender_output_file_name(scene_file)
+
+        assert_that(blender_output_file_name).is_equal_to(expected)
+
+    @pytest.mark.parametrize(('scene_file', 'frame_number', 'output_format', 'expected'), [
+        ('test_scene_file', 4, 'PNG', '/tmp/out_test_scene_file_0004.png'),
+        ('test_scene_file', 4, 'png', '/tmp/out_test_scene_file_0004.png'),
+        ('test_scene_file', 44444, 'PNG', '/tmp/out_test_scene_file_44444.png'),
+    ])  # pylint: disable=no-self-use
+    def test_that_method_returns_correct_full_blender_output_file_name(self, scene_file, frame_number, output_format, expected):
+        full_blender_output_file = generate_full_blender_output_file_name(
+            scene_file=scene_file,
+            frame_number=frame_number,
+            output_format=output_format,
+        )
+
+        assert_that(full_blender_output_file).is_equal_to(expected)
+
+    @pytest.mark.parametrize(('output_format', 'expected'), [
+        ('png', 'PNG'),
+        ('PNG', 'PNG'),
+        ('jpg', 'JPEG'),
+        ('JPG', 'JPEG'),
+        ('jpeg', 'JPEG'),
+        ('JPEG', 'JPEG'),
+        ('exr', 'EXR'),
+        ('EXR', 'EXR'),
+    ])  # pylint: disable=no-self-use
+    def test_that_method_returns_correct_format_name(self, output_format, expected):
+        upper_output_format = adjust_format_name(output_format)
+
+        assert_that(upper_output_format).is_equal_to(expected)

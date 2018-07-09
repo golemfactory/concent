@@ -83,6 +83,10 @@ def is_account_status_positive(
     return client_acc_balance > pending_value
 
 
+def get_transaction_count() -> int:
+    return ConcentRPC().get_transaction_count()  # type: ignore  # pylint: disable=no-member
+
+
 class TransactionType(Enum):
     BATCH = 'batch'
     FORCE = 'force'

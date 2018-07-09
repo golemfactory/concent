@@ -8,7 +8,6 @@ from golem_sci.transactionsstorage import TransactionsStorage
 from django.db import transaction
 
 from core.exceptions import TransactionNonceMismatch
-from common.singleton import ConcentRPC
 from core.models import GlobalTransactionState
 from core.models import PendingEthereumTransaction
 
@@ -21,15 +20,14 @@ class DatabaseTransactionsStorage(TransactionsStorage):
     database using Django models.
     """
 
-    def __init__(self, *args: List, **kwargs: Dict) -> None:
+    def __init__(self, nonce: int, *args: List, **kwargs: Dict) -> None:
         super().__init__(*args, **kwargs)
 
         assert isinstance(nonce, int)
         if not GlobalTransactionState.objects.filter(pk=0).exists():
-            concent_rpc = ConcentRPC()
             global_transaction_state = GlobalTransactionState(
                 pk=0,
-                nonce=concent_rpc.get_transaction_count(),  # TODO: Get it via backend
+                nonce=nonce,
             )
             global_transaction_state.full_clean()
             global_transaction_state.save()

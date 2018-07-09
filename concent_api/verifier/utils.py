@@ -336,19 +336,32 @@ def unpack_archives(file_paths: Iterable[str], subtask_id: str) -> None:
             )
 
 
-def validate_downloaded_archives(subtask_id: str, archives_list: Iterable[str]) -> None:
-    # If any file which is supposed to be unpacked from archives already exists, finish with error and raise exception.
-
-    for package_file_path in archives_list:
-        package_files_list = get_files_list_from_archive(
-            generate_verifier_storage_file_path(package_file_path)
-        )
-        if list(set(os.listdir(settings.VERIFIER_STORAGE_PATH)).intersection(package_files_list)):
-            raise VerificationError(  # TODO: write a test for this case
-                f'One of the files which are supposed to be unpacked from {package_file_path} already exists.',
-                ErrorCode.VERIFIER_UNPACKING_ARCHIVE_FAILED,
-                subtask_id,
+def validate_downloaded_archives(subtask_id: str, archives_list: Iterable[str], scene_file: str) -> None:
+    # If archive is broken, it means that Provider must have intentionally uploaded damaged zip file.
+    # In such case verification end with MISMATCH result.
+    package_files_list = []  # type: List[str]
+    try:
+        # If any file which is supposed to be unpacked from archives already exists, finish with error and raise exception.
+        for package_file_path in archives_list:
+            package_files_list += get_files_list_from_archive(
+                generate_verifier_storage_file_path(package_file_path)
             )
+    except zipfile.BadZipFile:
+        raise VerificationMismatch(subtask_id)
+
+    already_existing_files = set(os.listdir(settings.VERIFIER_STORAGE_PATH)).intersection(package_files_list)
+    if already_existing_files:
+        # This should not happen normally as the directory is cleaned before
+        raise VerificationError(
+            f'Files:<{", ".join(already_existing_files)}> already exist.',
+            ErrorCode.VERIFIER_UNPACKING_ARCHIVE_FAILED,
+            subtask_id,
+        )
+
+    # Similarly, it is Provider's responsibility to upload scene file.
+    # If it is missing, verification end with MISMATCH result.
+    if scene_file not in package_files_list:
+        raise VerificationMismatch(subtask_id)
 
 
 def download_archives_from_storage(

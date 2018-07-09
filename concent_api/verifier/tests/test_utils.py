@@ -1,14 +1,16 @@
 from unittest import TestCase
+from zipfile import BadZipFile
 
 from assertpy import assert_that
-import pytest
-from mock import mock
 from django.conf import settings
 from django.test import override_settings
+import mock
 from numpy import ones
 from numpy import zeros
 from numpy.core.records import ndarray
+import pytest
 
+from common.constants import ErrorCode
 from core.constants import VerificationResult
 from verifier.exceptions import VerificationError
 from verifier.exceptions import VerificationMismatch
@@ -23,9 +25,10 @@ from verifier.utils import generate_base_blender_output_file_name
 from verifier.utils import generate_full_blender_output_file_name
 from verifier.utils import generate_upload_file_path
 from verifier.utils import generate_verifier_storage_file_path
-from verifier.utils import render_images_by_frames
 from verifier.utils import parse_result_files_with_frames
+from verifier.utils import render_images_by_frames
 from verifier.utils import upload_blender_output_file
+from verifier.utils import validate_downloaded_archives
 
 
 class VerifierUtilsTest(TestCase):
@@ -294,3 +297,32 @@ class TestGenerateFilePathMethods():
         upper_output_format = adjust_format_name(output_format)
 
         assert_that(upper_output_format).is_equal_to(expected)
+
+
+class TestValidateDownloadedArchives(object):
+    @pytest.fixture(autouse=True)
+    def setUp(self):
+        self.scene_file = "kitten.blend"
+        self.subtask_id = "777"
+        self.archives_list = ["source.zip", "result.zip"]
+
+    def test_that_if_archive_is_not_a_zip_file_verification_mismatch_is_raised(self):
+        with mock.patch("verifier.utils.get_files_list_from_archive", side_effect=BadZipFile):
+            with pytest.raises(VerificationMismatch) as exception_wrapper:
+                validate_downloaded_archives(self.subtask_id, self.archives_list, self.scene_file)
+            assert_that(exception_wrapper.value.subtask_id).is_equal_to(self.subtask_id)
+
+    def test_that_if_scene_file_is_missing_in_archived_files_verification_mismatch_is_raised(self):
+        with mock.patch("verifier.utils.get_files_list_from_archive", side_effect=["", "result.png"]):
+            with pytest.raises(VerificationMismatch) as exception_wrapper:
+                validate_downloaded_archives(self.subtask_id, self.archives_list, self.scene_file)
+            assert_that(exception_wrapper.value.subtask_id).is_equal_to(self.subtask_id)
+
+    def test_that_if_one_of_the_files_to_be_unpacked_already_exists_verification_error_is_raised(self):
+        with mock.patch("verifier.utils.get_files_list_from_archive", side_effect=["kitten.blend", "result.png"]):
+            with mock.patch("verifier.utils.os.listdir", return_value="result.png"):
+                with pytest.raises(VerificationError) as exception_wrapper:
+                    validate_downloaded_archives(self.subtask_id, self.archives_list, self.scene_file)
+                assert_that(exception_wrapper.value.subtask_id).is_equal_to(self.subtask_id)
+                assert_that(exception_wrapper.value.error_code).\
+                    is_equal_to(ErrorCode.VERIFIER_UNPACKING_ARCHIVE_FAILED)

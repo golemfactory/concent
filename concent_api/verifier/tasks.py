@@ -111,7 +111,7 @@ def blender_verification_order(
         package_paths_to_downloaded_archive_names
     )
 
-    validate_downloaded_archives(subtask_id, package_paths_to_downloaded_archive_names.values())
+    validate_downloaded_archives(subtask_id, package_paths_to_downloaded_archive_names.values(), scene_file)
 
     unpack_archives(package_paths_to_downloaded_archive_names.values(), subtask_id)
 

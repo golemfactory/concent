@@ -23,6 +23,7 @@ CONCENT_FEATURES = [
     "conductor-urls",
     "conductor-worker",
     "gatekeeper",
+    "middleman",
     "verifier",
 ]
 

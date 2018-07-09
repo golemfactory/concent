@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'conductor',
     'core',
     'gatekeeper',
+    'middleman',
     'verifier',
 ]
 
@@ -309,7 +310,13 @@ ADDITIONAL_VERIFICATION_TIME_MULTIPLIER = 2.0
 # meant never to be exposed to the wide Internet.
 # Available features are:
 # - "concent-api": The public API server that allows requrestors and providers to interact with Concent.
-# - "Gatekeeper":  An internal helper that validates file transfer tokens.
+# - "concent-worker": Celery worker handling notification from storage cluster about completed file transfer.
+# - "conductor-urls": API server handling notification from nginx about uploaded files.
+# - "conductor-worker": Celery worker notifying control cluster about finished uploads and upon received
+#                       acknowledgement, ordering the start of verification process.
+# - "verifier": Celery worker that processes verification and notifies control cluster about its result.
+# - "middleman":  A socket server that mediates communication between Signing Service and Concent.
+# - "gatekeeper":  An internal helper that validates file transfer tokens.
 # - "admin-panel": Django admin panel that provides access to database content and service statistics.
 CONCENT_FEATURES = []  # type: ignore
 

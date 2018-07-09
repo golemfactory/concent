@@ -54,9 +54,16 @@ AVAILABLE_CONCENT_FEATURES = OrderedDict([
         "required_django_apps": [
             "gatekeeper",
         ],
-        "url_patterns":         [
-            url(r'^gatekeeper/', include(gatekeeper.urls, namespace = 'gatekeeper')),
+        "url_patterns": [
+            url(r'^gatekeeper/', include(gatekeeper.urls, namespace='gatekeeper')),
         ],
+    }),
+
+    ("middleman", {
+        "required_django_apps": [
+            "middleman",
+        ],
+        "url_patterns": [],
     }),
 
     ("verifier", {

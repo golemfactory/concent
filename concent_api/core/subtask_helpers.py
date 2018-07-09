@@ -9,7 +9,7 @@ from golem_messages.message.tasks import SubtaskResultsAccepted
 
 from core.models                import PendingResponse
 from core.models                import Subtask
-import core.payments.base
+from core.payments import service as payments_service
 from core.transfer_operations   import store_pending_message
 from core.transfer_operations   import verify_file_status
 from common.helpers              import deserialize_message
@@ -101,7 +101,7 @@ def update_timed_out_subtasks(
             task_to_compute = deserialize_message(locked_subtask.task_to_compute.data.tobytes())
 
             # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
-            core.payments.base.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
+            payments_service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
                 requestor_eth_address=task_to_compute.requestor_ethereum_address,
                 provider_eth_address=task_to_compute.provider_ethereum_address,
                 value=task_to_compute.price,

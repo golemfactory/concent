@@ -79,7 +79,7 @@ class UploadFinishedTaskTest(ConcentIntegrationTestCase):
     def test_that_scheduling_task_for_subtask_after_deadline_should_process_timeout(self):
         datetime = parse_timestamp_to_utc_datetime(get_current_utc_timestamp() + settings.CONCENT_MESSAGING_TIME + 1)
         with freeze_time(datetime):
-            with mock.patch('core.tasks.base.make_force_payment_to_provider', autospec=True) as payment_function_mock:
+            with mock.patch('core.tasks.payments_service.make_force_payment_to_provider', autospec=True) as payment_function_mock:
                 upload_finished(self.subtask.subtask_id)  # pylint: disable=no-value-for-parameter
 
         self.subtask.refresh_from_db()

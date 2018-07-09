@@ -39,8 +39,8 @@ from core.models import PaymentInfo
 from core.models import PendingResponse
 from core.models import StoredMessage
 from core.models import Subtask
-import core.payments.base
-from core.payments.sci_backend import TransactionType
+from core.payments import service as payments_service
+from core.payments.backends.sci_backend import TransactionType
 from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
 from core.transfer_operations import store_pending_message
@@ -481,7 +481,7 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
             reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
         )
 
-    if not core.payments.base.is_account_status_positive(  # pylint: disable=no-value-for-parameter
+    if not payments_service.is_account_status_positive(  # pylint: disable=no-value-for-parameter
         client_eth_address=task_to_compute.requestor_ethereum_address,
         pending_value=task_to_compute.price,
     ):
@@ -489,7 +489,7 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
             reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
         )
 
-    core.payments.base.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
+    payments_service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
         requestor_eth_address=task_to_compute.requestor_ethereum_address,
         provider_eth_address=task_to_compute.provider_ethereum_address,
         value=task_to_compute.price,
@@ -718,7 +718,7 @@ def handle_send_force_payment(
     )
 
     # Concent gets list of transactions from payment API where timestamp >= T0.
-    list_of_transactions = core.payments.base.get_list_of_payments(  # pylint: disable=no-value-for-parameter
+    list_of_transactions = payments_service.get_list_of_payments(  # pylint: disable=no-value-for-parameter
         requestor_eth_address   = requestor_eth_address,
         provider_eth_address    = provider_eth_address,
         payment_ts              = oldest_payments_ts,
@@ -745,7 +745,7 @@ def handle_send_force_payment(
         )
 
     # Concent gets list of forced payments from payment API where T0 <= payment_ts + PAYMENT_DUE_TIME.
-    list_of_forced_payments = core.payments.base.get_list_of_payments(  # pylint: disable=no-value-for-parameter
+    list_of_forced_payments = payments_service.get_list_of_payments(  # pylint: disable=no-value-for-parameter
         requestor_eth_address   = requestor_eth_address,
         provider_eth_address    = provider_eth_address,
         payment_ts              = oldest_payments_ts + settings.PAYMENT_DUE_TIME,  # Im not sure, check it please
@@ -770,7 +770,7 @@ def handle_send_force_payment(
             reason=message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,
         )
     else:
-        core.payments.base.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
+        payments_service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
             requestor_eth_address   = requestor_eth_address,
             provider_eth_address    = provider_eth_address,
             value                   = amount_pending,
@@ -1363,7 +1363,7 @@ def handle_send_subtask_results_verify(
             error_code=ErrorCode.QUEUE_SUBTASK_STATE_TRANSITION_NOT_ALLOWED,
         )
 
-    if not core.payments.base.is_account_status_positive(  # pylint: disable=no-value-for-parameter
+    if not payments_service.is_account_status_positive(  # pylint: disable=no-value-for-parameter
         client_eth_address=task_to_compute.requestor_ethereum_address,
         pending_value=task_to_compute.price,
     ):

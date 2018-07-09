@@ -1,3 +1,4 @@
+from django.core.validators import MaxLengthValidator
 from django.core.validators import ValidationError
 from django.db.models import BooleanField
 from django.db.models import CharField
@@ -19,10 +20,10 @@ class VerificationRequest(Model):
     subtask_id = CharField(max_length=MESSAGE_TASK_ID_MAX_LENGTH)
 
     # Relative path of the .zip file that contains Blender source files for the render.
-    source_package_path = CharField(max_length=255, unique=True)
+    source_package_path = TextField(validators=[MaxLengthValidator(MESSAGE_PATH_LENGTH)], unique=True)
 
     # Relative path of the .zip file that contains the rendering result received from the provider.
-    result_package_path = CharField(max_length=255, unique=True)
+    result_package_path = TextField(validators=[MaxLengthValidator(MESSAGE_PATH_LENGTH)], unique=True)
 
     # True when `upload_finished` task for this subtask has already been sent to the work queue.
     upload_finished = BooleanField(default=False)
@@ -84,7 +85,7 @@ class UploadReport(Model):
     """
 
     # Relative path of the file. Relative to the same directory that paths listed in FileTransferTokens are relative to.
-    path = CharField(max_length=MESSAGE_PATH_LENGTH)
+    path = TextField(validators=[MaxLengthValidator(MESSAGE_PATH_LENGTH)])
 
     # Foreign key to VerificationRequest. Can be NULL if there's no corresponding request.
     verification_request = ForeignKey(VerificationRequest, related_name='upload_reports', blank=True, null=True)

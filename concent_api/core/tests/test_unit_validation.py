@@ -322,9 +322,9 @@ class TestValidateComputeTaskDef(object):
         assert_that(exception_wrapper.value.error_code).is_equal_to(ErrorCode.MESSAGE_VALUE_NOT_STRING)
 
 
-class TestValidateSceneFile():
+class TestValidateSceneFile:
 
-    def test_that_wrong_scene_file_name_causes_validation_error(self, scene_file='scene_file.png'):
+    def test_that_wrong_scene_file_name_causes_validation_error(self, scene_file='scene_file.png'):  # pylint: disable=no-self-use
         with pytest.raises(ConcentValidationError) as exception_wrapper:
             validate_scene_file(scene_file)
         assert_that(exception_wrapper.value.error_message).contains(f'{scene_file}')

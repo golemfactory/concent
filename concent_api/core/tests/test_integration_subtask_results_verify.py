@@ -17,7 +17,6 @@ from core.transfer_operations import create_file_transfer_token_for_golem_client
 from common.constants import ErrorCode
 from common.helpers import get_current_utc_timestamp
 from common.helpers import get_storage_result_file_path
-from common.helpers import get_storage_scene_file_path
 from common.helpers import get_storage_source_file_path
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.testing_helpers import generate_ecc_key_pair
@@ -592,7 +591,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 'outfilebasename': 'Heli-cycles(3)',
                 'output_format': BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
                 'path_root': '/home/dariusz/Documents/tasks/resources',
-                'scene_file': get_storage_scene_file_path(self.subtask_id, self.task_id),
+                'scene_file': '/golem/resources/scene-Helicopter-27-internal.blend',
                 'script_src': '# This template is rendered by',
                 'start_task': 6,
                 'total_tasks': 8

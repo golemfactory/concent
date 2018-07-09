@@ -29,6 +29,7 @@ from core.validation import validate_golem_message_subtask_results_rejected
 from core.validation import validate_id_value
 from core.validation import validate_frames
 from core.validation import validate_positive_integer_value
+from core.validation import validate_scene_file
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
@@ -235,7 +236,7 @@ class TestAreEthereumAddressesAndKeysUnique(ConcentIntegrationTestCase):
         self.assertFalse(result)
 
 
-class TestFramesListValidaation(TestCase):
+class TestFramesListValidation(TestCase):
 
     def test_that_list_of_ints_is_valid(self):
         try:
@@ -276,7 +277,7 @@ class TestValidateComputeTaskDef(object):
         self.compute_task_def = ComputeTaskDefFactory()
         self.compute_task_def["extra_data"] = {
             "output_format": "PNG",
-            "scene_file": "nice_photo.blend",
+            "scene_file": "/nice_photo.blend",
             "frames": [1, 2, 3],
         }
 
@@ -319,3 +320,25 @@ class TestValidateComputeTaskDef(object):
             validate_compute_task_def(self.compute_task_def)
         assert_that(exception_wrapper.value.error_message).contains(f"{value_with_wrong_type}")
         assert_that(exception_wrapper.value.error_code).is_equal_to(ErrorCode.MESSAGE_VALUE_NOT_STRING)
+
+
+class TestValidateSceneFile():
+
+    def test_that_wrong_scene_file_name_causes_validation_error(self, scene_file='scene_file.png'):
+        with pytest.raises(ConcentValidationError) as exception_wrapper:
+            validate_scene_file(scene_file)
+        assert_that(exception_wrapper.value.error_message).contains(f'{scene_file}')
+        assert_that(exception_wrapper.value.error_code).is_equal_to(ErrorCode.MESSAGE_INVALID)
+
+    @pytest.mark.parametrize(
+        'scene_file', [
+            '/scene_file.blend',
+            '\\scene_file.blend',
+            'scene_file.blend',
+        ]  # pylint: disable=no-self-use
+    )
+    def test_that_valid_scene_file_name_doesnt_raise_any_error(self, scene_file):
+        try:
+            validate_scene_file(scene_file)
+        except Exception as exception:  # pylint: disable=broad-except
+            assert False, f"Unexpected exception has been raised: {str(exception)}"

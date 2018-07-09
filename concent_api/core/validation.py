@@ -293,6 +293,14 @@ def validate_positive_integer_value(value):
         )
 
 
+def validate_scene_file(scene_file):
+    if not scene_file.endswith('.blend'):
+        raise ConcentValidationError(
+            f'{scene_file} must ends with ".blend" filename extension',
+            ErrorCode.MESSAGE_INVALID
+        )
+
+
 def validate_compute_task_def(compute_task_def: message.tasks.ComputeTaskDef) -> None:
     string_fields = ["output_format", "scene_file"]
     other_mandatory_fields = ["frames"]
@@ -324,3 +332,5 @@ def validate_compute_task_def(compute_task_def: message.tasks.ComputeTaskDef) ->
                 f"{string_field} should be string",
                 ErrorCode.MESSAGE_VALUE_NOT_STRING
             )
+
+    validate_scene_file(extra_data['scene_file'])

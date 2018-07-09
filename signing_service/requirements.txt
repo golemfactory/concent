@@ -1,0 +1,7 @@
+coverage
+mypy
+pytest
+pytest-cov
+pytest-django
+pytest-xdist
+raven

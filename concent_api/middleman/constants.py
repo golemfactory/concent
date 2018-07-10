@@ -1,0 +1,3 @@
+DEFAULT_INTERNAL_PORT = 9054
+LOCALHOST_IP = "127.0.0.1"
+ERROR_ADDRESS_ALREADY_IN_USE = "Error: address already in use"

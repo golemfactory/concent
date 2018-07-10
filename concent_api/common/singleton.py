@@ -1,6 +1,8 @@
 from django.conf        import settings
 from golem_sci.factory  import new_sci_rpc
 
+from core.payments.storage import DatabaseTransactionsStorage
+
 
 class ConcentRPC:
     __instance = None
@@ -10,6 +12,7 @@ class ConcentRPC:
             cls.__instance = new_sci_rpc(
                 settings.GETH_ADDRESS,
                 settings.CONCENT_ETHEREUM_ADDRESS,
-                lambda tx: tx.sign(settings.CONCENT_ETHEREUM_PRIVATE_KEY)
+                lambda tx: tx.sign(settings.CONCENT_ETHEREUM_PRIVATE_KEY),
+                # DatabaseTransactionsStorage,
             )
         return cls.__instance

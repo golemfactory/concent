@@ -209,7 +209,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
 
         # when
         with mock.patch(
-            "core.message_handlers.core.payments.base.is_account_status_positive",
+            "core.message_handlers.payments_service.is_account_status_positive",
             return_value=False
         ) as is_account_status_positive_mock:
             with freeze_time(subtask_results_verify_time_str):
@@ -313,7 +313,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
          subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify()
 
         # when
-        with mock.patch("core.message_handlers.core.payments.base.is_account_status_positive", return_value=True) as is_account_status_positive_mock:
+        with mock.patch("core.message_handlers.payments_service.is_account_status_positive", return_value=True) as is_account_status_positive_mock:
             with mock.patch("core.queue_operations.blender_verification_request.delay") as send_verification_request_mock:
                 with freeze_time(subtask_results_verify_time_str):
                     response = self.client.post(
@@ -478,7 +478,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         subtask_results_verify_date_time = self._create_datetime_from_string(subtask_results_verify_time_str)
 
         # when
-        with mock.patch("core.message_handlers.core.payments.base.is_account_status_positive", autospec=True, return_value=True):
+        with mock.patch("core.message_handlers.payments_service.is_account_status_positive", autospec=True, return_value=True):
             with mock.patch("core.message_handlers.send_blender_verification_request", autospec=True):
                 with freeze_time(subtask_results_verify_date_time):
                     ack_subtask_results_verify = self.client.post(

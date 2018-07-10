@@ -5,7 +5,7 @@ from concent_api.system_check   import geth_container_address_check
 
 
 @override_settings(
-    PAYMENT_BACKEND = 'core.payments.sci_backend'
+    PAYMENT_BACKEND = 'core.payments.backends.sci_backend'
 )
 class SystemCheckTest(TestCase):
     def setUp(self):

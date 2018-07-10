@@ -270,7 +270,7 @@ DOWNLOAD_LEADIN_TIME = int(constants.DOWNLOAD_LEADIN_TIME.total_seconds())
 PAYMENT_DUE_TIME = int(constants.PDT.total_seconds())
 
 # A global constant defining currently used payment backend.
-PAYMENT_BACKEND = 'core.payments.mock'
+PAYMENT_BACKEND = 'core.payments.backends.mock'
 
 # A global constant defining the path to self-signed SSL certificate to storage cluster
 STORAGE_CLUSTER_SSL_CERTIFICATE_PATH = ''

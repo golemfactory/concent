@@ -15,7 +15,7 @@ from conductor import tasks
 from core.constants import VerificationResult
 from core.models import PendingResponse
 from core.models import Subtask
-from core.payments import base
+from core.payments import service as payments_service
 from core.subtask_helpers import update_subtask_state
 from core.transfer_operations import store_pending_message
 from core.utils import calculate_subtask_verification_time
@@ -47,7 +47,7 @@ def upload_finished(subtask_id: str):
         # If subtask is past the deadline, processes the timeout.
         if subtask.next_deadline.timestamp() < get_current_utc_timestamp():
             # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
-            base.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
+            payments_service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
                 requestor_eth_address=report_computed_task.task_to_compute.requestor_ethereum_address,
                 provider_eth_address=report_computed_task.task_to_compute.provider_ethereum_address,
                 value=report_computed_task.task_to_compute.price,
@@ -160,7 +160,7 @@ def verification_result(
     if subtask.next_deadline < parse_timestamp_to_utc_datetime(get_current_utc_timestamp()):
         task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
         # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
-        base.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
+        payments_service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
             requestor_eth_address=task_to_compute.requestor_ethereum_address,
             provider_eth_address=task_to_compute.provider_ethereum_address,
             value=task_to_compute.price,
@@ -207,7 +207,7 @@ def verification_result(
         task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
 
         # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
-        base.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
+        payments_service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
             requestor_eth_address=task_to_compute.requestor_ethereum_address,
             provider_eth_address=task_to_compute.provider_ethereum_address,
             value=task_to_compute.price,

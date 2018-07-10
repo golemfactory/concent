@@ -382,7 +382,7 @@ def storage_cluster_certificate_path_check(app_configs = None, **kwargs):  # pyl
 def geth_container_address_check(app_configs, **kwargs):  # pylint: disable=unused-argument
     if (
         hasattr(settings, 'PAYMENT_BACKEND') and
-        settings.PAYMENT_BACKEND == 'core.payments.sci_backend'
+        settings.PAYMENT_BACKEND == 'core.payments.backends.sci_backend'
     ):
         if hasattr(settings, 'GETH_ADDRESS'):
             url_validator = URLValidator(schemes = ['http', 'https'])

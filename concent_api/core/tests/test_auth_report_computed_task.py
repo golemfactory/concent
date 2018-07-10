@@ -227,14 +227,13 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             self.REQUESTOR_PRIVATE_KEY,
         )
 
-        report_computed_task_from_requestor = self._get_deserialized_report_computed_task(
+        report_computed_task_from_provider = self._get_deserialized_report_computed_task(
             timestamp="2017-12-01 10:55:00",
             task_to_compute=task_to_compute,
-            sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
         )
         with freeze_time("2017-12-01 11:00:05"):
             ack_report_computed_task = message.AckReportComputedTask(
-                report_computed_task=report_computed_task_from_requestor,
+                report_computed_task=report_computed_task_from_provider,
             )
         serialized_ack_report_computed_task = dump(ack_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
@@ -265,14 +264,13 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             self.REQUESTOR_PRIVATE_KEY,
         )
 
-        report_computed_task_from_requestor = self._get_deserialized_report_computed_task(
+        report_computed_task_from_provider = self._get_deserialized_report_computed_task(
             timestamp="2017-12-01 10:55:00",
             task_to_compute=self.deserialized_task_to_compute,
-            sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
         )
         with freeze_time("2017-12-01 11:00:05"):
             ack_report_computed_task = message.AckReportComputedTask(
-                report_computed_task=report_computed_task_from_requestor
+                report_computed_task=report_computed_task_from_provider
             )
         serialized_ack_report_computed_task = dump(ack_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 

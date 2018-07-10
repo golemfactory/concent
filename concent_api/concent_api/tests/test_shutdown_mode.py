@@ -113,19 +113,14 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
 
         self.stored_message_counter = 2
 
-        report_computed_task_from_requestor = self._get_deserialized_report_computed_task(
-            timestamp="2017-12-01 10:55:00",
-            task_to_compute=task_to_compute,
-            sign_with_private_key=self.REQUESTOR_PRIVATE_KEY,
-        )
         serialized_ack_report_computed_task = self._get_serialized_ack_report_computed_task(
-            timestamp                = "2017-12-01 11:00:05",
-            ack_report_computed_task = self._get_deserialized_ack_report_computed_task(
-                timestamp       = "2017-12-01 11:00:05",
-                subtask_id      = '8',
-                report_computed_task = report_computed_task_from_requestor
+            timestamp="2017-12-01 11:00:05",
+            ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
+                timestamp="2017-12-01 11:00:05",
+                subtask_id='8',
+                report_computed_task=report_computed_task
             ),
-            requestor_private_key    = self.REQUESTOR_PRIVATE_KEY
+            requestor_private_key=self.REQUESTOR_PRIVATE_KEY
         )
 
         with freeze_time("2017-12-01 11:00:05"):
@@ -136,9 +131,9 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY = self._get_encoded_requestor_public_key(),
             )
 
-        self.assertEqual(response.status_code,  202)
+        self.assertEqual(response.status_code, 202)
         self.assertEqual(len(response.content), 0)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=1)
         self._test_subtask_state(
             task_id                  = '1',
             subtask_id               = '8',

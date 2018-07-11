@@ -1,0 +1,3 @@
+
+class SigningServiceValidationError(Exception):
+    pass

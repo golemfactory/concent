@@ -75,8 +75,8 @@ def handle_send_force_report_computed_task(client_message):
         requestor_public_key,
         task_to_compute,
     )
-
-    if Subtask.objects.filter(
+    # QuerySet is inferred as lis; pylint: disable=no-member; https://github.com/PyCQA/pylint-django/issues/165
+    if Subtask.objects.filter(  # pylint: disable=no-member
         subtask_id=task_to_compute.compute_task_def['subtask_id'],
     ).exists():
         raise Http400(
@@ -400,7 +400,7 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
         task_to_compute,
     )
 
-    if Subtask.objects.filter(
+    if Subtask.objects.filter(  # pylint: disable=no-member
         subtask_id = task_to_compute.compute_task_def['subtask_id'],
         state      = Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name,  # pylint: disable=no-member
     ).exists():
@@ -475,7 +475,7 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
 
     current_time = get_current_utc_timestamp()
 
-    if Subtask.objects.filter(
+    if Subtask.objects.filter(  # pylint: disable=no-member
         subtask_id=task_to_compute.compute_task_def['subtask_id'],
         state=Subtask.SubtaskState.FORCING_ACCEPTANCE.name,  # pylint: disable=no-member
     ).exists():
@@ -1158,7 +1158,7 @@ def update_subtask(
     )
 
     # Concent should send e-mail notification when the last active subtask switches to a passive state.
-    if config.SOFT_SHUTDOWN_MODE is True and not Subtask.objects.filter(state__in=Subtask.ACTIVE_STATES).exists():
+    if config.SOFT_SHUTDOWN_MODE is True and not Subtask.objects.filter(state__in=Subtask.ACTIVE_STATES).exists():  # pylint: disable=no-member
         mail_admins(
             subject = 'Concent soft shutdown complete',
             message = (
@@ -1350,7 +1350,7 @@ def handle_send_subtask_results_verify(
             reason=message.concents.ServiceRefused.REASON.InvalidRequest,
         )
 
-    if Subtask.objects.filter(
+    if Subtask.objects.filter(  # pylint: disable=no-member
         subtask_id=compute_task_def['subtask_id'],
         state__in=[
             Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER.name,  # pylint: disable=no-member
@@ -1449,7 +1449,7 @@ def handle_message(client_message):
 
 
 def is_subtask_in_wrong_state(subtask_id, forbidden_states):
-    return Subtask.objects.filter(
+    return Subtask.objects.filter(  # pylint: disable=no-member
         subtask_id=subtask_id,
         state__in=forbidden_states
     ).exists()

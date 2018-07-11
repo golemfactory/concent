@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from core.message_handlers import are_items_unique
+from core.tests.utils import ConcentIntegrationTestCase
 
 
 class TestMessageHandlers(TestCase):

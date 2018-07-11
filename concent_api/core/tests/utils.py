@@ -355,7 +355,7 @@ class ConcentIntegrationTestCase(TestCase):
         for nested_message in unset_messages:
             self.assertIsNone(getattr(subtask, nested_message))
 
-    def _test_last_stored_messages(self, expected_messages, task_id, subtask_id, timestamp):
+    def _test_last_stored_messages(self, expected_messages, task_id, subtask_id):
         assert isinstance(expected_messages, list)
         assert isinstance(task_id,           str)
         assert isinstance(subtask_id,        str)
@@ -366,7 +366,6 @@ class ConcentIntegrationTestCase(TestCase):
             self.assertIn(stored_message.type,                      expected_message_types)
             self.assertEqual(stored_message.task_id,                task_id)
             self.assertEqual(stored_message.subtask_id,             subtask_id)
-            self.assertEqual(stored_message.timestamp.timestamp(),  self._parse_iso_date_to_timestamp(timestamp))
 
             expected_message_types.remove(stored_message.type)
 

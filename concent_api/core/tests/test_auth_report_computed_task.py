@@ -97,7 +97,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '1',
             subtask_id      = '8',
-            timestamp       = "2017-12-01 10:59:00"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',
@@ -297,7 +296,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '1',
             subtask_id      = '8',
-            timestamp       = "2017-12-01 11:00:05"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',
@@ -393,7 +391,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '1',
             subtask_id      = '8',
-            timestamp       = "2017-12-01 10:59:00"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',
@@ -603,7 +600,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '1',
             subtask_id      = '8',
-            timestamp       = "2017-12-01 11:00:05"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',
@@ -702,7 +698,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '1',
             subtask_id      = '8',
-            timestamp       = "2017-12-01 10:59:00"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',
@@ -901,7 +896,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '1',
             subtask_id      = '8',
-            timestamp       = "2017-12-01 11:00:05"
         )
         self._test_undelivered_pending_responses(
             subtask_id                          = '8',
@@ -1055,7 +1049,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '1',
             subtask_id      = '8',
-            timestamp       = "2017-12-01 10:59:00"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',

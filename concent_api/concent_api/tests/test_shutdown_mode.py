@@ -148,7 +148,6 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
             ],
             task_id         = '1',
             subtask_id      = '8',
-            timestamp       = "2017-12-01 11:00:05"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',

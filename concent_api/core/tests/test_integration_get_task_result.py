@@ -218,7 +218,6 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '1',
             subtask_id      = '8',
-            timestamp       = "2017-12-01 11:00:08"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',
@@ -322,7 +321,6 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '1',
             subtask_id      = '8',
-            timestamp       = "2017-12-01 11:00:10"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',
@@ -396,7 +394,6 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '99',
             subtask_id      = '8',
-            timestamp       = "2017-12-01 11:00:01"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',
@@ -668,7 +665,6 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '99',
             subtask_id      = '8',
-            timestamp       = "2017-12-01 11:00:01"
         )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.
@@ -822,7 +818,6 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '99',
             subtask_id      = '8',
-            timestamp       = "2017-12-01 11:00:01"
         )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.
@@ -977,7 +972,6 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '99',
             subtask_id      = '8',
-            timestamp       = "2017-12-01 11:00:01"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',

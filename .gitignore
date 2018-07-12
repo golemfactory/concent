@@ -112,3 +112,6 @@ ENV/
 
 # Version
 /concent_api/verifier_storage
+
+# PyCharm
+/.idea

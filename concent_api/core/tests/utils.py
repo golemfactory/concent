@@ -1,6 +1,7 @@
 from base64 import b64encode
 from typing import List
 from typing import Optional
+from typing import Union
 import datetime
 import functools
 import mock
@@ -167,7 +168,7 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_task_to_compute(
         self,
-        timestamp: Optional[str] = None,
+        timestamp: Union[str, datetime.datetime, None] = None,
         deadline = None,
         task_id: str = '1',
         subtask_id: str = '2',
@@ -197,6 +198,8 @@ class ConcentIntegrationTestCase(TestCase):
         assert isinstance(requestor_public_key, str) or requestor_public_key is None
         assert isinstance(provider_id, str) or provider_id is None
         assert isinstance(provider_public_key, str) or provider_public_key is None
+        assert isinstance(timestamp, (str, datetime.datetime)) or timestamp is None
+
         with freeze_time(timestamp or self._get_timestamp_string()):
             task_to_compute = TaskToComputeFactory(
                 compute_task_def=compute_task_def,

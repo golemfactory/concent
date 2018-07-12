@@ -33,6 +33,8 @@ STORAGE_CLUSTER_ADDRESS = 'http://127.0.0.1:8001/'
 
 GETH_ADDRESS = 'http://localhost:8545'
 
+CONCENT_UPLOAD_RATE = int(384 / 8)  # KB/s = kbps / 8
+
 STORAGE_SERVER_INTERNAL_ADDRESS = 'http://127.0.0.1:8001/'
 
 VERIFIER_STORAGE_PATH = os.path.join(BASE_DIR, 'verifier_storage')

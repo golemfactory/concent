@@ -1,5 +1,6 @@
 import os
 from celery import Celery
+from kombu import Queue
 
 # set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'concent_api.settings')
@@ -13,7 +14,14 @@ app = Celery('concent_api')
 #   should have a `CELERY_` prefix.
 app.config_from_object('django.conf:settings', namespace = 'CELERY')
 
-app.conf.task_create_missing_queues = True
+app.conf.task_create_missing_queues = False
+
+app.conf.task_queues = (
+    Queue('concent'),
+    Queue('conductor'),
+    Queue('verifier'),
+)
+
 app.conf.task_routes = ([
     ('core.tasks.verification_result', {'queue': 'concent'}),
     ('core.tasks.upload_finished', {'queue': 'concent'}),
@@ -21,4 +29,4 @@ app.conf.task_routes = ([
     ('conductor.tasks.upload_acknowledged', {'queue': 'conductor'}),
     ('verifier.tasks.blender_verification_order', {'queue': 'verifier'}),
 ],)
-app.conf.task_default_queue = 'non_existing'
+app.conf.task_default_queue = 'concent'

@@ -324,9 +324,9 @@ def validate_compute_task_def(compute_task_def: message.tasks.ComputeTaskDef) ->
                 ErrorCode.MESSAGE_INVALID
             )
 
-    if not extra_data.get('frames'):
+    if not 'frames' in extra_data:
         raise ConcentValidationError(
-            "'extra_data' is missing in ComputeTaskDef",
+            "'frames' is missing in ComputeTaskDef",
             ErrorCode.MESSAGE_INVALID
         )
 

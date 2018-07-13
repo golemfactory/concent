@@ -104,7 +104,6 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '1',
             subtask_id      = '8',
-            timestamp       = "2017-12-01 11:00:08"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',
@@ -300,7 +299,6 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '99',
             subtask_id      = '8',
-            timestamp       = "2017-12-01 11:00:01"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',
@@ -539,7 +537,6 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '99',
             subtask_id      = '8',
-            timestamp       = "2017-12-01 11:00:01"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',
@@ -785,7 +782,6 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '99',
             subtask_id      = '8',
-            timestamp       = "2017-12-01 11:00:01"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',
@@ -1020,7 +1016,6 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '99',
             subtask_id      = '8',
-            timestamp       = "2017-12-01 11:00:01"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = '8',

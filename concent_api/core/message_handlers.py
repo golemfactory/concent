@@ -10,7 +10,6 @@ from typing import Union
 from django.conf import settings
 from django.core.mail import mail_admins
 from django.http import HttpResponse
-from django.utils import timezone
 
 from constance import config
 
@@ -1286,7 +1285,7 @@ def store_message(
 ):
     assert golem_message.TYPE in message.registered_message_types
 
-    message_timestamp = datetime.datetime.now(timezone.utc)
+    message_timestamp = parse_timestamp_to_utc_datetime(golem_message.timestamp)
     stored_message = StoredMessage(
         type        = golem_message.TYPE,
         timestamp   = message_timestamp,

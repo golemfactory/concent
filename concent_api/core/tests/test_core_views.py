@@ -109,7 +109,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             ],
             task_id         = '8',
             subtask_id      = '8',
-            timestamp       = "2017-11-17 10:00:00"
         )
 
     @freeze_time("2017-11-17 10:00:00")
@@ -181,7 +180,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             ],
             task_id         = 'ABC00XYZ',
             subtask_id      = 'ABC00XYZ',
-            timestamp       = "2017-11-17 10:00:00"
         )
 
     @freeze_time("2017-11-17 10:00:00")
@@ -346,7 +344,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             ],
             task_id         = '8',
             subtask_id      = '8',
-            timestamp       = "2017-11-17 10:00:00"
         )
 
         reject_response = self.client.post(
@@ -366,7 +363,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             ],
             task_id         = '8',
             subtask_id      = '8',
-            timestamp       = "2017-11-17 10:00:00"
         )
 
     def test_send_should_reject_message_when_timestamp_too_old(self):

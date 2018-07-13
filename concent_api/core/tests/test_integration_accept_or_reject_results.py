@@ -113,7 +113,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',
-            timestamp       = "2018-02-05 10:00:30"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = 'xxyyzz',
@@ -378,7 +377,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',
-            timestamp       = "2018-02-05 10:00:31"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = 'xxyyzz',
@@ -481,7 +479,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',
-            timestamp       = "2018-02-05 10:00:31"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = 'xxyyzz',
@@ -626,7 +623,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',
-            timestamp       = "2018-02-05 10:00:30"
         )
 
         self._test_undelivered_pending_responses(
@@ -689,7 +685,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',
-            timestamp       = "2018-02-05 10:00:44"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = 'xxyyzz',
@@ -790,7 +785,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',
-            timestamp       = "2018-02-05 10:00:30"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = 'xxyyzz',
@@ -861,7 +855,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id='2',
             subtask_id='xxyyzz',
-            timestamp="2018-02-05 10:00:44"
         )
         self._test_undelivered_pending_responses(
             subtask_id='xxyyzz',
@@ -1116,7 +1109,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',
-            timestamp       = "2018-02-05 10:00:30"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = 'xxyyzz',
@@ -1418,7 +1410,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',
-            timestamp       = "2018-02-05 10:00:30"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = 'xxyyzz',
@@ -1597,7 +1588,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',
-            timestamp       = "2018-02-05 10:00:30"
         )
         self._test_undelivered_pending_responses(
             subtask_id                         = 'xxyyzz',

@@ -50,8 +50,9 @@ def calculate_subtask_verification_time(report_computed_task: message.ReportComp
     assert isinstance(report_computed_task, message.ReportComputedTask)
 
     if settings.CUSTOM_PROTOCOL_TIMES:
-        mdt = maximum_download_time(
+        mdt = calculate_maximum_download_time(
             size=report_computed_task.size,
+            rate=settings.CONCENT_UPLOAD_RATE
         )
         ttc_dt = datetime.datetime.utcfromtimestamp(
             report_computed_task.task_to_compute.timestamp,
@@ -63,7 +64,7 @@ def calculate_subtask_verification_time(report_computed_task: message.ReportComp
 
         return int(
             (4 * settings.CONCENT_MESSAGING_TIME) +
-            (3 * mdt.total_seconds()) +
+            (3 * mdt) +
             (0.5 * subtask_timeout.total_seconds())
         )
     else:

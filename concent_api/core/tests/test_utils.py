@@ -96,7 +96,10 @@ class CalculateSubtaskVerificationTimeTestCase(ConcentIntegrationTestCase):
         mock_subtask_verification_time.assert_not_called()
 
     @override_settings(
-        CONCENT_MESSAGING_TIME=int(constants.CMT.total_seconds())
+        CONCENT_MESSAGING_TIME=int(constants.CMT.total_seconds()),
+        CONCENT_UPLOAD_RATE=constants.DEFAULT_UPLOAD_RATE,
+        DOWNLOAD_LEADIN_TIME=constants.DOWNLOAD_LEADIN_TIME.total_seconds(),
+        CUSTOM_PROTOCOL_TIMES=True  # overridden to ensure this setting is always True, otherwise this test has no sense
     )
     def test_that_both_subtask_verification_time_implementation_should_return_same_result_when_golem_messages_constants_match_concent_settings(self):
         current_time = get_current_utc_timestamp()

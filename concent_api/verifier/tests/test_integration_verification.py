@@ -1,6 +1,7 @@
 import mock
 
 from django.test import override_settings
+from freezegun import freeze_time
 from numpy.core.multiarray import ndarray
 
 from common.constants import ErrorCode
@@ -370,44 +371,47 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         )
 
     def test_that_blender_verification_order_should_work_properly_when_there_is_more_than_one_frame_to_render(self):
-        with mock.patch('verifier.tasks.download_archives_from_storage', autospec=True) as mock_download_archives_from_storage,\
-            mock.patch('verifier.tasks.validate_downloaded_archives', autospec=True) as mock_validate_downloaded_archives, \
-            mock.patch('verifier.tasks.unpack_archives', autospec=True) as mock_unpack_archives, \
-            mock.patch('verifier.tasks.get_files_list_from_archive', autospec=True, side_effect=[self.multi_frames]) as mock_get_files_list_from_archive, \
-            mock.patch('verifier.tasks.parse_result_files_with_frames', autospec=True, return_value=self.parsed_multi_frames_files) as mock_parse_result_files_with_frames, \
-            mock.patch('verifier.tasks.render_images_by_frames', autospec=True, return_value=(self.multi_frames_blender_output_file_name_list, self.parsed_multi_frames_files)) as mock_render_image, \
-            mock.patch('verifier.tasks.delete_source_files', autospec=True) as mock_delete_source_files, \
-            mock.patch('verifier.tasks.upload_blender_output_file', autospec=True) as mock_try_to_upload_file, \
-            mock.patch('verifier.tasks.compare_all_rendered_images_with_user_results_files', autospec=True) as mock_compare_all_rendered_images_with_user_results_files, \
-            mock.patch('verifier.tasks.compare_minimum_ssim_with_results', side_effect=self._verification_results_match(self.subtask_id)) as compare_minimum_ssim_with_results:  # noqa: E125
+        #  `freeze_time()` was used here because this test gives non deterministic results.
+        #  verification_deadline could be different by one second when the test started at the turn of a second
+        with freeze_time():
+            with mock.patch('verifier.tasks.download_archives_from_storage', autospec=True) as mock_download_archives_from_storage,\
+                mock.patch('verifier.tasks.validate_downloaded_archives', autospec=True) as mock_validate_downloaded_archives, \
+                mock.patch('verifier.tasks.unpack_archives', autospec=True) as mock_unpack_archives, \
+                mock.patch('verifier.tasks.get_files_list_from_archive', autospec=True, side_effect=[self.multi_frames]) as mock_get_files_list_from_archive, \
+                mock.patch('verifier.tasks.parse_result_files_with_frames', autospec=True, return_value=self.parsed_multi_frames_files) as mock_parse_result_files_with_frames, \
+                mock.patch('verifier.tasks.render_images_by_frames', autospec=True, return_value=(self.multi_frames_blender_output_file_name_list, self.parsed_multi_frames_files)) as mock_render_image, \
+                mock.patch('verifier.tasks.delete_source_files', autospec=True) as mock_delete_source_files, \
+                mock.patch('verifier.tasks.upload_blender_output_file', autospec=True) as mock_try_to_upload_file, \
+                mock.patch('verifier.tasks.compare_all_rendered_images_with_user_results_files', autospec=True) as mock_compare_all_rendered_images_with_user_results_files, \
+                mock.patch('verifier.tasks.compare_minimum_ssim_with_results', side_effect=self._verification_results_match(self.subtask_id)) as compare_minimum_ssim_with_results:  # noqa: E125
 
-            self._send_blender_verification_order(frames=self.multi_frames)
+                self._send_blender_verification_order(frames=self.multi_frames)
 
-        self.assertEqual(mock_download_archives_from_storage.call_count, 1)
-        self.assertEqual(mock_validate_downloaded_archives.call_count, 1)
-        self.assertEqual(mock_unpack_archives.call_count, 1)
-        mock_render_image.assert_called_once_with(
-            frames=self.multi_frames,
-            parsed_files_to_compare=self.parsed_multi_frames_files,
-            output_format=self.output_format,
-            scene_file=self.scene_file,
-            subtask_id=self.subtask_id,
-            verification_deadline=self._get_verification_deadline_as_timestamp(
-                get_current_utc_timestamp(),
-                self.report_computed_task.task_to_compute,
-            ),
-            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
-        )
-        self.assertEqual(mock_delete_source_files.call_count, 1)
-        self.assertEqual(mock_get_files_list_from_archive.call_count, 1)
-        self.assertEqual(mock_try_to_upload_file.call_count, 1)
-        self.assertEqual(mock_compare_all_rendered_images_with_user_results_files.call_count, 1)
-        self.assertEqual(compare_minimum_ssim_with_results.call_count, 1)
-        self.assertEqual(mock_parse_result_files_with_frames.call_count, 1)
-        self.mock_verification_result.assert_called_once_with(
-            self.subtask_id,
-            VerificationResult.MATCH.name,
-        )
+            self.assertEqual(mock_download_archives_from_storage.call_count, 1)
+            self.assertEqual(mock_validate_downloaded_archives.call_count, 1)
+            self.assertEqual(mock_unpack_archives.call_count, 1)
+            mock_render_image.assert_called_once_with(
+                frames=self.multi_frames,
+                parsed_files_to_compare=self.parsed_multi_frames_files,
+                output_format=self.output_format,
+                scene_file=self.scene_file,
+                subtask_id=self.subtask_id,
+                verification_deadline=self._get_verification_deadline_as_timestamp(
+                    get_current_utc_timestamp(),
+                    self.report_computed_task.task_to_compute,
+                ),
+                blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+            )
+            self.assertEqual(mock_delete_source_files.call_count, 1)
+            self.assertEqual(mock_get_files_list_from_archive.call_count, 1)
+            self.assertEqual(mock_try_to_upload_file.call_count, 1)
+            self.assertEqual(mock_compare_all_rendered_images_with_user_results_files.call_count, 1)
+            self.assertEqual(compare_minimum_ssim_with_results.call_count, 1)
+            self.assertEqual(mock_parse_result_files_with_frames.call_count, 1)
+            self.mock_verification_result.assert_called_once_with(
+                self.subtask_id,
+                VerificationResult.MATCH.name,
+            )
 
     def _verification_results_match(self, subtask_id):
         self.mock_verification_result(

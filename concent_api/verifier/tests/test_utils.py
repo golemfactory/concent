@@ -6,32 +6,40 @@ from assertpy import assert_that
 from django.conf import settings
 from django.test import override_settings
 import mock
+from golem_messages.factories.concents import FileTransferTokenFactory
 from numpy import ones
 from numpy import zeros
 from numpy.core.records import ndarray
 import pytest
 
 from common.constants import ErrorCode
+from common.testing_helpers import generate_ecc_key_pair
 from core.constants import VerificationResult
 from core.tests.utils import generate_uuid
 from verifier.exceptions import VerificationError
 from verifier.exceptions import VerificationMismatch
 from verifier.utils import adjust_format_name
-from verifier.utils import get_files_list_from_archive
 from verifier.utils import are_image_sizes_and_color_channels_equal
 from verifier.utils import compare_all_rendered_images_with_user_results_files
 from verifier.utils import compare_images
 from verifier.utils import compare_minimum_ssim_with_results
+from verifier.utils import delete_file
+from verifier.utils import download_archives_from_storage
 from verifier.utils import ensure_enough_result_files_provided
 from verifier.utils import ensure_frames_have_related_files_to_compare
 from verifier.utils import generate_base_blender_output_file_name
 from verifier.utils import generate_full_blender_output_file_name
 from verifier.utils import generate_upload_file_path
 from verifier.utils import generate_verifier_storage_file_path
+from verifier.utils import get_files_list_from_archive
 from verifier.utils import parse_result_files_with_frames
+from verifier.utils import prepare_storage_request_headers
 from verifier.utils import render_images_by_frames
+from verifier.utils import unpack_archives
 from verifier.utils import upload_blender_output_file
 from verifier.utils import validate_downloaded_archives
+
+(CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
 class VerifierUtilsTest(TestCase):
@@ -196,6 +204,18 @@ class VerifierUtilsTest(TestCase):
         self.assertEqual(mock_compare_images.call_count, 2)
         self.assertEqual(self.ssim_list, ssim_list)
 
+    def test_that_method_should_raise_correct_error(self):
+        with mock.patch('verifier.utils.load_images', side_effect=self.image_pairs) as mock_load_images, \
+             mock.patch('verifier.utils.are_image_sizes_and_color_channels_equal', return_value=False) as mock_are_image_sizes_and_color_channels_equal:
+
+            with self.assertRaises(VerificationMismatch):
+                compare_all_rendered_images_with_user_results_files(
+                    parsed_files_to_compare=self.correct_parsed_all_files,
+                    subtask_id=self.subtask_id,
+                )
+            self.assertEqual(mock_load_images.call_count, 1)
+            self.assertEqual(mock_are_image_sizes_and_color_channels_equal.call_count, 1)
+
     @override_settings(
         VERIFIER_MIN_SSIM=0.95
     )
@@ -235,6 +255,23 @@ class VerifierUtilsTest(TestCase):
     def test_that_method_raise_verification_error_when_images_have_diffrent_sizes(self):
         with self.assertRaises(VerificationError):
             compare_images(self.image_ones, self.image_diffrent_size, 'subtask_id')
+
+    def test_delete_file_raise_exception_if_file_does_not_exist(self):
+        with mock.patch('verifier.utils.os.path.isfile', autospec=True) as mock_is_file:
+            delete_file(self.scene_file)
+            mock_is_file.assert_called_once_with(
+                '/tmp/scene-Helicopter-27-internal.blend'
+            )
+
+    @override_settings(
+        CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+        CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY
+    )
+    def test_that_prepare_storage_request_headers_return_correct_header(self):
+        file_transfer_token = FileTransferTokenFactory()
+        header = prepare_storage_request_headers(file_transfer_token)
+        assert_that(header).is_type_of(dict)
+        assert_that(header).contains_only('Authorization', 'Concent-Auth')
 
 
 class TestGenerateFilePathMethods():
@@ -302,6 +339,21 @@ class TestGenerateFilePathMethods():
         assert_that(upper_output_format).is_equal_to(expected)
 
 
+class TestUnpackArchives(object):
+    @pytest.fixture(autouse=True)
+    def setUp(self):
+        self.file_paths = ["kitten.blend", "source.blend"]
+        self.subtask_id = generate_uuid()
+
+    def test_that_if_archive_to_unpack_is_not_a_zip_file_verification_error_is_raised(self):
+        with mock.patch("verifier.utils.unpack_archive", side_effect=zipfile.BadZipFile):
+            with pytest.raises(VerificationError) as exception_wrapper:
+                unpack_archives(self.file_paths, self.subtask_id)
+            assert_that(exception_wrapper.value.subtask_id).is_equal_to(self.subtask_id)
+            assert_that(exception_wrapper.value.error_code). \
+                is_equal_to(ErrorCode.VERIFIER_UNPACKING_ARCHIVE_FAILED)
+
+
 class TestValidateDownloadedArchives(object):
     @pytest.fixture(autouse=True)
     def setUp(self):
@@ -329,6 +381,25 @@ class TestValidateDownloadedArchives(object):
                 assert_that(exception_wrapper.value.subtask_id).is_equal_to(self.subtask_id)
                 assert_that(exception_wrapper.value.error_code).\
                     is_equal_to(ErrorCode.VERIFIER_UNPACKING_ARCHIVE_FAILED)
+
+
+@override_settings(
+    CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY
+)
+def test_that_if_downloaded_archive_return_exception_verification_error_is_raised():
+    file_transfer_token = FileTransferTokenFactory()
+    subtask_id = generate_uuid()
+    package_paths_to_downloaded_file_names = {'a': 'source.zip', 'b': 'result.zip'}
+    with mock.patch('verifier.utils.clean_directory', autospec=True) as mock_clean_directory, \
+            mock.patch('verifier.utils.send_request_to_storage_cluster') as mock_send_request_to_storage_cluster, \
+            mock.patch('verifier.utils.store_file_from_response_in_chunks', side_effect=[None, Exception]) as mock_store_file_from_response_in_chunks:
+        with pytest.raises(VerificationError) as exception_wrapper:
+            download_archives_from_storage(file_transfer_token, subtask_id, package_paths_to_downloaded_file_names)
+        assert_that(exception_wrapper.value.subtask_id).is_equal_to(subtask_id)
+        assert_that(mock_clean_directory.call_count).is_equal_to(1)
+        assert_that(mock_send_request_to_storage_cluster.call_count).is_equal_to(2)
+        assert_that(mock_store_file_from_response_in_chunks.call_count).is_equal_to(2)
 
 
 @pytest.mark.parametrize('expected_list', [

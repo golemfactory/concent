@@ -23,3 +23,7 @@ class GolemMessageValidationError(ConcentBaseException):
 
 class FrameNumberValidationError(ConcentBaseException):
     pass
+
+
+class TransactionNonceMismatch(Exception):
+    pass

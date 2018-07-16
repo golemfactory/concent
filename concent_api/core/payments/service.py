@@ -60,3 +60,8 @@ def is_account_status_positive(
         client_eth_address      = client_eth_address,
         pending_value           = pending_value,
     )
+
+
+@_add_backend
+def get_transaction_count(backend: str) -> int:
+    return backend.get_transaction_count()  # type: ignore

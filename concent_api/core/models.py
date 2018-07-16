@@ -6,6 +6,7 @@ from django.db.models       import BinaryField
 from django.db.models       import BooleanField
 from django.db.models       import CharField
 from django.db.models       import DateTimeField
+from django.db.models       import DecimalField
 from django.db.models       import IntegerField
 from django.db.models       import ForeignKey
 from django.db.models       import Model
@@ -518,3 +519,39 @@ class PaymentInfo(Model):
             raise ValidationError({
                 'pending_response': 'PaymentInfo should be related with Pending Response'
             })
+
+
+class GlobalTransactionState(Model):
+    """
+    Represents state of whole transaction service by storing last `nonce` used.
+
+    There should always be at most one object of this type with id = 0. If it does not exist, it should be created and
+    nonce initialized with a value obtained from SCI (Client.get_transaction_count()).
+    """
+
+    nonce = DecimalField(max_digits=32, decimal_places=0, default=0, unique=True)
+
+    def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
+        self.pk = 0
+        super().save(*args, **kwargs)
+
+
+class PendingEthereumTransaction(Model):
+    """
+    Represents pending Ethereum transaction state.
+    """
+
+    nonce = DecimalField(max_digits=78, decimal_places=0)
+
+    gasprice = DecimalField(max_digits=78, decimal_places=0)
+    startgas = DecimalField(max_digits=78, decimal_places=0)
+    value = DecimalField(max_digits=78, decimal_places=0)
+
+    to = BinaryField(max_length=20)
+    data = BinaryField()
+
+    v = IntegerField()
+    r = DecimalField(max_digits=78, decimal_places=0)
+    s = DecimalField(max_digits=78, decimal_places=0)
+
+    created_at = DateTimeField(auto_now_add=True)

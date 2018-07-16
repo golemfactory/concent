@@ -6,7 +6,6 @@ import time
 from freezegun import freeze_time
 
 from golem_messages import message
-from golem_messages.helpers import maximum_download_time
 from golem_messages.utils import encode_hex
 
 from common.helpers import get_current_utc_timestamp
@@ -25,6 +24,8 @@ from api_testing_common import run_tests
 from api_testing_common import timestamp_to_isoformat
 
 import requests
+
+from core.utils import calculate_maximum_download_time
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
@@ -90,24 +91,28 @@ def report_computed_task(timestamp = None, task_to_compute = None):
         )
 
 
-def calculate_timestamp(current_time, concent_messaging_time):
+def calculate_timestamp(current_time, concent_messaging_time, concent_upload_rate):
     return timestamp_to_isoformat(
-        current_time - (2 + _precalculate_subtask_verification_time(concent_messaging_time))
+        current_time - (2 * concent_messaging_time + _precalculate_subtask_verification_time(concent_upload_rate, concent_messaging_time))
     )
 
 
-def calculate_deadline(current_time, concent_messaging_time):
-    return current_time - (1 + _precalculate_subtask_verification_time(concent_messaging_time))
+def calculate_deadline(current_time, concent_messaging_time, concent_upload_rate):
+    return current_time - (concent_messaging_time + _precalculate_subtask_verification_time(concent_upload_rate, concent_messaging_time))
 
 
-def calculate_deadline_too_far_in_the_future(current_time, concent_messaging_time):
-    return current_time - (1 + (20 * _precalculate_subtask_verification_time(concent_messaging_time)))
+def calculate_deadline_too_far_in_the_future(current_time, concent_upload_rate, concent_messaging_time):
+    return current_time - (1 + (20 * _precalculate_subtask_verification_time(concent_upload_rate, concent_messaging_time)))
 
 
-def _precalculate_subtask_verification_time(concent_messaging_time):
+def _precalculate_subtask_verification_time(concent_upload_rate, concent_messaging_time):
+    maxiumum_download_time = calculate_maximum_download_time(
+        size=REPORT_COMPUTED_TASK_SIZE,
+        rate=concent_upload_rate,
+    )
     return (
         (4 * concent_messaging_time) +
-        (3 * int(maximum_download_time(REPORT_COMPUTED_TASK_SIZE).total_seconds()))
+        (3 * maxiumum_download_time)
     )
 
 
@@ -117,10 +122,10 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts, cluster_url, 
     current_time = get_current_utc_timestamp()
     (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, '2D')
     signed_task_to_compute = create_signed_task_to_compute(
-        timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time),
+        timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.concent_upload_rate),
         task_id=task_id,
         subtask_id=subtask_id,
-        deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time),
+        deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time, cluster_consts.concent_upload_rate),
         price=10000,
     )
     api_request(
@@ -197,10 +202,10 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts, cluster_url, 
     current_time = get_current_utc_timestamp()
     (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '4B')
     signed_task_to_compute = create_signed_task_to_compute(
-        timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time),
+        timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.concent_upload_rate),
         task_id=task_id,
         subtask_id=subtask_id,
-        deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time),
+        deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time, cluster_consts.concent_upload_rate),
         price=10000,
     )
     api_request(
@@ -288,10 +293,10 @@ def test_case_2c_wrong_timestamps(cluster_consts, cluster_url, test_id):
                 timestamp=timestamp_to_isoformat(current_time),
                 report_computed_task=report_computed_task(
                     task_to_compute=create_signed_task_to_compute(
-                        timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time),
+                        timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.concent_upload_rate),
                         task_id=task_id,
                         subtask_id=subtask_id,
-                        deadline=calculate_deadline_too_far_in_the_future(current_time, cluster_consts.concent_messaging_time),
+                        deadline=calculate_deadline_too_far_in_the_future(current_time, cluster_consts.concent_messaging_time, cluster_consts.concent_upload_rate),
                         price=10000,
                     )
                 )
@@ -322,10 +327,10 @@ def test_case_2b_not_enough_funds(cluster_consts, cluster_url, test_id):
                 timestamp=timestamp_to_isoformat(current_time),
                 report_computed_task=report_computed_task(
                     task_to_compute=create_signed_task_to_compute(
-                        timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time),
+                        timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.concent_upload_rate),
                         task_id=task_id,
                         subtask_id=subtask_id,
-                        deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time),
+                        deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time, cluster_consts.concent_upload_rate),
                         requestor_ethereum_public_key=encode_hex(b'0' * GOLEM_PUBLIC_KEY_LENGTH),
                         provider_ethereum_public_key=encode_hex(b'1' * GOLEM_PUBLIC_KEY_LENGTH),
                         price=0,
@@ -349,10 +354,10 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts, cluster_u
     current_time = get_current_utc_timestamp()
     (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '2A')
     signed_task_to_compute = create_signed_task_to_compute(
-        timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time),
+        timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.concent_upload_rate),
         task_id=task_id,
         subtask_id=subtask_id,
-        deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time),
+        deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time, cluster_consts.concent_upload_rate),
         price=10000,
     )
     api_request(

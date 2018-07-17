@@ -1,13 +1,14 @@
 import logging
-from typing import Dict
+from typing import Callable
 from typing import List
-from hexbytes import HexBytes
+
+from eth_utils import encode_hex
 from ethereum.transactions import Transaction
+from hexbytes import HexBytes
 from golem_sci.transactionsstorage import TransactionsStorage
 
 from django.db import transaction
 
-from core.exceptions import TransactionNonceMismatch
 from core.models import GlobalTransactionState
 from core.models import PendingEthereumTransaction
 
@@ -20,22 +21,48 @@ class DatabaseTransactionsStorage(TransactionsStorage):
     database using Django models.
     """
 
-    def __init__(self, nonce: int, *args: List, **kwargs: Dict) -> None:
-        super().__init__(*args, **kwargs)
+    @transaction.atomic(using='control')
+    def init(self, network_nonce: int) -> None:
+        if not self._is_storage_initialized():
+            self._init_with_nonce(network_nonce)
+            return
 
-        assert isinstance(nonce, int)
-        if not GlobalTransactionState.objects.filter(pk=0).exists():
-            global_transaction_state = GlobalTransactionState(
+        #  If nonce stored in GlobalTransactionState is lower than network_nonce
+        #  this statement will update nonce in DatabaseTransactionStorage
+        if self._get_nonce() < network_nonce:
+            global_transaction_state = GlobalTransactionState.objects.select_for_update().get(
                 pk=0,
-                nonce=nonce,
             )
+            global_transaction_state.nonce = network_nonce
             global_transaction_state.full_clean()
             global_transaction_state.save()
+            return
 
     @transaction.atomic(using='control')
-    def get_nonce(self) -> int:
+    def _is_storage_initialized(self) -> bool:
         """
-        Returns the nonce for the next transaction.
+        Should return False if this is the first time we try to use this
+        storage.
+        """
+        return GlobalTransactionState.objects.filter(pk=0).exists()
+
+    @transaction.atomic(using='control')
+    def _init_with_nonce(self, nonce: int) -> None:
+        logger.info(
+            f'Initiating JsonTransactionStorage with nonce=%d',
+            nonce,
+        )
+        global_transaction_state = GlobalTransactionState(
+            pk=0,
+            nonce=nonce,
+        )
+        global_transaction_state.full_clean()
+        global_transaction_state.save()
+
+    @transaction.atomic(using='control')
+    def _get_nonce(self) -> int:
+        """
+        Return current nonce.
         """
         global_transaction_state = self._get_locked_global_transaction_state()
         return int(global_transaction_state.nonce)
@@ -61,18 +88,24 @@ class DatabaseTransactionsStorage(TransactionsStorage):
         ]
 
     @transaction.atomic(using='control')
-    def put_tx_and_inc_nonce(self, tx: Transaction) -> None:
+    def set_nonce_sign_and_save_tx(
+        self,
+        sign_tx: Callable[[Transaction], None],
+        tx: Transaction
+    ) -> None:
         """
-        Save a valid transaction and increase the nonce.
+        Sets the next nonce for the transaction, invokes the callback for
+        signing and saves it to the storage.
         """
         global_transaction_state = self._get_locked_global_transaction_state()
 
-        if int(global_transaction_state.nonce) != tx.nonce:
-            raise TransactionNonceMismatch(
-                f'Transaction nonce does not match. '
-                f'Current={global_transaction_state.nonce}, '
-                f'Transaction={tx.nonce}',
-            )
+        tx.nonce = self._get_nonce()
+        sign_tx(tx)
+        logger.info(
+            'Saving transaction %s, nonce=%d',
+            encode_hex(tx.hash),
+            tx.nonce,
+        )
 
         pending_ethereum_transaction = PendingEthereumTransaction(
             nonce=tx.nonce,

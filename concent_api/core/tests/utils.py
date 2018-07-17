@@ -1,6 +1,5 @@
 from base64 import b64encode
 from typing import List
-from typing import Optional
 from typing import Union
 import datetime
 import functools
@@ -22,6 +21,22 @@ from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.message.base import Message
+from golem_messages.message.concents import ForceGetTaskResult
+from golem_messages.message.concents import ForcePayment
+from golem_messages.message.concents import ForceReportComputedTask
+from golem_messages.message.concents import ForceSubtaskResults
+from golem_messages.message.concents import ForceSubtaskResultsResponse
+from golem_messages.message.concents import SubtaskResultsVerify
+from golem_messages.message.tasks import AckReportComputedTask
+from golem_messages.message.tasks import CannotComputeTask
+from golem_messages.message.tasks import ComputeTaskDef
+from golem_messages.message.tasks import RejectReportComputedTask
+from golem_messages.message.tasks import ReportComputedTask
+from golem_messages.message.tasks import SubtaskResultsAccepted
+from golem_messages.message.tasks import SubtaskResultsRejected
+from golem_messages.message.tasks import TaskFailure
+from golem_messages.message.tasks import TaskMessage
+from golem_messages.message.tasks import TaskToCompute
 from golem_messages.utils import encode_hex
 
 from core.models            import Client
@@ -121,10 +136,11 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_serialized_force_get_task_result(
         self,
-        report_computed_task,
-        timestamp,
-        requestor_private_key = None
-    ):
+        report_computed_task: ReportComputedTask,
+        timestamp: Union[str, datetime.datetime],
+        requestor_private_key: Union[bytes, None] = None,
+    ) -> ForceGetTaskResult:
+
         """ Returns MessageForceGetTaskResult serialized. """
         with freeze_time(timestamp):
             force_get_task_result = message.concents.ForceGetTaskResult(
@@ -140,14 +156,18 @@ class ConcentIntegrationTestCase(TestCase):
         self,
         subtask_id: str = '2',
         task_id: str = '1',
-        task_to_compute = None,
+        task_to_compute: Union[TaskToCompute, None] = None,
         size: int = 1,
         package_hash: str = 'sha1:4452d71687b6bc2c9389c3349fdc17fbd73b833b',
-        timestamp: Optional[str] = None,
-        sign_with_private_key = None,
-        frames: Optional[List[int]] = None
-    ):
+        timestamp: Union[str, None] = None,
+        sign_with_private_key: Union[bytes, None] = None,
+        frames: Union[List[int], None] = None,
+        should_check_signature: bool = True
+    ) -> ReportComputedTask:
+
         """ Returns ReportComputedTask deserialized. """
+        if should_check_signature and task_to_compute is not None:
+            assert TaskMessage.OWNER_CHOICES.requestor in task_to_compute.EXPECTED_OWNERS
         with freeze_time(timestamp or self._get_timestamp_string()):
             report_computed_task = ReportComputedTaskFactory(
                 task_to_compute=(
@@ -169,22 +189,23 @@ class ConcentIntegrationTestCase(TestCase):
     def _get_deserialized_task_to_compute(
         self,
         timestamp: Union[str, datetime.datetime, None] = None,
-        deadline = None,
+        deadline: Union[str, int, None] = None,
         task_id: str = '1',
         subtask_id: str = '2',
-        compute_task_def = None,
-        requestor_id: bytes = None,
-        requestor_public_key: bytes = None,
-        requestor_ethereum_public_key: bytes = None,
-        provider_id: bytes = None,
-        provider_public_key: bytes = None,
-        provider_ethereum_public_key: bytes = None,
-        price = 0,
+        compute_task_def: Union[ComputeTaskDef, None] = None,
+        requestor_id: Union[bytes, None] = None,
+        requestor_public_key: Union[bytes, None] = None,
+        requestor_ethereum_public_key: Union[bytes, None] = None,
+        provider_id: Union[bytes, None] = None,
+        provider_public_key: Union[bytes, None] = None,
+        provider_ethereum_public_key: Union[bytes, None] = None,
+        price: int = 0,
         package_hash: str = 'sha1:230fb0cad8c7ed29810a2183f0ec1d39c9df3f4a',
-        sign_with_private_key = None,
-        size=1,
-        frames: Optional[List[int]] = None
-    ):
+        sign_with_private_key: Union[bytes, None] = None,
+        size: int = 1,
+        frames: Union[List[int], None] = None,
+    ) -> TaskToCompute:
+
         """ Returns TaskToCompute deserialized. """
         compute_task_def = (
             compute_task_def if compute_task_def is not None else self._get_deserialized_compute_task_def(
@@ -233,14 +254,18 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_ack_report_computed_task(
         self,
-        timestamp       = None,
-        deadline        = None,
-        subtask_id      = '1',
-        report_computed_task = None,
-        task_to_compute = None,
-        sign_with_private_key = None,
-    ):
+        timestamp: Union[str, datetime.datetime, None] = None,
+        deadline: Union[str, int, None]=None,
+        subtask_id: str='1',
+        report_computed_task: Union[ReportComputedTask, None]=None,
+        task_to_compute: Union[TaskToCompute, None]=None,
+        sign_with_private_key: Union[bytes, None]=None,
+        should_check_signature: bool = True
+    )-> AckReportComputedTask:
+
         """ Returns AckReportComputedTask deserialized. """
+        if should_check_signature and report_computed_task is not None:
+            assert TaskMessage.OWNER_CHOICES.provider in report_computed_task.EXPECTED_OWNERS
         with freeze_time(timestamp or self._get_timestamp_string()):
             ack_report_computed_task = message.AckReportComputedTask(
                 report_computed_task=(
@@ -265,10 +290,10 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_serialized_ack_report_computed_task(
         self,
-        timestamp                   = None,
-        ack_report_computed_task    = None,
-        requestor_private_key       = None,
-    ):
+        timestamp: Union[str, datetime.datetime, None] = None,
+        ack_report_computed_task: Union[AckReportComputedTask, None] = None,
+        requestor_private_key: Union[bytes, None] = None,
+    ) -> bytes:
         with freeze_time(timestamp or self._get_timestamp_string()):
             return dump(
                 ack_report_computed_task,
@@ -276,10 +301,10 @@ class ConcentIntegrationTestCase(TestCase):
                 settings.CONCENT_PUBLIC_KEY
             )
 
-    def _parse_iso_date_to_timestamp(self, date_string):    # pylint: disable=no-self-use
+    def _parse_iso_date_to_timestamp(self, date_string) -> int:    # pylint: disable=no-self-use
         return int(dateutil.parser.parse(date_string).timestamp())
 
-    def _get_timestamp_string(self):                        # pylint: disable=no-self-use
+    def _get_timestamp_string(self) -> str:                        # pylint: disable=no-self-use
         return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     def _test_204_response(self, response):
@@ -426,13 +451,16 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_force_subtask_results(
         self,
-        timestamp                   = None,
-        ack_report_computed_task    = None,
-    ):
+        timestamp: Union[str, datetime.datetime, None] = None,
+        ack_report_computed_task: Union[AckReportComputedTask, None] = None,
+        should_check_signature: bool = True
+    ) -> ForceSubtaskResults:
+
         """ Returns ForceSubtaskResults deserialized. """
+        if should_check_signature and ack_report_computed_task is not None:
+            assert TaskMessage.OWNER_CHOICES.requestor or TaskMessage.OWNER_CHOICES.concent in ack_report_computed_task.EXPECTED_OWNERS
         with freeze_time(timestamp or self._get_timestamp_string()):
             force_subtask_results = message.concents.ForceSubtaskResults(
-                # timestamp = self._parse_iso_date_to_timestamp(timestamp),
                 ack_report_computed_task = (
                     ack_report_computed_task or
                     self._get_deserialized_ack_report_computed_task(
@@ -448,7 +476,7 @@ class ConcentIntegrationTestCase(TestCase):
         timestamp                   = None,
         ack_report_computed_task    = None,
         provider_private_key        = None,
-    ):
+    ) -> bytes:
         """ Returns ForceSubtaskResults serialized. """
         force_subtask_results = self._get_deserialized_force_subtask_results(
             timestamp                   = timestamp,
@@ -462,14 +490,18 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_subtask_results_accepted(
         self,
-        timestamp           = None,
-        task_to_compute     = None,
-        payment_ts          = None,
-        sign_with_private_key=None,
-    ):
+        timestamp: Union[str, datetime.datetime, None] = None,
+        task_to_compute: Union[TaskToCompute, None] = None,
+        payment_ts: Union[str, None] = None,
+        sign_with_private_key: Union[bytes, None] = None,
+        should_check_signature: bool = True
+    ) -> SubtaskResultsAccepted:
+
         """ Return SubtaskResultsAccepted deserialized """
+        if should_check_signature and task_to_compute is not None:
+            assert TaskMessage.OWNER_CHOICES.requestor in task_to_compute.EXPECTED_OWNERS
         with freeze_time(timestamp or self._get_timestamp_string()):
-            subtask_results_accepted = message.tasks.SubtaskResultsAccepted(
+            subtask_results_accepted = SubtaskResultsAccepted(
                 task_to_compute = task_to_compute,
                 payment_ts     = (
                     self._parse_iso_date_to_timestamp(payment_ts) or
@@ -489,7 +521,7 @@ class ConcentIntegrationTestCase(TestCase):
         requestor_private_key       = None,
         task_to_compute             = None,
         subtask_results_accepted    = None
-    ):
+    ) -> bytes:
         """ Return SubtaskResultsAccepted serialized """
         subtask_results_accepted = (
             subtask_results_accepted or
@@ -508,14 +540,18 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_subtask_results_rejected(
         self,
-        timestamp               = None,
-        reason                  = None,
-        report_computed_task    = None,
-        sign_with_private_key=None,
-    ):
+        timestamp: Union[str, datetime.datetime, None] = None,
+        reason: Union[message.tasks.SubtaskResultsRejected.REASON, None] = None,
+        report_computed_task: Union[ReportComputedTask, None] = None,
+        sign_with_private_key: Union[bytes, None] = None,
+        should_check_signature: bool = True
+    ) -> SubtaskResultsRejected:
+
         """ Return SubtaskResultsRejected deserialized """
+        if should_check_signature and report_computed_task is not None:
+            assert TaskMessage.OWNER_CHOICES.provider in report_computed_task.EXPECTED_OWNERS
         with freeze_time(timestamp or self._get_timestamp_string()):
-            subtask_results_rejected = message.tasks.SubtaskResultsRejected(
+            subtask_results_rejected = SubtaskResultsRejected(
                 reason = (
                     reason or
                     message.tasks.SubtaskResultsRejected.REASON.VerificationNegative
@@ -541,7 +577,7 @@ class ConcentIntegrationTestCase(TestCase):
         requestor_private_key       = None,
         report_computed_task        = None,
         subtask_results_rejected    = None
-    ):
+    ) -> bytes:
         """ Return SubtaskResultsRejected serialized """
         with freeze_time(timestamp or self._get_timestamp_string()):
             subtask_results_rejected = (
@@ -562,14 +598,14 @@ class ConcentIntegrationTestCase(TestCase):
         self,
         task_id: str = '1',
         subtask_id: str = '2',
-        deadline = None,
-        extra_data: dict = None,
+        deadline: Union[str, int, None] = None,
+        extra_data: Union[dict, None] = None,
         short_description: str = 'path_root: /home/dariusz/Documents/tasks/resources, start_task: 6, end_task: 6...',
         working_directory: str = '.',
         performance: float = 829.7531773625524,
-        docker_images: List[set] = None,
-        frames: Optional[List[int]] = None
-    ):
+        docker_images: Union[List[set], None] = None,
+        frames: Union[List[int], None] = None
+    ) -> ComputeTaskDef:
         compute_task_def = ComputeTaskDefFactory(
             task_id=task_id,
             subtask_id=subtask_id,
@@ -604,12 +640,18 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_force_subtask_results_response(
         self,
-        timestamp                   = None,
-        subtask_results_accepted    = None,
-        subtask_results_rejected    = None,
-    ):
+        timestamp: Union[str, datetime.datetime, None] = None,
+        subtask_results_accepted: Union[SubtaskResultsAccepted, None] = None,
+        subtask_results_rejected: Union[SubtaskResultsRejected, None] = None,
+        should_check_signature: bool = True
+    ) -> ForceSubtaskResultsResponse:
+
+        if should_check_signature and subtask_results_accepted is not None:
+            assert TaskMessage.OWNER_CHOICES.requestor in subtask_results_accepted.EXPECTED_OWNERS
+        if should_check_signature and subtask_results_rejected is not None:
+            assert TaskMessage.OWNER_CHOICES.requestor or TaskMessage.OWNER_CHOICES.concent in subtask_results_rejected.EXPECTED_OWNERS
         with freeze_time(timestamp or self._get_timestamp_string()):
-            force_subtask_results_response = message.concents.ForceSubtaskResultsResponse(
+            force_subtask_results_response = ForceSubtaskResultsResponse(
                 subtask_results_accepted = subtask_results_accepted,
                 subtask_results_rejected = subtask_results_rejected,
             )
@@ -621,7 +663,7 @@ class ConcentIntegrationTestCase(TestCase):
         subtask_results_accepted    = None,
         subtask_results_rejected    = None,
         requestor_private_key       = None,
-    ):
+    ) -> bytes:
         with freeze_time(timestamp or self._get_timestamp_string()):
             force_subtask_results_response = self._get_deserialized_force_subtask_results_response(
                 timestamp                   = timestamp,
@@ -637,9 +679,12 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_force_report_computed_task(
         self,
-        timestamp               = None,
-        report_computed_task    = None,
-    ):
+        timestamp: Union[str, datetime.datetime, None] = None,
+        report_computed_task: Union[ReportComputedTask, None] = None,
+        should_check_signature: bool = True
+    ) -> ForceReportComputedTask:
+        if should_check_signature and report_computed_task is not None:
+            assert TaskMessage.OWNER_CHOICES.provider in report_computed_task.EXPECTED_OWNERS
         with freeze_time(timestamp or self._get_timestamp_string()):
             return message.concents.ForceReportComputedTask(
                 report_computed_task = report_computed_task,
@@ -650,7 +695,7 @@ class ConcentIntegrationTestCase(TestCase):
         timestamp                   = None,
         force_report_computed_task  = None,
         provider_private_key        = None,
-    ):
+    ) -> bytes:
         with freeze_time(timestamp or self._get_timestamp_string()):
             return dump(
                 force_report_computed_task,
@@ -660,10 +705,13 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_cannot_compute_task(
         self,
-        timestamp       = None,
-        task_to_compute = None,
-        reason          = None,
-    ):
+        timestamp: Union[str, datetime.datetime, None] = None,
+        task_to_compute: Union[TaskToCompute, None] = None,
+        reason: Union[message.tasks.SubtaskResultsRejected.REASON, None] = None,
+        should_check_signature: bool = True
+    ) -> CannotComputeTask:
+        if should_check_signature and task_to_compute is not None:
+            assert TaskMessage.OWNER_CHOICES.requestor in task_to_compute.EXPECTED_OWNERS
         with freeze_time(timestamp or self._get_timestamp_string()):
             cannot_compute_task = message.tasks.CannotComputeTask(
                 task_to_compute = task_to_compute,
@@ -673,10 +721,13 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_task_failure(
         self,
-        timestamp=None,
-        err=None,
-        task_to_compute=None,
+        timestamp: Union[str, datetime.datetime, None] = None,
+        err: Union[str, None] = None,
+        task_to_compute: Union[TaskToCompute, None] = None,
+        should_check_signature: bool = True
     ):
+        if should_check_signature and task_to_compute is not None:
+            assert TaskMessage.OWNER_CHOICES.requestor in task_to_compute.EXPECTED_OWNERS
         with freeze_time(timestamp or self._get_timestamp_string()):
             task_failure = message.tasks.TaskFailure(
                 err=err,
@@ -686,12 +737,19 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_reject_report_computed_task(
         self,
-        timestamp           = None,
-        cannot_compute_task = None,
-        task_failure        = None,
-        task_to_compute     = None,
-        reason              = None,
-    ):
+        timestamp: Union[str, datetime.datetime, None] = None,
+        cannot_compute_task: Union[CannotComputeTask, None] = None,
+        task_failure: Union[TaskFailure, None] = None,
+        task_to_compute: Union[TaskToCompute, None] = None,
+        reason: Union[message.tasks.SubtaskResultsRejected.REASON, None] = None,
+        should_check_signature: bool = True
+    ) -> RejectReportComputedTask:
+        if should_check_signature and cannot_compute_task is not None:
+            assert TaskMessage.OWNER_CHOICES.provider in cannot_compute_task.EXPECTED_OWNERS
+        if should_check_signature and task_failure is not None:
+            assert TaskMessage.OWNER_CHOICES.provider in task_failure.EXPECTED_OWNERS
+        if should_check_signature and task_to_compute is not None:
+            assert TaskMessage.OWNER_CHOICES.requestor in task_to_compute.EXPECTED_OWNERS
         with freeze_time(timestamp or self._get_timestamp_string()):
             return message.RejectReportComputedTask(
                 cannot_compute_task = cannot_compute_task,
@@ -705,7 +763,7 @@ class ConcentIntegrationTestCase(TestCase):
         timestamp                   = None,
         reject_report_computed_task = None,
         requestor_private_key       = None,
-    ):
+    ) -> bytes:
         with freeze_time(timestamp or self._get_timestamp_string()):
             return dump(
                 reject_report_computed_task,
@@ -715,9 +773,9 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_force_payment(
         self,
-        timestamp = None,
-        subtask_results_accepted_list = None
-    ):
+        timestamp: Union[str, datetime.datetime, None] = None,
+        subtask_results_accepted_list: Union[List[SubtaskResultsAccepted], None] = None,
+    ) -> ForcePayment:
         with freeze_time(timestamp or self._get_timestamp_string()):
             force_payment = message.concents.ForcePayment(
                 subtask_results_accepted_list = subtask_results_accepted_list
@@ -729,7 +787,7 @@ class ConcentIntegrationTestCase(TestCase):
         timestamp                       = None,
         subtask_results_accepted_list   = None,
         provider_private_key            = None
-    ):
+    ) -> bytes:
         with freeze_time(timestamp or self._get_timestamp_string()):
             force_payment = self._get_deserialized_force_payment(
                 timestamp                       = timestamp,
@@ -743,10 +801,13 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_subtask_results_verify(
         self,
-        timestamp=None,
-        subtask_results_rejected=None,
-    ):
+        timestamp: Union[str, datetime.datetime, None] = None,
+        subtask_results_rejected: Union[SubtaskResultsRejected, None] = None,
+        should_check_signature: bool = True
+    ) -> SubtaskResultsVerify:
         """ Return SubtaskResultsVerify deserialized """
+        if should_check_signature and subtask_results_rejected is not None:
+            assert TaskMessage.OWNER_CHOICES.requestor or TaskMessage.OWNER_CHOICES.concent in subtask_results_rejected.EXPECTED_OWNERS
         with freeze_time(timestamp or self._get_timestamp_string()):
             return message.concents.SubtaskResultsVerify(
                 subtask_results_rejected=(
@@ -760,7 +821,7 @@ class ConcentIntegrationTestCase(TestCase):
         timestamp=None,
         subtask_results_verify=None,
         provider_private_key=None
-    ):
+    ) -> bytes:
         return dump(
             msg=(subtask_results_verify if subtask_results_verify is not None
                  else self._get_deserialized_subtask_results_verify(timestamp)),

@@ -3,7 +3,7 @@ assertpy
 Django >= 1.11, < 1.12
 psycopg2
 -e git://github.com/golemfactory/golem-messages.git@v2.10.1#egg=golem_messages
--e git://github.com/golemfactory/golem-smart-contracts-interface.git@v1.4.1#egg=golem_smart_contracts_interface
+-e git://github.com/golemfactory/golem-smart-contracts-interface.git@v1.5.0#egg=golem_smart_contracts_interface
 freezegun
 pyyaml
 requests

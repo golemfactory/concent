@@ -13,7 +13,6 @@ from django.db.models       import Model
 from django.db.models       import OneToOneField
 from django.db.models       import PositiveSmallIntegerField
 from django.db.models       import Manager
-from django.utils           import timezone
 
 from constance              import config
 from golem_messages         import message
@@ -35,6 +34,7 @@ class StoredMessage(Model):
     data        = BinaryField()
     task_id     = CharField(max_length = MESSAGE_TASK_ID_MAX_LENGTH, null = True, blank = True)
     subtask_id  = CharField(max_length = MESSAGE_TASK_ID_MAX_LENGTH, null = True, blank = True)
+    created_at = DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return 'StoredMessage #{}, type:{}, {}'.format(self.id, self.type, self.timestamp)
@@ -66,6 +66,8 @@ class Client(Model):
     objects = ClientManager()
 
     public_key = Base64Field(max_length = GOLEM_PUBLIC_KEY_LENGTH, unique = True)
+
+    created_at = DateTimeField(auto_now_add=True)
 
 
 class Subtask(Model):
@@ -287,24 +289,27 @@ class Subtask(Model):
             ('requestor', 'subtask_id'),
         )
 
-    task_id                     = CharField(max_length = MESSAGE_TASK_ID_MAX_LENGTH)
+    task_id = CharField(max_length=MESSAGE_TASK_ID_MAX_LENGTH)
 
     # Golem clients are not guaranteed to use unique subtask_id because they are UUIDs,
     # but Concent at this moment does not support subtasks with non-unique IDs.
     # However, the combination of requestor's public key and subtask ID is guaranteed to be unique.
-    subtask_id                  = CharField(max_length = MESSAGE_TASK_ID_MAX_LENGTH, unique = True, db_index = True)
+    subtask_id = CharField(max_length=MESSAGE_TASK_ID_MAX_LENGTH, unique=True, db_index=True)
 
     # Relation to concent client in requestor context.
-    requestor                   = ForeignKey(Client, related_name = 'subtasks_as_requestor')
+    requestor = ForeignKey(Client, related_name='subtasks_as_requestor')
 
     # Relation to concent client in provider context.
-    provider                    = ForeignKey(Client, related_name = 'subtasks_as_provider')
+    provider = ForeignKey(Client, related_name='subtasks_as_provider')
 
-    state                       = CharField(max_length = 32, choices = SubtaskState.choices())
+    state = CharField(max_length=32, choices=SubtaskState.choices())
 
     # If in an active state, it's the time at which Concent automatically transitions to a passive state if it does
     # not get the information it expects from the client (a timeout). Must be NULL in a passive state.
-    next_deadline               = DateTimeField(blank = True, null = True)
+    next_deadline = DateTimeField(blank=True, null=True)
+
+    created_at = DateTimeField(auto_now_add=True)
+    modified_at = DateTimeField(auto_now=True)
 
     # Related messages
     task_to_compute = OneToOneField(StoredMessage, related_name='subtasks_for_task_to_compute')
@@ -456,7 +461,9 @@ class PendingResponse(Model):
     delivered            = BooleanField(default = False)
 
     subtask              = ForeignKey(Subtask, blank = True, null = True)
-    created_at           = DateTimeField(default = timezone.now)
+
+    created_at = DateTimeField(auto_now_add=True)
+    modified_at = DateTimeField(auto_now=True)
 
     def clean(self):
         # payment_message can be included only if current state is ForcePaymentCommitted

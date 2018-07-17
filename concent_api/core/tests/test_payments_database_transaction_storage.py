@@ -1,9 +1,15 @@
+import os
+
 from django.test import TestCase
 from ethereum.transactions import Transaction
 
 from core.models import GlobalTransactionState
 from core.models import PendingEthereumTransaction
 from core.payments.storage import DatabaseTransactionsStorage
+
+
+def _sign(tx: Transaction) -> None:
+    tx.sign(os.urandom(32))
 
 
 class DatabaseTransactionsStorageTest(TestCase):
@@ -13,7 +19,10 @@ class DatabaseTransactionsStorageTest(TestCase):
     def setUp(self):
         super().setUp()
 
-        self.storage = DatabaseTransactionsStorage(5)
+        self.initial_nonce = 5
+        self.increased_nonce = 10
+        self.storage = DatabaseTransactionsStorage()
+        self.storage.init(self.initial_nonce)
 
         self.global_transaction_state = GlobalTransactionState.objects.get(pk=0)
 
@@ -52,17 +61,17 @@ class DatabaseTransactionsStorageTest(TestCase):
         )
 
     def test_that_initial_nonce_should_be_retreived_from_rpc(self):
-        nonce = self.storage.get_nonce()
+        nonce = self.storage._get_nonce()
 
-        self.assertEqual(nonce, 5)
+        self.assertEqual(nonce, self.initial_nonce)
         self.assertEqual(GlobalTransactionState.objects.count(), 1)
 
         global_transaction_state = GlobalTransactionState.objects.first()
         self.assertEqual(global_transaction_state.pk, 0)
-        self.assertEqual(global_transaction_state.nonce, 5)
+        self.assertEqual(global_transaction_state.nonce, self.initial_nonce)
 
     def test_that_if_global_transaction_state_exists_nonce_should_be_retreived_from_it(self):
-        nonce = self.storage.get_nonce()
+        nonce = self.storage._get_nonce()
 
         self.assertEqual(nonce, self.global_transaction_state.nonce)
         self.assertEqual(GlobalTransactionState.objects.count(), 1)
@@ -77,11 +86,12 @@ class DatabaseTransactionsStorageTest(TestCase):
         for transaction in all_transactions:
             self.assertIsInstance(transaction, Transaction)
 
-    def test_that_put_tx_and_inc_nonce_should_create_transaction_and_increase_nonce(self):
+    def test_that_set_nonce_sign_and_save_tx_should_accept_transaction_and_increase_nonce(self):
         current_nonce = self.global_transaction_state.nonce
         transaction = self._create_transaction()
 
-        self.storage.put_tx_and_inc_nonce(
+        self.storage.set_nonce_sign_and_save_tx(
+            _sign,
             transaction
         )
 
@@ -93,37 +103,39 @@ class DatabaseTransactionsStorageTest(TestCase):
         self.global_transaction_state.refresh_from_db()
         self.assertEqual(self.global_transaction_state.nonce, current_nonce + 1)
 
-    def test_that_put_tx_and_inc_nonce_should_fail_if_global_transaction_state_does_not_exist(self):
+    def test_that_set_nonce_sign_and_save_tx_should_fail_if_global_transaction_state_does_not_exist(self):
         transaction = self._create_transaction()
         self.global_transaction_state.delete()
 
         with self.assertRaises(GlobalTransactionState.DoesNotExist):
-            self.storage.put_tx_and_inc_nonce(
+            self.storage.set_nonce_sign_and_save_tx(
+                _sign,
                 transaction
             )
 
         self.assertEqual(PendingEthereumTransaction.objects.count(), 0)
 
-    def test_that_put_tx_and_inc_nonce_should_fail_if_nonce_does_not_match(self):
+    def test_that_set_nonce_sign_and_save_tx_should_create_new_transaction_with_correct_nonce_if_nonce_does_not_match(self):
         transaction = self._create_transaction()
         self.global_transaction_state.nonce += 1
         self.global_transaction_state.full_clean()
         self.global_transaction_state.save()
         current_nonce = self.global_transaction_state.nonce
 
-        with self.assertRaises(Exception):
-            self.storage.put_tx_and_inc_nonce(
-                transaction
-            )
+        self.storage.set_nonce_sign_and_save_tx(
+            _sign,
+            transaction
+        )
 
-        self.assertEqual(PendingEthereumTransaction.objects.count(), 0)
+        self.assertEqual(PendingEthereumTransaction.objects.count(), 1)
         self.global_transaction_state.refresh_from_db()
-        self.assertEqual(self.global_transaction_state.nonce, current_nonce)
+        self.assertEqual(self.global_transaction_state.nonce, current_nonce + 1)
 
     def test_that_put_tx_first_and_then_get_all_tx_returns_exactly_same_transaction_object(self):
         transaction = self._create_transaction()
 
-        self.storage.put_tx_and_inc_nonce(
+        self.storage.set_nonce_sign_and_save_tx(
+            _sign,
             transaction
         )
 
@@ -222,3 +234,27 @@ class DatabaseTransactionsStorageTest(TestCase):
         pending_ethereum_transaction_from_database = PendingEthereumTransaction.objects.filter(nonce=int(self.global_transaction_state.nonce)).first()
 
         self.assertEqual(pending_ethereum_transaction_from_database, pending_ethereum_transaction)
+
+    def test_that_function_is_storage_initialized_return_true_if_storage_is_initialized(self):
+        self.assertEqual(self.storage._is_storage_initialized(), True)
+
+    def test_that_function_is_storage_initialized_return_false_if_storage_is_not_initialized(self):
+        GlobalTransactionState.objects.all().delete()
+        assert GlobalTransactionState.objects.all().count() == 0
+
+        not_initialzied_storage = DatabaseTransactionsStorage()
+        self.assertEqual(not_initialzied_storage._is_storage_initialized(), False)
+
+    def test_that_init_with_nonce_function_works_properly(self):
+        GlobalTransactionState.objects.all().delete()
+        assert GlobalTransactionState.objects.all().count() == 0
+
+        self.storage._init_with_nonce(self.increased_nonce)
+        self.assertEqual(GlobalTransactionState.objects.get(pk=0).nonce, self.increased_nonce)
+
+    def test_that_storage_init_function_increase_nonce_if_is_lower_than_network_nonce(self):
+        assert self.storage._get_nonce() == self.initial_nonce
+
+        self.storage.init(self.increased_nonce)
+
+        self.assertEqual(self.storage._get_nonce(), self.increased_nonce)

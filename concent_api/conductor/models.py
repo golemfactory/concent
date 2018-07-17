@@ -34,6 +34,9 @@ class VerificationRequest(Model):
     # Deadline on additional verification for related Subtask.
     verification_deadline = DateTimeField()
 
+    # Indicates when Conductor has received the request.
+    created_at = DateTimeField(auto_now_add=True)
+
     def clean(self):
         super().clean()
 
@@ -73,9 +76,6 @@ class BlenderSubtaskDefinition(Model):
 
     # Source code of the Python script to be executed by Blender.
     blender_crop_script = TextField(blank=True, null=True)
-
-    # Indicates when Conductor has received the request.
-    created_at = DateTimeField(default=timezone.now)
 
 
 class UploadReport(Model):

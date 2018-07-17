@@ -13,6 +13,7 @@ from core.message_handlers import store_or_update_subtask
 from core.models import PendingResponse
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
+from core.tests.utils import parse_iso_date_to_timestamp
 from core.transfer_operations import create_file_transfer_token_for_golem_client
 from common.constants import ErrorCode
 from common.helpers import get_current_utc_timestamp
@@ -64,7 +65,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
-            next_deadline=self._parse_iso_date_to_timestamp(subtask_results_verify_time_str) + (self.compute_task_def['deadline'] - self.task_to_compute.timestamp),
+            next_deadline=parse_iso_date_to_timestamp(subtask_results_verify_time_str) + (self.compute_task_def['deadline'] - self.task_to_compute.timestamp),
             task_to_compute=self.report_computed_task.task_to_compute,
             report_computed_task=self.report_computed_task,
         )
@@ -336,7 +337,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             output_format=self.report_computed_task.task_to_compute.compute_task_def['extra_data']['output_format'],
             scene_file=self.report_computed_task.task_to_compute.compute_task_def['extra_data']['scene_file'],
             verification_deadline=self._get_verification_deadline_as_timestamp(
-                self._parse_iso_date_to_timestamp(self.subtask_result_rejected_time_str),
+                parse_iso_date_to_timestamp(self.subtask_result_rejected_time_str),
                 self.task_to_compute,
             ),
             blender_crop_script=self.report_computed_task.task_to_compute.compute_task_def['extra_data']['script_src'],
@@ -563,7 +564,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             reason=reason_of_rejection,
             timestamp=self.subtask_result_rejected_time_str,
             report_computed_task=self.report_computed_task,
-            sign_with_private_key=key,
+            signer_private_key=key,
         )
         subtask_results_verify_time_str = self._add_time_offset_to_date(
             self.subtask_result_rejected_time_str,

@@ -8,6 +8,7 @@ from golem_messages         import message
 from core.constants         import ETHEREUM_ADDRESS_LENGTH
 from core.models            import PendingResponse
 from core.tests.utils       import ConcentIntegrationTestCase
+from core.tests.utils import parse_iso_date_to_timestamp
 from common.testing_helpers  import generate_ecc_key_pair
 
 
@@ -85,7 +86,7 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ForcePaymentCommitted,
             fields       = {
                 'recipient_type': message.concents.ForcePaymentCommitted.Actor.Provider,
-                'timestamp':      self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+                'timestamp':      parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -127,7 +128,7 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ForcePaymentCommitted,
             fields       = {
                 'recipient_type': message.concents.ForcePaymentCommitted.Actor.Requestor,
-                'timestamp':      self._parse_iso_date_to_timestamp("2018-02-05 12:00:23"),
+                'timestamp':      parse_iso_date_to_timestamp("2018-02-05 12:00:23"),
             }
         )
 

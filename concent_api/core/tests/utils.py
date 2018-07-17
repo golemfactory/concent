@@ -22,6 +22,20 @@ from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.message.base import Message
+from golem_messages.message.concents import ForcePayment
+from golem_messages.message.concents import ForceReportComputedTask
+from golem_messages.message.concents import ForceSubtaskResults
+from golem_messages.message.concents import ForceSubtaskResultsResponse
+from golem_messages.message.concents import SubtaskResultsVerify
+from golem_messages.message.tasks import AckReportComputedTask
+from golem_messages.message.tasks import RejectReportComputedTask
+from golem_messages.message.tasks import TaskFailure
+from golem_messages.message.tasks import CannotComputeTask
+from golem_messages.message.tasks import ComputeTaskDef
+from golem_messages.message.tasks import ReportComputedTask
+from golem_messages.message.tasks import SubtaskResultsAccepted
+from golem_messages.message.tasks import SubtaskResultsRejected
+from golem_messages.message.tasks import TaskToCompute
 from golem_messages.utils import encode_hex
 
 from core.models            import Client
@@ -35,6 +49,14 @@ from common.helpers          import get_current_utc_timestamp
 from common.helpers          import parse_timestamp_to_utc_datetime
 from common.testing_helpers  import generate_ecc_key_pair
 from common.testing_helpers  import generate_priv_and_pub_eth_account_key
+
+
+def get_timestamp_string() -> str:
+    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def parse_iso_date_to_timestamp(date_string) -> int:
+    return int(dateutil.parser.parse(date_string).timestamp())
 
 
 class ConcentIntegrationTestCase(TestCase):
@@ -121,10 +143,11 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_serialized_force_get_task_result(
         self,
-        report_computed_task,
-        timestamp,
-        requestor_private_key = None
-    ):
+        report_computed_task: ReportComputedTask,
+        timestamp: Union[str, datetime.datetime, None],
+        requestor_private_key: Optional[bytes] = None,
+    ) -> bytes:
+
         """ Returns MessageForceGetTaskResult serialized. """
         with freeze_time(timestamp):
             force_get_task_result = message.concents.ForceGetTaskResult(
@@ -140,15 +163,16 @@ class ConcentIntegrationTestCase(TestCase):
         self,
         subtask_id: str = '2',
         task_id: str = '1',
-        task_to_compute = None,
+        task_to_compute: Optional[TaskToCompute] = None,
         size: int = 1,
         package_hash: str = 'sha1:4452d71687b6bc2c9389c3349fdc17fbd73b833b',
         timestamp: Optional[str] = None,
-        sign_with_private_key = None,
-        frames: Optional[List[int]] = None
-    ):
+        signer_private_key: Optional[bytes] = None,
+        frames: Optional[List[int]] = None,
+    ) -> ReportComputedTask:
+
         """ Returns ReportComputedTask deserialized. """
-        with freeze_time(timestamp or self._get_timestamp_string()):
+        with freeze_time(timestamp or get_timestamp_string()):
             report_computed_task = ReportComputedTaskFactory(
                 task_to_compute=(
                     task_to_compute or self._get_deserialized_task_to_compute(
@@ -162,29 +186,30 @@ class ConcentIntegrationTestCase(TestCase):
             )
         report_computed_task = self._sign_message(
             report_computed_task,
-            sign_with_private_key if sign_with_private_key is not None else self.PROVIDER_PRIVATE_KEY,
+            signer_private_key if signer_private_key is not None else self.PROVIDER_PRIVATE_KEY,
         )
         return report_computed_task
 
     def _get_deserialized_task_to_compute(
         self,
         timestamp: Union[str, datetime.datetime, None] = None,
-        deadline = None,
+        deadline: Union[str, int, None] = None,
         task_id: str = '1',
         subtask_id: str = '2',
-        compute_task_def = None,
-        requestor_id: bytes = None,
-        requestor_public_key: bytes = None,
-        requestor_ethereum_public_key: bytes = None,
-        provider_id: bytes = None,
-        provider_public_key: bytes = None,
-        provider_ethereum_public_key: bytes = None,
-        price = 0,
+        compute_task_def: Optional[ComputeTaskDef] = None,
+        requestor_id: Optional[bytes] = None,
+        requestor_public_key: Optional[bytes] = None,
+        requestor_ethereum_public_key: Optional[bytes] = None,
+        provider_id: Optional[bytes] = None,
+        provider_public_key: Optional[bytes] = None,
+        provider_ethereum_public_key: Optional[bytes] = None,
+        price: int = 0,
         package_hash: str = 'sha1:230fb0cad8c7ed29810a2183f0ec1d39c9df3f4a',
-        sign_with_private_key = None,
-        size=1,
-        frames: Optional[List[int]] = None
-    ):
+        signer_private_key: Optional[bytes] = None,
+        size: int = 1,
+        frames: Optional[List[int]] = None,
+    ) -> TaskToCompute:
+
         """ Returns TaskToCompute deserialized. """
         compute_task_def = (
             compute_task_def if compute_task_def is not None else self._get_deserialized_compute_task_def(
@@ -200,7 +225,7 @@ class ConcentIntegrationTestCase(TestCase):
         assert isinstance(provider_public_key, str) or provider_public_key is None
         assert isinstance(timestamp, (str, datetime.datetime)) or timestamp is None
 
-        with freeze_time(timestamp or self._get_timestamp_string()):
+        with freeze_time(timestamp or get_timestamp_string()):
             task_to_compute = TaskToComputeFactory(
                 compute_task_def=compute_task_def,
                 requestor_id=(
@@ -227,21 +252,21 @@ class ConcentIntegrationTestCase(TestCase):
             )
         task_to_compute = self._sign_message(
             task_to_compute,
-            sign_with_private_key,
+            signer_private_key,
         )
         return task_to_compute
 
     def _get_deserialized_ack_report_computed_task(
         self,
-        timestamp       = None,
-        deadline        = None,
-        subtask_id      = '1',
-        report_computed_task = None,
-        task_to_compute = None,
-        sign_with_private_key = None,
-    ):
+        timestamp: Union[str, datetime.datetime, None] = None,
+        deadline: Union[str, int, None] = None,
+        subtask_id: str = '1',
+        report_computed_task: Optional[ReportComputedTask] = None,
+        task_to_compute: Optional[TaskToCompute] = None,
+        signer_private_key: Optional[bytes] = None,
+    )-> AckReportComputedTask:
         """ Returns AckReportComputedTask deserialized. """
-        with freeze_time(timestamp or self._get_timestamp_string()):
+        with freeze_time(timestamp or get_timestamp_string()):
             ack_report_computed_task = message.AckReportComputedTask(
                 report_computed_task=(
                     report_computed_task if report_computed_task is not None else self._get_deserialized_report_computed_task(
@@ -256,31 +281,25 @@ class ConcentIntegrationTestCase(TestCase):
                     )
                 )
             )
-        if sign_with_private_key is not None:
+        if signer_private_key is not None:
             ack_report_computed_task = self._sign_message(
                 ack_report_computed_task,
-                sign_with_private_key,
+                signer_private_key,
             )
         return ack_report_computed_task
 
     def _get_serialized_ack_report_computed_task(
         self,
-        timestamp                   = None,
-        ack_report_computed_task    = None,
-        requestor_private_key       = None,
-    ):
-        with freeze_time(timestamp or self._get_timestamp_string()):
+        ack_report_computed_task: AckReportComputedTask,
+        timestamp: Union[str, datetime.datetime, None] = None,
+        requestor_private_key: Optional[bytes] = None,
+    ) -> bytes:
+        with freeze_time(timestamp or get_timestamp_string()):
             return dump(
                 ack_report_computed_task,
                 requestor_private_key if requestor_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
                 settings.CONCENT_PUBLIC_KEY
             )
-
-    def _parse_iso_date_to_timestamp(self, date_string):    # pylint: disable=no-self-use
-        return int(dateutil.parser.parse(date_string).timestamp())
-
-    def _get_timestamp_string(self):                        # pylint: disable=no-self-use
-        return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     def _test_204_response(self, response):
         self.assertEqual(response.status_code, 204)
@@ -426,18 +445,18 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_force_subtask_results(
         self,
-        timestamp                   = None,
-        ack_report_computed_task    = None,
-    ):
+        timestamp: Union[str, datetime.datetime, None] = None,
+        ack_report_computed_task: Optional[AckReportComputedTask] = None,
+    ) -> ForceSubtaskResults:
+
         """ Returns ForceSubtaskResults deserialized. """
-        with freeze_time(timestamp or self._get_timestamp_string()):
+        with freeze_time(timestamp or get_timestamp_string()):
             force_subtask_results = message.concents.ForceSubtaskResults(
-                # timestamp = self._parse_iso_date_to_timestamp(timestamp),
                 ack_report_computed_task = (
                     ack_report_computed_task or
                     self._get_deserialized_ack_report_computed_task(
                         timestamp       = timestamp,
-                        deadline        = (self._parse_iso_date_to_timestamp(timestamp) + 10),
+                        deadline        = (parse_iso_date_to_timestamp(timestamp) + 10),
                     )
                 )
             )
@@ -448,7 +467,7 @@ class ConcentIntegrationTestCase(TestCase):
         timestamp                   = None,
         ack_report_computed_task    = None,
         provider_private_key        = None,
-    ):
+    ) -> bytes:
         """ Returns ForceSubtaskResults serialized. """
         force_subtask_results = self._get_deserialized_force_subtask_results(
             timestamp                   = timestamp,
@@ -462,23 +481,24 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_subtask_results_accepted(
         self,
-        timestamp           = None,
-        task_to_compute     = None,
-        payment_ts          = None,
-        sign_with_private_key=None,
-    ):
+        task_to_compute: TaskToCompute,
+        timestamp: Union[str, datetime.datetime, None] = None,
+        payment_ts: Optional[str] = None,
+        signer_private_key: Optional[bytes] = None,
+    ) -> SubtaskResultsAccepted:
+
         """ Return SubtaskResultsAccepted deserialized """
-        with freeze_time(timestamp or self._get_timestamp_string()):
-            subtask_results_accepted = message.tasks.SubtaskResultsAccepted(
+        with freeze_time(timestamp or get_timestamp_string()):
+            subtask_results_accepted = SubtaskResultsAccepted(
                 task_to_compute = task_to_compute,
                 payment_ts     = (
-                    self._parse_iso_date_to_timestamp(payment_ts) if payment_ts is not None else
-                    self._parse_iso_date_to_timestamp(self._get_timestamp_string())
+                        parse_iso_date_to_timestamp(payment_ts) is not None else
+                        parse_iso_date_to_timestamp(get_timestamp_string())
                 )
             )
         subtask_results_accepted = self._sign_message(
             subtask_results_accepted,
-            sign_with_private_key if sign_with_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
+            signer_private_key if signer_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
         )
         return subtask_results_accepted
 
@@ -489,7 +509,7 @@ class ConcentIntegrationTestCase(TestCase):
         requestor_private_key       = None,
         task_to_compute             = None,
         subtask_results_accepted    = None
-    ):
+    ) -> bytes:
         """ Return SubtaskResultsAccepted serialized """
         subtask_results_accepted = (
             subtask_results_accepted or
@@ -508,14 +528,15 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_subtask_results_rejected(
         self,
-        timestamp               = None,
-        reason                  = None,
-        report_computed_task    = None,
-        sign_with_private_key=None,
-    ):
+        reason: message.tasks.SubtaskResultsRejected.REASON,
+        timestamp: Union[str, datetime.datetime, None] = None,
+        report_computed_task: Optional[ReportComputedTask] = None,
+        signer_private_key: Optional[bytes] = None,
+    ) -> SubtaskResultsRejected:
+
         """ Return SubtaskResultsRejected deserialized """
-        with freeze_time(timestamp or self._get_timestamp_string()):
-            subtask_results_rejected = message.tasks.SubtaskResultsRejected(
+        with freeze_time(timestamp or get_timestamp_string()):
+            subtask_results_rejected = SubtaskResultsRejected(
                 reason = (
                     reason or
                     message.tasks.SubtaskResultsRejected.REASON.VerificationNegative
@@ -530,46 +551,37 @@ class ConcentIntegrationTestCase(TestCase):
             )
         subtask_results_rejected = self._sign_message(
             subtask_results_rejected,
-            sign_with_private_key if sign_with_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
+            signer_private_key if signer_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
         )
         return subtask_results_rejected
 
     def _get_serialized_subtask_results_rejected(
         self,
-        reason                      = None,
-        timestamp                   = None,
-        requestor_private_key       = None,
-        report_computed_task        = None,
-        subtask_results_rejected    = None
-    ):
+        subtask_results_rejected: SubtaskResultsRejected,
+        timestamp: Union[str, datetime.datetime, None] = None,
+        requestor_private_key: Optional[bytes] = None,
+    ) -> bytes:
+
         """ Return SubtaskResultsRejected serialized """
-        with freeze_time(timestamp or self._get_timestamp_string()):
-            subtask_results_rejected = (
-                subtask_results_rejected or
-                self._get_deserialized_subtask_results_rejected(
-                    reason                  = reason,
-                    timestamp               = timestamp,
-                    report_computed_task    = report_computed_task,
-                )
-            )
+        with freeze_time(timestamp or get_timestamp_string()):
             return dump(
                 subtask_results_rejected,
                 requestor_private_key if requestor_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
                 settings.CONCENT_PUBLIC_KEY,
             )
 
-    def _get_deserialized_compute_task_def(
+    def _get_deserialized_compute_task_def(  # pylint: disable=no-self-use
         self,
         task_id: str = '1',
         subtask_id: str = '2',
-        deadline = None,
-        extra_data: dict = None,
+        deadline: Union[str, int, None] = None,
+        extra_data: Optional[dict] = None,
         short_description: str = 'path_root: /home/dariusz/Documents/tasks/resources, start_task: 6, end_task: 6...',
         working_directory: str = '.',
         performance: float = 829.7531773625524,
-        docker_images: List[set] = None,
+        docker_images: Optional[List[set]] = None,
         frames: Optional[List[int]] = None
-    ):
+    ) -> ComputeTaskDef:
         compute_task_def = ComputeTaskDefFactory(
             task_id=task_id,
             subtask_id=subtask_id,
@@ -581,9 +593,9 @@ class ConcentIntegrationTestCase(TestCase):
         if isinstance(deadline, int):
             compute_task_def['deadline'] = deadline
         elif isinstance(deadline, str):
-            compute_task_def['deadline'] = self._parse_iso_date_to_timestamp(deadline)
+            compute_task_def['deadline'] = parse_iso_date_to_timestamp(deadline)
         else:
-            compute_task_def['deadline'] = self._parse_iso_date_to_timestamp(self._get_timestamp_string()) + 10
+            compute_task_def['deadline'] = parse_iso_date_to_timestamp(get_timestamp_string()) + 10
 
         if extra_data is None:
             compute_task_def['extra_data'] = {
@@ -602,13 +614,13 @@ class ConcentIntegrationTestCase(TestCase):
 
         return compute_task_def
 
-    def _get_deserialized_force_subtask_results_response(
+    def _get_deserialized_force_subtask_results_response(  # pylint: disable=no-self-use
         self,
-        timestamp                   = None,
-        subtask_results_accepted    = None,
-        subtask_results_rejected    = None,
-    ):
-        with freeze_time(timestamp or self._get_timestamp_string()):
+        timestamp: Union[str, datetime.datetime, None] = None,
+        subtask_results_accepted: Optional[SubtaskResultsAccepted] = None,
+        subtask_results_rejected: Optional[SubtaskResultsRejected] = None,
+    ) -> ForceSubtaskResultsResponse:
+        with freeze_time(timestamp or get_timestamp_string()):
             force_subtask_results_response = message.concents.ForceSubtaskResultsResponse(
                 subtask_results_accepted = subtask_results_accepted,
                 subtask_results_rejected = subtask_results_rejected,
@@ -617,12 +629,12 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_serialized_force_subtask_results_response(
         self,
-        timestamp                   = None,
-        subtask_results_accepted    = None,
-        subtask_results_rejected    = None,
-        requestor_private_key       = None,
-    ):
-        with freeze_time(timestamp or self._get_timestamp_string()):
+        timestamp: Union[str, datetime.datetime, None] = None,
+        subtask_results_accepted: Optional[SubtaskResultsAccepted] = None,
+        subtask_results_rejected: Optional[SubtaskResultsRejected] = None,
+        requestor_private_key: Optional[bytes] = None,
+    ) -> bytes:
+        with freeze_time(timestamp or get_timestamp_string()):
             force_subtask_results_response = self._get_deserialized_force_subtask_results_response(
                 timestamp                   = timestamp,
                 subtask_results_accepted    = subtask_results_accepted,
@@ -635,23 +647,23 @@ class ConcentIntegrationTestCase(TestCase):
             settings.CONCENT_PUBLIC_KEY
         )
 
-    def _get_deserialized_force_report_computed_task(
+    def _get_deserialized_force_report_computed_task(  # pylint: disable=no-self-use
         self,
-        timestamp               = None,
-        report_computed_task    = None,
-    ):
-        with freeze_time(timestamp or self._get_timestamp_string()):
+        report_computed_task: ReportComputedTask,
+        timestamp: Union[str, datetime.datetime, None] = None,
+    ) -> ForceReportComputedTask:
+        with freeze_time(timestamp or get_timestamp_string()):
             return message.concents.ForceReportComputedTask(
                 report_computed_task = report_computed_task,
             )
 
     def _get_serialized_force_report_computed_task(
         self,
-        timestamp                   = None,
-        force_report_computed_task  = None,
-        provider_private_key        = None,
-    ):
-        with freeze_time(timestamp or self._get_timestamp_string()):
+        force_report_computed_task: ForceReportComputedTask,
+        timestamp: Union[str, datetime.datetime, None] = None,
+        provider_private_key: Optional[bytes] = None,
+    ) -> bytes:
+        with freeze_time(timestamp or get_timestamp_string()):
             return dump(
                 force_report_computed_task,
                 provider_private_key if provider_private_key is not None else self.PROVIDER_PRIVATE_KEY,
@@ -660,11 +672,11 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_cannot_compute_task(
         self,
-        timestamp       = None,
-        task_to_compute = None,
-        reason          = None,
-    ):
-        with freeze_time(timestamp or self._get_timestamp_string()):
+        task_to_compute: TaskToCompute,
+        reason: message.tasks.SubtaskResultsRejected.REASON,
+        timestamp: Union[str, datetime.datetime, None] = None,
+    ) -> CannotComputeTask:
+        with freeze_time(timestamp or get_timestamp_string()):
             cannot_compute_task = message.tasks.CannotComputeTask(
                 task_to_compute = task_to_compute,
                 reason          = reason,
@@ -673,26 +685,26 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_task_failure(
         self,
-        timestamp=None,
-        err=None,
-        task_to_compute=None,
-    ):
-        with freeze_time(timestamp or self._get_timestamp_string()):
+        err: str,
+        task_to_compute: TaskToCompute,
+        timestamp: Union[str, datetime.datetime, None] = None,
+    ) -> TaskFailure:
+        with freeze_time(timestamp or get_timestamp_string()):
             task_failure = message.tasks.TaskFailure(
                 err=err,
                 task_to_compute=task_to_compute,
             )
             return self._sign_message(task_failure, self.PROVIDER_PRIVATE_KEY)
 
-    def _get_deserialized_reject_report_computed_task(
+    def _get_deserialized_reject_report_computed_task(  # pylint: disable=no-self-use
         self,
-        timestamp           = None,
-        cannot_compute_task = None,
-        task_failure        = None,
-        task_to_compute     = None,
-        reason              = None,
-    ):
-        with freeze_time(timestamp or self._get_timestamp_string()):
+        reason: message.tasks.SubtaskResultsRejected.REASON,
+        task_to_compute: TaskToCompute,
+        timestamp: Union[str, datetime.datetime, None] = None,
+        cannot_compute_task: Optional[CannotComputeTask] = None,
+        task_failure: Optional[TaskFailure] = None,
+    )-> RejectReportComputedTask:
+        with freeze_time(timestamp or get_timestamp_string()):
             return message.RejectReportComputedTask(
                 cannot_compute_task = cannot_compute_task,
                 attached_task_to_compute = task_to_compute,
@@ -702,23 +714,23 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_serialized_reject_report_computed_task(
         self,
-        timestamp                   = None,
-        reject_report_computed_task = None,
-        requestor_private_key       = None,
-    ):
-        with freeze_time(timestamp or self._get_timestamp_string()):
+        reject_report_computed_task: RejectReportComputedTask,
+        timestamp: Union[str, datetime.datetime, None] = None,
+        requestor_private_key: Optional[bytes] = None,
+    ) -> bytes:
+        with freeze_time(timestamp or get_timestamp_string()):
             return dump(
                 reject_report_computed_task,
                 requestor_private_key if requestor_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
                 settings.CONCENT_PUBLIC_KEY
             )
 
-    def _get_deserialized_force_payment(
+    def _get_deserialized_force_payment(  # pylint: disable=no-self-use
         self,
-        timestamp = None,
-        subtask_results_accepted_list = None
-    ):
-        with freeze_time(timestamp or self._get_timestamp_string()):
+        subtask_results_accepted_list: List[SubtaskResultsAccepted],
+        timestamp: Union[str, datetime.datetime, None] = None,
+    ) -> ForcePayment:
+        with freeze_time(timestamp or get_timestamp_string()):
             force_payment = message.concents.ForcePayment(
                 subtask_results_accepted_list = subtask_results_accepted_list
             )
@@ -726,11 +738,11 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_serialized_force_payment(
         self,
-        timestamp                       = None,
-        subtask_results_accepted_list   = None,
-        provider_private_key            = None
-    ):
-        with freeze_time(timestamp or self._get_timestamp_string()):
+        subtask_results_accepted_list: List[SubtaskResultsAccepted],
+        timestamp: Union[str, datetime.datetime, None] = None,
+        provider_private_key: Optional[bytes] = None,
+    ) -> bytes:
+        with freeze_time(timestamp or get_timestamp_string()):
             force_payment = self._get_deserialized_force_payment(
                 timestamp                       = timestamp,
                 subtask_results_accepted_list   = subtask_results_accepted_list,
@@ -741,29 +753,27 @@ class ConcentIntegrationTestCase(TestCase):
             settings.CONCENT_PUBLIC_KEY
         )
 
-    def _get_deserialized_subtask_results_verify(
+    def _get_deserialized_subtask_results_verify(  # pylint: disable=no-self-use
         self,
-        timestamp=None,
-        subtask_results_rejected=None,
-    ):
+        subtask_results_rejected: SubtaskResultsRejected,
+        timestamp: Union[str, datetime.datetime, None] = None,
+    ) -> SubtaskResultsVerify:
         """ Return SubtaskResultsVerify deserialized """
-        with freeze_time(timestamp or self._get_timestamp_string()):
+        with freeze_time(timestamp or get_timestamp_string()):
             return message.concents.SubtaskResultsVerify(
-                subtask_results_rejected=(
-                    subtask_results_rejected if subtask_results_rejected is not None else
-                    self._get_deserialized_subtask_results_rejected()
-                ),
+                subtask_results_rejected=subtask_results_rejected
             )
 
     def _get_serialized_subtask_results_verify(
         self,
-        timestamp=None,
-        subtask_results_verify=None,
-        provider_private_key=None
-    ):
+        subtask_results_verify: SubtaskResultsVerify,
+        subtask_results_rejected: Optional[SubtaskResultsRejected] = None,
+        timestamp: Union[str, datetime.datetime, None] = None,
+        provider_private_key: Optional[bytes] = None,
+    ) -> bytes:
         return dump(
             msg=(subtask_results_verify if subtask_results_verify is not None
-                 else self._get_deserialized_subtask_results_verify(timestamp)),
+                 else self._get_deserialized_subtask_results_verify(subtask_results_rejected, timestamp)),
             privkey=provider_private_key if provider_private_key is not None else self.PROVIDER_PRIVATE_KEY,
             pubkey=settings.CONCENT_PUBLIC_KEY,
         )
@@ -774,8 +784,8 @@ class ConcentIntegrationTestCase(TestCase):
         timestamp,
         data,
         task_id,
-    ):
-        with freeze_time(timestamp or self._get_timestamp_string()):
+    ):  # pylint: disable=no-self-use
+        with freeze_time(timestamp or get_timestamp_string()):
             message_timestamp = datetime.datetime.now(timezone.utc)
             golem_message = StoredMessage(
                 type        = message_type,
@@ -853,13 +863,13 @@ class ConcentIntegrationTestCase(TestCase):
         ping_message = message.Ping()
         return ping_message
 
-    def _add_time_offset_to_date(self, base_time, offset):
+    def _add_time_offset_to_date(self, base_time, offset):  # pylint: disable=no-self-use
         """
         :param base_time: string format
         :param offset: timestamp format
         :return: new time in a string format
         """
-        return datetime.datetime.fromtimestamp(self._parse_iso_date_to_timestamp(base_time) + offset).strftime(
+        return datetime.datetime.fromtimestamp(parse_iso_date_to_timestamp(base_time) + offset).strftime(
             '%Y-%m-%d %H:%M:%S'
         )
 

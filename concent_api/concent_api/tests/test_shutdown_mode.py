@@ -12,7 +12,7 @@ from golem_messages             import message
 from core.message_handlers      import store_subtask
 from core.models                import PendingResponse
 from core.models                import Subtask
-from core.tests.utils           import ConcentIntegrationTestCase
+from core.tests.utils import ConcentIntegrationTestCase
 from common.helpers              import get_current_utc_timestamp
 from common.testing_helpers      import generate_ecc_key_pair
 

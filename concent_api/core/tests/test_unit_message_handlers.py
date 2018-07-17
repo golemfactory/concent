@@ -6,6 +6,7 @@ from core.message_handlers import are_items_unique
 from core.message_handlers import store_subtask
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
+from core.tests.utils import parse_iso_date_to_timestamp
 from core.utils import hex_to_bytes_convert
 
 
@@ -56,10 +57,10 @@ class TestMessagesStored(ConcentIntegrationTestCase):
             report_computed_task=self.report_computed_task,
         )
         self.assertEqual(
-            self._parse_iso_date_to_timestamp(subtask.task_to_compute.timestamp.isoformat()),
-            self._parse_iso_date_to_timestamp(self.task_to_compute_timestamp)
+            parse_iso_date_to_timestamp(subtask.task_to_compute.timestamp.isoformat()),
+            parse_iso_date_to_timestamp(self.task_to_compute_timestamp)
         )
         self.assertEqual(
-            self._parse_iso_date_to_timestamp(subtask.report_computed_task.timestamp.isoformat()),
-            self._parse_iso_date_to_timestamp(self.report_computed_task_timestamp)
+            parse_iso_date_to_timestamp(subtask.report_computed_task.timestamp.isoformat()),
+            parse_iso_date_to_timestamp(self.report_computed_task_timestamp)
         )

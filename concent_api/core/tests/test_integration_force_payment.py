@@ -9,6 +9,7 @@ from core.constants         import ETHEREUM_ADDRESS_LENGTH
 from core.models            import PendingResponse
 from core.payments.backends.sci_backend import TransactionType
 from core.tests.utils       import ConcentIntegrationTestCase
+from core.tests.utils import parse_iso_date_to_timestamp
 from common.testing_helpers  import generate_ecc_key_pair
 
 
@@ -67,7 +68,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ServiceRefused,
             fields       = {
                 'reason':    message.concents.ServiceRefused.REASON.InvalidRequest,
-                'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 10:00:25"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:25"),
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -117,7 +118,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ServiceRefused,
             fields       = {
                 'reason':    message.concents.ServiceRefused.REASON.InvalidRequest,
-                'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 10:00:25"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:25"),
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -169,8 +170,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         get_list_of_payments_mock_function.assert_called_with(
             requestor_eth_address=task_to_compute.requestor_ethereum_address,
             provider_eth_address=task_to_compute.provider_ethereum_address,
-            payment_ts=self._parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
-            current_time=self._parse_iso_date_to_timestamp("2018-02-05 12:00:09"),
+            payment_ts=parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
+            current_time=parse_iso_date_to_timestamp("2018-02-05 12:00:09"),
             transaction_type=TransactionType.BATCH,
         )
 
@@ -181,8 +182,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ForcePaymentRejected,
             fields       = {
                 'reason': message.concents.ForcePaymentRejected.REASON.TimestampError,
-                'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:09"),
-                'force_payment.timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:19"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:09"),
+                'force_payment.timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:19"),
                 'force_payment.subtask_results_accepted_list': subtask_results_accepted_list,
             }
         )
@@ -237,8 +238,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         get_list_of_payments_mock_function.assert_called_with(
             requestor_eth_address=task_to_compute.requestor_ethereum_address,
             provider_eth_address=task_to_compute.provider_ethereum_address,
-            payment_ts=self._parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
-            current_time=self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+            payment_ts=parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
+            current_time=parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
             transaction_type=TransactionType.BATCH,
         )
 
@@ -249,8 +250,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ForcePaymentRejected,
             fields       = {
                 'reason':    message.concents.ForcePaymentRejected.REASON.TimestampError,
-                'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
-                'force_payment.timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+                'force_payment.timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
                 'force_payment.subtask_results_accepted_list': subtask_results_accepted_list,
             }
         )
@@ -306,8 +307,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         get_list_of_payments_mock_function.assert_called_with(
             requestor_eth_address=task_to_compute.requestor_ethereum_address,
             provider_eth_address=task_to_compute.provider_ethereum_address,
-            payment_ts=self._parse_iso_date_to_timestamp("2018-02-05 11:55:10"),
-            current_time=self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+            payment_ts=parse_iso_date_to_timestamp("2018-02-05 11:55:10"),
+            current_time=parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
             transaction_type=TransactionType.FORCE,
         )
 
@@ -318,8 +319,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ForcePaymentRejected,
             fields       = {
                 'reason':    message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,
-                'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
-                'force_payment.timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+                'force_payment.timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
                 'force_payment.subtask_results_accepted_list': subtask_results_accepted_list,
             }
         )
@@ -385,14 +386,14 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             requestor_eth_address=task_to_compute.requestor_ethereum_address,
             provider_eth_address=task_to_compute.provider_ethereum_address,
             value=9000,
-            payment_ts=self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+            payment_ts=parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
         )
 
         get_list_of_payments_mock_function.assert_called_with(
             requestor_eth_address=task_to_compute.requestor_ethereum_address,
             provider_eth_address=task_to_compute.provider_ethereum_address,
-            payment_ts=self._parse_iso_date_to_timestamp("2018-02-05 11:55:10"),
-            current_time=self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+            payment_ts=parse_iso_date_to_timestamp("2018-02-05 11:55:10"),
+            current_time=parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
             transaction_type=TransactionType.FORCE,
         )
 
@@ -408,7 +409,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ForcePaymentCommitted,
             fields       = {
                 'recipient_type': message.concents.ForcePaymentCommitted.Actor.Provider,
-                'timestamp':      self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+                'timestamp':      parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
                 'amount_pending': amount_pending,
                 'amount_paid':    amount_paid,
             }
@@ -432,7 +433,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ForcePaymentCommitted,
             fields       = {
                 'recipient_type': message.concents.ForcePaymentCommitted.Actor.Requestor,
-                'timestamp':      self._parse_iso_date_to_timestamp("2018-02-05 12:00:21"),
+                'timestamp':      parse_iso_date_to_timestamp("2018-02-05 12:00:21"),
                 'amount_pending': amount_pending,
                 'amount_paid':    amount_paid,
                 'task_owner_key': decode_hex(task_to_compute.requestor_ethereum_public_key),
@@ -544,7 +545,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ServiceRefused,
             fields       = {
                 'reason':    message.concents.ServiceRefused.REASON.InvalidRequest,
-                'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -598,7 +599,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ServiceRefused,
             fields       = {
                 'reason':    message.concents.ServiceRefused.REASON.DuplicateRequest,
-                'timestamp': self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -658,14 +659,14 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             requestor_eth_address=task_to_compute.requestor_ethereum_address,
             provider_eth_address=task_to_compute.provider_ethereum_address,
             value=25000,
-            payment_ts=self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+            payment_ts=parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
         )
 
         get_list_of_payments_mock_function.assert_called_with(
             requestor_eth_address=task_to_compute.requestor_ethereum_address,
             provider_eth_address=task_to_compute.provider_ethereum_address,
-            payment_ts=self._parse_iso_date_to_timestamp("2018-02-05 11:00:10"),
-            current_time=self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+            payment_ts=parse_iso_date_to_timestamp("2018-02-05 11:00:10"),
+            current_time=parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
             transaction_type=TransactionType.FORCE,
         )
 
@@ -676,7 +677,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ForcePaymentCommitted,
             fields       = {
                 'recipient_type': message.concents.ForcePaymentCommitted.Actor.Provider,
-                'timestamp':      self._parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+                'timestamp':      parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
                 'amount_pending': 25000,
                 'amount_paid':    0,
             }
@@ -696,7 +697,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ForcePaymentCommitted,
             fields       = {
                 'recipient_type': message.concents.ForcePaymentCommitted.Actor.Requestor,
-                'timestamp':      self._parse_iso_date_to_timestamp("2018-02-05 12:00:21"),
+                'timestamp':      parse_iso_date_to_timestamp("2018-02-05 12:00:21"),
                 'amount_pending': 25000,
                 'amount_paid':    0,
                 'task_owner_key': decode_hex(task_to_compute.requestor_ethereum_public_key),

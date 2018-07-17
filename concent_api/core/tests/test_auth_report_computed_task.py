@@ -8,7 +8,8 @@ from golem_messages         import dump
 from golem_messages         import load
 from golem_messages         import message
 
-from core.tests.utils       import ConcentIntegrationTestCase
+from core.tests.utils import ConcentIntegrationTestCase
+from core.tests.utils import parse_iso_date_to_timestamp
 from core.models            import PendingResponse
 from core.models            import Subtask
 from common.constants        import ErrorCode
@@ -36,7 +37,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 10:00:00"):
             self.deserialized_task_to_compute = self._get_deserialized_task_to_compute(
                 compute_task_def      = self.compute_task_def,
-                sign_with_private_key = self.REQUESTOR_PRIVATE_KEY,
+                signer_private_key= self.REQUESTOR_PRIVATE_KEY,
             )
 
         with freeze_time("2017-12-01 10:59:00"):
@@ -88,7 +89,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
             requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -145,7 +146,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         self.assertEqual(response.status_code,                                                                  200)
-        self.assertEqual(force_report_computed_task_from_view.timestamp,                                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
+        self.assertEqual(force_report_computed_task_from_view.timestamp, parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   self.force_report_computed_task.report_computed_task.task_to_compute.timestamp)     # pylint: disable=no-member
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             self.force_report_computed_task.report_computed_task.task_to_compute)               # pylint: disable=no-member
 
@@ -344,7 +345,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         self.assertEqual(response.status_code,                         200)
-        self.assertEqual(ack_report_computed_task_from_view.timestamp, self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"))
+        self.assertEqual(ack_report_computed_task_from_view.timestamp, parse_iso_date_to_timestamp("2017-12-01 11:00:15"))
 
         self._assert_client_count_is_equal(2)
 
@@ -382,7 +383,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
             requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -439,7 +440,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         self.assertEqual(response.status_code,                                                                  200)
-        self.assertEqual(force_report_computed_task_from_view.timestamp,                                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
+        self.assertEqual(force_report_computed_task_from_view.timestamp, parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   self.force_report_computed_task.report_computed_task.task_to_compute.timestamp)  # pylint: disable=no-member
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             self.force_report_computed_task.report_computed_task.task_to_compute)            # pylint: disable=no-member
 
@@ -550,7 +551,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
             requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
 
         # STEP 5: Requestor rejects computed task due to CannotComputeTask or TaskFailure with correct key
@@ -646,8 +647,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         self.assertEqual(response.status_code,                                                                                          200)
-        self.assertEqual(force_report_computed_task_response.timestamp,                                                                 self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"))
-        self.assertEqual(force_report_computed_task_response.reject_report_computed_task.timestamp,                                     self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
+        self.assertEqual(force_report_computed_task_response.timestamp, parse_iso_date_to_timestamp("2017-12-01 11:00:15"))
+        self.assertEqual(force_report_computed_task_response.reject_report_computed_task.timestamp, parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
         self.assertEqual(force_report_computed_task_response.reject_report_computed_task.cannot_compute_task.timestamp,                 reject_report_computed_task.cannot_compute_task.timestamp)  # pylint: disable=no-member
         self.assertEqual(force_report_computed_task_response.reject_report_computed_task.cannot_compute_task.task_to_compute.timestamp, reject_report_computed_task.cannot_compute_task.task_to_compute.timestamp)  # pylint: disable=no-member
 
@@ -689,7 +690,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
             requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -746,7 +747,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         self.assertEqual(response.status_code,                                                                  200)
-        self.assertEqual(force_report_computed_task_from_view.timestamp,                                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
+        self.assertEqual(force_report_computed_task_from_view.timestamp, parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   self.force_report_computed_task.report_computed_task.task_to_compute.timestamp)  # pylint: disable=no-member
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             self.force_report_computed_task.report_computed_task.task_to_compute)            # pylint: disable=no-member
 
@@ -855,7 +856,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
             requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
 
         # STEP 5: Requestor rejects computed task due to CannotComputeTask or TaskFailure with correct key
@@ -951,7 +952,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         self.assertIsInstance(message_from_concent_to_provider,                                     message.concents.ForceReportComputedTaskResponse)
-        self.assertEqual(message_from_concent_to_provider.timestamp,                                self._parse_iso_date_to_timestamp("2017-12-01 11:00:15"))
+        self.assertEqual(message_from_concent_to_provider.timestamp, parse_iso_date_to_timestamp("2017-12-01 11:00:15"))
         self.assertEqual(message_from_concent_to_provider.ack_report_computed_task.report_computed_task.task_to_compute, self.deserialized_task_to_compute)
 
         # STEP 8: Requestor do not receives computed task report verdict out of band due to an overridden decision with different or mixed key
@@ -1040,7 +1041,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
             requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = self._parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -1097,7 +1098,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         self.assertEqual(response.status_code,                                                                  200)
-        self.assertEqual(force_report_computed_task_from_view.timestamp,                                        self._parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
+        self.assertEqual(force_report_computed_task_from_view.timestamp, parse_iso_date_to_timestamp("2017-12-01 11:00:05"))
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute.timestamp,   self.force_report_computed_task.report_computed_task.task_to_compute.timestamp)     # pylint: disable=no-member
         self.assertEqual(force_report_computed_task_from_view.report_computed_task.task_to_compute,             self.force_report_computed_task.report_computed_task.task_to_compute)               # pylint: disable=no-member
 

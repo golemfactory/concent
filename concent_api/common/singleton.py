@@ -37,7 +37,7 @@ def concent_sci(
     )
 
 
-class ConcentRPC:
+class PaymentInterface:
     __instance = None
 
     def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument

@@ -4,7 +4,7 @@ from golem_sci.blockshelper import BlocksHelper
 from web3 import Web3
 
 from core.constants import ETHEREUM_ADDRESS_LENGTH
-from common.singleton import ConcentRPC
+from common.singleton import PaymentInterface
 
 
 def get_list_of_payments(
@@ -24,23 +24,23 @@ def get_list_of_payments(
     assert isinstance(current_time,             int) and current_time   > 0
     assert isinstance(transaction_type,         Enum) and transaction_type in TransactionType
 
-    concent_rpc = ConcentRPC()
+    payment_interface = PaymentInterface()
 
-    last_block_before_payment = BlocksHelper(concent_rpc).get_first_block_after(payment_ts).number
+    last_block_before_payment = BlocksHelper(payment_interface).get_first_block_after(payment_ts).number
 
     if transaction_type == TransactionType.FORCE:
-        payments_list = concent_rpc.get_forced_payments(  # pylint: disable=no-member
+        payments_list = payment_interface.get_forced_payments(  # pylint: disable=no-member
             requestor_address   = Web3.toChecksumAddress(requestor_eth_address),
             provider_address    = Web3.toChecksumAddress(provider_eth_address),
             from_block          = last_block_before_payment,
-            to_block            = concent_rpc.get_block_number(),  # pylint: disable=no-member
+            to_block            = payment_interface.get_block_number(),  # pylint: disable=no-member
         )
     elif transaction_type == TransactionType.BATCH:
-        payments_list = concent_rpc.get_batch_transfers(  # pylint: disable=no-member
+        payments_list = payment_interface.get_batch_transfers(  # pylint: disable=no-member
             payer_address   = Web3.toChecksumAddress(requestor_eth_address),
             payee_address   = Web3.toChecksumAddress(provider_eth_address),
             from_block      = last_block_before_payment,
-            to_block        = concent_rpc.get_block_number(),  # pylint: disable=no-member
+            to_block        = payment_interface.get_block_number(),  # pylint: disable=no-member
         )
 
     return payments_list
@@ -61,11 +61,11 @@ def make_force_payment_to_provider(
     assert isinstance(payment_ts,               int) and payment_ts   >= 0
     assert isinstance(value,                    int) and value        >= 0
 
-    requestor_account_balance = ConcentRPC().get_deposit_value(Web3.toChecksumAddress(requestor_eth_address))  # type: ignore  # pylint: disable=no-member
+    requestor_account_balance = PaymentInterface().get_deposit_value(Web3.toChecksumAddress(requestor_eth_address))  # type: ignore  # pylint: disable=no-member
     if requestor_account_balance < value:
         value = requestor_account_balance
 
-    ConcentRPC().force_payment(  # type: ignore  # pylint: disable=no-member
+    PaymentInterface().force_payment(  # type: ignore  # pylint: disable=no-member
         requestor_address   = Web3.toChecksumAddress(requestor_eth_address),
         provider_address    = Web3.toChecksumAddress(provider_eth_address),
         value               = value,
@@ -80,13 +80,13 @@ def is_account_status_positive(
     assert isinstance(client_eth_address,       str) and len(client_eth_address) == ETHEREUM_ADDRESS_LENGTH
     assert isinstance(pending_value,            int) and pending_value >= 0
 
-    client_acc_balance = ConcentRPC().get_deposit_value(Web3.toChecksumAddress(client_eth_address))  # type: ignore  # pylint: disable=no-member
+    client_acc_balance = PaymentInterface().get_deposit_value(Web3.toChecksumAddress(client_eth_address))  # type: ignore  # pylint: disable=no-member
 
     return client_acc_balance > pending_value
 
 
 def get_transaction_count() -> int:
-    return ConcentRPC().get_transaction_count()  # type: ignore  # pylint: disable=no-member
+    return PaymentInterface().get_transaction_count()  # type: ignore  # pylint: disable=no-member
 
 
 class TransactionType(Enum):

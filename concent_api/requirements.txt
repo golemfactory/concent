@@ -22,4 +22,5 @@ pytest
 pytest-django
 pytest-xdist
 pytest-cov
+pytest-asyncio
 web3

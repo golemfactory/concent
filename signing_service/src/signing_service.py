@@ -181,7 +181,7 @@ if __name__ == '__main__':
     raven_client = Client(dsn=args.sentry_dsn)
     crash_logger.handlers[0].client = raven_client  # type: ignore
 
-    arg_host = args.concent_cluster_address
+    arg_host = args.concent_cluster_host
     arg_port = args.concent_cluster_port
     arg_initial_reconnect_delay = args.initial_reconnect_delay
 

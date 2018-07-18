@@ -10,6 +10,7 @@ printf "\n"
 
 printf "========================= MYPY STATIC TYPE CHECKER =================\n"
 mypy --config-file=mypy.ini concent_api/
+mypy --config-file=mypy.ini signing_service/
 printf "\n"
 
 printf "========================= UNIT TESTS WITH COVERAGE =================\n"

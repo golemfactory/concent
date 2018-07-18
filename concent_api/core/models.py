@@ -18,7 +18,6 @@ from django.db.models       import OneToOneField
 from django.db.models       import PositiveSmallIntegerField
 from django.db.models       import Manager
 from django.db.models       import Value
-from django.utils           import timezone
 
 from constance              import config
 from golem_messages         import message
@@ -49,8 +48,7 @@ class SubtaskWithTimingColumnsManager(Manager):
         subtask_timeout = Func(Value('epoch'), computation_deadline, function='DATE_PART') - task_to_compute_timestamp
         subtask_verification_time = (4 * settings.CONCENT_MESSAGING_TIME) + (3 * maximum_download_time) + (0.5 * subtask_timeout)
         download_deadline = Func(Value('epoch'), computation_deadline, function='DATE_PART') + subtask_verification_time
-        return super().get_queryset(
-        ).annotate(
+        return super().get_queryset().annotate(
             maximum_download_time=Value(settings.DOWNLOAD_LEADIN_TIME) + download_time,
             subtask_verification_time=ExpressionWrapper(subtask_verification_time, output_field=IntegerField()),
             download_deadline=ExpressionWrapper(download_deadline, output_field=IntegerField())

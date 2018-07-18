@@ -72,7 +72,7 @@ class SubtaskAdmin(ModelAdminReadOnlyMixin, admin.ModelAdmin):
 
     def download_deadline(self, obj):  # pylint: disable=no-self-use
         return parse_timestamp_to_utc_datetime(obj.download_deadline)
-
+    download_deadline.short_description = 'Download deadline'  # type: ignore
 
 class PendingResponseAdmin(ModelAdminReadOnlyMixin, admin.ModelAdmin):
     list_display = [

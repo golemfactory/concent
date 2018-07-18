@@ -3,6 +3,7 @@ import logging.config
 import os
 import signal
 import socket
+from contextlib import closing
 from time import sleep
 
 from exceptions import SigningServiceValidationError  # pylint: disable=no-name-in-module
@@ -40,7 +41,6 @@ class SigningService:
         self.port = port
         self.initial_reconnect_delay = initial_reconnect_delay
         self.current_reconnect_delay = None
-        self.socket: socket.socket = None  # type: ignore
         self.was_sigterm_caught = False
 
         self._validate_arguments()
@@ -56,72 +56,53 @@ class SigningService:
         """
 
         def _set_was_sigterm_caught_true(signum, frame):  # pylint: disable=unused-argument
+            logger.info('Closing connection and exiting on SIGTERM.')
             self.was_sigterm_caught = True
 
         # Handle shutdown signal.
         signal.signal(signal.SIGTERM, _set_was_sigterm_caught_true)
 
         while not self._was_sigterm_caught():
-            try:
-                if self.socket is None:
-                    self._connect()
-                else:
-                    # Sending empty string because it is only way to check
-                    # if connection is still alive directly on socket object.
-                    self.socket.send(b'')
-            except socket.error as exception:
-                logger.error(f'Socket error occurred: {exception}')
+            with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as tcp_socket:
+                try:
+                    self._connect(tcp_socket)
+                except socket.error as exception:
+                    logger.error(f'Socket error occurred: {exception}')
 
-                # When the other side closes the connection, return without errors.
-                if isinstance(exception.args, tuple) and exception.args[0] == socket.errno.EPIPE:  # type: ignore
-                    logger.info(os.strerror(exception.args[0]))
+                    # Only predefined list of exceptions should cause reconnect, others should be reraised.
+                    if isinstance(exception.args, tuple) and exception.args[0] not in SIGNING_SERVICE_RECOVERABLE_ERRORS:  # type: ignore
+                        raise
+
+                    # Increase delay and reconnect if the connection is interrupted due to a failure.
+                    self._increase_delay()
+                except KeyboardInterrupt:
+                    # Handle keyboard interrupt.
+                    logger.info('Closing connection and exiting on KeyboardInterrupt.')
                     break
-
-                # Only predefined list of exceptions should cause reconnect, others should be reraised.
-                if isinstance(exception.args, tuple) and exception.args[0] not in SIGNING_SERVICE_RECOVERABLE_ERRORS:  # type: ignore
+                except Exception as exception:
+                    # If there was an unrecognized exception, log it and report to Sentry.
+                    crash_logger.error(f'Unrecognized exception occurred: {exception}')
                     raise
 
-                # Increase delay and reconnect if the connection is interrupted due to a failure.
-                self._increase_delay()
-                self.socket = None  # type: ignore
-            except KeyboardInterrupt:
-                # Handle keyboard interrupt.
-                logger.info('Closing connection and exiting on KeyboardInterrupt.')
-                break
-            except Exception as exception:
-                # If there was an unrecognized exception, log it and report to Sentry.
-                crash_logger.error(f'Unrecognized exception occurred: {exception}')
-                raise
-            finally:
-                if self.socket is not None:
-                    self.socket.close()
-
-        if self.was_sigterm_caught:
-            if self.socket is not None:
-                self.socket.close()
-            logger.info('Closing connection and exiting on SIGTERM.')
-
-    def _connect(self) -> None:
+    def _connect(self, tcp_socket: socket.socket) -> None:
         """ Creates socket and connects to given HOST and PORT. """
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
         if self.current_reconnect_delay is not None:
             logger.warning(f'Waiting {self.current_reconnect_delay} before connecting.')
             sleep(self.current_reconnect_delay)
 
         logger.warning(f'Connecting to {self.host}:{self.port}.')
-        self.socket.connect((self.host, self.port))
+        tcp_socket.connect((self.host, self.port))
         logger.warning(f'Connection established.')
 
         # Reset delay on successful connection and set flag that connection is established.
         self.current_reconnect_delay = None
-        self._handle_connection()
+        self._handle_connection(tcp_socket)
 
-    def _handle_connection(self) -> None:
+    def _handle_connection(self, tcp_socket: socket.socket) -> None:  # pylint: disable=no-self-use
         """ Inner loop that handles data exchange over socket. """
         while True:
-            data = self.socket.recv(1024)
-            self.socket.send(data)
+            data = tcp_socket.recv(1024)
+            tcp_socket.send(data)
 
     def _increase_delay(self) -> None:
         """ Increase current delay if connection cannot be established. """

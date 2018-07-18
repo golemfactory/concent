@@ -75,7 +75,7 @@ def handle_send_force_report_computed_task(client_message):
         requestor_public_key,
         task_to_compute,
     )
-    # QuerySet is inferred as lis; pylint: disable=no-member; https://github.com/PyCQA/pylint-django/issues/165
+    # QuerySet is inferred as list; pylint: disable=no-member; https://github.com/PyCQA/pylint-django/issues/165
     if Subtask.objects.filter(  # pylint: disable=no-member
         subtask_id=task_to_compute.compute_task_def['subtask_id'],
     ).exists():

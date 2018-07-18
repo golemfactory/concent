@@ -38,20 +38,6 @@ class SigningServiceMainTestCase(TestCase):
         mock_socket_close.assert_called_once()
         mock__handle_connection.assert_called_once()
 
-    def test_that_signing_service_should_send_empty_bytes_to_check_if_connection_is_still_alive(self):
-        with mock.patch('socket.socket.connect') as mock_socket_connect:
-            with mock.patch('src.signing_service.SigningService._handle_connection') as mock__handle_connection:
-                with mock.patch('socket.socket.send') as mock_socket_send:
-                    with mock.patch('socket.socket.close') as mock_socket_close:
-                        with mock.patch('src.signing_service.SigningService._was_sigterm_caught', side_effect=[False, False, True]):
-                            signing_service = SigningService(self.host, self.port, self.initial_reconnect_delay)
-                            signing_service.run()
-
-        mock_socket_connect.assert_called_once_with(('127.0.0.1', 8000))
-        mock_socket_send.assert_called_once_with(b'')
-        mock__handle_connection.assert_called_once()
-        self.assertEqual(mock_socket_close.call_count, 2)
-
     def test_that_signing_service_should_exit_gracefully_on_keyboard_interrupt(self):
         with mock.patch('socket.socket.connect', side_effect=KeyboardInterrupt()) as mock_socket_connect:
             with mock.patch('socket.socket.close') as mock_socket_close:
@@ -67,15 +53,6 @@ class SigningServiceMainTestCase(TestCase):
                 signing_service = SigningService(self.host, self.port, self.initial_reconnect_delay)
                 with self.assertRaises(Exception):
                     signing_service.run()
-
-        mock_socket_connect.assert_called_once_with(('127.0.0.1', 8000))
-        mock_socket_close.assert_called_once()
-
-    def test_that_signing_service_should_exit_gracefully_on_broken_pipe(self):
-        with mock.patch('socket.socket.connect', side_effect=socket.error(socket.errno.EPIPE)) as mock_socket_connect:
-            with mock.patch('socket.socket.close') as mock_socket_close:
-                signing_service = SigningService(self.host, self.port, self.initial_reconnect_delay)
-                signing_service.run()
 
         mock_socket_connect.assert_called_once_with(('127.0.0.1', 8000))
         mock_socket_close.assert_called_once()

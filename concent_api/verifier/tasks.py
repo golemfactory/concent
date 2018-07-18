@@ -36,8 +36,8 @@ logger = logging.getLogger(__name__)
 
 @shared_task
 @provides_concent_feature('verifier')
-@handle_verification_results
 @log_task_errors
+@handle_verification_results
 def blender_verification_order(
     subtask_id: str,
     source_package_path: str,

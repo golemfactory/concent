@@ -11,9 +11,8 @@ from common.helpers import parse_timestamp_to_utc_datetime
 def populate_subtask_size_field(apps, _schema_editor):
     Subtask = apps.get_model('core', 'Subtask')
     for subtask in Subtask.objects.filter(result_package_size__isnull=True):
-        serialized_report_computed_task = subtask.report_computed_task
         subtask.result_package_size = deserialize_message(
-            serialized_report_computed_task.data
+            subtask.report_computed_task.data
         ).size
         subtask.full_clean()
         subtask.save()
@@ -22,10 +21,9 @@ def populate_subtask_size_field(apps, _schema_editor):
 def populate_subtask_deadline_field(apps, _schema_editor):
     Subtask = apps.get_model('core', 'Subtask')
     for subtask in Subtask.objects.filter(computation_deadline__isnull=True):
-        serialized_task_to_compute = subtask.task_to_compute
         subtask.computation_deadline = parse_timestamp_to_utc_datetime(
             deserialize_message(
-                serialized_task_to_compute.data
+                subtask.task_to_compute.data
             ).compute_task_def['deadline']
         )
         subtask.full_clean()

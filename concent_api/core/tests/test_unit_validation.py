@@ -3,25 +3,27 @@ from assertpy import assert_that
 import mock
 import pytest
 
-from django.test import override_settings
-
 from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
+from golem_messages.factories.tasks import SubtaskResultsAcceptedFactory
 from golem_messages.message.tasks import ReportComputedTask
 from golem_messages.message.tasks import SubtaskResultsRejected
 from golem_messages.message.tasks import TaskToCompute
 from golem_messages.utils import encode_hex
 from common.constants import ErrorCode
 from common.exceptions import ConcentValidationError
+from common.helpers import sign_message
 from common.testing_helpers import generate_ecc_key_pair
+from common.testing_helpers  import generate_priv_and_pub_eth_account_key
 from common.validations import validate_secure_hash_algorithm
 
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
-from core.message_handlers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
-from core.tests.utils import ConcentIntegrationTestCase
 from core.exceptions import FrameNumberValidationError
 from core.exceptions import HashingAlgorithmError
+from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
+from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
+from core.tests.utils import ConcentIntegrationTestCase
 from core.validation import validate_all_messages_identical
 from core.validation import validate_compute_task_def
 from core.validation import validate_ethereum_addresses
@@ -33,6 +35,14 @@ from core.validation import validate_scene_file
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
+(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
+(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
+(DIFFERENT_PROVIDER_PRIVATE_KEY, DIFFERENT_PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
+(DIFFERENT_REQUESTOR_PRIVATE_KEY, DIFFERENT_REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
+(PROVIDER_PRIV_ETH_KEY, PROVIDER_PUB_ETH_KEY) = generate_priv_and_pub_eth_account_key()
+(REQUESTOR_PRIV_ETH_KEY, REQUESTOR_PUB_ETH_KEY) = generate_priv_and_pub_eth_account_key()
+(DIFFERENT_PROVIDER_PRIV_ETH_KEY, DIFFERENT_PROVIDER_PUB_ETH_KEY) = generate_priv_and_pub_eth_account_key()
+(DIFFERENT_REQUESTOR_PRIV_ETH_KEY, DIFFERENT_REQUESTOR_PUB_ETH_KEY) = generate_priv_and_pub_eth_account_key()
 
 
 class TestValidateGolemMessageSubtaskResultsRejected(TestCase):
@@ -179,61 +189,87 @@ class TestInvalidHashAlgorithms(TestCase):
             self.assertEqual(context.exception.error_code, error_code)
 
 
-@override_settings(CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY)
-class TestAreEthereumAddressesAndKeysUnique(ConcentIntegrationTestCase):
+class TestAreEthereumAddressesAndKeysUnique(object):
 
+    @pytest.fixture(autouse=True)
     def setUp(self):
-        super().setUp()
-
         self.task_to_compute_1 = TaskToComputeFactory(
-            requestor_ethereum_address=encode_hex(self.REQUESTOR_PUBLIC_KEY),
-            requestor_ethereum_public_key=encode_hex(self.REQUESTOR_PUB_ETH_KEY),
-            requestor_public_key=encode_hex(self.REQUESTOR_PUBLIC_KEY),
+            requestor_ethereum_address=encode_hex(REQUESTOR_PUBLIC_KEY),
+            requestor_ethereum_public_key=encode_hex(REQUESTOR_PUB_ETH_KEY),
+            requestor_public_key=encode_hex(REQUESTOR_PUBLIC_KEY),
+            provider_ethereum_address=encode_hex(PROVIDER_PUBLIC_KEY),
+            provider_ethereum_public_key=encode_hex(PROVIDER_PUB_ETH_KEY),
+            provider_public_key=encode_hex(PROVIDER_PUBLIC_KEY),
         )
         self.task_to_compute_2 = TaskToComputeFactory(
-            requestor_ethereum_address=encode_hex(self.REQUESTOR_PUBLIC_KEY),
-            requestor_ethereum_public_key=encode_hex(self.REQUESTOR_PUB_ETH_KEY),
-            requestor_public_key=encode_hex(self.REQUESTOR_PUBLIC_KEY),
+            requestor_ethereum_address=encode_hex(REQUESTOR_PUBLIC_KEY),
+            requestor_ethereum_public_key=encode_hex(REQUESTOR_PUB_ETH_KEY),
+            requestor_public_key=encode_hex(REQUESTOR_PUBLIC_KEY),
+            provider_ethereum_address=encode_hex(PROVIDER_PUBLIC_KEY),
+            provider_ethereum_public_key=encode_hex(PROVIDER_PUB_ETH_KEY),
+            provider_public_key=encode_hex(PROVIDER_PUBLIC_KEY),
         )
 
-    def create_subtask_results_accepted_list(self, task_to_compute_1, task_to_compute_2) -> list:
+    def create_subtask_results_accepted_list(
+        self,
+        task_to_compute_1,
+        task_to_compute_2,
+        subtask_1_signed_by=REQUESTOR_PRIVATE_KEY,
+        subtask_2_signed_by=REQUESTOR_PRIVATE_KEY,
+    ) -> list:
+        subtask_results_accepted_1 = SubtaskResultsAcceptedFactory(
+            payment_ts="2018-02-05 12:00:16",
+            task_to_compute=task_to_compute_1
+        )
+        sign_message(subtask_results_accepted_1, subtask_1_signed_by)
+        subtask_results_accepted_2 = SubtaskResultsAcceptedFactory(
+            payment_ts="2018-02-05 12:00:16",
+            task_to_compute=task_to_compute_2
+        )
+        sign_message(subtask_results_accepted_2, subtask_2_signed_by)
         subtask_results_accepted_list = [
-            self._get_deserialized_subtask_results_accepted(
-                payment_ts="2018-02-05 12:00:16",
-                task_to_compute=task_to_compute_1
-            ),
-            self._get_deserialized_subtask_results_accepted(
-                payment_ts="2018-02-05 12:00:16",
-                task_to_compute=task_to_compute_2
-            ),
+            subtask_results_accepted_1,
+            subtask_results_accepted_2,
         ]
         return subtask_results_accepted_list
 
     def test_that_if_the_same_values_given_method_should_return_true(self):
         subtask_results_accepted_list = self.create_subtask_results_accepted_list(self.task_to_compute_1, self.task_to_compute_2)
         result = are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_results_accepted_list)
-        self.assertTrue(result)
+        assert_that(result).is_true()
 
-    def test_that_if_different_ethereum_addresses_are_given_method_should_return_false(self):
-        self.task_to_compute_2 = mock.Mock(spec_set=TaskToCompute)
-        self.task_to_compute_2.requestor_ethereum_address = encode_hex(self.DIFFERENT_REQUESTOR_PUBLIC_KEY)
-        self.task_to_compute_2.requestor_ethereum_public_key = encode_hex(self.REQUESTOR_PUB_ETH_KEY)
-        self.task_to_compute_2.requestor_public_key = encode_hex(self.REQUESTOR_PUBLIC_KEY)
-        subtask_results_accepted_list = [self.task_to_compute_1, self.task_to_compute_2]
-        result = are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_results_accepted_list)
-        self.assertFalse(result)
-
-    def test_that_if_different_ethereum_public_keys_are_given_method_should_return_false(self):
-        self.task_to_compute_2.requestor_ethereum_public_key = encode_hex(self.DIFFERENT_REQUESTOR_PUB_ETH_KEY)
+    def test_that_if_different_requestor_ethereum_public_keys_are_given_method_should_return_false(self):
+        self.task_to_compute_2.requestor_ethereum_public_key = encode_hex(DIFFERENT_REQUESTOR_PUB_ETH_KEY)
         subtask_results_accepted_list = self.create_subtask_results_accepted_list(self.task_to_compute_1, self.task_to_compute_2)
         result = are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_results_accepted_list)
-        self.assertFalse(result)
+        assert_that(result).is_false()
 
-    def test_that_if_different_public_keys_are_given_method_should_return_false(self):
-        self.task_to_compute_2.requestor_public_key = encode_hex(self.DIFFERENT_REQUESTOR_PUBLIC_KEY)
+    def test_that_if_different_requestor_public_keys_are_given_method_should_return_false(self):
+        self.task_to_compute_2.requestor_public_key = encode_hex(DIFFERENT_REQUESTOR_PUBLIC_KEY)
         subtask_results_accepted_list = self.create_subtask_results_accepted_list(self.task_to_compute_1, self.task_to_compute_2)
         result = are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_results_accepted_list)
-        self.assertFalse(result)
+        assert_that(result).is_false()
+
+    def test_that_if_different_provider_ethereum_public_keys_are_given_method_should_return_false(self):
+        self.task_to_compute_2.provider_ethereum_public_key = encode_hex(DIFFERENT_PROVIDER_PUB_ETH_KEY)
+        subtask_results_accepted_list = self.create_subtask_results_accepted_list(self.task_to_compute_1, self.task_to_compute_2)
+        result = are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_results_accepted_list)
+        assert_that(result).is_false()
+
+    def test_that_if_different_provider_public_keys_are_given_method_should_return_false(self):
+        self.task_to_compute_2.provider_public_key = encode_hex(DIFFERENT_PROVIDER_PUBLIC_KEY)
+        subtask_results_accepted_list = self.create_subtask_results_accepted_list(self.task_to_compute_1, self.task_to_compute_2)
+        result = are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_results_accepted_list)
+        assert_that(result).is_false()
+
+    def test_that_if_messages_are_signed_by_different_requestors_method_should_return_false(self):
+        subtask_results_accepted_list = self.create_subtask_results_accepted_list(
+            self.task_to_compute_1,
+            self.task_to_compute_2,
+            subtask_2_signed_by=DIFFERENT_REQUESTOR_PRIVATE_KEY,
+        )
+        result = are_subtask_results_accepted_messages_signed_by_the_same_requestor(subtask_results_accepted_list)
+        assert_that(result).is_false()
 
 
 class TestFramesListValidation(TestCase):

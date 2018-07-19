@@ -42,6 +42,7 @@ from core.payments import service as payments_service
 from core.payments.backends.sci_backend import TransactionType
 from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
+from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
 from core.transfer_operations import store_pending_message
 from core.transfer_operations import create_file_transfer_token_for_golem_client
 from core.utils import calculate_additional_verification_call_time
@@ -692,7 +693,10 @@ def handle_send_force_payment(
 
     current_time = get_current_utc_timestamp()
 
-    if not are_keys_and_addresses_unique_in_message_subtask_results_accepted(client_message.subtask_results_accepted_list):
+    if not (
+        are_keys_and_addresses_unique_in_message_subtask_results_accepted(client_message.subtask_results_accepted_list) and
+        are_subtask_results_accepted_messages_signed_by_the_same_requestor(client_message.subtask_results_accepted_list)
+    ):
         return message.concents.ServiceRefused(
             reason = message.concents.ServiceRefused.REASON.InvalidRequest
         )

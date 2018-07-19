@@ -12,6 +12,8 @@ from core.models                import Subtask
 from core.payments import service as payments_service
 from core.transfer_operations   import store_pending_message
 from core.transfer_operations   import verify_file_status
+from core.validation import is_golem_message_signed_with_key
+from core.utils import hex_to_bytes_convert
 from common.helpers              import deserialize_message
 from common.helpers              import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
@@ -150,12 +152,38 @@ def update_subtask_state(
 
 def are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_results_accepted_list: List[SubtaskResultsAccepted]) -> bool:
 
-    unique_public_keys = set(subtask_results_accepted.task_to_compute.requestor_public_key for subtask_results_accepted in subtask_results_accepted_list)
-    unique_ethereum_addresses = set(subtask_results_accepted.task_to_compute.requestor_ethereum_address for subtask_results_accepted in subtask_results_accepted_list)
-    unique_ethereum_public_keys = set(subtask_results_accepted.task_to_compute.requestor_ethereum_public_key for subtask_results_accepted in subtask_results_accepted_list)
+    unique_requestor_public_keys = set(subtask_results_accepted.task_to_compute.requestor_public_key for subtask_results_accepted in subtask_results_accepted_list)
+    unique_requestor_ethereum_addresses = set(subtask_results_accepted.task_to_compute.requestor_ethereum_address for subtask_results_accepted in subtask_results_accepted_list)
+    unique_requestor_ethereum_public_keys = set(subtask_results_accepted.task_to_compute.requestor_ethereum_public_key for subtask_results_accepted in subtask_results_accepted_list)
 
-    is_public_key_unique = (len(unique_public_keys) == 1)
-    is_ethereum_address_unique = (len(unique_ethereum_addresses) == 1)
-    is_ethereum_public_key_unique = (len(unique_ethereum_public_keys) == 1)
+    unique_provider_public_keys = set(subtask_results_accepted.task_to_compute.provider_public_key for subtask_results_accepted in subtask_results_accepted_list)
+    unique_provider_ethereum_addresses = set(subtask_results_accepted.task_to_compute.provider_ethereum_address for subtask_results_accepted in subtask_results_accepted_list)
+    unique_provider_ethereum_public_keys = set(subtask_results_accepted.task_to_compute.provider_ethereum_public_key for subtask_results_accepted in subtask_results_accepted_list)
 
-    return is_public_key_unique and is_ethereum_address_unique and is_ethereum_public_key_unique
+    is_requestor_public_key_unique = (len(unique_requestor_public_keys) == 1)
+    is_requestor_ethereum_address_unique = (len(unique_requestor_ethereum_addresses) == 1)
+    is_requestor_ethereum_public_key_unique = (len(unique_requestor_ethereum_public_keys) == 1)
+
+    is_provider_public_key_unique = (len(unique_provider_public_keys) == 1)
+    is_provider_ethereum_address_unique = (len(unique_provider_ethereum_addresses) == 1)
+    is_provider_ethereum_public_key_unique = (len(unique_provider_ethereum_public_keys) == 1)
+
+    return (
+        is_requestor_public_key_unique and
+        is_requestor_ethereum_address_unique and
+        is_requestor_ethereum_public_key_unique and
+        is_provider_public_key_unique and
+        is_provider_ethereum_address_unique and
+        is_provider_ethereum_public_key_unique
+    )
+
+
+def are_subtask_results_accepted_messages_signed_by_the_same_requestor(subtask_results_accepted_list: List[SubtaskResultsAccepted]) -> bool:
+    requestor_public_key = subtask_results_accepted_list[0].task_to_compute.requestor_public_key
+    are_all_signed_by_requestor = all(
+        is_golem_message_signed_with_key(
+            hex_to_bytes_convert(requestor_public_key),
+            subtask_results_accepted
+        ) for subtask_results_accepted in subtask_results_accepted_list
+    )
+    return are_all_signed_by_requestor

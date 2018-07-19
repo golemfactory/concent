@@ -19,9 +19,10 @@ from core.models                    import StoredMessage
 from core.models                    import PendingResponse
 from core.tests.utils               import ConcentIntegrationTestCase
 from core.models                    import Subtask
-from common.constants                import ErrorCode
-from common.helpers                  import get_current_utc_timestamp
-from common.testing_helpers          import generate_ecc_key_pair
+from common.constants               import ErrorCode
+from common.helpers                 import get_current_utc_timestamp
+from common.helpers                 import parse_timestamp_to_utc_datetime
+from common.testing_helpers         import generate_ecc_key_pair
 
 
 (CONCENT_PRIVATE_KEY,   CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
@@ -596,9 +597,11 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
                 requestor_public_key = REQUESTOR_PUBLIC_KEY,
                 price=0,
             )
+            self.size = 58
             self.force_golem_data = message.ForceReportComputedTask(
                 report_computed_task = message.tasks.ReportComputedTask(
-                    task_to_compute = self.task_to_compute
+                    task_to_compute=self.task_to_compute,
+                    size=self.size
                 )
             )
 
@@ -645,6 +648,8 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             state                   = Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
             provider                = client_provider,
             requestor               = client_requestor,
+            result_package_size=self.size,
+            computation_deadline=parse_timestamp_to_utc_datetime(self.compute_task_def['deadline'])
         )
         subtask.full_clean()
         subtask.save()
@@ -761,6 +766,8 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             state                    = Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
             provider                 = client_provider,
             requestor                = client_requestor,
+            result_package_size=self.size,
+            computation_deadline=parse_timestamp_to_utc_datetime(self.compute_task_def['deadline'])
         )
         subtask.full_clean()
         subtask.save()
@@ -843,17 +850,13 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             requestor_public_key = REQUESTOR_PUBLIC_KEY,
             price=0,
         )
-
-        self.force_golem_data = message.ForceReportComputedTask(
-            report_computed_task = message.tasks.ReportComputedTask(
-                task_to_compute = self.task_to_compute
-            )
-        )
+        self.size = 58
 
         with freeze_time("2017-11-17 10:00:00"):
             self.force_golem_data = message.ForceReportComputedTask(
                 report_computed_task = message.tasks.ReportComputedTask(
-                    task_to_compute = self.task_to_compute
+                    task_to_compute=self.task_to_compute,
+                    size=self.size
                 )
             )
         message_timestamp = datetime.datetime.now(timezone.utc)
@@ -914,6 +917,8 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             state                    = Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
             provider                 = client_provider,
             requestor                = client_requestor,
+            result_package_size=self.size,
+            computation_deadline=parse_timestamp_to_utc_datetime(self.compute_task_def['deadline'])
         )
         subtask.full_clean()
         subtask.save()

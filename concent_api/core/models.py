@@ -291,6 +291,10 @@ class Subtask(Model):
 
     task_id = CharField(max_length=MESSAGE_TASK_ID_MAX_LENGTH)
 
+    computation_deadline = DateTimeField()
+
+    result_package_size = IntegerField()
+
     # Golem clients are not guaranteed to use unique subtask_id because they are UUIDs,
     # but Concent at this moment does not support subtasks with non-unique IDs.
     # However, the combination of requestor's public key and subtask ID is guaranteed to be unique.
@@ -415,6 +419,21 @@ class Subtask(Model):
         ):
             raise ValidationError({
                 'force_get_task_result': "ReportComputedTask nested in ForceGetTaskResult must match Subtask's ReportComputedTask."
+            })
+
+        if not self.result_package_size == deserialized_report_computed_task.size:
+            raise ValidationError({
+                'result_package_size': "ReportComputedTask size mismatch"
+            })
+
+        if isinstance(self.task_to_compute.data, bytes):
+            deserialized_task_to_compute = deserialize_message(self.task_to_compute.data)
+        else:
+            deserialized_task_to_compute = deserialize_message(self.task_to_compute.data.tobytes())  # pylint: disable=no-member
+
+        if not self.computation_deadline.timestamp() == deserialized_task_to_compute.compute_task_def['deadline']:
+            raise ValidationError({
+                'computation_deadline': "TaskToCompute deadline mismatch"
             })
 
     @property

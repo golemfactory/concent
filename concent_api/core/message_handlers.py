@@ -75,8 +75,8 @@ def handle_send_force_report_computed_task(client_message):
         requestor_public_key,
         task_to_compute,
     )
-
-    if Subtask.objects.filter(
+    # QuerySet is inferred as list; pylint: disable=no-member; https://github.com/PyCQA/pylint-django/issues/165
+    if Subtask.objects.filter(  # pylint: disable=no-member
         subtask_id=task_to_compute.compute_task_def['subtask_id'],
     ).exists():
         raise Http400(
@@ -400,7 +400,7 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
         task_to_compute,
     )
 
-    if Subtask.objects.filter(
+    if Subtask.objects.filter(  # pylint: disable=no-member
         subtask_id = task_to_compute.compute_task_def['subtask_id'],
         state      = Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name,  # pylint: disable=no-member
     ).exists():
@@ -475,7 +475,7 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
 
     current_time = get_current_utc_timestamp()
 
-    if Subtask.objects.filter(
+    if Subtask.objects.filter(  # pylint: disable=no-member
         subtask_id=task_to_compute.compute_task_def['subtask_id'],
         state=Subtask.SubtaskState.FORCING_ACCEPTANCE.name,  # pylint: disable=no-member
     ).exists():
@@ -852,14 +852,18 @@ def store_subtask(
 
     provider  = Client.objects.get_or_create_full_clean(provider_public_key)
     requestor = Client.objects.get_or_create_full_clean(requestor_public_key)
+    computation_deadline = task_to_compute.compute_task_def['deadline']
+    result_package_size = report_computed_task.size
 
     subtask = Subtask(
-        task_id         = task_id,
-        subtask_id      = subtask_id,
-        provider        = provider,
-        requestor       = requestor,
-        state           = state.name,
-        next_deadline   = parse_timestamp_to_utc_datetime(next_deadline) if next_deadline is not None else None,
+        task_id=task_id,
+        subtask_id=subtask_id,
+        provider=provider,
+        requestor=requestor,
+        result_package_size=result_package_size,
+        state=state.name,
+        next_deadline=parse_timestamp_to_utc_datetime(next_deadline) if next_deadline is not None else None,
+        computation_deadline=parse_timestamp_to_utc_datetime(computation_deadline),
         task_to_compute=store_message(task_to_compute, task_id, subtask_id),
         report_computed_task=store_message(report_computed_task, task_id, subtask_id),
     )
@@ -884,6 +888,8 @@ def store_subtask(
         provider_public_key,
         requestor_public_key,
         next_deadline,
+        computation_deadline,
+        result_package_size,
     )
 
     return subtask
@@ -1135,6 +1141,8 @@ def update_subtask(
 
     if set_next_deadline:
         subtask.next_deadline = next_deadline
+    if report_computed_task is not None:
+        subtask.result_package_size = report_computed_task.size
     subtask.state = state.name
     subtask.full_clean()
     subtask.save()
@@ -1150,7 +1158,7 @@ def update_subtask(
     )
 
     # Concent should send e-mail notification when the last active subtask switches to a passive state.
-    if config.SOFT_SHUTDOWN_MODE is True and not Subtask.objects.filter(state__in=Subtask.ACTIVE_STATES).exists():
+    if config.SOFT_SHUTDOWN_MODE is True and not Subtask.objects.filter(state__in=Subtask.ACTIVE_STATES).exists():  # pylint: disable=no-member
         mail_admins(
             subject = 'Concent soft shutdown complete',
             message = (
@@ -1342,7 +1350,7 @@ def handle_send_subtask_results_verify(
             reason=message.concents.ServiceRefused.REASON.InvalidRequest,
         )
 
-    if Subtask.objects.filter(
+    if Subtask.objects.filter(  # pylint: disable=no-member
         subtask_id=compute_task_def['subtask_id'],
         state__in=[
             Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER.name,  # pylint: disable=no-member
@@ -1441,7 +1449,7 @@ def handle_message(client_message):
 
 
 def is_subtask_in_wrong_state(subtask_id, forbidden_states):
-    return Subtask.objects.filter(
+    return Subtask.objects.filter(  # pylint: disable=no-member
         subtask_id=subtask_id,
         state__in=forbidden_states
     ).exists()

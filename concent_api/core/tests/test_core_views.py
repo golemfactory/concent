@@ -19,9 +19,10 @@ from core.models                    import StoredMessage
 from core.models                    import PendingResponse
 from core.tests.utils               import ConcentIntegrationTestCase
 from core.models                    import Subtask
-from common.constants                import ErrorCode
-from common.helpers                  import get_current_utc_timestamp
-from common.testing_helpers          import generate_ecc_key_pair
+from common.constants               import ErrorCode
+from common.helpers                 import get_current_utc_timestamp
+from common.helpers                 import parse_timestamp_to_utc_datetime
+from common.testing_helpers         import generate_ecc_key_pair
 
 
 (CONCENT_PRIVATE_KEY,   CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
@@ -645,6 +646,8 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             state                   = Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
             provider                = client_provider,
             requestor               = client_requestor,
+            result_package_size     = '58',
+            computation_deadline    = parse_timestamp_to_utc_datetime(self.compute_task_def['deadline'])
         )
         subtask.full_clean()
         subtask.save()
@@ -761,6 +764,8 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             state                    = Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
             provider                 = client_provider,
             requestor                = client_requestor,
+            result_package_size      = '58',
+            computation_deadline     = parse_timestamp_to_utc_datetime(self.compute_task_def['deadline'])
         )
         subtask.full_clean()
         subtask.save()
@@ -914,6 +919,8 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             state                    = Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
             provider                 = client_provider,
             requestor                = client_requestor,
+            result_package_size      = '58',
+            computation_deadline     = parse_timestamp_to_utc_datetime(self.compute_task_def['deadline'])
         )
         subtask.full_clean()
         subtask.save()

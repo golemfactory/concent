@@ -1,18 +1,23 @@
 import base64
 import datetime
 
+from django.conf            import settings
 from django.core.validators import ValidationError
 from django.db.models       import BinaryField
 from django.db.models       import BooleanField
 from django.db.models       import CharField
 from django.db.models       import DateTimeField
 from django.db.models       import DecimalField
+from django.db.models       import ExpressionWrapper
+from django.db.models       import F
+from django.db.models       import Func
 from django.db.models       import IntegerField
 from django.db.models       import ForeignKey
 from django.db.models       import Model
 from django.db.models       import OneToOneField
 from django.db.models       import PositiveSmallIntegerField
 from django.db.models       import Manager
+from django.db.models       import Value
 
 from constance              import config
 from golem_messages         import message
@@ -26,6 +31,28 @@ from .constants             import TASK_OWNER_KEY_LENGTH
 from .constants             import ETHEREUM_ADDRESS_LENGTH
 from .constants             import GOLEM_PUBLIC_KEY_LENGTH
 from .constants             import MESSAGE_TASK_ID_MAX_LENGTH
+
+
+class SubtaskWithTimingColumnsManager(Manager):
+    """Creates maximum_download time, subtask_verification_time and download_deadline columns
+    maximum_download_time = DOWNLOAD_LEADIN_TIME + ceil((result_package_size / MINIMUM_UPLOAD_RATE << 10))
+    subtask_verification_time = (4 * CONCENT_MESSAGING_TIME) + (3 * maximum_download_time) + (0.5 * (computation_deadline - task_to_compute_timestamp))
+    download_deadline = computation_deadline + maximum_download_time
+    """
+    def get_queryset(self):
+        bytes_per_sec = settings.MINIMUM_UPLOAD_RATE << 10
+        download_time = Func(F('result_package_size') / float(bytes_per_sec), function='CEIL')
+        maximum_download_time = F('maximum_download_time')
+        task_to_compute_timestamp = Func(Value('epoch'), F('task_to_compute__timestamp'), function='DATE_PART')
+        computation_deadline = F('computation_deadline')
+        subtask_timeout = Func(Value('epoch'), computation_deadline, function='DATE_PART') - task_to_compute_timestamp
+        subtask_verification_time = (4 * settings.CONCENT_MESSAGING_TIME) + (3 * maximum_download_time) + (0.5 * subtask_timeout)
+        download_deadline = Func(Value('epoch'), computation_deadline, function='DATE_PART') + subtask_verification_time
+        return super().get_queryset().annotate(
+            maximum_download_time=Value(settings.DOWNLOAD_LEADIN_TIME) + download_time,
+            subtask_verification_time=ExpressionWrapper(subtask_verification_time, output_field=IntegerField()),
+            download_deadline=ExpressionWrapper(download_deadline, output_field=IntegerField())
+        )
 
 
 class StoredMessage(Model):
@@ -74,6 +101,8 @@ class Subtask(Model):
     """
     Represents subtask states.
     """
+    objects = Manager()
+    objects_with_timing_columns = SubtaskWithTimingColumnsManager()
 
     class SubtaskState(ChoiceEnum):
         FORCING_REPORT              = 'forcing_report'
@@ -290,6 +319,10 @@ class Subtask(Model):
         )
 
     task_id = CharField(max_length=MESSAGE_TASK_ID_MAX_LENGTH)
+
+    computation_deadline        = DateTimeField()
+
+    result_package_size         = IntegerField()
 
     # Golem clients are not guaranteed to use unique subtask_id because they are UUIDs,
     # but Concent at this moment does not support subtasks with non-unique IDs.

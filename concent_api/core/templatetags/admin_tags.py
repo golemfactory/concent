@@ -26,7 +26,7 @@ def get_active_subtasks_amount():
 
 @register.assignment_tag
 def get_active_subtasks_status():
-    return get_result_uploaded_subtasks().exists()
+    return get_result_uploaded_subtasks().exists()  # pylint: disable=no-member
 
 
 @register.assignment_tag

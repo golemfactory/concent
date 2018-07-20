@@ -67,11 +67,9 @@ VERIFIER_STORAGE_PATH = '/tmp/'
 
 CONCENT_MESSAGING_TIME    = 2
 
-CONCENT_UPLOAD_RATE       = int(384 / 8)  # KB/s = kbps / 8
-
 FORCE_ACCEPTANCE_TIME     = 5
 
-MINIMUM_UPLOAD_RATE       = 1
+MINIMUM_UPLOAD_RATE       = int(384 / 8)  # KB/s = kbps / 8
 
 DOWNLOAD_LEADIN_TIME      = 3
 

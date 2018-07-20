@@ -12,7 +12,7 @@ from core.message_handlers import store_or_update_subtask
 from core.models            import StoredMessage
 from core.models            import Subtask
 from core.models            import PendingResponse
-from core.tests.utils import ConcentIntegrationTestCase
+from core.tests.utils       import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
 from common.constants        import ErrorCode
 from common.testing_helpers  import generate_ecc_key_pair
@@ -106,7 +106,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_key                 = self._get_encoded_provider_public_key(),
             requestor_key                = self._get_encoded_requestor_public_key(),
             expected_nested_messages={'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
-            next_deadline                = parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
+            next_deadline=parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -197,7 +197,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ServiceRefused,
             fields       = {
                 'reason':       message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
-                'timestamp':    parse_iso_date_to_timestamp("2018-02-05 10:00:35")
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:35")
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -260,7 +260,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'reason':       message.concents.ForceSubtaskResultsRejected.REASON.RequestPremature,
                 'force_subtask_results.timestamp': parse_iso_date_to_timestamp("2018-03-05 10:00:24"),
                 'force_subtask_results.task_to_compute.timestamp': parse_iso_date_to_timestamp("2018-03-05 10:00:00"),
-                'timestamp':    parse_iso_date_to_timestamp("2018-03-05 10:00:24"),
+                'timestamp': parse_iso_date_to_timestamp("2018-03-05 10:00:24"),
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -304,7 +304,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'reason':       message.concents.ForceSubtaskResultsRejected.REASON.RequestTooLate,
                 'force_subtask_results.timestamp': parse_iso_date_to_timestamp("2018-03-05 10:00:40"),
                 'force_subtask_results.task_to_compute.timestamp': parse_iso_date_to_timestamp("2018-03-05 10:00:00"),
-                'timestamp':    parse_iso_date_to_timestamp("2018-03-05 10:00:40"),
+                'timestamp': parse_iso_date_to_timestamp("2018-03-05 10:00:40"),
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -370,7 +370,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_key                 = self._get_encoded_provider_public_key(),
             requestor_key                = self._get_encoded_requestor_public_key(),
             expected_nested_messages={'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
-            next_deadline                = parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
+            next_deadline=parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -401,8 +401,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             key          = self.REQUESTOR_PRIVATE_KEY,
             message_type = message.concents.ForceSubtaskResults,
             fields       = {
-                'timestamp':                                                    parse_iso_date_to_timestamp("2018-02-05 10:00:29"),
-                'ack_report_computed_task.subtask_id':                          'xxyyzz',
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:29"),
+                'ack_report_computed_task.subtask_id': 'xxyyzz',
                 "ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def": compute_task_def,
             }
         )
@@ -472,7 +472,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_key                 = self._get_encoded_provider_public_key(),
             requestor_key                = self._get_encoded_requestor_public_key(),
             expected_nested_messages={'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
-            next_deadline                = parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
+            next_deadline=parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -503,8 +503,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             key          = self.REQUESTOR_PRIVATE_KEY,
             message_type = message.concents.ForceSubtaskResults,
             fields       = {
-                'timestamp':                                                 parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
-                'ack_report_computed_task.subtask_id':                       'xxyyzz',
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
+                'ack_report_computed_task.subtask_id': 'xxyyzz',
                 'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': compute_task_def,
             }
         )
@@ -534,7 +534,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             key          = self.PROVIDER_PRIVATE_KEY,
             message_type = message.concents.SubtaskResultsSettled,
             fields       = {
-                'timestamp':                        parse_iso_date_to_timestamp("2018-02-05 11:00:01"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 11:00:01"),
                 'task_to_compute.compute_task_def': compute_task_def,
             }
         )
@@ -552,7 +552,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             key          = self.REQUESTOR_PRIVATE_KEY,
             message_type = message.concents.SubtaskResultsSettled,
             fields       = {
-                'timestamp':                        parse_iso_date_to_timestamp("2018-02-05 11:00:01"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 11:00:01"),
                 'task_to_compute.compute_task_def': compute_task_def,
             }
         )
@@ -616,7 +616,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_key                 = self._get_encoded_provider_public_key(),
             requestor_key                = self._get_encoded_requestor_public_key(),
             expected_nested_messages={'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
-            next_deadline                = parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
+            next_deadline=parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -649,8 +649,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             key             = self.REQUESTOR_PRIVATE_KEY,
             message_type    = message.concents.ForceSubtaskResults,
             fields          = {
-                'timestamp':                            parse_iso_date_to_timestamp("2018-02-05 10:00:44"),
-                'ack_report_computed_task.timestamp':   parse_iso_date_to_timestamp("2018-02-05 10:00:20"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:44"),
+                'ack_report_computed_task.timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:20"),
                 'ack_report_computed_task.subtask_id':  'xxyyzz',
             }
         )
@@ -710,10 +710,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             key             = self.PROVIDER_PRIVATE_KEY,
             message_type    = message.concents.ForceSubtaskResultsResponse,
             fields          = {
-                'timestamp':                                                    parse_iso_date_to_timestamp("2018-02-05 11:00:02"),
-                'subtask_results_accepted.timestamp':                           parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
-                'subtask_results_accepted.payment_ts':                          parse_iso_date_to_timestamp("2018-02-05 11:00:01"),
-                'subtask_results_accepted.task_to_compute.timestamp':           parse_iso_date_to_timestamp("2018-02-05 10:00:00"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 11:00:02"),
+                'subtask_results_accepted.timestamp': parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
+                'subtask_results_accepted.payment_ts': parse_iso_date_to_timestamp("2018-02-05 11:00:01"),
+                'subtask_results_accepted.task_to_compute.timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:00"),
                 'subtask_results_accepted.task_to_compute.compute_task_def':    task_to_compute.compute_task_def,
             }
         )
@@ -778,7 +778,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_key                 = self._get_encoded_provider_public_key(),
             requestor_key                = self._get_encoded_requestor_public_key(),
             expected_nested_messages={'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
-            next_deadline                = parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
+            next_deadline=parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -810,9 +810,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             key             = self.REQUESTOR_PRIVATE_KEY,
             message_type    = message.concents.ForceSubtaskResults,
             fields          = {
-                'timestamp':                            parse_iso_date_to_timestamp("2018-02-05 10:00:44"),
-                'ack_report_computed_task.timestamp':   parse_iso_date_to_timestamp("2018-02-05 10:00:20"),
-                'ack_report_computed_task.subtask_id':  'xxyyzz',
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:44"),
+                'ack_report_computed_task.timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:20"),
+                'ack_report_computed_task.subtask_id': 'xxyyzz',
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -880,10 +880,10 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             key             = self.PROVIDER_PRIVATE_KEY,
             message_type    = message.concents.ForceSubtaskResultsResponse,
             fields          = {
-                'timestamp':                                                parse_iso_date_to_timestamp("2018-02-05 11:00:02"),
-                'subtask_results_rejected.timestamp':                       parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
-                'subtask_results_rejected.reason':                          message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-                'subtask_results_rejected.report_computed_task.timestamp':  parse_iso_date_to_timestamp("2018-02-05 10:00:44"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 11:00:02"),
+                'subtask_results_rejected.timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
+                'subtask_results_rejected.reason': message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
+                'subtask_results_rejected.report_computed_task.timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:44"),
                 'subtask_results_rejected.report_computed_task.subtask_id': 'xxyyzz'
             }
         )
@@ -1102,7 +1102,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_key                 = self._get_encoded_provider_public_key(),
             requestor_key                = self._get_encoded_requestor_public_key(),
             expected_nested_messages     = {'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
-            next_deadline                = parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
+            next_deadline=parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -1256,6 +1256,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # This has to be done manually, otherwise will fail when signing ReportComputedTask
         with freeze_time("2018-02-05 10:00:15"):
             serialized_force_subtask_results = self._get_serialized_force_subtask_results(
+                timestamp="2018-02-05 10:00:00",
                 ack_report_computed_task = message.AckReportComputedTask(
                     report_computed_task=(
                         message.ReportComputedTask(
@@ -1404,7 +1405,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_key                 = self._get_encoded_provider_public_key(),
             requestor_key                = self._get_encoded_requestor_public_key(),
             expected_nested_messages     = {'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
-            next_deadline                = parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
+            next_deadline=parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -1435,7 +1436,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             key          = self.REQUESTOR_PRIVATE_KEY,
             message_type = message.concents.ForceSubtaskResults,
             fields       = {
-                'timestamp':                                                 parse_iso_date_to_timestamp("2018-02-05 10:00:31"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:31"),
                 'ack_report_computed_task.subtask_id':                       'xxyyzz',
                 'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': compute_task_def,
             }
@@ -1460,7 +1461,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             key          = self.PROVIDER_PRIVATE_KEY,
             message_type = message.concents.SubtaskResultsSettled,
             fields       = {
-                'timestamp':                        parse_iso_date_to_timestamp("2018-02-05 10:00:51"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:51"),
                 'task_to_compute.compute_task_def': compute_task_def,
             }
         )
@@ -1505,7 +1506,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             key          = self.REQUESTOR_PRIVATE_KEY,
             message_type = message.concents.SubtaskResultsSettled,
             fields       = {
-                'timestamp':                        parse_iso_date_to_timestamp("2018-02-05 10:00:51"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:51"),
                 'task_to_compute.compute_task_def': compute_task_def,
             }
         )
@@ -1582,7 +1583,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_key                 = self._get_encoded_provider_public_key(),
             requestor_key                = self._get_encoded_requestor_public_key(),
             expected_nested_messages={'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
-            next_deadline                = parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
+            next_deadline=parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -1613,7 +1614,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             key          = self.REQUESTOR_PRIVATE_KEY,
             message_type = message.concents.ForceSubtaskResults,
             fields       = {
-                'timestamp':                                                 parse_iso_date_to_timestamp("2018-02-05 10:00:31"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:31"),
                 'ack_report_computed_task.subtask_id':                       'xxyyzz',
                 'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def': compute_task_def,
             }
@@ -1632,7 +1633,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             key          = self.REQUESTOR_PRIVATE_KEY,
             message_type = message.concents.SubtaskResultsSettled,
             fields       = {
-                'timestamp':                        parse_iso_date_to_timestamp("2018-02-05 10:00:51"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:51"),
                 'task_to_compute.compute_task_def': compute_task_def,
             }
         )
@@ -1667,7 +1668,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             key          = self.PROVIDER_PRIVATE_KEY,
             message_type = message.concents.SubtaskResultsSettled,
             fields       = {
-                'timestamp':                        parse_iso_date_to_timestamp("2018-02-05 10:00:51"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:51"),
                 'task_to_compute.compute_task_def': compute_task_def,
             }
         )

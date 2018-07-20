@@ -124,7 +124,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -157,8 +157,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             key             = self.REQUESTOR_PRIVATE_KEY,
             message_type    = message.concents.ForceReportComputedTask,
             fields          = {
-                'timestamp':                                                parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
-                'report_computed_task.timestamp':                           parse_iso_date_to_timestamp("2017-12-01 10:59:00"),
+                'timestamp': parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'report_computed_task.timestamp': parse_iso_date_to_timestamp("2017-12-01 10:59:00"),
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
@@ -285,7 +285,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -318,8 +318,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             key             = self.REQUESTOR_PRIVATE_KEY,
             message_type    = message.concents.ForceReportComputedTask,
             fields          = {
-                'timestamp':                                                parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
-                'report_computed_task.task_to_compute.timestamp':           parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'timestamp': parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'report_computed_task.task_to_compute.timestamp': parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
@@ -459,7 +459,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -499,8 +499,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             key             = self.REQUESTOR_PRIVATE_KEY,
             message_type    = message.concents.ForceReportComputedTask,
             fields          = {
-                'timestamp':                                                parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
-                'report_computed_task.task_to_compute.timestamp':           parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'timestamp': parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'report_computed_task.task_to_compute.timestamp': parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
@@ -603,9 +603,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             key             = self.REQUESTOR_PRIVATE_KEY,
             message_type    = message.concents.VerdictReportComputedTask,
             fields          = {
-                'timestamp':                                                    parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
-                'ack_report_computed_task.timestamp':                           parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
-                'ack_report_computed_task.report_computed_task.task_to_compute.timestamp':           parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'timestamp': parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
+                'ack_report_computed_task.timestamp': parse_iso_date_to_timestamp("2017-12-01 11:00:15"),
+                'ack_report_computed_task.report_computed_task.task_to_compute.timestamp': parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
                 'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             },
             nested_message_verifiable_by={
@@ -669,7 +669,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -702,8 +702,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             key             = self.REQUESTOR_PRIVATE_KEY,
             message_type    = message.concents.ForceReportComputedTask,
             fields          = {
-                'timestamp':                                                parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
-                'report_computed_task.task_to_compute.timestamp':           parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'timestamp': parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'report_computed_task.task_to_compute.timestamp': parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
@@ -764,9 +764,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             key             = self.REQUESTOR_PRIVATE_KEY,
             message_type    = message.concents.VerdictReportComputedTask,
             fields          = {
-                'timestamp':                                                    parse_iso_date_to_timestamp("2017-12-01 11:00:11"),
-                'ack_report_computed_task.timestamp':                           parse_iso_date_to_timestamp("2017-12-01 11:00:11"),
-                'ack_report_computed_task.report_computed_task.task_to_compute.timestamp':           parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'timestamp': parse_iso_date_to_timestamp("2017-12-01 11:00:11"),
+                'ack_report_computed_task.timestamp': parse_iso_date_to_timestamp("2017-12-01 11:00:11"),
+                'ack_report_computed_task.report_computed_task.task_to_compute.timestamp': parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
                 'ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             },
             nested_message_verifiable_by={
@@ -831,7 +831,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -1012,7 +1012,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -1045,8 +1045,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             key             = self.REQUESTOR_PRIVATE_KEY,
             message_type    = message.concents.ForceReportComputedTask,
             fields          = {
-                'timestamp':                                                parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
-                'report_computed_task.task_to_compute.timestamp':           parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'timestamp': parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'report_computed_task.task_to_compute.timestamp': parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
@@ -1179,7 +1179,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -1212,8 +1212,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             key             = self.REQUESTOR_PRIVATE_KEY,
             message_type    = message.concents.ForceReportComputedTask,
             fields          = {
-                'timestamp':                                                parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
-                'report_computed_task.task_to_compute.timestamp':           parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'timestamp': parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'report_computed_task.task_to_compute.timestamp': parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
@@ -1350,7 +1350,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -1383,8 +1383,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             key             = self.REQUESTOR_PRIVATE_KEY,
             message_type    = message.concents.ForceReportComputedTask,
             fields          = {
-                'timestamp':                                                parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
-                'report_computed_task.task_to_compute.timestamp':           parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'timestamp': parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'report_computed_task.task_to_compute.timestamp': parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
@@ -1476,7 +1476,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -1509,8 +1509,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             key             = self.REQUESTOR_PRIVATE_KEY,
             message_type    = message.concents.ForceReportComputedTask,
             fields          = {
-                'timestamp':                                                parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
-                'report_computed_task.task_to_compute.timestamp':           parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'timestamp': parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'report_computed_task.task_to_compute.timestamp': parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
@@ -2076,7 +2076,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -2109,8 +2109,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             key             = self.REQUESTOR_PRIVATE_KEY,
             message_type    = message.concents.ForceReportComputedTask,
             fields          = {
-                'timestamp':                                                parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
-                'report_computed_task.task_to_compute.timestamp':           parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'timestamp': parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'report_computed_task.task_to_compute.timestamp': parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
@@ -2245,7 +2245,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -2278,8 +2278,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             key             = self.REQUESTOR_PRIVATE_KEY,
             message_type    = message.concents.ForceReportComputedTask,
             fields          = {
-                'timestamp':                                                parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
-                'report_computed_task.task_to_compute.timestamp':           parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'timestamp': parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'report_computed_task.task_to_compute.timestamp': parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
@@ -2291,7 +2291,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
                 timestamp="2017-12-01 11:00:05",
                 report_computed_task=report_computed_task,
-                task_to_compute=task_to_compute
+                task_to_compute=task_to_compute,
             ),
             requestor_private_key=self.REQUESTOR_PRIVATE_KEY
         )
@@ -2420,7 +2420,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -2465,8 +2465,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             key             = self.REQUESTOR_PRIVATE_KEY,
             message_type    = message.concents.ForceReportComputedTask,
             fields          = {
-                'timestamp':                                                parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
-                'report_computed_task.task_to_compute.timestamp':           parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
+                'timestamp': parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'report_computed_task.task_to_compute.timestamp': parse_iso_date_to_timestamp("2017-12-01 10:00:00"),
                 'report_computed_task.task_to_compute.compute_task_def':    compute_task_def,
             }
         )
@@ -2709,7 +2709,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -2742,8 +2742,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             key             = self.REQUESTOR_PRIVATE_KEY,
             message_type    = message.concents.ForceReportComputedTask,
             fields          = {
-                'timestamp':                                                parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
-                'report_computed_task.timestamp':                           parse_iso_date_to_timestamp("2017-12-01 10:59:00"),
+                'timestamp': parse_iso_date_to_timestamp("2017-12-01 11:00:05"),
+                'report_computed_task.timestamp': parse_iso_date_to_timestamp("2017-12-01 10:59:00"),
                 'report_computed_task.task_to_compute.compute_task_def':    task_to_compute.compute_task_def,
             }
         )

@@ -28,13 +28,13 @@ from golem_messages.message.concents import ForceSubtaskResults
 from golem_messages.message.concents import ForceSubtaskResultsResponse
 from golem_messages.message.concents import SubtaskResultsVerify
 from golem_messages.message.tasks import AckReportComputedTask
-from golem_messages.message.tasks import RejectReportComputedTask
-from golem_messages.message.tasks import TaskFailure
 from golem_messages.message.tasks import CannotComputeTask
 from golem_messages.message.tasks import ComputeTaskDef
+from golem_messages.message.tasks import RejectReportComputedTask
 from golem_messages.message.tasks import ReportComputedTask
 from golem_messages.message.tasks import SubtaskResultsAccepted
 from golem_messages.message.tasks import SubtaskResultsRejected
+from golem_messages.message.tasks import TaskFailure
 from golem_messages.message.tasks import TaskToCompute
 from golem_messages.utils import encode_hex
 
@@ -55,8 +55,14 @@ def get_timestamp_string() -> str:
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-def parse_iso_date_to_timestamp(date_string) -> int:
+def parse_iso_date_to_timestamp(date_string: str) -> int:
     return int(dateutil.parser.parse(date_string).timestamp())
+
+
+def add_time_offset_to_date(base_time: str, offset: int) -> str:
+    return datetime.datetime.fromtimestamp(parse_iso_date_to_timestamp(base_time) + offset).strftime(
+        '%Y-%m-%d %H:%M:%S'
+    )
 
 
 class ConcentIntegrationTestCase(TestCase):
@@ -445,19 +451,19 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_force_subtask_results(
         self,
-        timestamp: Union[str, datetime.datetime, None] = None,
+        timestamp: Union[str, datetime.datetime],
         ack_report_computed_task: Optional[AckReportComputedTask] = None,
         task_to_compute: Optional[TaskToCompute] = None
     ) -> ForceSubtaskResults:
 
         """ Returns ForceSubtaskResults deserialized. """
-        with freeze_time(timestamp or get_timestamp_string()):
+        with freeze_time(timestamp):
             force_subtask_results = message.concents.ForceSubtaskResults(
                 ack_report_computed_task = (
                     ack_report_computed_task or
                     self._get_deserialized_ack_report_computed_task(
-                        timestamp       = timestamp,
-                        deadline        = (parse_iso_date_to_timestamp(timestamp) + 10),
+                        timestamp=timestamp,
+                        deadline=(parse_iso_date_to_timestamp(str(timestamp)) + 10),
                         task_to_compute=task_to_compute if task_to_compute is not None else self._get_deserialized_task_to_compute()
                     )
                 )
@@ -466,10 +472,11 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_serialized_force_subtask_results(
         self,
-        timestamp                   = None,
-        ack_report_computed_task    = None,
-        provider_private_key        = None,
+        timestamp: Union[str, datetime.datetime],
+        ack_report_computed_task: AckReportComputedTask,
+        provider_private_key: Optional[bytes] = None,
     ) -> bytes:
+
         """ Returns ForceSubtaskResults serialized. """
         force_subtask_results = self._get_deserialized_force_subtask_results(
             timestamp                   = timestamp,
@@ -484,8 +491,8 @@ class ConcentIntegrationTestCase(TestCase):
     def _get_deserialized_subtask_results_accepted(
         self,
         task_to_compute: TaskToCompute,
-        timestamp: Union[str, datetime.datetime, None] = None,
         payment_ts: Optional[str] = None,
+        timestamp: Union[str, datetime.datetime, None] = None,
         signer_private_key: Optional[bytes] = None,
     ) -> SubtaskResultsAccepted:
 
@@ -494,7 +501,7 @@ class ConcentIntegrationTestCase(TestCase):
             subtask_results_accepted = SubtaskResultsAccepted(
                 task_to_compute = task_to_compute,
                 payment_ts     = (
-                        parse_iso_date_to_timestamp(payment_ts) is not None else
+                        parse_iso_date_to_timestamp(payment_ts) if payment_ts is not None else
                         parse_iso_date_to_timestamp(get_timestamp_string())
                 )
             )
@@ -864,16 +871,6 @@ class ConcentIntegrationTestCase(TestCase):
     def _create_test_ping_message(self):  # pylint: disable=no-self-use
         ping_message = message.Ping()
         return ping_message
-
-    def _add_time_offset_to_date(self, base_time, offset):  # pylint: disable=no-self-use
-        """
-        :param base_time: string format
-        :param offset: timestamp format
-        :return: new time in a string format
-        """
-        return datetime.datetime.fromtimestamp(parse_iso_date_to_timestamp(base_time) + offset).strftime(
-            '%Y-%m-%d %H:%M:%S'
-        )
 
     def _create_payment_object(self, amount, closure_time):  # pylint: disable=no-self-use
         payment_item = mock.Mock()

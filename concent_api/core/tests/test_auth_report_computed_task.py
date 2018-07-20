@@ -37,7 +37,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 10:00:00"):
             self.deserialized_task_to_compute = self._get_deserialized_task_to_compute(
                 compute_task_def      = self.compute_task_def,
-                signer_private_key= self.REQUESTOR_PRIVATE_KEY,
+                signer_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
 
         with freeze_time("2017-12-01 10:59:00"):
@@ -89,7 +89,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
             requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -383,7 +383,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
             requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -551,7 +551,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
             requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
 
         # STEP 5: Requestor rejects computed task due to CannotComputeTask or TaskFailure with correct key
@@ -690,7 +690,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
             requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages = [
@@ -856,7 +856,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
             requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
 
         # STEP 5: Requestor rejects computed task due to CannotComputeTask or TaskFailure with correct key
@@ -1041,7 +1041,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
             requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
             expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+            next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages = [

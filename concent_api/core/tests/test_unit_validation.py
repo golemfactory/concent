@@ -210,7 +210,7 @@ class TestAreEthereumAddressesAndKeysUnique(object):
             provider_public_key=encode_hex(PROVIDER_PUBLIC_KEY),
         )
 
-    def create_subtask_results_accepted_list(
+    def create_subtask_results_accepted_list(  # pylint: disable=no-self-use
         self,
         task_to_compute_1,
         task_to_compute_2,

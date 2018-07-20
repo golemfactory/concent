@@ -12,6 +12,7 @@ from conductor.models import BlenderSubtaskDefinition
 from core.message_handlers import store_or_update_subtask
 from core.models import PendingResponse
 from core.models import Subtask
+from core.tests.utils import add_time_offset_to_date
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
 from core.transfer_operations import create_file_transfer_token_for_golem_client
@@ -566,7 +567,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             report_computed_task=self.report_computed_task,
             signer_private_key=key,
         )
-        subtask_results_verify_time_str = self._add_time_offset_to_date(
+        subtask_results_verify_time_str = add_time_offset_to_date(
             self.subtask_result_rejected_time_str,
             time_offset
         )
@@ -583,7 +584,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
     def _create_report_computed_task(self):
         time_str = "2018-04-01 10:00:00"
         self.compute_task_def = self._get_deserialized_compute_task_def(
-            deadline=self._add_time_offset_to_date(time_str, 3600),
+            deadline=add_time_offset_to_date(time_str, 3600),
             task_id=self.task_id,
             subtask_id=self.subtask_id,
             extra_data={

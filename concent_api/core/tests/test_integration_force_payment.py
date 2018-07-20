@@ -47,7 +47,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     deadline                        = "2018-02-05 9:00:10",
                     subtask_id='3',
                 ),
-                sign_with_private_key=self.DIFFERENT_REQUESTOR_PRIVATE_KEY
+                signer_private_key=self.DIFFERENT_REQUESTOR_PRIVATE_KEY
             )
         ]
         serialized_force_payment = self._get_serialized_force_payment(
@@ -409,7 +409,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ForcePaymentCommitted,
             fields       = {
                 'recipient_type': message.concents.ForcePaymentCommitted.Actor.Provider,
-                'timestamp':      parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
                 'amount_pending': amount_pending,
                 'amount_paid':    amount_paid,
             }
@@ -433,7 +433,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ForcePaymentCommitted,
             fields       = {
                 'recipient_type': message.concents.ForcePaymentCommitted.Actor.Requestor,
-                'timestamp':      parse_iso_date_to_timestamp("2018-02-05 12:00:21"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:21"),
                 'amount_pending': amount_pending,
                 'amount_paid':    amount_paid,
                 'task_owner_key': decode_hex(task_to_compute.requestor_ethereum_public_key),
@@ -677,7 +677,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ForcePaymentCommitted,
             fields       = {
                 'recipient_type': message.concents.ForcePaymentCommitted.Actor.Provider,
-                'timestamp':      parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
                 'amount_pending': 25000,
                 'amount_paid':    0,
             }
@@ -697,7 +697,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ForcePaymentCommitted,
             fields       = {
                 'recipient_type': message.concents.ForcePaymentCommitted.Actor.Requestor,
-                'timestamp':      parse_iso_date_to_timestamp("2018-02-05 12:00:21"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:21"),
                 'amount_pending': 25000,
                 'amount_paid':    0,
                 'task_owner_key': decode_hex(task_to_compute.requestor_ethereum_public_key),

@@ -86,7 +86,7 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ForcePaymentCommitted,
             fields       = {
                 'recipient_type': message.concents.ForcePaymentCommitted.Actor.Provider,
-                'timestamp':      parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -128,7 +128,7 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ForcePaymentCommitted,
             fields       = {
                 'recipient_type': message.concents.ForcePaymentCommitted.Actor.Requestor,
-                'timestamp':      parse_iso_date_to_timestamp("2018-02-05 12:00:23"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:23"),
             }
         )
 

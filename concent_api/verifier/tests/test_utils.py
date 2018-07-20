@@ -19,6 +19,7 @@ from verifier.utils import are_image_sizes_and_color_channels_equal
 from verifier.utils import compare_all_rendered_images_with_user_results_files
 from verifier.utils import compare_images
 from verifier.utils import compare_minimum_ssim_with_results
+from verifier.utils import delete_file
 from verifier.utils import ensure_enough_result_files_provided
 from verifier.utils import ensure_frames_have_related_files_to_compare
 from verifier.utils import generate_base_blender_output_file_name
@@ -27,6 +28,7 @@ from verifier.utils import generate_upload_file_path
 from verifier.utils import generate_verifier_storage_file_path
 from verifier.utils import parse_result_files_with_frames
 from verifier.utils import render_images_by_frames
+from verifier.utils import store_blender_script_file
 from verifier.utils import upload_blender_output_file
 from verifier.utils import validate_downloaded_archives
 
@@ -232,6 +234,20 @@ class VerifierUtilsTest(TestCase):
     def test_that_method_raise_verification_error_when_images_have_diffrent_sizes(self):
         with self.assertRaises(VerificationError):
             compare_images(self.image_ones, self.image_diffrent_size, 'subtask_id')
+
+    # def test_store_blender_script_file_method(self):
+    #     with mock.patch('verifier.utils.generate_verifier_storage_file_path', autospec=True) as mock_file_path:
+    #         blender_script_file_name = store_blender_script_file(self.subtask_id, self.scene_file)
+    #         mock_file_path.assert_called_once_with(
+    #             blender_script_file_name
+    #         )
+
+    def test_delete_file_raise_exception_if_file_does_not_exist(self):
+        with mock.patch('verifier.utils.os.path.isfile', autospec=True) as mock_is_file:
+            delete_file(self.scene_file)
+            mock_is_file.assert_called_once_with(
+                '/tmp/scene-Helicopter-27-internal.blend'
+            )
 
 
 class TestGenerateFilePathMethods():

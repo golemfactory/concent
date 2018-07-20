@@ -44,9 +44,9 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
-                    requestor_public_key            = self._get_diffrent_requestor_hex_public_key(),
                     subtask_id='3',
-                )
+                ),
+                sign_with_private_key=self.DIFFERENT_REQUESTOR_PRIVATE_KEY
             )
         ]
         serialized_force_payment = self._get_serialized_force_payment(

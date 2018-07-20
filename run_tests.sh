@@ -45,6 +45,15 @@ pytest                              \
 rm .coverage
 cd ..
 
+cd middleman_protocol/
+pytest -p no:django                 \
+    --cov-report term-missing       \
+    --cov-config ../coverage-config \
+    --cov=$MODULE $PATTERN          \
+    ${TEST_RUNNER_EXTRA_ARGUMENTS}
+rm .coverage
+cd ..
+
 cd signing_service/
 pytest -p no:django                 \
     --cov-report term-missing       \

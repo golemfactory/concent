@@ -131,6 +131,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     signer_private_key=self.DIFFERENT_PROVIDER_PRIVATE_KEY,
                 ),
                 signer_private_key=self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
+                task_to_compute=task_to_compute
             ),
             provider_private_key = self.DIFFERENT_PROVIDER_PRIVATE_KEY,
         )

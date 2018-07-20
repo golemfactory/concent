@@ -258,11 +258,11 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_ack_report_computed_task(
         self,
+        task_to_compute: TaskToCompute,
         timestamp: Union[str, datetime.datetime, None] = None,
         deadline: Union[str, int, None] = None,
         subtask_id: str = '1',
         report_computed_task: Optional[ReportComputedTask] = None,
-        task_to_compute: Optional[TaskToCompute] = None,
         signer_private_key: Optional[bytes] = None,
     )-> AckReportComputedTask:
         """ Returns AckReportComputedTask deserialized. """
@@ -447,6 +447,7 @@ class ConcentIntegrationTestCase(TestCase):
         self,
         timestamp: Union[str, datetime.datetime, None] = None,
         ack_report_computed_task: Optional[AckReportComputedTask] = None,
+        task_to_compute: Optional[TaskToCompute] = None
     ) -> ForceSubtaskResults:
 
         """ Returns ForceSubtaskResults deserialized. """
@@ -457,6 +458,7 @@ class ConcentIntegrationTestCase(TestCase):
                     self._get_deserialized_ack_report_computed_task(
                         timestamp       = timestamp,
                         deadline        = (parse_iso_date_to_timestamp(timestamp) + 10),
+                        task_to_compute=task_to_compute if task_to_compute is not None else self._get_deserialized_task_to_compute()
                     )
                 )
             )

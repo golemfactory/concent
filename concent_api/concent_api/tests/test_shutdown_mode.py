@@ -118,7 +118,8 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
             ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
                 timestamp="2017-12-01 11:00:05",
                 subtask_id='8',
-                report_computed_task=report_computed_task
+                report_computed_task=report_computed_task,
+                task_to_compute=task_to_compute
             ),
             requestor_private_key=self.REQUESTOR_PRIVATE_KEY
         )

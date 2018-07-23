@@ -11,7 +11,8 @@ from golem_messages                 import load
 from golem_messages                 import message
 
 from core.exceptions                import Http400
-from core.tests.utils               import ConcentIntegrationTestCase
+from core.tests.utils import ConcentIntegrationTestCase
+from core.tests.utils import parse_iso_date_to_timestamp
 from common.constants                import ErrorCode
 from common.decorators               import handle_errors_and_responses
 from common.decorators import log_task_errors
@@ -62,7 +63,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         self.assertIsInstance(response,                 message.concents.ClientAuthorization)
         self.assertEqual(response.client_public_key,    self.PROVIDER_PUBLIC_KEY)
         self.assertEqual(response.sig,                  self._add_signature_to_message(response, self.PROVIDER_PRIVATE_KEY))
-        self.assertEqual(response.timestamp,            self._parse_iso_date_to_timestamp("2017-12-31 00:00:00"))
+        self.assertEqual(response.timestamp, parse_iso_date_to_timestamp("2017-12-31 00:00:00"))
 
     def test_require_golem_auth_message_should_return_http_400_when_message_created_too_far_in_the_future(self):
         with freeze_time("2017-12-31 01:00:00"):
@@ -160,7 +161,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code, 200)  # pylint: disable=no-member
         self.assertIsInstance(loaded_response, message.concents.ClientAuthorization)
-        self.assertEqual(loaded_response.timestamp, self._parse_iso_date_to_timestamp("2017-12-31 00:00:00"))
+        self.assertEqual(loaded_response.timestamp, parse_iso_date_to_timestamp("2017-12-31 00:00:00"))
 
     def test_handle_errors_and_responses_should_return_http_response_if_it_has_been_passed_to_decorator(self):
 

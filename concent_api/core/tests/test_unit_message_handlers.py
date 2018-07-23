@@ -2,7 +2,6 @@ from unittest import TestCase
 
 from django.conf import settings
 from django.test import override_settings
-
 from core.message_handlers import are_items_unique
 from core.message_handlers import store_subtask
 from core.models import Subtask

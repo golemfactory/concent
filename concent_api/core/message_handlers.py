@@ -556,6 +556,16 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
 
 
 def handle_send_force_subtask_results_response(client_message):
+    if client_message.subtask_results_accepted is not None and client_message.subtask_results_rejected is not None:
+        raise Http400(
+            f"ForceSubtaskResultsResponse contains both subtask_results_accepted and subtask_results_rejected",
+            error_code=ErrorCode.MESSAGE_INVALID,
+        )
+    if client_message.subtask_results_accepted is None and client_message.subtask_results_rejected is None:
+        raise Http400(
+            f"ForceSubtaskResultsResponse does not contain any of subtask_results_accepted or subtask_results_rejected",
+            error_code=ErrorCode.MESSAGE_INVALID,
+        )
     task_to_compute = client_message.task_to_compute
 
     validate_task_to_compute(task_to_compute)
@@ -1437,8 +1447,7 @@ def handle_message(client_message):
         return handle_send_force_subtask_results(client_message)
 
     elif (
-        isinstance(client_message, message.concents.ForceSubtaskResultsResponse) and
-        (client_message.subtask_results_accepted is not None or client_message.subtask_results_rejected is not None)
+        isinstance(client_message, message.concents.ForceSubtaskResultsResponse)
     ):
         return handle_send_force_subtask_results_response(client_message)
 

@@ -472,7 +472,7 @@ class ConcentIntegrationTestCase(TestCase):
             subtask_results_accepted = message.tasks.SubtaskResultsAccepted(
                 task_to_compute = task_to_compute,
                 payment_ts     = (
-                    self._parse_iso_date_to_timestamp(payment_ts) or
+                    self._parse_iso_date_to_timestamp(payment_ts) if payment_ts is not None else
                     self._parse_iso_date_to_timestamp(self._get_timestamp_string())
                 )
             )

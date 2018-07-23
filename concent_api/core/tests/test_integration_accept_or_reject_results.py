@@ -6,7 +6,9 @@ from freezegun              import freeze_time
 from golem_messages         import message
 
 from core.constants         import ETHEREUM_ADDRESS_LENGTH
-from core.message_handlers  import store_or_update_subtask
+from core.exceptions import Http400
+from core.message_handlers import handle_send_force_subtask_results_response
+from core.message_handlers import store_or_update_subtask
 from core.models            import StoredMessage
 from core.models            import Subtask
 from core.models            import PendingResponse
@@ -1926,3 +1928,19 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(0)
+
+    def test_that_force_subtask_results_response_with_no_subtask_results_rejected_or_accepted_should_return_http400(self):
+        force_subtask_results_response = self._get_deserialized_force_subtask_results_response()
+        with self.assertRaises(Http400):
+            handle_send_force_subtask_results_response(force_subtask_results_response)
+
+    def test_that_force_subtask_results_response_with_both_subtask_results_rejected_and_accepted_should_return_http400(self):
+        force_subtask_results_response = self._get_deserialized_force_subtask_results_response(
+            subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
+                task_to_compute=self._get_deserialized_task_to_compute(),
+            ),
+            subtask_results_rejected=self._get_deserialized_subtask_results_rejected(
+                reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative),
+        )
+        with self.assertRaises(Http400):
+            handle_send_force_subtask_results_response(force_subtask_results_response)

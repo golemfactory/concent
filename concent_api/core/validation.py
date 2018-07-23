@@ -4,6 +4,7 @@ from typing import Union
 
 from golem_messages import message
 from golem_messages.exceptions import MessageError
+from golem_messages.message import RejectReportComputedTask
 
 from common.constants import ErrorCode
 from common.exceptions import ConcentValidationError
@@ -16,6 +17,7 @@ from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
 from core.constants import VALID_ID_REGEX
 from core.exceptions import FrameNumberValidationError
 from core.exceptions import GolemMessageValidationError
+from core.message_handlers import validate_that_golem_messages_are_signed_with_key
 from core.utils import hex_to_bytes_convert
 
 
@@ -334,3 +336,34 @@ def validate_compute_task_def(compute_task_def: message.tasks.ComputeTaskDef) ->
             )
 
     validate_scene_file(extra_data['scene_file'])
+
+
+def validate_reject_report_computed_task(client_message: RejectReportComputedTask):
+
+    if (
+        isinstance(client_message.cannot_compute_task, message.CannotComputeTask) and
+        isinstance(client_message.task_failure, message.TaskFailure)
+    ):
+        raise GolemMessageValidationError(
+            "RejectReportComputedTask cannot contain CannotComputeTask and TaskFailure at the same time.",
+            error_code=ErrorCode.MESSAGE_INVALID,
+        )
+
+    if client_message.REASON is None:
+        raise GolemMessageValidationError(
+            f'Error during handling RejectReportComputedTask. REASON is None, it should be message.RejectReportComputedTask.REASON instance',
+            error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE
+        )
+
+    if not isinstance(client_message.reason, RejectReportComputedTask.REASON):
+        raise GolemMessageValidationError(
+            f'Error during handling RejectReportComputedTask. REASON should be message.RejectReportComputedTask.REASON instance'
+            f'Currently it is {type(client_message.reason)} instance',
+            error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE
+        )
+    validate_task_to_compute(client_message.task_to_compute)
+
+    validate_that_golem_messages_are_signed_with_key(
+        hex_to_bytes_convert(client_message.task_to_compute.requestor_public_key),
+        client_message.task_to_compute,
+    )

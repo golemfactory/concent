@@ -9,6 +9,7 @@ from assertpy import assert_that
 import mock
 import pytest
 
+from middleman.constants import DEFAULT_EXTERNAL_PORT
 from middleman.constants import DEFAULT_INTERNAL_PORT
 from middleman.constants import ERROR_ADDRESS_ALREADY_IN_USE
 from middleman.constants import LOCALHOST_IP
@@ -54,12 +55,14 @@ def get_client_thread(fun, *args):
 
 
 class TestMiddleManInitialization:
-    def test_that_middleman_is_created_with_given_params(self, unused_tcp_port, event_loop):  # pylint: disable=no-self-use
+    def test_that_middleman_is_created_with_given_params(self, unused_tcp_port_factory, event_loop):  # pylint: disable=no-self-use
         ip = "127.1.0.1"
-        middleman = MiddleMan(bind_address=ip, internal_port=(unused_tcp_port), loop=event_loop)
+        internal_port, external_port = unused_tcp_port_factory(), unused_tcp_port_factory()
+        middleman = MiddleMan(bind_address=ip, internal_port=internal_port, external_port=external_port, loop=event_loop)
 
         assert_that(middleman._bind_address).is_equal_to(ip)
-        assert_that(middleman._internal_port).is_equal_to(unused_tcp_port)
+        assert_that(middleman._internal_port).is_equal_to(internal_port)
+        assert_that(middleman._external_port).is_equal_to(external_port)
         assert_that(middleman._loop).is_equal_to(event_loop)
 
     def test_that_middleman_is_created_with_default_params(self):  # pylint: disable=no-self-use
@@ -67,6 +70,7 @@ class TestMiddleManInitialization:
 
         assert_that(middleman._bind_address).is_equal_to(LOCALHOST_IP)
         assert_that(middleman._internal_port).is_equal_to(DEFAULT_INTERNAL_PORT)
+        assert_that(middleman._external_port).is_equal_to(DEFAULT_EXTERNAL_PORT)
         assert_that(middleman._loop).is_equal_to(asyncio.get_event_loop())
 
 
@@ -74,73 +78,106 @@ class TestMiddleManServer:
     patcher = None
     crash_logger_mock = None
 
-    def setup_method(self):
+    @pytest.fixture(autouse=True)
+    def middleman_setup(self, unused_tcp_port_factory, event_loop):
         self.patcher = mock.patch("middleman.middleman_server.crash_logger")
         self.crash_logger_mock = self.patcher.start()
-
-    def teardown_method(self):
+        self.internal_port, self.external_port = unused_tcp_port_factory(), unused_tcp_port_factory()
+        self.middleman = MiddleMan(internal_port=self.internal_port, external_port=self.external_port, loop=event_loop)
+        yield self.internal_port, self.external_port
         self.patcher.stop()
 
-    def test_that_if_keyboard_interrupt_is_raised_application_will_exit_without_errors(self, unused_tcp_port, event_loop):
+    def test_that_if_keyboard_interrupt_is_raised_application_will_exit_without_errors(self, middleman_setup):
         with pytest.raises(SystemExit) as exception_wrapper:
-            middleman = MiddleMan(internal_port=unused_tcp_port, loop=event_loop)
-            with mock.patch.object(middleman, "_run_forever", side_effect=KeyboardInterrupt):
-                middleman.run()
+            with mock.patch.object(self.middleman, "_run_forever", side_effect=KeyboardInterrupt):
+                self.middleman.run()
         assert_that(exception_wrapper.value.code).is_equal_to(None)
         self.crash_logger_mock.assert_not_called()
 
     @mock.patch("middleman.middleman_server.asyncio.start_server", side_effect=OSError)
-    def test_that_if_chosen_port_is_already_used_application_will_exit_with_error_status(self,  _start_server_mock, unused_tcp_port, event_loop):
+    def test_that_if_chosen_port_is_already_used_application_will_exit_with_error_status(self, _start_server_mock, middleman_setup):
         with pytest.raises(SystemExit) as exception_wrapper:
-            MiddleMan(internal_port=unused_tcp_port, loop=event_loop).run()
+            self.middleman.run()
         assert_that(exception_wrapper.value.code).is_equal_to(ERROR_ADDRESS_ALREADY_IN_USE)
         self.crash_logger_mock.assert_not_called()
 
-    def test_that_if_sigterm_is_sent_application_will_exit_without_errors(self, unused_tcp_port, event_loop):
+    def test_that_if_sigterm_is_sent_application_will_exit_without_errors(self, middleman_setup):
         schedule_sigterm(delay=1)
         with pytest.raises(SystemExit) as exception_wrapper:
-            MiddleMan(internal_port=unused_tcp_port, loop=event_loop).run()
+            self.middleman.run()
         assert_that(exception_wrapper.value.code).is_equal_to(None)
         self.crash_logger_mock.assert_not_called()
 
-    def test_that_crash_of_the_server_is_reported_to_sentry(self, unused_tcp_port, event_loop):
-        middleman = MiddleMan(internal_port=unused_tcp_port, loop=event_loop)
+    def test_that_crash_of_the_server_is_reported_to_sentry(self, middleman_setup):
         error_message = "Unrecoverable error"
-        with mock.patch.object(middleman, "_run_forever", side_effect=Exception(error_message)):
-            middleman.run()
+        with mock.patch.object(self.middleman, "_run_forever", side_effect=Exception(error_message)):
+            self.middleman.run()
         self.crash_logger_mock.error.assert_called_once()
         assert_that(self.crash_logger_mock.error.mock_calls[0][1][0]).contains(error_message)
 
-    def test_that_server_accepts_connections_and_sends_data_back(self, event_loop, unused_tcp_port):
+    def test_that_server_accepts_connections_from_concent_and_sends_data_back(self, middleman_setup):
         timeout = 2
         short_delay = 0.5
         schedule_sigterm(delay=timeout)
         connections = Connections()
-        client_thread = get_client_thread(assert_connection, unused_tcp_port, short_delay, connections)
+        client_thread = get_client_thread(assert_connection, self.internal_port, short_delay, connections)
         client_thread.start()
 
         with pytest.raises(SystemExit) as exception_wrapper:
-            MiddleMan(internal_port=unused_tcp_port, loop=event_loop).run()
+            self.middleman.run()
 
         client_thread.join(timeout)
         assert_that(exception_wrapper.value.code).is_equal_to(None)
         self.crash_logger_mock.assert_not_called()
         assert_that(connections.counter).is_equal_to(1)
 
-    def test_that_broken_connection_is_reported_to_sentry(self, event_loop, unused_tcp_port):
+    def test_that_server_accepts_connections_from_signing_service_and_sends_data_back(self, middleman_setup):
+        timeout = 2
+        short_delay = 0.5
+        schedule_sigterm(delay=timeout)
+        connections = Connections()
+        client_thread = get_client_thread(assert_connection, self.external_port, short_delay, connections)
+        client_thread.start()
+
+        with pytest.raises(SystemExit) as exception_wrapper:
+            self.middleman.run()
+
+        client_thread.join(timeout)
+        assert_that(exception_wrapper.value.code).is_equal_to(None)
+        self.crash_logger_mock.assert_not_called()
+        assert_that(connections.counter).is_equal_to(1)
+
+    def test_that_broken_connection_from_concent_is_reported_to_sentry(self, middleman_setup):
         timeout = 2
         short_delay = 0.5
         schedule_sigterm(delay=timeout)
         fake_client = socket.socket()
-        client_thread = get_client_thread(send_data, fake_client, "Oi!\n", unused_tcp_port, short_delay)
+        client_thread = get_client_thread(send_data, fake_client, "Oi!\n", self.internal_port, short_delay)
         client_thread.start()
 
-        middleman = MiddleMan(internal_port=unused_tcp_port, loop=event_loop)
         error_message = "Connection_error"
 
-        with mock.patch.object(middleman, "_respond_to_user", side_effect=Exception(error_message)):
+        with mock.patch.object(self.middleman, "_respond_to_user", side_effect=Exception(error_message)):
             with pytest.raises(SystemExit):
-                middleman.run()
+                self.middleman.run()
+        client_thread.join(timeout)
+        fake_client.close()
+        self.crash_logger_mock.error.assert_called_once()
+        assert_that(self.crash_logger_mock.error.mock_calls[0][1][0]).contains(error_message)
+
+    def test_that_broken_connection_from_signing_service_is_reported_to_sentry(self, middleman_setup):
+        timeout = 2
+        short_delay = 0.5
+        schedule_sigterm(delay=timeout)
+        fake_client = socket.socket()
+        client_thread = get_client_thread(send_data, fake_client, "Oi!\n", self.external_port, short_delay)
+        client_thread.start()
+
+        error_message = "Connection_error"
+
+        with mock.patch.object(self.middleman, "_respond_to_user", side_effect=Exception(error_message)):
+            with pytest.raises(SystemExit):
+                self.middleman.run()
         client_thread.join(timeout)
         fake_client.close()
         self.crash_logger_mock.error.assert_called_once()

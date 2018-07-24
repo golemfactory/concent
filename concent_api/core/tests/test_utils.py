@@ -97,7 +97,7 @@ class CalculateSubtaskVerificationTimeTestCase(ConcentIntegrationTestCase):
 
     @override_settings(
         CONCENT_MESSAGING_TIME=int(constants.CMT.total_seconds()),
-        CONCENT_UPLOAD_RATE=constants.DEFAULT_UPLOAD_RATE,
+        MINIMUM_UPLOAD_RATE=constants.DEFAULT_UPLOAD_RATE,
         DOWNLOAD_LEADIN_TIME=constants.DOWNLOAD_LEADIN_TIME.total_seconds(),
         CUSTOM_PROTOCOL_TIMES=True  # overridden to ensure this setting is always True, otherwise this test has no sense
     )

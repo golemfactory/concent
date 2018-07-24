@@ -331,6 +331,3 @@ MOCK_VERIFICATION_ENABLED = True
 
 # Verifier setting defining number of threads used by Blender
 BLENDER_THREADS = 1
-
-# A global constant defining upload rate. Setting is necessary to calculate maximum_download_time
-CONCENT_UPLOAD_RATE = int(constants.DEFAULT_UPLOAD_RATE)  # KB/s = kbps / 8

@@ -52,7 +52,7 @@ def calculate_subtask_verification_time(report_computed_task: message.ReportComp
     if settings.CUSTOM_PROTOCOL_TIMES:
         mdt = calculate_maximum_download_time(
             size=report_computed_task.size,
-            rate=settings.CONCENT_UPLOAD_RATE
+            rate=settings.MINIMUM_UPLOAD_RATE
         )
         ttc_dt = datetime.datetime.utcfromtimestamp(
             report_computed_task.task_to_compute.timestamp,

@@ -17,7 +17,6 @@ from common.testing_helpers  import generate_ecc_key_pair
     MINIMUM_UPLOAD_RATE=4,  # bits per second
     DOWNLOAD_LEADIN_TIME=6,  # seconds
     PAYMENT_DUE_TIME=5,  # seconds
-    CONCENT_UPLOAD_RATE=2  # bits per second
 )
 class ProtocolConstantsTest(ConcentIntegrationTestCase):
 
@@ -32,7 +31,6 @@ class ProtocolConstantsTest(ConcentIntegrationTestCase):
             'MINIMUM_UPLOAD_RATE': settings.MINIMUM_UPLOAD_RATE,
             'DOWNLOAD_LEADIN_TIME': settings.DOWNLOAD_LEADIN_TIME,
             'PAYMENT_DUE_TIME': settings.PAYMENT_DUE_TIME,
-            'CONCENT_UPLOAD_RATE': settings.CONCENT_UPLOAD_RATE,
         }
 
         expected_protocol_constants = {name.lower(): value for name, value in protocol_constants_settings.items()}

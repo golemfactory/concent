@@ -1,3 +1,4 @@
+import re
 import socket
 
 SIGNING_SERVICE_DEFAULT_PORT = 9055
@@ -32,3 +33,7 @@ SIGNING_SERVICE_RECOVERABLE_ERRORS = [
     # 113 No route to host
     socket.errno.EHOSTUNREACH,  # type: ignore
 ]
+
+ETHEREUM_PRIVATE_KEY_LENGTH = 64
+
+ETHEREUM_PRIVATE_KEY_REGEXP = re.compile(r'^[a-f0-9]+$')

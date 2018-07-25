@@ -66,6 +66,7 @@ class ErrorCode(enum.Enum):
     VERIFIER_LOADING_FILES_WITH_OPENCV_FAILED                          = 'verifier.loading_files_with_opencv_failed'
     VERIFIER_RUNNING_BLENDER_FAILED                                    = 'verifier.running_blender_failed'
     VERIFIER_UNPACKING_ARCHIVE_FAILED                                  = 'verifier.unpacking_archive_failed'
+    WORKER_MAX_RETRIES_EXCEEDED                                        = 'maximum_number_of_retries_in_worker_exceeded'
 
 
 class MessageIdField(enum.Enum):

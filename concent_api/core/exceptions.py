@@ -25,5 +25,9 @@ class FrameNumberValidationError(ConcentBaseException):
     pass
 
 
+class MaxRetriesExceededError(ConcentBaseException):
+    pass
+
+
 class TransactionNonceMismatch(Exception):
     pass

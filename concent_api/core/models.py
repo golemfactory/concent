@@ -1,31 +1,84 @@
 import base64
 import datetime
 
+from django.conf            import settings
 from django.core.validators import ValidationError
 from django.db.models       import BinaryField
 from django.db.models       import BooleanField
 from django.db.models       import CharField
 from django.db.models       import DateTimeField
 from django.db.models       import DecimalField
-from django.db.models       import IntegerField
+from django.db.models       import ExpressionWrapper
+from django.db.models       import F
 from django.db.models       import ForeignKey
+from django.db.models       import Func
+from django.db.models       import IntegerField
+from django.db.models       import Manager
 from django.db.models       import Model
 from django.db.models       import OneToOneField
 from django.db.models       import PositiveSmallIntegerField
-from django.db.models       import Manager
+from django.db.models       import QuerySet
+from django.db.models       import Value
 
 from constance              import config
 from golem_messages         import message
 
-from common.exceptions import ConcentInSoftShutdownMode
-from common.fields           import Base64Field
-from common.fields           import ChoiceEnum
-from common.helpers import deserialize_message
+from common.exceptions      import ConcentInSoftShutdownMode
+from common.fields          import Base64Field
+from common.fields          import ChoiceEnum
+from common.helpers         import deserialize_message
 
 from .constants             import TASK_OWNER_KEY_LENGTH
 from .constants             import ETHEREUM_ADDRESS_LENGTH
 from .constants             import GOLEM_PUBLIC_KEY_LENGTH
 from .constants             import MESSAGE_TASK_ID_MAX_LENGTH
+
+
+class SubtaskWithTimingColumnsManager(Manager):
+    """Creates maximum_download time, subtask_verification_time and download_deadline columns
+    maximum_download_time = DOWNLOAD_LEADIN_TIME + ceil((result_package_size / MINIMUM_UPLOAD_RATE << 10))
+    subtask_verification_time = (4 * CONCENT_MESSAGING_TIME) + (3 * maximum_download_time) + (0.5 * (computation_deadline - task_to_compute_timestamp))
+    download_deadline = computation_deadline + maximum_download_time
+    """
+
+    @classmethod
+    def with_maximum_download_time(cls, query_set: QuerySet) -> QuerySet:
+        bytes_per_sec = settings.MINIMUM_UPLOAD_RATE << 10
+        download_time = Func(F('result_package_size') / float(bytes_per_sec), function='CEIL')
+        return query_set.annotate(
+            maximum_download_time=Value(settings.DOWNLOAD_LEADIN_TIME) + download_time
+        )
+
+    @classmethod
+    def with_subtask_verification_time(cls, query_set: QuerySet) -> QuerySet:
+        task_to_compute_timestamp = Func(Value('epoch'), F('task_to_compute__timestamp'), function='DATE_PART')
+        subtask_timeout = Func(Value('epoch'), F('computation_deadline'), function='DATE_PART') - task_to_compute_timestamp
+        subtask_verification_time = (
+            4 * settings.CONCENT_MESSAGING_TIME) + (
+            3 * F('maximum_download_time')) + (
+            0.5 * subtask_timeout
+        )
+        return query_set.annotate(subtask_verification_time=ExpressionWrapper(
+            subtask_verification_time, output_field=IntegerField())
+        )
+
+    @classmethod
+    def with_download_deadline(cls, query_set: QuerySet) -> QuerySet:
+        return query_set.annotate(download_deadline=ExpressionWrapper(
+            Func(Value('epoch'), F('computation_deadline'), function='DATE_PART') +
+            F('subtask_verification_time'),
+            output_field=IntegerField())
+        )
+
+    @classmethod
+    def with_timing_columns(cls, query_set):
+        query_set_with_maximum_download_time = cls.with_maximum_download_time(query_set)
+        query_set_with_subtask_verification_time = cls.with_subtask_verification_time(query_set_with_maximum_download_time)
+        query_set_with_download_deadline = cls.with_download_deadline(query_set_with_subtask_verification_time)
+        return query_set_with_download_deadline
+
+    def get_queryset(self):
+        return self.with_timing_columns(super().get_queryset())
 
 
 class StoredMessage(Model):
@@ -34,7 +87,7 @@ class StoredMessage(Model):
     data        = BinaryField()
     task_id     = CharField(max_length = MESSAGE_TASK_ID_MAX_LENGTH, null = True, blank = True)
     subtask_id  = CharField(max_length = MESSAGE_TASK_ID_MAX_LENGTH, null = True, blank = True)
-    created_at = DateTimeField(auto_now_add=True)
+    created_at  = DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return 'StoredMessage #{}, type:{}, {}'.format(self.id, self.type, self.timestamp)
@@ -74,6 +127,8 @@ class Subtask(Model):
     """
     Represents subtask states.
     """
+    objects = Manager()
+    objects_with_timing_columns = SubtaskWithTimingColumnsManager()
 
     class SubtaskState(ChoiceEnum):
         FORCING_REPORT              = 'forcing_report'

@@ -24,6 +24,7 @@ from signing_service.constants import SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME
 from signing_service.constants import SIGNING_SERVICE_RECOVERABLE_ERRORS
 from signing_service.exceptions import SigningServiceValidationError
 from signing_service.utils import is_valid_public_key
+from signing_service.utils import is_valid_private_key
 from signing_service.utils import make_secret_provider_factory
 
 
@@ -46,7 +47,8 @@ class SigningService:
         'was_sigterm_caught',
         'concent_public_key',
         'signing_service_private_key',
-        'signing_service_public_key'
+        'signing_service_public_key',
+        'ethereum_private_key',
     )
 
     def __init__(
@@ -56,19 +58,22 @@ class SigningService:
         initial_reconnect_delay: int,
         concent_public_key: bytes,
         signing_service_private_key: bytes,
+        ethereum_private_key: bytes,
     ) -> None:
         assert isinstance(host, str)
         assert isinstance(port, int)
         assert isinstance(initial_reconnect_delay, int)
         assert isinstance(concent_public_key, bytes)
         assert isinstance(signing_service_private_key, bytes)
-        self.host = host
-        self.port = port
+        assert isinstance(ethereum_private_key, str)
+        self.host = host  # type: str
+        self.port = port  # type: int
         self.initial_reconnect_delay = initial_reconnect_delay
-        self.concent_public_key = concent_public_key
-        self.signing_service_private_key = signing_service_private_key
+        self.concent_public_key = concent_public_key  # type: bytes
+        self.signing_service_private_key = signing_service_private_key  # type: bytes
         self.signing_service_public_key = privtopub(signing_service_private_key)
-        self.current_reconnect_delay = None
+        self.ethereum_private_key = ethereum_private_key  # type: str
+        self.current_reconnect_delay = None  # type: Union[int, None]
         self.was_sigterm_caught = False
 
         self._validate_arguments()
@@ -174,6 +179,9 @@ class SigningService:
         if not is_valid_public_key(self.concent_public_key):
             raise SigningServiceValidationError('concent_public_key is not valid public key.')
 
+        if not is_valid_private_key(self.ethereum_private_key):
+            raise SigningServiceValidationError('ethereum_private_key is not valid private key.')
+
 
 def _parse_arguments() -> argparse.Namespace:
 
@@ -207,19 +215,19 @@ def _parse_arguments() -> argparse.Namespace:
     ethereum_private_key_parser_group.add_argument(
         '--ethereum-private-key',
         dest='ethereum_private_key',
-        action=make_secret_provider_factory(read_command_line=True, base64_convert=True),
+        action=make_secret_provider_factory(read_command_line=True),
         help='Ethereum private key for Singing Service.',
     )
     ethereum_private_key_parser_group.add_argument(
         '--ethereum-private-key-path',
         dest='ethereum_private_key',
-        action=make_secret_provider_factory(use_file=True, base64_convert=True),
+        action=make_secret_provider_factory(use_file=True),
         help='Ethereum private key for Singing Service.',
     )
     ethereum_private_key_parser_group.add_argument(
         '--ethereum-private-key-from-env',
         dest='ethereum_private_key',
-        action=make_secret_provider_factory(env_variable_name='ETHEREUM_PRIVATE_KEY', base64_convert=True),
+        action=make_secret_provider_factory(env_variable_name='ETHEREUM_PRIVATE_KEY'),
         help='Ethereum private key for Singing Service.',
     )
 
@@ -263,6 +271,7 @@ def _parse_arguments() -> argparse.Namespace:
         action=make_secret_provider_factory(env_variable_name='SENTRY_DSN'),
         help='Sentry DSN for error reporting.',
     )
+
     return parser.parse_args()
 
 
@@ -280,6 +289,7 @@ if __name__ == '__main__':
     arg_initial_reconnect_delay = args.initial_reconnect_delay
     arg_concent_public_key = args.concent_public_key
     arg_signing_service_private_key = args.signing_service_private_key
+    arg_ethereum_private_key = args.ethereum_private_key
 
     SigningService(
         arg_host,
@@ -287,4 +297,5 @@ if __name__ == '__main__':
         arg_initial_reconnect_delay,
         arg_concent_public_key,
         arg_signing_service_private_key,
+        arg_ethereum_private_key,
     ).run()

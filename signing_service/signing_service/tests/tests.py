@@ -27,7 +27,9 @@ from signing_service.constants import SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME
 from signing_service.exceptions import SigningServiceValidationError
 from signing_service.signing_service import _parse_arguments
 from signing_service.signing_service import SigningService
-from signing_service.utils import is_valid_public_key
+from signing_service.utils import is_private_key_valid
+from signing_service.utils import is_public_key_valid
+from .utils import SigningServiceIntegrationTestCase
 
 
 concent_ecc_keys = ECCx(None)
@@ -48,14 +50,19 @@ class TestSigningServiceRun:
         self.host = '127.0.0.1'
         self.port = unused_tcp_port_factory()
         self.initial_reconnect_delay = 2
-
-    def test_that_signing_service_should_be_instantiated_correctly_with_all_parameters(self):
-        signing_service = SigningService(
+        self.ethereum_private_key = '3a1076bf45ab87712ad64ccb3b10217737f7faacbf2872e88fdd9a537d8fe266'
+        self.parameters = [
             self.host,
             self.port,
             self.initial_reconnect_delay,
             CONCENT_PUBLIC_KEY,
             SIGNING_SERVICE_PRIVATE_KEY,
+            self.ethereum_private_key,
+        ]
+
+    def test_that_signing_service_should_be_instantiated_correctly_with_all_parameters(self):
+        signing_service = SigningService(
+            *self.parameters
         )
 
         assertpy.assert_that(signing_service).is_instance_of(SigningService)
@@ -69,11 +76,7 @@ class TestSigningServiceRun:
                 with mock.patch('socket.socket.close') as mock_socket_close:
                     with mock.patch('signing_service.signing_service.SigningService._was_sigterm_caught', side_effect=[False, True]):
                         signing_service = SigningService(
-                            self.host,
-                            self.port,
-                            self.initial_reconnect_delay,
-                            CONCENT_PUBLIC_KEY,
-                            SIGNING_SERVICE_PRIVATE_KEY,
+                            *self.parameters
                         )
                         signing_service.run()
 
@@ -85,11 +88,7 @@ class TestSigningServiceRun:
         with mock.patch('socket.socket.connect', side_effect=KeyboardInterrupt()) as mock_socket_connect:
             with mock.patch('socket.socket.close') as mock_socket_close:
                 signing_service = SigningService(
-                    self.host,
-                    self.port,
-                    self.initial_reconnect_delay,
-                    CONCENT_PUBLIC_KEY,
-                    SIGNING_SERVICE_PRIVATE_KEY,
+                    *self.parameters
                 )
                 signing_service.run()
 
@@ -100,11 +99,7 @@ class TestSigningServiceRun:
         with mock.patch('socket.socket.connect', side_effect=Exception()) as mock_socket_connect:
             with mock.patch('socket.socket.close') as mock_socket_close:
                 signing_service = SigningService(
-                    self.host,
-                    self.port,
-                    self.initial_reconnect_delay,
-                    CONCENT_PUBLIC_KEY,
-                    SIGNING_SERVICE_PRIVATE_KEY,
+                    *self.parameters
                 )
                 with pytest.raises(Exception):
                     signing_service.run()
@@ -118,11 +113,7 @@ class TestSigningServiceRun:
         with mock.patch('socket.socket.connect', side_effect=socket.error(socket.errno.ECONNREFUSED)) as mock_socket_connect:
             with mock.patch('signing_service.signing_service.SigningService._was_sigterm_caught', side_effect=[False, False, True]):
                 signing_service = SigningService(
-                    self.host,
-                    self.port,
-                    self.initial_reconnect_delay,
-                    CONCENT_PUBLIC_KEY,
-                    SIGNING_SERVICE_PRIVATE_KEY,
+                    *self.parameters
                 )
                 signing_service.run()
 
@@ -134,11 +125,7 @@ class TestSigningServiceRun:
         with mock.patch('socket.socket.connect', side_effect=socket.error(socket.errno.EBUSY)) as mock_socket_connect:
             with mock.patch('socket.socket.close') as mock_socket_close:
                 signing_service = SigningService(
-                    self.host,
-                    self.port,
-                    self.initial_reconnect_delay,
-                    CONCENT_PUBLIC_KEY,
-                    SIGNING_SERVICE_PRIVATE_KEY,
+                    *self.parameters
                 )
                 with pytest.raises(socket.error):
                     signing_service.run()
@@ -228,6 +215,7 @@ class TestSigningServiceIncreaseDelay:
             2,
             CONCENT_PUBLIC_KEY,
             SIGNING_SERVICE_PRIVATE_KEY,
+            '3a1076bf45ab87712ad64ccb3b10217737f7faacbf2872e88fdd9a537d8fe266',
         )
 
     def test_that_initial_reconnect_delay_should_be_set_to_passed_value(self):
@@ -258,7 +246,7 @@ class SigningServiceParseArgumentsTestCase(TestCase):
         self.concent_public_key_encoded = b64encode(CONCENT_PUBLIC_KEY).decode()
         self.signing_service_private_key_encoded = b64encode(SIGNING_SERVICE_PRIVATE_KEY).decode()
         self.sentry_dsn = 'http://test.sentry@dsn.com'
-        self.ethereum_private_key = b'test_ethereum_private_key'
+        self.ethereum_private_key = '3a1076bf45ab87712ad64ccb3b10217737f7faacbf2872e88fdd9a537d8fe266'
 
     def test_that_argument_parser_should_parse_correct_input(self):
         sys.argv += [
@@ -348,7 +336,7 @@ class SigningServiceParseArgumentsTestCase(TestCase):
             file.write(self.sentry_dsn)
 
         with open(ethereum_private_key_tmp_file, "w") as file:
-            file.write(b64encode(self.ethereum_private_key).decode('ascii'))
+            file.write(self.ethereum_private_key)
 
         with open(signing_service_private_key_tmp_file, "w") as file:
             file.write(self.signing_service_private_key_encoded)
@@ -370,6 +358,7 @@ class SigningServiceValidateArgumentsTestCase(TestCase):
         self.host = '127.0.0.1'
         self.port = 8000
         self.initial_reconnect_delay = 2
+        self.ethereum_private_key = '3a1076bf45ab87712ad64ccb3b10217737f7faacbf2872e88fdd9a537d8fe266'
 
         self.signing_service = SigningService(
             self.host,
@@ -377,6 +366,7 @@ class SigningServiceValidateArgumentsTestCase(TestCase):
             self.initial_reconnect_delay,
             CONCENT_PUBLIC_KEY,
             SIGNING_SERVICE_PRIVATE_KEY,
+            self.ethereum_private_key,
         )
 
     def test_that_signing_service__validate_arguments_should_raise_exception_on_port_number_below_or_above_range(self):
@@ -398,20 +388,55 @@ class SigningServiceValidateArgumentsTestCase(TestCase):
         with self.assertRaises(SigningServiceValidationError):
             self.signing_service._validate_arguments()
 
+    def test_that_signing_service__validate_arguments_should_raise_exception_on_wrong_length_of_ethereum_private_key(self):
+        self.signing_service.ethereum_private_key = self.ethereum_private_key[:-1]
 
-class SigningServiceIsValidPulicKeyTestCase(TestCase):
+        with self.assertRaises(SigningServiceValidationError):
+            self.signing_service._validate_arguments()
 
-    def test_that_is_valid_public_key_should_return_true_for_correct_public_key_length(self):
+    def test_that_signing_service__validate_arguments_should_raise_exception_on_wrong_characters_in_ethereum_private_key(self):
+        self.signing_service.ethereum_private_key = self.signing_service.ethereum_private_key[:-1] + 'g'
+
+        with self.assertRaises(SigningServiceValidationError):
+            self.signing_service._validate_arguments()
+
+
+class SigningServiceIsPublicKeyValidTestCase(TestCase):
+
+    def test_that_is_public_key_valid_should_return_true_for_correct_public_key_length(self):
         public_key = b'x' * 64
 
-        self.assertTrue(is_valid_public_key(public_key))
+        self.assertTrue(is_public_key_valid(public_key))
 
-    def test_that_is_valid_public_key_should_return_true_for_too_short_public_key_length(self):
+    def test_that_is_public_key_valid_public_should_return_false_for_too_short_public_key_length(self):
         public_key = b'x' * 63
 
-        self.assertFalse(is_valid_public_key(public_key))
+        self.assertFalse(is_public_key_valid(public_key))
 
-    def test_that_is_valid_public_key_should_return_true_for_too_long_public_key_length(self):
+    def test_that_is_public_key_valid_should_return_false_for_too_long_public_key_length(self):
         public_key = b'x' * 65
 
-        self.assertFalse(is_valid_public_key(public_key))
+        self.assertFalse(is_public_key_valid(public_key))
+
+
+class SigningServiceIsPrivateKeyValidTestCase(TestCase):
+
+    def test_that_is_private_key_valid_should_return_true_for_correct_private_key_length(self):
+        private_key = 'a' * 64
+
+        self.assertTrue(is_private_key_valid(private_key))
+
+    def test_that_is_private_key_valid_should_return_false_for_too_short_private_key_length(self):
+        private_key = 'a' * 63
+
+        self.assertFalse(is_private_key_valid(private_key))
+
+    def test_that_is_private_key_valid_return_false_for_too_long_private_key_length(self):
+        private_key = 'a' * 65
+
+        self.assertFalse(is_private_key_valid(private_key))
+
+    def test_that_is_private_key_valid_return_false_for_invalid_characters(self):
+        private_key = '-' * 64
+
+        self.assertFalse(is_private_key_valid(private_key))

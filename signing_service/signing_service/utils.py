@@ -5,8 +5,10 @@ from base64 import b64decode
 from golem_messages.cryptography import verify_pubkey
 from golem_messages.exceptions import InvalidKeys
 
+from signing_service.constants import ETHEREUM_PRIVATE_KEY_REGEXP
 
-def is_valid_public_key(key):
+
+def is_valid_public_key(key: bytes) -> bool:
     """ Validates if given bytes are valid public key by using function from golem-messages. """
 
     assert isinstance(key, bytes)
@@ -16,6 +18,19 @@ def is_valid_public_key(key):
         return True
     except InvalidKeys:
         return False
+
+
+def is_valid_private_key(key: str) -> bool:
+    """
+    Validates if given string is valid Ethereum private key.
+
+    Ethereum private key format is described in
+    `https://theethereum.wiki/w/index.php/Accounts,_Addresses,_Public_And_Private_Keys,_And_Tokens`.
+    """
+
+    assert isinstance(key, str)
+
+    return ETHEREUM_PRIVATE_KEY_REGEXP.fullmatch(key) is not None
 
 
 def make_secret_provider_factory(

@@ -48,6 +48,7 @@ from core.utils import calculate_additional_verification_call_time
 from core.utils import calculate_maximum_download_time
 from core.utils import calculate_subtask_verification_time
 from core.validation import is_golem_message_signed_with_key
+from core.validation import validate_that_golem_messages_are_signed_with_key
 from core.validation import validate_reject_report_computed_task
 from core.validation import validate_all_messages_identical
 from core.validation import validate_ethereum_addresses
@@ -1456,16 +1457,3 @@ def is_subtask_in_wrong_state(subtask_id, forbidden_states):
 
 def are_items_unique(items: list):
     return len(items) == len(set(items))
-
-
-def validate_that_golem_messages_are_signed_with_key(
-    public_key: bytes,
-    *golem_messages: message.base.Message,
-) -> None:
-    for golem_message in golem_messages:
-        if not is_golem_message_signed_with_key(public_key, golem_message):
-            raise Http400(
-                f'There was an exception when validating if golem_message {golem_message.__class__.__name__} is signed with '
-                f'public key {public_key}.',
-                error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG,
-            )

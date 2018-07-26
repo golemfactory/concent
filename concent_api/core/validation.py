@@ -16,8 +16,8 @@ from core.constants import GOLEM_PUBLIC_KEY_LENGTH
 from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
 from core.constants import VALID_ID_REGEX
 from core.exceptions import FrameNumberValidationError
+from core.exceptions import Http400
 from core.exceptions import GolemMessageValidationError
-from core.message_handlers import validate_that_golem_messages_are_signed_with_key
 from core.utils import hex_to_bytes_convert
 
 
@@ -338,6 +338,19 @@ def validate_compute_task_def(compute_task_def: message.tasks.ComputeTaskDef) ->
     validate_scene_file(extra_data['scene_file'])
 
 
+def validate_that_golem_messages_are_signed_with_key(
+    public_key: bytes,
+    *golem_messages: message.base.Message,
+) -> None:
+    for golem_message in golem_messages:
+        if not is_golem_message_signed_with_key(public_key, golem_message):
+            raise Http400(
+                f'There was an exception when validating if golem_message {golem_message.__class__.__name__} is signed with '
+                f'public key {public_key}.',
+                error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG,
+            )
+
+
 def validate_reject_report_computed_task(client_message: RejectReportComputedTask):
 
     if (
@@ -349,7 +362,7 @@ def validate_reject_report_computed_task(client_message: RejectReportComputedTas
             error_code=ErrorCode.MESSAGE_INVALID,
         )
 
-    if client_message.REASON is None:
+    if client_message.reason is None:
         raise GolemMessageValidationError(
             f'Error during handling RejectReportComputedTask. REASON is None, it should be message.RejectReportComputedTask.REASON instance',
             error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE
@@ -357,7 +370,7 @@ def validate_reject_report_computed_task(client_message: RejectReportComputedTas
 
     if not isinstance(client_message.reason, RejectReportComputedTask.REASON):
         raise GolemMessageValidationError(
-            f'Error during handling RejectReportComputedTask. REASON should be message.RejectReportComputedTask.REASON instance'
+            f'Error during handling RejectReportComputedTask. REASON should be message.RejectReportComputedTask.REASON instance. '
             f'Currently it is {type(client_message.reason)} instance',
             error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE
         )

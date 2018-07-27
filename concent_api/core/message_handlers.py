@@ -9,6 +9,7 @@ from typing import Union
 
 from django.conf import settings
 from django.core.mail import mail_admins
+from django.db import transaction
 from django.http import HttpResponse
 
 from constance import config
@@ -1242,49 +1243,50 @@ def store_or_update_subtask(
     subtask_results_rejected: Optional[message.tasks.SubtaskResultsRejected] = None,
     force_get_task_result: Optional[message.concents.ForceGetTaskResult] = None,
 ) -> Subtask:
-    try:
-        subtask = Subtask.objects.get(
-            subtask_id = subtask_id,
-        )
-    except Subtask.DoesNotExist:
-        subtask = None
+    with transaction.atomic(using='control'):
+        try:
+            subtask = Subtask.objects.select_for_update().get(
+                subtask_id = subtask_id,
+            )
+        except Subtask.DoesNotExist:
+            subtask = None
 
-    if subtask is not None:
-        if task_to_compute is not None and subtask.task_to_compute is not None:
-            validate_all_messages_identical([
-                task_to_compute,
-                deserialize_message(subtask.task_to_compute.data.tobytes()),
-            ])
-        subtask = update_subtask(
-            subtask=subtask,
-            state=state,
-            next_deadline=next_deadline,
-            set_next_deadline=set_next_deadline,
-            task_to_compute=task_to_compute,
-            report_computed_task=report_computed_task,
-            ack_report_computed_task=ack_report_computed_task,
-            reject_report_computed_task=reject_report_computed_task,
-            subtask_results_accepted=subtask_results_accepted,
-            subtask_results_rejected= subtask_results_rejected,
-            force_get_task_result=force_get_task_result,
-        )
-    else:
-        subtask = store_subtask(
-            task_id=task_id,
-            subtask_id=subtask_id,
-            provider_public_key=provider_public_key,
-            requestor_public_key=requestor_public_key,
-            state=state,
-            next_deadline=next_deadline,
-            task_to_compute=task_to_compute,
-            report_computed_task=report_computed_task,
-            ack_report_computed_task=ack_report_computed_task,
-            reject_report_computed_task=reject_report_computed_task,
-            subtask_results_accepted=subtask_results_accepted,
-            subtask_results_rejected=subtask_results_rejected,
-            force_get_task_result=force_get_task_result,
-        )
-    return subtask
+        if subtask is not None:
+            if task_to_compute is not None and subtask.task_to_compute is not None:
+                validate_all_messages_identical([
+                    task_to_compute,
+                    deserialize_message(subtask.task_to_compute.data.tobytes()),
+                ])
+            subtask = update_subtask(
+                subtask=subtask,
+                state=state,
+                next_deadline=next_deadline,
+                set_next_deadline=set_next_deadline,
+                task_to_compute=task_to_compute,
+                report_computed_task=report_computed_task,
+                ack_report_computed_task=ack_report_computed_task,
+                reject_report_computed_task=reject_report_computed_task,
+                subtask_results_accepted=subtask_results_accepted,
+                subtask_results_rejected=subtask_results_rejected,
+                force_get_task_result=force_get_task_result,
+            )
+        else:
+            subtask = store_subtask(
+                task_id=task_id,
+                subtask_id=subtask_id,
+                provider_public_key=provider_public_key,
+                requestor_public_key=requestor_public_key,
+                state=state,
+                next_deadline=next_deadline,
+                task_to_compute=task_to_compute,
+                report_computed_task=report_computed_task,
+                ack_report_computed_task=ack_report_computed_task,
+                reject_report_computed_task=reject_report_computed_task,
+                subtask_results_accepted=subtask_results_accepted,
+                subtask_results_rejected=subtask_results_rejected,
+                force_get_task_result=force_get_task_result,
+            )
+        return subtask
 
 
 def store_message(

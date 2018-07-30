@@ -2,7 +2,7 @@ from functools                      import wraps
 from logging                        import getLogger
 import traceback
 
-from django.db import transaction
+from django.db                      import transaction
 from django.http                    import JsonResponse
 from django.http                    import HttpResponse
 from django.http                    import HttpResponseNotAllowed

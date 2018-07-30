@@ -4,14 +4,16 @@ import time
 
 from decorator import contextmanager
 from django.conf                    import settings
-from django.db import transaction, OperationalError
+from django.db import OperationalError
+from django.db import transaction
 
 from golem_messages                 import message
 from golem_messages.helpers         import maximum_download_time
 from golem_messages.helpers         import subtask_verification_time
 from golem_messages.utils import decode_hex
 
-from core.exceptions import Http400, MaxRetriesExceededError
+from core.exceptions import Http400
+from core.exceptions import MaxRetriesExceededError
 from common.constants import ErrorCode
 from .constants import GOLEM_PUBLIC_KEY_LENGTH
 from .constants import GOLEM_PUBLIC_KEY_HEX_LENGTH

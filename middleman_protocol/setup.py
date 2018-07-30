@@ -21,6 +21,7 @@ setup(
     maintainer_email='contact@codepoets.it',
     packages=[
         'middleman_protocol',
+        'middleman_protocol.concent_golem_messages',
     ],
     package_data={},
     python_requires='>=3.6',

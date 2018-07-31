@@ -8,7 +8,7 @@ from golem_messages.exceptions import InvalidKeys
 from signing_service.constants import ETHEREUM_PRIVATE_KEY_REGEXP
 
 
-def is_valid_public_key(key: bytes) -> bool:
+def is_public_key_valid(key: bytes) -> bool:
     """ Validates if given bytes are valid public key by using function from golem-messages. """
 
     assert isinstance(key, bytes)
@@ -20,7 +20,7 @@ def is_valid_public_key(key: bytes) -> bool:
         return False
 
 
-def is_valid_private_key(key: str) -> bool:
+def is_private_key_valid(key: str) -> bool:
     """
     Validates if given string is valid Ethereum private key.
 

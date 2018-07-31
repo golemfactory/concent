@@ -6,25 +6,38 @@ import socket
 from contextlib import closing
 from time import sleep
 
+from ethereum.transactions import InvalidTransaction
+from ethereum.transactions import Transaction
 from golem_messages.cryptography import privtopub
-from golem_messages.exceptions import InvalidSignature
+from golem_messages.exceptions import MessageError
+from mypy.types import Union
 from raven import Client
 
+from middleman_protocol.concent_golem_messages.message import SignedTransaction
+from middleman_protocol.concent_golem_messages.message import TransactionRejected
+from middleman_protocol.concent_golem_messages.message import TransactionSigningRequest
 from middleman_protocol.constants import ErrorCode
-from middleman_protocol.exceptions import MiddlemanProtocolError
-from middleman_protocol.stream import unescape_stream
-from middleman_protocol.stream import send_over_stream
+from middleman_protocol.constants import PayloadType
+from middleman_protocol.exceptions import FrameInvalidMiddlemanProtocolError
+from middleman_protocol.exceptions import PayloadInvalidMiddlemanProtocolError
+from middleman_protocol.exceptions import PayloadTypeInvalidMiddlemanProtocolError
+from middleman_protocol.exceptions import RequestIdInvalidTypeMiddlemanProtocolError
+from middleman_protocol.exceptions import SignatureInvalidMiddlemanProtocolError
 from middleman_protocol.message import AbstractFrame
 from middleman_protocol.message import ErrorFrame
+from middleman_protocol.message import GolemMessageFrame
+from middleman_protocol.stream import send_over_stream
+from middleman_protocol.stream import unescape_stream
 
 from signing_service.constants import REQUEST_ID_FOR_RESPONSE_FOR_INVALID_FRAME
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_PORT
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY  # pylint: disable=no-name-in-module
 from signing_service.constants import SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME
 from signing_service.constants import SIGNING_SERVICE_RECOVERABLE_ERRORS
+from signing_service.exceptions import SigningServiceUnexpectedMessageError
 from signing_service.exceptions import SigningServiceValidationError
-from signing_service.utils import is_valid_public_key
-from signing_service.utils import is_valid_private_key
+from signing_service.utils import is_private_key_valid
+from signing_service.utils import is_public_key_valid
 from signing_service.utils import make_secret_provider_factory
 
 
@@ -131,30 +144,70 @@ class SigningService:
         self.current_reconnect_delay = None
         self._handle_connection(tcp_socket)
 
-    def _handle_connection(self, tcp_socket: socket.socket) -> None:  # pylint: disable=no-self-use
+    def _handle_connection(self, tcp_socket: socket.socket) -> None:
         """ Inner loop that handles data exchange over socket. """
         receive_frame_generator = unescape_stream(connection=tcp_socket)
 
         for raw_message_received in receive_frame_generator:
             try:
-                AbstractFrame.deserialize(
-                    raw_message=raw_message_received,
-                    public_key=self.signing_service_public_key,
+                middleman_message = AbstractFrame.deserialize(
+                    raw_message_received,
+                    public_key=self.concent_public_key,
                 )
-            except (InvalidSignature, MiddlemanProtocolError) as exception:
-                logger.info(f'Malformed messages failed to deserialize with exception: {exception}.')
-                middleman_message_response = ErrorFrame(
-                    payload=(ErrorCode.InvalidFrameSignature, str(exception)),
-                    request_id=REQUEST_ID_FOR_RESPONSE_FOR_INVALID_FRAME,
+
+                if (
+                    not middleman_message.payload_type == PayloadType.GOLEM_MESSAGE or
+                    not isinstance(middleman_message.payload, TransactionSigningRequest)
+                ):
+                    raise SigningServiceUnexpectedMessageError
+
+            # Is the frame correct according to the protocol? If not, error code is InvalidFrame.
+            except (
+                FrameInvalidMiddlemanProtocolError,
+                PayloadTypeInvalidMiddlemanProtocolError,
+                RequestIdInvalidTypeMiddlemanProtocolError,
+            ) as exception:
+                middleman_message_response = self._prepare_error_response(ErrorCode.InvalidFrame, exception)
+            # Is frame signature correct? If not, error code is InvalidFrameSignature.
+            except SignatureInvalidMiddlemanProtocolError as exception:
+                middleman_message_response = self._prepare_error_response(ErrorCode.InvalidFrameSignature, exception)
+            # Is the content of the message valid? Do types match the schema and all values are within allowed ranges?
+            # If not, error code is InvalidPayload.
+            # Can the payload be decoded as a Golem message? If not, error code is InvalidPayload.
+            # Is payload message signature correct? If not, error code is InvalidPayload.
+            except (MessageError, PayloadInvalidMiddlemanProtocolError) as exception:
+                middleman_message_response = self._prepare_error_response(ErrorCode.InvalidPayload, exception)
+            # Is frame type GOLEM_MESSAGE? If not, error code is UnexpectedMessage.
+            # Is Golem message type TransactionSigningRequest? If not, error code is UnexpectedMessage.
+            except SigningServiceUnexpectedMessageError as exception:
+                middleman_message_response = self._prepare_error_response(ErrorCode.UnexpectedMessage, exception)
+            # If received frame is correct, validate transaction.
+            else:
+                golem_message_response = self._get_signed_transaction(middleman_message.payload)
+                golem_message_response.sign_message(private_key=self.signing_service_private_key)
+                middleman_message_response = GolemMessageFrame(
+                    payload=golem_message_response,
+                    request_id=middleman_message.request_id,
                 )
-                logger.debug(
-                    f'Sending Middleman protocol message with request_id: {middleman_message_response.request_id}.'
-                )
-                send_over_stream(
-                    connection=tcp_socket,
-                    raw_message=middleman_message_response,
-                    private_key=self.signing_service_private_key,
-                )
+
+            logger.info(
+                f'Sending Middleman protocol message with request_id: {middleman_message_response.request_id}.'
+            )
+            send_over_stream(
+                connection=tcp_socket,
+                raw_message=middleman_message_response,
+                private_key=self.signing_service_private_key,
+            )
+
+    @staticmethod
+    def _prepare_error_response(error_code, exception_object):
+        logger.info(
+            f'Deserializing received Middleman protocol message failed with exception: {exception_object}.'
+        )
+        return ErrorFrame(
+            payload=(error_code, str(exception_object)),
+            request_id=REQUEST_ID_FOR_RESPONSE_FOR_INVALID_FRAME,
+        )
 
     def _increase_delay(self) -> None:
         """ Increase current delay if connection cannot be established. """
@@ -176,11 +229,67 @@ class SigningService:
         if self.initial_reconnect_delay < 0:
             raise SigningServiceValidationError('reconnect_delay must be non-negative integer.')
 
-        if not is_valid_public_key(self.concent_public_key):
+        if not is_public_key_valid(self.concent_public_key):
             raise SigningServiceValidationError('concent_public_key is not valid public key.')
 
-        if not is_valid_private_key(self.ethereum_private_key):
+        if not is_private_key_valid(self.ethereum_private_key):
             raise SigningServiceValidationError('ethereum_private_key is not valid private key.')
+
+    def _get_signed_transaction(
+        self,
+        transaction_signing_request: TransactionSigningRequest
+    ) -> Union[SignedTransaction, TransactionRejected]:
+        """
+        This function verifies if data in received TransactionSigningRequest can be used to correctly instantiate
+        Ethereum Transaction object, signs this transaction, and handles related errors.
+
+        Returns Golem messages SignedTransaction if transaction was signed correctly, otherwise TransactionRejected.
+
+        """
+        assert isinstance(transaction_signing_request, TransactionSigningRequest)
+
+        try:
+            transaction = Transaction(
+                nonce    = transaction_signing_request.nonce,
+                gasprice = transaction_signing_request.gasprice,
+                startgas = transaction_signing_request.startgas,
+                to       = transaction_signing_request.to,
+                value    = transaction_signing_request.value,
+                data     = transaction_signing_request.data,
+            )
+        except (InvalidTransaction, TypeError):
+            # Is it possible to load the transaction using the library we're using to sign it?
+            # If not, rejection reason is InvalidTransaction
+            return TransactionRejected(
+                reason=TransactionRejected.REASON.InvalidTransaction,
+            )
+
+        # If transaction is correct, sign it.
+        try:
+            transaction.sign(self.ethereum_private_key)
+        except (InvalidTransaction, TypeError):
+            # Does the transaction execute a function from the contract that the service has the private key for?
+            # If not, rejection reason is UnauthorizedAccount.
+            return TransactionRejected(
+                reason=TransactionRejected.REASON.UnauthorizedAccount,
+            )
+
+        assert transaction.v is not None
+        assert transaction.r is not None
+        assert transaction.s is not None
+
+        # Respond with SignedTransaction.
+        return SignedTransaction(
+            nonce    = transaction_signing_request.nonce,
+            gasprice = transaction_signing_request.gasprice,
+            startgas = transaction_signing_request.startgas,
+            to       = transaction_signing_request.to,
+            value    = transaction_signing_request.value,
+            data     = transaction_signing_request.data,
+            v        = transaction.v,
+            r        = transaction.r,
+            s        = transaction.s,
+        )
 
 
 def _parse_arguments() -> argparse.Namespace:

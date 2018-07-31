@@ -31,7 +31,6 @@ from common.helpers import parse_timestamp_to_utc_datetime
 from common.helpers import sign_message
 from common.validations import validate_secure_hash_algorithm
 from common import logging
-
 from core.exceptions import Http400
 from core.models import Client
 from core.models import PaymentInfo
@@ -49,6 +48,8 @@ from core.utils import calculate_additional_verification_call_time
 from core.utils import calculate_maximum_download_time
 from core.utils import calculate_subtask_verification_time
 from core.validation import is_golem_message_signed_with_key
+from core.validation import validate_that_golem_messages_are_signed_with_key
+from core.validation import validate_reject_report_computed_task
 from core.validation import validate_all_messages_identical
 from core.validation import validate_ethereum_addresses
 from core.validation import validate_golem_message_subtask_results_rejected
@@ -220,27 +221,12 @@ def handle_send_ack_report_computed_task(client_message):
 
 
 def handle_send_reject_report_computed_task(client_message):
-    if (
-        isinstance(client_message.cannot_compute_task, message.CannotComputeTask) and
-        isinstance(client_message.task_failure, message.TaskFailure)
-    ):
-        raise Http400(
-            "RejectReportComputedTask cannot contain CannotComputeTask and TaskFailure at the same time.",
-            error_code=ErrorCode.MESSAGE_INVALID,
-        )
 
-    # Validate if task_to_compute is valid instance of TaskToCompute.
+    validate_reject_report_computed_task(client_message)
+
     task_to_compute = client_message.task_to_compute
-    validate_task_to_compute(task_to_compute)
-
     provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
-
-    # Validate if TaskToCompute signed by the requestor.
-    validate_that_golem_messages_are_signed_with_key(
-        requestor_public_key,
-        task_to_compute,
-    )
 
     # If reason is GotMessageCannotComputeTask,
     # cannot_compute_task is instance of CannotComputeTask signed by the provider.
@@ -272,6 +258,7 @@ def handle_send_reject_report_computed_task(client_message):
 
     # RejectReportComputedTask should contain empty cannot_compute_task and task_failure
     else:
+        assert client_message.reason == message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded
         if client_message.cannot_compute_task is not None or client_message.task_failure is not None:
             raise Http400(
                 "RejectReportComputedTask requires empty 'cannot_compute_task' and 'task_failure' with {} reason.".format(
@@ -1470,16 +1457,3 @@ def is_subtask_in_wrong_state(subtask_id, forbidden_states):
 
 def are_items_unique(items: list):
     return len(items) == len(set(items))
-
-
-def validate_that_golem_messages_are_signed_with_key(
-    public_key: bytes,
-    *golem_messages: message.base.Message,
-) -> None:
-    for golem_message in golem_messages:
-        if not is_golem_message_signed_with_key(public_key, golem_message):
-            raise Http400(
-                f'There was an exception when validating if golem_message {golem_message.__class__.__name__} is signed with '
-                f'public key {public_key}.',
-                error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG,
-            )

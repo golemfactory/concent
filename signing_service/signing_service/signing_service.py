@@ -6,13 +6,13 @@ import socket
 from contextlib import closing
 from time import sleep
 
-from exceptions import SigningServiceValidationError  # pylint: disable=no-name-in-module
 from raven import Client
 
-from constants import SIGNING_SERVICE_DEFAULT_PORT  # pylint: disable=no-name-in-module
-from constants import SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY  # pylint: disable=no-name-in-module
-from constants import SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME  # pylint: disable=no-name-in-module
-from constants import SIGNING_SERVICE_RECOVERABLE_ERRORS  # pylint: disable=no-name-in-module
+from signing_service.constants import SIGNING_SERVICE_DEFAULT_PORT
+from signing_service.constants import SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY  # pylint: disable=no-name-in-module
+from signing_service.constants import SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME
+from signing_service.constants import SIGNING_SERVICE_RECOVERABLE_ERRORS
+from signing_service.exceptions import SigningServiceValidationError
 
 
 logger = logging.getLogger()
@@ -167,6 +167,7 @@ if __name__ == '__main__':
 
     arg_host = args.concent_cluster_host
     arg_port = args.concent_cluster_port
+
     arg_initial_reconnect_delay = args.initial_reconnect_delay
 
     SigningService(arg_host, arg_port, arg_initial_reconnect_delay).run()

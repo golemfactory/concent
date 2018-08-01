@@ -4,6 +4,7 @@ from logging import getLogger
 
 import signal
 
+from middleman.constants import DEFAULT_EXTERNAL_PORT
 from middleman.constants import DEFAULT_INTERNAL_PORT
 from middleman.constants import ERROR_ADDRESS_ALREADY_IN_USE
 from middleman.constants import LOCALHOST_IP
@@ -13,10 +14,13 @@ crash_logger = getLogger('crash')
 
 
 class MiddleMan:
-    def __init__(self, bind_address=None, internal_port=None, loop=None):
+    def __init__(self, bind_address=None, internal_port=None, external_port=None, loop=None):
         self._bind_address = bind_address if bind_address is not None else LOCALHOST_IP
         self._internal_port = internal_port if internal_port is not None else DEFAULT_INTERNAL_PORT
+        self._external_port = external_port if external_port is not None else DEFAULT_EXTERNAL_PORT
         self._server_for_concent = None
+        self._server_for_signing_service = None
+        self._is_signing_service_connection_active = False
         self._loop = loop if loop is not None else asyncio.get_event_loop()
 
         # Handle shutdown signal.
@@ -57,7 +61,16 @@ class MiddleMan:
             exit(ERROR_ADDRESS_ALREADY_IN_USE)
         try:
             # Serve requests until Ctrl+C is pressed
-            logger.info('MiddleMan is serving on {}'.format(self._server_for_concent.sockets[0].getsockname()))
+            logger.info(
+                'MiddleMan is serving for Concent on {}'.format(
+                    self._server_for_concent.sockets[0].getsockname()
+                )
+            )
+            logger.info(
+                'MiddleMan is serving for Signing Service on {}'.format(
+                    self._server_for_signing_service.sockets[0].getsockname()
+                )
+            )
             self._run_forever()
         except KeyboardInterrupt:
             logger.info("Ctrl-C has been pressed.")
@@ -71,20 +84,29 @@ class MiddleMan:
         self._loop.run_forever()
 
     def _start_middleman(self) -> None:
-        server_coroutine = asyncio.start_server(
-            self._handle_user_request,
+        concent_server_coroutine = asyncio.start_server(
+            self._handle_concent_connection,
             self._bind_address,
             self._internal_port,
             loop=self._loop
         )
-        self._server_for_concent = self._loop.run_until_complete(server_coroutine)
+        self._server_for_concent = self._loop.run_until_complete(concent_server_coroutine)
+        service_server_coroutine = asyncio.start_server(
+            self._handle_service_connection,
+            self._bind_address,
+            self._external_port,
+            loop=self._loop
+        )
+        self._server_for_signing_service = self._loop.run_until_complete(service_server_coroutine)
 
     def _close_middleman(self) -> None:
         self._server_for_concent.close()
         self._loop.run_until_complete(self._server_for_concent.wait_closed())
+        self._server_for_signing_service.close()
+        self._loop.run_until_complete(self._server_for_signing_service.wait_closed())
         self._loop.close()
 
-    async def _handle_user_request(self, reader, writer) -> None:
+    async def _handle_concent_connection(self, reader, writer) -> None:
         try:
             data = await reader.readuntil()
             remote_address = writer.get_extra_info('peername')
@@ -95,6 +117,24 @@ class MiddleMan:
                 f"Exception occurred: {exception}, Traceback: {traceback.format_exc()}"
             )
             raise
+
+    async def _handle_service_connection(self, reader, writer) -> None:
+        if self._is_signing_service_connection_active:
+            writer.close()
+        else:
+            self._is_signing_service_connection_active = True
+            try:
+                data = await reader.readuntil()
+                remote_address = writer.get_extra_info('peername')
+                print("Received %r from %r" % (data, remote_address))
+                await self._respond_to_user(data, writer)
+            except Exception as exception:  # pylint: disable=broad-except
+                crash_logger.error(
+                    f"Exception occurred: {exception}, Traceback: {traceback.format_exc()}"
+                )
+                raise
+            finally:
+                self._is_signing_service_connection_active = False
 
     async def _respond_to_user(self, data: bytes, writer: asyncio.StreamWriter) -> None:  # pylint: disable=no-self-use
         writer.write(data)

@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand
 
+from middleman.constants import DEFAULT_EXTERNAL_PORT
 from middleman.constants import DEFAULT_INTERNAL_PORT
 from middleman.constants import LOCALHOST_IP
 from middleman.middleman_server import MiddleMan
@@ -25,10 +26,19 @@ class Command(BaseCommand):
             help="A port MiddleMan will be listening for Concent clients to connect."
         )
 
+        parser.add_argument(
+            '-e',
+            '--external-port',
+            type=int,
+            default=DEFAULT_EXTERNAL_PORT,
+            help="A port MiddleMan will be listening for Signing Service to connect."
+        )
+
     def handle(self, *args, **options):
         MiddleMan(
             bind_address=options['bind_address'],
             internal_port=options['internal_port'],
+            external_port=options['external_port'],
         ).run()
 
         print("\nEND OF EVANGELION")

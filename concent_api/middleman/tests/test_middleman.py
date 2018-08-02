@@ -77,9 +77,12 @@ class TestMiddleManInitialization:
 class TestMiddleManServer:
     patcher = None
     crash_logger_mock = None
+    internal_port = None
+    external_port = None
+    middleman = None
 
     @pytest.fixture(autouse=True)
-    def middleman_setup(self, unused_tcp_port_factory, event_loop):
+    def setup_middleman(self, unused_tcp_port_factory, event_loop):
         self.patcher = mock.patch("middleman.middleman_server.crash_logger")
         self.crash_logger_mock = self.patcher.start()
         self.internal_port, self.external_port = unused_tcp_port_factory(), unused_tcp_port_factory()
@@ -87,7 +90,7 @@ class TestMiddleManServer:
         yield self.internal_port, self.external_port
         self.patcher.stop()
 
-    def test_that_if_keyboard_interrupt_is_raised_application_will_exit_without_errors(self, middleman_setup):
+    def test_that_if_keyboard_interrupt_is_raised_application_will_exit_without_errors(self):
         with pytest.raises(SystemExit) as exception_wrapper:
             with mock.patch.object(self.middleman, "_run_forever", side_effect=KeyboardInterrupt):
                 self.middleman.run()
@@ -95,27 +98,27 @@ class TestMiddleManServer:
         self.crash_logger_mock.assert_not_called()
 
     @mock.patch("middleman.middleman_server.asyncio.start_server", side_effect=OSError)
-    def test_that_if_chosen_port_is_already_used_application_will_exit_with_error_status(self, _start_server_mock, middleman_setup):
+    def test_that_if_chosen_port_is_already_used_application_will_exit_with_error_status(self, _start_server_mock):
         with pytest.raises(SystemExit) as exception_wrapper:
             self.middleman.run()
         assert_that(exception_wrapper.value.code).is_equal_to(ERROR_ADDRESS_ALREADY_IN_USE)
         self.crash_logger_mock.assert_not_called()
 
-    def test_that_if_sigterm_is_sent_application_will_exit_without_errors(self, middleman_setup):
+    def test_that_if_sigterm_is_sent_application_will_exit_without_errors(self):
         schedule_sigterm(delay=1)
         with pytest.raises(SystemExit) as exception_wrapper:
             self.middleman.run()
         assert_that(exception_wrapper.value.code).is_equal_to(None)
         self.crash_logger_mock.assert_not_called()
 
-    def test_that_crash_of_the_server_is_reported_to_sentry(self, middleman_setup):
+    def test_that_crash_of_the_server_is_reported_to_sentry(self):
         error_message = "Unrecoverable error"
         with mock.patch.object(self.middleman, "_run_forever", side_effect=Exception(error_message)):
             self.middleman.run()
         self.crash_logger_mock.error.assert_called_once()
         assert_that(self.crash_logger_mock.error.mock_calls[0][1][0]).contains(error_message)
 
-    def test_that_server_accepts_connections_from_concent_and_sends_data_back(self, middleman_setup):
+    def test_that_server_accepts_connections_from_concent_and_sends_data_back(self):
         timeout = 2
         short_delay = 0.5
         schedule_sigterm(delay=timeout)
@@ -131,7 +134,7 @@ class TestMiddleManServer:
         self.crash_logger_mock.assert_not_called()
         assert_that(connections.counter).is_equal_to(1)
 
-    def test_that_server_accepts_connections_from_signing_service_and_sends_data_back(self, middleman_setup):
+    def test_that_server_accepts_connections_from_signing_service_and_sends_data_back(self):
         timeout = 2
         short_delay = 0.5
         schedule_sigterm(delay=timeout)
@@ -147,7 +150,7 @@ class TestMiddleManServer:
         self.crash_logger_mock.assert_not_called()
         assert_that(connections.counter).is_equal_to(1)
 
-    def test_that_broken_connection_from_concent_is_reported_to_sentry(self, middleman_setup):
+    def test_that_broken_connection_from_concent_is_reported_to_sentry(self):
         timeout = 2
         short_delay = 0.5
         schedule_sigterm(delay=timeout)
@@ -165,7 +168,7 @@ class TestMiddleManServer:
         self.crash_logger_mock.error.assert_called_once()
         assert_that(self.crash_logger_mock.error.mock_calls[0][1][0]).contains(error_message)
 
-    def test_that_broken_connection_from_signing_service_is_reported_to_sentry(self, middleman_setup):
+    def test_that_broken_connection_from_signing_service_is_reported_to_sentry(self):
         timeout = 2
         short_delay = 0.5
         schedule_sigterm(delay=timeout)

@@ -11,6 +11,7 @@ import requests
 from golem_messages.shortcuts import dump
 
 from api_testing_common import api_request
+from api_testing_common import get_force_get_task_result
 from api_testing_common import REQUESTOR_PRIVATE_KEY
 from api_testing_common import run_tests
 from common.helpers import get_current_utc_timestamp

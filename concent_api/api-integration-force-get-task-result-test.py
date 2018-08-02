@@ -3,56 +3,26 @@
 import os
 import sys
 import hashlib
-from freezegun import freeze_time
 
 from golem_messages import message
-from golem_messages.factories.tasks import ReportComputedTaskFactory
 
 from common.helpers import get_current_utc_timestamp
 from common.helpers import get_storage_result_file_path
 from common.helpers import upload_file_to_storage_cluster
-from common.helpers import sign_message
-from api_testing_common import api_request
+from api_testing_common import api_request, get_force_get_task_result
 from api_testing_common import assert_condition
 from api_testing_common import count_fails
 from api_testing_common import create_client_auth_message
-from api_testing_common import create_signed_task_to_compute
 from api_testing_common import get_task_id_and_subtask_id
 from api_testing_common import PROVIDER_PRIVATE_KEY
 from api_testing_common import PROVIDER_PUBLIC_KEY
 from api_testing_common import REQUESTOR_PRIVATE_KEY
 from api_testing_common import REQUESTOR_PUBLIC_KEY
 from api_testing_common import run_tests
-from api_testing_common import timestamp_to_isoformat
 
 import requests
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
-
-
-def get_force_get_task_result(task_id, subtask_id, current_time, cluster_consts, size, package_hash):
-    task_to_compute = create_signed_task_to_compute(
-        task_id=task_id,
-        subtask_id=subtask_id,
-        deadline=current_time,
-        price=0,
-    )
-
-    with freeze_time(timestamp_to_isoformat(current_time - 1)):
-        report_computed_task = ReportComputedTaskFactory(
-            task_to_compute=task_to_compute,
-            size=size,
-            package_hash=package_hash,
-            subtask_id=subtask_id,
-        )
-        sign_message(report_computed_task, PROVIDER_PRIVATE_KEY)
-
-    with freeze_time(timestamp_to_isoformat(current_time)):
-        force_get_task_result = message.concents.ForceGetTaskResult(
-            report_computed_task=report_computed_task,
-        )
-
-    return force_get_task_result
 
 
 @count_fails

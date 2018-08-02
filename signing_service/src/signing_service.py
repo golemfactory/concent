@@ -10,6 +10,7 @@ from exceptions import SigningServiceValidationError  # pylint: disable=no-name-
 from raven import Client
 
 from constants import SIGNING_SERVICE_DEFAULT_PORT  # pylint: disable=no-name-in-module
+from constants import SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY  # pylint: disable=no-name-in-module
 from constants import SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME  # pylint: disable=no-name-in-module
 from constants import SIGNING_SERVICE_RECOVERABLE_ERRORS  # pylint: disable=no-name-in-module
 
@@ -132,7 +133,9 @@ def _parse_arguments() -> argparse.Namespace:
         help='Host or IP address of a service on Concent cluster, to which SigningService connects over TCP.',
     )
     parser.add_argument(
-        'initial_reconnect_delay',
+        '-i',
+        '--initial_reconnect_delay',
+        default=SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY,
         type=int,
         help='Initial delay between reconnections, doubles after each unsuccessful attempt and is reset after success.',
     )

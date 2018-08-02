@@ -5,8 +5,9 @@ import sys
 import mock
 
 from ..constants import SIGNING_SERVICE_DEFAULT_PORT
-from ..constants import SIGNING_SERVICE_RECOVERABLE_ERRORS
+from ..constants import SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY
 from ..constants import SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME
+from ..constants import SIGNING_SERVICE_RECOVERABLE_ERRORS
 from ..signing_service import _parse_arguments
 from ..signing_service import SigningService
 
@@ -113,23 +114,25 @@ class SigningServiceParseArgumentsTestCase(TestCase):
         sys.argv = sys.argv[:1]
 
     def test_that_argument_parser_should_parse_correct_input(self):
-        sys.argv += ['127.0.0.1', '1', '--concent-cluster-port', '8000']
+        sys.argv += ['127.0.0.1', '--initial_reconnect_delay', '2', '--concent-cluster-port', '8000']
 
         args = _parse_arguments()
 
         self.assertEqual(args.concent_cluster_host, '127.0.0.1')
         self.assertEqual(args.concent_cluster_port, 8000)
+        self.assertEqual(args.initial_reconnect_delay, 2)
 
-    def test_that_argument_parser_should_parse_correct_input_and_use_default_port(self):
-        sys.argv += ['127.0.0.1', '1']
+    def test_that_argument_parser_should_parse_correct_input_and_use_default_values(self):
+        sys.argv += ['127.0.0.1']
 
         args = _parse_arguments()
 
         self.assertEqual(args.concent_cluster_host, '127.0.0.1')
         self.assertEqual(args.concent_cluster_port, SIGNING_SERVICE_DEFAULT_PORT)
+        self.assertEqual(args.initial_reconnect_delay, SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY)
 
     def test_that_argument_parser_should_fail_if_port_cannot_be_casted_to_int(self):
-        sys.argv += ['127.0.0.1', '1', '--concent-cluster-port', 'abc']
+        sys.argv += ['127.0.0.1', '--initial_reconnect_delay', '1', '--concent-cluster-port', 'abc']
 
         with self.assertRaises(SystemExit):
             _parse_arguments()

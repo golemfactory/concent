@@ -67,7 +67,7 @@ class ConductorTaskTestCase(ConcentIntegrationTestCase):
 
             with mock.patch('conductor.tasks.blender_verification_order.delay') as mock_blender_verification_order, \
                 mock.patch('conductor.tasks.filter_frames_by_blender_subtask_definition', return_value=[1]) as mock_frames_filtering:  # noqa: E125
-                upload_acknowledged(
+                upload_acknowledged(   # pylint: disable=no-value-for-parameter
                     subtask_id=self.report_computed_task.subtask_id,
                     source_file_size=self.report_computed_task.task_to_compute.size,
                     source_package_hash=self.report_computed_task.task_to_compute.package_hash,
@@ -100,7 +100,7 @@ class ConductorTaskTestCase(ConcentIntegrationTestCase):
     @mock.patch("conductor.tasks.log_error_message")
     @mock.patch("conductor.tasks.logger")
     def test_that_upload_acknowledged_task_should_log_error_when_verification_request_with_given_subtask_id_does_not_exist(self, mock_logger, mock_logging_error):
-        upload_acknowledged(
+        upload_acknowledged(   # pylint: disable=no-value-for-parameter
             subtask_id='non_existing_subtask_id',
             source_file_size=self.report_computed_task.task_to_compute.size,
             source_package_hash=self.report_computed_task.task_to_compute.package_hash,
@@ -123,7 +123,7 @@ class ConductorTaskTestCase(ConcentIntegrationTestCase):
         self.verification_request.save()
 
         with self.assertRaises(VerificationRequestAlreadyAcknowledgedError):
-            upload_acknowledged(
+            upload_acknowledged(   # pylint: disable=no-value-for-parameter
                 subtask_id=self.report_computed_task.subtask_id,
                 source_file_size=self.report_computed_task.task_to_compute.size,
                 source_package_hash=self.report_computed_task.task_to_compute.package_hash,

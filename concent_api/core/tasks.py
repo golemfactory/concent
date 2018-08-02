@@ -29,12 +29,25 @@ from .constants import VERIFICATION_RESULT_SUBTASK_STATE_UNEXPECTED_LOG_MESSAGE
 logger = logging.getLogger(__name__)
 
 
-@shared_task
+@shared_task(bind=True)
 @log_task_errors
 @transaction.atomic(using='control')
-def upload_finished(subtask_id: str):
+def upload_finished(self, subtask_id: str):
+    # Worker locks database row corresponding to the subtask in the subtask table.
     try:
-        subtask = Subtask.objects.get(subtask_id=subtask_id)
+        subtask = Subtask.objects.select_for_update(nowait=True).get(subtask_id=subtask_id)
+    except DatabaseError:
+        logging.warning(
+            f'Subtask object with ID {subtask_id} database row is locked, '
+            f'retrying task {self.request.retries}/{self.max_retries}'
+        )
+        # If the row is already locked, task fails so that Celery can retry later.
+        self.retry(
+            countdown=CELERY_LOCKED_SUBTASK_DELAY,
+            max_retries=MAXIMUM_VERIFICATION_RESULT_TASK_RETRIES,
+            throw=False,
+        )
+        return
     except Subtask.DoesNotExist:
         logging.error(f'Task `upload_finished` tried to get Subtask object with ID {subtask_id} but it does not exist.')
         return

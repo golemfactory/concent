@@ -3,9 +3,13 @@ from typing import List
 
 from celery import shared_task
 from mypy.types import Optional
+from django.db import DatabaseError
 from django.db import transaction
 
 from core import tasks
+from core.constants import CELERY_LOCKED_SUBTASK_DELAY
+from core.constants import MAXIMUM_VERIFICATION_RESULT_TASK_RETRIES
+from core.models import Subtask
 from core.validation import validate_frames
 from common.constants import ErrorCode
 from common.decorators import log_task_errors
@@ -24,11 +28,13 @@ from .models import VerificationRequest
 logger = logging.getLogger(__name__)
 
 
-@shared_task
+@shared_task(bind=True)
 @provides_concent_feature('conductor-worker')
 @log_task_errors
 @transaction.atomic(using='storage')
+@transaction.atomic(using='control')
 def blender_verification_request(
+    self,
     subtask_id: str,
     source_package_path: str,
     result_package_path: str,
@@ -49,6 +55,24 @@ def blender_verification_request(
         f'Verification_deadline: {verification_deadline}',
         f'With blender_crop_script: {bool(blender_crop_script)}',
     )
+
+    # Worker locks database row corresponding to the subtask in the subtask table.
+    if Subtask.objects.filter(subtask_id=subtask_id).exists():  # pylint: disable=no-member
+        try:
+            Subtask.objects.select_for_update(nowait=True).get(subtask_id=subtask_id)
+        except DatabaseError:
+            logging.warning(
+                f'Subtask object with ID {subtask_id} database row is locked, '
+                f'retrying task {self.request.retries}/{self.max_retries}'
+            )
+            # If the row is already locked, task fails so that Celery can retry later.
+            self.retry(
+                countdown=CELERY_LOCKED_SUBTASK_DELAY,
+                max_retries=MAXIMUM_VERIFICATION_RESULT_TASK_RETRIES,
+                throw=False,
+            )
+            return
+
     validate_frames(frames)
     assert isinstance(output_format, str)
     assert isinstance(verification_deadline, int)
@@ -103,10 +127,12 @@ def blender_verification_request(
         verification_request.save()
 
 
-@shared_task
+@shared_task(bind=True)
 @log_task_errors
 @transaction.atomic(using='storage')
+@transaction.atomic(using='control')
 def upload_acknowledged(
+    self,
     subtask_id: str,
     source_file_size: str,
     source_package_hash: str,
@@ -123,6 +149,22 @@ def upload_acknowledged(
     )
     assert isinstance(subtask_id, str)
 
+    # Worker locks database row corresponding to the subtask in the subtask table.
+    if Subtask.objects.filter(subtask_id=subtask_id).exists():  # pylint: disable=no-member
+        try:
+            Subtask.objects.select_for_update(nowait=True).get(subtask_id=subtask_id)
+        except DatabaseError:
+            logging.warning(
+                f'Subtask object with ID {subtask_id} database row is locked, '
+                f'retrying task {self.request.retries}/{self.max_retries}'
+            )
+            # If the row is already locked, task fails so that Celery can retry later.
+            self.retry(
+                countdown=CELERY_LOCKED_SUBTASK_DELAY,
+                max_retries=MAXIMUM_VERIFICATION_RESULT_TASK_RETRIES,
+                throw=False,
+            )
+            return
     try:
         verification_request = VerificationRequest.objects.get(subtask_id=subtask_id)
     except VerificationRequest.DoesNotExist:

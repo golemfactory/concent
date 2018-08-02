@@ -2,7 +2,7 @@
 
 printf "[FLAKE8: concent_api, signing_service]\n"
 flake8                          \
-    --exclude=local_settings.py \
+    --exclude=local_settings.py,signing_service/build \
     --jobs=4                    \
     --ignore=E124,E126,E128,E131,E156,E201,E221,E222,E225,E241,E251,E265,E271,E272,E501,E701,F405
 printf "\n"

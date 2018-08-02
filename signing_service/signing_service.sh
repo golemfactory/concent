@@ -1,3 +1,3 @@
 #!/bin/bash -e
 
-python3 src/signing_service.py "$@"
+python3 -m signing_service.signing_service "$@"

@@ -1,7 +1,8 @@
-coverage
+--find-links https://builds.golem.network/simple/pyelliptic
+-e git://github.com/golemfactory/golem-messages.git@v2.10.1#egg=golem_messages
+mock
 mypy
 pytest
-pytest-cov
 pytest-django
 pytest-xdist
 raven

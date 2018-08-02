@@ -3,16 +3,18 @@ import logging.config
 import os
 import signal
 import socket
+from base64 import b64decode
 from contextlib import closing
 from time import sleep
 
-from exceptions import SigningServiceValidationError  # pylint: disable=no-name-in-module
 from raven import Client
 
-from constants import SIGNING_SERVICE_DEFAULT_PORT  # pylint: disable=no-name-in-module
-from constants import SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY  # pylint: disable=no-name-in-module
-from constants import SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME  # pylint: disable=no-name-in-module
-from constants import SIGNING_SERVICE_RECOVERABLE_ERRORS  # pylint: disable=no-name-in-module
+from signing_service.constants import SIGNING_SERVICE_DEFAULT_PORT
+from signing_service.constants import SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY  # pylint: disable=no-name-in-module
+from signing_service.constants import SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME
+from signing_service.constants import SIGNING_SERVICE_RECOVERABLE_ERRORS
+from signing_service.exceptions import SigningServiceValidationError
+from signing_service.utils import is_valid_public_key
 
 
 logger = logging.getLogger()
@@ -32,15 +34,18 @@ class SigningService:
         'current_reconnect_delay',
         'socket',
         'was_sigterm_caught',
+        'concent_public_key',
     )
 
-    def __init__(self, host, port, initial_reconnect_delay) -> None:
+    def __init__(self, host, port, initial_reconnect_delay, concent_public_key) -> None:
         assert isinstance(host, str)
         assert isinstance(port, int)
         assert isinstance(initial_reconnect_delay, int)
+        assert isinstance(concent_public_key, bytes)
         self.host = host
         self.port = port
         self.initial_reconnect_delay = initial_reconnect_delay
+        self.concent_public_key = concent_public_key
         self.current_reconnect_delay = None
         self.was_sigterm_caught = False
 
@@ -125,6 +130,9 @@ class SigningService:
         if self.initial_reconnect_delay < 0:
             raise SigningServiceValidationError('reconnect_delay must be non-negative integer.')
 
+        if not is_valid_public_key(self.concent_public_key):
+            raise SigningServiceValidationError('concent_public_key is not valid public key.')
+
 
 def _parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -138,6 +146,11 @@ def _parse_arguments() -> argparse.Namespace:
         default=SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY,
         type=int,
         help='Initial delay between reconnections, doubles after each unsuccessful attempt and is reset after success.',
+    )
+    parser.add_argument(
+        'concent_public_key',
+        type=str,
+        help="Concent's public key.",
     )
     parser.add_argument(
         '--concent-cluster-port',
@@ -167,6 +180,8 @@ if __name__ == '__main__':
 
     arg_host = args.concent_cluster_host
     arg_port = args.concent_cluster_port
+    (arg_concent_public_key, _count_of_bytes_decoded) = b64decode(args.concent_public_key)
+
     arg_initial_reconnect_delay = args.initial_reconnect_delay
 
-    SigningService(arg_host, arg_port, arg_initial_reconnect_delay).run()
+    SigningService(arg_host, arg_port, arg_initial_reconnect_delay, arg_concent_public_key).run()

@@ -253,6 +253,9 @@ CONSTANCE_CONFIG_FIELDSETS = {
 #CONCENT_PRIVATE_KEY =
 #CONCENT_PUBLIC_KEY  =
 
+# Public key to be used by Signing Service
+# SIGNING_SERVICE_PUBLIC_KEY =
+
 # A global constant defining the length of the time window within which a requestor or a provider is supposed to
 # contact concent and send or receive a message as defined in the protocol.
 CONCENT_MESSAGING_TIME = int(constants.CMT.total_seconds())

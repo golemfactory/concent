@@ -8,12 +8,20 @@ import time
 from assertpy import assert_that
 import mock
 import pytest
+from django.test import override_settings
+from golem_messages.message import Ping
 
+from common.testing_helpers import generate_ecc_key_pair
 from middleman.constants import DEFAULT_EXTERNAL_PORT
 from middleman.constants import DEFAULT_INTERNAL_PORT
 from middleman.constants import ERROR_ADDRESS_ALREADY_IN_USE
 from middleman.constants import LOCALHOST_IP
 from middleman.middleman_server import MiddleMan
+from middleman_protocol.message import GolemMessageFrame
+from middleman_protocol.stream import append_frame_separator
+from middleman_protocol.stream import escape_encode_raw_message
+
+(CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
 class Connections():
@@ -21,21 +29,20 @@ class Connections():
         self.counter = 0
 
 
-def assert_connection(port, delay, connection_counter):
-    message = "hello\n"
+def assert_connection(port, delay, connection_counter, data_to_send):
     fake_client = socket.socket()
-    send_data(fake_client, message, port, delay)
-    data = fake_client.recv(1024)
+    send_data(fake_client, data_to_send, port, delay)
+    received_data = fake_client.recv(1024)
     fake_client.close()
-    assert_that(data.decode()).is_equal_to(message)
+    assert_that(received_data).is_equal_to(data_to_send)
     connection_counter.counter += 1
 
 
-def send_data(fake_client, message, port, delay):
+def send_data(fake_client, data_to_send, port, delay):
     time.sleep(delay)
     fake_client.settimeout(1)
     fake_client.connect((LOCALHOST_IP, port))
-    fake_client.send(message.encode())
+    fake_client.send(data_to_send)
 
 
 def trigger_signal(pid, delay):
@@ -80,12 +87,16 @@ class TestMiddleManServer:
     internal_port = None
     external_port = None
     middleman = None
+    golem_message_frame = None
+    data_to_send = None
 
     @pytest.fixture(autouse=True)
     def setup_middleman(self, unused_tcp_port_factory, event_loop):
         self.patcher = mock.patch("middleman.middleman_server.crash_logger")
         self.crash_logger_mock = self.patcher.start()
         self.internal_port, self.external_port = unused_tcp_port_factory(), unused_tcp_port_factory()
+        self.golem_message_frame = GolemMessageFrame(Ping(), 777).serialize(CONCENT_PRIVATE_KEY)
+        self.data_to_send = append_frame_separator(escape_encode_raw_message(self.golem_message_frame))
         self.middleman = MiddleMan(internal_port=self.internal_port, external_port=self.external_port, loop=event_loop)
         yield self.internal_port, self.external_port
         self.patcher.stop()
@@ -119,69 +130,85 @@ class TestMiddleManServer:
         assert_that(self.crash_logger_mock.error.mock_calls[0][1][0]).contains(error_message)
 
     def test_that_server_accepts_connections_from_concent_and_sends_data_back(self):
-        timeout = 0.2
-        short_delay = 0.1
-        schedule_sigterm(delay=timeout)
-        connections = Connections()
-        client_thread = get_client_thread(assert_connection, self.internal_port, short_delay, connections)
-        client_thread.start()
+        with override_settings(
+            CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+        ):
+            timeout = 0.2
+            short_delay = 0.1
+            schedule_sigterm(delay=timeout)
+            connections = Connections()
+            client_thread = get_client_thread(assert_connection, self.internal_port, short_delay, connections, self.data_to_send)
+            client_thread.start()
 
-        with pytest.raises(SystemExit) as exception_wrapper:
-            self.middleman.run()
+            with pytest.raises(SystemExit) as exception_wrapper:
+                self.middleman.run()
 
-        client_thread.join(timeout)
-        assert_that(exception_wrapper.value.code).is_equal_to(None)
-        self.crash_logger_mock.assert_not_called()
-        assert_that(connections.counter).is_equal_to(1)
+            client_thread.join(timeout)
+            assert_that(exception_wrapper.value.code).is_equal_to(None)
+            self.crash_logger_mock.assert_not_called()
+            assert_that(connections.counter).is_equal_to(1)
 
     def test_that_server_accepts_connections_from_signing_service_and_sends_data_back(self):
-        timeout = 0.2
-        short_delay = 0.1
-        schedule_sigterm(delay=timeout)
-        connections = Connections()
-        client_thread = get_client_thread(assert_connection, self.external_port, short_delay, connections)
-        client_thread.start()
+        with override_settings(
+            CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+        ):
+            timeout = 0.2
+            short_delay = 0.1
+            schedule_sigterm(delay=timeout)
+            connections = Connections()
+            client_thread = get_client_thread(assert_connection, self.external_port, short_delay, connections, self.data_to_send)
+            client_thread.start()
 
-        with pytest.raises(SystemExit) as exception_wrapper:
-            self.middleman.run()
+            with pytest.raises(SystemExit) as exception_wrapper:
+                self.middleman.run()
 
-        client_thread.join(timeout)
-        assert_that(exception_wrapper.value.code).is_equal_to(None)
-        self.crash_logger_mock.assert_not_called()
-        assert_that(connections.counter).is_equal_to(1)
+            client_thread.join(timeout)
+            assert_that(exception_wrapper.value.code).is_equal_to(None)
+            self.crash_logger_mock.assert_not_called()
+            assert_that(connections.counter).is_equal_to(1)
 
     def test_that_broken_connection_from_concent_is_reported_to_sentry(self):
-        timeout = 0.2
-        short_delay = 0.1
-        schedule_sigterm(delay=timeout)
-        fake_client = socket.socket()
-        client_thread = get_client_thread(send_data, fake_client, "Oi!\n", self.internal_port, short_delay)
-        client_thread.start()
+        with override_settings(
+            CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+        ):
+            timeout = 0.2
+            short_delay = 0.1
+            schedule_sigterm(delay=timeout)
+            fake_client = socket.socket()
+            client_thread = get_client_thread(send_data, fake_client,  self.data_to_send, self.internal_port, short_delay)
+            client_thread.start()
 
-        error_message = "Connection_error"
+            error_message = "Connection_error"
 
-        with mock.patch.object(self.middleman, "_respond_to_user", side_effect=Exception(error_message)):
-            with pytest.raises(SystemExit):
-                self.middleman.run()
-        client_thread.join(timeout)
-        fake_client.close()
-        self.crash_logger_mock.error.assert_called_once()
-        assert_that(self.crash_logger_mock.error.mock_calls[0][1][0]).contains(error_message)
+            with mock.patch.object(self.middleman, "_respond_to_user", side_effect=Exception(error_message)):
+                with pytest.raises(SystemExit):
+                    self.middleman.run()
+            client_thread.join(timeout)
+            fake_client.close()
+            self.crash_logger_mock.error.assert_called_once()
+            assert_that(self.crash_logger_mock.error.mock_calls[0][1][0]).contains(error_message)
 
     def test_that_broken_connection_from_signing_service_is_reported_to_sentry(self):
-        timeout = 0.2
-        short_delay = 0.1
-        schedule_sigterm(delay=timeout)
-        fake_client = socket.socket()
-        client_thread = get_client_thread(send_data, fake_client, "Oi!\n", self.external_port, short_delay)
-        client_thread.start()
+        with override_settings(
+            CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+        ):
+            timeout = 0.2
+            short_delay = 0.1
+            schedule_sigterm(delay=timeout)
+            fake_client = socket.socket()
+            client_thread = get_client_thread(send_data, fake_client,  self.data_to_send, self.external_port, short_delay)
+            client_thread.start()
 
-        error_message = "Connection_error"
+            error_message = "Connection_error"
 
-        with mock.patch.object(self.middleman, "_respond_to_user", side_effect=Exception(error_message)):
-            with pytest.raises(SystemExit):
-                self.middleman.run()
-        client_thread.join(timeout)
-        fake_client.close()
-        self.crash_logger_mock.error.assert_called_once()
-        assert_that(self.crash_logger_mock.error.mock_calls[0][1][0]).contains(error_message)
+            with mock.patch.object(self.middleman, "_respond_to_user", side_effect=Exception(error_message)):
+                with pytest.raises(SystemExit):
+                    self.middleman.run()
+            client_thread.join(timeout)
+            fake_client.close()
+            self.crash_logger_mock.error.assert_called_once()
+            assert_that(self.crash_logger_mock.error.mock_calls[0][1][0]).contains(error_message)

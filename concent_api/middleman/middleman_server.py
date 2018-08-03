@@ -4,6 +4,15 @@ from logging import getLogger
 
 import signal
 
+from django.conf import settings
+from middleman_protocol.exceptions import MiddlemanProtocolError
+from middleman_protocol.message import AbstractFrame
+from middleman_protocol.message import ErrorFrame
+from middleman_protocol.stream import append_frame_separator
+from middleman_protocol.stream import escape_encode_raw_message
+from middleman_protocol.stream_async import handle_frame_receive_async
+from middleman_protocol.stream_async import map_exception_to_error_code
+
 from middleman.constants import DEFAULT_EXTERNAL_PORT
 from middleman.constants import DEFAULT_INTERNAL_PORT
 from middleman.constants import ERROR_ADDRESS_ALREADY_IN_USE
@@ -108,15 +117,28 @@ class MiddleMan:
 
     async def _handle_concent_connection(self, reader, writer) -> None:
         try:
-            data = await reader.readuntil()
+            data = await handle_frame_receive_async(reader)
             remote_address = writer.get_extra_info('peername')
             print("Received %r from %r" % (data, remote_address))
-            await self._respond_to_user(data, writer)
+            serialized_message = self._prepare_response(data)
+            await self._respond_to_user(serialized_message, writer)
         except Exception as exception:  # pylint: disable=broad-except
             crash_logger.error(
                 f"Exception occurred: {exception}, Traceback: {traceback.format_exc()}"
             )
             raise
+
+    @staticmethod
+    def _prepare_response(data):
+        try:
+            AbstractFrame.deserialize(data, settings.CONCENT_PUBLIC_KEY)
+        except MiddlemanProtocolError as exception:
+            error_code = map_exception_to_error_code(exception)
+            data = ErrorFrame(
+                (error_code, str(exception)),
+                0,
+            ).serialize(settings.CONCENT_PRIVATE_KEY)
+        return data
 
     async def _handle_service_connection(self, reader, writer) -> None:
         if self._is_signing_service_connection_active:
@@ -124,10 +146,11 @@ class MiddleMan:
         else:
             self._is_signing_service_connection_active = True
             try:
-                data = await reader.readuntil()
+                data = await handle_frame_receive_async(reader)
                 remote_address = writer.get_extra_info('peername')
                 print("Received %r from %r" % (data, remote_address))
-                await self._respond_to_user(data, writer)
+                serialized_message = self._prepare_response(data)
+                await self._respond_to_user(serialized_message, writer)
             except Exception as exception:  # pylint: disable=broad-except
                 crash_logger.error(
                     f"Exception occurred: {exception}, Traceback: {traceback.format_exc()}"
@@ -137,7 +160,7 @@ class MiddleMan:
                 self._is_signing_service_connection_active = False
 
     async def _respond_to_user(self, data: bytes, writer: asyncio.StreamWriter) -> None:  # pylint: disable=no-self-use
-        writer.write(data)
+        writer.write(append_frame_separator(escape_encode_raw_message(data)))
         await writer.drain()
         writer.close()
 

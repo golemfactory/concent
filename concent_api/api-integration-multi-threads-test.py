@@ -25,7 +25,7 @@ testing_subtask_id = str(now.year) + str(now.month) + str(now.day) + str(now.hou
 
 responses = []  # type: list
 
-number_of_testing_threads = 3
+NUMBER_OF_TESTING_THREADS = 3
 
 
 def multi_threads(number_of_threads: int):
@@ -44,9 +44,9 @@ def test_case_that_multiple_requests_by_one_subtask_will_not_be_cause_of_server_
 
     send_correct_request(cluster_consts=cluster_consts, cluster_url=cluster_url)
 
-    for i in range(3 * number_of_testing_threads):
+    for i in range(3 * NUMBER_OF_TESTING_THREADS):
         time.sleep(0.5)
-        if len(responses) == number_of_testing_threads:
+        if len(responses) == NUMBER_OF_TESTING_THREADS:
             break
 
     print('Responses = ' + str(responses))
@@ -59,7 +59,7 @@ def test_case_that_multiple_requests_by_one_subtask_will_not_be_cause_of_server_
     print('Test passed successfully')
 
 
-@multi_threads(number_of_testing_threads)
+@multi_threads(NUMBER_OF_TESTING_THREADS)
 def send_correct_request(cluster_consts, cluster_url):
     current_time = get_current_utc_timestamp()
     (subtask_id, task_id) = (testing_subtask_id, '130')

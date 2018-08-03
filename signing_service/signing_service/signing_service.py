@@ -135,6 +135,34 @@ class SigningService:
 
 
 def _parse_arguments() -> argparse.Namespace:
+    def make_secret_provider_factory(read_command_line=False, env_variable_name=None, use_file=False):
+        def wrapper(**kwargs):
+            return SecretProvider(read_command_line, env_variable_name, use_file, **kwargs)
+        return wrapper
+
+    class SecretProvider(argparse.Action):
+        def __init__(self, read_command_line, env_variable_name, use_file, option_strings, dest, help=None):  # pylint: disable=redefined-builtin
+            self.read_command_line = read_command_line
+            self.env_variable_name = env_variable_name
+            self.use_file = use_file
+            if self.env_variable_name is not None:
+                command_line_arguments = 0
+            else:
+                command_line_arguments = None
+            super(SecretProvider, self).__init__(option_strings=option_strings, dest=dest, help=help, nargs=command_line_arguments)
+
+        def __call__(self, parser, namespace, values, option_string=None):
+            if values is not None and self.use_file:
+                with open(values) as file:
+                    self.const = file.read()
+            elif values is not None and self.read_command_line:
+                self.const = values
+            elif self.env_variable_name is not None:
+                self.const = os.environ.get(self.env_variable_name)
+            else:
+                assert False
+            setattr(namespace, self.dest, self.const)
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         'concent_cluster_host',
@@ -159,13 +187,27 @@ def _parse_arguments() -> argparse.Namespace:
         type=int,
         help=f'Port on which Concent cluster is listening (default: {SIGNING_SERVICE_DEFAULT_PORT}).',
     )
-    parser.add_argument(
-        '--sentry-dsn',
-        default='',
-        dest='sentry_dsn',
-        help=f'Sentry DSN for error reporting.',
-    )
 
+    sentry_dsn_parser_group = parser.add_mutually_exclusive_group()
+    sentry_dsn_parser_group.add_argument(
+        '--sentry-dsn',
+        dest='sentry_dsn',
+        action=make_secret_provider_factory(read_command_line=True),
+        help='Sentry DSN for error reporting.',
+    )
+    sentry_dsn_parser_group.add_argument(
+        '--sentry-dsn-path',
+        dest='sentry_dsn',
+        action=make_secret_provider_factory(use_file=True),
+        help='Sentry DSN for error reporting.',
+    )
+    sentry_dsn_parser_group.add_argument(
+        '--sentry-dsn-from-env',
+        dest='sentry_dsn',
+        action=make_secret_provider_factory(env_variable_name='SENTRY_DSN'),
+        help='Sentry DSN for error reporting.',
+    )
+    parser.set_defaults(sentry_dsn=os.environ.get('SENTRY_DSN'))
     return parser.parse_args()
 
 

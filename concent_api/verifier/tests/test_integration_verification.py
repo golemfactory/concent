@@ -292,7 +292,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                     self.subtask_id
                 ),
             ), \
-            mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result:  # noqa: E125
+            mock.patch('core.tasks.verification_result.delay', autospec=True) as mock_verification_result:  # noqa: E125
 
             current_time = get_current_utc_timestamp()
             self._send_blender_verification_order(current_time=current_time)
@@ -341,7 +341,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                     self.subtask_id
                 ),
             ), \
-            mock.patch('verifier.tasks.verification_result.delay', autospec=True) as mock_verification_result:  # noqa: E125
+            mock.patch('core.tasks.verification_result.delay', autospec=True) as mock_verification_result:  # noqa: E125
 
             current_time = get_current_utc_timestamp()
             self._send_blender_verification_order(current_time=current_time)

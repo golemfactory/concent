@@ -119,8 +119,8 @@ class TestMiddleManServer:
         assert_that(self.crash_logger_mock.error.mock_calls[0][1][0]).contains(error_message)
 
     def test_that_server_accepts_connections_from_concent_and_sends_data_back(self):
-        timeout = 2
-        short_delay = 0.5
+        timeout = 0.2
+        short_delay = 0.1
         schedule_sigterm(delay=timeout)
         connections = Connections()
         client_thread = get_client_thread(assert_connection, self.internal_port, short_delay, connections)
@@ -135,8 +135,8 @@ class TestMiddleManServer:
         assert_that(connections.counter).is_equal_to(1)
 
     def test_that_server_accepts_connections_from_signing_service_and_sends_data_back(self):
-        timeout = 2
-        short_delay = 0.5
+        timeout = 0.2
+        short_delay = 0.1
         schedule_sigterm(delay=timeout)
         connections = Connections()
         client_thread = get_client_thread(assert_connection, self.external_port, short_delay, connections)
@@ -151,8 +151,8 @@ class TestMiddleManServer:
         assert_that(connections.counter).is_equal_to(1)
 
     def test_that_broken_connection_from_concent_is_reported_to_sentry(self):
-        timeout = 2
-        short_delay = 0.5
+        timeout = 0.2
+        short_delay = 0.1
         schedule_sigterm(delay=timeout)
         fake_client = socket.socket()
         client_thread = get_client_thread(send_data, fake_client, "Oi!\n", self.internal_port, short_delay)
@@ -169,8 +169,8 @@ class TestMiddleManServer:
         assert_that(self.crash_logger_mock.error.mock_calls[0][1][0]).contains(error_message)
 
     def test_that_broken_connection_from_signing_service_is_reported_to_sentry(self):
-        timeout = 2
-        short_delay = 0.5
+        timeout = 0.2
+        short_delay = 0.1
         schedule_sigterm(delay=timeout)
         fake_client = socket.socket()
         client_thread = get_client_thread(send_data, fake_client, "Oi!\n", self.external_port, short_delay)

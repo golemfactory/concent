@@ -21,19 +21,22 @@ from common.helpers import get_current_utc_timestamp
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
 now = datetime.now()
-testing_subtask_id = str(now.year) + str(now.month) + str(now.day) + str(now.hour) + str(now.minute) + str(
-    now.second) + str(now.microsecond)
+testing_subtask_id = str(now.year) + str(now.month) + str(now.day) + str(now.hour) + str(now.minute) + str(now.second) + str(now.microsecond)
 
-responses = []  # type: str
+responses = []  # type: list
+
+number_of_testing_threads = 3
 
 
-def multi_threads(func):
-    def wrapper(*args, **kwargs):
-        for i in range(3):
-            t = Thread(target=func, args=(*args,), kwargs={**kwargs})
-            t.start()
+def multi_threads(number_of_threads: int):
+    def call_function_in_threads(func):
+        def wrapper(*args, **kwargs):
+            for i in range(number_of_threads):
+                t = Thread(target=func, args=(*args,), kwargs={**kwargs})
+                t.start()
 
-    return wrapper
+        return wrapper
+    return call_function_in_threads
 
 
 @count_fails
@@ -41,7 +44,11 @@ def test_case_that_multiple_requests_by_one_subtask_will_not_be_cause_of_server_
 
     send_correct_request(cluster_consts=cluster_consts, cluster_url=cluster_url)
 
-    time.sleep(4)
+    for i in range(3 * number_of_testing_threads):
+        time.sleep(0.5)
+        if len(responses) == number_of_testing_threads:
+            break
+
     print('Responses = ' + str(responses))
 
     assert_condition(
@@ -52,7 +59,7 @@ def test_case_that_multiple_requests_by_one_subtask_will_not_be_cause_of_server_
     print('Test passed successfully')
 
 
-@multi_threads
+@multi_threads(number_of_testing_threads)
 def send_correct_request(cluster_consts, cluster_url):
     current_time = get_current_utc_timestamp()
     (subtask_id, task_id) = (testing_subtask_id, '130')

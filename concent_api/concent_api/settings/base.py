@@ -331,3 +331,7 @@ MOCK_VERIFICATION_ENABLED = True
 
 # Verifier setting defining number of threads used by Blender
 BLENDER_THREADS = 1
+
+# Settings for creating locks on concent workers ensuring, that only one worker processes particular Subtask in one time
+MAX_RETRIES = 30
+INITIAL_RETRY_DELAY = 0.5  # Value in seconds

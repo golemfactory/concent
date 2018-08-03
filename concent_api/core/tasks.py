@@ -19,6 +19,7 @@ from core.payments import service as payments_service
 from core.subtask_helpers import update_subtask_state
 from core.transfer_operations import store_pending_message
 from core.utils import calculate_subtask_verification_time
+from core.utils import database_lock_rows
 from .constants import CELERY_LOCKED_SUBTASK_DELAY
 from .constants import MAXIMUM_VERIFICATION_RESULT_TASK_RETRIES
 from .constants import VERIFICATION_RESULT_SUBTASK_STATE_ACCEPTED_LOG_MESSAGE
@@ -34,7 +35,8 @@ logger = logging.getLogger(__name__)
 @transaction.atomic(using='control')
 def upload_finished(subtask_id: str):
     try:
-        subtask = Subtask.objects.get(subtask_id=subtask_id)
+        with database_lock_rows(Subtask, subtask_id) as database_lock:
+            subtask = database_lock
     except Subtask.DoesNotExist:
         logging.error(f'Task `upload_finished` tried to get Subtask object with ID {subtask_id} but it does not exist.')
         return

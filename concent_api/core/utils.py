@@ -1,7 +1,11 @@
 import datetime
 import math
+import time
 
+from decorator import contextmanager
 from django.conf                    import settings
+from django.db import OperationalError
+from django.db import transaction
 
 from golem_messages                 import message
 from golem_messages.helpers         import maximum_download_time
@@ -9,6 +13,7 @@ from golem_messages.helpers         import subtask_verification_time
 from golem_messages.utils import decode_hex
 
 from core.exceptions import Http400
+from core.exceptions import MaxRetriesExceededError
 from common.constants import ErrorCode
 from .constants import GOLEM_PUBLIC_KEY_LENGTH
 from .constants import GOLEM_PUBLIC_KEY_HEX_LENGTH
@@ -102,3 +107,29 @@ def hex_to_bytes_convert(client_public_key: str):
     key_bytes = decode_hex(client_public_key)
     assert len(key_bytes) == GOLEM_PUBLIC_KEY_LENGTH
     return key_bytes
+
+
+def retry_handler(max_retries: int):
+    next_retry_delay = settings.INITIAL_RETRY_DELAY
+    retry_count = 0
+    while retry_count <= max_retries:
+        yield retry_count
+        time.sleep(next_retry_delay)
+        retry_count += 1
+        next_retry_delay *= 2
+    raise MaxRetriesExceededError("Maximum number of retries of handling this Subtask extended",
+                                  error_code=ErrorCode.WORKER_MAX_RETRIES_EXCEEDED
+                                  )
+
+
+@contextmanager
+def database_lock_rows(Subtask, subtask_id):
+    for _ in retry_handler(settings.MAX_RETRIES):
+        try:
+            with transaction.atomic(using='control'):
+                subtask = Subtask.objects.select_for_update(nowait=True).get(subtask_id=subtask_id)
+        except OperationalError:
+            pass
+        else:
+            yield subtask
+            return

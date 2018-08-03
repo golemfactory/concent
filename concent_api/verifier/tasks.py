@@ -73,21 +73,6 @@ def blender_verification_order(
     assert isinstance(subtask_id, str)
     assert isinstance(verification_deadline, int)
 
-    # this is a temporary hack - dummy verification which's result depends on subtask_id only
-
-    if settings.MOCK_VERIFICATION_ENABLED:
-        result = VerificationResult.MATCH.name if subtask_id[-1] == 'm' else VerificationResult.MISMATCH.name
-        if subtask_id[-1] == 'm':
-            verification_result.delay(
-                subtask_id,
-                result,
-            )
-        log_string_message(
-            logger,
-            f'Temporary hack, verification result depends on subtask_id only - SUBTASK_ID: {subtask_id}. Result: {result}'
-        )
-        return
-
     # Generate a FileTransferToken valid for a download of any file listed in the order.
     file_transfer_token = create_file_transfer_token_for_concent(
         subtask_id=subtask_id,

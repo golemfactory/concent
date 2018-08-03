@@ -1,12 +1,17 @@
 from asyncio import StreamReader
+
+import pytest
 from assertpy import assert_that
 from mock import MagicMock
 from mock import Mock
 
+from middleman_protocol import constants
+from middleman_protocol import exceptions
 from middleman_protocol.constants import ESCAPE_CHARACTER
 from middleman_protocol.constants import ESCAPE_SEQUENCES
 from middleman_protocol.constants import FRAME_SEPARATOR
 from middleman_protocol.stream_async import handle_frame_receive_async
+from middleman_protocol.stream_async import map_exception_to_error_code
 
 SOME_BYTES = b'1234567890qwerty'
 
@@ -55,3 +60,18 @@ class TestHandleFrameReceiveAsync:
         mocked_reader = Mock(spec_set=StreamReader)
         mocked_reader.readuntil = async_stream_reader_mock(return_value=return_sequence)
         return mocked_reader
+
+
+@pytest.mark.parametrize(
+    "exception, expected_error_code", (
+        (exceptions.PayloadTypeInvalidMiddlemanProtocolError, constants.ErrorCode.InvalidPayload),
+        (exceptions.RequestIdInvalidTypeMiddlemanProtocolError, constants.ErrorCode.InvalidFrame),
+        (exceptions.SignatureInvalidMiddlemanProtocolError, constants.ErrorCode.InvalidFrameSignature),
+        (exceptions.PayloadInvalidMiddlemanProtocolError, constants.ErrorCode.InvalidPayload),
+        (exceptions.FrameInvalidMiddlemanProtocolError, constants.ErrorCode.InvalidFrame),
+        (exceptions.MiddlemanProtocolError, constants.ErrorCode.Unknown),
+        (Exception, constants.ErrorCode.Unknown),
+    )
+)
+def test_that_middleman_protocol_exceptions_are_correctly_mapped_to_error_codes(exception, expected_error_code):
+    assert_that(map_exception_to_error_code(exception)).is_equal_to(expected_error_code)

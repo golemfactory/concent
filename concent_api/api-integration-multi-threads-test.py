@@ -11,6 +11,8 @@ import requests
 from golem_messages.shortcuts import dump
 
 from api_testing_common import api_request
+from api_testing_common import assert_condition
+from api_testing_common import count_fails
 from api_testing_common import get_force_get_task_result
 from api_testing_common import REQUESTOR_PRIVATE_KEY
 from api_testing_common import run_tests
@@ -22,10 +24,10 @@ now = datetime.now()
 testing_subtask_id = str(now.year) + str(now.month) + str(now.day) + str(now.hour) + str(now.minute) + str(
     now.second) + str(now.microsecond)
 
-responses = []
+responses = []  # type: str
 
 
-def multiprocess(func):
+def multi_threads(func):
     def wrapper(*args, **kwargs):
         for i in range(3):
             t = Thread(target=func, args=(*args,), kwargs={**kwargs})
@@ -34,19 +36,23 @@ def multiprocess(func):
     return wrapper
 
 
+@count_fails
 def test_case_that_multiple_requests_by_one_subtask_will_not_be_cause_of_server_error(cluster_consts, cluster_url, test_id):
 
     send_correct_request(cluster_consts=cluster_consts, cluster_url=cluster_url)
 
     time.sleep(4)
     print('Responses = ' + str(responses))
-    assert 'AckForceGetTaskResult' in responses
-    responses.remove('AckForceGetTaskResult')
-    assert all(x == 'ServiceRefused' for x in responses)
+
+    assert_condition(
+        actual=responses,
+        expected=['AckForceGetTaskResult', 'ServiceRefused', 'ServiceRefused'],
+        error_message="Responses should be: 'AckForceGetTaskResult', 'ServiceRefused', 'ServiceRefused'"
+    )
     print('Test passed successfully')
 
 
-@multiprocess
+@multi_threads
 def send_correct_request(cluster_consts, cluster_url):
     current_time = get_current_utc_timestamp()
     (subtask_id, task_id) = (testing_subtask_id, '130')

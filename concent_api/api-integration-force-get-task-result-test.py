@@ -9,7 +9,8 @@ from golem_messages import message
 from common.helpers import get_current_utc_timestamp
 from common.helpers import get_storage_result_file_path
 from common.helpers import upload_file_to_storage_cluster
-from api_testing_common import api_request, get_force_get_task_result
+from api_testing_common import api_request
+from api_testing_common import get_force_get_task_result
 from api_testing_common import assert_condition
 from api_testing_common import count_fails
 from api_testing_common import create_client_auth_message

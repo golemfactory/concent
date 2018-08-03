@@ -2,7 +2,10 @@ import time
 from functools                      import wraps
 from logging                        import getLogger
 import traceback
+from typing import Any
+from typing import Optional
 
+from django.core.handlers.wsgi import WSGIRequest
 from django.db import DatabaseError
 from django.db import transaction
 from django.http                    import JsonResponse
@@ -10,6 +13,7 @@ from django.http                    import HttpResponse
 from django.http                    import HttpResponseNotAllowed
 from django.conf                    import settings
 
+import golem_messages
 from golem_messages                 import dump
 from golem_messages                 import message
 from golem_messages.exceptions      import FieldError
@@ -174,39 +178,7 @@ def handle_errors_and_responses(database_name):
                 try:
                     response_from_view = view(request, client_message, client_public_key, *args, **kwargs)
                 except DatabaseError as e:
-                    # This section is to catch Database errors caused by multiple requests about one Subtask.
-                    # This requests are waiting and retrying.
-                    log_string_message(
-                        logger,
-                        f'DatabaseError during process client request. Client public key: {client_public_key}.'
-                        f'Error: {e}'
-                    )
-                    sleep_time = settings.INITIAL_VIEW_RETRY_DELAY
-                    subtask_got_successfully = False
-                    response_from_view = None
-
-                    for counter in range(settings.MAX_VIEW_RETRIES):
-                        try:
-                            time.sleep(sleep_time)
-                            sleep_time *= 2
-                            response_from_view = view(request, client_message, client_public_key, *args, **kwargs)
-                            subtask_got_successfully = True
-                            break
-                        except DatabaseError as e:
-                            log_string_message(
-                                logger,
-                                f'DatabaseError during process client request. Client public key: {client_public_key}.'
-                                f'Number of retries {counter+1}/{settings.MAX_VIEW_RETRIES}'
-                                f'Error: {e}'
-                            )
-                    if not subtask_got_successfully:
-                        log_string_message(
-                            logger,
-                            f'DatabaseError during process client request. Client public key: {client_public_key}.'
-                            f'Maximum number of retries exceeded.'
-                        )
-                        raise DatabaseError
-
+                    response_from_view = get_response_from_view_with_db_retry(view, e, request, client_message, client_public_key, *args, **kwargs)
                 if database_name is not None:
                     transaction.savepoint_commit(sid, using=database_name)
 
@@ -336,3 +308,39 @@ def log_task_errors(task):
             )
             raise
     return wrapper
+
+
+def get_response_from_view_with_db_retry(
+    view,
+    error: DatabaseError,
+    request: WSGIRequest,
+    client_message: golem_messages.message,
+    client_public_key: bytes,
+    *args: Optional[Any],
+    **kwargs: Optional[Any],
+) -> HttpResponse:
+    """
+    This section is to catch Database errors caused by multiple requests about one Subtask.
+    These requests are waiting and retrying.
+    """
+    log_string_message(
+        logger,
+        f'DatabaseError during process client request. Client public key: {client_public_key}.'
+        f'Error: {error}'
+    )
+    sleep_time = settings.INITIAL_VIEW_RETRY_DELAY
+
+    for counter in range(settings.MAX_VIEW_RETRIES):
+        try:
+            time.sleep(sleep_time)
+            sleep_time *= 2
+            response_from_view = view(request, client_message, client_public_key, *args, **kwargs)
+            return response_from_view
+        except DatabaseError as e:
+            log_string_message(
+                logger,
+                f'DatabaseError during process client request. Client public key: {client_public_key}.'
+                f'Number of retries {counter+1}/{settings.MAX_VIEW_RETRIES}'
+                f'Error: {e}'
+            )
+    raise DatabaseError

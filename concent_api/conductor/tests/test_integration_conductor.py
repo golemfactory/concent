@@ -295,7 +295,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
             self.assertFalse(verification_request.upload_finished)
 
     def test_blender_verification_request_task_should_create_verification_request_and_blender_subtask_definition(self):
-        blender_verification_request(   # pylint: disable=no-value-for-parameter
+        blender_verification_request(
             frames=self.compute_task_def['extra_data']['frames'],
             subtask_id=self.compute_task_def['subtask_id'],
             source_package_path=self.source_package_path,
@@ -325,7 +325,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         upload_report.full_clean()
         upload_report.save()
 
-        blender_verification_request(   # pylint: disable=no-value-for-parameter
+        blender_verification_request(
             frames=self.compute_task_def['extra_data']['frames'],
             subtask_id=self.compute_task_def['subtask_id'],
             source_package_path=self.source_package_path,
@@ -359,7 +359,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         upload_report.save()
 
         with mock.patch('conductor.tasks.tasks.upload_finished.delay') as mock_task:
-            blender_verification_request(   # pylint: disable=no-value-for-parameter
+            blender_verification_request(
                 frames=self.compute_task_def['extra_data']['frames'],
                 subtask_id=self.compute_task_def['subtask_id'],
                 source_package_path=self.source_package_path,

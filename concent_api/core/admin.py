@@ -49,6 +49,8 @@ class SubtaskAdmin(ModelAdminReadOnlyMixin, admin.ModelAdmin):
         'computation_deadline',
         'download_deadline',
         'result_package_size',
+        'created_at',
+        'modified_at',
     ]
     list_filter = (
         ActivePassiveDownloadsStateFilter,

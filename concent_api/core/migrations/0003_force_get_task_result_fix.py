@@ -19,7 +19,7 @@ def insert_force_get_task_result_if_empty(apps, _schema_editor):
         )
 
         stored_message = StoredMessage(
-            type=force_get_task_result.TYPE,
+            type=force_get_task_result.header.type_,
             timestamp=now(),
             data=force_get_task_result.serialize(),
             task_id=subtask.task_id,

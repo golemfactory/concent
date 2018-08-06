@@ -1,7 +1,7 @@
 from logging import getLogger
 
 from django.http import JsonResponse
-from golem_messages.message import FileTransferToken
+from golem_messages.message.concents import FileTransferToken
 
 from common import logging
 

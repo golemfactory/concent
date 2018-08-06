@@ -281,8 +281,8 @@ class Subtask(Model):
     MESSAGE_FOR_FIELD = {
         'task_to_compute':              message.TaskToCompute,
         'report_computed_task':         message.ReportComputedTask,
-        'ack_report_computed_task':     message.AckReportComputedTask,
-        'reject_report_computed_task':  message.RejectReportComputedTask,
+        'ack_report_computed_task':     message.tasks.AckReportComputedTask,
+        'reject_report_computed_task':  message.tasks.RejectReportComputedTask,
         'subtask_results_accepted':     message.tasks.SubtaskResultsAccepted,
         'subtask_results_rejected':     message.tasks.SubtaskResultsRejected,
         'force_get_task_result':        message.concents.ForceGetTaskResult,

@@ -6,7 +6,7 @@ import mock
 from freezegun import freeze_time
 
 from golem_messages.factories.tasks import ReportComputedTaskFactory
-from golem_messages.message import FileTransferToken
+from golem_messages.message.concents import FileTransferToken
 
 from core.tests.utils import ConcentIntegrationTestCase
 from core.exceptions import UnexpectedResponse

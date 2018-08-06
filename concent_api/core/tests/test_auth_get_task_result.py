@@ -5,7 +5,7 @@ from django.urls            import reverse
 from freezegun              import freeze_time
 from golem_messages         import load
 from golem_messages         import message
-from golem_messages.message import FileTransferToken
+from golem_messages.message.concents import FileTransferToken
 
 from core.models            import PendingResponse
 from core.models            import Subtask
@@ -389,7 +389,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # Test FileTransferToken message
-        self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
+        self.assertIsInstance(message_file_transfer_token, message.concents.FileTransferToken)
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp, parse_iso_date_to_timestamp("2017-12-01 11:00:02"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, parse_iso_date_to_timestamp("2017-12-01 11:00:52"))
@@ -634,7 +634,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'], '99')
 
         # Test FileTransferToken message
-        self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
+        self.assertIsInstance(message_file_transfer_token, message.concents.FileTransferToken)
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp, parse_iso_date_to_timestamp("2017-12-01 11:00:03"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, parse_iso_date_to_timestamp("2017-12-01 11:00:52"))
@@ -876,7 +876,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'], '99')
 
         # Test FileTransferToken message
-        self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
+        self.assertIsInstance(message_file_transfer_token, message.concents.FileTransferToken)
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp, parse_iso_date_to_timestamp("2017-12-01 11:00:02"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, parse_iso_date_to_timestamp("2017-12-01 11:00:52"))
@@ -1104,7 +1104,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # Test FileTransferToken message
-        self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
+        self.assertIsInstance(message_file_transfer_token, message.concents.FileTransferToken)
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp, parse_iso_date_to_timestamp("2017-12-01 11:00:02"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, parse_iso_date_to_timestamp("2017-12-01 11:00:52"))
@@ -1180,7 +1180,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
         self.assertEqual(message_from_concent.force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'], '99')
         self.assertEqual(message_from_concent.file_transfer_token.subtask_id, deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
-        self.assertIsInstance(message_from_concent.file_transfer_token, message.FileTransferToken)
+        self.assertIsInstance(message_from_concent.file_transfer_token, message.concents.FileTransferToken)
         self.assertEqual(
             message_from_concent.file_transfer_token.timestamp,
             parse_iso_date_to_timestamp("2017-12-01 11:00:08")

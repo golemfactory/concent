@@ -74,7 +74,7 @@ class TestValidateRejectReportComputedTask(ConcentIntegrationTestCase):
 
     def test_that_validation_passes_if_correct_message_given(self):
         correct_reject_reported_computed_task = self._get_deserialized_reject_report_computed_task(
-            reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
+            reason=message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
             task_to_compute=self._get_deserialized_task_to_compute()
         )
         validate_reject_report_computed_task(correct_reject_reported_computed_task)

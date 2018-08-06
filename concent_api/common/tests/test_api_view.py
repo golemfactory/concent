@@ -78,7 +78,7 @@ class ApiViewTestCase(TestCase):
             check_time=False,
         )
 
-        self.force_report_computed_task = message.ForceReportComputedTask()
+        self.force_report_computed_task = message.concents.ForceReportComputedTask()
         self.force_report_computed_task.report_computed_task = message.tasks.ReportComputedTask()
         self.force_report_computed_task.report_computed_task.task_to_compute = task_to_compute
 
@@ -101,7 +101,7 @@ class ApiViewTestCase(TestCase):
 
         dummy_view(request)                                                     # pylint: disable=no-value-for-parameter
 
-        self.assertIsInstance(decoded_message, message.ForceReportComputedTask)
+        self.assertIsInstance(decoded_message, message.concents.ForceReportComputedTask)
         self.assertEqual(decoded_message, self.force_report_computed_task)
 
     def test_api_view_should_return_http_415_when_request_content_type_is_not_supported(self):
@@ -254,7 +254,7 @@ class ApiViewTransactionTestCase(TransactionTestCase):
             PROVIDER_PUBLIC_KEY,
             check_time=False,
         )
-        self.force_report_computed_task = message.ForceReportComputedTask(
+        self.force_report_computed_task = message.concents.ForceReportComputedTask(
             report_computed_task=report_computed_task
         )
 

@@ -5,7 +5,7 @@ import sys
 
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.message.tasks import AckReportComputedTask
-from golem_messages.message import ForceReportComputedTask
+from golem_messages.message.concents import ForceReportComputedTask
 from golem_messages.message.concents import ForceReportComputedTaskResponse
 
 from common.helpers import get_current_utc_timestamp
@@ -77,7 +77,7 @@ def test_case_1_provider_forces_report_computed_task_and_gets_accepted(cluster_c
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=ForceReportComputedTask.TYPE,
+        expected_message_type=ForceReportComputedTask.header.type_,
         expected_content_type='application/octet-stream',
     )
     api_request(
@@ -103,7 +103,7 @@ def test_case_1_provider_forces_report_computed_task_and_gets_accepted(cluster_c
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=ForceReportComputedTaskResponse.TYPE,
+        expected_message_type=ForceReportComputedTaskResponse.header.type_,
         expected_content_type='application/octet-stream',
     )
 

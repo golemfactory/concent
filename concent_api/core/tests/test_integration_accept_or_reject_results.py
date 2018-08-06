@@ -112,7 +112,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             expected_messages = [
                 message.TaskToCompute,
                 message.ReportComputedTask,
-                message.AckReportComputedTask,
+                message.tasks.AckReportComputedTask,
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',
@@ -376,7 +376,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             expected_messages = [
                 message.TaskToCompute,
                 message.ReportComputedTask,
-                message.AckReportComputedTask,
+                message.tasks.AckReportComputedTask,
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',
@@ -478,7 +478,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             expected_messages = [
                 message.TaskToCompute,
                 message.ReportComputedTask,
-                message.AckReportComputedTask,
+                message.tasks.AckReportComputedTask,
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',
@@ -622,7 +622,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             expected_messages = [
                 message.TaskToCompute,
                 message.ReportComputedTask,
-                message.AckReportComputedTask,
+                message.tasks.AckReportComputedTask,
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',
@@ -784,7 +784,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             expected_messages = [
                 message.TaskToCompute,
                 message.ReportComputedTask,
-                message.AckReportComputedTask,
+                message.tasks.AckReportComputedTask,
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',
@@ -1108,7 +1108,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             expected_messages = [
                 message.TaskToCompute,
                 message.ReportComputedTask,
-                message.AckReportComputedTask,
+                message.tasks.AckReportComputedTask,
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',
@@ -1257,7 +1257,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 10:00:15"):
             serialized_force_subtask_results = self._get_serialized_force_subtask_results(
                 timestamp="2018-02-05 10:00:00",
-                ack_report_computed_task = message.AckReportComputedTask(
+                ack_report_computed_task = message.tasks.AckReportComputedTask(
                     report_computed_task=(
                         message.ReportComputedTask(
                             task_to_compute=message.CannotComputeTask()
@@ -1411,7 +1411,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             expected_messages = [
                 message.TaskToCompute,
                 message.ReportComputedTask,
-                message.AckReportComputedTask,
+                message.tasks.AckReportComputedTask,
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',
@@ -1589,7 +1589,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             expected_messages = [
                 message.TaskToCompute,
                 message.ReportComputedTask,
-                message.AckReportComputedTask,
+                message.tasks.AckReportComputedTask,
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',

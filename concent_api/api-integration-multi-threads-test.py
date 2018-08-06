@@ -26,6 +26,7 @@ testing_subtask_id = str(now.year) + str(now.month) + str(now.day) + str(now.hou
 responses = []  # type: list
 
 NUMBER_OF_TESTING_THREADS = 3
+MAXIMUM_WAITING_TIME_FOR_ALL_RESPONSES = 5     # seconds
 
 
 def multi_threads(number_of_threads: int):
@@ -44,9 +45,10 @@ def test_case_that_multiple_requests_by_one_subtask_will_not_be_cause_of_server_
 
     send_correct_request(cluster_consts=cluster_consts, cluster_url=cluster_url)
 
-    for i in range(3 * NUMBER_OF_TESTING_THREADS):
-        time.sleep(0.5)
-        if len(responses) == NUMBER_OF_TESTING_THREADS:
+    end_time = time.time() + MAXIMUM_WAITING_TIME_FOR_ALL_RESPONSES
+    while len(responses) != NUMBER_OF_TESTING_THREADS:
+        time.sleep(0.1)
+        if time.time() >= end_time:
             break
 
     print('Responses = ' + str(responses))

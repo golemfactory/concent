@@ -104,9 +104,9 @@ def validate_response_message(encoded_message, expected_message_type, private_ke
     if expected_message_type is not None:
         decoded_message = try_to_decode_golem_message(private_key, public_key, encoded_message)
         assert_condition(
-            decoded_message.TYPE,
+            type(decoded_message),
             expected_message_type,
-            f"Expected:{expected_message_type}, actual:{decoded_message.TYPE}",
+            f"Expected:{expected_message_type}, actual:{type(decoded_message)}",
         )
 
 

@@ -354,17 +354,17 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 'subtask_results_verify': self._prepare_subtask_results_verify(serialized_subtask_results_verify),
                 'file_transfer_token': self._prepare_file_transfer_token(subtask_results_verify_time_str),
                 'file_transfer_token.files': [
-                    message.FileTransferToken.FileInfo(
+                    message.concents.FileTransferToken.FileInfo(
                         path='blender/result/task1/task1.subtask1.zip',
                         checksum='sha1:4452d71687b6bc2c9389c3349fdc17fbd73b833b',
                         size=1,
-                        category=message.FileTransferToken.FileInfo.Category.results,
+                        category=message.concents.FileTransferToken.FileInfo.Category.results,
                     ),
-                    message.FileTransferToken.FileInfo(
+                    message.concents.FileTransferToken.FileInfo(
                         path='blender/source/task1/task1.subtask1.zip',
                         checksum='sha1:230fb0cad8c7ed29810a2183f0ec1d39c9df3f4a',
                         size=1,
-                        category=message.FileTransferToken.FileInfo.Category.resources,
+                        category=message.concents.FileTransferToken.FileInfo.Category.resources,
                     )
                 ]
             }
@@ -548,7 +548,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             file_transfer_token = create_file_transfer_token_for_golem_client(
                 self.report_computed_task,
                 self.PROVIDER_PUBLIC_KEY,
-                message.FileTransferToken.Operation.upload,
+                message.concents.FileTransferToken.Operation.upload,
             )
         return file_transfer_token
 

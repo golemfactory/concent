@@ -85,7 +85,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         )
         self.reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
             task_to_compute=task_to_compute,
-            reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
+            reason=message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
         )
 
     @freeze_time("2017-11-17 10:00:00")
@@ -196,7 +196,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             task_to_compute = task_to_compute
         )
         with freeze_time("2017-11-17 9:56:00"):
-            force_report_computed_task = message.ForceReportComputedTask(
+            force_report_computed_task = message.concents.ForceReportComputedTask(
                 report_computed_task = report_computed_task
             )
 
@@ -214,7 +214,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             error_code=ErrorCode.MESSAGE_VALUE_BLANK
         )
 
-        data                                        = message.ForceReportComputedTask()
+        data                                        = message.concents.ForceReportComputedTask()
         data.report_computed_task                   = message.tasks.ReportComputedTask()
         compute_task_def['deadline']                = self.message_timestamp - 3600
         data.report_computed_task.task_to_compute   = message.TaskToCompute(compute_task_def = compute_task_def)
@@ -300,7 +300,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         serialized_task_to_compute      = dump(task_to_compute,             REQUESTOR_PRIVATE_KEY,   PROVIDER_PUBLIC_KEY)
         deserialized_task_to_compute    = load(serialized_task_to_compute,  PROVIDER_PRIVATE_KEY,  REQUESTOR_PUBLIC_KEY, check_time = False)
 
-        ack_report_computed_task = message.AckReportComputedTask()
+        ack_report_computed_task = message.tasks.AckReportComputedTask()
         ack_report_computed_task.report_computed_task = message.ReportComputedTask(
             task_to_compute = deserialized_task_to_compute
         )
@@ -360,7 +360,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         self.assertEqual(reject_response.status_code,       202)
         self._test_last_stored_messages(
             expected_messages = [
-                message.RejectReportComputedTask,
+                message.tasks.RejectReportComputedTask,
             ],
             task_id         = '8',
             subtask_id      = '8',
@@ -433,7 +433,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             deserialized_task_to_compute = load(serialized_task_to_compute,  PROVIDER_PRIVATE_KEY,  REQUESTOR_PUBLIC_KEY, check_time = False)
 
             with freeze_time("2017-11-17 10:00:00"):
-                force_report_computed_task = message.ForceReportComputedTask(
+                force_report_computed_task = message.concents.ForceReportComputedTask(
                     report_computed_task = message.tasks.ReportComputedTask(
                         task_to_compute = deserialized_task_to_compute
                     )
@@ -598,7 +598,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
                 price=0,
             )
             self.size = 58
-            self.force_golem_data = message.ForceReportComputedTask(
+            self.force_golem_data = message.concents.ForceReportComputedTask(
                 report_computed_task = message.tasks.ReportComputedTask(
                     task_to_compute=self.task_to_compute,
                     size=self.size
@@ -609,7 +609,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
     def test_receive_should_accept_valid_message(self):
         message_timestamp = datetime.datetime.now(timezone.utc)
         new_message       = StoredMessage(
-            type        = self.force_golem_data.report_computed_task.TYPE,
+            type        = self.force_golem_data.report_computed_task.header.type_,
             timestamp   = message_timestamp,
             data        = self.force_golem_data.report_computed_task.serialize(),
             task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
@@ -631,7 +631,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         client_requestor.save()
 
         task_to_compute_message = StoredMessage(
-            type        = self.task_to_compute.TYPE,
+            type        = self.task_to_compute.header.type_,
             timestamp   = message_timestamp,
             data        = self.task_to_compute.serialize(),
             task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
@@ -701,7 +701,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
                 requestor_public_key = REQUESTOR_PUBLIC_KEY,
                 price=0,
             )
-            self.force_golem_data = message.ForceReportComputedTask(
+            self.force_golem_data = message.concents.ForceReportComputedTask(
                 report_computed_task = message.tasks.ReportComputedTask(
                     task_to_compute = self.task_to_compute
                 )
@@ -710,7 +710,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
     def test_receive_should_return_first_messages_in_order_they_were_added_to_queue_if_the_receive_queue_contains_only_force_report_and_its_past_deadline(self):
         message_timestamp = datetime.datetime.now(timezone.utc)
         new_message       = StoredMessage(
-            type        = self.force_golem_data.report_computed_task.TYPE,
+            type        = self.force_golem_data.report_computed_task.header.type_,
             timestamp   = message_timestamp,
             data        = self.force_golem_data.report_computed_task.serialize(),
             task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
@@ -720,7 +720,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         new_message.save()
 
         task_to_compute_message = StoredMessage(
-            type        = self.task_to_compute.TYPE,
+            type        = self.task_to_compute.header.type_,
             timestamp   = message_timestamp,
             data        = self.task_to_compute.serialize(),
             task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
@@ -729,14 +729,14 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         task_to_compute_message.full_clean()
         task_to_compute_message.save()
 
-        ack_report_computed_task = message.AckReportComputedTask(
+        ack_report_computed_task = message.tasks.AckReportComputedTask(
             report_computed_task=message.ReportComputedTask(
                 task_to_compute=self.task_to_compute,
             )
         )
 
         stored_ack_report_computed_task = StoredMessage(
-            type        = ack_report_computed_task.TYPE,
+            type        = ack_report_computed_task.header.type_,
             timestamp   = message_timestamp,
             data        = ack_report_computed_task.serialize(),
             task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
@@ -853,7 +853,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
         self.size = 58
 
         with freeze_time("2017-11-17 10:00:00"):
-            self.force_golem_data = message.ForceReportComputedTask(
+            self.force_golem_data = message.concents.ForceReportComputedTask(
                 report_computed_task = message.tasks.ReportComputedTask(
                     task_to_compute=self.task_to_compute,
                     size=self.size
@@ -861,7 +861,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             )
         message_timestamp = datetime.datetime.now(timezone.utc)
         new_message       = StoredMessage(
-            type        = self.force_golem_data.report_computed_task.TYPE,
+            type        = self.force_golem_data.report_computed_task.header.type_,
             timestamp   = message_timestamp,
             data        = self.force_golem_data.report_computed_task.serialize(),
             task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
@@ -871,7 +871,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
         new_message.save()
 
         task_to_compute_message = StoredMessage(
-            type        = self.task_to_compute.TYPE,
+            type        = self.task_to_compute.header.type_,
             timestamp   = message_timestamp,
             data        = self.task_to_compute.serialize(),
             task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
@@ -880,14 +880,14 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
         task_to_compute_message.full_clean()
         task_to_compute_message.save()
 
-        ack_report_computed_task = message.AckReportComputedTask(
+        ack_report_computed_task = message.tasks.AckReportComputedTask(
             report_computed_task=message.tasks.ReportComputedTask(
                 task_to_compute=self.task_to_compute,
             )
         )
 
         stored_ack_report_computed_task = StoredMessage(
-            type        = ack_report_computed_task.TYPE,
+            type        = ack_report_computed_task.header.type_,
             timestamp   = message_timestamp,
             data        = ack_report_computed_task.serialize(),
             task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member

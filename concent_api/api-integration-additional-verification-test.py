@@ -123,7 +123,7 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):  #
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.AckSubtaskResultsVerify.TYPE,
+        expected_message_type=message.concents.AckSubtaskResultsVerify,
         expected_content_type='application/octet-stream',
     )
 
@@ -172,7 +172,7 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):  #
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.SubtaskResultsSettled.TYPE,
+        expected_message_type=message.concents.SubtaskResultsSettled,
         expected_content_type='application/octet-stream',
     )
 
@@ -186,7 +186,7 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):  #
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.SubtaskResultsSettled.TYPE,
+        expected_message_type=message.concents.SubtaskResultsSettled,
         expected_content_type='application/octet-stream',
     )
 
@@ -219,7 +219,7 @@ def test_case_2_test_for_resources_failure_reason(cluster_consts, cluster_url, t
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.ServiceRefused.TYPE,
+        expected_message_type=message.concents.ServiceRefused,
         expected_content_type='application/octet-stream',
     )
 
@@ -252,7 +252,7 @@ def test_case_3_test_for_invalid_time(cluster_consts, cluster_url, test_id):  # 
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.ServiceRefused.TYPE,
+        expected_message_type=message.concents.ServiceRefused,
         expected_content_type='application/octet-stream',
     )
 
@@ -288,7 +288,7 @@ def test_case_4_test_for_duplicated_request(cluster_consts, cluster_url, test_id
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.AckSubtaskResultsVerify.TYPE,
+        expected_message_type=message.concents.AckSubtaskResultsVerify,
         expected_content_type='application/octet-stream',
     )
 
@@ -311,7 +311,7 @@ def test_case_4_test_for_duplicated_request(cluster_consts, cluster_url, test_id
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.ServiceRefused.TYPE,
+        expected_message_type=message.concents.ServiceRefused,
         expected_content_type='application/octet-stream',
     )
 
@@ -350,7 +350,7 @@ def test_case_5_test_requestor_status_account_negative(cluster_consts, cluster_u
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.ServiceRefused.TYPE,
+        expected_message_type=message.concents.ServiceRefused,
         expected_content_type='application/octet-stream',
     )
 
@@ -390,7 +390,7 @@ def test_case_6_test_without_script_src_in(cluster_consts, cluster_url, test_id)
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.AckSubtaskResultsVerify.TYPE,
+        expected_message_type=message.concents.AckSubtaskResultsVerify,
         expected_content_type='application/octet-stream',
     )
 
@@ -439,7 +439,7 @@ def test_case_6_test_without_script_src_in(cluster_consts, cluster_url, test_id)
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.SubtaskResultsSettled.TYPE,
+        expected_message_type=message.concents.SubtaskResultsSettled,
         expected_content_type='application/octet-stream',
     )
 
@@ -453,7 +453,7 @@ def test_case_6_test_without_script_src_in(cluster_consts, cluster_url, test_id)
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.SubtaskResultsSettled.TYPE,
+        expected_message_type=message.concents.SubtaskResultsSettled,
         expected_content_type='application/octet-stream',
     )
 

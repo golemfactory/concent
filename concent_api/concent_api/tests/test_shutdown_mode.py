@@ -145,7 +145,7 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.AckReportComputedTask,
+                message.tasks.AckReportComputedTask,
             ],
             task_id         = '1',
             subtask_id      = '8',

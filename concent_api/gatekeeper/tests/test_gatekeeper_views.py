@@ -7,7 +7,7 @@ from django.test    import override_settings
 from django.urls    import reverse
 
 from golem_messages.shortcuts       import dump
-from golem_messages.message         import FileTransferToken
+from golem_messages.message.concents import FileTransferToken
 from golem_messages.factories.concents import FileTransferTokenFactory
 
 from core.tests.utils                import ConcentIntegrationTestCase

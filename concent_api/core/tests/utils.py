@@ -36,6 +36,7 @@ from golem_messages.message.tasks import SubtaskResultsAccepted
 from golem_messages.message.tasks import SubtaskResultsRejected
 from golem_messages.message.tasks import TaskFailure
 from golem_messages.message.tasks import TaskToCompute
+from golem_messages.register import library
 from golem_messages.utils import encode_hex
 
 from core.models            import Client
@@ -273,7 +274,7 @@ class ConcentIntegrationTestCase(TestCase):
     )-> AckReportComputedTask:
         """ Returns AckReportComputedTask deserialized. """
         with freeze_time(timestamp or get_timestamp_string()):
-            ack_report_computed_task = message.AckReportComputedTask(
+            ack_report_computed_task = message.tasks.AckReportComputedTask(
                 report_computed_task=(
                     report_computed_task if report_computed_task is not None else self._get_deserialized_report_computed_task(
                         task_to_compute=(
@@ -384,17 +385,16 @@ class ConcentIntegrationTestCase(TestCase):
         assert isinstance(expected_messages, list)
         assert isinstance(task_id,           str)
         assert isinstance(subtask_id,        str)
+        assert all(expected_message in library._types.values() for expected_message in expected_messages)
 
-        expected_message_types = [expected_message.TYPE for expected_message in expected_messages]
-
-        for stored_message in StoredMessage.objects.order_by('-id')[:len(expected_message_types)]:
-            self.assertIn(stored_message.type,                      expected_message_types)
+        for stored_message in StoredMessage.objects.order_by('-id')[:len(expected_messages)]:
+            self.assertIn(library[stored_message.type],             expected_messages)
             self.assertEqual(stored_message.task_id,                task_id)
             self.assertEqual(stored_message.subtask_id,             subtask_id)
 
-            expected_message_types.remove(stored_message.type)
+            expected_messages.remove(library[stored_message.type])
 
-        assert expected_message_types == []
+        assert expected_messages == []
 
     def _test_undelivered_pending_responses(
         self,
@@ -714,7 +714,7 @@ class ConcentIntegrationTestCase(TestCase):
         task_failure: Optional[TaskFailure] = None,
     )-> RejectReportComputedTask:
         with freeze_time(timestamp or get_timestamp_string()):
-            return message.RejectReportComputedTask(
+            return message.tasks.RejectReportComputedTask(
                 cannot_compute_task = cannot_compute_task,
                 attached_task_to_compute = task_to_compute,
                 task_failure        = task_failure,
@@ -812,7 +812,7 @@ class ConcentIntegrationTestCase(TestCase):
         report_computed_task = message.tasks.ReportComputedTask(
             task_to_compute = self.task_to_compute  # pylint: disable=no-member
         )
-        force_report_computed_task = message.ForceReportComputedTask(
+        force_report_computed_task = message.concents.ForceReportComputedTask(
             report_computed_task = report_computed_task,
         )
         return self.client.post(

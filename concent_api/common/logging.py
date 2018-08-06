@@ -6,8 +6,8 @@ from typing import Optional
 from typing import Union
 
 from django.http import JsonResponse
-from golem_messages.message import FileTransferToken
 from golem_messages.message.base import Message
+from golem_messages.message.concents import FileTransferToken
 from golem_messages.utils import encode_hex
 
 from core.models import Subtask
@@ -200,7 +200,6 @@ def log_stored_message_added_to_subtask(
         f"TASK_ID: {task_id} "
         f"SUBTASK_ID: {subtask_id} "
         f"STORED_MESSAGE_TYPE: {_get_message_type(stored_message)} "
-        f"TYPE: { stored_message.TYPE} "
         f"PROVIDER PUBLIC KEY: {provider_id} "
         f"REQUESTOR PUBLIC KEY: {requestor_is}"
     )
@@ -248,7 +247,7 @@ def log_receive_message_from_database(
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
     logger.info(
-        f'Message {_get_message_type(message)}, TYPE: {message.TYPE} has been received by {queue_name} endpoint.'
+        f'Message {_get_message_type(message)}, TYPE: {message.header.type_} has been received by {queue_name} endpoint.'
         f' RESPONSE_TYPE: {response_type} '
         f'TASK_ID: {task_id} '
         f'SUBTASK_ID: {subtask_id} '

@@ -3,7 +3,7 @@ import json
 
 from django.http                    import JsonResponse
 from django.test                    import TestCase
-from golem_messages.message         import FileTransferToken
+from golem_messages.message.concents import FileTransferToken
 
 from gatekeeper.utils               import gatekeeper_access_denied_response
 from common.constants                import ErrorCode

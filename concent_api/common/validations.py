@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 
 from golem_messages import message
-from golem_messages.message import FileTransferToken
+from golem_messages.message.concents import FileTransferToken
 
 from common.constants import ErrorCode
 from core.constants import VALID_SHA1_HASH_REGEX

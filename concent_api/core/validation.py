@@ -4,7 +4,7 @@ from typing import Union
 
 from golem_messages import message
 from golem_messages.exceptions import MessageError
-from golem_messages.message import RejectReportComputedTask
+from golem_messages.message.tasks import RejectReportComputedTask
 
 from common.constants import ErrorCode
 from common.exceptions import ConcentValidationError
@@ -226,7 +226,7 @@ def get_validated_client_public_key_from_client_message(golem_message: message.b
 
     if task_to_compute is not None:
         if isinstance(golem_message, (
-            message.ForceReportComputedTask,
+            message.concents.ForceReportComputedTask,
             message.concents.ForceSubtaskResults,
             message.concents.ForcePayment,
             message.concents.SubtaskResultsVerify,
@@ -234,8 +234,8 @@ def get_validated_client_public_key_from_client_message(golem_message: message.b
             client_public_key = task_to_compute.provider_public_key
             validate_hex_public_key(client_public_key, 'provider_public_key')
         elif isinstance(golem_message, (
-            message.AckReportComputedTask,
-            message.RejectReportComputedTask,
+            message.tasks.AckReportComputedTask,
+            message.tasks.RejectReportComputedTask,
             message.concents.ForceGetTaskResult,
             message.concents.ForceSubtaskResultsResponse,
         )):
@@ -364,13 +364,13 @@ def validate_reject_report_computed_task(client_message: RejectReportComputedTas
 
     if client_message.reason is None:
         raise GolemMessageValidationError(
-            f'Error during handling RejectReportComputedTask. REASON is None, it should be message.RejectReportComputedTask.REASON instance',
+            f'Error during handling RejectReportComputedTask. REASON is None, it should be message.tasks.RejectReportComputedTask.REASON instance',
             error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE
         )
 
     if not isinstance(client_message.reason, RejectReportComputedTask.REASON):
         raise GolemMessageValidationError(
-            f'Error during handling RejectReportComputedTask. REASON should be message.RejectReportComputedTask.REASON instance. '
+            f'Error during handling RejectReportComputedTask. REASON should be message.tasks.RejectReportComputedTask.REASON instance. '
             f'Currently it is {type(client_message.reason)} instance',
             error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE
         )

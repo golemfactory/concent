@@ -2,7 +2,7 @@ import os
 import requests
 from golem_messages.shortcuts import dump
 from golem_messages.shortcuts import load
-from golem_messages.message import AckReportComputedTask
+from golem_messages.message.tasks import AckReportComputedTask
 from golem_messages.message.concents import ForceGetTaskResult
 from golem_messages.message.concents import ForceReportComputedTask
 from golem_messages.message.concents import ForceSubtaskResults

@@ -98,7 +98,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             expected_messages = [
                 message.TaskToCompute,
                 message.ReportComputedTask,
-                message.AckReportComputedTask,
+                message.tasks.AckReportComputedTask,
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',
@@ -248,7 +248,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             expected_messages = [
                 message.TaskToCompute,
                 message.ReportComputedTask,
-                message.AckReportComputedTask,
+                message.tasks.AckReportComputedTask,
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',
@@ -374,7 +374,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             expected_messages = [
                 message.TaskToCompute,
                 message.ReportComputedTask,
-                message.AckReportComputedTask,
+                message.tasks.AckReportComputedTask,
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',
@@ -707,7 +707,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             expected_messages = [
                 message.TaskToCompute,
                 message.ReportComputedTask,
-                message.AckReportComputedTask,
+                message.tasks.AckReportComputedTask,
             ],
             task_id         = '2',
             subtask_id      = 'xxyyzz',
@@ -1047,7 +1047,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             expected_messages = [
                 message.TaskToCompute,
                 message.ReportComputedTask,
-                message.AckReportComputedTask,
+                message.tasks.AckReportComputedTask,
             ],
             task_id         = '1',
             subtask_id      = 'xxyyzz',
@@ -1249,7 +1249,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             expected_messages = [
                 message.TaskToCompute,
                 message.ReportComputedTask,
-                message.AckReportComputedTask,
+                message.tasks.AckReportComputedTask,
             ],
             task_id         = '1',
             subtask_id      = 'xxyyzz',

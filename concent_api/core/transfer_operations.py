@@ -10,7 +10,7 @@ from django.conf import settings
 from django.utils import timezone
 from golem_messages import message
 from golem_messages import shortcuts
-from golem_messages.message import FileTransferToken
+from golem_messages.message.concents import FileTransferToken
 
 from core import exceptions
 from core.models import Client

@@ -13,7 +13,7 @@ from django.views.decorators.http   import require_POST
 from django.views.decorators.http   import require_safe
 
 from golem_messages.exceptions      import MessageError
-from golem_messages.message         import FileTransferToken
+from golem_messages.message.concents import FileTransferToken
 from golem_messages.message         import Message
 from golem_messages.shortcuts       import load
 

@@ -47,7 +47,7 @@ def clean_directory(directory_path: str):
             logger.warning(f'File {file} in directory {directory_path} was not deleted, exception: {exception}')
 
 
-def prepare_storage_request_headers(file_transfer_token: message.FileTransferToken) -> dict:
+def prepare_storage_request_headers(file_transfer_token: message.concents.FileTransferToken) -> dict:
     """ Prepare headers for request to storage cluster. """
     dumped_file_transfer_token = dump(
         file_transfer_token,
@@ -239,7 +239,7 @@ def try_to_upload_blender_output_file(blender_output_file_name: str, output_form
                 result_package_path=upload_file_path,
                 result_size=len(upload_file_content),
                 result_package_hash=upload_file_checksum,
-                operation=message.FileTransferToken.Operation.upload,
+                operation=message.concents.FileTransferToken.Operation.upload,
             )
 
             # Upload the image.

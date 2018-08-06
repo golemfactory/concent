@@ -4,7 +4,7 @@ from django.db.models import Q
 from django.http.response import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from golem_messages.message import FileTransferToken
+from golem_messages.message.concents import FileTransferToken
 
 from core.tasks import upload_finished
 from common.decorators import provides_concent_feature

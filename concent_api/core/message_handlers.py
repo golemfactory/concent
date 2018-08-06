@@ -14,11 +14,12 @@ from django.http import HttpResponse
 from constance import config
 
 from golem_messages import message
-from golem_messages.message import FileTransferToken
+from golem_messages.message.concents import FileTransferToken
 from golem_messages.message.concents import ForcePaymentCommitted
 from golem_messages.message.concents import ForcePaymentRejected
 from golem_messages.message.concents import ServiceRefused
 from golem_messages.message.tasks import SubtaskResultsRejected
+from golem_messages.register import library
 from golem_sci.events import BatchTransferEvent
 from golem_sci.events import ForcedPaymentEvent
 
@@ -230,7 +231,7 @@ def handle_send_reject_report_computed_task(client_message):
 
     # If reason is GotMessageCannotComputeTask,
     # cannot_compute_task is instance of CannotComputeTask signed by the provider.
-    if client_message.reason == message.RejectReportComputedTask.REASON.GotMessageCannotComputeTask:
+    if client_message.reason == message.tasks.RejectReportComputedTask.REASON.GotMessageCannotComputeTask:
         if not isinstance(client_message.cannot_compute_task, message.CannotComputeTask):
             raise Http400(
                 "Expected CannotComputeTask inside RejectReportComputedTask.",
@@ -244,7 +245,7 @@ def handle_send_reject_report_computed_task(client_message):
 
     # If reason is GotMessageTaskFailure,
     # task_failure is instance of TaskFailure signed by the provider.
-    elif client_message.reason == message.RejectReportComputedTask.REASON.GotMessageTaskFailure:
+    elif client_message.reason == message.tasks.RejectReportComputedTask.REASON.GotMessageTaskFailure:
         if not isinstance(client_message.task_failure, message.TaskFailure):
             raise Http400(
                 "Expected TaskFailure inside RejectReportComputedTask.",
@@ -258,7 +259,7 @@ def handle_send_reject_report_computed_task(client_message):
 
     # RejectReportComputedTask should contain empty cannot_compute_task and task_failure
     else:
-        assert client_message.reason == message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded
+        assert client_message.reason == message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded
         if client_message.cannot_compute_task is not None or client_message.task_failure is not None:
             raise Http400(
                 "RejectReportComputedTask requires empty 'cannot_compute_task' and 'task_failure' with {} reason.".format(
@@ -304,7 +305,7 @@ def handle_send_reject_report_computed_task(client_message):
         ]
     )
 
-    if client_message.reason == message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded:
+    if client_message.reason == message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded:
 
         subtask = update_subtask(
             subtask                     = subtask,
@@ -831,8 +832,8 @@ def store_subtask(
     next_deadline: Optional[int],
     task_to_compute: message.TaskToCompute,
     report_computed_task: message.ReportComputedTask,
-    ack_report_computed_task: Optional[message.AckReportComputedTask] = None,
-    reject_report_computed_task: Optional[message.RejectReportComputedTask] = None,
+    ack_report_computed_task: Optional[message.tasks.AckReportComputedTask] = None,
+    reject_report_computed_task: Optional[message.tasks.RejectReportComputedTask] = None,
     subtask_results_accepted: Optional[message.tasks.SubtaskResultsAccepted] = None,
     subtask_results_rejected: Optional[message.tasks.SubtaskResultsRejected] = None,
     force_get_task_result: Optional[message.concents.ForceGetTaskResult] = None,
@@ -938,8 +939,8 @@ def handle_messages_from_database(
                 reject_report_computed_task=reject_report_computed_task,
                 reason=message.concents.ForceReportComputedTaskResponse.REASON.RejectFromRequestor,
             )
-            if reject_report_computed_task.reason == message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded:
-                ack_report_computed_task = message.AckReportComputedTask(
+            if reject_report_computed_task.reason == message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded:
+                ack_report_computed_task = message.tasks.AckReportComputedTask(
                     report_computed_task=deserialize_message(pending_response.subtask.report_computed_task.data.tobytes()),
                 )
                 sign_message(ack_report_computed_task, settings.CONCENT_PRIVATE_KEY)
@@ -950,7 +951,7 @@ def handle_messages_from_database(
             mark_message_as_delivered_and_log(pending_response, response_to_client)
             return response_to_client
         else:
-            ack_report_computed_task = message.AckReportComputedTask(
+            ack_report_computed_task = message.tasks.AckReportComputedTask(
                 report_computed_task=deserialize_message(pending_response.subtask.report_computed_task.data.tobytes()),
             )
             sign_message(ack_report_computed_task, settings.CONCENT_PRIVATE_KEY)
@@ -962,7 +963,7 @@ def handle_messages_from_database(
             return response_to_client
 
     elif pending_response.response_type == PendingResponse.ResponseType.VerdictReportComputedTask.name:  # pylint: disable=no-member
-        ack_report_computed_task = message.AckReportComputedTask(
+        ack_report_computed_task = message.tasks.AckReportComputedTask(
             report_computed_task=deserialize_message(pending_response.subtask.report_computed_task.data.tobytes()),
         )
         sign_message(ack_report_computed_task, settings.CONCENT_PRIVATE_KEY)
@@ -1114,8 +1115,8 @@ def update_subtask(
     set_next_deadline: Optional[bool] = False,
     task_to_compute: Optional[message.TaskToCompute] = None,
     report_computed_task: Optional[message.ReportComputedTask] = None,
-    ack_report_computed_task: Optional[message.AckReportComputedTask] = None,
-    reject_report_computed_task: Optional[message.RejectReportComputedTask] = None,
+    ack_report_computed_task: Optional[message.tasks.AckReportComputedTask] = None,
+    reject_report_computed_task: Optional[message.tasks.RejectReportComputedTask] = None,
     subtask_results_accepted: Optional[message.tasks.SubtaskResultsAccepted] = None,
     subtask_results_rejected: Optional[message.tasks.SubtaskResultsRejected] = None,
     force_get_task_result: Optional[message.concents.ForceGetTaskResult] = None,
@@ -1176,8 +1177,8 @@ def set_subtask_messages(
     subtask: Subtask,
     task_to_compute: Optional[message.TaskToCompute] = None,
     report_computed_task: Optional[message.ReportComputedTask] = None,
-    ack_report_computed_task: Optional[message.AckReportComputedTask] = None,
-    reject_report_computed_task: Optional[message.RejectReportComputedTask] = None,
+    ack_report_computed_task: Optional[message.tasks.AckReportComputedTask] = None,
+    reject_report_computed_task: Optional[message.tasks.RejectReportComputedTask] = None,
     subtask_results_accepted: Optional[message.tasks.SubtaskResultsAccepted] = None,
     subtask_results_rejected: Optional[message.tasks.SubtaskResultsRejected] = None,
     force_get_task_result: Optional[message.concents.ForceGetTaskResult] = None
@@ -1236,8 +1237,8 @@ def store_or_update_subtask(
     set_next_deadline: Optional[bool] = False,
     task_to_compute: Optional[message.TaskToCompute] = None,
     report_computed_task: Optional[message.ReportComputedTask] = None,
-    ack_report_computed_task: Optional[message.AckReportComputedTask] = None,
-    reject_report_computed_task: Optional[message.RejectReportComputedTask] = None,
+    ack_report_computed_task: Optional[message.tasks.AckReportComputedTask] = None,
+    reject_report_computed_task: Optional[message.tasks.RejectReportComputedTask] = None,
     subtask_results_accepted: Optional[message.tasks.SubtaskResultsAccepted] = None,
     subtask_results_rejected: Optional[message.tasks.SubtaskResultsRejected] = None,
     force_get_task_result: Optional[message.concents.ForceGetTaskResult] = None,
@@ -1292,11 +1293,11 @@ def store_message(
     task_id:                str,
     subtask_id:             str,
 ):
-    assert golem_message.TYPE in message.registered_message_types
+    assert golem_message.header.type_ in library
 
     message_timestamp = parse_timestamp_to_utc_datetime(golem_message.timestamp)
     stored_message = StoredMessage(
-        type        = golem_message.TYPE,
+        type        = golem_message.header.type_,
         timestamp   = message_timestamp,
         data        = copy.copy(golem_message).serialize(),
         task_id     = task_id,
@@ -1412,13 +1413,13 @@ def handle_send_subtask_results_verify(
 
 
 def handle_message(client_message):
-    if isinstance(client_message, message.ForceReportComputedTask):
+    if isinstance(client_message, message.concents.ForceReportComputedTask):
         return handle_send_force_report_computed_task(client_message)
 
-    elif isinstance(client_message, message.AckReportComputedTask):
+    elif isinstance(client_message, message.tasks.AckReportComputedTask):
         return handle_send_ack_report_computed_task(client_message)
 
-    elif isinstance(client_message, message.RejectReportComputedTask):
+    elif isinstance(client_message, message.tasks.RejectReportComputedTask):
         return handle_send_reject_report_computed_task(client_message)
 
     elif (

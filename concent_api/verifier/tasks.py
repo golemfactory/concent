@@ -97,7 +97,7 @@ def blender_verification_order(
         result_package_path=result_package_path,
         result_size=result_size,
         result_package_hash=result_package_hash,
-        operation=message.FileTransferToken.Operation.download,
+        operation=message.concents.FileTransferToken.Operation.download,
     )
 
     package_paths_to_downloaded_archive_names = {

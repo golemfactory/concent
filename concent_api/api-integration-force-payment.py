@@ -95,7 +95,7 @@ def test_case_2d_send_correct_force_payment(cluster_consts, cluster_url, test_id
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.ForcePaymentCommitted.TYPE,
+        expected_message_type=message.concents.ForcePaymentCommitted,
         expected_content_type='application/octet-stream',
     )
     time.sleep(5)
@@ -109,7 +109,7 @@ def test_case_2d_send_correct_force_payment(cluster_consts, cluster_url, test_id
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.ForcePaymentCommitted.TYPE,
+        expected_message_type=message.concents.ForcePaymentCommitted,
         expected_content_type='application/octet-stream',
     )
 
@@ -156,7 +156,7 @@ def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts, clu
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.ForcePaymentRejected.TYPE,
+        expected_message_type=message.concents.ForcePaymentRejected,
         expected_content_type='application/octet-stream',
     )
 
@@ -203,7 +203,7 @@ def test_case_2b_send_force_payment_beyond_payment_time(cluster_consts, cluster_
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.ForcePaymentRejected.TYPE,
+        expected_message_type=message.concents.ForcePaymentRejected,
         expected_content_type='application/octet-stream',
     )
 
@@ -255,7 +255,7 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.ServiceRefused.TYPE,
+        expected_message_type=message.concents.ServiceRefused,
         expected_content_type='application/octet-stream',
     )
 

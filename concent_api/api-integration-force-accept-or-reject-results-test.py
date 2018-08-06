@@ -43,7 +43,7 @@ def force_subtask_results(timestamp = None, ack_report_computed_task = None):
 def ack_report_computed_task(timestamp = None, report_computed_task = None):
     with freeze_time(timestamp):
         return sign_message(
-            message.AckReportComputedTask(
+            message.tasks.AckReportComputedTask(
                 report_computed_task=report_computed_task,
             ),
             REQUESTOR_PRIVATE_KEY,
@@ -157,7 +157,7 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts, cluster_url, 
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.ForceSubtaskResults.TYPE,
+        expected_message_type=message.concents.ForceSubtaskResults,
         expected_content_type='application/octet-stream',
     )
     api_request(
@@ -190,7 +190,7 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts, cluster_url, 
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.ForceSubtaskResultsResponse.TYPE,
+        expected_message_type=message.concents.ForceSubtaskResultsResponse,
         expected_content_type='application/octet-stream',
     )
 
@@ -239,7 +239,7 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts, cluster_url, 
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.ForceSubtaskResults.TYPE,
+        expected_message_type=message.concents.ForceSubtaskResults,
         expected_content_type='application/octet-stream',
     )
     #  Step 3. Requestor sends ForceSubtaskResultsResponse
@@ -272,7 +272,7 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts, cluster_url, 
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.ForceSubtaskResultsResponse.TYPE,
+        expected_message_type=message.concents.ForceSubtaskResultsResponse,
         expected_content_type='application/octet-stream',
     )
 
@@ -306,7 +306,7 @@ def test_case_2c_wrong_timestamps(cluster_consts, cluster_url, test_id):
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.ForceSubtaskResultsRejected.TYPE,
+        expected_message_type=message.concents.ForceSubtaskResultsRejected,
         expected_content_type='application/octet-stream',
     )
 
@@ -342,7 +342,7 @@ def test_case_2b_not_enough_funds(cluster_consts, cluster_url, test_id):
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.ServiceRefused.TYPE,
+        expected_message_type=message.concents.ServiceRefused,
         expected_content_type='application/octet-stream',
     )
 
@@ -399,7 +399,7 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts, cluster_u
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.ServiceRefused.TYPE,
+        expected_message_type=message.concents.ServiceRefused,
         expected_content_type='application/octet-stream',
     )
     #  Step 3. Requestor wants to receive ForceSubtaskResults from Concent
@@ -413,7 +413,7 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts, cluster_u
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.ForceSubtaskResults.TYPE,
+        expected_message_type=message.concents.ForceSubtaskResults,
         expected_content_type='application/octet-stream',
     )
 

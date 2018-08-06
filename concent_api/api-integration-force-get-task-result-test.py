@@ -86,7 +86,7 @@ def test_case_1_test_for_existing_file(cluster_consts, cluster_url, test_id):
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.AckForceGetTaskResult.TYPE,
+        expected_message_type=message.concents.AckForceGetTaskResult,
         expected_content_type='application/octet-stream',
     )
 
@@ -100,7 +100,7 @@ def test_case_1_test_for_existing_file(cluster_consts, cluster_url, test_id):
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.ForceGetTaskResultUpload.TYPE,
+        expected_message_type=message.concents.ForceGetTaskResultUpload,
         expected_content_type='application/octet-stream',
     )
 
@@ -131,7 +131,7 @@ def test_case_1_test_for_existing_file(cluster_consts, cluster_url, test_id):
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.ForceGetTaskResultDownload.TYPE,
+        expected_message_type=message.concents.ForceGetTaskResultDownload,
         expected_content_type='application/octet-stream',
     )
 
@@ -158,7 +158,7 @@ def test_case_2_test_for_non_existing_file(cluster_consts, cluster_url, test_id)
             'Content-Type':                     'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.AckForceGetTaskResult.TYPE,
+        expected_message_type=message.concents.AckForceGetTaskResult,
         expected_content_type='application/octet-stream',
     )
 
@@ -172,7 +172,7 @@ def test_case_2_test_for_non_existing_file(cluster_consts, cluster_url, test_id)
             'Content-Type': 'application/octet-stream',
         },
         expected_status=200,
-        expected_message_type=message.concents.ForceGetTaskResultUpload.TYPE,
+        expected_message_type=message.concents.ForceGetTaskResultUpload,
         expected_content_type='application/octet-stream',
     )
 

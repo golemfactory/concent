@@ -59,7 +59,7 @@ class SerializeMessageToDictionaryTestCase(TestCase):
         deserialized_task_to_compute = load(serialized_task_to_compute, PROVIDER_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY,
                                             check_time=False)
 
-        self.ack_report_computed_task = message.AckReportComputedTask()
+        self.ack_report_computed_task = message.tasks.AckReportComputedTask()
         self.ack_report_computed_task.report_computed_task = message.ReportComputedTask(
             task_to_compute=deserialized_task_to_compute
         )

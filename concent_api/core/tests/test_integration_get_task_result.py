@@ -5,7 +5,7 @@ from django.urls            import reverse
 from freezegun              import freeze_time
 from golem_messages         import load
 from golem_messages         import message
-from golem_messages.message import FileTransferToken
+from golem_messages.message.concents import FileTransferToken
 
 from core.tests.utils       import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
@@ -442,7 +442,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'], '99')
 
         # Test FileTransferToken message
-        self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
+        self.assertIsInstance(message_file_transfer_token, message.concents.FileTransferToken)
         self.assertEqual(message_file_transfer_token.sig,  self._add_signature_to_message(message_file_transfer_token, CONCENT_PRIVATE_KEY))
         self.assertEqual(message_file_transfer_token.authorized_client_public_key, self.PROVIDER_PUBLIC_KEY)
         self.assertEqual(message_file_transfer_token.subtask_id, deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
@@ -706,7 +706,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'], '99')
 
         # Test FileTransferToken message
-        self.assertIsInstance(message_file_transfer_token,                      message.FileTransferToken)
+        self.assertIsInstance(message_file_transfer_token,                      message.concents.FileTransferToken)
         self.assertEqual(message_file_transfer_token.sig,                       self._add_signature_to_message(message_file_transfer_token, CONCENT_PRIVATE_KEY))
         self.assertEqual(message_file_transfer_token.authorized_client_public_key, self.PROVIDER_PUBLIC_KEY)
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
@@ -747,7 +747,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertIsInstance(message_from_concent,                                                         message.concents.ForceGetTaskResultDownload)
         self.assertEqual(message_from_concent.timestamp, parse_iso_date_to_timestamp("2017-12-01 11:00:54"))
         self.assertEqual(message_from_concent.force_get_task_result.report_computed_task.task_to_compute,   deserialized_task_to_compute)
-        self.assertIsInstance(message_from_concent.file_transfer_token,                                     message.FileTransferToken)
+        self.assertIsInstance(message_from_concent.file_transfer_token,                                     message.concents.FileTransferToken)
         self.assertEqual(message_from_concent.file_transfer_token.sig,                                      self._add_signature_to_message(message_from_concent.file_transfer_token, CONCENT_PRIVATE_KEY))
         self.assertEqual(message_from_concent.file_transfer_token.authorized_client_public_key, self.REQUESTOR_PUBLIC_KEY)
         self.assertEqual(message_from_concent.file_transfer_token.subtask_id,                               deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
@@ -859,7 +859,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'], '99')
 
         # Test FileTransferToken message
-        self.assertIsInstance(message_file_transfer_token,                      message.FileTransferToken)
+        self.assertIsInstance(message_file_transfer_token,                      message.concents.FileTransferToken)
         self.assertEqual(message_file_transfer_token.sig,                       self._add_signature_to_message(message_file_transfer_token, CONCENT_PRIVATE_KEY))
         self.assertEqual(message_file_transfer_token.authorized_client_public_key, self.PROVIDER_PUBLIC_KEY)
         self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
@@ -1014,7 +1014,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'], '99')
 
         # Test FileTransferToken message
-        self.assertIsInstance(message_file_transfer_token, message.FileTransferToken)
+        self.assertIsInstance(message_file_transfer_token, message.concents.FileTransferToken)
         self.assertEqual(message_file_transfer_token.sig,       self._add_signature_to_message(message_file_transfer_token, CONCENT_PRIVATE_KEY))
         self.assertEqual(message_file_transfer_token.authorized_client_public_key, self.PROVIDER_PUBLIC_KEY)
         self.assertEqual(message_file_transfer_token.subtask_id, deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
@@ -1068,7 +1068,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
         self.assertEqual(message_from_concent.force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'], '99')
 
-        self.assertIsInstance(message_from_concent.file_transfer_token, message.FileTransferToken)
+        self.assertIsInstance(message_from_concent.file_transfer_token, message.concents.FileTransferToken)
         self.assertEqual(message_from_concent.file_transfer_token.sig,  self._add_signature_to_message(message_from_concent.file_transfer_token, CONCENT_PRIVATE_KEY))
         self.assertEqual(message_from_concent.file_transfer_token.authorized_client_public_key, self.REQUESTOR_PUBLIC_KEY)
         self.assertEqual(message_from_concent.file_transfer_token.subtask_id, deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member

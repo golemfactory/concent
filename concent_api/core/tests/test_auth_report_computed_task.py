@@ -163,7 +163,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            ack_report_computed_task = message.AckReportComputedTask(
+            ack_report_computed_task = message.tasks.AckReportComputedTask(
                 report_computed_task=self._get_deserialized_report_computed_task(
                     task_to_compute=self.deserialized_task_to_compute,
                 )
@@ -195,7 +195,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            ack_report_computed_task = message.AckReportComputedTask(
+            ack_report_computed_task = message.tasks.AckReportComputedTask(
                 report_computed_task=self._get_deserialized_report_computed_task(
                     task_to_compute=task_to_compute,
                 )
@@ -232,7 +232,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_to_compute=task_to_compute,
         )
         with freeze_time("2017-12-01 11:00:05"):
-            ack_report_computed_task = message.AckReportComputedTask(
+            ack_report_computed_task = message.tasks.AckReportComputedTask(
                 report_computed_task=report_computed_task_from_provider,
             )
         serialized_ack_report_computed_task = dump(ack_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -269,7 +269,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             task_to_compute=self.deserialized_task_to_compute,
         )
         with freeze_time("2017-12-01 11:00:05"):
-            ack_report_computed_task = message.AckReportComputedTask(
+            ack_report_computed_task = message.tasks.AckReportComputedTask(
                 report_computed_task=report_computed_task_from_provider
             )
         serialized_ack_report_computed_task = dump(ack_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -293,7 +293,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.AckReportComputedTask,
+                message.tasks.AckReportComputedTask,
             ],
             task_id         = '1',
             subtask_id      = '8',
@@ -457,8 +457,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            reject_report_computed_task = message.RejectReportComputedTask(
-                reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
+            reject_report_computed_task = message.tasks.RejectReportComputedTask(
+                reason=message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
                 attached_task_to_compute=task_to_compute,
             )
 
@@ -489,8 +489,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            reject_report_computed_task = message.RejectReportComputedTask(
-                reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
+            reject_report_computed_task = message.tasks.RejectReportComputedTask(
+                reason=message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
                 attached_task_to_compute=task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -518,8 +518,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            reject_report_computed_task = message.RejectReportComputedTask(
-                reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
+            reject_report_computed_task = message.tasks.RejectReportComputedTask(
+                reason=message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
                 attached_task_to_compute=task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -570,9 +570,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         deserialized_cannot_compute_task = load(serialized_cannot_compute_task, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY, check_time = False)
 
         with freeze_time("2017-12-01 11:00:05"):
-            reject_report_computed_task = message.RejectReportComputedTask(
+            reject_report_computed_task = message.tasks.RejectReportComputedTask(
                 cannot_compute_task = deserialized_cannot_compute_task,
-                reason              = message.RejectReportComputedTask.REASON.GotMessageCannotComputeTask,
+                reason              = message.tasks.RejectReportComputedTask.REASON.GotMessageCannotComputeTask,
                 attached_task_to_compute=self.deserialized_task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -597,7 +597,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.RejectReportComputedTask,
+                message.tasks.RejectReportComputedTask,
             ],
             task_id         = '1',
             subtask_id      = '8',
@@ -764,8 +764,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            reject_report_computed_task = message.RejectReportComputedTask(
-                reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
+            reject_report_computed_task = message.tasks.RejectReportComputedTask(
+                reason=message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
                 attached_task_to_compute=task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -795,8 +795,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            reject_report_computed_task = message.RejectReportComputedTask(
-                reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
+            reject_report_computed_task = message.tasks.RejectReportComputedTask(
+                reason=message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
                 attached_task_to_compute=task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -824,8 +824,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            reject_report_computed_task = message.RejectReportComputedTask(
-                reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
+            reject_report_computed_task = message.tasks.RejectReportComputedTask(
+                reason=message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
                 attached_task_to_compute=task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -867,8 +867,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            reject_report_computed_task = message.RejectReportComputedTask(
-                reason=message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
+            reject_report_computed_task = message.tasks.RejectReportComputedTask(
+                reason=message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
                 attached_task_to_compute=self.deserialized_task_to_compute,
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -893,7 +893,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._test_last_stored_messages(
             expected_messages= [
-                message.RejectReportComputedTask,
+                message.tasks.RejectReportComputedTask,
             ],
             task_id         = '1',
             subtask_id      = '8',
@@ -990,7 +990,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         message_from_concent_to_requestor = load(response.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
-        self.assertIsInstance(message_from_concent_to_requestor,                                message.VerdictReportComputedTask)
+        self.assertIsInstance(message_from_concent_to_requestor,                                message.concents.VerdictReportComputedTask)
         self.assertGreaterEqual(message_from_concent_to_requestor.timestamp,                    int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))
         self.assertLessEqual(   message_from_concent_to_requestor.timestamp,                    int(dateutil.parser.parse("2017-12-01 11:00:15").timestamp()))
         self.assertEqual(message_from_concent_to_requestor.ack_report_computed_task.subtask_id, message_from_concent_to_provider.ack_report_computed_task.subtask_id)
@@ -1193,7 +1193,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             check_time = False
         )
 
-        self.assertIsInstance(message_from_concent_to_requestor,                                message.VerdictReportComputedTask)
+        self.assertIsInstance(message_from_concent_to_requestor,                                message.concents.VerdictReportComputedTask)
         self.assertGreaterEqual(message_from_concent_to_requestor.timestamp,                    int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))
         self.assertLessEqual(message_from_concent_to_requestor.timestamp,                       int(dateutil.parser.parse("2017-12-01 11:00:15").timestamp()))
         self.assertEqual(message_from_concent_to_requestor.ack_report_computed_task.subtask_id, message_from_concent_to_provider.ack_report_computed_task.subtask_id)

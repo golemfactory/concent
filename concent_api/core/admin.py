@@ -61,11 +61,13 @@ class SubtaskAdmin(ModelAdminReadOnlyMixin, admin.ModelAdmin):
         'task_id',
     ]
 
-    def get_provider_public_key(self, obj):  # pylint: disable=no-self-use
+    @classmethod
+    def get_provider_public_key(cls, obj):
         return obj.provider.public_key
     get_provider_public_key.short_description = 'Provider public key'  # type: ignore
 
-    def get_requestor_public_key(self, obj):  # pylint: disable=no-self-use
+    @classmethod
+    def get_requestor_public_key(cls, obj):
         return obj.requestor.public_key
     get_requestor_public_key.short_description = 'Requestor public key'  # type: ignore
 
@@ -99,13 +101,15 @@ class PendingResponseAdmin(ModelAdminReadOnlyMixin, admin.ModelAdmin):
         'subtask__task_id',
     ]
 
-    def get_subtask_subtask_id(self, obj):  # pylint: disable=no-self-use
+    @classmethod
+    def get_subtask_subtask_id(cls, obj):
         if obj.subtask is not None:
             return obj.subtask.subtask_id
         return '-not available-'
     get_subtask_subtask_id.short_description = 'Subtask id'  # type: ignore
 
-    def get_client_public_key(self, obj):  # pylint: disable=no-self-use
+    @classmethod
+    def get_client_public_key(cls, obj):
         return obj.client.public_key
     get_client_public_key.short_description = 'Client public key'  # type: ignore
 

@@ -6,11 +6,7 @@ from celery import shared_task
 from golem_messages import message
 from mypy.types import Optional
 
-from django.conf import settings
-
 from conductor.models import BlenderSubtaskDefinition
-from core.constants import VerificationResult
-from core.tasks import verification_result
 from core.transfer_operations import create_file_transfer_token_for_concent
 from common.decorators import log_task_errors
 from common.decorators import provides_concent_feature
@@ -72,21 +68,6 @@ def blender_verification_order(
     assert (source_size and source_package_hash and source_package_path) and (result_size and result_package_hash and result_package_path)
     assert isinstance(subtask_id, str)
     assert isinstance(verification_deadline, int)
-
-    # this is a temporary hack - dummy verification which's result depends on subtask_id only
-
-    if settings.MOCK_VERIFICATION_ENABLED:
-        result = VerificationResult.MATCH.name if subtask_id[-1] == 'm' else VerificationResult.MISMATCH.name
-        if subtask_id[-1] == 'm':
-            verification_result.delay(
-                subtask_id,
-                result,
-            )
-        log_string_message(
-            logger,
-            f'Temporary hack, verification result depends on subtask_id only - SUBTASK_ID: {subtask_id}. Result: {result}'
-        )
-        return
 
     # Generate a FileTransferToken valid for a download of any file listed in the order.
     file_transfer_token = create_file_transfer_token_for_concent(

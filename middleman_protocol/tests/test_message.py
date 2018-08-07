@@ -24,8 +24,8 @@ from middleman_protocol.message import ErrorFrame
 from middleman_protocol.message import GolemMessageFrame
 from middleman_protocol.registry import create_middleman_protocol_message
 from middleman_protocol.registry import PAYLOAD_TYPE_TO_MIDDLEMAN_MESSAGE_CLASS
-from middleman_protocol.stream import receive_frame
 from middleman_protocol.stream import send_over_stream
+from middleman_protocol.stream import unescape_stream
 
 
 concent_ecc_keys = ECCx(None)
@@ -115,7 +115,7 @@ class TestMessageMiddlemanProtocol:
                     raw_message=middleman_message,
                     private_key=CONCENT_PRIVATE_KEY
                 )
-                raw_message_received = next(receive_frame(connection=connection))
+                raw_message_received = next(unescape_stream(connection=connection))
 
         deserialized_message = AbstractFrame.deserialize(
             raw_message=raw_message_received,

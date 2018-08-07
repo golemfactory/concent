@@ -87,7 +87,7 @@ def split_stream(connection: socket.socket) -> Iterator[bytes]:
 
 def unescape_stream(connection: socket.socket) -> Iterator[Optional[bytes]]:
     """
-    Middle level receiver which determines if received data has broken escaping and yields None to indicate it,
+    Top level receiver which determines if received data has broken escaping and yields None to indicate it,
     or reverses escaping and yields unescaped frame.
     """
     assert isinstance(connection, socket.socket)
@@ -102,26 +102,6 @@ def unescape_stream(connection: socket.socket) -> Iterator[Optional[bytes]]:
             yield escape_decode_raw_message(unescaped_data)
         except BrokenEscapingInFrameMiddlemanProtocolError:
             yield None
-
-
-def receive_frame(connection: socket.socket) -> Iterator[Optional[bytes]]:
-    """
-    Top level receiver which determines if received data indicates an invalid escape sequence and yields it,
-    or if received data should be valid Middleman protocol message and yields received data.
-    """
-    assert isinstance(connection, socket.socket)
-
-    for received_frame in unescape_stream(connection=connection):
-        assert isinstance(received_frame, (bytes, type(None)))
-
-        # If you have just received the value indicating an invalid escape sequence,
-        # yield a special value indicating an invalid escape sequence and continue.
-        if received_frame is None:
-            yield None
-
-        # Otherwise create an instance of the frame class and yield it.
-        else:
-            yield received_frame
 
 
 def send_over_stream(connection: socket.socket, raw_message: AbstractFrame, private_key: bytes) -> int:

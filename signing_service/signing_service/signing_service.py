@@ -8,7 +8,15 @@ from contextlib import closing
 from time import sleep
 
 from golem_messages.cryptography import privtopub
+from golem_messages.exceptions import InvalidSignature
 from raven import Client
+
+from middleman_protocol.constants import ErrorCode
+from middleman_protocol.exceptions import MiddlemanProtocolError
+from middleman_protocol.stream import unescape_stream
+from middleman_protocol.stream import send_over_stream
+from middleman_protocol.message import AbstractFrame
+from middleman_protocol.message import ErrorFrame
 
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_PORT
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY  # pylint: disable=no-name-in-module
@@ -119,9 +127,28 @@ class SigningService:
 
     def _handle_connection(self, tcp_socket: socket.socket) -> None:  # pylint: disable=no-self-use
         """ Inner loop that handles data exchange over socket. """
-        while True:
-            data = tcp_socket.recv(1024)
-            tcp_socket.send(data)
+        receive_frame_generator = unescape_stream(connection=tcp_socket)
+
+        for raw_message_received in receive_frame_generator:
+            try:
+                AbstractFrame.deserialize(
+                    raw_message=raw_message_received,
+                    public_key=self.signing_service_public_key,
+                )
+            except (InvalidSignature, MiddlemanProtocolError) as exception:
+                logger.info(f'Malformed messages failed to deserialize with exception: {exception}.')
+                middleman_message_response = ErrorFrame(
+                    payload=(ErrorCode.InvalidFrameSignature, str(exception)),
+                    request_id=99,
+                )
+                logger.debug(
+                    f'Sending Middleman protocol message with request_id: {middleman_message_response.request_id}.'
+                )
+                send_over_stream(
+                    connection=tcp_socket,
+                    raw_message=middleman_message_response,
+                    private_key=self.signing_service_private_key,
+                )
 
     def _increase_delay(self) -> None:
         """ Increase current delay if connection cannot be established. """

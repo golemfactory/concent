@@ -35,10 +35,10 @@ logger = logging.getLogger(__name__)
 def upload_finished(self, subtask_id: str):
     # Worker locks database row corresponding to the subtask in the subtask table.
     try:
-        subtask = Subtask.objects.select_for_update(nowait=True).get(subtask_id=subtask_id)
-    except DatabaseError:
-        logging.warning(
-            f'Subtask object with ID {subtask_id} database row is locked, '
+        subtask = Subtask.objects.select_for_update().get(subtask_id=subtask_id)
+    except DatabaseError as exception:
+        logger.warning(
+            f'Exception during process Subtask with ID {subtask_id}. Exception: {str(exception)} '
             f'retrying task {self.request.retries}/{self.max_retries}'
         )
         # If the row is already locked, task fails so that Celery can retry later.
@@ -49,7 +49,7 @@ def upload_finished(self, subtask_id: str):
         )
         return
     except Subtask.DoesNotExist:
-        logging.error(f'Task `upload_finished` tried to get Subtask object with ID {subtask_id} but it does not exist.')
+        logger.error(f'Task `upload_finished` tried to get Subtask object with ID {subtask_id} but it does not exist.')
         return
 
     report_computed_task = deserialize_message(subtask.report_computed_task.data.tobytes())

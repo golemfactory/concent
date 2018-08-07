@@ -201,6 +201,7 @@ def _parse_arguments() -> argparse.Namespace:
         help='Initial delay between reconnections, doubles after each unsuccessful attempt and is reset after success.',
     )
     parser.add_argument(
+        '-p',
         '--concent-cluster-port',
         default=SIGNING_SERVICE_DEFAULT_PORT,
         dest='concent_cluster_port',
@@ -260,6 +261,7 @@ def _parse_arguments() -> argparse.Namespace:
 
     sentry_dsn_parser_group = parser.add_mutually_exclusive_group()
     parser.add_argument(
+        '-s',
         '--sentry-dsn',
         dest='sentry_dsn',
         action=make_secret_provider_factory(read_command_line=True),

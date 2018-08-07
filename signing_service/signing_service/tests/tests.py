@@ -1,5 +1,7 @@
+import tempfile
 from unittest import TestCase
 from base64 import b64encode
+import os
 import socket
 import sys
 
@@ -151,21 +153,33 @@ class SigningServiceParseArgumentsTestCase(TestCase):
         # so they have to be replaced.
         sys.argv = sys.argv[:1]
         self.concent_public_key_encoded = b64encode(CONCENT_PUBLIC_KEY).decode()
+        self.sentry_dsn = 'http://test.sentry@dsn.com'
+        self.ethereum_private_key = b'test_ethereum_private_key'
 
     def test_that_argument_parser_should_parse_correct_input(self):
         sys.argv += ['127.0.0.1', self.concent_public_key_encoded, '--initial_reconnect_delay', '2', '--concent-cluster-port', '8000']
 
-        args = _parse_arguments()
+        with mock.patch.dict(os.environ, {
+            'SENTRY_DSN': self.sentry_dsn,
+            'ETHEREUM_PRIVATE_KEY': b64encode(self.ethereum_private_key).decode('ascii'),
+        }):
+            args = _parse_arguments()
 
         self.assertEqual(args.concent_cluster_host, '127.0.0.1')
         self.assertEqual(args.concent_cluster_port, 8000)
         self.assertEqual(args.initial_reconnect_delay, 2)
         self.assertEqual(args.concent_public_key, self.concent_public_key_encoded)
+        self.assertEqual(args.sentry_dsn, self.sentry_dsn)
+        self.assertEqual(args.ethereum_private_key, self.ethereum_private_key)
 
     def test_that_argument_parser_should_parse_correct_input_and_use_default_values(self):
         sys.argv += ['127.0.0.1', self.concent_public_key_encoded]
 
-        args = _parse_arguments()
+        with mock.patch.dict(os.environ, {
+            'SENTRY_DSN': self.sentry_dsn,
+            'ETHEREUM_PRIVATE_KEY': b64encode(self.ethereum_private_key).decode('ascii'),
+        }):
+            args = _parse_arguments()
 
         self.assertEqual(args.concent_cluster_host, '127.0.0.1')
         self.assertEqual(args.concent_cluster_port, SIGNING_SERVICE_DEFAULT_PORT)
@@ -174,12 +188,51 @@ class SigningServiceParseArgumentsTestCase(TestCase):
     def test_that_argument_parser_should_fail_if_port_cannot_be_casted_to_int(self):
         sys.argv += ['127.0.0.1', self.concent_public_key_encoded, '--initial_reconnect_delay', '1', '--concent-cluster-port', 'abc']
 
-        with self.assertRaises(SystemExit):
-            _parse_arguments()
+        with mock.patch.dict(os.environ, {
+            'SENTRY_DSN': self.sentry_dsn,
+            'ETHEREUM_PRIVATE_KEY': b64encode(self.ethereum_private_key).decode('ascii'),
+        }):
+            with self.assertRaises(SystemExit):
+                _parse_arguments()
 
     def test_that_argument_parser_should_fail_if_parameters_are_missing(self):
-        with self.assertRaises(SystemExit):
+
+        with mock.patch.dict(os.environ, {
+            'SENTRY_DSN': self.sentry_dsn,
+            'ETHEREUM_PRIVATE_KEY': b64encode(self.ethereum_private_key).decode('ascii'),
+        }):
+            with self.assertRaises(SystemExit):
+                _parse_arguments()
+
+    def test_that_argument_parser_should_parse_correct_secrets_from_command_line(self):
+        sys.argv += ['127.0.0.1', self.concent_public_key_encoded, '--sentry-dsn', self.sentry_dsn, '--ethereum-private-key', b64encode(self.ethereum_private_key).decode('ascii')]
+
+        args = _parse_arguments()
+
+        self.assertEqual(args.sentry_dsn, self.sentry_dsn)
+        self.assertEqual(args.ethereum_private_key, self.ethereum_private_key)
+
+    def test_that_argument_parses_should_fail_if_file_with_secrets_is_missing(self):
+        sys.argv += ['127.0.0.1', self.concent_public_key_encoded, '--sentry-dsn-path', '/not_existing_path/file.txt']
+        with self.assertRaises(FileNotFoundError):
             _parse_arguments()
+
+    def test_that_argument_parser_should_parse_correct_sentry_dsn_and_ethereum_private_key_if_files_exist(self):
+        sentry_tmp_file = os.path.join(tempfile.gettempdir(), "sentry_tmp_file.txt")
+        ethereum_private_key_tmp_file = os.path.join(tempfile.gettempdir(), "ethereum_private_key_tmp_file.txt")
+        sys.argv += ['127.0.0.1', self.concent_public_key_encoded, '--ethereum-private-key-path', ethereum_private_key_tmp_file, '--sentry-dsn-path', sentry_tmp_file]
+        with open(sentry_tmp_file, "w") as file:
+            file.write(self.sentry_dsn)
+
+        with open(ethereum_private_key_tmp_file, "w") as file:
+            file.write(b64encode(self.ethereum_private_key).decode('ascii'))
+
+        args =_parse_arguments()
+
+        self.assertEqual(args.sentry_dsn, self.sentry_dsn)
+        self.assertEqual(args.ethereum_private_key, self.ethereum_private_key)
+        os.remove(sentry_tmp_file)
+        os.remove(ethereum_private_key_tmp_file)
 
 
 class SigningServiceValidateArgumentsTestCase(TestCase):

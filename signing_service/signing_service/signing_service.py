@@ -7,6 +7,7 @@ from base64 import b64decode
 from contextlib import closing
 from time import sleep
 
+from golem_messages.cryptography import privtopub
 from raven import Client
 
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_PORT
@@ -35,17 +36,29 @@ class SigningService:
         'socket',
         'was_sigterm_caught',
         'concent_public_key',
+        'signing_service_private_key',
+        'signing_service_public_key'
     )
 
-    def __init__(self, host, port, initial_reconnect_delay, concent_public_key) -> None:
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        initial_reconnect_delay: int,
+        concent_public_key: bytes,
+        signing_service_private_key: bytes,
+    ) -> None:
         assert isinstance(host, str)
         assert isinstance(port, int)
         assert isinstance(initial_reconnect_delay, int)
         assert isinstance(concent_public_key, bytes)
+        assert isinstance(signing_service_private_key, bytes)
         self.host = host
         self.port = port
         self.initial_reconnect_delay = initial_reconnect_delay
         self.concent_public_key = concent_public_key
+        self.signing_service_private_key = signing_service_private_key
+        self.signing_service_public_key = privtopub(signing_service_private_key)
         self.current_reconnect_delay = None
         self.was_sigterm_caught = False
 
@@ -137,6 +150,9 @@ class SigningService:
 def _parse_arguments() -> argparse.Namespace:
     def make_secret_provider_factory(read_command_line=False, env_variable_name=None, use_file=False, base64_convert=False):
         def wrapper(**kwargs):
+            # Remove 'required' as it is added automatically by ArgumentParser.
+            if 'required' in kwargs:
+                del kwargs['required']
             return SecretProvider(read_command_line, env_variable_name, use_file, base64_convert, **kwargs)
         return wrapper
 
@@ -150,7 +166,7 @@ def _parse_arguments() -> argparse.Namespace:
                 command_line_arguments = 0
             else:
                 command_line_arguments = None
-            super(SecretProvider, self).__init__(option_strings=option_strings, dest=dest, help=help, nargs=command_line_arguments)
+            super().__init__(option_strings=option_strings, dest=dest, help=help, nargs=command_line_arguments)
 
         def __call__(self, parser, namespace, values, option_string=None):
             if values is not None and self.use_file:
@@ -173,16 +189,16 @@ def _parse_arguments() -> argparse.Namespace:
         help='Host or IP address of a service on Concent cluster, to which SigningService connects over TCP.',
     )
     parser.add_argument(
+        'concent_public_key',
+        action=make_secret_provider_factory(read_command_line=True, base64_convert=True),
+        help="Concent's public key.",
+    )
+    parser.add_argument(
         '-i',
         '--initial_reconnect_delay',
         default=SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY,
         type=int,
         help='Initial delay between reconnections, doubles after each unsuccessful attempt and is reset after success.',
-    )
-    parser.add_argument(
-        'concent_public_key',
-        type=str,
-        help="Concent's public key.",
     )
     parser.add_argument(
         '--concent-cluster-port',
@@ -211,10 +227,39 @@ def _parse_arguments() -> argparse.Namespace:
         action=make_secret_provider_factory(env_variable_name='ETHEREUM_PRIVATE_KEY', base64_convert=True),
         help='Ethereum private key for Singing Service.',
     )
-    parser.set_defaults(ethereum_private_key=b64decode(os.environ.get('ETHEREUM_PRIVATE_KEY')) if os.environ.get('ETHEREUM_PRIVATE_KEY') is not None else None)  # type: ignore
+    parser.set_defaults(
+        ethereum_private_key=b64decode(os.environ.get('ETHEREUM_PRIVATE_KEY'))  # type: ignore
+        if os.environ.get('ETHEREUM_PRIVATE_KEY') is not None
+        else None
+    )
+
+    signing_service_private_key_parser_group = parser.add_mutually_exclusive_group()
+    signing_service_private_key_parser_group.add_argument(
+        '--signing-service-private-key',
+        dest='signing_service_private_key',
+        action=make_secret_provider_factory(read_command_line=True, base64_convert=True),
+        help='Singing Service private key.',
+    )
+    signing_service_private_key_parser_group.add_argument(
+        '--signing-service-private-key-path',
+        dest='signing_service_private_key',
+        action=make_secret_provider_factory(use_file=True, base64_convert=True),
+        help='Singing Service private key.',
+    )
+    signing_service_private_key_parser_group.add_argument(
+        '--signing-service-private-key-from-env',
+        dest='signing_service_private_key',
+        action=make_secret_provider_factory(env_variable_name='SIGNING_SERVICE_PRIVATE_KEY', base64_convert=True),
+        help='Singing Service private key.',
+    )
+    parser.set_defaults(
+        signing_service_private_key=b64decode(os.environ.get('SIGNING_SERVICE_PRIVATE_KEY'))  # type: ignore
+        if os.environ.get('SIGNING_SERVICE_PRIVATE_KEY') is not None
+        else None
+    )
 
     sentry_dsn_parser_group = parser.add_mutually_exclusive_group()
-    sentry_dsn_parser_group.add_argument(
+    parser.add_argument(
         '--sentry-dsn',
         dest='sentry_dsn',
         action=make_secret_provider_factory(read_command_line=True),
@@ -247,8 +292,14 @@ if __name__ == '__main__':
 
     arg_host = args.concent_cluster_host
     arg_port = args.concent_cluster_port
-    arg_concent_public_key = b64decode(args.concent_public_key)
-
     arg_initial_reconnect_delay = args.initial_reconnect_delay
+    arg_concent_public_key = args.concent_public_key
+    arg_signing_service_private_key = args.signing_service_private_key
 
-    SigningService(arg_host, arg_port, arg_initial_reconnect_delay, arg_concent_public_key).run()
+    SigningService(
+        arg_host,
+        arg_port,
+        arg_initial_reconnect_delay,
+        arg_concent_public_key,
+        arg_signing_service_private_key,
+    ).run()

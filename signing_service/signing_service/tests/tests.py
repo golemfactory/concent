@@ -1,9 +1,9 @@
-import tempfile
 from unittest import TestCase
 from base64 import b64encode
 import os
 import socket
 import sys
+import tempfile
 
 from golem_messages.cryptography import ECCx
 import mock
@@ -21,6 +21,9 @@ from signing_service.utils import is_valid_public_key
 concent_ecc_keys = ECCx(None)
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = concent_ecc_keys.raw_privkey, concent_ecc_keys.raw_pubkey
 
+signing_service_ecc_keys = ECCx(None)
+(SIGNING_SERVICE_PRIVATE_KEY, SIGNING_SERVICE_PUBLIC_KEY) = signing_service_ecc_keys.raw_privkey, signing_service_ecc_keys.raw_pubkey
+
 
 class SigningServiceMainTestCase(TestCase):
 
@@ -30,7 +33,13 @@ class SigningServiceMainTestCase(TestCase):
         self.initial_reconnect_delay = 2
 
     def test_that_signing_service_should_be_instantiated_correctly_with_all_parameters(self):
-        signing_service = SigningService(self.host, self.port, self.initial_reconnect_delay, CONCENT_PUBLIC_KEY)
+        signing_service = SigningService(
+            self.host,
+            self.port,
+            self.initial_reconnect_delay,
+            CONCENT_PUBLIC_KEY,
+            SIGNING_SERVICE_PRIVATE_KEY,
+        )
 
         self.assertIsInstance(signing_service, SigningService)
         self.assertEqual(signing_service.host, self.host)
@@ -47,6 +56,7 @@ class SigningServiceMainTestCase(TestCase):
                             self.port,
                             self.initial_reconnect_delay,
                             CONCENT_PUBLIC_KEY,
+                            SIGNING_SERVICE_PRIVATE_KEY,
                         )
                         signing_service.run()
 
@@ -62,6 +72,7 @@ class SigningServiceMainTestCase(TestCase):
                     self.port,
                     self.initial_reconnect_delay,
                     CONCENT_PUBLIC_KEY,
+                    SIGNING_SERVICE_PRIVATE_KEY,
                 )
                 signing_service.run()
 
@@ -76,6 +87,7 @@ class SigningServiceMainTestCase(TestCase):
                     self.port,
                     self.initial_reconnect_delay,
                     CONCENT_PUBLIC_KEY,
+                    SIGNING_SERVICE_PRIVATE_KEY,
                 )
                 with self.assertRaises(Exception):
                     signing_service.run()
@@ -93,6 +105,7 @@ class SigningServiceMainTestCase(TestCase):
                     self.port,
                     self.initial_reconnect_delay,
                     CONCENT_PUBLIC_KEY,
+                    SIGNING_SERVICE_PRIVATE_KEY,
                 )
                 signing_service.run()
 
@@ -108,6 +121,7 @@ class SigningServiceMainTestCase(TestCase):
                     self.port,
                     self.initial_reconnect_delay,
                     CONCENT_PUBLIC_KEY,
+                    SIGNING_SERVICE_PRIVATE_KEY,
                 )
                 with self.assertRaises(socket.error):
                     signing_service.run()
@@ -124,6 +138,7 @@ class SigningServiceIncreaseDelayTestCase(TestCase):
             8000,
             2,
             CONCENT_PUBLIC_KEY,
+            SIGNING_SERVICE_PRIVATE_KEY,
         )
 
     def test_that_initial_reconnect_delay_should_be_set_to_passed_value(self):
@@ -153,59 +168,84 @@ class SigningServiceParseArgumentsTestCase(TestCase):
         # so they have to be replaced.
         sys.argv = sys.argv[:1]
         self.concent_public_key_encoded = b64encode(CONCENT_PUBLIC_KEY).decode()
+        self.signing_service_private_key_encoded = b64encode(SIGNING_SERVICE_PRIVATE_KEY).decode()
         self.sentry_dsn = 'http://test.sentry@dsn.com'
         self.ethereum_private_key = b'test_ethereum_private_key'
 
     def test_that_argument_parser_should_parse_correct_input(self):
-        sys.argv += ['127.0.0.1', self.concent_public_key_encoded, '--initial_reconnect_delay', '2', '--concent-cluster-port', '8000']
+        sys.argv += [
+            '127.0.0.1',
+            self.concent_public_key_encoded,
+            '--initial_reconnect_delay', '2',
+            '--concent-cluster-port', '8000',
+        ]
 
         with mock.patch.dict(os.environ, {
             'SENTRY_DSN': self.sentry_dsn,
             'ETHEREUM_PRIVATE_KEY': b64encode(self.ethereum_private_key).decode('ascii'),
+            'SIGNING_SERVICE_PRIVATE_KEY': self.signing_service_private_key_encoded,
         }):
             args = _parse_arguments()
 
         self.assertEqual(args.concent_cluster_host, '127.0.0.1')
         self.assertEqual(args.concent_cluster_port, 8000)
         self.assertEqual(args.initial_reconnect_delay, 2)
-        self.assertEqual(args.concent_public_key, self.concent_public_key_encoded)
+        self.assertEqual(args.concent_public_key, CONCENT_PUBLIC_KEY)
         self.assertEqual(args.sentry_dsn, self.sentry_dsn)
         self.assertEqual(args.ethereum_private_key, self.ethereum_private_key)
+        self.assertEqual(args.signing_service_private_key, SIGNING_SERVICE_PRIVATE_KEY)
 
     def test_that_argument_parser_should_parse_correct_input_and_use_default_values(self):
-        sys.argv += ['127.0.0.1', self.concent_public_key_encoded]
+        sys.argv += [
+            '127.0.0.1',
+            self.concent_public_key_encoded,
+        ]
 
         with mock.patch.dict(os.environ, {
             'SENTRY_DSN': self.sentry_dsn,
             'ETHEREUM_PRIVATE_KEY': b64encode(self.ethereum_private_key).decode('ascii'),
+            'SIGNING_SERVICE_PRIVATE_KEY': self.signing_service_private_key_encoded,
         }):
             args = _parse_arguments()
 
         self.assertEqual(args.concent_cluster_host, '127.0.0.1')
         self.assertEqual(args.concent_cluster_port, SIGNING_SERVICE_DEFAULT_PORT)
         self.assertEqual(args.initial_reconnect_delay, SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY)
+        self.assertEqual(args.signing_service_private_key, SIGNING_SERVICE_PRIVATE_KEY)
 
     def test_that_argument_parser_should_fail_if_port_cannot_be_casted_to_int(self):
-        sys.argv += ['127.0.0.1', self.concent_public_key_encoded, '--initial_reconnect_delay', '1', '--concent-cluster-port', 'abc']
+        sys.argv += [
+            '127.0.0.1',
+            self.concent_public_key_encoded,
+            '--initial_reconnect_delay', '1',
+            '--concent-cluster-port', 'abc',
+        ]
 
         with mock.patch.dict(os.environ, {
             'SENTRY_DSN': self.sentry_dsn,
             'ETHEREUM_PRIVATE_KEY': b64encode(self.ethereum_private_key).decode('ascii'),
+            'SIGNING_SERVICE_PRIVATE_KEY': self.signing_service_private_key_encoded,
         }):
             with self.assertRaises(SystemExit):
                 _parse_arguments()
 
     def test_that_argument_parser_should_fail_if_parameters_are_missing(self):
-
         with mock.patch.dict(os.environ, {
             'SENTRY_DSN': self.sentry_dsn,
             'ETHEREUM_PRIVATE_KEY': b64encode(self.ethereum_private_key).decode('ascii'),
+            'SIGNING_SERVICE_PRIVATE_KEY': self.signing_service_private_key_encoded,
         }):
             with self.assertRaises(SystemExit):
                 _parse_arguments()
 
     def test_that_argument_parser_should_parse_correct_secrets_from_command_line(self):
-        sys.argv += ['127.0.0.1', self.concent_public_key_encoded, '--sentry-dsn', self.sentry_dsn, '--ethereum-private-key', b64encode(self.ethereum_private_key).decode('ascii')]
+        sys.argv += [
+            '127.0.0.1',
+            self.concent_public_key_encoded,
+            '--sentry-dsn', self.sentry_dsn,
+            '--ethereum-private-key', b64encode(self.ethereum_private_key).decode('ascii'),
+            '--signing-service-private-key', self.signing_service_private_key_encoded,
+        ]
 
         args = _parse_arguments()
 
@@ -217,22 +257,36 @@ class SigningServiceParseArgumentsTestCase(TestCase):
         with self.assertRaises(FileNotFoundError):
             _parse_arguments()
 
-    def test_that_argument_parser_should_parse_correct_sentry_dsn_and_ethereum_private_key_if_files_exist(self):
+    def test_that_argument_parser_should_parse_parameters_if_passed_files_exist(self):
         sentry_tmp_file = os.path.join(tempfile.gettempdir(), "sentry_tmp_file.txt")
         ethereum_private_key_tmp_file = os.path.join(tempfile.gettempdir(), "ethereum_private_key_tmp_file.txt")
-        sys.argv += ['127.0.0.1', self.concent_public_key_encoded, '--ethereum-private-key-path', ethereum_private_key_tmp_file, '--sentry-dsn-path', sentry_tmp_file]
+        signing_service_private_key_tmp_file = os.path.join(tempfile.gettempdir(), "signing_service_private_key_tmp_file.txt")
+
+        sys.argv += [
+            '127.0.0.1',
+            self.concent_public_key_encoded,
+            '--ethereum-private-key-path', ethereum_private_key_tmp_file,
+            '--sentry-dsn-path', sentry_tmp_file,
+            '--signing-service-private-key-path', signing_service_private_key_tmp_file,
+        ]
+
         with open(sentry_tmp_file, "w") as file:
             file.write(self.sentry_dsn)
 
         with open(ethereum_private_key_tmp_file, "w") as file:
             file.write(b64encode(self.ethereum_private_key).decode('ascii'))
 
+        with open(signing_service_private_key_tmp_file, "w") as file:
+            file.write(self.signing_service_private_key_encoded)
+
         args =_parse_arguments()
 
         self.assertEqual(args.sentry_dsn, self.sentry_dsn)
         self.assertEqual(args.ethereum_private_key, self.ethereum_private_key)
+        self.assertEqual(args.signing_service_private_key, SIGNING_SERVICE_PRIVATE_KEY)
         os.remove(sentry_tmp_file)
         os.remove(ethereum_private_key_tmp_file)
+        os.remove(signing_service_private_key_tmp_file)
 
 
 class SigningServiceValidateArgumentsTestCase(TestCase):
@@ -248,6 +302,7 @@ class SigningServiceValidateArgumentsTestCase(TestCase):
             self.port,
             self.initial_reconnect_delay,
             CONCENT_PUBLIC_KEY,
+            SIGNING_SERVICE_PRIVATE_KEY,
         )
 
     def test_that_signing_service__validate_arguments_should_raise_exception_on_port_number_below_or_above_range(self):

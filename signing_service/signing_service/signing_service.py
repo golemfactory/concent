@@ -137,7 +137,7 @@ class SigningService:
 def _parse_arguments() -> argparse.Namespace:
     def make_secret_provider_factory(read_command_line=False, env_variable_name=None, use_file=False):
         def wrapper(**kwargs):
-            return SecretProvider(read_command_line, env_variable_name, use_file, **kwargs)
+            return SecretProvider(read_command_line, env_variable_name, use_file,**kwargs)
         return wrapper
 
     class SecretProvider(argparse.Action):
@@ -187,6 +187,27 @@ def _parse_arguments() -> argparse.Namespace:
         type=int,
         help=f'Port on which Concent cluster is listening (default: {SIGNING_SERVICE_DEFAULT_PORT}).',
     )
+
+    ethereum_private_key_parser_group = parser.add_mutually_exclusive_group()
+    ethereum_private_key_parser_group.add_argument(
+        '--ethereum-private-key',
+        dest='ethereum_private_key',
+        action=make_secret_provider_factory(read_command_line=True),
+        help='Ethereum private key for Singing Service.',
+    )
+    ethereum_private_key_parser_group.add_argument(
+        '--ethereum-private-key-path',
+        dest='ethereum_private_key',
+        action=make_secret_provider_factory(use_file=True),
+        help='Ethereum private key for Singing Service.',
+    )
+    ethereum_private_key_parser_group.add_argument(
+        '--ethereum-private-key-from-env',
+        dest='ethereum_private_key',
+        action=make_secret_provider_factory(env_variable_name='ETHEREUM_PRIVATE_KEY'),
+        help='Ethereum private key for Singing Service.',
+    )
+    parser.set_defaults(ethereum_private_key=os.environ.get('ETHEREUM_PRIVATE_KEY'))
 
     sentry_dsn_parser_group = parser.add_mutually_exclusive_group()
     sentry_dsn_parser_group.add_argument(

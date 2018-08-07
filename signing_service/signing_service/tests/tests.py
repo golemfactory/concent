@@ -1,12 +1,21 @@
-from unittest import TestCase
 from base64 import b64encode
+from contextlib import closing
+from unittest import TestCase
 import os
 import socket
 import sys
 import tempfile
 
 from golem_messages.cryptography import ECCx
+from golem_messages.message import Ping
 import mock
+
+from middleman_protocol.constants import ErrorCode
+from middleman_protocol.message import AbstractFrame
+from middleman_protocol.message import GolemMessageFrame
+from middleman_protocol.stream import append_frame_separator
+from middleman_protocol.stream import escape_encode_raw_message
+from middleman_protocol.stream import unescape_stream
 
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_PORT
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY
@@ -128,6 +137,67 @@ class SigningServiceMainTestCase(TestCase):
 
         mock_socket_connect.assert_called_once_with(('127.0.0.1', 8000))
         mock_socket_close.assert_called_once()
+
+
+class SigningServiceHandleConnectionTestCase(TestCase):
+
+    def setUp(self):
+        self.host = '127.0.0.1'
+        self.port = 8000
+        self.initial_reconnect_delay = 2
+
+    def test_that__handle_connection_should_send_wrapped_service_refuse_if_frame_is_invalid(self):
+        # Prepare message with wrong signature
+        middleman_message = GolemMessageFrame(Ping(), 99)
+        raw_message = append_frame_separator(
+            escape_encode_raw_message(
+                middleman_message.serialize(
+                    private_key=CONCENT_PRIVATE_KEY,
+                )
+            )
+        )
+        malformed_raw_message = bytes(bytearray([max(raw_message[1] - 1, 0)])) + raw_message[1:]
+
+        def mocked_generator(connection):  # pylint: disable=unused-argument
+            yield malformed_raw_message
+            raise SigningServiceValidationError()
+
+        with mock.patch('signing_service.signing_service.SigningService.run'):
+            with mock.patch(
+                'signing_service.signing_service.unescape_stream',
+                side_effect=mocked_generator,
+            ):
+                with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as signing_service_socket:
+                    signing_service_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as client_socket:
+                        client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                        signing_service = SigningService(
+                            self.host,
+                            self.port,
+                            self.initial_reconnect_delay,
+                            CONCENT_PUBLIC_KEY,
+                            SIGNING_SERVICE_PRIVATE_KEY,
+                        )
+
+                        # For test purposes we reverse roles, so signing service works as server.
+                        signing_service_socket.bind(('127.0.0.1', 8001))
+                        signing_service_socket.listen(1)
+                        client_socket.connect(('127.0.0.1', 8001))
+                        (connection, _address) = signing_service_socket.accept()
+
+                        with self.assertRaises(SigningServiceValidationError):
+                            signing_service._handle_connection(connection)
+
+                        raw_message_received = next(unescape_stream(connection=client_socket))
+
+        deserialized_message = AbstractFrame.deserialize(
+            raw_message=raw_message_received,
+            public_key=SIGNING_SERVICE_PUBLIC_KEY,
+        )
+
+        self.assertIsInstance(deserialized_message.payload, tuple)
+        self.assertEqual(len(deserialized_message.payload), 2)
+        self.assertEqual(deserialized_message.payload[0], ErrorCode.InvalidFrameSignature)
 
 
 class SigningServiceIncreaseDelayTestCase(TestCase):

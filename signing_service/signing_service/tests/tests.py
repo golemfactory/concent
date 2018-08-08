@@ -7,15 +7,21 @@ import sys
 import tempfile
 
 from golem_messages.cryptography import ECCx
+from golem_messages.cryptography import ecdsa_sign
 from golem_messages.message import Ping
 import assertpy
 import mock
 import pytest
 
+from middleman_protocol.concent_golem_messages.message import SignedTransaction
+from middleman_protocol.concent_golem_messages.message import TransactionRejected
 from middleman_protocol.constants import ErrorCode
+from middleman_protocol.constants import FRAME_PAYLOAD_STARTING_BYTE
+from middleman_protocol.constants import FRAME_PAYLOAD_TYPE_LENGTH
+from middleman_protocol.constants import FRAME_SIGNATURE_BYTES_LENGTH
+from middleman_protocol.constants import FRAME_REQUEST_ID_BYTES_LENGTH
 from middleman_protocol.message import AbstractFrame
 from middleman_protocol.message import GolemMessageFrame
-from middleman_protocol.stream import append_frame_separator
 from middleman_protocol.stream import escape_encode_raw_message
 from middleman_protocol.stream import unescape_stream
 
@@ -27,6 +33,8 @@ from signing_service.exceptions import SigningServiceValidationError
 from signing_service.signing_service import _parse_arguments
 from signing_service.signing_service import SigningService
 from signing_service.utils import is_valid_public_key
+
+from .utils import SigningServiceIntegrationTestCase
 
 
 concent_ecc_keys = ECCx(None)
@@ -131,33 +139,184 @@ class TestSigningServiceRun:
         mock_socket_close.assert_called_once()
 
 
-class TestSigningServiceHandleConnection:
+class TestSigningServiceHandleConnection(SigningServiceIntegrationTestCase):
 
     host = None
     port = None
     initial_reconnect_delay = None
+    ethereum_private_key = None
+    signing_service_port = None
 
     @pytest.fixture(autouse=True)
     def setUp(self, unused_tcp_port_factory):
         self.host = '127.0.0.1'
         self.port = unused_tcp_port_factory()
         self.initial_reconnect_delay = 2
+        self.ethereum_private_key = '3a1076bf45ab87712ad64ccb3b10217737f7faacbf2872e88fdd9a537d8fe266'
+        self.signing_service_port = unused_tcp_port_factory()
 
-    def test_that__handle_connection_should_send_error_frame_if_frame_is_invalid(self, unused_tcp_port_factory):
-        # Prepare message with wrong signature
-        middleman_message = GolemMessageFrame(Ping(), 99)
-        raw_message = append_frame_separator(
-            escape_encode_raw_message(
-                middleman_message.serialize(
-                    private_key=CONCENT_PRIVATE_KEY,
-                )
-            )
+    def test_that__handle_connection_should_send_golem_message_signed_transaction_if_frame_is_correct(self):
+        middleman_message = GolemMessageFrame(
+            payload=self._get_deserialized_transaction_signing_request(),
+            request_id=99,
+        )
+        raw_message = middleman_message.serialize(
+            private_key=CONCENT_PRIVATE_KEY,
+        )
+
+        def handle_connection_wrapper(signing_service, connection):
+            with mock.patch(
+                'signing_service.signing_service.SigningService._sign_transaction',
+                return_value=self._get_deserialized_signed_transaction(),
+            ):
+                signing_service._handle_connection(connection)
+
+        raw_message_received = self._prepare_and_execute_handle_connection(
+            raw_message,
+            handle_connection_wrapper,
+        )
+
+        deserialized_message = AbstractFrame.deserialize(
+            raw_message=raw_message_received,
+            public_key=SIGNING_SERVICE_PUBLIC_KEY,
+        )
+
+        assertpy.assert_that(deserialized_message.payload).is_instance_of(SignedTransaction)
+
+    def test_that__handle_connection_should_send_error_frame_if_frame_signature_is_wrong(self):
+        # Prepare message with wrong signature.
+        middleman_message = GolemMessageFrame(
+            payload=self._get_deserialized_transaction_signing_request(),
+            request_id=99,
+        )
+        raw_message = middleman_message.serialize(
+            private_key=CONCENT_PRIVATE_KEY,
         )
         first_byte = 2 if raw_message[0] == 0 else raw_message[0]
         malformed_raw_message = bytes(bytearray([first_byte - 1])) + raw_message[1:]
 
+        raw_message_received = self._prepare_and_execute_handle_connection(malformed_raw_message)
+
+        deserialized_message = AbstractFrame.deserialize(
+            raw_message=raw_message_received,
+            public_key=SIGNING_SERVICE_PUBLIC_KEY,
+        )
+
+        assertpy.assert_that(deserialized_message.payload).is_instance_of(tuple)
+        assertpy.assert_that(deserialized_message.payload).is_length(2)
+        assertpy.assert_that(deserialized_message.payload[0]).is_equal_to(ErrorCode.InvalidFrameSignature)
+
+    def test_that__handle_connection_should_send_error_frame_if_payload_type_is_invalid(self):
+        # Prepare frame with malformed payload_type.
+        middleman_message = GolemMessageFrame(
+            payload=self._get_deserialized_transaction_signing_request(),
+            request_id=99,
+        )
+        raw_message = middleman_message.serialize(
+            private_key=CONCENT_PRIVATE_KEY,
+        )
+
+        payload_type_position = FRAME_SIGNATURE_BYTES_LENGTH + FRAME_REQUEST_ID_BYTES_LENGTH
+        invalid_payload_type = 100
+
+        # Replace bytes with payload length.
+        malformed_raw_message = (
+            raw_message[:payload_type_position] +
+            bytes(bytearray([invalid_payload_type])) +
+            raw_message[payload_type_position + FRAME_PAYLOAD_TYPE_LENGTH:]
+        )
+
+        # Replace message signature
+        new_signature = ecdsa_sign(CONCENT_PRIVATE_KEY, malformed_raw_message[FRAME_SIGNATURE_BYTES_LENGTH:])
+        malformed_raw_message_with_new_signature = new_signature + malformed_raw_message[FRAME_SIGNATURE_BYTES_LENGTH:]
+
+        raw_message_received = self._prepare_and_execute_handle_connection(malformed_raw_message_with_new_signature)
+
+        deserialized_message = AbstractFrame.deserialize(
+            raw_message=raw_message_received,
+            public_key=SIGNING_SERVICE_PUBLIC_KEY,
+        )
+
+        assertpy.assert_that(deserialized_message.payload).is_instance_of(tuple)
+        assertpy.assert_that(deserialized_message.payload).is_length(2)
+        assertpy.assert_that(deserialized_message.payload[0]).is_equal_to(ErrorCode.InvalidFrame)
+
+    def test_that__handle_connection_should_send_error_frame_if_payload_is_invalid(self):
+        # Prepare frame payload which is not Golem message.
+        middleman_message = GolemMessageFrame(
+            payload=Ping(),
+            request_id=99,
+        )
+        raw_message = middleman_message.serialize(
+            private_key=CONCENT_PRIVATE_KEY,
+        )
+        malformed_raw_message = (
+            raw_message[:FRAME_PAYLOAD_STARTING_BYTE] +
+            AbstractFrame.get_frame_format().signed_part_of_the_frame.payload.build(b'\x00' * 100)
+        )
+
+        # Replace message signature
+        new_signature = ecdsa_sign(CONCENT_PRIVATE_KEY, malformed_raw_message[FRAME_SIGNATURE_BYTES_LENGTH:])
+        malformed_raw_message_with_new_signature = new_signature + malformed_raw_message[FRAME_SIGNATURE_BYTES_LENGTH:]
+
+        raw_message_received = self._prepare_and_execute_handle_connection(malformed_raw_message_with_new_signature)
+
+        deserialized_message = AbstractFrame.deserialize(
+            raw_message=raw_message_received,
+            public_key=SIGNING_SERVICE_PUBLIC_KEY,
+        )
+
+        assertpy.assert_that(deserialized_message.payload).is_instance_of(tuple)
+        assertpy.assert_that(deserialized_message.payload).is_length(2)
+        assertpy.assert_that(deserialized_message.payload[0]).is_equal_to(ErrorCode.InvalidPayload)
+
+    def test_that__handle_connection_should_send_error_frame_if_payload_golem_message_type_cannot_be_deserialized(self):
+        # Prepare frame payload which is Golem message that cannot be deserialized.
+        middleman_message = GolemMessageFrame(
+            payload=self._get_deserialized_transaction_signing_request(
+                nonce='not_int_nonce_which_will_fail_on_deserialization_causing_message_error'
+            ),
+            request_id=99,
+        )
+        raw_message = middleman_message.serialize(
+            private_key=CONCENT_PRIVATE_KEY,
+        )
+
+        raw_message_received = self._prepare_and_execute_handle_connection(raw_message)
+
+        deserialized_message = AbstractFrame.deserialize(
+            raw_message=raw_message_received,
+            public_key=SIGNING_SERVICE_PUBLIC_KEY,
+        )
+
+        assertpy.assert_that(deserialized_message.payload).is_instance_of(tuple)
+        assertpy.assert_that(deserialized_message.payload).is_length(2)
+        assertpy.assert_that(deserialized_message.payload[0]).is_equal_to(ErrorCode.InvalidPayload)
+
+    def test_that__handle_connection_should_send_error_frame_if_payload_golem_message_type_is_unexpected(self):
+        # Prepare frame payload which is Golem message other than TransactionSigningRequest.
+        middleman_message = GolemMessageFrame(
+            payload=Ping(),
+            request_id=99,
+        )
+        raw_message = middleman_message.serialize(
+            private_key=CONCENT_PRIVATE_KEY,
+        )
+
+        raw_message_received = self._prepare_and_execute_handle_connection(raw_message)
+
+        deserialized_message = AbstractFrame.deserialize(
+            raw_message=raw_message_received,
+            public_key=SIGNING_SERVICE_PUBLIC_KEY,
+        )
+
+        assertpy.assert_that(deserialized_message.payload).is_instance_of(tuple)
+        assertpy.assert_that(deserialized_message.payload).is_length(2)
+        assertpy.assert_that(deserialized_message.payload[0]).is_equal_to(ErrorCode.UnexpectedMessage)
+
+    def _prepare_and_execute_handle_connection(self, raw_message, handle_connection_wrapper=None):
         def mocked_generator(connection):  # pylint: disable=unused-argument
-            yield malformed_raw_message
+            yield raw_message
             raise SigningServiceValidationError()
 
         with mock.patch('signing_service.signing_service.SigningService.run'):
@@ -175,28 +334,78 @@ class TestSigningServiceHandleConnection:
                             self.initial_reconnect_delay,
                             CONCENT_PUBLIC_KEY,
                             SIGNING_SERVICE_PRIVATE_KEY,
+                            self.ethereum_private_key,
                         )
 
                         # For test purposes we reverse roles, so signing service works as server.
-                        siging_service_port = unused_tcp_port_factory()
-                        signing_service_socket.bind(('127.0.0.1', siging_service_port))
+                        signing_service_socket.bind(('127.0.0.1', self.signing_service_port))
                         signing_service_socket.listen(1)
-                        client_socket.connect(('127.0.0.1', siging_service_port))
+                        client_socket.connect(('127.0.0.1', self.signing_service_port))
                         (connection, _address) = signing_service_socket.accept()
 
                         with pytest.raises(SigningServiceValidationError):
-                            signing_service._handle_connection(connection)
+                            if handle_connection_wrapper is not None:
+                                handle_connection_wrapper(signing_service, connection)
+                            else:
+                                signing_service._handle_connection(connection)
 
                         raw_message_received = next(unescape_stream(connection=client_socket))
 
-        deserialized_message = AbstractFrame.deserialize(
-            raw_message=raw_message_received,
-            public_key=SIGNING_SERVICE_PUBLIC_KEY,
-        )
+        return raw_message_received
 
-        assertpy.assert_that(deserialized_message.payload).is_instance_of(tuple)
-        assertpy.assert_that(deserialized_message.payload).is_length(2)
-        assertpy.assert_that(deserialized_message.payload[0]).is_equal_to(ErrorCode.InvalidFrameSignature)
+
+class SigningServiceSingTransactionTestCase(SigningServiceIntegrationTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.host = '127.0.0.1'
+        self.port = 8000
+        self.initial_reconnect_delay = 2
+        self.ethereum_private_key = '3a1076bf45ab87712ad64ccb3b10217737f7faacbf2872e88fdd9a537d8fe266'
+
+        with mock.patch('signing_service.signing_service.SigningService.run'):
+            self.signing_service = SigningService(
+                self.host,
+                self.port,
+                self.initial_reconnect_delay,
+                CONCENT_PUBLIC_KEY,
+                SIGNING_SERVICE_PRIVATE_KEY,
+                self.ethereum_private_key,
+            )
+
+    def test_that_sign_transaction_should_return_transaction_signed_if_transaction_was_signed_correctly(self):
+        transaction_signing_request = self._get_deserialized_transaction_signing_request()
+
+        transaction_signed = self.signing_service._sign_transaction(transaction_signing_request)
+
+        self.assertIsInstance(transaction_signed, SignedTransaction)
+        self.assertEqual(transaction_signed.nonce, transaction_signed.nonce)  # pylint: disable=no-member
+        self.assertEqual(transaction_signed.gasprice, transaction_signed.gasprice)  # pylint: disable=no-member
+        self.assertEqual(transaction_signed.startgas, transaction_signed.startgas)  # pylint: disable=no-member
+        self.assertEqual(transaction_signed.to, transaction_signed.to)  # pylint: disable=no-member
+        self.assertEqual(transaction_signed.value, transaction_signed.value)  # pylint: disable=no-member
+        self.assertEqual(transaction_signed.data, transaction_signed.data)  # pylint: disable=no-member
+        self.assertEqual(transaction_signed.v, 27)  # pylint: disable=no-member
+        self.assertEqual(transaction_signed.r, 28432435636157264186184846253514929279866516705674805985962967266423282207917)  # pylint: disable=no-member
+        self.assertEqual(transaction_signed.s, 27149918735952638314193245761844556778323336412848419389171231353348292287326)  # pylint: disable=no-member
+
+    def test_that_sign_transaction_should_return_transaction_rejected_if_transaction_cannot_be_recreated_from_received_transaction_signing_request(self):
+        transaction_signing_request = self._get_deserialized_transaction_signing_request()
+        transaction_signing_request.nonce = 'invalid_nonce'
+
+        transaction_rejected = self.signing_service._sign_transaction(transaction_signing_request)
+
+        self.assertIsInstance(transaction_rejected, TransactionRejected)
+        self.assertEqual(transaction_rejected.reason, TransactionRejected.REASON.InvalidTransaction)  # pylint: disable=no-member
+
+    def test_that_sign_transaction_should_return_transaction_rejected_if_transaction_cannot_be_signed(self):
+        transaction_signing_request = self._get_deserialized_transaction_signing_request()
+        self.signing_service.ethereum_private_key = b'\x00'
+
+        transaction_rejected = self.signing_service._sign_transaction(transaction_signing_request)
+
+        self.assertIsInstance(transaction_rejected, TransactionRejected)
+        self.assertEqual(transaction_rejected.reason, TransactionRejected.REASON.UnauthorizedAccount)  # pylint: disable=no-member
 
 
 class TestSigningServiceIncreaseDelay:
@@ -269,7 +478,7 @@ class SigningServiceParseArgumentsTestCase(TestCase):
         sys.argv += [
             '127.0.0.1',
             self.concent_public_key_encoded,
-            '--ethereum-private-key', b64encode(self.ethereum_private_key).decode('ascii'),
+            '--ethereum-private-key', self.ethereum_private_key,
             '--signing-service-private-key', self.signing_service_private_key_encoded,
         ]
 
@@ -398,7 +607,7 @@ class SigningServiceValidateArgumentsTestCase(TestCase):
             self.signing_service._validate_arguments()
 
 
-class SigningServiceIsValidPulicKeyTestCase(TestCase):
+class SigningServiceIsValidPublicKeyTestCase(TestCase):
 
     def test_that_is_valid_public_key_should_return_true_for_correct_public_key_length(self):
         public_key = b'x' * 64

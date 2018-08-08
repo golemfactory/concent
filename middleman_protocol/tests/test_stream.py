@@ -22,7 +22,6 @@ from middleman_protocol.message import GolemMessageFrame
 from middleman_protocol.stream import append_frame_separator
 from middleman_protocol.stream import escape_decode_raw_message
 from middleman_protocol.stream import escape_encode_raw_message
-from middleman_protocol.stream import receive_frame
 from middleman_protocol.stream import remove_frame_separator
 from middleman_protocol.stream import send_over_stream
 from middleman_protocol.stream import split_stream
@@ -35,7 +34,7 @@ concent_ecc_keys = ECCx(None)
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = concent_ecc_keys.raw_privkey, concent_ecc_keys.raw_pubkey
 
 
-class TestRegistryMiddlemanProtocol(TestCase):
+class TestEscapingAndHandlingSeparatorMiddlemanProtocol(TestCase):
 
     def test_that_append_frame_separator_should_add_frame_separator_to_given_bytes(self):
         raw = b'12345'
@@ -95,160 +94,6 @@ class TestRegistryMiddlemanProtocol(TestCase):
 
         with self.assertRaises(BrokenEscapingInFrameMiddlemanProtocolError):
             escape_decode_raw_message(wrong_escape_sequence)
-
-
-class TestReceiveFrameHelperMiddlemanProtocol:
-
-    request_id = 99
-
-    @pytest.mark.parametrize(('middleman_message_type', 'payload'), [
-        (GolemMessageFrame,            Ping()),
-        (ErrorFrame,                   (111, 'error_message')),
-        (AuthenticationChallengeFrame, b'random_bytes'),
-        (AuthenticationResponseFrame,  b'TODO'),
-    ])
-    def test_that_receiving_any_message_should_be_handled_correctly(
-        self,
-        middleman_message_type,
-        payload,
-    ):
-        middleman_message = middleman_message_type(payload, self.request_id)
-
-        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as server_socket:
-            server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
-            with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as client_socket:
-                client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
-                server_socket.bind(('127.0.0.1', 8001))
-                server_socket.listen(1)
-
-                client_socket.connect(('127.0.0.1', 8001))
-
-                (connection, _address) = server_socket.accept()
-
-                send_over_stream(
-                    connection=client_socket,
-                    raw_message=middleman_message,
-                    private_key=CONCENT_PRIVATE_KEY
-                )
-                raw_message_received = next(receive_frame(connection=connection))
-
-        deserialized_message = AbstractFrame.deserialize(
-            raw_message=raw_message_received,
-            public_key=CONCENT_PUBLIC_KEY,
-        )
-
-        assertpy.assert_that(deserialized_message).is_instance_of(middleman_message_type)
-        assertpy.assert_that(deserialized_message.payload).is_instance_of(type(payload))
-        assertpy.assert_that(deserialized_message.payload).is_equal_to(payload)
-
-    def test_that_receiving_a_series_of_messages_should_be_handled_correctly(self):
-        payload = Ping()
-        middleman_message = GolemMessageFrame(payload, self.request_id)
-
-        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as server_socket:
-            server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
-            with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as client_socket:
-                client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
-                server_socket.bind(('127.0.0.1', 8001))
-                server_socket.listen(1)
-
-                client_socket.connect(('127.0.0.1', 8001))
-
-                (connection, _address) = server_socket.accept()
-
-                for _i in range(10):
-                    send_over_stream(
-                        connection=client_socket,
-                        raw_message=middleman_message,
-                        private_key=CONCENT_PRIVATE_KEY
-                    )
-
-                receive_frame_generator = receive_frame(connection=connection)
-
-                for _i in range(10):
-                    raw_message_received = next(receive_frame_generator)
-
-                    deserialized_message = AbstractFrame.deserialize(
-                        raw_message=raw_message_received,
-                        public_key=CONCENT_PUBLIC_KEY,
-                    )
-
-                    assertpy.assert_that(deserialized_message).is_instance_of(GolemMessageFrame)
-                    assertpy.assert_that(deserialized_message.payload).is_instance_of(Ping)
-                    assertpy.assert_that(deserialized_message.payload).is_equal_to(payload)
-
-    def test_that_receiving_wrongly_encoded_message_should_return_none(self):
-        middleman_message = GolemMessageFrame(Ping(), self.request_id)
-        raw_message = middleman_message.serialize(
-            private_key=CONCENT_PRIVATE_KEY,
-        )
-
-        raw_message_encoded = escape_encode_raw_message(raw_message)
-        raw_message_encoded = raw_message_encoded + ESCAPE_CHARACTER + b'\xff'
-        raw_message_encoded = append_frame_separator(raw_message_encoded)
-
-        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as server_socket:
-            server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
-            with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as client_socket:
-                client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
-                server_socket.bind(('127.0.0.1', 8001))
-                server_socket.listen(1)
-
-                client_socket.connect(('127.0.0.1', 8001))
-
-                (connection, _address) = server_socket.accept()
-
-                client_socket.send(raw_message_encoded)
-                raw_message_received = next(receive_frame(connection=connection))
-
-        assertpy.assert_that(raw_message_received).is_none()
-
-    def test_that_exceeding_maximum_frame_length_should_treat_exceeded_frame_as_invalid(self):
-        first_middleman_message = GolemMessageFrame(Ping(), self.request_id)
-        first_raw_message = append_frame_separator(
-            escape_encode_raw_message(
-                first_middleman_message.serialize(
-                    private_key=CONCENT_PRIVATE_KEY
-                )
-            )
-        )
-        second_middleman_message = AuthenticationChallengeFrame(
-            payload=b'',
-            request_id=100,
-        )
-        second_raw_message = append_frame_separator(
-            escape_encode_raw_message(
-                second_middleman_message.serialize(
-                    private_key=CONCENT_PRIVATE_KEY
-                )
-            )
-        )
-
-        assert len(first_raw_message) > len(second_raw_message) + 10
-
-        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as server_socket:
-            server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
-            with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as client_socket:
-                client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
-                server_socket.bind(('127.0.0.1', 8001))
-                server_socket.listen(1)
-
-                client_socket.connect(('127.0.0.1', 8001))
-
-                (connection, _address) = server_socket.accept()
-
-                client_socket.send(first_raw_message)
-                client_socket.send(second_raw_message)
-
-                with mock.patch('middleman_protocol.stream.MAXIMUM_FRAME_LENGTH', len(first_raw_message) - 10):
-                    raw_message_received = next(receive_frame(connection=connection))
-
-        deserialized_message = AbstractFrame.deserialize(
-            raw_message=raw_message_received,
-            public_key=CONCENT_PUBLIC_KEY,
-        )
-
-        assertpy.assert_that(deserialized_message.request_id).is_equal_to(100)
 
 
 class TestUnescapeStreamHelperMiddlemanProtocol:
@@ -385,6 +230,53 @@ class TestUnescapeStreamHelperMiddlemanProtocol:
                 raw_message_received = next(unescape_stream(connection=connection))
 
         assertpy.assert_that(raw_message_received).is_none()
+
+    def test_that_exceeding_maximum_frame_length_should_treat_exceeded_frame_as_invalid(self):
+        first_middleman_message = GolemMessageFrame(Ping(), self.request_id)
+        first_raw_message = append_frame_separator(
+            escape_encode_raw_message(
+                first_middleman_message.serialize(
+                    private_key=CONCENT_PRIVATE_KEY
+                )
+            )
+        )
+        second_middleman_message = AuthenticationChallengeFrame(
+            payload=b'',
+            request_id=100,
+        )
+        second_raw_message = append_frame_separator(
+            escape_encode_raw_message(
+                second_middleman_message.serialize(
+                    private_key=CONCENT_PRIVATE_KEY
+                )
+            )
+        )
+
+        assert len(first_raw_message) > len(second_raw_message) + 10
+
+        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as server_socket:
+            server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
+            with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as client_socket:
+                client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
+                server_socket.bind(('127.0.0.1', 8001))
+                server_socket.listen(1)
+
+                client_socket.connect(('127.0.0.1', 8001))
+
+                (connection, _address) = server_socket.accept()
+
+                client_socket.send(first_raw_message)
+                client_socket.send(second_raw_message)
+
+                with mock.patch('middleman_protocol.stream.MAXIMUM_FRAME_LENGTH', len(first_raw_message) - 10):
+                    raw_message_received = next(unescape_stream(connection=connection))
+
+        deserialized_message = AbstractFrame.deserialize(
+            raw_message=raw_message_received,
+            public_key=CONCENT_PUBLIC_KEY,
+        )
+
+        assertpy.assert_that(deserialized_message.request_id).is_equal_to(100)
 
 
 class TestSplitStreamHelperMiddlemanProtocol:

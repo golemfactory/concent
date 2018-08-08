@@ -155,7 +155,7 @@ class TestMessageMiddlemanProtocol:
         middleman_message = middleman_message_type(payload, self.request_id)
         raw_message = middleman_message.serialize(private_key=CONCENT_PRIVATE_KEY)
 
-        first_byte = raw_message[1] if raw_message[1] != 0 else 0
+        first_byte = 2 if raw_message[0] == 0 else raw_message[0]
         malformed_raw_message = bytes(bytearray([first_byte - 1])) + raw_message[1:]
 
         with pytest.raises(SignatureInvalidMiddlemanProtocolError):

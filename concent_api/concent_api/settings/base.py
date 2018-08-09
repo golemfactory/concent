@@ -294,6 +294,9 @@ STORAGE_CLUSTER_SSL_CERTIFICATE_PATH = ''
 # rendering results and any intermediate files.
 # VERIFIER_STORAGE_PATH = ''
 
+# A global constant defining chunk_size used for downloading files from nginx storage to verifier storage.
+VERIFIER_DOWNLOAD_CHUNK_SIZE = 1000000
+
 CUSTOM_PROTOCOL_TIMES = False
 
 # The minimum acceptable value of the SSIM metric. Values below this threshold for an image pair will result in a

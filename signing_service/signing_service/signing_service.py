@@ -247,7 +247,7 @@ if __name__ == '__main__':
 
     arg_host = args.concent_cluster_host
     arg_port = args.concent_cluster_port
-    (arg_concent_public_key, _count_of_bytes_decoded) = b64decode(args.concent_public_key)
+    arg_concent_public_key = b64decode(args.concent_public_key)
 
     arg_initial_reconnect_delay = args.initial_reconnect_delay
 

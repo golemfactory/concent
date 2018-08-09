@@ -256,6 +256,30 @@ def create_error_39_storage_server_internal_address_is_not_set():
     )
 
 
+def create_error_40_verifier_download_chunk_size_is_not_defined():
+    return Error(
+        'VERIFIER_DOWNLOAD_CHUNK_SIZE setting is not defined',
+        hint='Set VERIFIER_DOWNLOAD_CHUNK_SIZE in your local_settings.py.',
+        id='concent.E040',
+    )
+
+
+def create_error_41_verifier_download_chunk_size_has_wrong_type(verifier_download_chunk_size_type):
+    return Error(
+        'VERIFIER_DOWNLOAD_CHUNK_SIZE has wrong type',
+        hint=f"VERIFIER_DOWNLOAD_CHUNK_SIZE must be integer instead of {verifier_download_chunk_size_type}.",
+        id='concent.E041',
+    )
+
+
+def create_error_42_verifier_download_chunk_size_has_wrong_value(verifier_download_chunk_size_value):
+    return Error(
+        'VERIFIER_DOWNLOAD_CHUNK_SIZE setting has wrong value',
+        hint=f"VERIFIER_DOWNLOAD_CHUNK_SIZE must be greater or equal than 1. Currently it has {verifier_download_chunk_size_value}.",
+        id='concent.E042',
+    )
+
+
 @register()
 def check_settings_concent_features(app_configs, **kwargs):  # pylint: disable=unused-argument
 
@@ -496,5 +520,22 @@ def check_additional_verification_time_multiplier(app_configs=None, **kwargs):  
         return [create_error_35_additional_verification_time_multiplier_has_wrong_type(
             type(settings.ADDITIONAL_VERIFICATION_TIME_MULTIPLIER)
         )]
+
+    return []
+
+
+@register()
+def check_verifier_download_chunk_size(app_configs=None, **kwargs):  # pylint: disable=unused-argument
+    if 'verifier' in settings.CONCENT_FEATURES:
+        if not hasattr(settings, 'VERIFIER_DOWNLOAD_CHUNK_SIZE'):
+            return [create_error_40_verifier_download_chunk_size_is_not_defined()]
+        if not isinstance(settings.VERIFIER_DOWNLOAD_CHUNK_SIZE, int):
+            return [create_error_41_verifier_download_chunk_size_has_wrong_type(
+                type(settings.VERIFIER_DOWNLOAD_CHUNK_SIZE)
+            )]
+        if settings.VERIFIER_DOWNLOAD_CHUNK_SIZE < 1:
+            return [create_error_42_verifier_download_chunk_size_has_wrong_value(
+                settings.VERIFIER_DOWNLOAD_CHUNK_SIZE
+            )]
 
     return []

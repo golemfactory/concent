@@ -36,21 +36,21 @@ class VerifierUtilsTest(TestCase):
     def setUp(self):
         super().setUp()
         self.frames = [1, 2]
-        self.result_files_list = ['result_0001.png', 'result_0002.png']
+        self.result_files_list = ['result_240001.png', 'result_240002.png']
         self.output_format = 'PNG'
         self.parsed_files_to_compare = {
-            1: ['/tmp/result_0001.png'],
-            2: ['/tmp/result_0002.png'],
+            1: ['/tmp/result_240001.png'],
+            2: ['/tmp/result_240002.png'],
         }
         self.scene_file = 'scene-Helicopter-27-internal.blend'
         self.subtask_id = '1234-5678-9101-1213'
         self.correct_parsed_all_files = {
             1: [
-                '/tmp/result_0001.png',
+                '/tmp/result_240001.png',
                 '/tmp/out_scene-Helicopter-27-internal.blend_0001.png'
             ],
             2: [
-                '/tmp/result_0002.png',
+                '/tmp/result_240002.png',
                 '/tmp/out_scene-Helicopter-27-internal.blend_0002.png'
             ]
         }

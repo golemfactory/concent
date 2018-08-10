@@ -71,7 +71,7 @@ def prepare_storage_request_headers(file_transfer_token: message.concents.FileTr
 
 def store_file_from_response_in_chunks(response: requests.Response, file_path: str):
     with open(file_path, 'xb') as f:
-        for chunk in response.iter_content(chunk_size=1000000):
+        for chunk in response.iter_content(chunk_size=settings.VERIFIER_DOWNLOAD_CHUNK_SIZE):
             f.write(chunk)
 
 

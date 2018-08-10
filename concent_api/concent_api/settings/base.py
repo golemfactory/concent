@@ -328,3 +328,7 @@ CONCENT_FEATURES = []  # type: ignore
 
 # Verifier setting defining number of threads used by Blender
 BLENDER_THREADS = 1
+
+# Settings for creating locks on concent views ensuring, that only one view instance processes particular Subtask in one time
+MAX_VIEW_RETRIES = 10
+INITIAL_VIEW_RETRY_DELAY = 0.5  # Value in seconds

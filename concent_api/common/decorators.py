@@ -1,13 +1,19 @@
+import time
 from functools                      import wraps
 from logging                        import getLogger
 import traceback
+from typing import Any
+from typing import Optional
 
-from django.db                      import transaction
+from django.core.handlers.wsgi import WSGIRequest
+from django.db import DatabaseError
+from django.db import transaction
 from django.http                    import JsonResponse
 from django.http                    import HttpResponse
 from django.http                    import HttpResponseNotAllowed
 from django.conf                    import settings
 
+import golem_messages
 from golem_messages                 import dump
 from golem_messages                 import message
 from golem_messages.exceptions      import FieldError
@@ -169,9 +175,17 @@ def handle_errors_and_responses(database_name):
             try:
                 if database_name is not None:
                     sid = transaction.savepoint(using=database_name)
-                response_from_view = view(request, client_message, client_public_key, *args, **kwargs)
+                response_from_view = get_response_from_view_with_secure_retry_if_database_locked(
+                    view=view,
+                    request=request,
+                    client_message=client_message,
+                    client_public_key=client_public_key,
+                    *args,
+                    **kwargs
+                )
                 if database_name is not None:
                     transaction.savepoint_commit(sid, using=database_name)
+
             except ConcentBaseException as exception:
                 log_400_error(
                     logger,
@@ -298,3 +312,30 @@ def log_task_errors(task):
             )
             raise
     return wrapper
+
+
+def get_response_from_view_with_secure_retry_if_database_locked(
+    view,
+    request: WSGIRequest,
+    client_message: golem_messages.message,
+    client_public_key: bytes,
+    *args: Optional[Any],
+    **kwargs: Optional[Any],
+) -> HttpResponse:
+    sleep_time = settings.INITIAL_VIEW_RETRY_DELAY
+    for counter in range(settings.MAX_VIEW_RETRIES):
+        try:
+            response_from_view = view(request, client_message, client_public_key, *args, **kwargs)
+            return response_from_view
+        except DatabaseError as e:
+            # This section is to catch Database errors caused by multiple requests about one Subtask.
+            # These requests are waiting and retrying.
+            log_string_message(
+                logger,
+                f'DatabaseError during process client request. Client public key: {client_public_key}.'
+                f'Number of retries {counter+1}/{settings.MAX_VIEW_RETRIES}'
+                f'Error: {e}'
+            )
+            time.sleep(sleep_time)
+            sleep_time *= 2
+    raise DatabaseError

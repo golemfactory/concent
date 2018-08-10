@@ -3,6 +3,7 @@ from typing import List
 
 from celery import shared_task
 from mypy.types import Optional
+from django.db import DatabaseError
 from django.db import transaction
 
 from core import tasks
@@ -55,23 +56,31 @@ def blender_verification_request(
 
     output_format = output_format.upper()
     assert output_format in BlenderSubtaskDefinition.OutputFormat.__members__.keys()
+    try:
+        with transaction.atomic(using='storage'):
+            # The app creates a new instance of VerificationRequest in the database
+            # and a BlenderSubtaskDefinition instance associated with it.
+            (verification_request, blender_subtask_definition) = store_verification_request_and_blender_subtask_definition(
+                subtask_id=subtask_id,
+                source_package_path=source_package_path,
+                result_package_path=result_package_path,
+                verification_deadline=verification_deadline,
+                output_format=output_format,
+                scene_file=scene_file,
+                blender_crop_script=blender_crop_script,
+            )
 
-    # The app creates a new instance of VerificationRequest in the database
-    # and a BlenderSubtaskDefinition instance associated with it.
-    (verification_request, blender_subtask_definition) = store_verification_request_and_blender_subtask_definition(
-        subtask_id=subtask_id,
-        source_package_path=source_package_path,
-        result_package_path=result_package_path,
-        verification_deadline=verification_deadline,
-        output_format=output_format,
-        scene_file=scene_file,
-        blender_crop_script=blender_crop_script,
-    )
-
-    store_frames(
-        blender_subtask_definition=blender_subtask_definition,
-        frame_list=frames,
-    )
+            store_frames(
+                blender_subtask_definition=blender_subtask_definition,
+                frame_list=frames,
+            )
+    except DatabaseError as exception:
+        log_string_message(
+            logger,
+            f'Error: verification_request or blender_subtask_definition for subtask {subtask_id} already exist',
+            f'Exception from database: {exception}'
+        )
+        raise DatabaseError
 
     # If there are already UploadReports corresponding to some files, the app links them with the VerificationRequest
     # by setting the value of the foreign key in UploadReport.
@@ -124,7 +133,7 @@ def upload_acknowledged(
     assert isinstance(subtask_id, str)
 
     try:
-        verification_request = VerificationRequest.objects.get(subtask_id=subtask_id)
+        verification_request = VerificationRequest.objects.select_for_update().get(subtask_id=subtask_id)
     except VerificationRequest.DoesNotExist:
         log_error_message(
             logger,

@@ -404,7 +404,7 @@ def parse_result_files_with_frames(frames: List[int], result_files_list: List[st
     for frame_number in frames:
         for result_file_name in result_files_list:
             if (
-                re.search(f'_{frame_number:>04}.{output_format.lower()}$', result_file_name) is not None and
+                re.search(f'_[0-9]\\d*{frame_number:>04}.{output_format.lower()}$', result_file_name) is not None and
                 result_file_name not in frames_to_result_files_map.values()
             ):
                 frames_to_result_files_map[frame_number] = [generate_verifier_storage_file_path(result_file_name)]

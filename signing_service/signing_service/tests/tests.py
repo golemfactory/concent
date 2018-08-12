@@ -248,14 +248,12 @@ class SigningServiceParseArgumentsTestCase(TestCase):
             self.concent_public_key_encoded,
             '--initial_reconnect_delay', '2',
             '--concent-cluster-port', '8000',
+            '--sentry-dsn', self.sentry_dsn,
+            '--ethereum-private-key', b64encode(self.ethereum_private_key).decode('ascii'),
+            '--signing-service-private-key', self.signing_service_private_key_encoded,
         ]
 
-        with mock.patch.dict(os.environ, {
-            'SENTRY_DSN': self.sentry_dsn,
-            'ETHEREUM_PRIVATE_KEY': b64encode(self.ethereum_private_key).decode('ascii'),
-            'SIGNING_SERVICE_PRIVATE_KEY': self.signing_service_private_key_encoded,
-        }):
-            args = _parse_arguments()
+        args = _parse_arguments()
 
         self.assertEqual(args.concent_cluster_host, '127.0.0.1')
         self.assertEqual(args.concent_cluster_port, 8000)
@@ -269,19 +267,15 @@ class SigningServiceParseArgumentsTestCase(TestCase):
         sys.argv += [
             '127.0.0.1',
             self.concent_public_key_encoded,
+            '--sentry-dsn', self.sentry_dsn,
+            '--ethereum-private-key', b64encode(self.ethereum_private_key).decode('ascii'),
+            '--signing-service-private-key', self.signing_service_private_key_encoded,
         ]
 
-        with mock.patch.dict(os.environ, {
-            'SENTRY_DSN': self.sentry_dsn,
-            'ETHEREUM_PRIVATE_KEY': b64encode(self.ethereum_private_key).decode('ascii'),
-            'SIGNING_SERVICE_PRIVATE_KEY': self.signing_service_private_key_encoded,
-        }):
-            args = _parse_arguments()
+        args = _parse_arguments()
 
-        self.assertEqual(args.concent_cluster_host, '127.0.0.1')
         self.assertEqual(args.concent_cluster_port, SIGNING_SERVICE_DEFAULT_PORT)
         self.assertEqual(args.initial_reconnect_delay, SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY)
-        self.assertEqual(args.signing_service_private_key, SIGNING_SERVICE_PRIVATE_KEY)
 
     def test_that_argument_parser_should_fail_if_port_cannot_be_casted_to_int(self):
         sys.argv += [

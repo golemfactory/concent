@@ -242,7 +242,7 @@ def _parse_arguments() -> argparse.Namespace:
         help='Singing Service private key.',
     )
 
-    sentry_dsn_parser_group = parser.add_mutually_exclusive_group(required=True)
+    sentry_dsn_parser_group = parser.add_mutually_exclusive_group()
     sentry_dsn_parser_group.add_argument(
         '-s',
         '--sentry-dsn',

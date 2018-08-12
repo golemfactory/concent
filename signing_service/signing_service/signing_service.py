@@ -3,7 +3,6 @@ import logging.config
 import os
 import signal
 import socket
-from base64 import b64decode
 from contextlib import closing
 from time import sleep
 
@@ -24,6 +23,7 @@ from signing_service.constants import SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME
 from signing_service.constants import SIGNING_SERVICE_RECOVERABLE_ERRORS
 from signing_service.exceptions import SigningServiceValidationError
 from signing_service.utils import is_valid_public_key
+from signing_service.utils import make_secret_provider_factory
 
 
 logger = logging.getLogger()
@@ -175,40 +175,6 @@ class SigningService:
 
 
 def _parse_arguments() -> argparse.Namespace:
-    def make_secret_provider_factory(read_command_line=False, env_variable_name=None, use_file=False, base64_convert=False):
-        def wrapper(**kwargs):
-            # Remove 'required' as it is added automatically by ArgumentParser.
-            if 'required' in kwargs:
-                del kwargs['required']
-            return SecretProvider(read_command_line, env_variable_name, use_file, base64_convert, **kwargs)
-        return wrapper
-
-    class SecretProvider(argparse.Action):
-        def __init__(self, read_command_line, env_variable_name, use_file, base64_convert, option_strings, dest, help=None):  # pylint: disable=redefined-builtin
-            self.read_command_line = read_command_line
-            self.env_variable_name = env_variable_name
-            self.use_file = use_file
-            self.base64_convert = base64_convert
-            if self.env_variable_name is not None:
-                command_line_arguments = 0
-            else:
-                command_line_arguments = None
-            super().__init__(option_strings=option_strings, dest=dest, help=help, nargs=command_line_arguments)
-
-        def __call__(self, parser, namespace, values, option_string=None):
-            if values is not None and self.use_file:
-                with open(values) as file:
-                    self.const = file.read()
-            elif values is not None and self.read_command_line:
-                self.const = values
-            elif self.env_variable_name is not None:
-                self.const = os.environ.get(self.env_variable_name)
-            else:
-                assert False
-            if self.base64_convert:
-                assert isinstance(self.const, str)
-                self.const = b64decode(self.const)
-            setattr(namespace, self.dest, self.const)
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -236,7 +202,7 @@ def _parse_arguments() -> argparse.Namespace:
         help=f'Port on which Concent cluster is listening (default: {SIGNING_SERVICE_DEFAULT_PORT}).',
     )
 
-    ethereum_private_key_parser_group = parser.add_mutually_exclusive_group()
+    ethereum_private_key_parser_group = parser.add_mutually_exclusive_group(required=True)
     ethereum_private_key_parser_group.add_argument(
         '--ethereum-private-key',
         dest='ethereum_private_key',
@@ -255,13 +221,8 @@ def _parse_arguments() -> argparse.Namespace:
         action=make_secret_provider_factory(env_variable_name='ETHEREUM_PRIVATE_KEY', base64_convert=True),
         help='Ethereum private key for Singing Service.',
     )
-    parser.set_defaults(
-        ethereum_private_key=b64decode(os.environ.get('ETHEREUM_PRIVATE_KEY'))  # type: ignore
-        if os.environ.get('ETHEREUM_PRIVATE_KEY') is not None
-        else None
-    )
 
-    signing_service_private_key_parser_group = parser.add_mutually_exclusive_group()
+    signing_service_private_key_parser_group = parser.add_mutually_exclusive_group(required=True)
     signing_service_private_key_parser_group.add_argument(
         '--signing-service-private-key',
         dest='signing_service_private_key',
@@ -280,14 +241,9 @@ def _parse_arguments() -> argparse.Namespace:
         action=make_secret_provider_factory(env_variable_name='SIGNING_SERVICE_PRIVATE_KEY', base64_convert=True),
         help='Singing Service private key.',
     )
-    parser.set_defaults(
-        signing_service_private_key=b64decode(os.environ.get('SIGNING_SERVICE_PRIVATE_KEY'))  # type: ignore
-        if os.environ.get('SIGNING_SERVICE_PRIVATE_KEY') is not None
-        else None
-    )
 
     sentry_dsn_parser_group = parser.add_mutually_exclusive_group()
-    parser.add_argument(
+    sentry_dsn_parser_group.add_argument(
         '-s',
         '--sentry-dsn',
         dest='sentry_dsn',
@@ -306,7 +262,6 @@ def _parse_arguments() -> argparse.Namespace:
         action=make_secret_provider_factory(env_variable_name='SENTRY_DSN'),
         help='Sentry DSN for error reporting.',
     )
-    parser.set_defaults(sentry_dsn=os.environ.get('SENTRY_DSN'))
     return parser.parse_args()
 
 

@@ -8,7 +8,9 @@ import tempfile
 
 from golem_messages.cryptography import ECCx
 from golem_messages.message import Ping
+import assertpy
 import mock
+import pytest
 
 from middleman_protocol.constants import ErrorCode
 from middleman_protocol.message import AbstractFrame
@@ -34,11 +36,16 @@ signing_service_ecc_keys = ECCx(None)
 (SIGNING_SERVICE_PRIVATE_KEY, SIGNING_SERVICE_PUBLIC_KEY) = signing_service_ecc_keys.raw_privkey, signing_service_ecc_keys.raw_pubkey
 
 
-class SigningServiceMainTestCase(TestCase):
+class TestSigningServiceRun:
 
-    def setUp(self):
+    host = None
+    port = None
+    initial_reconnect_delay = None
+
+    @pytest.fixture(autouse=True)
+    def setUp(self, unused_tcp_port_factory):
         self.host = '127.0.0.1'
-        self.port = 8000
+        self.port = unused_tcp_port_factory()
         self.initial_reconnect_delay = 2
 
     def test_that_signing_service_should_be_instantiated_correctly_with_all_parameters(self):
@@ -50,10 +57,10 @@ class SigningServiceMainTestCase(TestCase):
             SIGNING_SERVICE_PRIVATE_KEY,
         )
 
-        self.assertIsInstance(signing_service, SigningService)
-        self.assertEqual(signing_service.host, self.host)
-        self.assertEqual(signing_service.port, self.port)
-        self.assertEqual(signing_service.initial_reconnect_delay, self.initial_reconnect_delay)
+        assertpy.assert_that(signing_service).is_instance_of(SigningService)
+        assertpy.assert_that(signing_service.host).is_equal_to(self.host)
+        assertpy.assert_that(signing_service.port).is_equal_to(self.port)
+        assertpy.assert_that(signing_service.initial_reconnect_delay).is_equal_to(self.initial_reconnect_delay)
 
     def test_that_signing_service_should_run_full_loop_when_instantiated_with_all_parameters(self):
         with mock.patch('socket.socket.connect') as mock_socket_connect:
@@ -69,7 +76,7 @@ class SigningServiceMainTestCase(TestCase):
                         )
                         signing_service.run()
 
-        mock_socket_connect.assert_called_once_with(('127.0.0.1', 8000))
+        mock_socket_connect.assert_called_once_with(('127.0.0.1', self.port))
         mock_socket_close.assert_called_once()
         mock__handle_connection.assert_called_once()
 
@@ -85,7 +92,7 @@ class SigningServiceMainTestCase(TestCase):
                 )
                 signing_service.run()
 
-        mock_socket_connect.assert_called_once_with(('127.0.0.1', 8000))
+        mock_socket_connect.assert_called_once_with(('127.0.0.1', self.port))
         mock_socket_close.assert_called_once()
 
     def test_that_signing_service_should_reraise_unrecognized_exception(self):
@@ -98,10 +105,10 @@ class SigningServiceMainTestCase(TestCase):
                     CONCENT_PUBLIC_KEY,
                     SIGNING_SERVICE_PRIVATE_KEY,
                 )
-                with self.assertRaises(Exception):
+                with pytest.raises(Exception):
                     signing_service.run()
 
-        mock_socket_connect.assert_called_once_with(('127.0.0.1', 8000))
+        mock_socket_connect.assert_called_once_with(('127.0.0.1', self.port))
         mock_socket_close.assert_called_once()
 
     def test_that_signing_service_should_reconnect_when_expected_socket_error_was_caught(self):
@@ -118,7 +125,7 @@ class SigningServiceMainTestCase(TestCase):
                 )
                 signing_service.run()
 
-        self.assertEqual(mock_socket_connect.call_count, 2)
+        assertpy.assert_that(mock_socket_connect.call_count).is_equal_to(2)
 
     def test_that_signing_service_should_reraise_different_socket_erros(self):
         assert socket.errno.EBUSY not in SIGNING_SERVICE_RECOVERABLE_ERRORS
@@ -132,21 +139,26 @@ class SigningServiceMainTestCase(TestCase):
                     CONCENT_PUBLIC_KEY,
                     SIGNING_SERVICE_PRIVATE_KEY,
                 )
-                with self.assertRaises(socket.error):
+                with pytest.raises(socket.error):
                     signing_service.run()
 
-        mock_socket_connect.assert_called_once_with(('127.0.0.1', 8000))
+        mock_socket_connect.assert_called_once_with(('127.0.0.1', self.port))
         mock_socket_close.assert_called_once()
 
 
-class SigningServiceHandleConnectionTestCase(TestCase):
+class TestSigningServiceHandleConnection:
 
-    def setUp(self):
+    host = None
+    port = None
+    initial_reconnect_delay = None
+
+    @pytest.fixture(autouse=True)
+    def setUp(self, unused_tcp_port_factory):
         self.host = '127.0.0.1'
-        self.port = 8000
+        self.port = unused_tcp_port_factory()
         self.initial_reconnect_delay = 2
 
-    def test_that__handle_connection_should_send_wrapped_service_refuse_if_frame_is_invalid(self):
+    def test_that__handle_connection_should_send_error_frame_if_frame_is_invalid(self, unused_tcp_port_factory):
         # Prepare message with wrong signature
         middleman_message = GolemMessageFrame(Ping(), 99)
         raw_message = append_frame_separator(
@@ -156,7 +168,8 @@ class SigningServiceHandleConnectionTestCase(TestCase):
                 )
             )
         )
-        malformed_raw_message = bytes(bytearray([max(raw_message[1] - 1, 0)])) + raw_message[1:]
+        first_byte = 2 if raw_message[0] == 0 else raw_message[0]
+        malformed_raw_message = bytes(bytearray([first_byte - 1])) + raw_message[1:]
 
         def mocked_generator(connection):  # pylint: disable=unused-argument
             yield malformed_raw_message
@@ -180,12 +193,13 @@ class SigningServiceHandleConnectionTestCase(TestCase):
                         )
 
                         # For test purposes we reverse roles, so signing service works as server.
-                        signing_service_socket.bind(('127.0.0.1', 8001))
+                        siging_service_port = unused_tcp_port_factory()
+                        signing_service_socket.bind(('127.0.0.1', siging_service_port))
                         signing_service_socket.listen(1)
-                        client_socket.connect(('127.0.0.1', 8001))
+                        client_socket.connect(('127.0.0.1', siging_service_port))
                         (connection, _address) = signing_service_socket.accept()
 
-                        with self.assertRaises(SigningServiceValidationError):
+                        with pytest.raises(SigningServiceValidationError):
                             signing_service._handle_connection(connection)
 
                         raw_message_received = next(unescape_stream(connection=client_socket))
@@ -195,45 +209,47 @@ class SigningServiceHandleConnectionTestCase(TestCase):
             public_key=SIGNING_SERVICE_PUBLIC_KEY,
         )
 
-        self.assertIsInstance(deserialized_message.payload, tuple)
-        self.assertEqual(len(deserialized_message.payload), 2)
-        self.assertEqual(deserialized_message.payload[0], ErrorCode.InvalidFrameSignature)
+        assertpy.assert_that(deserialized_message.payload).is_instance_of(tuple)
+        assertpy.assert_that(deserialized_message.payload).is_length(2)
+        assertpy.assert_that(deserialized_message.payload[0]).is_equal_to(ErrorCode.InvalidFrameSignature)
 
 
-class SigningServiceIncreaseDelayTestCase(TestCase):
+class TestSigningServiceIncreaseDelay:
 
-    def setUp(self):
+    signing_service = None
+
+    @pytest.fixture(autouse=True)
+    def setUp(self, unused_tcp_port_factory):
         self.signing_service = SigningService(
             '127.0.0.1',
-            8000,
+            unused_tcp_port_factory(),
             2,
             CONCENT_PUBLIC_KEY,
             SIGNING_SERVICE_PRIVATE_KEY,
         )
 
     def test_that_initial_reconnect_delay_should_be_set_to_passed_value(self):
-        self.assertEqual(self.signing_service.current_reconnect_delay, None)
-        self.assertEqual(self.signing_service.initial_reconnect_delay, 2)
+        assertpy.assert_that(self.signing_service.current_reconnect_delay).is_equal_to(None)
+        assertpy.assert_that(self.signing_service.initial_reconnect_delay).is_equal_to(2)
 
     def test_that_current_reconnect_delay_should_be_set_to_reconnect_delay_after_first_call_to__increase_delay(self):
         self.signing_service._increase_delay()
-        self.assertEqual(self.signing_service.current_reconnect_delay, 2)
+        assertpy.assert_that(self.signing_service.current_reconnect_delay).is_equal_to(2)
 
     def test_that_current_reconnect_delay_should_be_doubled_after_next_call_to__increase_delay(self):
         self.signing_service._increase_delay()
         self.signing_service._increase_delay()
-        self.assertEqual(self.signing_service.current_reconnect_delay, 2 * 2)
+        assertpy.assert_that(self.signing_service.current_reconnect_delay).is_equal_to(2 * 2)
 
     def test_that_current_reconnect_delay_should_be_set_to_allowed_maximum_after_it_extends_it(self):
         self.signing_service.current_reconnect_delay = SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME - 1
         self.signing_service._increase_delay()
-        self.assertEqual(self.signing_service.current_reconnect_delay, SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME)
+        assertpy.assert_that(self.signing_service.current_reconnect_delay).is_equal_to(SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME)
 
 
 class SigningServiceParseArgumentsTestCase(TestCase):
 
     def setUp(self):
-        super().setUp()
         # ArgumentParser takes values directly from sys.argv, but the test runner has its own arguments,
         # so they have to be replaced.
         sys.argv = sys.argv[:1]

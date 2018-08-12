@@ -283,7 +283,6 @@ class SigningServiceParseArgumentsTestCase(TestCase):
         sys.argv += [
             '127.0.0.1',
             self.concent_public_key_encoded,
-            '--sentry-dsn', self.sentry_dsn,
             '--ethereum-private-key', b64encode(self.ethereum_private_key).decode('ascii'),
             '--signing-service-private-key', self.signing_service_private_key_encoded,
         ]
@@ -297,40 +296,33 @@ class SigningServiceParseArgumentsTestCase(TestCase):
         sys.argv += [
             '127.0.0.1',
             self.concent_public_key_encoded,
-            '--initial_reconnect_delay', '1',
             '--concent-cluster-port', 'abc',
-        ]
-
-        with mock.patch.dict(os.environ, {
-            'SENTRY_DSN': self.sentry_dsn,
-            'ETHEREUM_PRIVATE_KEY': b64encode(self.ethereum_private_key).decode('ascii'),
-            'SIGNING_SERVICE_PRIVATE_KEY': self.signing_service_private_key_encoded,
-        }):
-            with self.assertRaises(SystemExit):
-                _parse_arguments()
-
-    def test_that_argument_parser_should_fail_if_parameters_are_missing(self):
-        with mock.patch.dict(os.environ, {
-            'SENTRY_DSN': self.sentry_dsn,
-            'ETHEREUM_PRIVATE_KEY': b64encode(self.ethereum_private_key).decode('ascii'),
-            'SIGNING_SERVICE_PRIVATE_KEY': self.signing_service_private_key_encoded,
-        }):
-            with self.assertRaises(SystemExit):
-                _parse_arguments()
-
-    def test_that_argument_parser_should_parse_correct_secrets_from_command_line(self):
-        sys.argv += [
-            '127.0.0.1',
-            self.concent_public_key_encoded,
-            '--sentry-dsn', self.sentry_dsn,
             '--ethereum-private-key', b64encode(self.ethereum_private_key).decode('ascii'),
             '--signing-service-private-key', self.signing_service_private_key_encoded,
         ]
 
-        args = _parse_arguments()
+        with self.assertRaises(SystemExit):
+            _parse_arguments()
+
+    def test_that_argument_parser_should_parse_correct_secrets_from_env_variables(self):
+        sys.argv += [
+            '127.0.0.1',
+            self.concent_public_key_encoded,
+            '--sentry-dsn-from-env',
+            '--ethereum-private-key-from-env',
+            '--signing-service-private-key-from-env',
+        ]
+
+        with mock.patch.dict(os.environ, {
+            'SENTRY_DSN': self.sentry_dsn,
+            'ETHEREUM_PRIVATE_KEY': b64encode(self.ethereum_private_key).decode('ascii'),
+            'SIGNING_SERVICE_PRIVATE_KEY': self.signing_service_private_key_encoded,
+        }):
+            args = _parse_arguments()
 
         self.assertEqual(args.sentry_dsn, self.sentry_dsn)
         self.assertEqual(args.ethereum_private_key, self.ethereum_private_key)
+        self.assertEqual(args.signing_service_private_key, SIGNING_SERVICE_PRIVATE_KEY)
 
     def test_that_argument_parses_should_fail_if_file_with_secrets_is_missing(self):
         sys.argv += ['127.0.0.1', self.concent_public_key_encoded, '--sentry-dsn-path', '/not_existing_path/file.txt']

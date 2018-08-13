@@ -34,6 +34,4 @@ SIGNING_SERVICE_RECOVERABLE_ERRORS = [
     socket.errno.EHOSTUNREACH,  # type: ignore
 ]
 
-ETHEREUM_PRIVATE_KEY_LENGTH = 64
-
-ETHEREUM_PRIVATE_KEY_REGEXP = re.compile(r'^[a-f0-9]+$')
+ETHEREUM_PRIVATE_KEY_REGEXP = re.compile(r'^[a-f0-9]{64}$')

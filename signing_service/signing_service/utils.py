@@ -5,7 +5,6 @@ from base64 import b64decode
 from golem_messages.cryptography import verify_pubkey
 from golem_messages.exceptions import InvalidKeys
 
-from signing_service.constants import ETHEREUM_PRIVATE_KEY_LENGTH
 from signing_service.constants import ETHEREUM_PRIVATE_KEY_REGEXP
 
 
@@ -31,7 +30,7 @@ def is_valid_private_key(key: str) -> bool:
 
     assert isinstance(key, str)
 
-    return len(key) == ETHEREUM_PRIVATE_KEY_LENGTH and ETHEREUM_PRIVATE_KEY_REGEXP.fullmatch(key) is not None
+    return ETHEREUM_PRIVATE_KEY_REGEXP.fullmatch(key) is not None
 
 
 def make_secret_provider_factory(

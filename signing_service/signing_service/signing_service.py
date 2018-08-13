@@ -148,9 +148,6 @@ class SigningService:
         receive_frame_generator = unescape_stream(connection=tcp_socket)
 
         for raw_message_received in receive_frame_generator:
-            error_code = None
-            exception_object = None
-
             try:
                 middleman_message = AbstractFrame.deserialize(
                     raw_message_received,
@@ -169,30 +166,22 @@ class SigningService:
                 PayloadTypeInvalidMiddlemanProtocolError,
                 RequestIdInvalidTypeMiddlemanProtocolError,
             ) as exception:
-                error_code = ErrorCode.InvalidFrame
-                exception_object = exception
+                middleman_message_response = self._prepare_error_response(ErrorCode.InvalidFrame, exception)
             # Is frame signature correct? If not, error code is InvalidFrameSignature.
             except SignatureInvalidMiddlemanProtocolError as exception:
-                error_code = ErrorCode.InvalidFrameSignature
-                exception_object = exception
+                middleman_message_response = self._prepare_error_response(ErrorCode.InvalidFrameSignature, exception)
             # Is the content of the message valid? Do types match the schema and all values are within allowed ranges?
             # If not, error code is InvalidPayload.
-            except PayloadInvalidMiddlemanProtocolError as exception:
-                error_code = ErrorCode.InvalidPayload
-                exception_object = exception
             # Can the payload be decoded as a Golem message? If not, error code is InvalidPayload.
             # Is payload message signature correct? If not, error code is InvalidPayload.
-            except MessageError as exception:
-                error_code = ErrorCode.InvalidPayload
-                exception_object = exception
+            except (MessageError, PayloadInvalidMiddlemanProtocolError) as exception:
+                middleman_message_response = self._prepare_error_response(ErrorCode.InvalidPayload, exception)
             # Is frame type GOLEM_MESSAGE? If not, error code is UnexpectedMessage.
             # Is Golem message type TransactionSigningRequest? If not, error code is UnexpectedMessage.
             except SigningServiceUnexpectedMessageError as exception:
-                error_code = ErrorCode.UnexpectedMessage
-                exception_object = exception
-
+                middleman_message_response = self._prepare_error_response(ErrorCode.UnexpectedMessage, exception)
             # If received frame is correct, validate transaction.
-            if error_code is None:
+            else:
                 golem_message_response = self._sign_transaction(middleman_message.payload)
                 golem_message_response.sign_message(
                     private_key=self.signing_service_private_key,
@@ -201,16 +190,6 @@ class SigningService:
                     payload=golem_message_response,
                     request_id=middleman_message.request_id,
                 )
-            elif error_code is not None and exception_object is not None:
-                logger.info(
-                    f'Deserializing received Middleman protocol message failed with exception: {exception_object}.'
-                )
-                middleman_message_response = ErrorFrame(
-                    payload=(error_code, str(exception_object)),
-                    request_id=99,
-                )
-            else:
-                assert False
 
             logger.info(
                 f'Sending Middleman protocol message with request_id: {middleman_message_response.request_id}.'
@@ -220,6 +199,16 @@ class SigningService:
                 raw_message=middleman_message_response,
                 private_key=self.signing_service_private_key,
             )
+
+    @staticmethod
+    def _prepare_error_response(error_code, exception_object):
+        logger.info(
+            f'Deserializing received Middleman protocol message failed with exception: {exception_object}.'
+        )
+        return ErrorFrame(
+            payload=(error_code, str(exception_object)),
+            request_id=0,
+        )
 
     def _increase_delay(self) -> None:
         """ Increase current delay if connection cannot be established. """

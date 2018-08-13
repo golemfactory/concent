@@ -136,7 +136,7 @@ class SigningService:
                     public_key=self.signing_service_public_key,
                 )
             except (InvalidSignature, MiddlemanProtocolError) as exception:
-                logger.info(f'Exception caught when deserializing received Middleman protocol message: {exception}.')
+                logger.info(f'Malformed messages failed to deserialize with exception: {exception}.')
                 middleman_message_response = ErrorFrame(
                     payload=(ErrorCode.InvalidFrameSignature, str(exception)),
                     request_id=99,

@@ -19,6 +19,7 @@ from middleman_protocol.stream import append_frame_separator
 from middleman_protocol.stream import escape_encode_raw_message
 from middleman_protocol.stream import unescape_stream
 
+from signing_service.constants import REQUEST_ID_FOR_RESPONSE_FOR_INVALID_FRAME
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_PORT
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY
 from signing_service.constants import SIGNING_SERVICE_RECOVERABLE_ERRORS
@@ -160,7 +161,7 @@ class TestSigningServiceHandleConnection:
 
     def test_that__handle_connection_should_send_error_frame_if_frame_is_invalid(self, unused_tcp_port_factory):
         # Prepare message with wrong signature
-        middleman_message = GolemMessageFrame(Ping(), 99)
+        middleman_message = GolemMessageFrame(Ping(), 1)
         raw_message = append_frame_separator(
             escape_encode_raw_message(
                 middleman_message.serialize(
@@ -212,6 +213,7 @@ class TestSigningServiceHandleConnection:
         assertpy.assert_that(deserialized_message.payload).is_instance_of(tuple)
         assertpy.assert_that(deserialized_message.payload).is_length(2)
         assertpy.assert_that(deserialized_message.payload[0]).is_equal_to(ErrorCode.InvalidFrameSignature)
+        assertpy.assert_that(deserialized_message.request_id).is_equal_to(REQUEST_ID_FOR_RESPONSE_FOR_INVALID_FRAME)
 
 
 class TestSigningServiceIncreaseDelay:

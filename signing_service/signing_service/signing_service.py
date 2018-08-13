@@ -17,6 +17,7 @@ from middleman_protocol.stream import send_over_stream
 from middleman_protocol.message import AbstractFrame
 from middleman_protocol.message import ErrorFrame
 
+from signing_service.constants import REQUEST_ID_FOR_RESPONSE_FOR_INVALID_FRAME
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_PORT
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY  # pylint: disable=no-name-in-module
 from signing_service.constants import SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME
@@ -139,7 +140,7 @@ class SigningService:
                 logger.info(f'Malformed messages failed to deserialize with exception: {exception}.')
                 middleman_message_response = ErrorFrame(
                     payload=(ErrorCode.InvalidFrameSignature, str(exception)),
-                    request_id=99,
+                    request_id=REQUEST_ID_FOR_RESPONSE_FOR_INVALID_FRAME,
                 )
                 logger.debug(
                     f'Sending Middleman protocol message with request_id: {middleman_message_response.request_id}.'

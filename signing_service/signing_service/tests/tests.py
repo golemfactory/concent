@@ -354,10 +354,9 @@ class TestSigningServiceHandleConnection(SigningServiceIntegrationTestCase):
         return raw_message_received
 
 
-class SigningServiceSingTransactionTestCase(SigningServiceIntegrationTestCase):
+class SigningServiceSingTransactionTestCase(SigningServiceIntegrationTestCase, TestCase):
 
     def setUp(self):
-        super().setUp()
         self.host = '127.0.0.1'
         self.port = 8000
         self.initial_reconnect_delay = 2
@@ -419,7 +418,7 @@ class TestSigningServiceIncreaseDelay:
             2,
             CONCENT_PUBLIC_KEY,
             SIGNING_SERVICE_PRIVATE_KEY,
-            '3a1076bf45ab87712ad64ccb3b10217737f7faacbf2872e88fdd9a537d8fe266',
+            TEST_ETHEREUM_PRIVATE_KEY,
         )
 
     def test_that_initial_reconnect_delay_should_be_set_to_passed_value(self):

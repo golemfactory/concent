@@ -336,19 +336,19 @@ def _parse_arguments() -> argparse.Namespace:
     ethereum_private_key_parser_group.add_argument(
         '--ethereum-private-key',
         dest='ethereum_private_key',
-        action=make_secret_provider_factory(read_command_line=True),
+        action=make_secret_provider_factory(read_command_line=True, base64_convert=True, string_decode=True),
         help='Ethereum private key for Singing Service.',
     )
     ethereum_private_key_parser_group.add_argument(
         '--ethereum-private-key-path',
         dest='ethereum_private_key',
-        action=make_secret_provider_factory(use_file=True),
+        action=make_secret_provider_factory(use_file=True, base64_convert=True, string_decode=True),
         help='Ethereum private key for Singing Service.',
     )
     ethereum_private_key_parser_group.add_argument(
         '--ethereum-private-key-from-env',
         dest='ethereum_private_key',
-        action=make_secret_provider_factory(env_variable_name='ETHEREUM_PRIVATE_KEY'),
+        action=make_secret_provider_factory(env_variable_name='ETHEREUM_PRIVATE_KEY', base64_convert=True, string_decode=True),
         help='Ethereum private key for Singing Service.',
     )
 

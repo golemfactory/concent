@@ -22,7 +22,6 @@ from middleman_protocol.constants import FRAME_SIGNATURE_BYTES_LENGTH
 from middleman_protocol.constants import FRAME_REQUEST_ID_BYTES_LENGTH
 from middleman_protocol.message import AbstractFrame
 from middleman_protocol.message import GolemMessageFrame
-from middleman_protocol.stream import escape_encode_raw_message
 from middleman_protocol.stream import unescape_stream
 
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_PORT
@@ -37,6 +36,8 @@ from signing_service.utils import is_valid_public_key
 from .utils import SigningServiceIntegrationTestCase
 
 
+TEST_ETHEREUM_PRIVATE_KEY = '3a1076bf45ab87712ad64ccb3b10217737f7faacbf2872e88fdd9a537d8fe266'
+
 concent_ecc_keys = ECCx(None)
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = concent_ecc_keys.raw_privkey, concent_ecc_keys.raw_pubkey
 
@@ -49,20 +50,20 @@ class TestSigningServiceRun:
     host = None
     port = None
     initial_reconnect_delay = None
+    parameters = None
 
     @pytest.fixture(autouse=True)
     def setUp(self, unused_tcp_port_factory):
         self.host = '127.0.0.1'
         self.port = unused_tcp_port_factory()
         self.initial_reconnect_delay = 2
-        self.ethereum_private_key = '3a1076bf45ab87712ad64ccb3b10217737f7faacbf2872e88fdd9a537d8fe266'
         self.parameters = [
             self.host,
             self.port,
             self.initial_reconnect_delay,
             CONCENT_PUBLIC_KEY,
             SIGNING_SERVICE_PRIVATE_KEY,
-            self.ethereum_private_key,
+            TEST_ETHEREUM_PRIVATE_KEY,
         ]
 
     def test_that_signing_service_should_be_instantiated_correctly_with_all_parameters(self):
@@ -152,7 +153,6 @@ class TestSigningServiceHandleConnection(SigningServiceIntegrationTestCase):
         self.host = '127.0.0.1'
         self.port = unused_tcp_port_factory()
         self.initial_reconnect_delay = 2
-        self.ethereum_private_key = '3a1076bf45ab87712ad64ccb3b10217737f7faacbf2872e88fdd9a537d8fe266'
         self.signing_service_port = unused_tcp_port_factory()
 
     def test_that__handle_connection_should_send_golem_message_signed_transaction_if_frame_is_correct(self):
@@ -334,7 +334,7 @@ class TestSigningServiceHandleConnection(SigningServiceIntegrationTestCase):
                             self.initial_reconnect_delay,
                             CONCENT_PUBLIC_KEY,
                             SIGNING_SERVICE_PRIVATE_KEY,
-                            self.ethereum_private_key,
+                            TEST_ETHEREUM_PRIVATE_KEY,
                         )
 
                         # For test purposes we reverse roles, so signing service works as server.
@@ -361,7 +361,6 @@ class SigningServiceSingTransactionTestCase(SigningServiceIntegrationTestCase):
         self.host = '127.0.0.1'
         self.port = 8000
         self.initial_reconnect_delay = 2
-        self.ethereum_private_key = '3a1076bf45ab87712ad64ccb3b10217737f7faacbf2872e88fdd9a537d8fe266'
 
         with mock.patch('signing_service.signing_service.SigningService.run'):
             self.signing_service = SigningService(
@@ -370,7 +369,7 @@ class SigningServiceSingTransactionTestCase(SigningServiceIntegrationTestCase):
                 self.initial_reconnect_delay,
                 CONCENT_PUBLIC_KEY,
                 SIGNING_SERVICE_PRIVATE_KEY,
-                self.ethereum_private_key,
+                TEST_ETHEREUM_PRIVATE_KEY,
             )
 
     def test_that_sign_transaction_should_return_transaction_signed_if_transaction_was_signed_correctly(self):
@@ -450,8 +449,10 @@ class SigningServiceParseArgumentsTestCase(TestCase):
         sys.argv = sys.argv[:1]
         self.concent_public_key_encoded = b64encode(CONCENT_PUBLIC_KEY).decode()
         self.signing_service_private_key_encoded = b64encode(SIGNING_SERVICE_PRIVATE_KEY).decode()
+        self.ethereum_private_key_encoded = b64encode(
+            TEST_ETHEREUM_PRIVATE_KEY.encode('ascii')
+        ).decode()
         self.sentry_dsn = 'http://test.sentry@dsn.com'
-        self.ethereum_private_key = '3a1076bf45ab87712ad64ccb3b10217737f7faacbf2872e88fdd9a537d8fe266'
 
     def test_that_argument_parser_should_parse_correct_input(self):
         sys.argv += [
@@ -460,7 +461,7 @@ class SigningServiceParseArgumentsTestCase(TestCase):
             '--initial_reconnect_delay', '2',
             '--concent-cluster-port', '8000',
             '--sentry-dsn', self.sentry_dsn,
-            '--ethereum-private-key', b64encode(self.ethereum_private_key).decode('ascii'),
+            '--ethereum-private-key', self.ethereum_private_key_encoded,
             '--signing-service-private-key', self.signing_service_private_key_encoded,
         ]
 
@@ -471,14 +472,14 @@ class SigningServiceParseArgumentsTestCase(TestCase):
         self.assertEqual(args.initial_reconnect_delay, 2)
         self.assertEqual(args.concent_public_key, CONCENT_PUBLIC_KEY)
         self.assertEqual(args.sentry_dsn, self.sentry_dsn)
-        self.assertEqual(args.ethereum_private_key, self.ethereum_private_key)
+        self.assertEqual(args.ethereum_private_key, TEST_ETHEREUM_PRIVATE_KEY)
         self.assertEqual(args.signing_service_private_key, SIGNING_SERVICE_PRIVATE_KEY)
 
     def test_that_argument_parser_should_parse_correct_input_and_use_default_values(self):
         sys.argv += [
             '127.0.0.1',
             self.concent_public_key_encoded,
-            '--ethereum-private-key', self.ethereum_private_key,
+            '--ethereum-private-key', self.ethereum_private_key_encoded,
             '--signing-service-private-key', self.signing_service_private_key_encoded,
         ]
 
@@ -492,7 +493,7 @@ class SigningServiceParseArgumentsTestCase(TestCase):
             '127.0.0.1',
             self.concent_public_key_encoded,
             '--concent-cluster-port', 'abc',
-            '--ethereum-private-key', b64encode(self.ethereum_private_key).decode('ascii'),
+            '--ethereum-private-key', self.ethereum_private_key_encoded,
             '--signing-service-private-key', self.signing_service_private_key_encoded,
         ]
 
@@ -510,13 +511,13 @@ class SigningServiceParseArgumentsTestCase(TestCase):
 
         with mock.patch.dict(os.environ, {
             'SENTRY_DSN': self.sentry_dsn,
-            'ETHEREUM_PRIVATE_KEY': b64encode(self.ethereum_private_key).decode('ascii'),
+            'ETHEREUM_PRIVATE_KEY': self.ethereum_private_key_encoded,
             'SIGNING_SERVICE_PRIVATE_KEY': self.signing_service_private_key_encoded,
         }):
             args = _parse_arguments()
 
         self.assertEqual(args.sentry_dsn, self.sentry_dsn)
-        self.assertEqual(args.ethereum_private_key, self.ethereum_private_key)
+        self.assertEqual(args.ethereum_private_key, TEST_ETHEREUM_PRIVATE_KEY)
         self.assertEqual(args.signing_service_private_key, SIGNING_SERVICE_PRIVATE_KEY)
 
     def test_that_argument_parses_should_fail_if_file_with_secrets_is_missing(self):
@@ -541,7 +542,7 @@ class SigningServiceParseArgumentsTestCase(TestCase):
             file.write(self.sentry_dsn)
 
         with open(ethereum_private_key_tmp_file, "w") as file:
-            file.write(self.ethereum_private_key)
+            file.write(self.ethereum_private_key_encoded)
 
         with open(signing_service_private_key_tmp_file, "w") as file:
             file.write(self.signing_service_private_key_encoded)
@@ -549,7 +550,7 @@ class SigningServiceParseArgumentsTestCase(TestCase):
         args =_parse_arguments()
 
         self.assertEqual(args.sentry_dsn, self.sentry_dsn)
-        self.assertEqual(args.ethereum_private_key, self.ethereum_private_key)
+        self.assertEqual(args.ethereum_private_key, TEST_ETHEREUM_PRIVATE_KEY)
         self.assertEqual(args.signing_service_private_key, SIGNING_SERVICE_PRIVATE_KEY)
         os.remove(sentry_tmp_file)
         os.remove(ethereum_private_key_tmp_file)
@@ -563,7 +564,6 @@ class SigningServiceValidateArgumentsTestCase(TestCase):
         self.host = '127.0.0.1'
         self.port = 8000
         self.initial_reconnect_delay = 2
-        self.ethereum_private_key = '3a1076bf45ab87712ad64ccb3b10217737f7faacbf2872e88fdd9a537d8fe266'
 
         self.signing_service = SigningService(
             self.host,
@@ -571,7 +571,7 @@ class SigningServiceValidateArgumentsTestCase(TestCase):
             self.initial_reconnect_delay,
             CONCENT_PUBLIC_KEY,
             SIGNING_SERVICE_PRIVATE_KEY,
-            self.ethereum_private_key,
+            TEST_ETHEREUM_PRIVATE_KEY,
         )
 
     def test_that_signing_service__validate_arguments_should_raise_exception_on_port_number_below_or_above_range(self):
@@ -594,7 +594,7 @@ class SigningServiceValidateArgumentsTestCase(TestCase):
             self.signing_service._validate_arguments()
 
     def test_that_signing_service__validate_arguments_should_raise_exception_on_wrong_length_of_ethereum_private_key(self):
-        self.signing_service.ethereum_private_key = self.ethereum_private_key[:-1]
+        self.signing_service.ethereum_private_key = TEST_ETHEREUM_PRIVATE_KEY[:-1]
 
         with self.assertRaises(SigningServiceValidationError):
             self.signing_service._validate_arguments()

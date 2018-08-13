@@ -38,6 +38,7 @@ def make_secret_provider_factory(
     env_variable_name=None,
     use_file=False,
     base64_convert=False,
+    string_decode=False,
 ):
     def wrapper(**kwargs):
         return SecretProvider(
@@ -45,6 +46,7 @@ def make_secret_provider_factory(
             env_variable_name,
             use_file,
             base64_convert,
+            string_decode,
             **kwargs
         )
     return wrapper
@@ -58,6 +60,7 @@ class SecretProvider(Action):
         env_variable_name,
         use_file,
         base64_convert,
+        string_decode,
         option_strings,
         dest,
         required=False,
@@ -67,6 +70,7 @@ class SecretProvider(Action):
         self.env_variable_name = env_variable_name
         self.use_file = use_file
         self.base64_convert = base64_convert
+        self.string_decode = string_decode
 
         super().__init__(
             option_strings=option_strings,
@@ -89,4 +93,6 @@ class SecretProvider(Action):
         if self.base64_convert:
             assert isinstance(self.const, str)
             self.const = b64decode(self.const)
+            if self.string_decode:
+                self.const = self.const.decode()
         setattr(namespace, self.dest, self.const)

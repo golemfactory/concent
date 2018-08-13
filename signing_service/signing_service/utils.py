@@ -53,14 +53,12 @@ class SecretProvider(Action):
         self.use_file = use_file
         self.base64_convert = base64_convert
 
-        command_line_arguments = 0 if self.env_variable_name is not None else None
-
         super().__init__(
             option_strings=option_strings,
             dest=dest,
             required=required,
             help=help,
-            nargs=command_line_arguments
+            nargs=0 if self.env_variable_name is not None else None,
         )
 
     def __call__(self, parser, namespace, values, option_string=None):

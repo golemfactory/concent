@@ -17,7 +17,8 @@ class TestCheckSigningServiceKeyAvailabilityForMiddleMan:  # pylint: disable=no-
             errors = check_signing_service_key_availability_for_middleman()
             assert_that(errors).is_empty()
 
-    def test_that_if_middleman_is_enabled_and_key_signing_service_public_key_is_not_defined_error_is_returned(self):
+    @override_settings()
+    def test_that_if_middleman_is_enabled_and_signing_service_public_key_is_not_defined_error_is_returned(self):
         del settings.SIGNING_SERVICE_PUBLIC_KEY
         errors = check_signing_service_key_availability_for_middleman()
         assert_that(errors).is_length(1)

@@ -333,3 +333,9 @@ CONCENT_FEATURES = []  # type: ignore
 
 # Verifier setting defining number of threads used by Blender
 BLENDER_THREADS = 1
+
+# Defines IP or domain name that can be used to connect to Middleman.
+# MIDDLEMAN_ADDRESS = ''
+
+# The port on which Middleman is accepting requests.
+# MIDDLEMAN_PORT =

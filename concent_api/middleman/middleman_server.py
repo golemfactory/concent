@@ -8,10 +8,9 @@ from django.conf import settings
 from middleman_protocol.exceptions import MiddlemanProtocolError
 from middleman_protocol.message import AbstractFrame
 from middleman_protocol.message import ErrorFrame
-from middleman_protocol.stream import append_frame_separator
-from middleman_protocol.stream import escape_encode_raw_message
 from middleman_protocol.stream_async import handle_frame_receive_async
 from middleman_protocol.stream_async import map_exception_to_error_code
+from middleman_protocol.stream_async import send_over_stream_async
 
 from middleman.constants import DEFAULT_EXTERNAL_PORT
 from middleman.constants import DEFAULT_INTERNAL_PORT
@@ -160,8 +159,7 @@ class MiddleMan:
                 self._is_signing_service_connection_active = False
 
     async def _respond_to_user(self, data: bytes, writer: asyncio.StreamWriter) -> None:  # pylint: disable=no-self-use
-        writer.write(append_frame_separator(escape_encode_raw_message(data)))
-        await writer.drain()
+        await send_over_stream_async(data, writer)
         writer.close()
 
     def _terminate_connections(self) -> None:

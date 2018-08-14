@@ -177,8 +177,15 @@ def upload_file_to_storage_cluster(
     )
 
 
+def generate_ethereum_address_from_ethereum_public_key_bytes(ethereum_public_key: str) -> bytes:
+    assert isinstance(ethereum_public_key, str)
+    assert len(ethereum_public_key) == ETHEREUM_PUBLIC_KEY_LENGTH
+
+    return sha3(decode_hex(ethereum_public_key))[12:]
+
+
 def generate_ethereum_address_from_ethereum_public_key(ethereum_public_key: str) -> str:
     assert isinstance(ethereum_public_key, str)
     assert len(ethereum_public_key) == ETHEREUM_PUBLIC_KEY_LENGTH
 
-    return sha3(decode_hex(ethereum_public_key))[12:].hex()
+    return generate_ethereum_address_from_ethereum_public_key_bytes(ethereum_public_key).hex()

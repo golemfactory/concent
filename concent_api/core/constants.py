@@ -35,6 +35,8 @@ CELERY_LOCKED_SUBTASK_DELAY = 60
 
 MAXIMUM_VERIFICATION_RESULT_TASK_RETRIES = 3
 
+# Defines how many seconds should SCI callback wait for response from MiddleMan.
+SCI_CALLBACK_MAXIMUM_TIMEOUT = 30
 
 VERIFICATION_RESULT_SUBTASK_STATE_ACCEPTED_LOG_MESSAGE = (
     'Verification has timed out and a client has already asked about the result '

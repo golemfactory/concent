@@ -8,6 +8,7 @@ from golem_sci import new_sci_rpc
 from golem_sci import SmartContractsInterface
 
 from common.helpers import generate_ethereum_address_from_ethereum_public_key
+from core.payments.sci_callback import sci_callback
 from core.payments.storage import DatabaseTransactionsStorage
 
 
@@ -25,6 +26,6 @@ class PaymentInterface:
                 ),
                 chain=chains.RINKEBY,
                 storage=DatabaseTransactionsStorage(),
-                tx_sign=lambda tx: tx.sign(settings.CONCENT_ETHEREUM_PRIVATE_KEY),
+                tx_sign=sci_callback,
             )
         return cls.__instance

@@ -11,15 +11,20 @@ import pytest
 from django.test import override_settings
 from golem_messages.message import Ping
 
+from middleman_protocol.exceptions import BrokenEscapingInFrameMiddlemanProtocolError
+from middleman_protocol.message import ErrorFrame
+from middleman_protocol.message import GolemMessageFrame
+from middleman_protocol.stream import append_frame_separator
+from middleman_protocol.stream import escape_encode_raw_message
+from middleman_protocol.stream_async import map_exception_to_error_code
+from middleman_protocol.testing_utils import async_stream_actor_mock
+
 from common.testing_helpers import generate_ecc_key_pair
 from middleman.constants import DEFAULT_EXTERNAL_PORT
 from middleman.constants import DEFAULT_INTERNAL_PORT
 from middleman.constants import ERROR_ADDRESS_ALREADY_IN_USE
 from middleman.constants import LOCALHOST_IP
 from middleman.middleman_server import MiddleMan
-from middleman_protocol.message import GolemMessageFrame
-from middleman_protocol.stream import append_frame_separator
-from middleman_protocol.stream import escape_encode_raw_message
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
@@ -29,12 +34,12 @@ class Connections():
         self.counter = 0
 
 
-def assert_connection(port, delay, connection_counter, data_to_send):
+def assert_connection(port, delay, connection_counter, data_to_send, expected_data):
     fake_client = socket.socket()
     send_data(fake_client, data_to_send, port, delay)
     received_data = fake_client.recv(1024)
     fake_client.close()
-    assert_that(received_data).is_equal_to(data_to_send)
+    assert_that(received_data).is_equal_to(expected_data)
     connection_counter.counter += 1
 
 
@@ -59,6 +64,15 @@ def schedule_sigterm(delay):
 def get_client_thread(fun, *args):
     client_thread = threading.Thread(target=fun, args=args)
     return client_thread
+
+
+def get_raw_error_frame_bytes(exception):
+    error_code = map_exception_to_error_code(exception)
+    expected_data = ErrorFrame(
+        (error_code, ''),
+        0,
+    ).serialize(CONCENT_PRIVATE_KEY)
+    return append_frame_separator(escape_encode_raw_message(expected_data))
 
 
 class TestMiddleManInitialization:
@@ -87,16 +101,19 @@ class TestMiddleManServer:
     internal_port = None
     external_port = None
     middleman = None
-    golem_message_frame = None
     data_to_send = None
+    timeout = None
+    short_delay = None
 
     @pytest.fixture(autouse=True)
     def setup_middleman(self, unused_tcp_port_factory, event_loop):
+        golem_message_frame = GolemMessageFrame(Ping(), 777).serialize(CONCENT_PRIVATE_KEY)
         self.patcher = mock.patch("middleman.middleman_server.crash_logger")
         self.crash_logger_mock = self.patcher.start()
         self.internal_port, self.external_port = unused_tcp_port_factory(), unused_tcp_port_factory()
-        self.golem_message_frame = GolemMessageFrame(Ping(), 777).serialize(CONCENT_PRIVATE_KEY)
-        self.data_to_send = append_frame_separator(escape_encode_raw_message(self.golem_message_frame))
+        self.data_to_send = append_frame_separator(escape_encode_raw_message(golem_message_frame))
+        self.timeout = 0.2
+        self.short_delay = 0.1
         self.middleman = MiddleMan(internal_port=self.internal_port, external_port=self.external_port, loop=event_loop)
         yield self.internal_port, self.external_port
         self.patcher.stop()
@@ -134,17 +151,15 @@ class TestMiddleManServer:
             CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
         ):
-            timeout = 0.2
-            short_delay = 0.1
-            schedule_sigterm(delay=timeout)
+            schedule_sigterm(delay=self.timeout)
             connections = Connections()
-            client_thread = get_client_thread(assert_connection, self.internal_port, short_delay, connections, self.data_to_send)
+            client_thread = get_client_thread(assert_connection, self.internal_port, self.short_delay, connections, self.data_to_send, self.data_to_send)
             client_thread.start()
 
             with pytest.raises(SystemExit) as exception_wrapper:
                 self.middleman.run()
 
-            client_thread.join(timeout)
+            client_thread.join(self.timeout)
             assert_that(exception_wrapper.value.code).is_equal_to(None)
             self.crash_logger_mock.assert_not_called()
             assert_that(connections.counter).is_equal_to(1)
@@ -154,17 +169,15 @@ class TestMiddleManServer:
             CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
         ):
-            timeout = 0.2
-            short_delay = 0.1
-            schedule_sigterm(delay=timeout)
+            schedule_sigterm(delay=self.timeout)
             connections = Connections()
-            client_thread = get_client_thread(assert_connection, self.external_port, short_delay, connections, self.data_to_send)
+            client_thread = get_client_thread(assert_connection, self.external_port, self.short_delay, connections, self.data_to_send, self.data_to_send)
             client_thread.start()
 
             with pytest.raises(SystemExit) as exception_wrapper:
                 self.middleman.run()
 
-            client_thread.join(timeout)
+            client_thread.join(self.timeout)
             assert_that(exception_wrapper.value.code).is_equal_to(None)
             self.crash_logger_mock.assert_not_called()
             assert_that(connections.counter).is_equal_to(1)
@@ -174,11 +187,9 @@ class TestMiddleManServer:
             CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
         ):
-            timeout = 0.2
-            short_delay = 0.1
-            schedule_sigterm(delay=timeout)
+            schedule_sigterm(delay=self.timeout)
             fake_client = socket.socket()
-            client_thread = get_client_thread(send_data, fake_client,  self.data_to_send, self.internal_port, short_delay)
+            client_thread = get_client_thread(send_data, fake_client,  self.data_to_send, self.internal_port, self.short_delay)
             client_thread.start()
 
             error_message = "Connection_error"
@@ -186,7 +197,7 @@ class TestMiddleManServer:
             with mock.patch.object(self.middleman, "_respond_to_user", side_effect=Exception(error_message)):
                 with pytest.raises(SystemExit):
                     self.middleman.run()
-            client_thread.join(timeout)
+            client_thread.join(self.timeout)
             fake_client.close()
             self.crash_logger_mock.error.assert_called_once()
             assert_that(self.crash_logger_mock.error.mock_calls[0][1][0]).contains(error_message)
@@ -196,11 +207,9 @@ class TestMiddleManServer:
             CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
         ):
-            timeout = 0.2
-            short_delay = 0.1
-            schedule_sigterm(delay=timeout)
+            schedule_sigterm(delay=self.timeout)
             fake_client = socket.socket()
-            client_thread = get_client_thread(send_data, fake_client,  self.data_to_send, self.external_port, short_delay)
+            client_thread = get_client_thread(send_data, fake_client,  self.data_to_send, self.external_port, self.short_delay)
             client_thread.start()
 
             error_message = "Connection_error"
@@ -208,7 +217,46 @@ class TestMiddleManServer:
             with mock.patch.object(self.middleman, "_respond_to_user", side_effect=Exception(error_message)):
                 with pytest.raises(SystemExit):
                     self.middleman.run()
-            client_thread.join(timeout)
+            client_thread.join(self.timeout)
             fake_client.close()
             self.crash_logger_mock.error.assert_called_once()
             assert_that(self.crash_logger_mock.error.mock_calls[0][1][0]).contains(error_message)
+
+    def test_that_broken_escaping_results_in_middleman_sending_back_error_frame(self):
+        with override_settings(
+            CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+        ):
+            schedule_sigterm(delay=self.timeout)
+            connections = Connections()
+            expected_data = get_raw_error_frame_bytes(BrokenEscapingInFrameMiddlemanProtocolError)
+            client_thread = get_client_thread(assert_connection, self.external_port, self.short_delay, connections, self.data_to_send, expected_data)
+            client_thread.start()
+
+            with mock.patch("middleman.middleman_server.handle_frame_receive_async", new=async_stream_actor_mock(side_effect=BrokenEscapingInFrameMiddlemanProtocolError)):
+                with pytest.raises(SystemExit):
+                    self.middleman.run()
+            client_thread.join(self.timeout)
+
+            self.crash_logger_mock.assert_not_called()
+            assert_that(connections.counter).is_equal_to(1)
+
+    def test_that_overrun_limit_results_in_middleman_sending_back_error_frame(self):
+        with override_settings(
+            CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+        ):
+            schedule_sigterm(delay=self.timeout)
+            connections = Connections()
+            expected_data = get_raw_error_frame_bytes(asyncio.LimitOverrunError)
+            client_thread = get_client_thread(assert_connection, self.external_port, self.short_delay, connections, self.data_to_send, expected_data)
+            client_thread.start()
+
+            with mock.patch("middleman.middleman_server.handle_frame_receive_async", new=async_stream_actor_mock(side_effect=asyncio.LimitOverrunError('', 1000))):
+                with pytest.raises(SystemExit):
+                    self.middleman.run()
+
+            client_thread.join(self.timeout)
+
+            self.crash_logger_mock.assert_not_called()
+            assert_that(connections.counter).is_equal_to(1)

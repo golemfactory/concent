@@ -7,6 +7,7 @@ import signal
 from django.conf import settings
 
 from middleman_protocol.constants import MAXIMUM_FRAME_LENGTH
+from middleman_protocol.exceptions import BrokenEscapingInFrameMiddlemanProtocolError
 from middleman_protocol.exceptions import MiddlemanProtocolError
 from middleman_protocol.message import AbstractFrame
 from middleman_protocol.message import ErrorFrame
@@ -125,6 +126,8 @@ class MiddleMan:
             print("Received %r from %r" % (data, remote_address))
             serialized_message = self._prepare_response(data)
             await self._respond_to_user(serialized_message, writer)
+        except (BrokenEscapingInFrameMiddlemanProtocolError, asyncio.LimitOverrunError) as exception:
+            await self._send_immediate_error(writer, exception)
         except Exception as exception:  # pylint: disable=broad-except
             crash_logger.error(
                 f"Exception occurred: {exception}, Traceback: {traceback.format_exc()}"
@@ -154,6 +157,8 @@ class MiddleMan:
                 print("Received %r from %r" % (data, remote_address))
                 serialized_message = self._prepare_response(data)
                 await self._respond_to_user(serialized_message, writer)
+            except (BrokenEscapingInFrameMiddlemanProtocolError, asyncio.LimitOverrunError) as exception:
+                await self._send_immediate_error(writer, exception)
             except Exception as exception:  # pylint: disable=broad-except
                 crash_logger.error(
                     f"Exception occurred: {exception}, Traceback: {traceback.format_exc()}"
@@ -169,3 +174,11 @@ class MiddleMan:
     def _terminate_connections(self) -> None:
         logger.info('SIGTERM received - closing connections and exiting.')
         self._loop.stop()
+
+    async def _send_immediate_error(self, writer: asyncio.StreamWriter, exception: Exception):
+        error_code = map_exception_to_error_code(exception)
+        data = ErrorFrame(
+            (error_code, str(exception)),
+            0,
+        ).serialize(settings.CONCENT_PRIVATE_KEY)
+        await self._respond_to_user(data, writer)

@@ -5,6 +5,8 @@ from logging import getLogger
 import signal
 
 from django.conf import settings
+
+from middleman_protocol.constants import MAXIMUM_FRAME_LENGTH
 from middleman_protocol.exceptions import MiddlemanProtocolError
 from middleman_protocol.message import AbstractFrame
 from middleman_protocol.message import ErrorFrame
@@ -96,14 +98,16 @@ class MiddleMan:
             self._handle_concent_connection,
             self._bind_address,
             self._internal_port,
-            loop=self._loop
+            loop=self._loop,
+            limit=MAXIMUM_FRAME_LENGTH
         )
         self._server_for_concent = self._loop.run_until_complete(concent_server_coroutine)
         service_server_coroutine = asyncio.start_server(
             self._handle_service_connection,
             self._bind_address,
             self._external_port,
-            loop=self._loop
+            loop=self._loop,
+            limit=MAXIMUM_FRAME_LENGTH
         )
         self._server_for_signing_service = self._loop.run_until_complete(service_server_coroutine)
 

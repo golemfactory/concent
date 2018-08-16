@@ -9,7 +9,7 @@ RequestQueueItem = namedtuple(
     "RequestQueueItem",
     (
         "connection_id",
-        "request_id",
+        "concent_request_id",
         "message",
         "timestamp",
     )
@@ -19,7 +19,17 @@ ResponseQueueItem = namedtuple(
     "ResponseQueueItem",
     (
         "message",
-        "request_id",
+        "concent_request_id",
+        "timestamp",
+    )
+)
+
+MessageTrackerItem = namedtuple(
+    "MessageTrackerItem",
+    (
+        "concent_request_id",
+        "connection_id",
+        "message",
         "timestamp",
     )
 )

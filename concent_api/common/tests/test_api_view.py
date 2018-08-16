@@ -13,6 +13,7 @@ from golem_messages                 import dump
 from golem_messages                 import load
 from golem_messages                 import message
 from golem_messages.factories       import tasks
+from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.utils import encode_hex
 
 from core.exceptions                import Http400
@@ -216,15 +217,10 @@ class ApiViewTransactionTestCase(TransactionTestCase):
 
         deadline_offset = 10
         message_timestamp = get_current_utc_timestamp() + deadline_offset
-        compute_task_def = message.ComputeTaskDef()
+        compute_task_def = ComputeTaskDefFactory()
         compute_task_def['task_id'] = '8'
         compute_task_def['subtask_id'] = '8'
         compute_task_def['deadline'] = message_timestamp
-        compute_task_def['extra_data'] = {
-            'frames': [1],
-            'output_format': 'PNG',
-            'scene_file': 'kitten.blend',
-        }
         task_to_compute = tasks.TaskToComputeFactory(
             compute_task_def=compute_task_def,
             requestor_public_key=encode_hex(REQUESTOR_PUBLIC_KEY),

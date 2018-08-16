@@ -329,7 +329,7 @@ def create_signed_task_to_compute(
             deadline= deadline,
             extra_data={
                 'output_format': 'png',
-                'scene_file': 'golem-header-light.blend',
+                'scene_file': '/golem/resources/golem-header-light.blend',
                 'frames': [1],
                 'script_src': script_src,
             }

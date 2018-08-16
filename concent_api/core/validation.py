@@ -10,10 +10,12 @@ from common.constants import ErrorCode
 from common.exceptions import ConcentValidationError
 from common.logging import log_error_message
 from common.validations import validate_secure_hash_algorithm
+from core.constants import VALID_SCENE_FILE_PREFIXES
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.constants import GOLEM_PUBLIC_KEY_HEX_LENGTH
 from core.constants import GOLEM_PUBLIC_KEY_LENGTH
 from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
+from core.constants import SCENE_FILE_EXTENSION
 from core.constants import VALID_ID_REGEX
 from core.exceptions import FrameNumberValidationError
 from core.exceptions import Http400
@@ -296,9 +298,15 @@ def validate_positive_integer_value(value):
 
 
 def validate_scene_file(scene_file):
-    if not scene_file.endswith('.blend'):
+    if not scene_file.endswith(SCENE_FILE_EXTENSION):
         raise ConcentValidationError(
-            f'{scene_file} must ends with ".blend" filename extension',
+            f'{scene_file} must ends with {SCENE_FILE_EXTENSION} filename extension',
+            ErrorCode.MESSAGE_INVALID
+        )
+
+    if not any(scene_file.startswith(file_path) for file_path in VALID_SCENE_FILE_PREFIXES):
+        raise ConcentValidationError(
+            f'{scene_file} path must starts with one of {VALID_SCENE_FILE_PREFIXES} paths',
             ErrorCode.MESSAGE_INVALID
         )
 

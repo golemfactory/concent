@@ -96,17 +96,9 @@ class TestMiddleManInitialization:
 
 
 class TestMiddleManServer:
-    patcher = None
-    crash_logger_mock = None
-    internal_port = None
-    external_port = None
-    middleman = None
-    data_to_send = None
-    timeout = None
-    short_delay = None
 
     @pytest.fixture(autouse=True)
-    def setup_middleman(self, unused_tcp_port_factory, event_loop):
+    def setUp(self, unused_tcp_port_factory, event_loop):
         golem_message_frame = GolemMessageFrame(Ping(), 777).serialize(CONCENT_PRIVATE_KEY)
         self.patcher = mock.patch("middleman.middleman_server.crash_logger")
         self.crash_logger_mock = self.patcher.start()
@@ -194,7 +186,7 @@ class TestMiddleManServer:
 
             error_message = "Connection_error"
 
-            with mock.patch.object(self.middleman, "_respond_to_user", side_effect=Exception(error_message)):
+            with mock.patch("middleman.middleman_server.send_over_stream_async", side_effect=Exception(error_message)):
                 with pytest.raises(SystemExit):
                     self.middleman.run()
             client_thread.join(self.timeout)
@@ -214,7 +206,7 @@ class TestMiddleManServer:
 
             error_message = "Connection_error"
 
-            with mock.patch.object(self.middleman, "_respond_to_user", side_effect=Exception(error_message)):
+            with mock.patch("middleman.middleman_server.send_over_stream_async", side_effect=Exception(error_message)):
                 with pytest.raises(SystemExit):
                     self.middleman.run()
             client_thread.join(self.timeout)

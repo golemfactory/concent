@@ -676,6 +676,8 @@ def check_concent_ethereum_public_key(app_configs: None=None, **kwargs: Any) -> 
         if len(settings.CONCENT_ETHEREUM_PUBLIC_KEY) != ETHEREUM_PUBLIC_KEY_LENGTH:
             return [create_error_47_concent_ethereum_public_key_has_wrong_length(settings.CONCENT_ETHEREUM_PUBLIC_KEY)]
 
+    return []
+
 
 @register()
 def check_middleman_address(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument

@@ -339,3 +339,6 @@ BLENDER_THREADS = 1
 
 # The port on which Middleman is accepting requests.
 # MIDDLEMAN_PORT =
+
+# Defines public part of the key used by Signing Service to sign Middleman protocol frames and Golem messages.
+# SIGNING_SERVICE_PUBLIC_KEY = ''

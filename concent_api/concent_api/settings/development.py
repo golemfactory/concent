@@ -46,3 +46,5 @@ VERIFIER_STORAGE_PATH = os.path.join(BASE_DIR, 'verifier_storage')
 MIDDLEMAN_ADDRESS = 'localhost'
 
 MIDDLEMAN_PORT = DEFAULT_INTERNAL_PORT
+
+SIGNING_SERVICE_PUBLIC_KEY = b'\x19\xaew&P>\xce\xd7D\xfb\xbff)55\xc1%\xea\xebN\x0e\x05>\xf7v\x0c\x94I\xe4\xa3\x80\x1dl\xed\xb5j\xe9apZ\x8c\x86\xe2\xb2x^M}>8c\x90\x0e\xa2\xf4\x8cOb\xb1\x1er\x11\xd7\xee'

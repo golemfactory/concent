@@ -1,3 +1,4 @@
+import re
 import socket
 
 SIGNING_SERVICE_DEFAULT_PORT = 9055
@@ -35,3 +36,5 @@ SIGNING_SERVICE_RECOVERABLE_ERRORS = [
 
 # When deserializing message is not possible, response should use following request_id
 REQUEST_ID_FOR_RESPONSE_FOR_INVALID_FRAME = 0
+
+ETHEREUM_PRIVATE_KEY_REGEXP = re.compile(r'^[a-f0-9]{64}$')

@@ -110,6 +110,7 @@ class TestUnescapeStreamHelperMiddlemanProtocol:
         self,
         middleman_message_type,
         payload,
+        unused_tcp_port,
     ):
         middleman_message = middleman_message_type(payload, self.request_id)
 
@@ -117,10 +118,10 @@ class TestUnescapeStreamHelperMiddlemanProtocol:
             server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
             with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as client_socket:
                 client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
-                server_socket.bind(('127.0.0.1', 8001))
+                server_socket.bind(('127.0.0.1', unused_tcp_port))
                 server_socket.listen(1)
 
-                client_socket.connect(('127.0.0.1', 8001))
+                client_socket.connect(('127.0.0.1', unused_tcp_port))
 
                 (connection, _address) = server_socket.accept()
 
@@ -139,7 +140,7 @@ class TestUnescapeStreamHelperMiddlemanProtocol:
         assertpy.assert_that(deserialized_message).is_instance_of(middleman_message_type)
         assertpy.assert_that(deserialized_message.payload).is_equal_to(payload)
 
-    def test_that_receiving_a_series_of_messages_should_be_handled_correctly(self):
+    def test_that_receiving_a_series_of_messages_should_be_handled_correctly(self, unused_tcp_port):
         payload = Ping()
         middleman_message = GolemMessageFrame(payload, self.request_id)
 
@@ -147,10 +148,10 @@ class TestUnescapeStreamHelperMiddlemanProtocol:
             server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
             with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as client_socket:
                 client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
-                server_socket.bind(('127.0.0.1', 8001))
+                server_socket.bind(('127.0.0.1', unused_tcp_port))
                 server_socket.listen(1)
 
-                client_socket.connect(('127.0.0.1', 8001))
+                client_socket.connect(('127.0.0.1', unused_tcp_port))
 
                 (connection, _address) = server_socket.accept()
 
@@ -175,7 +176,7 @@ class TestUnescapeStreamHelperMiddlemanProtocol:
                     assertpy.assert_that(deserialized_message.payload).is_instance_of(Ping)
                     assertpy.assert_that(deserialized_message.payload).is_equal_to(payload)
 
-    def test_that_receiving_encoded_message_should_decode_on_the_fly(self):
+    def test_that_receiving_encoded_message_should_decode_on_the_fly(self, unused_tcp_port):
         middleman_message = GolemMessageFrame(Ping(), self.request_id)
         raw_message = append_frame_separator(
             middleman_message.serialize(private_key=CONCENT_PRIVATE_KEY)
@@ -192,10 +193,10 @@ class TestUnescapeStreamHelperMiddlemanProtocol:
             server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
             with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as client_socket:
                 client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
-                server_socket.bind(('127.0.0.1', 8001))
+                server_socket.bind(('127.0.0.1', unused_tcp_port))
                 server_socket.listen(1)
 
-                client_socket.connect(('127.0.0.1', 8001))
+                client_socket.connect(('127.0.0.1', unused_tcp_port))
 
                 (connection, _address) = server_socket.accept()
 
@@ -205,7 +206,7 @@ class TestUnescapeStreamHelperMiddlemanProtocol:
         assertpy_bytes_starts_with(raw_message, raw_message_received)
         assertpy.assert_that(len(raw_message_received)).is_greater_than_or_equal_to(FRAME_PAYLOAD_STARTING_BYTE)
 
-    def test_that_receiving_wrongly_encoded_message_should_return_none(self):
+    def test_that_receiving_wrongly_encoded_message_should_return_none(self, unused_tcp_port):
         middleman_message = GolemMessageFrame(Ping(), self.request_id)
         raw_message = middleman_message.serialize(
             private_key=CONCENT_PRIVATE_KEY,
@@ -219,10 +220,10 @@ class TestUnescapeStreamHelperMiddlemanProtocol:
             server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
             with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as client_socket:
                 client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
-                server_socket.bind(('127.0.0.1', 8001))
+                server_socket.bind(('127.0.0.1', unused_tcp_port))
                 server_socket.listen(1)
 
-                client_socket.connect(('127.0.0.1', 8001))
+                client_socket.connect(('127.0.0.1', unused_tcp_port))
 
                 (connection, _address) = server_socket.accept()
 
@@ -231,7 +232,7 @@ class TestUnescapeStreamHelperMiddlemanProtocol:
 
         assertpy.assert_that(raw_message_received).is_none()
 
-    def test_that_exceeding_maximum_frame_length_should_treat_exceeded_frame_as_invalid(self):
+    def test_that_exceeding_maximum_frame_length_should_treat_exceeded_frame_as_invalid(self, unused_tcp_port):
         first_middleman_message = GolemMessageFrame(Ping(), self.request_id)
         first_raw_message = append_frame_separator(
             escape_encode_raw_message(
@@ -258,10 +259,10 @@ class TestUnescapeStreamHelperMiddlemanProtocol:
             server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
             with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as client_socket:
                 client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
-                server_socket.bind(('127.0.0.1', 8001))
+                server_socket.bind(('127.0.0.1', unused_tcp_port))
                 server_socket.listen(1)
 
-                client_socket.connect(('127.0.0.1', 8001))
+                client_socket.connect(('127.0.0.1', unused_tcp_port))
 
                 (connection, _address) = server_socket.accept()
 
@@ -293,6 +294,7 @@ class TestSplitStreamHelperMiddlemanProtocol:
         self,
         middleman_message_type,
         payload,
+        unused_tcp_port,
     ):
         middleman_message = middleman_message_type(payload, self.request_id)
         raw_message = escape_encode_raw_message(
@@ -304,10 +306,10 @@ class TestSplitStreamHelperMiddlemanProtocol:
             server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
             with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as client_socket:
                 client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
-                server_socket.bind(('127.0.0.1', 8001))
+                server_socket.bind(('127.0.0.1', unused_tcp_port))
                 server_socket.listen(1)
 
-                client_socket.connect(('127.0.0.1', 8001))
+                client_socket.connect(('127.0.0.1', unused_tcp_port))
 
                 (connection, _address) = server_socket.accept()
 
@@ -316,7 +318,7 @@ class TestSplitStreamHelperMiddlemanProtocol:
 
         assertpy.assert_that(raw_message).is_equal_to(raw_message_received)
 
-    def test_that_receiving_a_series_of_messages_should_be_handled_correctly(self):
+    def test_that_receiving_a_series_of_messages_should_be_handled_correctly(self, unused_tcp_port):
         payload = Ping()
         middleman_message = GolemMessageFrame(payload, self.request_id)
         raw_message = escape_encode_raw_message(
@@ -328,10 +330,10 @@ class TestSplitStreamHelperMiddlemanProtocol:
             server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
             with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as client_socket:
                 client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
-                server_socket.bind(('127.0.0.1', 8001))
+                server_socket.bind(('127.0.0.1', unused_tcp_port))
                 server_socket.listen(1)
 
-                client_socket.connect(('127.0.0.1', 8001))
+                client_socket.connect(('127.0.0.1', unused_tcp_port))
 
                 (connection, _address) = server_socket.accept()
 
@@ -345,7 +347,7 @@ class TestSplitStreamHelperMiddlemanProtocol:
 
                     assertpy.assert_that(raw_message).is_equal_to(raw_message_received)
 
-    def test_that_raising_error_in_generator_should_call_close_on_socket(self):
+    def test_that_raising_error_in_generator_should_call_close_on_socket(self, unused_tcp_port):
         payload = Ping()
         middleman_message = GolemMessageFrame(payload, self.request_id)
 
@@ -353,10 +355,10 @@ class TestSplitStreamHelperMiddlemanProtocol:
             server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
             with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as client_socket:
                 client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
-                server_socket.bind(('127.0.0.1', 8001))
+                server_socket.bind(('127.0.0.1', unused_tcp_port))
                 server_socket.listen(1)
 
-                client_socket.connect(('127.0.0.1', 8001))
+                client_socket.connect(('127.0.0.1', unused_tcp_port))
 
                 (connection, _address) = server_socket.accept()
 

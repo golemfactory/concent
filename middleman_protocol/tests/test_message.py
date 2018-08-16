@@ -96,6 +96,7 @@ class TestMessageMiddlemanProtocol:
         self,
         middleman_message_type,
         payload,
+        unused_tcp_port,
     ):
         middleman_message = middleman_message_type(payload, self.request_id)
 
@@ -103,10 +104,10 @@ class TestMessageMiddlemanProtocol:
             server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
             with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as client_socket:
                 client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
-                server_socket.bind(('127.0.0.1', 8001))
+                server_socket.bind(('127.0.0.1', unused_tcp_port))
                 server_socket.listen(1)
 
-                client_socket.connect(('127.0.0.1', 8001))
+                client_socket.connect(('127.0.0.1', unused_tcp_port))
 
                 (connection, _address) = server_socket.accept()
 

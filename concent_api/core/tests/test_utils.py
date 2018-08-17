@@ -1,5 +1,7 @@
 import datetime
 import mock
+import pytest
+from assertpy import assert_that
 
 from django.conf import settings
 from django.test import override_settings
@@ -8,8 +10,10 @@ from django.test import TestCase
 from golem_messages import constants
 from golem_messages import helpers
 
+from core.exceptions import SceneFilePathError
 from core.tests.utils import ConcentIntegrationTestCase
 from core.utils import calculate_maximum_download_time
+from core.utils import extract_name_from_scene_file_path
 from core.utils import calculate_subtask_verification_time
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
@@ -123,3 +127,23 @@ class CalculateSubtaskVerificationTimeTestCase(ConcentIntegrationTestCase):
                 calculate_subtask_verification_time(report_computed_task),
                 int(helpers.subtask_verification_time(report_computed_task).total_seconds())
             )
+
+
+class TestExtractNameFromSceneFilePath():
+
+    @pytest.mark.parametrize(('scene_file_path', 'expected_result'), [
+            ('/golem/resources/test.blend', 'test.blend'),
+            ('/golem/resources/test/test.blend', 'test/test.blend'),
+    ])  # pylint:disable=no-self-use
+    def test_that_function_correctly_cut_off_golems_resource_path(self, scene_file_path, expected_result):
+        result = extract_name_from_scene_file_path(scene_file_path)
+
+        assert_that(expected_result).is_equal_to(result)
+
+    @pytest.mark.parametrize('scene_file_path', [
+            'golem/resources/test.blend',
+            '/resources/test/test.blend',
+    ])  # pylint:disable=no-self-use
+    def test_that_function_should_raise_exception_when_could_not_find_golems_resource_path_to_cut_off(self, scene_file_path):
+        with pytest.raises(SceneFilePathError):
+            extract_name_from_scene_file_path(scene_file_path)

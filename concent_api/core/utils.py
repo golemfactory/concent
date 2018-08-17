@@ -9,7 +9,9 @@ from golem_messages.helpers         import subtask_verification_time
 from golem_messages.utils import decode_hex
 
 from core.exceptions import Http400
+from core.exceptions import SceneFilePathError
 from common.constants import ErrorCode
+from .constants import VALID_SCENE_FILE_PREFIXES
 from .constants import GOLEM_PUBLIC_KEY_LENGTH
 from .constants import GOLEM_PUBLIC_KEY_HEX_LENGTH
 
@@ -102,3 +104,16 @@ def hex_to_bytes_convert(client_public_key: str):
     key_bytes = decode_hex(client_public_key)
     assert len(key_bytes) == GOLEM_PUBLIC_KEY_LENGTH
     return key_bytes
+
+
+def extract_name_from_scene_file_path(absoulte_scene_file_path_in_docker):
+    for golem_resources_path in VALID_SCENE_FILE_PREFIXES:
+        if absoulte_scene_file_path_in_docker.startswith(golem_resources_path):
+            relative_scene_file_path_in_archive = absoulte_scene_file_path_in_docker[len(golem_resources_path):]
+            break
+    else:
+        raise SceneFilePathError(
+            f'Scene file should starts with one of available scene file paths: {VALID_SCENE_FILE_PREFIXES}',
+            ErrorCode.MESSAGE_INVALID
+        )
+    return relative_scene_file_path_in_archive

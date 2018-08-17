@@ -1130,6 +1130,8 @@ def update_subtask(
     assert (state in Subtask.ACTIVE_STATES)  == (next_deadline is not None)
     assert (state in Subtask.PASSIVE_STATES) == (next_deadline is None)
 
+    next_deadline_datetime = parse_timestamp_to_utc_datetime(next_deadline) if next_deadline is not None else None
+
     set_subtask_messages(
         subtask,
         task_to_compute=task_to_compute,
@@ -1142,7 +1144,7 @@ def update_subtask(
     )
 
     if set_next_deadline:
-        subtask.next_deadline = next_deadline
+        subtask.next_deadline = next_deadline_datetime
     if report_computed_task is not None:
         subtask.result_package_size = report_computed_task.size
     subtask.state = state.name

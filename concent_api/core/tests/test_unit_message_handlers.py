@@ -2,10 +2,13 @@ from unittest import TestCase
 
 from django.conf import settings
 from django.test import override_settings
+from django.test.utils import freeze_time
 from golem_messages import message
 
+from common.helpers import parse_timestamp_to_utc_datetime
 from core.exceptions import GolemMessageValidationError
 from core.message_handlers import are_items_unique
+from core.message_handlers import update_subtask
 from core.message_handlers import store_subtask
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
@@ -27,7 +30,7 @@ class TestMessageHandlers(TestCase):
 @override_settings(
     CONCENT_MESSAGING_TIME=10,  # seconds
 )
-class TestMessagesStored(ConcentIntegrationTestCase):
+class TestSubtaskStoreAndUpdate(ConcentIntegrationTestCase):
     def setUp(self):
         super().setUp()
         self.compute_task_def = self._get_deserialized_compute_task_def(
@@ -46,6 +49,12 @@ class TestMessagesStored(ConcentIntegrationTestCase):
             timestamp=self.report_computed_task_timestamp,
             task_to_compute=self.task_to_compute,
         )
+
+        with freeze_time(self.task_to_compute_timestamp):
+            self.force_get_task_result = message.concents.ForceGetTaskResult(
+                report_computed_task=self.report_computed_task,
+            )
+
         self.provider_public_key = hex_to_bytes_convert(self.task_to_compute.provider_public_key)
         self.requestor_public_key = hex_to_bytes_convert(self.task_to_compute.requestor_public_key)
 
@@ -68,6 +77,59 @@ class TestMessagesStored(ConcentIntegrationTestCase):
             parse_iso_date_to_timestamp(subtask.report_computed_task.timestamp.isoformat()),
             parse_iso_date_to_timestamp(self.report_computed_task_timestamp)
         )
+
+    def test_that_update_subtask_passes_validations_from_passive_to_active_state(self):
+        subtask = store_subtask(
+            task_id=self.task_to_compute.compute_task_def['task_id'],
+            subtask_id=self.task_to_compute.compute_task_def['subtask_id'],
+            provider_public_key=self.provider_public_key,
+            requestor_public_key=self.requestor_public_key,
+            state=Subtask.SubtaskState.REPORTED,
+            next_deadline=None,
+            task_to_compute=self.task_to_compute,
+            report_computed_task=self.report_computed_task,
+        )
+        subtask_state = Subtask.objects.get(subtask_id=self.task_to_compute.compute_task_def['subtask_id']).state
+        self.assertEqual(subtask_state, Subtask.SubtaskState.REPORTED.name)
+        self.assertEqual(subtask.next_deadline, None)
+
+        next_deadline = int(self.task_to_compute.compute_task_def['deadline']) + settings.CONCENT_MESSAGING_TIME
+        update_subtask(
+            subtask=subtask,
+            state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
+            next_deadline=next_deadline,
+            force_get_task_result=self.force_get_task_result,
+            set_next_deadline=True,
+        )
+        subtask_state = Subtask.objects.get(subtask_id=self.task_to_compute.compute_task_def['subtask_id']).state
+        self.assertEqual(subtask_state, Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name)
+        self.assertEqual(subtask.next_deadline, parse_timestamp_to_utc_datetime(next_deadline))
+
+    def test_that_update_subtask_passes_validations_from_active_to_passive_state(self):
+        next_deadline = int(self.task_to_compute.compute_task_def['deadline']) + settings.CONCENT_MESSAGING_TIME
+        subtask = store_subtask(
+            task_id=self.task_to_compute.compute_task_def['task_id'],
+            subtask_id=self.task_to_compute.compute_task_def['subtask_id'],
+            provider_public_key=self.provider_public_key,
+            requestor_public_key=self.requestor_public_key,
+            state=Subtask.SubtaskState.FORCING_REPORT,
+            next_deadline=next_deadline,
+            task_to_compute=self.task_to_compute,
+            report_computed_task=self.report_computed_task,
+        )
+        subtask_state = Subtask.objects.get(subtask_id=self.task_to_compute.compute_task_def['subtask_id']).state
+        self.assertEqual(subtask_state, Subtask.SubtaskState.FORCING_REPORT.name)
+        self.assertEqual(subtask.next_deadline, parse_timestamp_to_utc_datetime(next_deadline))
+
+        update_subtask(
+            subtask=subtask,
+            state=Subtask.SubtaskState.REPORTED,
+            next_deadline=None,
+            set_next_deadline=True,
+        )
+        subtask_state = Subtask.objects.get(subtask_id=self.task_to_compute.compute_task_def['subtask_id']).state
+        self.assertEqual(subtask_state, Subtask.SubtaskState.REPORTED.name)
+        self.assertEqual(subtask.next_deadline, None)
 
 
 class TestValidateRejectReportComputedTask(ConcentIntegrationTestCase):

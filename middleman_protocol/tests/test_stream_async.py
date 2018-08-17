@@ -1,4 +1,3 @@
-from asyncio import StreamReader
 from asyncio import StreamWriter
 
 import pytest
@@ -16,8 +15,9 @@ from middleman_protocol.stream import append_frame_separator
 from middleman_protocol.stream import escape_encode_raw_message
 from middleman_protocol.stream_async import handle_frame_receive_async
 from middleman_protocol.stream_async import map_exception_to_error_code
+from .utils import async_stream_actor_mock
+from .utils import prepare_mocked_reader
 from middleman_protocol.stream_async import send_over_stream_async
-from middleman_protocol.testing_utils import async_stream_actor_mock
 
 from .utils import generate_ecc_key_pair
 
@@ -35,19 +35,13 @@ class TestHandleFrameReceiveAsync:
     def test_that_when_frame_with_escaped_sequence_and_separator_is_received_unescaped_frame_is_returned(self, event_loop):
         golem_message_frame = GolemMessageFrame(Ping(), 777)
         data_to_send = escape_encode_raw_message(golem_message_frame.serialize(CONCENT_PRIVATE_KEY)) + ESCAPE_SEQUENCES[ESCAPE_CHARACTER] + FRAME_SEPARATOR
-        mocked_reader = self._prepare_mocked_reader(data_to_send)
+        mocked_reader = prepare_mocked_reader(data_to_send)
 
         task = _run_test_in_event_loop(event_loop, handle_frame_receive_async, mocked_reader, CONCENT_PUBLIC_KEY)
 
         assert_that(task.done()).is_true()
         mocked_reader.readuntil.mock.assert_called_once_with(FRAME_SEPARATOR)
         assert_that(task.result()).is_equal_to(golem_message_frame)
-
-    @staticmethod
-    def _prepare_mocked_reader(return_sequence):
-        mocked_reader = Mock(spec_set=StreamReader)
-        mocked_reader.readuntil = async_stream_actor_mock(return_value=return_sequence)
-        return mocked_reader
 
 
 @pytest.mark.parametrize(

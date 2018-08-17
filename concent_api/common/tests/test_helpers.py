@@ -1,7 +1,9 @@
 import datetime
 
-from django.test            import TestCase
-from django.utils           import timezone
+from django.conf import settings
+from django.test import override_settings
+from django.test import TestCase
+from django.utils import timezone
 
 from golem_messages         import message
 
@@ -9,6 +11,7 @@ from common.helpers          import join_messages
 from common.helpers          import parse_datetime_to_timestamp
 from common.helpers          import parse_timestamp_to_utc_datetime
 from common.helpers          import sign_message
+from common.helpers          import generate_ethereum_address_from_ethereum_public_key
 from common.testing_helpers  import generate_ecc_key_pair
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
@@ -82,3 +85,12 @@ class HelpersTestCase(TestCase):
 
     def test_join_messages_with_single_argument_should_return_single_string(self):
         self.assertEqual(join_messages('Error in Golem Message.'), 'Error in Golem Message.')
+
+    @override_settings(
+        CONCENT_ETHEREUM_PUBLIC_KEY='b51e9af1ae9303315ca0d6f08d15d8fbcaecf6958f037cc68f9ec18a77c6f63eae46daaba5c637e06a3e4a52a2452725aafba3d4fda4e15baf48798170eb7412',
+    )
+    def test_that_generate_ethereum_address_from_ethereum_public_key_should_generate_correct_ethereum_address(self):
+        self.assertEqual(
+            generate_ethereum_address_from_ethereum_public_key(settings.CONCENT_ETHEREUM_PUBLIC_KEY),
+            '24ca754bc4b73997c289bbcd0d666ec0e0dd7368'
+        )

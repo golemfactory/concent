@@ -5,17 +5,17 @@ from django.urls            import reverse
 from freezegun              import freeze_time
 from golem_messages         import message
 
-from core.constants         import ETHEREUM_ADDRESS_LENGTH
+from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
 from core.exceptions import Http400
 from core.message_handlers import handle_send_force_subtask_results_response
 from core.message_handlers import store_or_update_subtask
-from core.models            import StoredMessage
-from core.models            import Subtask
-from core.models            import PendingResponse
-from core.tests.utils       import ConcentIntegrationTestCase
+from core.models import StoredMessage
+from core.models import Subtask
+from core.models import PendingResponse
+from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
-from common.constants        import ErrorCode
-from common.testing_helpers  import generate_ecc_key_pair
+from common.constants import ErrorCode
+from common.testing_helpers import generate_ecc_key_pair
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
@@ -38,7 +38,7 @@ def _get_requestor_account_status(_provider, _requestor):
     CONCENT_PUBLIC_KEY        = CONCENT_PUBLIC_KEY,
     CONCENT_MESSAGING_TIME    = 10,  # seconds
     FORCE_ACCEPTANCE_TIME     = 10,  # seconds
-    CONCENT_ETHEREUM_ADDRESS  = 'x' * ETHEREUM_ADDRESS_LENGTH
+    CONCENT_ETHEREUM_PUBLIC_KEY='x' * ETHEREUM_PUBLIC_KEY_LENGTH,
 )
 class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 

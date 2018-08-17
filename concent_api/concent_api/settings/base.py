@@ -282,9 +282,8 @@ STORAGE_CLUSTER_SSL_CERTIFICATE_PATH = ''
 # A global constant defining address to geth client
 # GETH_ADDRESS = 'http://localhost:8545'
 
-# A global constant defining Concent ethereum contract address
-# Stored in a 'string' 0x...
-# CONCENT_ETHEREUM_ADDRESS = ''
+# A global constant defining Concent ethereum public key.
+# CONCENT_ETHEREUM_PUBLIC_KEY = ''
 
 # A global constant defining Concent ethereum private key
 # Stored in a 'bytes' array, e.g. b'\xf3\x97\x19\xcdX\xda...'

@@ -1,4 +1,9 @@
+from asyncio import sleep
+from asyncio import StreamReader
+
 import assertpy
+from mock import MagicMock
+from mock import Mock
 from golem_messages import ECCx
 
 
@@ -15,6 +20,23 @@ def assertpy_bytes_starts_with(data: bytes, starting_data: bytes):
     ).starts_with(
         str(starting_data)[2:-1]
     )
+
+
+def async_stream_actor_mock(*args, **kwargs):
+    m = MagicMock(*args, **kwargs)
+
+    async def mock_coro(*a, **kw):
+        await sleep(0.0000001)
+        return m(*a, **kw)
+
+    mock_coro.mock = m
+    return mock_coro
+
+
+def prepare_mocked_reader(return_sequence):
+    mocked_reader = Mock(spec_set=StreamReader)
+    mocked_reader.readuntil = async_stream_actor_mock(return_value=return_sequence)
+    return mocked_reader
 
 
 def generate_ecc_key_pair():

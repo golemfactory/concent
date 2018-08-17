@@ -17,7 +17,7 @@ from middleman_protocol.message import GolemMessageFrame
 from middleman_protocol.stream import append_frame_separator
 from middleman_protocol.stream import escape_encode_raw_message
 from middleman_protocol.stream_async import map_exception_to_error_code
-from middleman_protocol.testing_utils import async_stream_actor_mock
+from middleman_protocol.tests.utils import async_stream_actor_mock
 
 from common.testing_helpers import generate_ecc_key_pair
 from middleman.constants import DEFAULT_EXTERNAL_PORT

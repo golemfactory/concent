@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 printf "=================== INSTALL CONCENT_API REQUIREMENTS ====================\n"
 pip install -r concent_api/requirements.lock

@@ -59,6 +59,9 @@ You can put the output of the script above directly in your `local_settings.py`
 
     # Extra stuff for development that's not normally installed in production. Linter, debugger, etc.
     pip install --requirement requirements-development.txt
+    
+    # All dependencies needed for developers. Concent, Singing Service, MiddleMan Protocol and requirements placed in requirements-development.txt
+    ./install-development-requirements.sh
     ```
 
     **libsecp256k1**

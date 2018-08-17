@@ -16,13 +16,13 @@ from core.tests.utils import add_time_offset_to_date
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
 from core.transfer_operations import create_file_transfer_token_for_golem_client
+from core.utils import extract_name_from_scene_file_path
 from common.constants import ErrorCode
 from common.helpers import get_current_utc_timestamp
 from common.helpers import get_storage_result_file_path
 from common.helpers import get_storage_source_file_path
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.testing_helpers import generate_ecc_key_pair
-
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
@@ -336,7 +336,9 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             source_package_path=self.source_package_path,
             result_package_path=self.result_package_path,
             output_format=self.report_computed_task.task_to_compute.compute_task_def['extra_data']['output_format'],
-            scene_file=self.report_computed_task.task_to_compute.compute_task_def['extra_data']['scene_file'],
+            scene_file=extract_name_from_scene_file_path(
+                self.report_computed_task.task_to_compute.compute_task_def['extra_data']['scene_file']
+            ),
             verification_deadline=self._get_verification_deadline_as_timestamp(
                 parse_iso_date_to_timestamp(self.subtask_result_rejected_time_str),
                 self.task_to_compute,

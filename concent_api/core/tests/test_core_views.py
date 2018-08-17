@@ -7,6 +7,7 @@ from django.urls                    import reverse
 from django.http                    import HttpResponse
 from django.http                    import JsonResponse
 from django.utils                   import timezone
+from golem_messages.factories.tasks import ComputeTaskDefFactory
 
 from golem_messages                 import message
 from golem_messages                 import settings
@@ -68,15 +69,10 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             num_cores           = 7,
         )
 
-        compute_task_def = message.ComputeTaskDef()
+        compute_task_def = ComputeTaskDefFactory()
         compute_task_def['task_id'] = '8'
         compute_task_def['subtask_id'] = '8'
         compute_task_def['deadline'] = self.message_timestamp + 600
-        compute_task_def['extra_data'] = {
-            'frames': [1],
-            'output_format': 'PNG',
-            'scene_file': 'kitten.blend',
-        }
         task_to_compute = self._get_deserialized_task_to_compute(
             compute_task_def = compute_task_def
         )
@@ -453,7 +449,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_202_if_task_to_compute_deadline_is_correct(self):
-        compute_task_def = message.ComputeTaskDef()
+        compute_task_def = ComputeTaskDefFactory()
 
         valid_values = [
             11,
@@ -466,11 +462,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             compute_task_def['task_id']     = str(i)
             compute_task_def['subtask_id']  = str(i)
             compute_task_def['deadline']    = deadline
-            compute_task_def['extra_data'] = {
-                'frames': [1],
-                'output_format': 'PNG',
-                'scene_file': 'kitten.blend',
-            }
 
             deserialized_task_to_compute = self._get_deserialized_task_to_compute(
                 compute_task_def     = compute_task_def,

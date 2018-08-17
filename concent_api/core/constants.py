@@ -1,6 +1,11 @@
 from enum import IntEnum
 import re
 
+# Defines available scene file paths for Concent validators
+VALID_SCENE_FILE_PREFIXES = ['/golem/resources/']
+
+# Defines available scene file extension for Blender render
+SCENE_FILE_EXTENSION = '.blend'
 
 # Defines max length of task_id passed in Golem Messages.
 MESSAGE_TASK_ID_MAX_LENGTH = 128

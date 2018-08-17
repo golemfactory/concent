@@ -27,3 +27,7 @@ class FrameNumberValidationError(ConcentBaseException):
 
 class TransactionNonceMismatch(Exception):
     pass
+
+
+class SceneFilePathError(ConcentBaseException):
+    pass

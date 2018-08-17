@@ -313,7 +313,7 @@ class TestValidateComputeTaskDef(object):
         self.compute_task_def = ComputeTaskDefFactory()
         self.compute_task_def["extra_data"] = {
             "output_format": "PNG",
-            "scene_file": "/nice_photo.blend",
+            "scene_file": "/golem/resources/nice_photo.blend",
             "frames": [1, 2, 3],
         }
 
@@ -360,7 +360,16 @@ class TestValidateComputeTaskDef(object):
 
 class TestValidateSceneFile:
 
-    def test_that_wrong_scene_file_name_causes_validation_error(self, scene_file='scene_file.png'):  # pylint: disable=no-self-use
+    @pytest.mark.parametrize(
+        'scene_file', [
+            '/golem/resources/scene_file.png',
+            'golem/resources/scene_file.blend',
+            'resources/abc/scene_file.blend',
+            '/resources/abc/scene_file.blend',
+            '/golem/scene_file.blend',
+        ]  # pylint: disable=no-self-use
+    )
+    def test_that_wrong_scene_file_name_causes_validation_error(self, scene_file):  # pylint: disable=no-self-use
         with pytest.raises(ConcentValidationError) as exception_wrapper:
             validate_scene_file(scene_file)
         assert_that(exception_wrapper.value.error_message).contains(f'{scene_file}')
@@ -368,9 +377,8 @@ class TestValidateSceneFile:
 
     @pytest.mark.parametrize(
         'scene_file', [
-            '/scene_file.blend',
-            '\\scene_file.blend',
-            'scene_file.blend',
+            '/golem/resources/scene_file.blend',
+            '/golem/resources/abc/scene_file.blend',
         ]  # pylint: disable=no-self-use
     )
     def test_that_valid_scene_file_name_doesnt_raise_any_error(self, scene_file):

@@ -3,7 +3,6 @@ from asyncio import StreamWriter
 
 import pytest
 from assertpy import assert_that
-from mock import MagicMock
 from mock import Mock
 
 from middleman_protocol import constants
@@ -21,16 +20,6 @@ SOME_BYTES = b'1234567890qwerty'
 MESSAGE = SOME_BYTES + FRAME_SEPARATOR
 
 MESSAGE_WITH_ESCAPE_CHARACTER_SEQUENCE = SOME_BYTES + ESCAPE_SEQUENCES[ESCAPE_CHARACTER] + FRAME_SEPARATOR
-
-
-def async_stream_actor_mock(*args, **kwargs):
-    m = MagicMock(*args, **kwargs)
-
-    async def mock_coro(*a, **kw):
-        return m(*a, **kw)
-
-    mock_coro.mock = m
-    return mock_coro
 
 
 def _run_test_in_event_loop(event_loop, coroutine, *args):

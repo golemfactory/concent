@@ -90,7 +90,7 @@ class TestSubtaskStoreAndUpdate(ConcentIntegrationTestCase):
             report_computed_task=self.report_computed_task,
         )
         subtask_state = Subtask.objects.get(subtask_id=self.task_to_compute.compute_task_def['subtask_id']).state
-        self.assertEqual(subtask_state, Subtask.SubtaskState.REPORTED.name)
+        self.assertEqual(subtask_state, Subtask.SubtaskState.REPORTED.name)  # pylint: disable=no-member
         self.assertEqual(subtask.next_deadline, None)
 
         next_deadline = int(self.task_to_compute.compute_task_def['deadline']) + settings.CONCENT_MESSAGING_TIME
@@ -102,7 +102,7 @@ class TestSubtaskStoreAndUpdate(ConcentIntegrationTestCase):
             set_next_deadline=True,
         )
         subtask_state = Subtask.objects.get(subtask_id=self.task_to_compute.compute_task_def['subtask_id']).state
-        self.assertEqual(subtask_state, Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name)
+        self.assertEqual(subtask_state, Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name)  # pylint: disable=no-member
         self.assertEqual(subtask.next_deadline, parse_timestamp_to_utc_datetime(next_deadline))
 
     def test_that_update_subtask_passes_validations_from_active_to_passive_state(self):
@@ -118,7 +118,7 @@ class TestSubtaskStoreAndUpdate(ConcentIntegrationTestCase):
             report_computed_task=self.report_computed_task,
         )
         subtask_state = Subtask.objects.get(subtask_id=self.task_to_compute.compute_task_def['subtask_id']).state
-        self.assertEqual(subtask_state, Subtask.SubtaskState.FORCING_REPORT.name)
+        self.assertEqual(subtask_state, Subtask.SubtaskState.FORCING_REPORT.name)  # pylint: disable=no-member
         self.assertEqual(subtask.next_deadline, parse_timestamp_to_utc_datetime(next_deadline))
 
         update_subtask(
@@ -128,7 +128,7 @@ class TestSubtaskStoreAndUpdate(ConcentIntegrationTestCase):
             set_next_deadline=True,
         )
         subtask_state = Subtask.objects.get(subtask_id=self.task_to_compute.compute_task_def['subtask_id']).state
-        self.assertEqual(subtask_state, Subtask.SubtaskState.REPORTED.name)
+        self.assertEqual(subtask_state, Subtask.SubtaskState.REPORTED.name)  # pylint: disable=no-member
         self.assertEqual(subtask.next_deadline, None)
 
 

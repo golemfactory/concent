@@ -119,14 +119,13 @@ class MiddleMan:
         self._loop.run_until_complete(self._server_for_signing_service.wait_closed())
         self._loop.close()
 
-    async def _handle_concent_connection(self, reader, writer) -> None:
+    async def _handle_concent_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         try:
-            data = await handle_frame_receive_async(reader)
+            frame = await handle_frame_receive_async(reader, settings.CONCENT_PUBLIC_KEY)
             remote_address = writer.get_extra_info('peername')
-            print("Received %r from %r" % (data, remote_address))
-            serialized_message = self._prepare_response(data)
-            await self._respond_to_user(serialized_message, writer)
-        except (BrokenEscapingInFrameMiddlemanProtocolError, asyncio.LimitOverrunError) as exception:
+            print("Received %r from %r" % (frame, remote_address))
+            await self._respond_to_user(frame, writer)
+        except (BrokenEscapingInFrameMiddlemanProtocolError, asyncio.LimitOverrunError, MiddlemanProtocolError) as exception:
             await self._send_immediate_error(writer, exception)
         except Exception as exception:  # pylint: disable=broad-except
             crash_logger.error(
@@ -134,30 +133,17 @@ class MiddleMan:
             )
             raise
 
-    @staticmethod
-    def _prepare_response(data):
-        try:
-            AbstractFrame.deserialize(data, settings.CONCENT_PUBLIC_KEY)
-        except MiddlemanProtocolError as exception:
-            error_code = map_exception_to_error_code(exception)
-            data = ErrorFrame(
-                (error_code, str(exception)),
-                0,
-            ).serialize(settings.CONCENT_PRIVATE_KEY)
-        return data
-
-    async def _handle_service_connection(self, reader, writer) -> None:
+    async def _handle_service_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         if self._is_signing_service_connection_active:
             writer.close()
         else:
             self._is_signing_service_connection_active = True
             try:
-                data = await handle_frame_receive_async(reader)
+                frame = await handle_frame_receive_async(reader, settings.CONCENT_PUBLIC_KEY)
                 remote_address = writer.get_extra_info('peername')
-                print("Received %r from %r" % (data, remote_address))
-                serialized_message = self._prepare_response(data)
-                await self._respond_to_user(serialized_message, writer)
-            except (BrokenEscapingInFrameMiddlemanProtocolError, asyncio.LimitOverrunError) as exception:
+                print("Received %r from %r" % (frame, remote_address))
+                await self._respond_to_user(frame, writer)
+            except (BrokenEscapingInFrameMiddlemanProtocolError, asyncio.LimitOverrunError, MiddlemanProtocolError) as exception:
                 await self._send_immediate_error(writer, exception)
             except Exception as exception:  # pylint: disable=broad-except
                 crash_logger.error(
@@ -167,8 +153,8 @@ class MiddleMan:
             finally:
                 self._is_signing_service_connection_active = False
 
-    async def _respond_to_user(self, data: bytes, writer: asyncio.StreamWriter) -> None:  # pylint: disable=no-self-use
-        await send_over_stream_async(data, writer)
+    async def _respond_to_user(self, frame: AbstractFrame, writer: asyncio.StreamWriter) -> None:  # pylint: disable=no-self-use
+        await send_over_stream_async(frame, writer, settings.CONCENT_PRIVATE_KEY)
         writer.close()
 
     def _terminate_connections(self) -> None:
@@ -177,8 +163,9 @@ class MiddleMan:
 
     async def _send_immediate_error(self, writer: asyncio.StreamWriter, exception: Exception):
         error_code = map_exception_to_error_code(exception)
-        data = ErrorFrame(
+        # TODO: update after this constant is added to MiddlemanProtocol
+        error_frame = ErrorFrame(
             (error_code, str(exception)),
             0,
-        ).serialize(settings.CONCENT_PRIVATE_KEY)
-        await self._respond_to_user(data, writer)
+        )
+        await self._respond_to_user(error_frame, writer)

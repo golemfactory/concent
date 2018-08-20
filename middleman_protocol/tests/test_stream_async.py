@@ -3,6 +3,7 @@ from asyncio import StreamWriter
 
 import pytest
 from assertpy import assert_that
+from golem_messages.message import Ping
 from mock import Mock
 
 from middleman_protocol import constants
@@ -10,16 +11,18 @@ from middleman_protocol import exceptions
 from middleman_protocol.constants import ESCAPE_CHARACTER
 from middleman_protocol.constants import ESCAPE_SEQUENCES
 from middleman_protocol.constants import FRAME_SEPARATOR
+from middleman_protocol.message import GolemMessageFrame
+from middleman_protocol.stream import append_frame_separator
+from middleman_protocol.stream import escape_encode_raw_message
 from middleman_protocol.stream_async import handle_frame_receive_async
 from middleman_protocol.stream_async import map_exception_to_error_code
 from middleman_protocol.stream_async import send_over_stream_async
 from middleman_protocol.testing_utils import async_stream_actor_mock
 
-SOME_BYTES = b'1234567890qwerty'
+from .utils import generate_ecc_key_pair
 
-MESSAGE = SOME_BYTES + FRAME_SEPARATOR
 
-MESSAGE_WITH_ESCAPE_CHARACTER_SEQUENCE = SOME_BYTES + ESCAPE_SEQUENCES[ESCAPE_CHARACTER] + FRAME_SEPARATOR
+(CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
 def _run_test_in_event_loop(event_loop, coroutine, *args):
@@ -29,23 +32,16 @@ def _run_test_in_event_loop(event_loop, coroutine, *args):
 
 
 class TestHandleFrameReceiveAsync:
-    def test_that_when_data_with_no_escape_sequence_and_separator_is_received_unescaped_data_is_returned(self, event_loop):
-        mocked_reader = self._prepare_mocked_reader(MESSAGE)
+    def test_that_when_frame_with_escaped_sequence_and_separator_is_received_unescaped_frame_is_returned(self, event_loop):
+        golem_message_frame = GolemMessageFrame(Ping(), 777)
+        data_to_send = escape_encode_raw_message(golem_message_frame.serialize(CONCENT_PRIVATE_KEY)) + ESCAPE_SEQUENCES[ESCAPE_CHARACTER] + FRAME_SEPARATOR
+        mocked_reader = self._prepare_mocked_reader(data_to_send)
 
-        task = _run_test_in_event_loop(event_loop, handle_frame_receive_async, mocked_reader)
-
-        assert_that(task.done()).is_true()
-        mocked_reader.readuntil.mock.assert_called_once_with(FRAME_SEPARATOR)
-        assert_that(task.result()).is_equal_to(SOME_BYTES)
-
-    def test_that_when_data_with_escaped_sequence_and_separator_is_received_unescaped_data_is_returned(self, event_loop):
-        mocked_reader = self._prepare_mocked_reader(MESSAGE_WITH_ESCAPE_CHARACTER_SEQUENCE)
-
-        task = _run_test_in_event_loop(event_loop, handle_frame_receive_async, mocked_reader)
+        task = _run_test_in_event_loop(event_loop, handle_frame_receive_async, mocked_reader, CONCENT_PUBLIC_KEY)
 
         assert_that(task.done()).is_true()
         mocked_reader.readuntil.mock.assert_called_once_with(FRAME_SEPARATOR)
-        assert_that(task.result()).is_equal_to(SOME_BYTES + ESCAPE_CHARACTER)
+        assert_that(task.result()).is_equal_to(golem_message_frame)
 
     @staticmethod
     def _prepare_mocked_reader(return_sequence):
@@ -71,12 +67,14 @@ def test_that_middleman_protocol_exceptions_are_correctly_mapped_to_error_codes(
 
 class TestSendOverStreamAsync:
     def test_that_sent_data_is_escaped_and_contains_frame_separator(self, event_loop):
+        frame = GolemMessageFrame(Ping(), 777)
+        expected_data = append_frame_separator(escape_encode_raw_message(frame.serialize(CONCENT_PRIVATE_KEY)))
         mocked_writer = self._prepare_mocked_writer()
 
-        task = _run_test_in_event_loop(event_loop, send_over_stream_async, SOME_BYTES + ESCAPE_CHARACTER, mocked_writer)
+        task = _run_test_in_event_loop(event_loop, send_over_stream_async, frame, mocked_writer, CONCENT_PRIVATE_KEY)
 
         assert_that(task.done()).is_true()
-        mocked_writer.write.assert_called_once_with(SOME_BYTES + ESCAPE_SEQUENCES[ESCAPE_CHARACTER] + FRAME_SEPARATOR)
+        mocked_writer.write.assert_called_once_with(expected_data)
         mocked_writer.drain.mock.assert_called_once_with()
 
     @staticmethod

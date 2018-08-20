@@ -1,5 +1,6 @@
 from asyncio import sleep
 from asyncio import StreamReader
+from asyncio import StreamWriter
 
 import assertpy
 from mock import MagicMock
@@ -37,6 +38,12 @@ def prepare_mocked_reader(return_sequence):
     mocked_reader = Mock(spec_set=StreamReader)
     mocked_reader.readuntil = async_stream_actor_mock(return_value=return_sequence)
     return mocked_reader
+
+
+def prepare_mocked_writer():
+    mocked_writer = Mock(spec_set=StreamWriter)
+    mocked_writer.drain = async_stream_actor_mock()
+    return mocked_writer
 
 
 def generate_ecc_key_pair():

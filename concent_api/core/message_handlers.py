@@ -1418,7 +1418,7 @@ def handle_send_subtask_results_verify(
 def handle_message(client_message):
     subtask_ids_of_processed_requests = get_subtask_ids_as_list(client_message)
     for subtask_id in subtask_ids_of_processed_requests:
-        if Subtask.objects.filter(subtask_id=subtask_id).exists():
+        if Subtask.objects.filter(subtask_id=subtask_id).exists():  # pylint: disable=no-member
             Subtask.objects.select_for_update().get(subtask_id=subtask_id)
 
     if isinstance(client_message, message.concents.ForceReportComputedTask):

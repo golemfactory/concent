@@ -193,3 +193,52 @@ class VerifierVerificationResultTaskTransactionTest(TransactionTestCase):
                     self.subtask.subtask_id,
                     VerificationResult.MATCH.name,
                 )
+
+
+class VerificationResultAssertionTest(ConcentIntegrationTestCase):
+
+    multi_db = True
+
+    def setUp(self):
+        super().setUp()
+
+        (self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
+        (self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
+
+        self.subtask = store_subtask(
+            task_id='1',
+            subtask_id='8',
+            provider_public_key=self.PROVIDER_PUBLIC_KEY,
+            requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
+            state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
+            next_deadline=get_current_utc_timestamp() + settings.CONCENT_MESSAGING_TIME,
+            task_to_compute=TaskToComputeFactory(
+                task_id='1',
+                subtask_id='8',
+            ),
+            report_computed_task=ReportComputedTaskFactory(
+                subtask_id='8',
+            )
+        )
+
+    def test_that_assertion_in_verification_result_method_doesnt_rise_exception_when_empty_string_is_passed_in_error_message(self):
+        try:
+            verification_result(  # pylint: disable=no-value-for-parameter
+                self.subtask.subtask_id,
+                VerificationResult.ERROR.name,
+                '',
+                'error_code',
+            )
+        except Exception:  # pylint: disable=broad-except
+            self.fail()
+
+    def test_that_assertion_in_verification_result_method_doesnt_rise_exception_when_empty_string_is_passed_in_error_code(self):
+        try:
+            verification_result(  # pylint: disable=no-value-for-parameter
+                self.subtask.subtask_id,
+                VerificationResult.ERROR.name,
+                'error_message',
+                '',
+            )
+        except Exception:  # pylint: disable=broad-except
+            self.fail()

@@ -125,7 +125,7 @@ def verification_result(
 
     result_enum = VerificationResult[result]
 
-    assert result_enum != VerificationResult.ERROR or all([error_message, error_code])
+    assert result_enum != VerificationResult.ERROR or all([isinstance(error_message, str), isinstance(error_code, str)])
 
     # Worker locks database row corresponding to the subtask in the subtask table.
     try:

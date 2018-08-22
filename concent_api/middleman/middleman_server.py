@@ -4,6 +4,17 @@ from logging import getLogger
 
 import signal
 
+from django.conf import settings
+
+from middleman_protocol.constants import MAXIMUM_FRAME_LENGTH
+from middleman_protocol.exceptions import BrokenEscapingInFrameMiddlemanProtocolError
+from middleman_protocol.exceptions import MiddlemanProtocolError
+from middleman_protocol.message import AbstractFrame
+from middleman_protocol.message import ErrorFrame
+from middleman_protocol.stream_async import handle_frame_receive_async
+from middleman_protocol.stream_async import map_exception_to_error_code
+from middleman_protocol.stream_async import send_over_stream_async
+
 from middleman.constants import DEFAULT_EXTERNAL_PORT
 from middleman.constants import DEFAULT_INTERNAL_PORT
 from middleman.constants import ERROR_ADDRESS_ALREADY_IN_USE
@@ -88,14 +99,16 @@ class MiddleMan:
             self._handle_concent_connection,
             self._bind_address,
             self._internal_port,
-            loop=self._loop
+            loop=self._loop,
+            limit=MAXIMUM_FRAME_LENGTH
         )
         self._server_for_concent = self._loop.run_until_complete(concent_server_coroutine)
         service_server_coroutine = asyncio.start_server(
             self._handle_service_connection,
             self._bind_address,
             self._external_port,
-            loop=self._loop
+            loop=self._loop,
+            limit=MAXIMUM_FRAME_LENGTH
         )
         self._server_for_signing_service = self._loop.run_until_complete(service_server_coroutine)
 
@@ -106,28 +119,32 @@ class MiddleMan:
         self._loop.run_until_complete(self._server_for_signing_service.wait_closed())
         self._loop.close()
 
-    async def _handle_concent_connection(self, reader, writer) -> None:
+    async def _handle_concent_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         try:
-            data = await reader.readuntil()
+            frame = await handle_frame_receive_async(reader, settings.CONCENT_PUBLIC_KEY)
             remote_address = writer.get_extra_info('peername')
-            print("Received %r from %r" % (data, remote_address))
-            await self._respond_to_user(data, writer)
+            print("Received %r from %r" % (frame, remote_address))
+            await self._respond_to_user(frame, writer)
+        except (BrokenEscapingInFrameMiddlemanProtocolError, asyncio.LimitOverrunError, MiddlemanProtocolError) as exception:
+            await self._send_immediate_error(writer, exception)
         except Exception as exception:  # pylint: disable=broad-except
             crash_logger.error(
                 f"Exception occurred: {exception}, Traceback: {traceback.format_exc()}"
             )
             raise
 
-    async def _handle_service_connection(self, reader, writer) -> None:
+    async def _handle_service_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         if self._is_signing_service_connection_active:
             writer.close()
         else:
             self._is_signing_service_connection_active = True
             try:
-                data = await reader.readuntil()
+                frame = await handle_frame_receive_async(reader, settings.CONCENT_PUBLIC_KEY)
                 remote_address = writer.get_extra_info('peername')
-                print("Received %r from %r" % (data, remote_address))
-                await self._respond_to_user(data, writer)
+                print("Received %r from %r" % (frame, remote_address))
+                await self._respond_to_user(frame, writer)
+            except (BrokenEscapingInFrameMiddlemanProtocolError, asyncio.LimitOverrunError, MiddlemanProtocolError) as exception:
+                await self._send_immediate_error(writer, exception)
             except Exception as exception:  # pylint: disable=broad-except
                 crash_logger.error(
                     f"Exception occurred: {exception}, Traceback: {traceback.format_exc()}"
@@ -136,11 +153,19 @@ class MiddleMan:
             finally:
                 self._is_signing_service_connection_active = False
 
-    async def _respond_to_user(self, data: bytes, writer: asyncio.StreamWriter) -> None:  # pylint: disable=no-self-use
-        writer.write(data)
-        await writer.drain()
+    async def _respond_to_user(self, frame: AbstractFrame, writer: asyncio.StreamWriter) -> None:  # pylint: disable=no-self-use
+        await send_over_stream_async(frame, writer, settings.CONCENT_PRIVATE_KEY)
         writer.close()
 
     def _terminate_connections(self) -> None:
         logger.info('SIGTERM received - closing connections and exiting.')
         self._loop.stop()
+
+    async def _send_immediate_error(self, writer: asyncio.StreamWriter, exception: Exception):
+        error_code = map_exception_to_error_code(exception)
+        # TODO: update after this constant is added to MiddlemanProtocol
+        error_frame = ErrorFrame(
+            (error_code, str(exception)),
+            0,
+        )
+        await self._respond_to_user(error_frame, writer)

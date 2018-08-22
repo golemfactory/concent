@@ -1,6 +1,8 @@
 from enum import IntEnum
 from enum import unique
 
+from middleman_protocol import exceptions
+
 
 @unique
 class PayloadType(IntEnum):
@@ -21,6 +23,7 @@ class ErrorCode(IntEnum):
     ConnectionLimitExceeded = 6
     MessageLost             = 7
     ConnectionTimeout       = 8
+    Unknown                 = 9
 
 
 # Random sequence of bytes used as separator between messages. Should be placed after frame.
@@ -51,3 +54,12 @@ assert all([FRAME_SEPARATOR not in escape_sequence for escape_sequence in ESCAPE
 
 RECEIVE_BYTES_PER_LOOP = 1
 MAXIMUM_FRAME_LENGTH = 1000
+
+MIDDLEMAN_EXCEPTION_TO_ERROR_CODE_MAP = {
+    exceptions.PayloadTypeInvalidMiddlemanProtocolError: ErrorCode.InvalidPayload,
+    exceptions.RequestIdInvalidTypeMiddlemanProtocolError: ErrorCode.InvalidFrame,
+    exceptions.SignatureInvalidMiddlemanProtocolError: ErrorCode.InvalidFrameSignature,
+    exceptions.PayloadInvalidMiddlemanProtocolError: ErrorCode.InvalidPayload,
+    exceptions.FrameInvalidMiddlemanProtocolError: ErrorCode.InvalidFrame,
+    exceptions.MiddlemanProtocolError: ErrorCode.Unknown,
+}

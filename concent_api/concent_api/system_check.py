@@ -10,6 +10,8 @@ from django.core.exceptions import ValidationError
 
 from golem_messages import constants
 
+from common.exceptions import ConcentValidationError
+from core.validation import validate_bytes_public_key
 from concent_api.constants  import AVAILABLE_CONCENT_FEATURES
 
 
@@ -280,6 +282,22 @@ def create_error_42_verifier_download_chunk_size_has_wrong_value(verifier_downlo
     )
 
 
+def create_error_43_signing_service_public_key_is_missing():
+    return Error(
+        'SIGNING_SERVICE_PUBLIC_KEY is not defined',
+        hint='SIGNING_SERVICE_PUBLIC_KEY should be defined in settings if "middleman" feature is enabled.',
+        id='concent.E043',
+    )
+
+
+def create_error_44_signing_service_public_key_is_invalid():
+    return Error(
+        'SIGNING_SERVICE_PUBLIC_KEY is not valid',
+        hint='SIGNING_SERVICE_PUBLIC_KEY should be a valid public key.',
+        id='concent.E044',
+    )
+
+
 @register()
 def check_settings_concent_features(app_configs, **kwargs):  # pylint: disable=unused-argument
 
@@ -539,3 +557,17 @@ def check_verifier_download_chunk_size(app_configs=None, **kwargs):  # pylint: d
             )]
 
     return []
+
+
+@register()
+def check_signing_service_key_availability_for_middleman(app_configs=None, **kwargs):  # pylint: disable=unused-argument
+    errors = []
+    if "middleman" in settings.CONCENT_FEATURES:
+        if not hasattr(settings, "SIGNING_SERVICE_PUBLIC_KEY"):
+            errors.append(create_error_43_signing_service_public_key_is_missing())
+        else:
+            try:
+                validate_bytes_public_key(settings.SIGNING_SERVICE_PUBLIC_KEY, "SIGNING_SERVICE_PUBLIC_KEY")
+            except ConcentValidationError:
+                errors.append(create_error_44_signing_service_public_key_is_invalid())
+    return errors

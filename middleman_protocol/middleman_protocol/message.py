@@ -64,6 +64,16 @@ class AbstractFrame(ABC):
         self._validate_payload(payload)
         self.payload = payload
 
+    def __eq__(self, other):
+        """Overrides the default implementation for our tests"""
+        if isinstance(other, AbstractFrame):
+            return (
+                self.payload == other.payload and
+                self.payload_type == other.payload_type and
+                self.request_id == other.request_id
+            )
+        return False
+
     @classmethod
     @abstractmethod
     def _deserialize_payload(cls, payload: bytes):

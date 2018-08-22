@@ -42,6 +42,7 @@ from core.payments import service as payments_service
 from core.payments.backends.sci_backend import TransactionType
 from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
+from core.subtask_helpers import get_subtask_ids_as_list
 from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
 from core.transfer_operations import store_pending_message
 from core.transfer_operations import create_file_transfer_token_for_golem_client
@@ -1415,6 +1416,11 @@ def handle_send_subtask_results_verify(
 
 
 def handle_message(client_message):
+    subtask_ids_of_processed_requests = get_subtask_ids_as_list(client_message)
+    for subtask_id in subtask_ids_of_processed_requests:
+        if Subtask.objects.filter(subtask_id=subtask_id).exists():
+            Subtask.objects.select_for_update().get(subtask_id=subtask_id)
+
     if isinstance(client_message, message.concents.ForceReportComputedTask):
         return handle_send_force_report_computed_task(client_message)
 

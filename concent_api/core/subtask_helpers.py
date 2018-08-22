@@ -5,6 +5,7 @@ from typing import Optional
 
 from django.db.models           import Q
 from django.utils               import timezone
+import golem_messages
 from golem_messages.message.tasks import SubtaskResultsAccepted
 
 from core.models                import PendingResponse
@@ -187,3 +188,15 @@ def are_subtask_results_accepted_messages_signed_by_the_same_requestor(subtask_r
         ) for subtask_results_accepted in subtask_results_accepted_list
     )
     return are_all_signed_by_requestor
+
+
+def get_subtask_ids_as_list(client_message: golem_messages.message) -> List[str]:
+    list_of_subtasks = []
+
+    if isinstance(client_message, golem_messages.message. concents.ForcePayment):
+        for subtask_results_accepted in client_message.subtask_results_accepted_list:
+            list_of_subtasks.append(subtask_results_accepted.subtask_id)
+    else:
+        list_of_subtasks = [client_message.subtask_id]
+
+    return list_of_subtasks

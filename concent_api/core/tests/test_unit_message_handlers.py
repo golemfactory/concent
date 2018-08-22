@@ -11,6 +11,7 @@ from core.message_handlers import are_items_unique
 from core.message_handlers import update_subtask
 from core.message_handlers import store_subtask
 from core.models import Subtask
+from core.subtask_helpers import get_subtask_ids_as_list
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
 from core.utils import hex_to_bytes_convert
@@ -156,3 +157,24 @@ class TestValidateRejectReportComputedTask(ConcentIntegrationTestCase):
         )
         with self.assertRaises(GolemMessageValidationError):
             validate_reject_report_computed_task(incorrect_reject_reported_computed_task)
+
+
+class TestGetSubtaskIdsAsList(ConcentIntegrationTestCase):
+
+    def test_that_correct_subtask_should_be_returned_when_golem_message_with_one_subtask_given(self):
+        force_report_computed_task = self._get_deserialized_force_report_computed_task(
+            self._get_deserialized_report_computed_task(subtask_id='xxyyzz')
+        )
+
+        subtasks_list= get_subtask_ids_as_list(force_report_computed_task)
+        self.assertEqual(subtasks_list, ['xxyyzz'])
+
+    def test_that_correct_subtask_should_be_returned_when_force_payment_with_more_then_one_subtask_given(self):
+        subtask_results_accepted_1 = self._get_deserialized_subtask_results_accepted(self._get_deserialized_task_to_compute(subtask_id='xyz1'))
+        subtask_results_accepted_2 = self._get_deserialized_subtask_results_accepted(self._get_deserialized_task_to_compute(subtask_id='xyz2'))
+
+        subtask_results_accepted_list = [subtask_results_accepted_1, subtask_results_accepted_2]
+        force_payment = self._get_deserialized_force_payment(subtask_results_accepted_list)
+
+        subtasks_list = get_subtask_ids_as_list(force_payment)
+        self.assertEqual(subtasks_list, ['xyz1', 'xyz2'])

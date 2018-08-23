@@ -10,6 +10,7 @@ from core.tests.utils import ConcentIntegrationTestCase
 from common.helpers import get_current_utc_timestamp
 from common.helpers import get_storage_result_file_path
 from common.helpers import get_storage_source_file_path
+from common.helpers import parse_datetime_to_timestamp
 from ..exceptions import VerificationRequestAlreadyAcknowledgedError
 
 
@@ -89,10 +90,7 @@ class ConductorTaskTestCase(ConcentIntegrationTestCase):
                 result_package_hash=self.report_computed_task.package_hash,
                 output_format=self.verification_request.blender_subtask_definition.output_format,
                 scene_file=self.verification_request.blender_subtask_definition.scene_file,
-                verification_deadline=self._get_verification_deadline_as_timestamp(
-                    get_current_utc_timestamp(),
-                    self.report_computed_task.task_to_compute,
-                ),
+                verification_deadline=parse_datetime_to_timestamp(self.verification_request.verification_deadline),
                 blender_crop_script=self.verification_request.blender_subtask_definition.blender_crop_script,
             )
             mock_frames_filtering.assert_called_once()

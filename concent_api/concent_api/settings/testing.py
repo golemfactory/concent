@@ -77,6 +77,8 @@ SUBTASK_VERIFICATION_TIME = 5
 
 CUSTOM_PROTOCOL_TIMES = True
 
+SIGNING_SERVICE_PUBLIC_KEY = b'\xc0$\xa3\xab\x8d\x04[q\x0b\x1b\x00#\x8b\x18\xd9\xcf\x95\xf1\\`\x08w@\xf0\x9d\xf6B7;\xe56\xc8\xb1pp\x97\xac\xb3\xd3\xc1\xb0\x96a6\xcat\x8b\xea\xbb\x98\x04\xcfD28\x97$\xa9\xb9b8\x17\xe1\xfc'
+
 # disable HandleServerErrorMiddleware in tests
 if MIDDLEWARE.index('concent_api.middleware.HandleServerErrorMiddleware') is not None:
     MIDDLEWARE.remove('concent_api.middleware.HandleServerErrorMiddleware')

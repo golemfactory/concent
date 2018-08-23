@@ -147,6 +147,8 @@ class MiddleMan:
                 await self._respond_to_user(frame, writer)
             except (BrokenEscapingInFrameMiddlemanProtocolError, asyncio.LimitOverrunError, MiddlemanProtocolError) as exception:
                 await self._send_immediate_error(writer, exception)
+            except asyncio.streams.IncompleteReadError:
+                pass
             except Exception as exception:  # pylint: disable=broad-except
                 crash_logger.error(
                     f"Exception occurred: {exception}, Traceback: {traceback.format_exc()}"

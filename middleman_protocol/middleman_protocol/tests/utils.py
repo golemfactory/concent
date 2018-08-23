@@ -34,9 +34,9 @@ def async_stream_actor_mock(*args, **kwargs):
     return mock_coro
 
 
-def prepare_mocked_reader(return_sequence):
+def prepare_mocked_reader(return_sequence, **kwargs):
     mocked_reader = Mock(spec_set=StreamReader)
-    mocked_reader.readuntil = async_stream_actor_mock(return_value=return_sequence)
+    mocked_reader.readuntil = async_stream_actor_mock(return_value=return_sequence, **kwargs)
     return mocked_reader
 
 

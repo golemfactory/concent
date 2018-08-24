@@ -13,7 +13,7 @@ ignore=
     .mypy_cache,
     build,
     dist,
-    Signing_Service.egg-info
+    Signing_Service.egg-info,
     Middleman_Protocol.egg-info
 
 # Add files or directories matching the regex patterns to the blacklist. The

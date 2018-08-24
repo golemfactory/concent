@@ -9,6 +9,7 @@ from typing import Union
 
 from django.conf import settings
 from django.core.mail import mail_admins
+from django.db import transaction
 from django.http import HttpResponse
 
 from constance import config
@@ -30,6 +31,7 @@ from common.helpers import deserialize_message
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.helpers import sign_message
+from common.logging import log_error_message
 from common.validations import validate_secure_hash_algorithm
 from common import logging
 from core.exceptions import Http400
@@ -898,6 +900,7 @@ def store_subtask(
     return subtask
 
 
+@transaction.atomic(using='control')
 def handle_messages_from_database(
     client_public_key: bytes,
     response_type: PendingResponse.Queue,
@@ -915,6 +918,14 @@ def handle_messages_from_database(
         return None
 
     assert pending_response.response_type_enum in set(PendingResponse.ResponseType)
+
+    try:
+        Subtask.objects.select_for_update().get(subtask_id=pending_response.subtask_id)
+    except Subtask.DoesNotExist:
+        log_error_message(
+            logger,
+            f'Tried to get last message for client {client_public_key}, but subtask with id {pending_response.subtask_id} does not exist in database'
+        )
 
     if pending_response.response_type == PendingResponse.ResponseType.ForceReportComputedTask.name:  # pylint: disable=no-member
         report_computed_task = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())

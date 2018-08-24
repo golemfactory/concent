@@ -1,5 +1,6 @@
+import tempfile
 from unittest import TestCase
-from zipfile import BadZipFile
+import zipfile
 
 from assertpy import assert_that
 from django.conf import settings
@@ -15,6 +16,7 @@ from core.constants import VerificationResult
 from verifier.exceptions import VerificationError
 from verifier.exceptions import VerificationMismatch
 from verifier.utils import adjust_format_name
+from verifier.utils import get_files_list_from_archive
 from verifier.utils import are_image_sizes_and_color_channels_equal
 from verifier.utils import compare_all_rendered_images_with_user_results_files
 from verifier.utils import compare_images
@@ -307,7 +309,7 @@ class TestValidateDownloadedArchives(object):
         self.archives_list = ["source.zip", "result.zip"]
 
     def test_that_if_archive_is_not_a_zip_file_verification_mismatch_is_raised(self):
-        with mock.patch("verifier.utils.get_files_list_from_archive", side_effect=BadZipFile):
+        with mock.patch("verifier.utils.get_files_list_from_archive", side_effect=zipfile.BadZipFile):
             with pytest.raises(VerificationMismatch) as exception_wrapper:
                 validate_downloaded_archives(self.subtask_id, self.archives_list, self.scene_file)
             assert_that(exception_wrapper.value.subtask_id).is_equal_to(self.subtask_id)
@@ -326,3 +328,17 @@ class TestValidateDownloadedArchives(object):
                 assert_that(exception_wrapper.value.subtask_id).is_equal_to(self.subtask_id)
                 assert_that(exception_wrapper.value.error_code).\
                     is_equal_to(ErrorCode.VERIFIER_UNPACKING_ARCHIVE_FAILED)
+
+
+@pytest.mark.parametrize('expected_list', [
+    (['result1.blend', 'result2.blend', 'result3.blend']),
+    (['tmp.txt', 'tmp']),
+    (['tmp.txt']),
+])
+def test_that_method_returns_correct_archives_list(expected_list):
+    with tempfile.TemporaryFile(prefix='archive_', suffix='.zip') as tmp:
+        with zipfile.ZipFile(tmp, 'w', zipfile.ZIP_DEFLATED) as archive:
+            for file in expected_list:
+                archive.writestr(file, 'Some content here')
+        files_list = get_files_list_from_archive(tmp)
+        assert_that(files_list).is_equal_to(expected_list)

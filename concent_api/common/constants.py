@@ -31,6 +31,8 @@ class ErrorCode(enum.Enum):
     MESSAGE_FRAME_WRONG_TYPE                                            = 'message.frames.wrong_type'
     MESSAGE_FRAME_VALUE_NOT_POSITIVE_INTEGER                            = 'message.frames.value_not_positive_integer'
     MESSAGE_INVALID                                                     = 'message.invalid'
+    MESSAGE_WRONG_UUID_VALUE                                            = 'message.wrong_uuid_value'
+    MESSAGE_WRONG_UUID_TYPE                                             = 'message.wrong_uuid_type'
     MESSAGE_OPERATION_INVALID                                           = 'message.operation.invalid'
     MESSAGE_SIGNATURE_MISSING                                           = 'message.signature.missing'
     MESSAGE_SIGNATURE_WRONG                                             = 'message.signature.wrong'

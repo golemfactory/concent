@@ -5,12 +5,12 @@ from freezegun              import freeze_time
 from golem_messages         import message
 from golem_messages.utils import decode_hex
 
-from core.constants         import ETHEREUM_ADDRESS_LENGTH
-from core.models            import PendingResponse
+from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
+from core.models import PendingResponse
 from core.payments.backends.sci_backend import TransactionType
-from core.tests.utils       import ConcentIntegrationTestCase
+from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
-from common.testing_helpers  import generate_ecc_key_pair
+from common.testing_helpers import generate_ecc_key_pair
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
@@ -20,7 +20,7 @@ from common.testing_helpers  import generate_ecc_key_pair
     CONCENT_PRIVATE_KEY  = CONCENT_PRIVATE_KEY,
     CONCENT_PUBLIC_KEY   = CONCENT_PUBLIC_KEY,
     PAYMENT_DUE_TIME     = 10,  # seconds
-    CONCENT_ETHEREUM_ADDRESS = 'x' * ETHEREUM_ADDRESS_LENGTH
+    CONCENT_ETHEREUM_PUBLIC_KEY='x' * ETHEREUM_PUBLIC_KEY_LENGTH,
 )
 class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
     def test_provider_send_force_payment_with_subtask_results_accepted_signed_by_different_requestors_concent_should_refuse(self):

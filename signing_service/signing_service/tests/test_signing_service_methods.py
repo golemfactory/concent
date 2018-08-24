@@ -21,7 +21,7 @@ from signing_service.signing_service import SigningService
 from .utils import SigningServiceIntegrationTestCase
 
 
-TEST_ETHEREUM_PRIVATE_KEY = '3a1076bf45ab87712ad64ccb3b10217737f7faacbf2872e88fdd9a537d8fe266'
+TEST_ETHEREUM_PRIVATE_KEY = '47a286230c8b3a1c3fa0282f6a65d1d57ffe5147dafaef7cd110d24ed51b462e'
 
 concent_ecc_keys = ECCx(None)
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = concent_ecc_keys.raw_privkey, concent_ecc_keys.raw_pubkey
@@ -60,8 +60,8 @@ class SigningServiceSingTransactionTestCase(SigningServiceIntegrationTestCase, T
         self.assertEqual(transaction_signed.value, transaction_signing_request.value)  # pylint: disable=no-member
         self.assertEqual(transaction_signed.data, transaction_signing_request.data)  # pylint: disable=no-member
         self.assertEqual(transaction_signed.v, 27)  # pylint: disable=no-member
-        self.assertEqual(transaction_signed.r, 28432435636157264186184846253514929279866516705674805985962967266423282207917)  # pylint: disable=no-member
-        self.assertEqual(transaction_signed.s, 27149918735952638314193245761844556778323336412848419389171231353348292287326)  # pylint: disable=no-member
+        self.assertEqual(transaction_signed.r, 30388804072119173430692318653717116791007045427887199775992056799290419449340)  # pylint: disable=no-member
+        self.assertEqual(transaction_signed.s, 12415095341641447952516229207372622127096123813439844824954905697584046077123)  # pylint: disable=no-member
 
     def test_that_get_signed_transaction_should_return_transaction_rejected_if_transaction_cannot_be_recreated_from_received_transaction_signing_request(self):
         transaction_signing_request = self._get_deserialized_transaction_signing_request()

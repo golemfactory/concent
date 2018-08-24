@@ -6,6 +6,7 @@ import time
 
 from django.conf import settings
 from django.utils                   import timezone
+from ethereum.utils import sha3
 from mypy.types import Optional
 from mypy.types                     import Union
 import requests
@@ -14,9 +15,11 @@ from golem_messages                 import message
 from golem_messages.datastructures  import FrozenDict
 from golem_messages.exceptions      import MessageError
 from golem_messages.shortcuts import dump
+from golem_messages.utils import decode_hex
 
-from core.exceptions                import Http400
-from common.constants                import ErrorCode
+from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
+from core.exceptions import Http400
+from common.constants import ErrorCode
 
 
 def is_base64(data: str) -> bool:
@@ -172,3 +175,10 @@ def upload_file_to_storage_cluster(
         data=file_content,
         verify=False
     )
+
+
+def generate_ethereum_address_from_ethereum_public_key(ethereum_public_key: str) -> str:
+    assert isinstance(ethereum_public_key, str)
+    assert len(ethereum_public_key) == ETHEREUM_PUBLIC_KEY_LENGTH
+
+    return sha3(decode_hex(ethereum_public_key))[12:].hex()

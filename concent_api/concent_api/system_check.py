@@ -11,8 +11,9 @@ from django.core.exceptions import ValidationError
 from golem_messages import constants
 
 from common.exceptions import ConcentValidationError
-from core.validation import validate_bytes_public_key
 from concent_api.constants  import AVAILABLE_CONCENT_FEATURES
+from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
+from core.validation import validate_bytes_public_key
 
 
 def create_error_13_ssl_cert_path_is_none():
@@ -298,6 +299,30 @@ def create_error_44_signing_service_public_key_is_invalid():
     )
 
 
+def create_error_45_concent_ethereum_public_key_is_not_set():
+    return Error(
+        'CONCENT_ETHEREUM_PUBLIC_KEY setting is not defined',
+        hint='Set CONCENT_ETHEREUM_PUBLIC_KEY in your local_settings.py to the one matching SigningService Ethereum private key.',
+        id='concent.E045',
+    )
+
+
+def create_error_46_concent_ethereum_public_key_has_wrong_type(concent_ethereum_public_key):
+    return Error(
+        'CONCENT_ETHEREUM_PUBLIC_KEY has wrong type',
+        hint=f"CONCENT_ETHEREUM_PUBLIC_KEY must be string instead of {type(concent_ethereum_public_key)}.",
+        id='concent.E046',
+    )
+
+
+def create_error_47_concent_ethereum_public_key_has_wrong_length(concent_ethereum_public_key):
+    return Error(
+        'CONCENT_ETHEREUM_PUBLIC_KEY has wrong length',
+        hint=f"CONCENT_ETHEREUM_PUBLIC_KEY must have length {ETHEREUM_PUBLIC_KEY_LENGTH} instead of {len(concent_ethereum_public_key)}.",
+        id='concent.E047',
+    )
+
+
 @register()
 def check_settings_concent_features(app_configs, **kwargs):  # pylint: disable=unused-argument
 
@@ -571,3 +596,17 @@ def check_signing_service_key_availability_for_middleman(app_configs=None, **kwa
             except ConcentValidationError:
                 errors.append(create_error_44_signing_service_public_key_is_invalid())
     return errors
+
+
+@register()
+def check_concent_ethereum_public_key(app_configs=None, **kwargs):  # pylint: disable=unused-argument
+    if not hasattr(settings, 'CONCENT_ETHEREUM_PUBLIC_KEY') and 'core' in settings.CONCENT_FEATURES:
+        return [create_error_45_concent_ethereum_public_key_is_not_set()]
+
+    if hasattr(settings, 'CONCENT_ETHEREUM_PUBLIC_KEY'):
+        if not isinstance(settings.CONCENT_ETHEREUM_PUBLIC_KEY, str):
+            return [create_error_46_concent_ethereum_public_key_has_wrong_type(settings.CONCENT_ETHEREUM_PUBLIC_KEY)]
+        if len(settings.CONCENT_ETHEREUM_PUBLIC_KEY) != ETHEREUM_PUBLIC_KEY_LENGTH:
+            return [create_error_47_concent_ethereum_public_key_has_wrong_length(settings.CONCENT_ETHEREUM_PUBLIC_KEY)]
+
+    return []

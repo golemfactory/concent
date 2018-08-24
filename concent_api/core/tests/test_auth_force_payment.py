@@ -5,9 +5,9 @@ from django.urls            import reverse
 from freezegun              import freeze_time
 from golem_messages         import message
 
-from core.constants         import ETHEREUM_ADDRESS_LENGTH
-from core.models            import PendingResponse
-from core.tests.utils       import ConcentIntegrationTestCase
+from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
+from core.models import PendingResponse
+from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
 from common.testing_helpers  import generate_ecc_key_pair
 
@@ -19,7 +19,7 @@ from common.testing_helpers  import generate_ecc_key_pair
     CONCENT_PRIVATE_KEY  = CONCENT_PRIVATE_KEY,
     CONCENT_PUBLIC_KEY   = CONCENT_PUBLIC_KEY,
     PAYMENT_DUE_TIME     = 10,  # seconds
-    CONCENT_ETHEREUM_ADDRESS = 'x' * ETHEREUM_ADDRESS_LENGTH
+    CONCENT_ETHEREUM_PUBLIC_KEY='x' * ETHEREUM_PUBLIC_KEY_LENGTH,
 )
 class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
     def test_provider_send_force_payment_and_concent_should_return_it_to_requestor_with_correct_keys(self):

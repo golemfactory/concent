@@ -15,7 +15,6 @@ from api_testing_common import api_request
 from api_testing_common import count_fails
 from api_testing_common import create_client_auth_message
 from api_testing_common import create_signed_task_to_compute
-from api_testing_common import get_task_id_and_subtask_id
 from api_testing_common import PROVIDER_PRIVATE_KEY
 from api_testing_common import PROVIDER_PUBLIC_KEY
 from api_testing_common import REQUESTOR_PRIVATE_KEY
@@ -46,9 +45,8 @@ def ack_report_computed_task(task_to_compute):
 
 
 @count_fails
-def test_case_1_provider_forces_report_computed_task_and_gets_accepted(cluster_consts, cluster_url, test_id):
+def test_case_1_provider_forces_report_computed_task_and_gets_accepted(cluster_consts, cluster_url, task_id, subtask_id):
     current_time = get_current_utc_timestamp()
-    (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '1')
     task_to_compute = create_signed_task_to_compute(
         task_id=task_id,
         subtask_id=subtask_id,

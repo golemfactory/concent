@@ -3,6 +3,7 @@
 import os
 import sys
 import time
+import uuid
 
 from freezegun import freeze_time
 
@@ -17,7 +18,6 @@ from api_testing_common import api_request
 from api_testing_common import count_fails
 from api_testing_common import create_client_auth_message
 from api_testing_common import create_signed_task_to_compute
-from api_testing_common import get_task_id_and_subtask_id
 from api_testing_common import run_tests
 from api_testing_common import PROVIDER_PRIVATE_KEY
 from api_testing_common import REQUESTOR_PRIVATE_KEY
@@ -54,10 +54,9 @@ def subtask_results_accepted(timestamp = None, payment_ts = None, task_to_comput
 
 
 @count_fails
-def test_case_2d_send_correct_force_payment(cluster_consts, cluster_url, test_id):
+def test_case_2d_send_correct_force_payment(cluster_consts, cluster_url, task_id, subtask_id):
     # Test CASE 2D - Send correct ForcePayment
     current_time = get_current_utc_timestamp()
-    (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '2D')
     correct_force_payment = force_payment(
         subtask_results_accepted_list=[
             subtask_results_accepted(
@@ -65,8 +64,8 @@ def test_case_2d_send_correct_force_payment(cluster_consts, cluster_url, test_id
 
                 task_to_compute=create_signed_task_to_compute(
                     timestamp=parse_timestamp_to_utc_datetime(current_time),
-                    task_id=task_id + 'a',
-                    subtask_id=subtask_id + 'A',
+                    task_id=task_id,
+                    subtask_id=subtask_id,
                     deadline=current_time,
                     price=1000,
                 )
@@ -75,8 +74,8 @@ def test_case_2d_send_correct_force_payment(cluster_consts, cluster_url, test_id
                 payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                 task_to_compute=create_signed_task_to_compute(
                     timestamp=parse_timestamp_to_utc_datetime(current_time),
-                    task_id=task_id + 'b',
-                    subtask_id=subtask_id + 'B',
+                    task_id=subtask_id,
+                    subtask_id=task_id,
                     deadline=current_time,
                     price=1000,
                 )
@@ -115,10 +114,9 @@ def test_case_2d_send_correct_force_payment(cluster_consts, cluster_url, test_id
 
 
 @count_fails
-def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts, cluster_url, test_id):
+def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts, cluster_url, task_id, subtask_id):
     #  Test CASE 2C - Send ForcePayment with no value to be paid
     current_time = get_current_utc_timestamp()
-    (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '2C')
     api_request(
         cluster_url,
         'send',
@@ -132,8 +130,8 @@ def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts, clu
                     payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=parse_timestamp_to_utc_datetime(current_time),
-                        task_id=task_id + 'a',
-                        subtask_id=subtask_id + 'A',
+                        task_id=task_id,
+                        subtask_id=subtask_id,
                         deadline=current_time,
                         price=0,
                     )
@@ -143,8 +141,8 @@ def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts, clu
                     payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=parse_timestamp_to_utc_datetime(current_time),
-                        task_id=task_id + 'b',
-                        subtask_id=subtask_id + 'B',
+                        task_id=task_id,
+                        subtask_id=str(uuid.uuid4()),
                         deadline=current_time,
                         price=0,
                     )
@@ -162,10 +160,9 @@ def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts, clu
 
 
 @count_fails
-def test_case_2b_send_force_payment_beyond_payment_time(cluster_consts, cluster_url, test_id):
+def test_case_2b_send_force_payment_beyond_payment_time(cluster_consts, cluster_url, task_id, subtask_id):
     #  Test CASE 2B - Send ForcePayment beyond payment time
     current_time = get_current_utc_timestamp()
-    (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '2B')
     api_request(
         cluster_url,
         'send',
@@ -179,8 +176,8 @@ def test_case_2b_send_force_payment_beyond_payment_time(cluster_consts, cluster_
                     payment_ts=current_time,
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=parse_timestamp_to_utc_datetime(current_time),
-                        task_id=task_id + 'a',
-                        subtask_id=subtask_id + 'A',
+                        task_id=task_id,
+                        subtask_id=subtask_id,
                         deadline=current_time,
                         price=15000,
                     )
@@ -190,8 +187,8 @@ def test_case_2b_send_force_payment_beyond_payment_time(cluster_consts, cluster_
                     payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=parse_timestamp_to_utc_datetime(current_time),
-                        task_id=task_id + 'b',
-                        subtask_id=subtask_id + 'B',
+                        task_id=task_id,
+                        subtask_id=str(uuid.uuid4()),
                         deadline=current_time,
                         price=15000,
                     )
@@ -212,11 +209,11 @@ def test_case_2b_send_force_payment_beyond_payment_time(cluster_consts, cluster_
 def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_accounts_are_different(
     cluster_consts,
     cluster_url,
-    test_id
+    task_id,
+    subtask_id,
 ):
     # Test CASE 2A - Send ForcePayment with SubtaskResultsAccepted where ethereum accounts are different
     current_time = get_current_utc_timestamp()
-    (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '2A')
     api_request(
         cluster_url,
         'send',
@@ -230,8 +227,8 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
                     payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=parse_timestamp_to_utc_datetime(current_time),
-                        task_id=task_id + 'a',
-                        subtask_id=subtask_id + 'A',
+                        task_id=task_id,
+                        subtask_id=subtask_id,
                         deadline=current_time,
                         price=15000,
                     )
@@ -241,8 +238,8 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
                     payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=parse_timestamp_to_utc_datetime(current_time),
-                        task_id=task_id + 'b',
-                        subtask_id=subtask_id + 'B',
+                        task_id=task_id,
+                        subtask_id=subtask_id,
                         deadline=current_time,
                         price=15000,
                         requestor_ethereum_public_key=encode_hex(b'0' * GOLEM_PUBLIC_KEY_LENGTH)

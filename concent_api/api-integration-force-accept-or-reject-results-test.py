@@ -15,7 +15,6 @@ from api_testing_common import api_request
 from api_testing_common import count_fails
 from api_testing_common import create_client_auth_message
 from api_testing_common import create_signed_task_to_compute
-from api_testing_common import get_task_id_and_subtask_id
 from api_testing_common import PROVIDER_PRIVATE_KEY
 from api_testing_common import PROVIDER_PUBLIC_KEY
 from api_testing_common import REQUESTOR_PRIVATE_KEY
@@ -117,10 +116,9 @@ def _precalculate_subtask_verification_time(minimum_upload_rate, concent_messagi
 
 
 @count_fails
-def test_case_2d_requestor_rejects_subtask_results(cluster_consts, cluster_url, test_id):
+def test_case_2d_requestor_rejects_subtask_results(cluster_consts, cluster_url, task_id, subtask_id):
     # Test CASE 2D + 3 + 4B + 5. Requestor sends ForceSubtaskResultsResponse with SubtaskResultsRejected
     current_time = get_current_utc_timestamp()
-    (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, '2D')
     signed_task_to_compute = create_signed_task_to_compute(
         timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
         task_id=task_id,
@@ -196,11 +194,10 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts, cluster_url, 
 
 
 @count_fails
-def test_case_4b_requestor_accepts_subtaks_results(cluster_consts, cluster_url, test_id):
+def test_case_4b_requestor_accepts_subtaks_results(cluster_consts, cluster_url, task_id, subtask_id):
     # Test CASE 4B + 5. Requestor sends ForceSubtaskResultsResponse with SubtaskResultsAccepted
     #  Step 1. Provider sends ForceSubtaskResults
     current_time = get_current_utc_timestamp()
-    (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '4B')
     signed_task_to_compute = create_signed_task_to_compute(
         timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
         task_id=task_id,
@@ -278,10 +275,9 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts, cluster_url, 
 
 
 @count_fails
-def test_case_2c_wrong_timestamps(cluster_consts, cluster_url, test_id):
+def test_case_2c_wrong_timestamps(cluster_consts, cluster_url, task_id, subtask_id):
     # Test CASE 2C - Send ForceSubtaskResults with wrong timestamps
     current_time = get_current_utc_timestamp()
-    (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '2C')
     api_request(
         cluster_url,
         'send',
@@ -312,10 +308,9 @@ def test_case_2c_wrong_timestamps(cluster_consts, cluster_url, test_id):
 
 
 @count_fails
-def test_case_2b_not_enough_funds(cluster_consts, cluster_url, test_id):
+def test_case_2b_not_enough_funds(cluster_consts, cluster_url, task_id, subtask_id):
     #  Test CASE 2B - Send ForceSubtaskResults with not enough amount of funds on account
     current_time = get_current_utc_timestamp()
-    (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '2B')
     api_request(
         cluster_url,
         'send',
@@ -348,11 +343,10 @@ def test_case_2b_not_enough_funds(cluster_consts, cluster_url, test_id):
 
 
 @count_fails
-def test_case_2a_send_duplicated_force_subtask_results(cluster_consts, cluster_url, test_id):
+def test_case_2a_send_duplicated_force_subtask_results(cluster_consts, cluster_url, task_id, subtask_id):
     #  Test CASE 2A + 2D + 3 - Send ForceSubtaskResults with same task_id as stored by Concent before
     #  Step 1. Send ForceSubtaskResults first time
     current_time = get_current_utc_timestamp()
-    (task_id, subtask_id) = get_task_id_and_subtask_id(test_id, '2A')
     signed_task_to_compute = create_signed_task_to_compute(
         timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
         task_id=task_id,

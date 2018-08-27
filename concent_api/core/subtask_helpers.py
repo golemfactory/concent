@@ -5,8 +5,10 @@ from typing import Optional
 
 from django.db.models           import Q
 from django.utils               import timezone
+import golem_messages
 from golem_messages.message.tasks import SubtaskResultsAccepted
 
+from common.logging import log_error_message
 from core.models                import PendingResponse
 from core.models                import Subtask
 from core.payments import service as payments_service
@@ -32,6 +34,15 @@ def update_timed_out_subtasks(
         state__in               = [state.name for state in Subtask.ACTIVE_STATES],
         next_deadline__lte      = timezone.now()
     )
+
+    for subtask in clients_subtask_list:    # create locks in database for all subtasks of client
+        try:
+            Subtask.objects.select_for_update().get(pk=subtask.pk)
+        except Subtask.DoesNotExist:
+            log_error_message(
+                logger,
+                f'Tried to update_timed_out_subtasks for client {client_public_key}, but subtask with id {subtask.subtask_id} does not exist in database'
+            )
 
     for subtask in clients_subtask_list:
         if subtask.state == Subtask.SubtaskState.FORCING_REPORT.name:  # pylint: disable=no-member
@@ -80,7 +91,7 @@ def update_timed_out_subtasks(
                 subtask             = subtask,
             )
         elif subtask.state == Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER.name:  # pylint: disable=no-member
-            locked_subtask = Subtask.objects.select_for_update().get(pk=subtask.pk)
+            locked_subtask = Subtask.objects.get(pk=subtask.pk)
 
             update_subtask_state(
                 subtask=locked_subtask,
@@ -99,7 +110,7 @@ def update_timed_out_subtasks(
                 subtask=locked_subtask,
             )
         elif subtask.state == Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name:  # pylint: disable=no-member
-            locked_subtask = Subtask.objects.select_for_update().get(pk=subtask.pk)
+            locked_subtask = Subtask.objects.get(pk=subtask.pk)
             task_to_compute = deserialize_message(locked_subtask.task_to_compute.data.tobytes())
 
             # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
@@ -187,3 +198,15 @@ def are_subtask_results_accepted_messages_signed_by_the_same_requestor(subtask_r
         ) for subtask_results_accepted in subtask_results_accepted_list
     )
     return are_all_signed_by_requestor
+
+
+def get_subtask_ids_as_list(client_message: golem_messages.message) -> List[str]:
+    list_of_subtasks = []
+
+    if isinstance(client_message, golem_messages.message. concents.ForcePayment):
+        for subtask_results_accepted in client_message.subtask_results_accepted_list:
+            list_of_subtasks.append(subtask_results_accepted.subtask_id)
+    else:
+        list_of_subtasks = [client_message.subtask_id]
+
+    return list_of_subtasks

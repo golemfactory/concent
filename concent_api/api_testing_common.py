@@ -3,9 +3,11 @@ import random
 import sys
 
 from freezegun import freeze_time
+from golem_messages import message
 
 from golem_messages.exceptions      import MessageError
 from golem_messages.factories.tasks import ComputeTaskDefFactory
+from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.message import Message
 from golem_messages.message.concents import ClientAuthorization
@@ -258,7 +260,7 @@ def parse_arguments():
 
 def get_tests_list(patterns, all_objects):
     def _is_a_test(x):
-        return "case_" in x
+        return "case_" in x or "TestApi" in x
 
     tests = list(filter(lambda x: _is_a_test(x), all_objects))
     if len(patterns) > 0:
@@ -348,3 +350,28 @@ def create_signed_task_to_compute(
         )
         sign_message(task_to_compute, REQUESTOR_PRIVATE_KEY)
         return task_to_compute
+
+
+def get_force_get_task_result(task_id, subtask_id, current_time, cluster_consts, size, package_hash):
+    task_to_compute = create_signed_task_to_compute(
+        task_id=task_id,
+        subtask_id=subtask_id,
+        deadline=current_time,
+        price=0,
+    )
+
+    with freeze_time(timestamp_to_isoformat(current_time - 1)):
+        report_computed_task = ReportComputedTaskFactory(
+            task_to_compute=task_to_compute,
+            size=size,
+            package_hash=package_hash,
+            subtask_id=subtask_id,
+        )
+        sign_message(report_computed_task, PROVIDER_PRIVATE_KEY)
+
+    with freeze_time(timestamp_to_isoformat(current_time)):
+        force_get_task_result = message.concents.ForceGetTaskResult(
+            report_computed_task=report_computed_task,
+        )
+
+    return force_get_task_result

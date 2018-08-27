@@ -87,27 +87,27 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
-            task_id                  = deserialized_task_to_compute.task_id,
-            subtask_id               = deserialized_task_to_compute.subtask_id,
-            subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
-            provider_key             = self._get_encoded_provider_public_key(),
-            requestor_key            = self._get_encoded_requestor_public_key(),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task', 'force_get_task_result'},
+            task_id=deserialized_task_to_compute.task_id,
+            subtask_id=deserialized_task_to_compute.subtask_id,
+            subtask_state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
+            provider_key=self._get_encoded_provider_public_key(),
+            requestor_key=self._get_encoded_requestor_public_key(),
+            expected_nested_messages={'task_to_compute', 'report_computed_task', 'force_get_task_result'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
-            expected_messages = [
+            expected_messages=[
                 message.tasks.TaskToCompute,
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],
-            task_id         = deserialized_task_to_compute.task_id,
-            subtask_id      = deserialized_task_to_compute.subtask_id,
+            task_id=deserialized_task_to_compute.task_id,
+            subtask_id=deserialized_task_to_compute.subtask_id,
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = deserialized_task_to_compute.subtask_id,
-            client_public_key                  = self._get_encoded_provider_public_key(),
-            expected_pending_responses_receive = [
+            subtask_id=deserialized_task_to_compute.subtask_id,
+            client_public_key=self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive=[
                 PendingResponse.ResponseType.ForceGetTaskResultUpload,
             ]
         )
@@ -214,18 +214,18 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             deserialized_original_serialized_force_get_task_result.report_computed_task
         )
 
-        self.assertEqual(response.status_code,  200)
+        self.assertEqual(response.status_code, 200)
 
-        message_from_concent = load(response.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
+        message_from_concent = load(response.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time=False)
 
-        self.assertIsInstance(message_from_concent,      message.concents.ServiceRefused)
+        self.assertIsInstance(message_from_concent, message.concents.ServiceRefused)
         self.assertEqual(message_from_concent.timestamp, parse_iso_date_to_timestamp("2017-12-01 11:00:08"))
-        self.assertEqual(message_from_concent.reason,    message_from_concent.REASON.DuplicateRequest)
+        self.assertEqual(message_from_concent.reason, message_from_concent.REASON.DuplicateRequest)
 
         self._test_undelivered_pending_responses(
-            subtask_id                         = deserialized_task_to_compute.subtask_id,
-            client_public_key                  = self._get_encoded_provider_public_key(),
-            expected_pending_responses_receive = [
+            subtask_id=deserialized_task_to_compute.subtask_id,
+            client_public_key=self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive=[
                 PendingResponse.ResponseType.ForceGetTaskResultUpload,
             ]
         )
@@ -280,27 +280,27 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
-            task_id                  = deserialized_task_to_compute.task_id,
-            subtask_id               = deserialized_task_to_compute.subtask_id,
-            subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
-            provider_key             = self._get_encoded_provider_public_key(),
-            requestor_key            = self._get_encoded_requestor_public_key(),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task', 'force_get_task_result'},
+            task_id=deserialized_task_to_compute.task_id,
+            subtask_id=deserialized_task_to_compute.subtask_id,
+            subtask_state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
+            provider_key=self._get_encoded_provider_public_key(),
+            requestor_key=self._get_encoded_requestor_public_key(),
+            expected_nested_messages={'task_to_compute', 'report_computed_task', 'force_get_task_result'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
-            expected_messages = [
+            expected_messages=[
                 message.tasks.TaskToCompute,
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],
-            task_id         = deserialized_task_to_compute.task_id,
-            subtask_id      = deserialized_task_to_compute.subtask_id,
+            task_id=deserialized_task_to_compute.task_id,
+            subtask_id=deserialized_task_to_compute.subtask_id,
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = deserialized_task_to_compute.subtask_id,
-            client_public_key                  = self._get_encoded_provider_public_key(),
-            expected_pending_responses_receive = [
+            subtask_id=deserialized_task_to_compute.subtask_id,
+            client_public_key=self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive=[
                 PendingResponse.ResponseType.ForceGetTaskResultUpload,
             ]
         )
@@ -338,9 +338,9 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         self._test_undelivered_pending_responses(
-            subtask_id                         = deserialized_task_to_compute.subtask_id,
-            client_public_key                  = self._get_encoded_provider_public_key(),
-            expected_pending_responses_receive = [
+            subtask_id=deserialized_task_to_compute.subtask_id,
+            client_public_key=self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive=[
                 PendingResponse.ResponseType.ForceGetTaskResultUpload,
             ]
         )
@@ -371,7 +371,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # Test ForceGetTaskResult message
 
-        self.assertIsInstance(message_force_get_task_result,                                 message.concents.ForceGetTaskResult)
+        self.assertIsInstance(message_force_get_task_result, message.concents.ForceGetTaskResult)
         self.assertEqual(message_force_get_task_result.timestamp, parse_iso_date_to_timestamp("2017-12-01 11:00:01"))
         self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute, deserialized_force_get_task_result.report_computed_task.task_to_compute)
         self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def, deserialized_force_get_task_result.report_computed_task.task_to_compute.compute_task_def)
@@ -386,7 +386,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         # Test FileTransferToken message
         self.assertIsInstance(message_file_transfer_token, message.concents.FileTransferToken)
-        self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
+        self.assertEqual(message_file_transfer_token.subtask_id, deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp, parse_iso_date_to_timestamp("2017-12-01 11:00:02"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, parse_iso_date_to_timestamp("2017-12-01 11:00:52"))
         self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
@@ -459,12 +459,12 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self._assert_stored_message_counter_not_increased()
         self._test_subtask_state(
-            task_id                  = deserialized_task_to_compute.task_id,
-            subtask_id               = deserialized_task_to_compute.subtask_id,
-            subtask_state            = Subtask.SubtaskState.FAILED,  # Should be FAILED?
-            provider_key             = self._get_encoded_provider_public_key(),
-            requestor_key            = self._get_encoded_requestor_public_key(),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            task_id=deserialized_task_to_compute.task_id,
+            subtask_id=deserialized_task_to_compute.subtask_id,
+            subtask_state=Subtask.SubtaskState.FAILED,  # Should be FAILED?
+            provider_key=self._get_encoded_provider_public_key(),
+            requestor_key=self._get_encoded_requestor_public_key(),
+            expected_nested_messages={'task_to_compute', 'report_computed_task'},
         )
 
         self._assert_client_count_is_equal(2)
@@ -525,18 +525,18 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
-            expected_messages = [
+            expected_messages=[
                 message.tasks.TaskToCompute,
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],
-            task_id         = deserialized_task_to_compute.task_id,
-            subtask_id      = deserialized_task_to_compute.subtask_id,
+            task_id=deserialized_task_to_compute.task_id,
+            subtask_id=deserialized_task_to_compute.subtask_id,
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = deserialized_task_to_compute.subtask_id,
-            client_public_key                  = self._get_encoded_provider_public_key(),
-            expected_pending_responses_receive = [
+            subtask_id=deserialized_task_to_compute.subtask_id,
+            client_public_key=self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive=[
                 PendingResponse.ResponseType.ForceGetTaskResultUpload,
             ]
         )
@@ -576,9 +576,9 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         self._test_undelivered_pending_responses(
-            subtask_id                         = deserialized_task_to_compute.subtask_id,
-            client_public_key                  = self._get_encoded_provider_public_key(),
-            expected_pending_responses_receive = [
+            subtask_id=deserialized_task_to_compute.subtask_id,
+            client_public_key=self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive=[
                 PendingResponse.ResponseType.ForceGetTaskResultUpload,
             ]
         )
@@ -625,11 +625,17 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['deadline'],
             parse_iso_date_to_timestamp("2017-12-01 11:00:00")
         )
-        self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'], deserialized_task_to_compute.task_id)
+        self.assertEqual(
+            message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'],
+            deserialized_task_to_compute.task_id
+        )
 
         # Test FileTransferToken message
         self.assertIsInstance(message_file_transfer_token, message.concents.FileTransferToken)
-        self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
+        self.assertEqual(
+            message_file_transfer_token.subtask_id,
+            deserialized_task_to_compute.compute_task_def['subtask_id']
+        )  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp, parse_iso_date_to_timestamp("2017-12-01 11:00:03"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, parse_iso_date_to_timestamp("2017-12-01 11:00:52"))
         self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
@@ -698,16 +704,19 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             message_from_concent.task_to_compute.compute_task_def['deadline'],
             parse_iso_date_to_timestamp("2017-12-01 11:00:00")
         )
-        self.assertEqual(message_from_concent.task_to_compute.compute_task_def['task_id'], deserialized_task_to_compute.task_id)
+        self.assertEqual(
+            message_from_concent.task_to_compute.compute_task_def['task_id'],
+            deserialized_task_to_compute.task_id
+        )
 
         self._assert_stored_message_counter_not_increased()
         self._test_subtask_state(
-            task_id                  = deserialized_task_to_compute.task_id,
-            subtask_id               = deserialized_task_to_compute.subtask_id,
-            subtask_state            = Subtask.SubtaskState.FAILED,  # Should be FAILED?
-            provider_key             = self._get_encoded_provider_public_key(),
-            requestor_key            = self._get_encoded_requestor_public_key(),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            task_id=deserialized_task_to_compute.task_id,
+            subtask_id=deserialized_task_to_compute.subtask_id,
+            subtask_state=Subtask.SubtaskState.FAILED,  # Should be FAILED?
+            provider_key=self._get_encoded_provider_public_key(),
+            requestor_key=self._get_encoded_requestor_public_key(),
+            expected_nested_messages={'task_to_compute', 'report_computed_task'},
         )
 
         self._assert_client_count_is_equal(2)
@@ -768,18 +777,18 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
-            expected_messages = [
+            expected_messages=[
                 message.tasks.TaskToCompute,
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],
-            task_id         = deserialized_task_to_compute.task_id,
-            subtask_id      = deserialized_task_to_compute.subtask_id,
+            task_id=deserialized_task_to_compute.task_id,
+            subtask_id=deserialized_task_to_compute.subtask_id,
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = deserialized_task_to_compute.subtask_id,
-            client_public_key                  = self._get_encoded_provider_public_key(),
-            expected_pending_responses_receive = [
+            subtask_id=deserialized_task_to_compute.subtask_id,
+            client_public_key=self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive=[
                 PendingResponse.ResponseType.ForceGetTaskResultUpload,
             ]
         )
@@ -819,9 +828,9 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         self._test_undelivered_pending_responses(
-            subtask_id                         = deserialized_task_to_compute.subtask_id,
-            client_public_key                  = self._get_encoded_provider_public_key(),
-            expected_pending_responses_receive = [
+            subtask_id=deserialized_task_to_compute.subtask_id,
+            client_public_key=self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive=[
                 PendingResponse.ResponseType.ForceGetTaskResultUpload,
             ]
         )
@@ -865,11 +874,17 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['deadline'],
             parse_iso_date_to_timestamp("2017-12-01 11:00:00")
         )
-        self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'], deserialized_task_to_compute.task_id)
+        self.assertEqual(
+            message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'],
+            deserialized_task_to_compute.task_id
+        )
 
         # Test FileTransferToken message
         self.assertIsInstance(message_file_transfer_token, message.concents.FileTransferToken)
-        self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
+        self.assertEqual(
+            message_file_transfer_token.subtask_id,
+            deserialized_task_to_compute.compute_task_def['subtask_id']
+        )  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp, parse_iso_date_to_timestamp("2017-12-01 11:00:02"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, parse_iso_date_to_timestamp("2017-12-01 11:00:52"))
         self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
@@ -930,7 +945,10 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             message_from_concent.task_to_compute.compute_task_def['deadline'],
             parse_iso_date_to_timestamp("2017-12-01 11:00:00")
         )
-        self.assertEqual(message_from_concent.task_to_compute.compute_task_def['task_id'], deserialized_task_to_compute.task_id)
+        self.assertEqual(
+            message_from_concent.task_to_compute.compute_task_def['task_id'],
+            deserialized_task_to_compute.task_id
+        )
 
         self._assert_stored_message_counter_not_increased()
         self._test_subtask_state(
@@ -991,27 +1009,27 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
-            task_id                  = deserialized_task_to_compute.task_id,
-            subtask_id               = deserialized_task_to_compute.subtask_id,
-            subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
-            provider_key             = self._get_encoded_provider_public_key(),
-            requestor_key            = self._get_encoded_requestor_public_key(),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task', 'force_get_task_result'},
+            task_id=deserialized_task_to_compute.task_id,
+            subtask_id=deserialized_task_to_compute.subtask_id,
+            subtask_state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
+            provider_key=self._get_encoded_provider_public_key(),
+            requestor_key=self._get_encoded_requestor_public_key(),
+            expected_nested_messages={'task_to_compute', 'report_computed_task', 'force_get_task_result'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
-            expected_messages = [
+            expected_messages=[
                 message.tasks.TaskToCompute,
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],
-            task_id         = deserialized_task_to_compute.task_id,
-            subtask_id      = deserialized_task_to_compute.subtask_id,
+            task_id=deserialized_task_to_compute.task_id,
+            subtask_id=deserialized_task_to_compute.subtask_id,
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = deserialized_task_to_compute.subtask_id,
-            client_public_key                  = self._get_encoded_provider_public_key(),
-            expected_pending_responses_receive = [
+            subtask_id=deserialized_task_to_compute.subtask_id,
+            client_public_key=self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive=[
                 PendingResponse.ResponseType.ForceGetTaskResultUpload,
             ]
         )
@@ -1051,9 +1069,9 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         self._test_undelivered_pending_responses(
-            subtask_id                         = deserialized_task_to_compute.subtask_id,
-            client_public_key                  = self._get_encoded_provider_public_key(),
-            expected_pending_responses_receive = [
+            subtask_id=deserialized_task_to_compute.subtask_id,
+            client_public_key=self._get_encoded_provider_public_key(),
+            expected_pending_responses_receive=[
                 PendingResponse.ResponseType.ForceGetTaskResultUpload,
             ]
         )
@@ -1090,12 +1108,15 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
         self.assertEqual(
             message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'],
-            deserialized_task_to_compute.task_id
+            deserialized_task_to_compute.task_id,
         )
 
         # Test FileTransferToken message
         self.assertIsInstance(message_file_transfer_token, message.concents.FileTransferToken)
-        self.assertEqual(message_file_transfer_token.subtask_id,                deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
+        self.assertEqual(
+            message_file_transfer_token.subtask_id,
+            deserialized_task_to_compute.compute_task_def['subtask_id'],
+        )  # pylint: disable=no-member
         self.assertEqual(message_file_transfer_token.timestamp, parse_iso_date_to_timestamp("2017-12-01 11:00:02"))
         self.assertEqual(message_file_transfer_token.token_expiration_deadline, parse_iso_date_to_timestamp("2017-12-01 11:00:52"))
         self.assertEqual(message_file_transfer_token.operation, FileTransferToken.Operation.upload)
@@ -1168,8 +1189,14 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             message_from_concent.force_get_task_result.report_computed_task.task_to_compute.compute_task_def['deadline'],
             parse_iso_date_to_timestamp("2017-12-01 11:00:00")
         )
-        self.assertEqual(message_from_concent.force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'], deserialized_task_to_compute.task_id)
-        self.assertEqual(message_from_concent.file_transfer_token.subtask_id, deserialized_task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
+        self.assertEqual(
+            message_from_concent.force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'],
+            deserialized_task_to_compute.task_id
+        )
+        self.assertEqual(
+            message_from_concent.file_transfer_token.subtask_id,
+            deserialized_task_to_compute.compute_task_def['subtask_id']
+        )  # pylint: disable=no-member
         self.assertIsInstance(message_from_concent.file_transfer_token, message.concents.FileTransferToken)
         self.assertEqual(
             message_from_concent.file_transfer_token.timestamp,
@@ -1183,12 +1210,12 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self._assert_stored_message_counter_not_increased()
         self._test_subtask_state(
-            task_id                  = deserialized_task_to_compute.task_id,
-            subtask_id               = deserialized_task_to_compute.subtask_id,
-            subtask_state            = Subtask.SubtaskState.RESULT_UPLOADED,
-            provider_key             = self._get_encoded_provider_public_key(),
-            requestor_key            = self._get_encoded_requestor_public_key(),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            task_id=deserialized_task_to_compute.task_id,
+            subtask_id=deserialized_task_to_compute.subtask_id,
+            subtask_state=Subtask.SubtaskState.RESULT_UPLOADED,
+            provider_key=self._get_encoded_provider_public_key(),
+            requestor_key=self._get_encoded_requestor_public_key(),
+            expected_nested_messages={'task_to_compute', 'report_computed_task'},
         )
 
         self._assert_client_count_is_equal(2)

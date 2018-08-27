@@ -141,7 +141,6 @@ class DatabaseTransactionsStorage(TransactionsStorage):
             logger.info(f'Successfully removed PendingEthereumTransaction with nonce {nonce}.')
         except PendingEthereumTransaction.DoesNotExist:
             logger.error(f'Trying to remove PendingEthereumTransaction with nonce {nonce} but it does not exist.')
-            raise
 
     @transaction.atomic(using='control')
     def revert_last_tx(self) -> None:
@@ -165,11 +164,10 @@ class DatabaseTransactionsStorage(TransactionsStorage):
             logger.info(
                 f'Successfully reverted last PendingEthereumTransaction with nonce {pending_ethereum_transaction.nonce}.'
             )
-        except GlobalTransactionState.DoesNotExist:
+        except PendingEthereumTransaction.DoesNotExist:
             logger.error(
                 f'Trying to revert last PendingEthereumTransaction with nonce {global_transaction_state.nonce - 1} but it does not exist.'
             )
-            raise
 
     @staticmethod
     def _get_locked_global_transaction_state() -> GlobalTransactionState:

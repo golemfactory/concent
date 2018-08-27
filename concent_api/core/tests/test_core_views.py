@@ -2,6 +2,7 @@ import datetime
 
 from freezegun                      import freeze_time
 import dateutil.parser
+from django.conf import settings
 from django.test                    import override_settings
 from django.urls                    import reverse
 from django.http                    import HttpResponse
@@ -10,7 +11,7 @@ from django.utils                   import timezone
 from golem_messages.factories.tasks import ComputeTaskDefFactory
 
 from golem_messages                 import message
-from golem_messages                 import settings
+from golem_messages import settings as golem_settings
 from golem_messages.factories       import tasks
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
@@ -45,9 +46,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         self.stored_message_counter = 0
         self.message_timestamp = get_current_utc_timestamp()  # 1510912800
         self.compute_task_def = self._get_deserialized_compute_task_def(
-            task_id='8',
-            subtask_id='8',
-            deadline=self.message_timestamp
+            deadline=self.message_timestamp + settings.CONCENT_MESSAGING_TIME
         )
         self.task_to_compute = self._get_deserialized_task_to_compute(
             compute_task_def = self.compute_task_def,
@@ -69,18 +68,11 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             num_cores           = 7,
         )
 
-        compute_task_def = ComputeTaskDefFactory()
-        compute_task_def['task_id'] = '8'
-        compute_task_def['subtask_id'] = '8'
-        compute_task_def['deadline'] = self.message_timestamp + 600
-        task_to_compute = self._get_deserialized_task_to_compute(
-            compute_task_def = compute_task_def
-        )
         self.cannot_compute_task = message.CannotComputeTask(
-            task_to_compute = task_to_compute
+            task_to_compute = self.task_to_compute
         )
         self.reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
-            task_to_compute=task_to_compute,
+            task_to_compute=self.task_to_compute,
             reason=message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
         )
 
@@ -104,8 +96,8 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
-            task_id         = '8',
-            subtask_id      = '8',
+            task_id         = self.correct_golem_data.task_id,
+            subtask_id      = self.correct_golem_data.subtask_id,
         )
 
     @freeze_time("2017-11-17 10:00:00")
@@ -145,8 +137,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         assert StoredMessage.objects.count() == 0
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id='ABC00XYZ',
-            subtask_id='ABC00XYZ',
             deadline=self.message_timestamp
         )
         task_to_compute                 = self._get_deserialized_task_to_compute(
@@ -175,8 +165,8 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
-            task_id         = 'ABC00XYZ',
-            subtask_id      = 'ABC00XYZ',
+            task_id         = task_to_compute.task_id,
+            subtask_id      = task_to_compute.subtask_id,
         )
 
     @freeze_time("2017-11-17 10:00:00")
@@ -281,8 +271,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_task_to_compute_deadline_exceeded(self):
-        compute_task_def = message.ComputeTaskDef()
-        compute_task_def['task_id'] = '8'
+        compute_task_def = ComputeTaskDefFactory()
         compute_task_def['deadline'] = self.message_timestamp - 9000
 
         with freeze_time(datetime.datetime.fromtimestamp(self.message_timestamp - 10000)):
@@ -339,8 +328,8 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
-            task_id         = '8',
-            subtask_id      = '8',
+            task_id         = self.correct_golem_data.report_computed_task.task_id,
+            subtask_id      = self.correct_golem_data.report_computed_task.subtask_id,
         )
 
         reject_response = self.client.post(
@@ -358,8 +347,8 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             expected_messages = [
                 message.tasks.RejectReportComputedTask,
             ],
-            task_id         = '8',
-            subtask_id      = '8',
+            task_id         = self.reject_report_computed_task.task_id,
+            subtask_id      = self.reject_report_computed_task.subtask_id,
         )
 
     def test_send_should_reject_message_when_timestamp_too_old(self):
@@ -368,7 +357,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-11-17 10:00:00"):
             timestamp = dateutil.parser.parse("2017-11-17 09:40:00")
-            assert datetime.datetime.now() - timestamp > settings.MSG_TTL
+            assert datetime.datetime.now() - timestamp > golem_settings.MSG_TTL
             response = self.client.post(
                 reverse('core:send'),
                 data = dump(
@@ -387,7 +376,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-11-17 10:00:00"):
             timestamp = dateutil.parser.parse("2017-11-17 10:10:00")
-            assert timestamp - datetime.datetime.now() > settings.FUTURE_TIME_TOLERANCE
+            assert timestamp - datetime.datetime.now() > golem_settings.FUTURE_TIME_TOLERANCE
             response = self.client.post(
                 reverse('core:send'),
                 data = dump(
@@ -402,9 +391,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_task_to_compute_deadline_is_not_an_integer(self):
-        compute_task_def = message.ComputeTaskDef()
-        compute_task_def['task_id']    = '8'
-        compute_task_def['subtask_id'] = '8'
+        compute_task_def = ComputeTaskDefFactory()
 
         invalid_values = [
             -11,
@@ -457,10 +444,8 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             0,
             False,
         ]
-        for i, deadline in enumerate(valid_values):
+        for deadline in valid_values:
             StoredMessage.objects.all().delete()
-            compute_task_def['task_id']     = str(i)
-            compute_task_def['subtask_id']  = str(i)
             compute_task_def['deadline']    = deadline
 
             deserialized_task_to_compute = self._get_deserialized_task_to_compute(
@@ -469,7 +454,6 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
                 report_computed_task = self._get_deserialized_report_computed_task(
-                    subtask_id      = str(i),
                     task_to_compute = deserialized_task_to_compute
                 )
             )
@@ -540,14 +524,12 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
     def test_send_should_return_http_400_if_task_to_compute_younger_than_report_computed(self):
 
         deserialized_task_to_compute = self._get_deserialized_task_to_compute(
-            task_id     = '1',
-            subtask_id  = '3',
             deadline    = get_current_utc_timestamp() + (60 * 37),
         )
         with freeze_time("2017-11-17 10:00:00"):
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
                 report_computed_task = self._get_deserialized_report_computed_task(
-                    subtask_id      = '3',
+                    subtask_id      = deserialized_task_to_compute.subtask_id,
                     task_to_compute = deserialized_task_to_compute
                 )
             )
@@ -578,9 +560,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
     def setUp(self):
         with freeze_time("2017-11-17 10:00:00"):
             super().setUp()
-            self.compute_task_def               = message.ComputeTaskDef()
-            self.compute_task_def['task_id']    = '1'
-            self.compute_task_def['subtask_id'] = '1'
+            self.compute_task_def               = ComputeTaskDefFactory()
             self.compute_task_def['deadline']   = get_current_utc_timestamp() + (60 * 37)
             self.task_to_compute = tasks.TaskToComputeFactory(
                 compute_task_def     = self.compute_task_def,
@@ -682,9 +662,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
     def test_receive_should_return_ack_if_the_receive_queue_contains_only_force_report_and_its_past_deadline(self):
 
         with freeze_time("2017-11-17 10:00:00"):
-            self.compute_task_def               = message.ComputeTaskDef()
-            self.compute_task_def['task_id']    = '2'
-            self.compute_task_def['subtask_id'] = '2'
+            self.compute_task_def               = ComputeTaskDefFactory()
             self.compute_task_def['deadline']   = get_current_utc_timestamp()
             self.task_to_compute = message.TaskToCompute(
                 compute_task_def     = self.compute_task_def,
@@ -831,9 +809,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
 
     def setUp(self):
         super().setUp()
-        self.compute_task_def               = message.ComputeTaskDef()
-        self.compute_task_def['task_id']    = '1'
-        self.compute_task_def['subtask_id'] = '1'
+        self.compute_task_def = ComputeTaskDefFactory()
         self.compute_task_def['deadline']   = get_current_utc_timestamp() - 60
         self.task_to_compute                = tasks.TaskToComputeFactory(
             compute_task_def     = self.compute_task_def,

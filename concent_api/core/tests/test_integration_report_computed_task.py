@@ -30,7 +30,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent. Concent rejects computed task immediately when deadline is exceeded
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -82,8 +81,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
-            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -118,8 +115,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = compute_task_def['task_id'],
+            subtask_id               = compute_task_def['subtask_id'],
             subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -131,11 +128,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = compute_task_def['task_id'],
+            subtask_id      = compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = compute_task_def['subtask_id'],
             client_public_key                  = self._get_encoded_requestor_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTask,
@@ -186,8 +183,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response_3.content), 0)
         self._assert_stored_message_counter_increased(increased_by=1)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = compute_task_def['task_id'],
+            subtask_id               = compute_task_def['subtask_id'],
             subtask_state            = Subtask.SubtaskState.REPORTED,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -197,11 +194,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             expected_messages= [
                 message.tasks.AckReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = compute_task_def['task_id'],
+            subtask_id      = compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = compute_task_def['subtask_id'],
             client_public_key                  = self._get_encoded_provider_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTaskResponse,
@@ -244,8 +241,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
-            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -279,8 +274,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response_1.content), 0)
         self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = compute_task_def['task_id'],
+            subtask_id               = compute_task_def['subtask_id'],
             subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -292,11 +287,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = compute_task_def['task_id'],
+            subtask_id      = compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = compute_task_def['subtask_id'],
             client_public_key                  = self._get_encoded_requestor_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTask,
@@ -357,8 +352,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response_3.content), 0)
         self._assert_stored_message_counter_increased(increased_by = 1)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = compute_task_def['task_id'],
+            subtask_id               = compute_task_def['subtask_id'],
             subtask_state            = Subtask.SubtaskState.FAILED,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -368,11 +363,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             expected_messages= [
                 message.tasks.RejectReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = compute_task_def['task_id'],
+            subtask_id      = compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = compute_task_def['subtask_id'],
             client_public_key                  = self._get_encoded_provider_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTaskResponse,
@@ -418,8 +413,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
-            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -453,8 +446,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response_1.content), 0)
         self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = compute_task_def['task_id'],
+            subtask_id               = compute_task_def['subtask_id'],
             subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -466,18 +459,18 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = compute_task_def['task_id'],
+            subtask_id      = compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = compute_task_def['subtask_id'],
             client_public_key                  = self._get_encoded_requestor_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTask,
             ]
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = compute_task_def['subtask_id'],
             client_public_key                  = self._get_encoded_requestor_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTask,
@@ -531,8 +524,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response_3.content),                   0)
         self._assert_stored_message_counter_increased(increased_by = 1)
         self._test_subtask_state(
-            task_id                     = '1',
-            subtask_id                  = '8',
+            task_id                     = compute_task_def['task_id'],
+            subtask_id                  = compute_task_def['subtask_id'],
             subtask_state               = Subtask.SubtaskState.REPORTED,
             provider_key                = self._get_encoded_provider_public_key(),
             requestor_key               = self._get_encoded_requestor_public_key(),
@@ -542,11 +535,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             expected_messages= [
                 message.tasks.RejectReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = compute_task_def['task_id'],
+            subtask_id      = compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = compute_task_def['subtask_id'],
             client_public_key                  = self._get_encoded_provider_public_key(),
             client_public_key_out_of_band      = self._get_encoded_requestor_public_key(),
             expected_pending_responses_receive = [
@@ -627,8 +620,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
-            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -663,8 +654,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = compute_task_def['task_id'],
+            subtask_id               = compute_task_def['subtask_id'],
             subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -676,11 +667,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = compute_task_def['task_id'],
+            subtask_id      = compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = compute_task_def['subtask_id'],
             client_public_key                  = self._get_encoded_requestor_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTask,
@@ -740,8 +731,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
         self._assert_stored_message_counter_not_increased()
         self._test_subtask_state(
-            task_id                     = '1',
-            subtask_id                  = '8',
+            task_id                     = compute_task_def['task_id'],
+            subtask_id                  = compute_task_def['subtask_id'],
             subtask_state               = Subtask.SubtaskState.REPORTED,
             provider_key                = self._get_encoded_provider_public_key(),
             requestor_key               = self._get_encoded_requestor_public_key(),
@@ -790,8 +781,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
-            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -825,8 +814,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response_1.content), 0)
         self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = compute_task_def['task_id'],
+            subtask_id               = compute_task_def['subtask_id'],
             subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -838,11 +827,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = compute_task_def['task_id'],
+            subtask_id      = compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = compute_task_def['subtask_id'],
             client_public_key                  = self._get_encoded_requestor_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTask,
@@ -876,7 +865,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Requestor accepts computed task via Concent
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -889,7 +877,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             timestamp = "2017-12-01 11:00:05",
             ack_report_computed_task = self._get_deserialized_ack_report_computed_task(
                 timestamp = "2017-12-01 11:00:05",
-                subtask_id = '1',
                 task_to_compute = task_to_compute
             ),
             requestor_private_key = self.REQUESTOR_PRIVATE_KEY
@@ -921,7 +908,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Requestor accepts computed task via Concent
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -971,8 +957,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
-            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -1006,8 +990,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response_1.content), 0)
         self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = compute_task_def['task_id'],
+            subtask_id               = compute_task_def['subtask_id'],
             subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -1019,11 +1003,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = compute_task_def['task_id'],
+            subtask_id      = compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = compute_task_def['subtask_id'],
             client_public_key                  = self._get_encoded_requestor_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTask,
@@ -1074,8 +1058,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response_3.content), 0)
         self._assert_stored_message_counter_increased(increased_by=1)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = compute_task_def['task_id'],
+            subtask_id               = compute_task_def['subtask_id'],
             subtask_state            = Subtask.SubtaskState.REPORTED,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -1085,11 +1069,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             expected_messages= [
                 message.tasks.AckReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = compute_task_def['task_id'],
+            subtask_id      = compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = compute_task_def['subtask_id'],
             client_public_key                  = self._get_encoded_provider_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTaskResponse,
@@ -1138,8 +1122,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
-            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -1173,8 +1155,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response_1.content), 0)
         self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = compute_task_def['task_id'],
+            subtask_id               = compute_task_def['subtask_id'],
             subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -1186,11 +1168,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = compute_task_def['task_id'],
+            subtask_id      = compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = compute_task_def['subtask_id'],
             client_public_key                  = self._get_encoded_requestor_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTask,
@@ -1243,8 +1225,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_3.status_code,  202)
         self._assert_stored_message_counter_increased(increased_by = 1)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = compute_task_def['task_id'],
+            subtask_id               = compute_task_def['subtask_id'],
             subtask_state            = Subtask.SubtaskState.REPORTED,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -1254,11 +1236,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             expected_messages= [
                 message.tasks.RejectReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = compute_task_def['task_id'],
+            subtask_id      = compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = compute_task_def['subtask_id'],
             client_public_key                  = self._get_encoded_provider_public_key(),
             client_public_key_out_of_band      = self._get_encoded_requestor_public_key(),
             expected_pending_responses_receive = [
@@ -1275,7 +1257,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             timestamp = "2017-12-01 11:00:05",
             ack_report_computed_task = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2017-12-01 11:00:05",
-                subtask_id      = '1',
                 task_to_compute = task_to_compute
             ),
             requestor_private_key = self.REQUESTOR_PRIVATE_KEY
@@ -1309,8 +1290,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
-            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -1344,8 +1323,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response_1.content), 0)
         self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = compute_task_def['task_id'],
+            subtask_id               = compute_task_def['subtask_id'],
             subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -1357,11 +1336,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = compute_task_def['task_id'],
+            subtask_id      = compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = compute_task_def['subtask_id'],
             client_public_key                  = self._get_encoded_requestor_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTask,
@@ -1396,7 +1375,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             timestamp = "2017-12-01 11:00:15",
             ack_report_computed_task = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2017-12-01 11:00:15",
-                subtask_id      = '1',
                 task_to_compute = task_to_compute
             ),
             requestor_private_key = self.REQUESTOR_PRIVATE_KEY
@@ -1435,8 +1413,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
-            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -1470,8 +1446,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response_1.content), 0)
         self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = compute_task_def['task_id'],
+            subtask_id               = compute_task_def['subtask_id'],
             subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -1483,11 +1459,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = compute_task_def['task_id'],
+            subtask_id      = compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = compute_task_def['subtask_id'],
             client_public_key                  = self._get_encoded_requestor_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTask,
@@ -1638,7 +1614,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -1689,7 +1664,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -1740,7 +1714,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -1791,7 +1764,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -1841,7 +1813,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Requestor accepts computed task via Concent
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -1891,7 +1862,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Requestor accepts computed task via Concent
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -1937,7 +1907,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -1984,7 +1953,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -2035,8 +2003,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
-            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -2070,8 +2036,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response_1.content), 0)
         self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = compute_task_def['task_id'],
+            subtask_id               = compute_task_def['subtask_id'],
             subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -2083,11 +2049,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = compute_task_def['task_id'],
+            subtask_id      = compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = compute_task_def['subtask_id'],
             client_public_key                  = self._get_encoded_requestor_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTask,
@@ -2138,8 +2104,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response_3.content), 0)
         self._assert_stored_message_counter_increased(increased_by=1)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = compute_task_def['task_id'],
+            subtask_id               = compute_task_def['subtask_id'],
             subtask_state            = Subtask.SubtaskState.REPORTED,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -2149,11 +2115,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             expected_messages= [
                 message.tasks.AckReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = compute_task_def['task_id'],
+            subtask_id      = compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = compute_task_def['subtask_id'],
             client_public_key                  = self._get_encoded_provider_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTaskResponse,
@@ -2204,8 +2170,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
-            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -2239,8 +2203,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response_1.content), 0)
         self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = compute_task_def['task_id'],
+            subtask_id               = compute_task_def['subtask_id'],
             subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -2252,11 +2216,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = compute_task_def['task_id'],
+            subtask_id      = compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = compute_task_def['subtask_id'],
             client_public_key                  = self._get_encoded_requestor_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTask,
@@ -2307,8 +2271,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response_3.content), 0)
         self._assert_stored_message_counter_increased(increased_by=1)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = compute_task_def['task_id'],
+            subtask_id               = compute_task_def['subtask_id'],
             subtask_state            = Subtask.SubtaskState.REPORTED,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -2318,11 +2282,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             expected_messages= [
                 message.tasks.AckReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = compute_task_def['task_id'],
+            subtask_id      = compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = compute_task_def['subtask_id'],
             client_public_key                  = self._get_encoded_provider_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTaskResponse,
@@ -2379,8 +2343,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
-            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -2414,8 +2376,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response_1.content), 0)
         self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = compute_task_def['task_id'],
+            subtask_id               = compute_task_def['subtask_id'],
             subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -2427,11 +2389,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = compute_task_def['task_id'],
+            subtask_id      = compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = compute_task_def['subtask_id'],
             client_public_key                  = self._get_encoded_requestor_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTask,
@@ -2495,8 +2457,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id='1',
-            subtask_id='8',
             deadline="2017-12-01 11:00:00"
         )
 
@@ -2530,8 +2490,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response_1.content), 0)
         self._assert_stored_message_counter_increased(increased_by=2)
         self._test_subtask_state(
-            task_id='1',
-            subtask_id='8',
+            task_id=compute_task_def['task_id'],
+            subtask_id=compute_task_def['subtask_id'],
             subtask_state=Subtask.SubtaskState.FORCING_REPORT,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
@@ -2543,11 +2503,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
-            task_id='1',
-            subtask_id='8',
+            task_id=compute_task_def['task_id'],
+            subtask_id=compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id='8',
+            subtask_id=compute_task_def['subtask_id'],
             client_public_key=self._get_encoded_requestor_public_key(),
             expected_pending_responses_receive=[
                 PendingResponse.ResponseType.ForceReportComputedTask,
@@ -2608,8 +2568,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response_3.content), 0)
         self._assert_stored_message_counter_increased(increased_by=1)
         self._test_subtask_state(
-            task_id='1',
-            subtask_id='8',
+            task_id=compute_task_def['task_id'],
+            subtask_id=compute_task_def['subtask_id'],
             subtask_state=Subtask.SubtaskState.FAILED,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
@@ -2619,11 +2579,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             expected_messages=[
                 message.tasks.RejectReportComputedTask,
             ],
-            task_id='1',
-            subtask_id='8',
+            task_id=compute_task_def['task_id'],
+            subtask_id=compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id='8',
+            subtask_id=compute_task_def['subtask_id'],
             client_public_key=self._get_encoded_provider_public_key(),
             expected_pending_responses_receive=[
                 PendingResponse.ResponseType.ForceReportComputedTaskResponse,
@@ -2668,8 +2628,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp = "2017-12-01 10:00:00",
-            task_id = '1',
-            subtask_id = '8',
             deadline = "2017-12-01 11:00:00"
         )
 
@@ -2703,8 +2661,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = task_to_compute.task_id,
+            subtask_id               = task_to_compute.subtask_id,
             subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -2716,11 +2674,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = task_to_compute.task_id,
+            subtask_id      = task_to_compute.subtask_id,
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = task_to_compute.subtask_id,
             client_public_key                  = self._get_encoded_requestor_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTask,
@@ -2755,7 +2713,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             timestamp="2017-12-01 11:00:05",
             ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
                 timestamp="2017-12-01 11:00:05",
-                subtask_id='8',
+                subtask_id=task_to_compute.subtask_id,
                 report_computed_task=different_report_computed_task,
                 task_to_compute=task_to_compute
             ),
@@ -2774,8 +2732,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response_3.content), 0)
         self._assert_stored_message_counter_increased(increased_by = 2)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = task_to_compute.task_id,
+            subtask_id               = task_to_compute.subtask_id,
             subtask_state            = Subtask.SubtaskState.REPORTED,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -2785,11 +2743,11 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             expected_messages= [
                 message.tasks.AckReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = task_to_compute.task_id,
+            subtask_id      = task_to_compute.subtask_id,
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = task_to_compute.subtask_id,
             client_public_key                  = self._get_encoded_provider_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTaskResponse,

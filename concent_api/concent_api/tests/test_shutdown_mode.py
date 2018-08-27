@@ -41,8 +41,6 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
         """
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
-            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
 
@@ -84,8 +82,6 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
         """
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '1',
-            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
         task_to_compute = self._get_deserialized_task_to_compute(
@@ -100,8 +96,8 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
         with freeze_time("2017-12-01 11:00:00"):
             config.SOFT_SHUTDOWN_MODE = False
             store_subtask(
-                task_id                 = '1',
-                subtask_id              = '8',
+                task_id                 = compute_task_def['task_id'],
+                subtask_id              = compute_task_def['subtask_id'],
                 provider_public_key     = self.PROVIDER_PUBLIC_KEY,
                 requestor_public_key    = self.REQUESTOR_PUBLIC_KEY,
                 state                   = Subtask.SubtaskState.FORCING_REPORT,
@@ -117,7 +113,7 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
             timestamp="2017-12-01 11:00:05",
             ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
                 timestamp="2017-12-01 11:00:05",
-                subtask_id='8',
+                subtask_id=compute_task_def['subtask_id'],
                 report_computed_task=report_computed_task,
                 task_to_compute=task_to_compute
             ),
@@ -136,8 +132,8 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response.content), 0)
         self._assert_stored_message_counter_increased(increased_by=1)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = compute_task_def['task_id'],
+            subtask_id               = compute_task_def['subtask_id'],
             subtask_state            = Subtask.SubtaskState.REPORTED,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -147,11 +143,11 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
             expected_messages= [
                 message.tasks.AckReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = compute_task_def['task_id'],
+            subtask_id      = compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = compute_task_def['subtask_id'],
             client_public_key                  = self._get_encoded_provider_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceReportComputedTaskResponse,
@@ -171,7 +167,6 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp                       = "2018-02-05 10:00:00",
                     deadline                        = "2018-02-05 10:00:10",
-                    task_id                         = '2',
                     requestor_public_key            = self._get_encoded_requestor_public_key(),
                     requestor_ethereum_public_key   = self._get_requestor_ethereum_hex_public_key(),
                 )

@@ -180,8 +180,6 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         deserialized_task_to_compute = self._get_deserialized_task_to_compute(
             timestamp   = "2017-12-01 10:00:00",
             deadline    = "2017-12-01 11:00:00",
-            task_id     = '1',
-            subtask_id  = '8',
         )
         deserialized_report_computed_task = self._get_deserialized_report_computed_task(
             task_to_compute = deserialized_task_to_compute,
@@ -203,8 +201,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = deserialized_task_to_compute.task_id,
+            subtask_id               = deserialized_task_to_compute.subtask_id,
             subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -217,11 +215,11 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = deserialized_task_to_compute.task_id,
+            subtask_id      = deserialized_task_to_compute.subtask_id,
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = deserialized_task_to_compute.subtask_id,
             client_public_key                  = self._get_encoded_provider_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceGetTaskResultUpload,
@@ -254,7 +252,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_from_concent.reason,       message_from_concent.REASON.DuplicateRequest)
         self._assert_stored_message_counter_not_increased()
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = deserialized_task_to_compute.subtask_id,
             client_public_key                  = self._get_encoded_provider_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceGetTaskResultUpload,
@@ -278,8 +276,6 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         deserialized_task_to_compute = self._get_deserialized_task_to_compute(
             timestamp   = "2017-12-01 10:00:00",
             deadline    = "2017-12-01 11:00:00",
-            task_id     = '1',
-            subtask_id  = '8',
         )
         deserialized_report_computed_task = self._get_deserialized_report_computed_task(
             task_to_compute = deserialized_task_to_compute,
@@ -306,8 +302,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
+            task_id                  = deserialized_task_to_compute.task_id,
+            subtask_id               = deserialized_task_to_compute.subtask_id,
             subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -320,11 +316,11 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id         = deserialized_task_to_compute.task_id,
+            subtask_id      = deserialized_task_to_compute.subtask_id,
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = deserialized_task_to_compute.subtask_id,
             client_public_key                  = self._get_encoded_provider_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceGetTaskResultUpload,
@@ -350,8 +346,6 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         # Concent accepts request if all conditions were met.
         deserialized_task_to_compute = self._get_deserialized_task_to_compute(
             timestamp   = "2017-12-01 10:00:00",
-            task_id     = '99',
-            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
         deserialized_report_computed_task = self._get_deserialized_report_computed_task(
@@ -379,8 +373,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code, 200)
         self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
-            task_id                  = '99',
-            subtask_id               = '8',
+            task_id                  = deserialized_task_to_compute.task_id,
+            subtask_id               = deserialized_task_to_compute.subtask_id,
             subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -393,11 +387,11 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],
-            task_id         = '99',
-            subtask_id      = '8',
+            task_id         = deserialized_task_to_compute.task_id,
+            subtask_id      = deserialized_task_to_compute.subtask_id,
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = deserialized_task_to_compute.subtask_id,
             client_public_key                  = self._get_encoded_provider_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceGetTaskResultUpload,
@@ -439,7 +433,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['deadline'],
             parse_iso_date_to_timestamp("2017-12-01 11:00:00")
         )
-        self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'], '99')
+        self.assertEqual(
+            message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'],
+            deserialized_task_to_compute.task_id
+        )
 
         # Test FileTransferToken message
         self.assertIsInstance(message_file_transfer_token, message.concents.FileTransferToken)
@@ -469,8 +466,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_3.status_code, 200)
         self._assert_stored_message_counter_not_increased()
         self._test_subtask_state(
-            task_id                  = '99',
-            subtask_id               = '8',
+            task_id                  = deserialized_task_to_compute.task_id,
+            subtask_id               = deserialized_task_to_compute.subtask_id,
             subtask_state            = Subtask.SubtaskState.FAILED,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -488,7 +485,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             message_from_concent.task_to_compute.compute_task_def['deadline'],
             parse_iso_date_to_timestamp("2017-12-01 11:00:00")
         )
-        self.assertEqual(message_from_concent.task_to_compute.compute_task_def['task_id'], '99')
+        self.assertEqual(
+            message_from_concent.task_to_compute.compute_task_def['task_id'],
+            deserialized_task_to_compute.task_id
+        )
 
         self._assert_client_count_is_equal(2)
 
@@ -507,8 +507,6 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         # Concent accepts request if all conditions were met.
         deserialized_task_to_compute = self._get_deserialized_task_to_compute(
             timestamp   = "2017-12-01 10:00:00",
-            task_id     = '99',
-            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
         deserialized_report_computed_task = self._get_deserialized_report_computed_task(
@@ -530,8 +528,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code, 200)
         self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
-            task_id                  = '99',
-            subtask_id               = '8',
+            task_id                  = deserialized_task_to_compute.task_id,
+            subtask_id               = deserialized_task_to_compute.subtask_id,
             subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -539,7 +537,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             expected_nested_messages = {'task_to_compute', 'report_computed_task', 'force_get_task_result'},
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = deserialized_task_to_compute.subtask_id,
             client_public_key                  = self._get_encoded_provider_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceGetTaskResultUpload,
@@ -557,8 +555,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_2.status_code, 200)
         self._assert_stored_message_counter_increased(increased_by = 0)
         self._test_subtask_state(
-            task_id                  = '99',
-            subtask_id               = '8',
+            task_id                  = deserialized_task_to_compute.task_id,
+            subtask_id               = deserialized_task_to_compute.subtask_id,
             subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -585,8 +583,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_3.status_code, 200)
         self._assert_stored_message_counter_not_increased()
         self._test_subtask_state(
-            task_id                  = '99',
-            subtask_id               = '8',
+            task_id                  = deserialized_task_to_compute.task_id,
+            subtask_id               = deserialized_task_to_compute.subtask_id,
             subtask_state            = Subtask.SubtaskState.FAILED,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -604,7 +602,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             message_from_concent.task_to_compute.compute_task_def['deadline'],
             parse_iso_date_to_timestamp("2017-12-01 11:00:00")
         )
-        self.assertEqual(message_from_concent.task_to_compute.compute_task_def['task_id'], '99')
+        self.assertEqual(message_from_concent.task_to_compute.compute_task_def['task_id'], deserialized_task_to_compute.task_id)
 
     def test_concent_requests_task_result_from_provider_and_requestor_receives_force_get_task_upload_because_file_already_uploaded(self):
         """
@@ -621,8 +619,6 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         # Concent accepts request if all conditions were met.
         deserialized_task_to_compute = self._get_deserialized_task_to_compute(
             timestamp   = "2017-12-01 10:00:00",
-            task_id     = '99',
-            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
         deserialized_report_computed_task = self._get_deserialized_report_computed_task(
@@ -650,8 +646,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code, 200)
         self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
-            task_id                  = '99',
-            subtask_id               = '8',
+            task_id                  = deserialized_task_to_compute.task_id,
+            subtask_id               = deserialized_task_to_compute.subtask_id,
             subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -664,8 +660,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],
-            task_id         = '99',
-            subtask_id      = '8',
+            task_id         = deserialized_task_to_compute.task_id,
+            subtask_id      = deserialized_task_to_compute.subtask_id,
         )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.
@@ -703,7 +699,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['deadline'],
             parse_iso_date_to_timestamp("2017-12-01 11:00:00")
         )
-        self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'], '99')
+        self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'], deserialized_task_to_compute.task_id)
 
         # Test FileTransferToken message
         self.assertIsInstance(message_file_transfer_token,                      message.concents.FileTransferToken)
@@ -733,8 +729,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_3.status_code, 200)
         self._assert_stored_message_counter_increased(increased_by = 0)
         self._test_subtask_state(
-            task_id                  = '99',
-            subtask_id               = '8',
+            task_id                  = deserialized_task_to_compute.task_id,
+            subtask_id               = deserialized_task_to_compute.subtask_id,
             subtask_state            = Subtask.SubtaskState.RESULT_UPLOADED,  # Should be FAILED?
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -774,8 +770,6 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         # Concent accepts request if all conditions were met.
         deserialized_task_to_compute = self._get_deserialized_task_to_compute(
             timestamp   = "2017-12-01 10:00:00",
-            task_id     = '99',
-            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
         deserialized_report_computed_task = self._get_deserialized_report_computed_task(
@@ -803,8 +797,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code, 200)
         self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
-            task_id                  = '99',
-            subtask_id               = '8',
+            task_id                  = deserialized_task_to_compute.task_id,
+            subtask_id               = deserialized_task_to_compute.subtask_id,
             subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -817,8 +811,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],
-            task_id         = '99',
-            subtask_id      = '8',
+            task_id         = deserialized_task_to_compute.task_id,
+            subtask_id      = deserialized_task_to_compute.subtask_id,
         )
 
         # STEP 2: Provider receives force get task result and file transfer token inside ForceGetTaskResultUpload via Concent.
@@ -856,7 +850,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['deadline'],
             parse_iso_date_to_timestamp("2017-12-01 11:00:00")
         )
-        self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'], '99')
+        self.assertEqual(
+            message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'],
+            deserialized_task_to_compute.task_id,
+        )
 
         # Test FileTransferToken message
         self.assertIsInstance(message_file_transfer_token,                      message.concents.FileTransferToken)
@@ -886,8 +883,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_3.status_code, 200)
         self._assert_stored_message_counter_increased(increased_by = 0)
         self._test_subtask_state(
-            task_id                  = '99',
-            subtask_id               = '8',
+            task_id                  = deserialized_task_to_compute.task_id,
+            subtask_id               = deserialized_task_to_compute.subtask_id,
             subtask_state            = Subtask.SubtaskState.RESULT_UPLOADED,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -907,7 +904,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             message_from_concent.force_get_task_result.report_computed_task.task_to_compute.compute_task_def['deadline'],
             parse_iso_date_to_timestamp("2017-12-01 11:00:00")
         )
-        self.assertEqual(message_from_concent.force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'], '99')
+        self.assertEqual(
+            message_from_concent.force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'],
+            deserialized_task_to_compute.task_id,
+        )
 
         self._assert_client_count_is_equal(2)
 
@@ -928,8 +928,6 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         # Concent accepts request if all conditions were met.
         deserialized_task_to_compute = self._get_deserialized_task_to_compute(
             timestamp   = "2017-12-01 10:00:00",
-            task_id     = '99',
-            subtask_id  = '8',
             deadline    = "2017-12-01 11:00:00"
         )
         deserialized_report_computed_task = self._get_deserialized_report_computed_task(
@@ -957,8 +955,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code, 200)
         self._assert_stored_message_counter_increased(increased_by = 3)
         self._test_subtask_state(
-            task_id                  = '99',
-            subtask_id               = '8',
+            task_id                  = deserialized_task_to_compute.task_id,
+            subtask_id               = deserialized_task_to_compute.subtask_id,
             subtask_state            = Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -971,11 +969,11 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],
-            task_id         = '99',
-            subtask_id      = '8',
+            task_id         = deserialized_task_to_compute.task_id,
+            subtask_id      = deserialized_task_to_compute.subtask_id,
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
+            subtask_id                         = deserialized_task_to_compute.subtask_id,
             client_public_key                  = self._get_encoded_provider_public_key(),
             expected_pending_responses_receive = [
                 PendingResponse.ResponseType.ForceGetTaskResultUpload,
@@ -1011,7 +1009,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['deadline'],
             parse_iso_date_to_timestamp("2017-12-01 11:00:00")
         )
-        self.assertEqual(message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'], '99')
+        self.assertEqual(
+            message_force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'],
+            deserialized_task_to_compute.task_id,
+        )
 
         # Test FileTransferToken message
         self.assertIsInstance(message_file_transfer_token, message.concents.FileTransferToken)
@@ -1040,8 +1041,8 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_3.status_code,  200)
         self._test_subtask_state(
-            task_id                  = '99',
-            subtask_id               = '8',
+            task_id                  = deserialized_task_to_compute.task_id,
+            subtask_id               = deserialized_task_to_compute.subtask_id,
             subtask_state            = Subtask.SubtaskState.RESULT_UPLOADED,
             provider_key             = self._get_encoded_provider_public_key(),
             requestor_key            = self._get_encoded_requestor_public_key(),
@@ -1066,7 +1067,10 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             message_from_concent.force_get_task_result.report_computed_task.task_to_compute.compute_task_def['deadline'],
             parse_iso_date_to_timestamp("2017-12-01 11:00:00")
         )
-        self.assertEqual(message_from_concent.force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'], '99')
+        self.assertEqual(
+            message_from_concent.force_get_task_result.report_computed_task.task_to_compute.compute_task_def['task_id'],
+            deserialized_task_to_compute.task_id
+        )
 
         self.assertIsInstance(message_from_concent.file_transfer_token, message.concents.FileTransferToken)
         self.assertEqual(message_from_concent.file_transfer_token.sig,  self._add_signature_to_message(message_from_concent.file_transfer_token, CONCENT_PRIVATE_KEY))

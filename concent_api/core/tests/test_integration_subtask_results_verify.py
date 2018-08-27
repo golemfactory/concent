@@ -1,3 +1,4 @@
+import uuid
 from datetime import timedelta
 
 import mock
@@ -38,8 +39,8 @@ from common.testing_helpers import generate_ecc_key_pair
 class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
     def setUp(self):
         super().setUp()
-        self.task_id = "task1"
-        self.subtask_id = "subtask1"
+        self.task_id = str(uuid.uuid4())
+        self.subtask_id = str(uuid.uuid4())
         self.subtask_result_rejected_time_str = "2018-04-01 10:30:00"
         self.source_package_path = get_storage_source_file_path(
             subtask_id=self.subtask_id,
@@ -357,13 +358,13 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 'file_transfer_token': self._prepare_file_transfer_token(subtask_results_verify_time_str),
                 'file_transfer_token.files': [
                     message.concents.FileTransferToken.FileInfo(
-                        path='blender/result/task1/task1.subtask1.zip',
+                        path=f'blender/result/{self.task_id}/{self.task_id}.{self.subtask_id}.zip',
                         checksum='sha1:4452d71687b6bc2c9389c3349fdc17fbd73b833b',
                         size=1,
                         category=message.concents.FileTransferToken.FileInfo.Category.results,
                     ),
                     message.concents.FileTransferToken.FileInfo(
-                        path='blender/source/task1/task1.subtask1.zip',
+                        path=f'blender/source/{self.task_id}/{self.task_id}.{self.subtask_id}.zip',
                         checksum='sha1:230fb0cad8c7ed29810a2183f0ec1d39c9df3f4a',
                         size=1,
                         category=message.concents.FileTransferToken.FileInfo.Category.resources,

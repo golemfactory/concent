@@ -11,7 +11,6 @@ import pytest
 from django.test import override_settings
 from golem_messages.message import Ping
 
-from middleman_protocol.exceptions import BrokenEscapingInFrameMiddlemanProtocolError
 from middleman_protocol.message import ErrorFrame
 from middleman_protocol.message import GolemMessageFrame
 from middleman_protocol.stream import append_frame_separator
@@ -27,6 +26,7 @@ from middleman.constants import LOCALHOST_IP
 from middleman.middleman_server import MiddleMan
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
+(SIGNING_SERVICE_PRIVATE_KEY, SIGNING_SERVICE_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
 class Connections():
@@ -138,46 +138,11 @@ class TestMiddleManServer:
         self.crash_logger_mock.error.assert_called_once()
         assert_that(self.crash_logger_mock.error.mock_calls[0][1][0]).contains(error_message)
 
-    def test_that_server_accepts_connections_from_concent_and_sends_data_back(self):
-        with override_settings(
-            CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
-        ):
-            schedule_sigterm(delay=self.timeout)
-            connections = Connections()
-            client_thread = get_client_thread(assert_connection, self.internal_port, self.short_delay, connections, self.data_to_send, self.data_to_send)
-            client_thread.start()
-
-            with pytest.raises(SystemExit) as exception_wrapper:
-                self.middleman.run()
-
-            client_thread.join(self.timeout)
-            assert_that(exception_wrapper.value.code).is_equal_to(None)
-            self.crash_logger_mock.assert_not_called()
-            assert_that(connections.counter).is_equal_to(1)
-
-    def test_that_server_accepts_connections_from_signing_service_and_sends_data_back(self):
-        with override_settings(
-            CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
-        ):
-            schedule_sigterm(delay=self.timeout)
-            connections = Connections()
-            client_thread = get_client_thread(assert_connection, self.external_port, self.short_delay, connections, self.data_to_send, self.data_to_send)
-            client_thread.start()
-
-            with pytest.raises(SystemExit) as exception_wrapper:
-                self.middleman.run()
-
-            client_thread.join(self.timeout)
-            assert_that(exception_wrapper.value.code).is_equal_to(None)
-            self.crash_logger_mock.assert_not_called()
-            assert_that(connections.counter).is_equal_to(1)
-
     def test_that_broken_connection_from_concent_is_reported_to_sentry(self):
         with override_settings(
             CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+            SIGNING_SERVICE_PUBLIC_KEY=SIGNING_SERVICE_PUBLIC_KEY,
         ):
             schedule_sigterm(delay=self.timeout)
             fake_client = socket.socket()
@@ -186,7 +151,10 @@ class TestMiddleManServer:
 
             error_message = "Connection_error"
 
-            with mock.patch("middleman.middleman_server.send_over_stream_async", side_effect=Exception(error_message)):
+            with mock.patch(
+                "middleman.middleman_server.request_producer",
+                new=async_stream_actor_mock(side_effect=Exception(error_message))
+            ):
                 with pytest.raises(SystemExit):
                     self.middleman.run()
             client_thread.join(self.timeout)
@@ -198,6 +166,7 @@ class TestMiddleManServer:
         with override_settings(
             CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+            SIGNING_SERVICE_PUBLIC_KEY=SIGNING_SERVICE_PUBLIC_KEY,
         ):
             schedule_sigterm(delay=self.timeout)
             fake_client = socket.socket()
@@ -206,49 +175,13 @@ class TestMiddleManServer:
 
             error_message = "Connection_error"
 
-            with mock.patch("middleman.middleman_server.send_over_stream_async", side_effect=Exception(error_message)):
+            with mock.patch(
+                "middleman.middleman_server.request_consumer",
+                new=async_stream_actor_mock(side_effect=Exception(error_message))
+            ):
                 with pytest.raises(SystemExit):
                     self.middleman.run()
             client_thread.join(self.timeout)
             fake_client.close()
             self.crash_logger_mock.error.assert_called_once()
             assert_that(self.crash_logger_mock.error.mock_calls[0][1][0]).contains(error_message)
-
-    def test_that_broken_escaping_results_in_middleman_sending_back_error_frame(self):
-        with override_settings(
-            CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
-        ):
-            schedule_sigterm(delay=self.timeout)
-            connections = Connections()
-            expected_data = get_raw_error_frame_bytes(BrokenEscapingInFrameMiddlemanProtocolError)
-            client_thread = get_client_thread(assert_connection, self.external_port, self.short_delay, connections, self.data_to_send, expected_data)
-            client_thread.start()
-
-            with mock.patch("middleman.middleman_server.handle_frame_receive_async", new=async_stream_actor_mock(side_effect=BrokenEscapingInFrameMiddlemanProtocolError)):
-                with pytest.raises(SystemExit):
-                    self.middleman.run()
-            client_thread.join(self.timeout)
-
-            self.crash_logger_mock.assert_not_called()
-            assert_that(connections.counter).is_equal_to(1)
-
-    def test_that_overrun_limit_results_in_middleman_sending_back_error_frame(self):
-        with override_settings(
-            CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
-            CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
-        ):
-            schedule_sigterm(delay=self.timeout)
-            connections = Connections()
-            expected_data = get_raw_error_frame_bytes(asyncio.LimitOverrunError)
-            client_thread = get_client_thread(assert_connection, self.external_port, self.short_delay, connections, self.data_to_send, expected_data)
-            client_thread.start()
-
-            with mock.patch("middleman.middleman_server.handle_frame_receive_async", new=async_stream_actor_mock(side_effect=asyncio.LimitOverrunError('', 1000))):
-                with pytest.raises(SystemExit):
-                    self.middleman.run()
-
-            client_thread.join(self.timeout)
-
-            self.crash_logger_mock.assert_not_called()
-            assert_that(connections.counter).is_equal_to(1)

@@ -5,11 +5,12 @@ from logging import getLogger
 
 import signal
 
-from middleman.constants import CONNECTION_COUNTER_LIMIT, PROCESSING_TIMEOUT
+from middleman.constants import CONNECTION_COUNTER_LIMIT
 from middleman.constants import DEFAULT_EXTERNAL_PORT
 from middleman.constants import DEFAULT_INTERNAL_PORT
 from middleman.constants import ERROR_ADDRESS_ALREADY_IN_USE
 from middleman.constants import LOCALHOST_IP
+from middleman.constants import PROCESSING_TIMEOUT
 from middleman.queue_operations import request_consumer
 from middleman.queue_operations import request_producer
 from middleman.queue_operations import response_consumer

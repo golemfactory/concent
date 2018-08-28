@@ -160,12 +160,11 @@ class DatabaseTransactionsStorageTest(TestCase):
         self.assertFalse(PendingEthereumTransaction.objects.filter(nonce=pending_transaction_1.nonce).exists())
         self.assertTrue(PendingEthereumTransaction.objects.filter(nonce=pending_transaction_2.nonce).exists())
 
-    def test_that_remove_tx_should_fail_when_removing_transaction_with_nonce_that_does_not_exist(self):
+    def test_that_remove_tx_should_not_fail_when_removing_transaction_with_nonce_that_does_not_exist(self):
         self._create_pending_ethereum_transaction()
         self._create_pending_ethereum_transaction()
 
-        with self.assertRaises(PendingEthereumTransaction.DoesNotExist):
-            self.storage.remove_tx(int(self.global_transaction_state.nonce))
+        self.storage.remove_tx(int(self.global_transaction_state.nonce))
 
         self.assertEqual(PendingEthereumTransaction.objects.count(), 2)
 
@@ -183,7 +182,7 @@ class DatabaseTransactionsStorageTest(TestCase):
         self.global_transaction_state.refresh_from_db()
         self.assertEqual(self.global_transaction_state.nonce, current_nonce - 1)
 
-    def test_that_revert_last_tx_should_fail_when_reverting_transaction_with_nonce_that_does_not_exist(self):
+    def test_that_revert_last_tx_should_not_fail_when_reverting_transaction_with_nonce_that_does_not_exist(self):
         self._create_pending_ethereum_transaction()
         pending_transaction_2 = self._create_pending_ethereum_transaction()
         current_nonce = self.global_transaction_state.nonce
@@ -194,8 +193,7 @@ class DatabaseTransactionsStorageTest(TestCase):
         self.global_transaction_state.full_clean()
         self.global_transaction_state.save()
 
-        with self.assertRaises(PendingEthereumTransaction.DoesNotExist):
-            self.storage.revert_last_tx()
+        self.storage.revert_last_tx()
 
         self.assertEqual(PendingEthereumTransaction.objects.count(), 2)
 

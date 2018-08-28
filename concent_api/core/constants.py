@@ -8,7 +8,7 @@ VALID_SCENE_FILE_PREFIXES = ['/golem/resources/']
 SCENE_FILE_EXTENSION = '.blend'
 
 # Defines max length of task_id passed in Golem Messages.
-MESSAGE_TASK_ID_MAX_LENGTH = 128
+MESSAGE_TASK_ID_MAX_LENGTH = 36
 
 # Defines exact length of Ethereum key used to identify Golem clients.
 GOLEM_PUBLIC_KEY_LENGTH = 64
@@ -24,9 +24,6 @@ ETHEREUM_PUBLIC_KEY_LENGTH = 128
 
 # Defines length of Clients ids, public keys or ethereum public keys
 TASK_OWNER_KEY_LENGTH = 64
-
-# Regular expresion of allowed characters in task_id and subtask_id
-VALID_ID_REGEX = re.compile(r'[a-zA-Z0-9_-]*')
 
 # Regular expresion of allowed characters and length of checksum hash
 VALID_SHA1_HASH_REGEX = re.compile(r"^[a-fA-F\d]{40}$")

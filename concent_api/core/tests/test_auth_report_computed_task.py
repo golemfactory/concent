@@ -29,8 +29,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
     def setUp(self):
         super().setUp()
         self.compute_task_def = self._get_deserialized_compute_task_def(
-            task_id='1',
-            subtask_id='8',
             deadline=int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
         )
 
@@ -83,26 +81,26 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response.content),       0)
 
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
-            subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
-            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
+            subtask_state=Subtask.SubtaskState.FORCING_REPORT,
+            provider_key=b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key=b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            expected_nested_messages={'task_to_compute', 'report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
-            expected_messages = [
+            expected_messages=[
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
-            client_public_key                  = self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY),
-            expected_pending_responses_receive = [
+            subtask_id=self.compute_task_def['subtask_id'],
+            client_public_key=self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY),
+            expected_pending_responses_receive=[
                 PendingResponse.ResponseType.ForceReportComputedTask,
             ]
         )
@@ -284,24 +282,24 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response.status_code,        202)
 
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
-            subtask_state            = Subtask.SubtaskState.REPORTED,
-            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
+            subtask_state=Subtask.SubtaskState.REPORTED,
+            provider_key=b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key=b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            expected_nested_messages={'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
         )
         self._test_last_stored_messages(
-            expected_messages= [
+            expected_messages=[
                 message.tasks.AckReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
-            client_public_key                  = self._get_encoded_key(self.PROVIDER_PUBLIC_KEY),
-            expected_pending_responses_receive = [
+            subtask_id=self.compute_task_def['subtask_id'],
+            client_public_key=self._get_encoded_key(self.PROVIDER_PUBLIC_KEY),
+            expected_pending_responses_receive=[
                 PendingResponse.ResponseType.ForceReportComputedTaskResponse,
             ]
         )
@@ -377,26 +375,26 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response.content),       0)
 
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
-            subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
-            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
+            subtask_state=Subtask.SubtaskState.FORCING_REPORT,
+            provider_key=b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key=b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            expected_nested_messages={'task_to_compute', 'report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
-            expected_messages = [
+            expected_messages=[
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
-            client_public_key                  = self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY),
-            expected_pending_responses_receive = [
+            subtask_id=self.compute_task_def['subtask_id'],
+            client_public_key=self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY),
+            expected_pending_responses_receive=[
                 PendingResponse.ResponseType.ForceReportComputedTask,
             ]
         )
@@ -545,12 +543,12 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
-            subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
-            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
+            subtask_state=Subtask.SubtaskState.FORCING_REPORT,
+            provider_key=b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key=b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            expected_nested_messages={'task_to_compute', 'report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
 
@@ -588,24 +586,24 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response.content),       0)
 
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
-            subtask_state            = Subtask.SubtaskState.FAILED,
-            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task', 'reject_report_computed_task'},
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
+            subtask_state=Subtask.SubtaskState.FAILED,
+            provider_key=b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key=b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            expected_nested_messages={'task_to_compute', 'report_computed_task', 'reject_report_computed_task'},
         )
         self._test_last_stored_messages(
-            expected_messages= [
+            expected_messages=[
                 message.tasks.RejectReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
-            client_public_key                  = self._get_encoded_key(self.PROVIDER_PUBLIC_KEY),
-            expected_pending_responses_receive = [
+            subtask_id=self.compute_task_def['subtask_id'],
+            client_public_key=self._get_encoded_key(self.PROVIDER_PUBLIC_KEY),
+            expected_pending_responses_receive=[
                 PendingResponse.ResponseType.ForceReportComputedTaskResponse,
             ]
         )
@@ -684,26 +682,26 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response.content),       0)
 
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
-            subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
-            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
+            subtask_state=Subtask.SubtaskState.FORCING_REPORT,
+            provider_key=b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key=b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            expected_nested_messages={'task_to_compute', 'report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
-            expected_messages = [
+            expected_messages=[
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
-            client_public_key                  = self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY),
-            expected_pending_responses_receive = [
+            subtask_id=self.compute_task_def['subtask_id'],
+            client_public_key=self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY),
+            expected_pending_responses_receive=[
                 PendingResponse.ResponseType.ForceReportComputedTask,
             ]
         )
@@ -850,12 +848,12 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
-            subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
-            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
+            subtask_state=Subtask.SubtaskState.FORCING_REPORT,
+            provider_key=b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key=b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            expected_nested_messages={'task_to_compute', 'report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
 
@@ -884,28 +882,28 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response.content),       0)
 
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
-            subtask_state            = Subtask.SubtaskState.REPORTED,
-            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task', 'reject_report_computed_task'},
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
+            subtask_state=Subtask.SubtaskState.REPORTED,
+            provider_key=b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key=b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            expected_nested_messages={'task_to_compute', 'report_computed_task', 'reject_report_computed_task'},
         )
         self._test_last_stored_messages(
-            expected_messages= [
+            expected_messages=[
                 message.tasks.RejectReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                          = '8',
-            client_public_key                   = self._get_encoded_key(self.PROVIDER_PUBLIC_KEY),
-            client_public_key_out_of_band       = self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY),
-            expected_pending_responses_receive = [
+            subtask_id=self.compute_task_def['subtask_id'],
+            client_public_key=self._get_encoded_key(self.PROVIDER_PUBLIC_KEY),
+            client_public_key_out_of_band=self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY),
+            expected_pending_responses_receive=[
                 PendingResponse.ResponseType.ForceReportComputedTaskResponse,
             ],
-            expected_pending_responses_receive_out_of_band = [
+            expected_pending_responses_receive_out_of_band=[
                 PendingResponse.ResponseType.VerdictReportComputedTask,
             ]
         )
@@ -996,12 +994,12 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_from_concent_to_requestor.ack_report_computed_task.subtask_id, message_from_concent_to_provider.ack_report_computed_task.subtask_id)
 
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
-            subtask_state            = Subtask.SubtaskState.REPORTED,
-            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task', 'reject_report_computed_task'},
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
+            subtask_state=Subtask.SubtaskState.REPORTED,
+            provider_key=b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key=b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            expected_nested_messages={'task_to_compute', 'report_computed_task', 'reject_report_computed_task'},
         )
 
         self._assert_client_count_is_equal(2)
@@ -1035,26 +1033,26 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(len(response.content),       0)
 
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
-            subtask_state            = Subtask.SubtaskState.FORCING_REPORT,
-            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
+            subtask_state=Subtask.SubtaskState.FORCING_REPORT,
+            provider_key=b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key=b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            expected_nested_messages={'task_to_compute', 'report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
-            expected_messages = [
+            expected_messages=[
                 message.TaskToCompute,
                 message.ReportComputedTask,
             ],
-            task_id         = '1',
-            subtask_id      = '8',
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
-            client_public_key                  = self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY),
-            expected_pending_responses_receive = [
+            subtask_id=self.compute_task_def['subtask_id'],
+            client_public_key=self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY),
+            expected_pending_responses_receive=[
                 PendingResponse.ResponseType.ForceReportComputedTask,
             ]
         )
@@ -1139,19 +1137,19 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_from_concent_to_provider.ack_report_computed_task.report_computed_task.task_to_compute, self.deserialized_task_to_compute)
 
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
-            subtask_state            = Subtask.SubtaskState.REPORTED,
-            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = None,
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
+            subtask_state=Subtask.SubtaskState.REPORTED,
+            provider_key=b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key=b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            next_deadline=None,
         )
         self._test_undelivered_pending_responses(
-            subtask_id                         = '8',
-            client_public_key                  = self._get_encoded_key(self.PROVIDER_PUBLIC_KEY),
-            client_public_key_out_of_band      = self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY),
-            expected_pending_responses_receive_out_of_band = [
+            subtask_id=self.compute_task_def['subtask_id'],
+            client_public_key=self._get_encoded_key(self.PROVIDER_PUBLIC_KEY),
+            client_public_key_out_of_band=self._get_encoded_key(self.REQUESTOR_PUBLIC_KEY),
+            expected_pending_responses_receive_out_of_band=[
                 PendingResponse.ResponseType.VerdictReportComputedTask,
             ]
         )
@@ -1199,12 +1197,12 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(message_from_concent_to_requestor.ack_report_computed_task.subtask_id, message_from_concent_to_provider.ack_report_computed_task.subtask_id)
 
         self._test_subtask_state(
-            task_id                  = '1',
-            subtask_id               = '8',
-            subtask_state            = Subtask.SubtaskState.REPORTED,
-            provider_key             = b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
-            requestor_key            = b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
-            expected_nested_messages = {'task_to_compute', 'report_computed_task'},
-            next_deadline            = None,
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
+            subtask_state=Subtask.SubtaskState.REPORTED,
+            provider_key=b64encode(self.PROVIDER_PUBLIC_KEY).decode('ascii'),
+            requestor_key=b64encode(self.REQUESTOR_PUBLIC_KEY).decode('ascii'),
+            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            next_deadline=None,
         )
         self._assert_client_count_is_equal(2)

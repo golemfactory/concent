@@ -58,8 +58,6 @@ class ApiViewTestCase(TestCase):
         deadline_offset = 10
         message_timestamp = get_current_utc_timestamp() + deadline_offset
         compute_task_def = tasks.ComputeTaskDefFactory(
-            task_id='8',
-            subtask_id='8',
             deadline=message_timestamp,
         )
         task_to_compute = tasks.TaskToComputeFactory(
@@ -218,8 +216,6 @@ class ApiViewTransactionTestCase(TransactionTestCase):
         deadline_offset = 10
         message_timestamp = get_current_utc_timestamp() + deadline_offset
         compute_task_def = ComputeTaskDefFactory()
-        compute_task_def['task_id'] = '8'
-        compute_task_def['subtask_id'] = '8'
         compute_task_def['deadline'] = message_timestamp
         task_to_compute = tasks.TaskToComputeFactory(
             compute_task_def=compute_task_def,

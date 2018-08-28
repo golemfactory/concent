@@ -17,7 +17,6 @@ from api_testing_common import assert_condition
 from api_testing_common import count_fails
 from api_testing_common import create_client_auth_message
 from api_testing_common import create_signed_task_to_compute
-from api_testing_common import get_task_id_and_subtask_id
 from api_testing_common import PROVIDER_PRIVATE_KEY
 from api_testing_common import PROVIDER_PUBLIC_KEY
 from api_testing_common import REQUESTOR_PRIVATE_KEY
@@ -56,9 +55,8 @@ def get_force_get_task_result(task_id, subtask_id, current_time, cluster_consts,
 
 
 @count_fails
-def test_case_1_test_for_existing_file(cluster_consts, cluster_url, test_id):
+def test_case_1_test_for_existing_file(cluster_consts, cluster_url, task_id, subtask_id):
     current_time    = get_current_utc_timestamp()
-    (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'existing_file')
 
     file_content = task_id
     file_size = len(file_content)
@@ -137,9 +135,8 @@ def test_case_1_test_for_existing_file(cluster_consts, cluster_url, test_id):
 
 
 @count_fails
-def test_case_2_test_for_non_existing_file(cluster_consts, cluster_url, test_id):
+def test_case_2_test_for_non_existing_file(cluster_consts, cluster_url, task_id, subtask_id):
     current_time    = get_current_utc_timestamp()
-    (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'non_existing_file')
 
     api_request(
         cluster_url,

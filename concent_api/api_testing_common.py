@@ -1,7 +1,7 @@
 import argparse
-import random
 import sys
 
+import uuid
 from freezegun import freeze_time
 
 from golem_messages.exceptions      import MessageError
@@ -242,12 +242,6 @@ def parse_command_line(command_line):
     return cluster_url
 
 
-def get_task_id_and_subtask_id(test_id, case_name):
-    task_id = f'task_{case_name}_{test_id}'
-    subtask_id = 'sub_' + task_id
-    return (subtask_id, task_id)
-
-
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("cluster_url")
@@ -270,9 +264,7 @@ def get_tests_list(patterns, all_objects):
 def execute_tests(tests_to_execute, objects, **kwargs):
     tests = [objects[name] for name in tests_to_execute]
     for test in tests:
-        test_id = kwargs['test_id'] + test.__name__
-        kw = {k: v for k, v in kwargs.items() if k != 'test_id'}
-        test(test_id=test_id, **kw)
+        test(task_id=str(uuid.uuid4()), subtask_id=str(uuid.uuid4()), **kwargs)
         print("-" * 80)
 
 
@@ -282,7 +274,6 @@ def run_tests(objects, additional_arguments=None):
     (cluster_url, patterns) = parse_arguments()
     cluster_consts = get_protocol_constants(cluster_url)
     print_protocol_constants(cluster_consts)
-    test_id = str(random.randrange(1, 100000))
     tests_to_execute = get_tests_list(patterns, list(objects.keys()))
     print("Tests to be executed: \n * " + "\n * ".join(tests_to_execute))
     print()
@@ -290,7 +281,6 @@ def run_tests(objects, additional_arguments=None):
         tests_to_execute=tests_to_execute,
         objects=objects,
         cluster_url=cluster_url,
-        test_id=test_id,
         cluster_consts=cluster_consts,
         **additional_arguments
     )

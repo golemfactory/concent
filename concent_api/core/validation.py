@@ -2,6 +2,8 @@ from logging import getLogger
 from typing import List
 from typing import Union
 
+from uuid import UUID
+
 from golem_messages import message
 from golem_messages.exceptions import MessageError
 from golem_messages.message.tasks import RejectReportComputedTask
@@ -16,7 +18,6 @@ from core.constants import GOLEM_PUBLIC_KEY_HEX_LENGTH
 from core.constants import GOLEM_PUBLIC_KEY_LENGTH
 from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
 from core.constants import SCENE_FILE_EXTENSION
-from core.constants import VALID_ID_REGEX
 from core.exceptions import FrameNumberValidationError
 from core.exceptions import Http400
 from core.exceptions import GolemMessageValidationError
@@ -41,28 +42,6 @@ def validate_value_is_int_convertible_and_positive(value):
                 error_code=ErrorCode.MESSAGE_VALUE_NOT_INTEGER,
             )
     validate_positive_integer_value(value)
-
-
-def validate_id_value(value, field_name):
-    validate_expected_value_type(value, field_name, str)
-
-    if value == '':
-        raise ConcentValidationError(
-            "{} cannot be blank.".format(field_name),
-            error_code=ErrorCode.MESSAGE_VALUE_BLANK,
-        )
-
-    if len(value) > MESSAGE_TASK_ID_MAX_LENGTH:
-        raise ConcentValidationError(
-            "{} cannot be longer than {} chars.".format(field_name, MESSAGE_TASK_ID_MAX_LENGTH),
-            error_code=ErrorCode.MESSAGE_VALUE_WRONG_LENGTH,
-        )
-
-    if VALID_ID_REGEX.fullmatch(value) is None:
-        raise ConcentValidationError(
-            f'{field_name} must contain only alphanumeric chars.',
-            error_code=ErrorCode.MESSAGE_VALUE_NOT_ALLOWED,
-        )
 
 
 def validate_hex_public_key(value, field_name):
@@ -317,8 +296,8 @@ def validate_compute_task_def(compute_task_def: message.tasks.ComputeTaskDef) ->
 
     validate_value_is_int_convertible_and_positive(compute_task_def['deadline'])
 
-    validate_id_value(compute_task_def['task_id'], 'task_id')
-    validate_id_value(compute_task_def['subtask_id'], 'subtask_id')
+    validate_uuid(compute_task_def['task_id'])
+    validate_uuid(compute_task_def['subtask_id'])
 
     extra_data = compute_task_def.get("extra_data")
     if extra_data is None:
@@ -388,3 +367,18 @@ def validate_reject_report_computed_task(client_message: RejectReportComputedTas
         hex_to_bytes_convert(client_message.task_to_compute.requestor_public_key),
         client_message.task_to_compute,
     )
+
+
+def validate_uuid(id_):
+    if not isinstance(id_, str):
+        raise ConcentValidationError(
+            f'ID must be string with maximum {MESSAGE_TASK_ID_MAX_LENGTH} characters length',
+            error_code=ErrorCode.MESSAGE_WRONG_UUID_TYPE
+        )
+    try:
+        UUID(id_, version=4)
+    except ValueError:
+        raise ConcentValidationError(
+            'ID must be a UUID derivative.',
+            error_code=ErrorCode.MESSAGE_WRONG_UUID_VALUE,
+        )

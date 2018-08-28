@@ -1,3 +1,4 @@
+import uuid
 from unittest import TestCase
 from assertpy import assert_that
 import mock
@@ -28,7 +29,7 @@ from core.validation import validate_all_messages_identical
 from core.validation import validate_compute_task_def
 from core.validation import validate_ethereum_addresses
 from core.validation import validate_golem_message_subtask_results_rejected
-from core.validation import validate_id_value
+from core.validation import validate_uuid
 from core.validation import validate_frames
 from core.validation import validate_positive_integer_value
 from core.validation import validate_scene_file
@@ -115,61 +116,41 @@ class TestValidateAllMessagesIdentical(ConcentIntegrationTestCase):
             validate_all_messages_identical([self.report_computed_task, different_report_computed_task])
 
 
-class TestValidateIdValue(TestCase):
+class TestValidateIdValue():
 
-    def test_that_function_should_pass_when_value_is_allowed(self):
-        correct_values = [
-            'a',
-            '0',
-            'a0',
-            '0a',
-            'a-_b'
-        ]
-
-        for value in correct_values:
-            try:
-                validate_id_value(value, 'test')
-            except Exception:  # pylint: disable=broad-except
-                self.fail()
-
-    def test_that_function_should_raise_exception_when_value_is_not_allowed(self):
-        incorrect_values = [
-            '*',
-            'a()',
-            '0@',
-            'a+0',
-            '0+a',
-        ]
-
-        for value in incorrect_values:
-            try:
-                validate_id_value(value, 'test')
-            except ConcentValidationError as exception:
-                self.assertEqual(exception.error_code, ErrorCode.MESSAGE_VALUE_NOT_ALLOWED)
-
-    def test_that_function_should_raise_exception_when_value_is_not_a_string(self):
-        incorrect_values = 1
+    @pytest.mark.parametrize('id_', [
+        str(uuid.uuid4()).replace('-', ''),
+        str(uuid.uuid4()),
+    ])  # pylint: disable=no-self-use
+    def test_that_function_should_pass_when_value_is_allowed(self, id_):
 
         try:
-            validate_id_value(incorrect_values, 'test')
-        except ConcentValidationError as exception:
-            self.assertEqual(exception.error_code, ErrorCode.MESSAGE_VALUE_WRONG_TYPE)
+            validate_uuid(id_)
+        except Exception as exception:  # pylint: disable=broad-except
+            pytest.fail(f'{exception}')
 
-    def test_that_function_should_raise_exception_when_value_is_blank(self):
-        incorrect_values = ''
+    @pytest.mark.parametrize('id_', [
+        f'{str(uuid.uuid4())}{str(uuid.uuid4())}',
+        str(uuid.uuid4())[1:],
+        str(uuid.uuid4())[:-1],
+        str(uuid.uuid4()) + '1',
+        '',
+    ])  # pylint: disable=no-self-use
+    def test_that_function_should_raise_exception_when_value_is_not_allowed(self, id_):
 
-        try:
-            validate_id_value(incorrect_values, 'test')
-        except ConcentValidationError as exception:
-            self.assertEqual(exception.error_code, ErrorCode.MESSAGE_VALUE_BLANK)
+        with pytest.raises(ConcentValidationError) as exception:
+            validate_uuid(id_)
+        assert_that(exception.value.error_code).is_equal_to(ErrorCode.MESSAGE_WRONG_UUID_VALUE)
 
-    def test_that_function_should_raise_exception_when_value_is_too_long(self):
-        incorrect_values = 'a' * (MESSAGE_TASK_ID_MAX_LENGTH + 1)
+    @pytest.mark.parametrize('id_', [
+        int('1' * MESSAGE_TASK_ID_MAX_LENGTH),
+        None
+    ])  # pylint: disable=no-self-use
+    def test_that_function_should_raise_exception_when_type_is_not_allowed(self, id_):
 
-        try:
-            validate_id_value(incorrect_values, 'test')
-        except ConcentValidationError as exception:
-            self.assertEqual(exception.error_code, ErrorCode.MESSAGE_VALUE_WRONG_LENGTH)
+        with pytest.raises(ConcentValidationError) as exception:
+            validate_uuid(id_)
+        assert_that(exception.value.error_code).is_equal_to(ErrorCode.MESSAGE_WRONG_UUID_TYPE)
 
 
 class TestInvalidHashAlgorithms(TestCase):

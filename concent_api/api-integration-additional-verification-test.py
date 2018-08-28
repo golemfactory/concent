@@ -15,7 +15,6 @@ from api_testing_common import assert_condition
 from api_testing_common import count_fails
 from api_testing_common import create_client_auth_message
 from api_testing_common import create_signed_task_to_compute
-from api_testing_common import get_task_id_and_subtask_id
 from api_testing_common import PROVIDER_PRIVATE_KEY
 from api_testing_common import PROVIDER_PUBLIC_KEY
 from api_testing_common import REQUESTOR_PRIVATE_KEY
@@ -88,9 +87,8 @@ def get_subtask_results_verify(
 
 
 @count_fails
-def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):  # pylint: disable=unused-argument
+def test_case_1_test_for_positive_case(cluster_consts, cluster_url, task_id, subtask_id):  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
-    (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'existing_file')
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(current_dir, 'tests_resources', 'source.zip'), 'rb') as archive:
@@ -192,9 +190,8 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):  #
 
 
 @count_fails
-def test_case_2_test_for_resources_failure_reason(cluster_consts, cluster_url, test_id):  # pylint: disable=unused-argument
+def test_case_2_test_for_resources_failure_reason(cluster_consts, cluster_url, task_id, subtask_id):  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
-    (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'existing_file')
 
     file_content = task_id
     file_size = len(file_content)
@@ -225,9 +222,8 @@ def test_case_2_test_for_resources_failure_reason(cluster_consts, cluster_url, t
 
 
 @count_fails
-def test_case_3_test_for_invalid_time(cluster_consts, cluster_url, test_id):  # pylint: disable=unused-argument
+def test_case_3_test_for_invalid_time(cluster_consts, cluster_url, task_id, subtask_id):  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
-    (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'existing_file')
 
     file_content = task_id
     file_size = len(file_content)
@@ -258,9 +254,8 @@ def test_case_3_test_for_invalid_time(cluster_consts, cluster_url, test_id):  # 
 
 
 @count_fails
-def test_case_4_test_for_duplicated_request(cluster_consts, cluster_url, test_id):  # pylint: disable=unused-argument
+def test_case_4_test_for_duplicated_request(cluster_consts, cluster_url, task_id, subtask_id):  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
-    (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'existing_file')
 
     result_file_content_1 = task_id
     source_file_content_2 = subtask_id
@@ -317,9 +312,8 @@ def test_case_4_test_for_duplicated_request(cluster_consts, cluster_url, test_id
 
 
 @count_fails
-def test_case_5_test_requestor_status_account_negative(cluster_consts, cluster_url, test_id):  # pylint: disable=unused-argument
+def test_case_5_test_requestor_status_account_negative(cluster_consts, cluster_url, task_id, subtask_id):  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
-    (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'existing_file')
 
     result_file_content_1 = task_id
     source_file_content_2 = subtask_id
@@ -356,9 +350,8 @@ def test_case_5_test_requestor_status_account_negative(cluster_consts, cluster_u
 
 
 @count_fails
-def test_case_6_test_without_script_src_in(cluster_consts, cluster_url, test_id):  # pylint: disable=unused-argument
+def test_case_6_test_without_script_src_in(cluster_consts, cluster_url, task_id, subtask_id):  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
-    (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'without_script_src')
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(current_dir, 'tests_resources', 'source.zip'), 'rb') as archive:

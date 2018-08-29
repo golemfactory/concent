@@ -79,7 +79,7 @@ def handle_send_force_report_computed_task(client_message):
         task_to_compute,
     )
 
-    if Subtask.objects.select_for_update().filter(  # pylint: disable=no-member
+    if Subtask.objects.filter(  # pylint: disable=no-member
         subtask_id=task_to_compute.compute_task_def['subtask_id'],
     ).exists():
         raise Http400(
@@ -389,16 +389,14 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
         task_to_compute,
     )
 
-    if Subtask.objects.filter(subtask_id=task_to_compute.compute_task_def['subtask_id']).exists():  # pylint: disable=no-member
-        Subtask.objects.select_for_update().get(subtask_id=task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
-
-    if Subtask.objects.filter(  # pylint: disable=no-member
-        subtask_id = task_to_compute.compute_task_def['subtask_id'],
-        state      = Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name,  # pylint: disable=no-member
-    ).exists():
-        return message.concents.ServiceRefused(
-            reason = message.concents.ServiceRefused.REASON.DuplicateRequest,
-        )
+    try:
+        subtask = Subtask.objects.select_for_update().get(subtask_id=task_to_compute.compute_task_def['subtask_id'])
+        if subtask.state_enum == Subtask.SubtaskState.FORCING_RESULT_TRANSFER:
+            return message.concents.ServiceRefused(
+                reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
+            )
+    except Subtask.DoesNotExist:
+        pass
 
     maximum_download_time = calculate_maximum_download_time(
         client_message.report_computed_task.size,
@@ -467,16 +465,14 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
 
     current_time = get_current_utc_timestamp()
 
-    if Subtask.objects.filter(subtask_id=task_to_compute.compute_task_def['subtask_id']).exists():  # pylint: disable=no-member
-        Subtask.objects.select_for_update().get(subtask_id=task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
-
-    if Subtask.objects.filter(  # pylint: disable=no-member
-        subtask_id=task_to_compute.compute_task_def['subtask_id'],
-        state=Subtask.SubtaskState.FORCING_ACCEPTANCE.name,  # pylint: disable=no-member
-    ).exists():
-        return message.concents.ServiceRefused(
-            reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
-        )
+    try:
+        subtask = Subtask.objects.select_for_update().get(subtask_id=task_to_compute.compute_task_def['subtask_id'])
+        if subtask.state_enum == Subtask.SubtaskState.FORCING_ACCEPTANCE:
+            return message.concents.ServiceRefused(
+                reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
+            )
+    except Subtask.DoesNotExist:
+        pass
 
     if not payments_service.is_account_status_positive(  # pylint: disable=no-value-for-parameter
         client_eth_address=task_to_compute.requestor_ethereum_address,
@@ -727,12 +723,6 @@ def handle_send_force_payment(
         subtask_results_accepted.payment_ts for subtask_results_accepted in client_message.subtask_results_accepted_list
     )
 
-    for subtask_results_accepted in client_message.subtask_results_accepted_list:
-        try:
-            Subtask.objects.select_for_update().get(subtask_id=subtask_results_accepted.subtask_id)
-        except Subtask.DoesNotExist:
-            pass
-
     # Concent gets list of transactions from payment API where timestamp >= T0.
     list_of_transactions = payments_service.get_list_of_payments(  # pylint: disable=no-value-for-parameter
         requestor_eth_address   = requestor_eth_address,
@@ -916,7 +906,7 @@ def handle_messages_from_database(
     assert client_public_key    not in ['', None]
 
     encoded_client_public_key = b64encode(client_public_key)
-    pending_response = PendingResponse.objects.filter(
+    pending_response = PendingResponse.objects.select_for_update().filter(
         client__public_key = encoded_client_public_key,
         queue              = response_type.name,
         delivered          = False,
@@ -1366,31 +1356,28 @@ def handle_send_subtask_results_verify(
             reason=message.concents.ServiceRefused.REASON.InvalidRequest,
         )
 
-    if Subtask.objects.filter(subtask_id=compute_task_def['subtask_id']).exists():  # pylint: disable=no-member
-        Subtask.objects.select_for_update().get(subtask_id=compute_task_def['subtask_id'])  # pylint: disable=no-member
+    try:
+        subtask = Subtask.objects.select_for_update().get(subtask_id=compute_task_def['subtask_id'])
 
-    if Subtask.objects.filter(  # pylint: disable=no-member
-        subtask_id=compute_task_def['subtask_id'],
-        state__in=[
-            Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER.name,  # pylint: disable=no-member
-            Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name,     # pylint: disable=no-member
-        ]
-    ).exists():
-        return message.concents.ServiceRefused(
-            reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
-        )
+        if subtask.state_enum in[
+            Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
+            Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
+        ]:
+            return message.concents.ServiceRefused(
+                reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
+            )
 
-    if is_subtask_in_wrong_state(
-        compute_task_def['subtask_id'],
-        [
-            Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
-            Subtask.SubtaskState.FAILED.name,  # pylint: disable=no-member
-        ]
-    ):
-        raise Http400(
-            "SubtaskResultsVerify is not allowed in current state",
-            error_code=ErrorCode.QUEUE_SUBTASK_STATE_TRANSITION_NOT_ALLOWED,
-        )
+        if subtask.state_enum in [
+            Subtask.SubtaskState.ACCEPTED,  # pylint: disable=no-member
+            Subtask.SubtaskState.FAILED,  # pylint: disable=no-member
+        ]:
+            raise Http400(
+                "SubtaskResultsVerify is not allowed in current state",
+                error_code=ErrorCode.QUEUE_SUBTASK_STATE_TRANSITION_NOT_ALLOWED,
+            )
+
+    except Subtask.DoesNotExist:
+        pass
 
     if not payments_service.is_account_status_positive(  # pylint: disable=no-value-for-parameter
         client_eth_address=task_to_compute.requestor_ethereum_address,
@@ -1464,13 +1451,6 @@ def handle_message(client_message):
 
     else:
         return handle_unsupported_golem_messages_type(client_message)
-
-
-def is_subtask_in_wrong_state(subtask_id, forbidden_states):
-    return Subtask.objects.filter(  # pylint: disable=no-member
-        subtask_id=subtask_id,
-        state__in=forbidden_states
-    ).exists()
 
 
 def are_items_unique(items: list):

@@ -39,15 +39,15 @@ def verify_file_status(
     """
 
     encoded_client_public_key = b64encode(client_public_key)
-    force_get_task_result_list = Subtask.objects.filter(
+    subtasks_list = Subtask.objects.select_for_update().filter(
         requestor__public_key  =encoded_client_public_key,
         state                  = Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name,  # pylint: disable=no-member
     )
 
-    for get_task_result in force_get_task_result_list:
-        report_computed_task    = deserialize_message(get_task_result.report_computed_task.data.tobytes())
+    for subtask in subtasks_list:
+        report_computed_task    = deserialize_message(subtask.report_computed_task.data.tobytes())
         if request_upload_status(report_computed_task):
-            subtask               = get_task_result
+            subtask               = subtask
             subtask.state         = Subtask.SubtaskState.RESULT_UPLOADED.name  # pylint: disable=no-member
             subtask.next_deadline = None
             subtask.full_clean()

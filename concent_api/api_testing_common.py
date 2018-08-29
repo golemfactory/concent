@@ -1,4 +1,3 @@
-from freezegun import freeze_time
 from typing import Any
 from typing import Callable
 from typing import Iterable
@@ -14,6 +13,8 @@ import json
 import requests
 import sys
 import uuid
+
+from freezegun import freeze_time
 
 from golem_messages.exceptions import MessageError
 from golem_messages.factories.tasks import ComputeTaskDefFactory

@@ -76,7 +76,7 @@ def blender_verification_request(
     # If there are already UploadReports corresponding to some files, the app links them with the VerificationRequest
     # by setting the value of the foreign key in UploadReport.
     for path in [source_package_path, result_package_path]:
-        UploadReport.objects.filter(
+        UploadReport.objects.select_for_update().filter(
             path=path,
             verification_request=None,
         ).update(

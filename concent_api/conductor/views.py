@@ -1,5 +1,6 @@
 from logging import getLogger
 
+from django.db import transaction
 from django.db.models import Q
 from django.http.request import HttpRequest
 from django.http.response import HttpResponse
@@ -20,6 +21,7 @@ logger = getLogger(__name__)
 @provides_concent_feature('conductor-urls')
 @require_POST
 @csrf_exempt
+@transaction.atomic(using='storage')
 def report_upload(_request: HttpRequest, file_path: str) -> HttpResponse:
 
     log_request_received(logger,  file_path, FileTransferToken.Operation.upload)

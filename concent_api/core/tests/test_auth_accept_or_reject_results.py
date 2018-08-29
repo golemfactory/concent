@@ -151,7 +151,6 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:31"),
             }
         )
-
         self._assert_stored_message_counter_not_increased()
 
         # STEP 3: Provider again forces subtask results via Concent with message with the same task_id with correct keys.

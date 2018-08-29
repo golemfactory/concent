@@ -85,8 +85,8 @@ class StoredMessage(Model):
     type        = PositiveSmallIntegerField()
     timestamp   = DateTimeField()
     data        = BinaryField()
-    task_id     = CharField(max_length = MESSAGE_TASK_ID_MAX_LENGTH, null = True, blank = True)
-    subtask_id  = CharField(max_length = MESSAGE_TASK_ID_MAX_LENGTH, null = True, blank = True)
+    task_id     = CharField(max_length = MESSAGE_TASK_ID_MAX_LENGTH)
+    subtask_id  = CharField(max_length = MESSAGE_TASK_ID_MAX_LENGTH)
     created_at  = DateTimeField(auto_now_add=True)
 
     def __str__(self):

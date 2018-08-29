@@ -18,22 +18,25 @@ class ActivePassiveDownloadsStateFilter(admin.SimpleListFilter):
 
     def lookups(self, request, model_admin):
         return (
-            ('active', 'Active'),
-            ('passive', 'Passive'),
-            ('active_or_downloads', 'Active or with active downloads')
+            ('active', 'Not timed out active'),
+            ('passive', 'Passive or timed out active'),
+            ('active_or_downloads', 'Not timed out active or active with pending downloads')
         )
 
     def queryset(self, request, queryset: QuerySet) -> QuerySet:
         assert self.value() in {'active', 'passive', 'active_or_downloads', None}
+        current_timestamp = get_current_utc_timestamp()
         if self.value() == 'active':
-            return queryset.filter(state__in=ACTIVE_STATE_NAMES)
+            return queryset.filter(state__in=ACTIVE_STATE_NAMES, next_deadline__gte=parse_timestamp_to_utc_datetime(current_timestamp))
         elif self.value() == 'passive':
-            return queryset.filter(state__in=PASSIVE_STATE_NAMES)
+            return queryset.filter(
+                Q(state__in=PASSIVE_STATE_NAMES) |
+                Q(state__in=ACTIVE_STATE_NAMES, next_deadline__lt=parse_timestamp_to_utc_datetime(current_timestamp))
+            )
         elif self.value() == 'active_or_downloads':
-            current_timestamp = get_current_utc_timestamp()
             return Subtask.objects_with_timing_columns.filter(
                 Q(download_deadline__gte=current_timestamp, state=Subtask.SubtaskState.RESULT_UPLOADED.name) |  # pylint: disable=no-member
-                Q(state__in=ACTIVE_STATE_NAMES)
+                Q(state__in=ACTIVE_STATE_NAMES, next_deadline__gte=parse_timestamp_to_utc_datetime(current_timestamp))
             )
         return queryset
 

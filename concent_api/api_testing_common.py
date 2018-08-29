@@ -1,4 +1,5 @@
 import argparse
+import collections
 import sys
 
 import uuid
@@ -66,10 +67,14 @@ class count_fails(object):
         print(f'Total failed tests : {cls.get_fails()} out of {cls.number_of_run_tests}')
 
 
-def assert_condition(actual, expected, error_message = None):
+def assert_condition(actual, expected, error_message = None, compare_lists_regardless_of_order: bool = False):
     message = error_message or f"Actual: {actual} != expected: {expected}"
-    if actual != expected:
-        raise TestAssertionException(message)
+    if not compare_lists_regardless_of_order:
+        if actual != expected:
+            raise TestAssertionException(message)
+    else:
+        if collections.Counter(actual) != collections.Counter(expected):
+            raise TestAssertionException(message)
 
 
 def print_golem_message(message, indent = 4):

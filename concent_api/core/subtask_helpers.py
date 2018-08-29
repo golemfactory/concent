@@ -33,6 +33,15 @@ def update_timed_out_subtasks(
         next_deadline__lte      = timezone.now()
     )
 
+    for subtask in clients_subtask_list:  # create locks in database for all subtasks of client
+        try:
+            Subtask.objects.select_for_update().get(pk=subtask.pk)
+        except Subtask.DoesNotExist:
+            logging.log_error_message(
+                logger,
+                f'Tried to update_timed_out_subtasks for client {client_public_key}, but subtask with id {subtask.subtask_id} does not exist in database'
+            )
+
     for subtask in clients_subtask_list:
         if subtask.state == Subtask.SubtaskState.FORCING_REPORT.name:  # pylint: disable=no-member
             update_subtask_state(
@@ -80,7 +89,7 @@ def update_timed_out_subtasks(
                 subtask             = subtask,
             )
         elif subtask.state == Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER.name:  # pylint: disable=no-member
-            locked_subtask = Subtask.objects.select_for_update().get(pk=subtask.pk)
+            locked_subtask = Subtask.objects.get(pk=subtask.pk)
 
             update_subtask_state(
                 subtask=locked_subtask,
@@ -99,7 +108,7 @@ def update_timed_out_subtasks(
                 subtask=locked_subtask,
             )
         elif subtask.state == Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name:  # pylint: disable=no-member
-            locked_subtask = Subtask.objects.select_for_update().get(pk=subtask.pk)
+            locked_subtask = Subtask.objects.get(pk=subtask.pk)
             task_to_compute = deserialize_message(locked_subtask.task_to_compute.data.tobytes())
 
             # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.

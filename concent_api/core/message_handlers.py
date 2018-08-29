@@ -79,7 +79,7 @@ def handle_send_force_report_computed_task(client_message):
         task_to_compute,
     )
 
-    if Subtask.objects.filter(  # pylint: disable=no-member
+    if Subtask.objects.select_for_update().filter(  # pylint: disable=no-member
         subtask_id=task_to_compute.compute_task_def['subtask_id'],
     ).exists():
         raise Http400(
@@ -140,7 +140,7 @@ def handle_send_ack_report_computed_task(client_message):
 
     if get_current_utc_timestamp() <= task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
         try:
-            subtask = Subtask.objects.get(
+            subtask = Subtask.objects.select_for_update().get(
                 subtask_id = task_to_compute.compute_task_def['subtask_id'],
             )
         except Subtask.DoesNotExist:
@@ -269,7 +269,7 @@ def handle_send_reject_report_computed_task(client_message):
             )
 
     try:
-        subtask = Subtask.objects.get(
+        subtask = Subtask.objects.select_for_update().get(
             subtask_id = task_to_compute.compute_task_def['subtask_id'],
         )
     except Subtask.DoesNotExist:
@@ -389,6 +389,9 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
         task_to_compute,
     )
 
+    if Subtask.objects.filter(subtask_id=task_to_compute.compute_task_def['subtask_id']).exists():  # pylint: disable=no-member
+        Subtask.objects.select_for_update().get(subtask_id=task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
+
     if Subtask.objects.filter(  # pylint: disable=no-member
         subtask_id = task_to_compute.compute_task_def['subtask_id'],
         state      = Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name,  # pylint: disable=no-member
@@ -463,6 +466,9 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
     )
 
     current_time = get_current_utc_timestamp()
+
+    if Subtask.objects.filter(subtask_id=task_to_compute.compute_task_def['subtask_id']).exists():  # pylint: disable=no-member
+        Subtask.objects.select_for_update().get(subtask_id=task_to_compute.compute_task_def['subtask_id'])  # pylint: disable=no-member
 
     if Subtask.objects.filter(  # pylint: disable=no-member
         subtask_id=task_to_compute.compute_task_def['subtask_id'],
@@ -588,7 +594,7 @@ def handle_send_force_subtask_results_response(client_message):
         )
 
     try:
-        subtask = Subtask.objects.get(
+        subtask = Subtask.objects.select_for_update().get(
             subtask_id = task_to_compute.compute_task_def['subtask_id'],
         )
     except Subtask.DoesNotExist:
@@ -720,6 +726,12 @@ def handle_send_force_payment(
     oldest_payments_ts = min(
         subtask_results_accepted.payment_ts for subtask_results_accepted in client_message.subtask_results_accepted_list
     )
+
+    for subtask_results_accepted in client_message.subtask_results_accepted_list:
+        try:
+            Subtask.objects.select_for_update().get(subtask_id=subtask_results_accepted.subtask_id)
+        except Subtask.DoesNotExist:
+            pass
 
     # Concent gets list of transactions from payment API where timestamp >= T0.
     list_of_transactions = payments_service.get_list_of_payments(  # pylint: disable=no-value-for-parameter
@@ -1246,7 +1258,7 @@ def store_or_update_subtask(
     force_get_task_result: Optional[message.concents.ForceGetTaskResult] = None,
 ) -> Subtask:
     try:
-        subtask = Subtask.objects.get(
+        subtask = Subtask.objects.select_for_update().get(
             subtask_id = subtask_id,
         )
     except Subtask.DoesNotExist:
@@ -1353,6 +1365,9 @@ def handle_send_subtask_results_verify(
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.InvalidRequest,
         )
+
+    if Subtask.objects.filter(subtask_id=compute_task_def['subtask_id']).exists():  # pylint: disable=no-member
+        Subtask.objects.select_for_update().get(subtask_id=compute_task_def['subtask_id'])  # pylint: disable=no-member
 
     if Subtask.objects.filter(  # pylint: disable=no-member
         subtask_id=compute_task_def['subtask_id'],

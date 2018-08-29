@@ -1,18 +1,20 @@
+from freezegun import freeze_time
 from typing import Any
 from typing import Callable
+from typing import Iterable
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
 from typing import Union
+
 import argparse
 import datetime
 import http.client
 import json
+import requests
 import sys
 import uuid
 
-import requests
-from freezegun import freeze_time
 from golem_messages.exceptions import MessageError
 from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
@@ -76,6 +78,11 @@ def assert_condition(actual: Any, expected: Any, error_message: str=None) -> Non
     message = error_message or f"Actual: {actual} != expected: {expected}"
     if actual != expected:
         raise TestAssertionException(message)
+
+
+def assert_content_equal(actual: Iterable[str], expected: Iterable[str]) -> None:
+    if sorted(actual) != sorted(expected):
+        raise TestAssertionException(f'Content of iterables is not equal. "Actual: {actual}". "Expected: {expected}"')
 
 
 def print_golem_message(message: Message, indent: int=4) -> None:

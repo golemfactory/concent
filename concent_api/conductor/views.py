@@ -25,7 +25,7 @@ def report_upload(_request: HttpRequest, file_path: str) -> HttpResponse:
     log_request_received(logger,  file_path, FileTransferToken.Operation.upload)
     # If there's a corresponding VerificationRequest, the load it and link it to UploadReport.
     try:
-        verification_request = VerificationRequest.objects.get(
+        verification_request = VerificationRequest.objects.select_for_update().get(
             Q(source_package_path=file_path) | Q(result_package_path=file_path)
         )
     except VerificationRequest.DoesNotExist:

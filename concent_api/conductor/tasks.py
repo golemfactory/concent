@@ -124,7 +124,7 @@ def upload_acknowledged(
     assert isinstance(subtask_id, str)
 
     try:
-        verification_request = VerificationRequest.objects.get(subtask_id=subtask_id)
+        verification_request = VerificationRequest.objects.select_for_update().get(subtask_id=subtask_id)
     except VerificationRequest.DoesNotExist:
         log_error_message(
             logger,

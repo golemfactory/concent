@@ -63,3 +63,6 @@ MIDDLEMAN_EXCEPTION_TO_ERROR_CODE_MAP = {
     exceptions.FrameInvalidMiddlemanProtocolError: ErrorCode.InvalidFrame,
     exceptions.MiddlemanProtocolError: ErrorCode.Unknown,
 }
+
+# When deserializing message is not possible, response should use following request_id
+REQUEST_ID_FOR_RESPONSE_FOR_INVALID_FRAME = 0

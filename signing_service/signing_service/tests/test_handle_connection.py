@@ -14,11 +14,11 @@ from middleman_protocol.constants import FRAME_PAYLOAD_STARTING_BYTE
 from middleman_protocol.constants import FRAME_PAYLOAD_TYPE_LENGTH
 from middleman_protocol.constants import FRAME_REQUEST_ID_BYTES_LENGTH
 from middleman_protocol.constants import FRAME_SIGNATURE_BYTES_LENGTH
+from middleman_protocol.constants import REQUEST_ID_FOR_RESPONSE_FOR_INVALID_FRAME
 from middleman_protocol.message import AbstractFrame
 from middleman_protocol.message import GolemMessageFrame
 from middleman_protocol.stream import unescape_stream
 
-from signing_service.constants import REQUEST_ID_FOR_RESPONSE_FOR_INVALID_FRAME
 from signing_service.exceptions import SigningServiceValidationError
 from signing_service.signing_service import SigningService
 from .utils import SigningServiceIntegrationTestCase

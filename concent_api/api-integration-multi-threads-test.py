@@ -1,12 +1,11 @@
-
 # !/usr/bin/env python3
 import os
 import sys
 import time
 from threading import Thread
 from typing import Optional
-
 import requests
+
 from golem_messages import message
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.message import Message
@@ -15,11 +14,11 @@ from golem_messages.message.concents import ForceReportComputedTask
 from golem_messages.message.tasks import AckReportComputedTask
 from golem_messages.message.tasks import ReportComputedTask
 
+from api_testing_common import compare_lists_regardless_of_order
 from api_testing_common import count_fails
 from api_testing_common import PROVIDER_PRIVATE_KEY
 from api_testing_common import REQUESTOR_PRIVATE_KEY
 from api_testing_common import api_request
-from api_testing_common import assert_condition
 from api_testing_common import create_signed_task_to_compute
 from api_testing_common import run_tests
 from api_testing_common import timestamp_to_isoformat
@@ -48,24 +47,20 @@ def call_function_in_treads(
     golem_message: Message,
 ) -> None:
     for i in range(number_of_threads):
-        t = Thread(target=func, args=(cluster_url, golem_message,))
-        t.start()
+        thread = Thread(target=func, args=(cluster_url, golem_message,))
+        thread.start()
 
 
 def get_ack_report_computed_task(report_computed_task: ReportComputedTask) -> AckReportComputedTask:
-    ack_report_computed_task = AckReportComputedTask(report_computed_task=report_computed_task)
-    return ack_report_computed_task
+    return AckReportComputedTask(report_computed_task=report_computed_task)
 
 
 def get_force_get_task_result(report_computed_task: ReportComputedTask) -> ForceGetTaskResult:
-    force_get_task_result = message.concents.ForceGetTaskResult(report_computed_task=report_computed_task)
-    return force_get_task_result
+    return message.concents.ForceGetTaskResult(report_computed_task=report_computed_task)
 
 
 def get_force_report_computed_task(report_computed_task: ReportComputedTask) -> ForceReportComputedTask:
-    force_report_computed_task = ForceReportComputedTask()
-    force_report_computed_task.report_computed_task = report_computed_task
-    return force_report_computed_task
+    return ForceReportComputedTask(report_computed_task = report_computed_task)
 
 
 def create_report_computed_task(
@@ -157,11 +152,11 @@ def test_case_multiple_requests_concerning_one_subtask_will_be_processed_one_by_
     cluster_url: str,
     task_id: str,
     subtask_id: str
-):
+) -> None:
     report_computed_task = create_report_computed_task(task_id=task_id, subtask_id=subtask_id)
 
-    """send messages to save subtask in database and change state to REPORTED. Next message ForceGetTaskResult
-       requires REPORTED state and this is the simplest way to get it """
+    # send messages to save subtask in database and change state to REPORTED. Next message ForceGetTaskResult
+    # requires REPORTED state and this is the simplest way to get it
     send_correct_force_report_computed_task(
         cluster_url=cluster_url,
         report_computed_task=report_computed_task,
@@ -174,14 +169,14 @@ def test_case_multiple_requests_concerning_one_subtask_will_be_processed_one_by_
     )  # Subtask state changed to: REPORTED
 
     clear_responses()
-    """this is test- sending some messages in one time """
+    # this is test- sending some messages in one time
     call_function_in_treads(
         func=send_correct_force_get_task_result,  # Subtask state changed to: FORCING_RESULT_TRANSFER
         number_of_threads=NUMBER_OF_TESTING_THREADS,
         cluster_url=cluster_url,
         golem_message=report_computed_task,
     )
-    "waiting for responses from all threads"
+    # waiting for responses from all threads
     end_time = time.time() + MAXIMUM_WAITING_TIME_FOR_ALL_RESPONSES
     while len(responses_global) != NUMBER_OF_TESTING_THREADS:
         time.sleep(0.1)
@@ -189,26 +184,18 @@ def test_case_multiple_requests_concerning_one_subtask_will_be_processed_one_by_
             break
 
     expected_responses = ['AckForceGetTaskResult', 'ServiceRefused', 'ServiceRefused']
+    assert len(expected_responses) == NUMBER_OF_TESTING_THREADS,'Did you changed number of testing threads and forgot to change expected_responses?'
 
     print('Responses = ' + str(responses_global))
-    assert_condition(
-        actual=responses_global,
-        expected=expected_responses,
-        error_message=f"Responses should be: {expected_responses}. Probably reason is that something is wrong with code"
-        f" and test failed or maybe you changed number of testing threads and forgot to change expected_responses?",
-        compare_lists_regardless_of_order=True,
-    )
+    error_message = f"Responses should be: {expected_responses}."
+    assert compare_lists_regardless_of_order(actual=responses_global, expected=expected_responses), error_message
     print('Single test passed successfully')
 
 
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
-
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file=sys.stderr)
-        sys.exit(str(exception))
-
-
-
+        sys.exit(exception)

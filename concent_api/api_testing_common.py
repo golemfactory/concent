@@ -1,8 +1,9 @@
 import argparse
-import collections
 import sys
 
 import uuid
+from typing import List
+
 from freezegun import freeze_time
 
 from golem_messages.exceptions      import MessageError
@@ -67,14 +68,18 @@ class count_fails(object):
         print(f'Total failed tests : {cls.get_fails()} out of {cls.number_of_run_tests}')
 
 
-def assert_condition(actual, expected, error_message = None, compare_lists_regardless_of_order: bool = False):
+def assert_condition(actual, expected, error_message = None):
     message = error_message or f"Actual: {actual} != expected: {expected}"
-    if not compare_lists_regardless_of_order:
-        if actual != expected:
-            raise TestAssertionException(message)
-    else:
-        if collections.Counter(actual) != collections.Counter(expected):
-            raise TestAssertionException(message)
+    if actual != expected:
+        raise TestAssertionException(message)
+
+
+def compare_lists_regardless_of_order(actual: List[str], expected: List[str]) -> bool:
+    assert isinstance(actual, list)
+    assert all(isinstance(item, str) for item in actual)
+    assert isinstance(expected, list)
+    assert all(isinstance(item, str) for item in expected)
+    return sorted(actual) == sorted(expected)
 
 
 def print_golem_message(message, indent = 4):

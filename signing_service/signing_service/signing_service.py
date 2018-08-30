@@ -18,6 +18,7 @@ from middleman_protocol.concent_golem_messages.message import TransactionRejecte
 from middleman_protocol.concent_golem_messages.message import TransactionSigningRequest
 from middleman_protocol.constants import ErrorCode
 from middleman_protocol.constants import PayloadType
+from middleman_protocol.constants import REQUEST_ID_FOR_RESPONSE_FOR_INVALID_FRAME
 from middleman_protocol.exceptions import FrameInvalidMiddlemanProtocolError
 from middleman_protocol.exceptions import PayloadInvalidMiddlemanProtocolError
 from middleman_protocol.exceptions import PayloadTypeInvalidMiddlemanProtocolError
@@ -29,7 +30,6 @@ from middleman_protocol.message import GolemMessageFrame
 from middleman_protocol.stream import send_over_stream
 from middleman_protocol.stream import unescape_stream
 
-from signing_service.constants import REQUEST_ID_FOR_RESPONSE_FOR_INVALID_FRAME
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_PORT
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY  # pylint: disable=no-name-in-module
 from signing_service.constants import SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME

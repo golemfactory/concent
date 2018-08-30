@@ -34,7 +34,4 @@ SIGNING_SERVICE_RECOVERABLE_ERRORS = [
     socket.errno.EHOSTUNREACH,  # type: ignore
 ]
 
-# When deserializing message is not possible, response should use following request_id
-REQUEST_ID_FOR_RESPONSE_FOR_INVALID_FRAME = 0
-
 ETHEREUM_PRIVATE_KEY_REGEXP = re.compile(r'^[a-f0-9]{64}$')

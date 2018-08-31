@@ -163,10 +163,15 @@ def api_request(
     validate_content_type(response.headers['Content-Type'], expected_content_type)
     validate_response_message(response.content, expected_message_type, private_key, public_key)
     print()
-    if response.status_code in [202, 204]:
+    content_type = response.headers['Content-Type']
+    if 'text/html' in content_type:
         return None
-    else:
+    elif 'json' in content_type:
+        return json.loads(response._content)
+    elif 'application/octet-stream' in content_type:
         return try_to_decode_golem_message(private_key, public_key, response.content)
+    else:
+        raise UnexpectedResponse(f'Unexpected response content_type. Responses content type is {content_type}.')
 
 
 def _print_response(private_key, public_key, response):

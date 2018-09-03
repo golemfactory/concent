@@ -319,6 +319,13 @@ def _parse_arguments() -> argparse.Namespace:
         type=int,
         help=f'Port on which Concent cluster is listening (default: {SIGNING_SERVICE_DEFAULT_PORT}).',
     )
+    parser.add_argument(
+        '-e',
+        '--sentry-environment',
+        dest='sentry_environment',
+        type=str,
+        help=f'Environment which will be set in Raven client config `environment` parameter.',
+    )
 
     ethereum_private_key_parser_group = parser.add_mutually_exclusive_group(required=True)
     ethereum_private_key_parser_group.add_argument(
@@ -390,7 +397,13 @@ if __name__ == '__main__':
     # Parse required arguments.
     args = _parse_arguments()
 
-    raven_client = Client(dsn=args.sentry_dsn)
+    raven_client = Client(
+        dsn=args.sentry_dsn,
+        environment=args.sentry_environment,
+        tags={
+            'component': 'signing-service',
+        },
+    )
     crash_logger.handlers[0].client = raven_client  # type: ignore
 
     arg_host = args.concent_cluster_host

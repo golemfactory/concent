@@ -1,9 +1,11 @@
 from base64                     import b64encode
 from logging import getLogger
+from typing import Dict
 from typing import List
+from typing import Union
 from typing import Optional
 
-from django.db.models           import Q
+from django.db.models import Q
 from django.utils               import timezone
 from golem_messages.message.tasks import SubtaskResultsAccepted
 
@@ -185,3 +187,28 @@ def are_subtask_results_accepted_messages_signed_by_the_same_requestor(subtask_r
         ) for subtask_results_accepted in subtask_results_accepted_list
     )
     return are_all_signed_by_requestor
+
+
+def get_one_or_none_subtask_from_database(
+    subtask_id: str,
+    optional_condition_dict: Dict[str, str] = None,
+    lock_returned_subtasks_in_database: bool = False,
+) -> Union[Subtask, None]:
+
+    condition_dict = {'subtask_id': subtask_id}
+
+    if optional_condition_dict is not None:
+        assert all(isinstance(k, str) for k in optional_condition_dict.keys())
+        assert all(isinstance(v, str) for v in optional_condition_dict.values())
+        assert all(k in str(Subtask._meta.fields) for k in optional_condition_dict.keys())
+        condition_dict.update(optional_condition_dict)
+
+    if lock_returned_subtasks_in_database:
+        query = Subtask.objects.select_for_update().filter(**condition_dict)
+    else:
+        query = Subtask.objects.filter(**condition_dict)
+    assert len(query) <= 1
+    if len(query) == 0:
+        return None
+    else:
+        return query[0]

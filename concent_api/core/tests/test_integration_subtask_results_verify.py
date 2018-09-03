@@ -74,14 +74,18 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_increased(2)
 
         # when
-        with freeze_time(subtask_results_verify_time_str):
-            response = self.client.post(
-                reverse('core:send'),
-                data=serialized_subtask_results_verify,
-                content_type='application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
-            )
+        with mock.patch(
+                "core.message_handlers.payments_service.is_account_status_positive",
+                return_value=True
+        ):
+            with freeze_time(subtask_results_verify_time_str):
+                response = self.client.post(
+                    reverse('core:send'),
+                    data=serialized_subtask_results_verify,
+                    content_type='application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
+                )
 
         # then
         self._test_response(
@@ -116,14 +120,18 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_increased(increased_by=2)
 
         # when
-        with freeze_time(subtask_results_verify_time_str):
-            response = self.client.post(
-                reverse('core:send'),
-                data=serialized_subtask_results_verify,
-                content_type='application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
-            )
+        with mock.patch(
+            "core.message_handlers.payments_service.is_account_status_positive",
+            return_value=True
+        ):
+            with freeze_time(subtask_results_verify_time_str):
+                response = self.client.post(
+                    reverse('core:send'),
+                    data=serialized_subtask_results_verify,
+                    content_type='application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
+                )
 
         # then
         self._test_400_response(
@@ -153,14 +161,18 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_increased(increased_by=2)
 
         # when
-        with freeze_time(subtask_results_verify_time_str):
-            response = self.client.post(
-                reverse('core:send'),
-                data=serialized_subtask_results_verify,
-                content_type='application/octet-stream',
-                HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
-                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
-            )
+        with mock.patch(
+                "core.message_handlers.payments_service.is_account_status_positive",
+                return_value=True
+        ):
+            with freeze_time(subtask_results_verify_time_str):
+                response = self.client.post(
+                    reverse('core:send'),
+                    data=serialized_subtask_results_verify,
+                    content_type='application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
+                )
 
         # then
         self._test_400_response(

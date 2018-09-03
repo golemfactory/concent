@@ -47,7 +47,6 @@ def verify_file_status(
     for subtask in subtasks_list:
         report_computed_task    = deserialize_message(subtask.report_computed_task.data.tobytes())
         if request_upload_status(report_computed_task):
-            subtask               = subtask
             subtask.state         = Subtask.SubtaskState.RESULT_UPLOADED.name  # pylint: disable=no-member
             subtask.next_deadline = None
             subtask.full_clean()

@@ -5,6 +5,9 @@ DEFAULT_EXTERNAL_PORT = 9055
 LOCALHOST_IP = "127.0.0.1"
 ERROR_ADDRESS_ALREADY_IN_USE = "Error: address already in use"
 CONNECTION_COUNTER_LIMIT = 987654321
+PROCESSING_TIMEOUT = 5
+STANDARD_ERROR_MESSAGE = "This connection has been already added"
+WRONG_TYPE_ERROR_MESSAGE = "QueuePool can only contain mapping between connection ID (int) and response queue (asyncio.Queue)"
 
 RequestQueueItem = namedtuple(
     "RequestQueueItem",

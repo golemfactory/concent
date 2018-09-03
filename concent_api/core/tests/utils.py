@@ -266,7 +266,7 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_ack_report_computed_task(
         self,
-        task_to_compute: TaskToCompute,
+        task_to_compute: Optional[TaskToCompute] = None,
         timestamp: Union[str, datetime.datetime, None] = None,
         deadline: Union[str, int, None] = None,
         subtask_id: Optional[str] = None,
@@ -318,6 +318,7 @@ class ConcentIntegrationTestCase(TestCase):
         self.assertIn('error', response.json())
         if error_message is not None:
             self.assertIn(error_message, response.json()['error'])
+        if error_code is not None:
             self.assertEqual(response.json()['error_code'], error_code.value)
 
     def _test_response(self, response, status, key, message_type=None, fields=None, nested_message_verifiable_by=None):

@@ -131,6 +131,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             CONCENT_PUBLIC_KEY,
         )
         self.assertIsInstance(response_message, message.concents.ForceReportComputedTaskResponse)
+        self.assertEqual(response_message.reason, message.concents.ForceReportComputedTaskResponse.REASON.SubtaskTimeout)
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_accept_valid_message_with_non_numeric_task_id(self):
@@ -195,10 +196,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             ),
             content_type                        = 'application/octet-stream',
         )
-        self._test_400_response(
-            response,
-            error_code=ErrorCode.MESSAGE_VALUE_BLANK
-        )
+        self._test_400_response(response)
 
         data                                        = message.concents.ForceReportComputedTask()
         data.report_computed_task                   = message.tasks.ReportComputedTask()
@@ -215,6 +213,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             content_type                        = 'application/octet-stream',
         )
         self._test_400_response(response)
+        self.assertTrue(response.json()['error'].startswith('Error in Golem Message'))
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_task_id_already_use(self):
@@ -266,7 +265,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
         self._test_400_response(
             response_400,
-            error_code=ErrorCode.MESSAGE_UNEXPECTED
+            error_code=ErrorCode.MESSAGE_UNKNOWN
         )
 
     @freeze_time("2017-11-17 10:00:00")

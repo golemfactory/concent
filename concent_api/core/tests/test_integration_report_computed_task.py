@@ -1082,7 +1082,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 4: Requestor rejects computed task via Concent
         reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
-            reason=None,
+            reason=message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
             timestamp           = "2017-12-01 11:00:05",
             task_to_compute=task_to_compute,
         )
@@ -1695,7 +1695,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
         self._test_400_response(
             response_1,
-            error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE,
+            error_code=ErrorCode.MESSAGE_VALUE_WRONG_LENGTH,
         )
         self._assert_stored_message_counter_not_increased()
 
@@ -1745,7 +1745,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
         self._test_400_response(
             response_1,
-            error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE
+            error_code=ErrorCode.MESSAGE_VALUE_WRONG_LENGTH
         )
         self._assert_stored_message_counter_not_increased()
 
@@ -1795,7 +1795,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
         self._test_400_response(
             response_1,
-            error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE,
+            error_code=ErrorCode.MESSAGE_VALUE_WRONG_LENGTH,
         )
         self._assert_stored_message_counter_not_increased()
 

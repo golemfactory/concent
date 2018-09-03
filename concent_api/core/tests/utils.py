@@ -169,8 +169,8 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_report_computed_task(
         self,
-        subtask_id: str = str(uuid.uuid4()),
-        task_id: str = str(uuid.uuid4()),
+        subtask_id: Optional[str] = None,
+        task_id: Optional[str] = None,
         task_to_compute: Optional[TaskToCompute] = None,
         size: int = 1,
         package_hash: str = 'sha1:4452d71687b6bc2c9389c3349fdc17fbd73b833b',
@@ -184,8 +184,8 @@ class ConcentIntegrationTestCase(TestCase):
             report_computed_task = ReportComputedTaskFactory(
                 task_to_compute=(
                     task_to_compute or self._get_deserialized_task_to_compute(
-                        subtask_id=subtask_id,
-                        task_id=task_id,
+                        subtask_id=subtask_id if subtask_id is not None else self._get_uuid(),
+                        task_id=task_id if task_id is not None else self._get_uuid(),
                         frames=frames if frames is not None else [1]
                     )
                 ),
@@ -202,8 +202,8 @@ class ConcentIntegrationTestCase(TestCase):
         self,
         timestamp: Union[str, datetime.datetime, None] = None,
         deadline: Union[str, int, None] = None,
-        task_id: str = str(uuid.uuid4()),
-        subtask_id: str = str(uuid.uuid4()),
+        task_id: Optional[str] = None,
+        subtask_id: Optional[str] = None,
         compute_task_def: Optional[ComputeTaskDef] = None,
         requestor_id: Optional[bytes] = None,
         requestor_public_key: Optional[bytes] = None,
@@ -221,8 +221,8 @@ class ConcentIntegrationTestCase(TestCase):
         """ Returns TaskToCompute deserialized. """
         compute_task_def = (
             compute_task_def if compute_task_def is not None else self._get_deserialized_compute_task_def(
-                task_id=task_id,
-                subtask_id=subtask_id,
+                task_id=task_id if task_id is not None else self._get_uuid(),
+                subtask_id=subtask_id if subtask_id is not None else self._get_uuid(),
                 deadline=deadline,
                 frames=frames if frames is not None else [1],
             )
@@ -269,7 +269,7 @@ class ConcentIntegrationTestCase(TestCase):
         task_to_compute: TaskToCompute,
         timestamp: Union[str, datetime.datetime, None] = None,
         deadline: Union[str, int, None] = None,
-        subtask_id: str = str(uuid.uuid4()),
+        subtask_id: Optional[str] = None,
         report_computed_task: Optional[ReportComputedTask] = None,
         signer_private_key: Optional[bytes] = None,
     )-> AckReportComputedTask:
@@ -283,7 +283,7 @@ class ConcentIntegrationTestCase(TestCase):
                             self._get_deserialized_task_to_compute(
                                 timestamp = timestamp,
                                 deadline  = deadline,
-                                subtask_id=subtask_id
+                                subtask_id=subtask_id if subtask_id is not None else self._get_uuid()
                             )
                         ),
                     )
@@ -582,8 +582,8 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_compute_task_def(  # pylint: disable=no-self-use
         self,
-        task_id: str = str(uuid.uuid4()),
-        subtask_id: str = str(uuid.uuid4()),
+        task_id: Optional[str] = None,
+        subtask_id: Optional[str] = None,
         deadline: Union[str, int, None] = None,
         extra_data: Optional[dict] = None,
         short_description: str = 'path_root: /home/dariusz/Documents/tasks/resources, start_task: 6, end_task: 6...',
@@ -593,8 +593,8 @@ class ConcentIntegrationTestCase(TestCase):
         frames: Optional[List[int]] = None
     ) -> ComputeTaskDef:
         compute_task_def = ComputeTaskDefFactory(
-            task_id=task_id,
-            subtask_id=subtask_id,
+            task_id=task_id if task_id is not None else self._get_uuid(),
+            subtask_id=subtask_id if subtask_id is not None else self._get_uuid(),
             extra_data=extra_data,
             short_description=short_description,
             working_directory=working_directory,
@@ -950,3 +950,7 @@ class ConcentIntegrationTestCase(TestCase):
             task_to_compute.compute_task_def['deadline'],
             task_to_compute.timestamp,
         )
+
+    @staticmethod
+    def _get_uuid() -> str:
+        return str(uuid.uuid4())

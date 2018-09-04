@@ -1263,67 +1263,6 @@ def set_subtask_messages(
             )
 
 
-def store_or_update_subtask(
-    task_id: str,
-    subtask_id: str,
-    provider_public_key: bytes,
-    requestor_public_key: bytes,
-    state: Subtask.SubtaskState,
-    next_deadline: Optional[int] = None,
-    set_next_deadline: Optional[bool] = False,
-    task_to_compute: Optional[message.TaskToCompute] = None,
-    report_computed_task: Optional[message.ReportComputedTask] = None,
-    ack_report_computed_task: Optional[message.tasks.AckReportComputedTask] = None,
-    reject_report_computed_task: Optional[message.tasks.RejectReportComputedTask] = None,
-    subtask_results_accepted: Optional[message.tasks.SubtaskResultsAccepted] = None,
-    subtask_results_rejected: Optional[message.tasks.SubtaskResultsRejected] = None,
-    force_get_task_result: Optional[message.concents.ForceGetTaskResult] = None,
-) -> Subtask:
-    try:
-        subtask = Subtask.objects.select_for_update().get(
-            subtask_id = subtask_id,
-        )
-    except Subtask.DoesNotExist:
-        subtask = None
-
-    if subtask is not None:
-        if task_to_compute is not None and subtask.task_to_compute is not None:
-            validate_all_messages_identical([
-                task_to_compute,
-                deserialize_message(subtask.task_to_compute.data.tobytes()),
-            ])
-        subtask = update_subtask(
-            subtask=subtask,
-            state=state,
-            next_deadline=next_deadline,
-            set_next_deadline=set_next_deadline,
-            task_to_compute=task_to_compute,
-            report_computed_task=report_computed_task,
-            ack_report_computed_task=ack_report_computed_task,
-            reject_report_computed_task=reject_report_computed_task,
-            subtask_results_accepted=subtask_results_accepted,
-            subtask_results_rejected= subtask_results_rejected,
-            force_get_task_result=force_get_task_result,
-        )
-    else:
-        subtask = store_subtask(
-            task_id=task_id,
-            subtask_id=subtask_id,
-            provider_public_key=provider_public_key,
-            requestor_public_key=requestor_public_key,
-            state=state,
-            next_deadline=next_deadline,
-            task_to_compute=task_to_compute,
-            report_computed_task=report_computed_task,
-            ack_report_computed_task=ack_report_computed_task,
-            reject_report_computed_task=reject_report_computed_task,
-            subtask_results_accepted=subtask_results_accepted,
-            subtask_results_rejected=subtask_results_rejected,
-            force_get_task_result=force_get_task_result,
-        )
-    return subtask
-
-
 def store_message(
     golem_message:          message.base.Message,
     task_id:                str,

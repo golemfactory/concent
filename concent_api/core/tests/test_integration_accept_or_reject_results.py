@@ -8,7 +8,7 @@ from golem_messages         import message
 from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
 from core.exceptions import Http400
 from core.message_handlers import handle_send_force_subtask_results_response
-from core.message_handlers import store_or_update_subtask
+from core.message_handlers import store_subtask
 from core.models import StoredMessage
 from core.models import Subtask
 from core.models import PendingResponse
@@ -1679,12 +1679,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         task_to_compute = deserialized_force_subtask_results.ack_report_computed_task.report_computed_task.task_to_compute  # pylint: disable=no-member,
 
-        subtask = store_or_update_subtask(
+        subtask = store_subtask(
             task_id=task_to_compute.compute_task_def['task_id'],
             subtask_id=task_to_compute.compute_task_def['subtask_id'],
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ACCEPTED,
+            next_deadline=None,
             report_computed_task=deserialized_force_subtask_results.ack_report_computed_task.report_computed_task,  # pylint: disable=no-member,
             task_to_compute=task_to_compute,
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
@@ -1786,12 +1787,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         task_to_compute = deserialized_force_subtask_results.ack_report_computed_task.report_computed_task.task_to_compute  # pylint: disable=no-member,
 
-        subtask = store_or_update_subtask(
+        subtask = store_subtask(
             task_id=task_to_compute.compute_task_def['task_id'],
             subtask_id=task_to_compute.compute_task_def['subtask_id'],
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ACCEPTED,
+            next_deadline=None,
             report_computed_task=deserialized_force_subtask_results.ack_report_computed_task.report_computed_task,  # pylint: disable=no-member,
             task_to_compute=task_to_compute,
             subtask_results_rejected=self._get_deserialized_subtask_results_rejected(

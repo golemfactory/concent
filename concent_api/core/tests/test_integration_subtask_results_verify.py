@@ -10,7 +10,7 @@ from golem_messages import load
 from golem_messages import message
 
 from conductor.models import BlenderSubtaskDefinition
-from core.message_handlers import store_or_update_subtask
+from core.message_handlers import store_subtask
 from core.models import PendingResponse
 from core.models import Subtask
 from core.tests.utils import add_time_offset_to_date
@@ -61,7 +61,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         (serialized_subtask_results_verify,
          subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify()
 
-        store_or_update_subtask(
+        store_subtask(
             task_id=self.task_id,
             subtask_id=self.subtask_id,
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
@@ -108,12 +108,13 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         (serialized_subtask_results_verify,
          subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify()
 
-        store_or_update_subtask(
+        store_subtask(
             task_id=self.task_id,
             subtask_id=self.subtask_id,
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ACCEPTED,
+            next_deadline=None,
             task_to_compute=self.report_computed_task.task_to_compute,  # pylint: disable=no-member
             report_computed_task=self.report_computed_task,
         )
@@ -149,12 +150,13 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         (serialized_subtask_results_verify,
          subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify()
 
-        store_or_update_subtask(
+        store_subtask(
             task_id=self.task_id,
             subtask_id=self.subtask_id,
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.FAILED,
+            next_deadline=None,
             task_to_compute=self.report_computed_task.task_to_compute,  # pylint: disable=no-member
             report_computed_task=self.report_computed_task,
         )
@@ -397,7 +399,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         """
 
         with freeze_time("2018-04-01 10:30:00"):
-            subtask = store_or_update_subtask(
+            subtask = store_subtask(
                 task_id=self.task_id,
                 subtask_id=self.subtask_id,
                 provider_public_key=self.PROVIDER_PUBLIC_KEY,

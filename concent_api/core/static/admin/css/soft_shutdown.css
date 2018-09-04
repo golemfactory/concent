@@ -9,12 +9,12 @@
     padding-bottom: 0.7em;
 }
 
-.active_subtasks_status {
+.are_active_subtasks_present {
     background: #ad5a5a;
     color: #e6f0f5;
 }
 
-.result_uploaded_subtasks_status {
+.are_only_with_downloads_subtasks_present {
     background: #ad8c47;
     color: #e6f0f5;
 }
@@ -28,7 +28,7 @@
     margin-left: 0.3em;
 }
 
-.passive_subtasks {
+.subtasks_with_downloads {
     margin-left: 0.3em;
 }
 

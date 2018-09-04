@@ -11,23 +11,26 @@
     {% get_shutdown_mode_state as is_shutdown_mode_enabled %}
     {% if is_shutdown_mode_enabled and has_permission %}
 
-        {% get_result_uploaded_subtasks_amount as result_uploaded_subtasks_amount %}
-        {% get_active_subtasks_amount as active_subtasks_amount %}
-        {% get_active_subtasks_status as active_subtasks_status %}
-        {% result_uploaded_subtasks_status as result_uploaded_subtasks_status %}
+        {% get_subtasks_with_downloads_count as subtasks_with_downloads_count %}
+        {% get_time_until_concent_can_be_shut_down as time_until_concent_can_be_shut_down %}
+        {% get_active_subtasks_count as active_subtasks_count %}
+        {% are_active_subtasks_present as are_active_subtasks_present %}
+        {% are_only_with_downloads_subtasks_present as are_only_with_downloads_subtasks_present %}
 
         <div class="shutdown_mode
-        {% if active_subtasks_status %}active_subtasks_status
-        {% elif result_uploaded_subtasks_status %}result_uploaded_subtasks_status
+        {% if are_active_subtasks_present %}are_active_subtasks_present
+        {% elif are_only_with_downloads_subtasks_present %}are_only_with_downloads_subtasks_present
         {% else %}shut_down
         {% endif %}">
-            {% if active_subtasks_status %}
+            {% if are_active_subtasks_present %}
                 <div class="shutdown_info"><span>Shutting down.</span></div>
                 {% include "admin/active_subtasks.html" %}
-                {% include "admin/passive_subtasks.html" %}
-            {% elif result_uploaded_subtasks_status %}
+                {% include "admin/subtasks_with_downloads.html" %}
+                {% include "admin/time_left.html" %}
+            {% elif are_only_with_downloads_subtasks_present %}
                 <div class="shutdown_info">Shutting down.</div>
-                {% include "admin/passive_subtasks.html" %}
+                {% include "admin/subtasks_with_downloads.html" %}
+                {% include "admin/time_left.html" %}
             {% else %}
                 <div class="shutdown_info"><span>Concent can be shut down.</span></div>
             {% endif %}

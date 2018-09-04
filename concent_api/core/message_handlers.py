@@ -811,7 +811,7 @@ def handle_send_force_payment(
 
 
 def handle_unsupported_golem_messages_type(client_message):
-    if hasattr(client_message, 'TYPE'):
+    if hasattr(client_message, 'header') and hasattr(client_message.header, 'type_'):
         raise Http400(
             f"This message type ({type(client_message).__name__}) is either not supported or cannot be submitted to Concent.",
             error_code=ErrorCode.MESSAGE_UNEXPECTED,

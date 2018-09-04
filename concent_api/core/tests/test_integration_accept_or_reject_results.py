@@ -1668,16 +1668,18 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
+        subtask_id = self._get_uuid()
+
         compute_task_def = self._get_deserialized_compute_task_def(
-            task_id     = '2',
-            deadline    = "2018-02-05 11:00:00",
+            subtask_id=subtask_id,
+            deadline="2018-02-05 11:00:00",
         )
 
         task_to_compute = deserialized_force_subtask_results.ack_report_computed_task.report_computed_task.task_to_compute  # pylint: disable=no-member,
 
         subtask = store_or_update_subtask(
             task_id=task_to_compute.compute_task_def['task_id'],
-            subtask_id=task_to_compute.compute_task_def['subtask_id'],
+            subtask_id=subtask_id,
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ACCEPTED,
@@ -1734,6 +1736,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     task_to_compute = self._get_deserialized_task_to_compute(
                         timestamp   = "2018-02-05 11:00:01",
                         deadline    = "2018-02-05 11:00:06",
+                        compute_task_def=compute_task_def,
                     )
                 )
             )
@@ -1776,15 +1779,18 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
+        subtask_id = self._get_uuid()
+
         compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2018-02-05 11:00:00",
+            deadline="2018-02-05 11:00:00",
+            subtask_id=subtask_id,
         )
 
         task_to_compute = deserialized_force_subtask_results.ack_report_computed_task.report_computed_task.task_to_compute  # pylint: disable=no-member,
 
         subtask = store_or_update_subtask(
             task_id=task_to_compute.compute_task_def['task_id'],
-            subtask_id=task_to_compute.compute_task_def['subtask_id'],
+            subtask_id=subtask_id,
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ACCEPTED,
@@ -1835,6 +1841,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     task_to_compute = self._get_deserialized_task_to_compute(
                         timestamp   = "2018-02-05 11:00:01",
                         deadline    = "2018-02-05 11:00:06",
+                        compute_task_def=compute_task_def,
                     )
                 )
             )
@@ -1878,7 +1885,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_400_response(
             response_1,
-            error_code=ErrorCode.MESSAGE_UNEXPECTED
+            error_code=ErrorCode.MESSAGE_INVALID
         )
         self._assert_stored_message_counter_not_increased()
 

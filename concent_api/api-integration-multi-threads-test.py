@@ -51,15 +51,15 @@ def call_function_in_treads(
         thread.start()
 
 
-def get_ack_report_computed_task(report_computed_task: ReportComputedTask) -> AckReportComputedTask:
+def create_ack_report_computed_task(report_computed_task: ReportComputedTask) -> AckReportComputedTask:
     return AckReportComputedTask(report_computed_task=report_computed_task)
 
 
-def get_force_get_task_result(report_computed_task: ReportComputedTask) -> ForceGetTaskResult:
+def create_force_get_task_result(report_computed_task: ReportComputedTask) -> ForceGetTaskResult:
     return message.concents.ForceGetTaskResult(report_computed_task=report_computed_task)
 
 
-def get_force_report_computed_task(report_computed_task: ReportComputedTask) -> ForceReportComputedTask:
+def create_force_report_computed_task(report_computed_task: ReportComputedTask) -> ForceReportComputedTask:
     return ForceReportComputedTask(report_computed_task = report_computed_task)
 
 
@@ -73,7 +73,7 @@ def create_report_computed_task(
         timestamp=timestamp_to_isoformat(current_time),
         task_id=task_id,
         subtask_id=subtask_id,
-        deadline=(current_time + 100),
+        deadline=(current_time + CONCENT_MESSAGING_TIME),
         price=10000,
     )
 
@@ -94,7 +94,7 @@ def send_correct_force_report_computed_task(
         'send',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        get_force_report_computed_task(
+        create_force_report_computed_task(
             report_computed_task=report_computed_task,
         ),
         headers={
@@ -115,7 +115,7 @@ def send_correct_ack_report_computed_task(
         'send',
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        get_ack_report_computed_task(
+        create_ack_report_computed_task(
             report_computed_task=report_computed_task
         ),
         headers={
@@ -135,7 +135,7 @@ def send_correct_force_get_task_result(
         'send',
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        get_force_get_task_result(
+        create_force_get_task_result(
             report_computed_task=report_computed_task,
         ),
         headers={
@@ -194,7 +194,8 @@ def test_case_multiple_requests_concerning_one_subtask_will_be_processed_one_by_
 
 if __name__ == '__main__':
     try:
-        from concent_api.settings import CONCENT_PUBLIC_KEY
+        from concent_api.settings import CONCENT_PUBLIC_KEY, CONCENT_MESSAGING_TIME
+
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file=sys.stderr)

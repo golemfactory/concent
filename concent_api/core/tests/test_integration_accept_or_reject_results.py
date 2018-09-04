@@ -124,12 +124,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 2: Provider again forces subtask results via Concent with message with the same task_id.
         # Request is refused.
-        with freeze_time("2018-02-05 10:00:31"):
-            response_2 = self.client.post(
-                reverse('core:send'),
-                data                                = serialized_force_subtask_results,
-                content_type                        = 'application/octet-stream',
-            )
+        with mock.patch(
+                'core.message_handlers.payments_service.is_account_status_positive',
+                side_effect=self.is_account_status_positive_true_mock
+        ):
+            with freeze_time("2018-02-05 10:00:31"):
+                response_2 = self.client.post(
+                    reverse('core:send'),
+                    data                                = serialized_force_subtask_results,
+                    content_type                        = 'application/octet-stream',
+                )
 
         self._test_response(
             response_2,

@@ -66,7 +66,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             'core.message_handlers.payments_service.is_account_status_positive',
             side_effect=self.is_account_status_positive_true_mock
         ) as is_account_status_positive_true_mock_function:
-            with freeze_time("2018-02-05 10:00:30"):
+            with freeze_time("2018-02-05 10:00:29"):
                 response = self.client.post(
                     reverse('core:send'),
                     data                                = serialized_force_subtask_results,
@@ -129,13 +129,16 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ),
             provider_private_key=self.DIFFERENT_PROVIDER_PRIVATE_KEY,
         )
-
-        with freeze_time("2018-02-05 10:00:31"):
-            response = self.client.post(
-                reverse('core:send'),
-                data                                = different_serialized_force_subtask_results,
-                content_type                        = 'application/octet-stream',
-            )
+        with mock.patch(
+                'core.message_handlers.payments_service.is_account_status_positive',
+                side_effect=self.is_account_status_positive_true_mock
+        ):
+            with freeze_time("2018-02-05 10:00:30"):
+                response = self.client.post(
+                    reverse('core:send'),
+                    data                                = different_serialized_force_subtask_results,
+                    content_type                        = 'application/octet-stream',
+                )
 
         self._test_response(
             response,
@@ -144,20 +147,23 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             message_type=message.concents.ServiceRefused,
             fields={
                 'reason': message.concents.ServiceRefused.REASON.DuplicateRequest,
-                'timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:31"),
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:30"),
             }
         )
-
         self._assert_stored_message_counter_not_increased()
 
         # STEP 3: Provider again forces subtask results via Concent with message with the same task_id with correct keys.
         # Request is refused.
-        with freeze_time("2018-02-05 10:00:31"):
-            response = self.client.post(
-                reverse('core:send'),
-                data                                = serialized_force_subtask_results,
-                content_type                        = 'application/octet-stream',
-            )
+        with mock.patch(
+                'core.message_handlers.payments_service.is_account_status_positive',
+                side_effect=self.is_account_status_positive_true_mock
+        ):
+            with freeze_time("2018-02-05 10:00:31"):
+                response = self.client.post(
+                    reverse('core:send'),
+                    data                                = serialized_force_subtask_results,
+                    content_type                        = 'application/octet-stream',
+                )
 
         self._test_response(
             response,

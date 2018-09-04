@@ -481,18 +481,9 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
 
     current_time = get_current_utc_timestamp()
 
-    try:
-        subtask = Subtask.objects.select_for_update().get(subtask_id=task_to_compute.compute_task_def['subtask_id'])
-        if subtask.state_enum == Subtask.SubtaskState.FORCING_ACCEPTANCE:
-            return message.concents.ServiceRefused(
-                reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
-            )
-    except Subtask.DoesNotExist:
-        pass
-
     if not payments_service.is_account_status_positive(  # pylint: disable=no-value-for-parameter
-        client_eth_address=task_to_compute.requestor_ethereum_address,
-        pending_value=task_to_compute.price,
+            client_eth_address=task_to_compute.requestor_ethereum_address,
+            pending_value=task_to_compute.price,
     ):
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
@@ -535,18 +526,37 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
             reason=message.concents.ForceSubtaskResultsRejected.REASON.RequestPremature,
         )
 
-    subtask = store_or_update_subtask(
-        task_id                     = task_to_compute.compute_task_def['task_id'],
-        subtask_id                  = task_to_compute.compute_task_def['subtask_id'],
-        provider_public_key         = provider_public_key,
-        requestor_public_key        = requestor_public_key,
-        state                       = Subtask.SubtaskState.FORCING_ACCEPTANCE,
-        next_deadline               = forcing_acceptance_deadline + settings.CONCENT_MESSAGING_TIME,
-        set_next_deadline           = True,
-        ack_report_computed_task    = client_message.ack_report_computed_task,
-        task_to_compute             = client_message.ack_report_computed_task.report_computed_task.task_to_compute,
-        report_computed_task        = client_message.ack_report_computed_task.report_computed_task,
+    subtask = get_one_or_none_subtask_from_database(
+        subtask_id=task_to_compute.compute_task_def['subtask_id'],
+        lock_returned_subtasks_in_database=True,
     )
+
+    if subtask is None:
+        subtask = store_subtask(
+            task_id=task_to_compute.compute_task_def['task_id'],
+            subtask_id=task_to_compute.compute_task_def['subtask_id'],
+            provider_public_key=provider_public_key,
+            requestor_public_key=requestor_public_key,
+            state=Subtask.SubtaskState.FORCING_ACCEPTANCE,
+            next_deadline=forcing_acceptance_deadline + settings.CONCENT_MESSAGING_TIME,
+            task_to_compute=client_message.ack_report_computed_task.report_computed_task.task_to_compute,
+            report_computed_task=client_message.ack_report_computed_task.report_computed_task,
+            ack_report_computed_task=client_message.ack_report_computed_task,
+        )
+    else:
+        if subtask.state_enum == Subtask.SubtaskState.FORCING_ACCEPTANCE:
+            return message.concents.ServiceRefused(
+                reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
+            )
+        subtask = update_subtask(
+            subtask=subtask,
+            state=Subtask.SubtaskState.FORCING_ACCEPTANCE,
+            next_deadline=forcing_acceptance_deadline + settings.CONCENT_MESSAGING_TIME,
+            set_next_deadline=True,
+            task_to_compute=client_message.ack_report_computed_task.report_computed_task.task_to_compute,
+            report_computed_task=client_message.ack_report_computed_task.report_computed_task,
+            ack_report_computed_task=client_message.ack_report_computed_task,
+        )
     store_pending_message(
         response_type       = PendingResponse.ResponseType.ForceSubtaskResults,
         client_public_key   = requestor_public_key,

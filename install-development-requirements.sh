@@ -14,5 +14,5 @@ python setup.py develop
 cd ..
 
 printf "=================== INSTALL REQUIREMENTS DEVELOPMENT ====================\n"
-pip install -r requirements-development.txt
+pip install -r requirements-development.lock
 printf "\n"

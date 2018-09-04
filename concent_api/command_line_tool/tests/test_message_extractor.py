@@ -8,6 +8,7 @@ from assertpy import assert_that
 from command_line_tool.message_extractor import convert_message_name
 from command_line_tool.message_extractor import MessageExtractor
 from command_line_tool.message_extractor import split_uppercase
+from core.tests.utils import generate_uuid
 
 
 class TestSplitUppercase(TestCase):
@@ -27,8 +28,8 @@ class TestMessageExtractor(TestCase):
         self.requestor_ethereum_public_key = "b'T8ER1hrI9hH0Zyu/m6u9H2K4rc1mC/dlCqK0PSzBSwvKBdHfysmrIIsQMyvecDU+TIkhDmq93Olfo5h2FSGRjw=='"
         self.requestor_public_key = "mrdOXP6Owe3i48G29RHPVU6wewvuUNuNxFB+kPTDnmI21+p5ShttCSUAbHOVm8OIUF9hEluc1+lICJZGkFSSOA=="
         self.deadline = 1510394400
-        self.subtask_id = "12"
-        self.task_id = "2"
+        self.subtask_id = generate_uuid()
+        self.task_id = generate_uuid()
 
     def test_that_exception_is_raised_when_wrong_dict_is_given(self):
         input_data = {

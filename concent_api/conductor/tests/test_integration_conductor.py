@@ -115,7 +115,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
 
     def test_conductor_should_create_upload_report_and_do_not_link_to_unrelated_verification_request(self):
         verification_request = VerificationRequest(
-            subtask_id='1',
+            subtask_id=self._get_uuid(),
             source_package_path='blender/source/bad/bad.bad.zip',
             result_package_path='blender/result/bad/bad.bad.zip',
             verification_deadline=self._get_verification_deadline_as_datetime(

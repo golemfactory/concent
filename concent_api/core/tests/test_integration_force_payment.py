@@ -31,21 +31,21 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         """
         subtask_results_accepted_list = [
             self._get_deserialized_subtask_results_accepted(
-                timestamp       = "2018-02-05 10:00:15",
-                payment_ts      = "2018-02-05 12:00:16",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp                       = "2018-02-05 10:00:00",
-                    deadline                        = "2018-02-05 10:00:10",
-                    subtask_id='2',
+                timestamp="2018-02-05 10:00:15",
+                payment_ts="2018-02-05 12:00:16",
+                task_to_compute=self._get_deserialized_task_to_compute(
+                    timestamp="2018-02-05 10:00:00",
+                    deadline="2018-02-05 10:00:10",
+                    subtask_id=self._get_uuid('1'),
                 )
             ),
             self._get_deserialized_subtask_results_accepted(
-                timestamp       = "2018-02-05 9:00:15",
-                payment_ts      = "2018-02-05 11:00:16",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp                       = "2018-02-05 9:00:00",
-                    deadline                        = "2018-02-05 9:00:10",
-                    subtask_id='3',
+                timestamp="2018-02-05 9:00:15",
+                payment_ts="2018-02-05 11:00:16",
+                task_to_compute=self._get_deserialized_task_to_compute(
+                    timestamp="2018-02-05 9:00:00",
+                    deadline="2018-02-05 9:00:10",
+                    subtask_id=self._get_uuid('2'),
                 ),
                 signer_private_key=self.DIFFERENT_REQUESTOR_PRIVATE_KEY
             )
@@ -86,7 +86,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp                       = "2018-02-05 10:00:00",
                     deadline                        = "2018-02-05 10:00:10",
-                    subtask_id='2',
+                    subtask_id=self._get_uuid('1'),
                 )
             ),
             self._get_deserialized_subtask_results_accepted(
@@ -96,7 +96,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
                     requestor_ethereum_public_key   = self._get_requestor_ethereum_hex_public_key_different(),
-                    subtask_id='3',
+                    subtask_id=self._get_uuid('2'),
                 )
             )
         ]
@@ -132,7 +132,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp                       = "2018-02-05 10:00:00",
             deadline                        = "2018-02-05 10:00:10",
-            subtask_id='2',
+            subtask_id=self._get_uuid('1'),
         )
 
         subtask_results_accepted_list = [
@@ -147,7 +147,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
-                    subtask_id='3',
+                    subtask_id=self._get_uuid('2'),
                 )
             )
         ]
@@ -198,8 +198,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp                       = "2018-02-05 10:00:00",
             deadline                        = "2018-02-05 10:00:10",
-            task_id                         = '2',
-            subtask_id                      = '2',
+            task_id                         = self._get_uuid('1'),
+            subtask_id                      = self._get_uuid('1'),
         )
 
         subtask_results_accepted_list = [
@@ -214,8 +214,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
-                    task_id                         = '3',
-                    subtask_id                      = '3',
+                    task_id                         = self._get_uuid('2'),
+                    subtask_id                      = self._get_uuid('2'),
                 )
             )
         ]
@@ -266,7 +266,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp                       = "2018-02-05 10:00:00",
             deadline                        = "2018-02-05 10:00:10",
-            subtask_id='2',
+            subtask_id=self._get_uuid('1'),
             price                           = 10000,
         )
 
@@ -282,7 +282,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
-                    subtask_id='3',
+                    subtask_id=self._get_uuid('2'),
                     price                           = 3000,
                 )
             )
@@ -336,7 +336,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp                       = "2018-02-05 10:00:00",
             deadline                        = "2018-02-05 10:00:10",
-            subtask_id='2',
+            subtask_id=self._get_uuid('1'),
             price                           = 15000,
         )
 
@@ -352,7 +352,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
-                    subtask_id='3',
+                    subtask_id=self._get_uuid('2'),
                     price                           = 7000,
                 )
             )
@@ -455,7 +455,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             task_to_compute = self._get_deserialized_task_to_compute(
                 timestamp                       = "2018-02-05 10:00:00",
                 deadline                        = "2018-02-05 10:00:10",
-                task_id                         = '2',
+                task_id                         = self._get_uuid(),
                 price                           = 15000,
             )
         )
@@ -510,7 +510,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp                       = "2018-02-05 10:00:00",
                     deadline                        = "2018-02-05 10:00:10",
-                    task_id                         = '2',
+                    task_id                         = self._get_uuid('1'),
                     price                           = 15000,
                 )
             ),
@@ -520,7 +520,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
-                    task_id                         = '3',
+                    task_id                         = self._get_uuid('2'),
                     requestor_ethereum_public_key   = '',
                     price                           = 15000,
                 )
@@ -556,6 +556,9 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         Provider  -> Concent:    ForcePayment
         Concent   -> Provider:   ServiceRefused
         """
+        task_id = self._get_uuid()
+        subtask_id = self._get_uuid()
+
         subtask_results_accepted_list = [
             self._get_deserialized_subtask_results_accepted(
                 timestamp       = "2018-02-05 10:00:15",
@@ -563,8 +566,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp                       = "2018-02-05 10:00:00",
                     deadline                        = "2018-02-05 10:00:10",
-                    task_id                         = '2',
-                    subtask_id                      = '4',
+                    task_id                         = task_id,
+                    subtask_id                      = subtask_id,
                     price                           = 15000,
                 )
             ),
@@ -574,8 +577,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
-                    task_id                         = '2',
-                    subtask_id                      = '4',
+                    task_id                         = task_id,
+                    subtask_id                      = subtask_id,
                     price                           = 15000,
                 )
             )
@@ -614,7 +617,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp                       = "2018-02-05 10:00:00",
             deadline                        = "2018-02-05 10:00:10",
-            subtask_id='2',
+            subtask_id=self._get_uuid('1'),
             price                           = 20000,
         )
 
@@ -630,7 +633,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 task_to_compute = self._get_deserialized_task_to_compute(
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
-                    subtask_id='3',
+                    subtask_id=self._get_uuid('2'),
                     price                           = 5000,
                 )
             )

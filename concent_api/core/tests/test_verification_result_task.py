@@ -10,6 +10,10 @@ from freezegun import freeze_time
 from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 
+from common.constants import ErrorCode
+from common.helpers import get_current_utc_timestamp
+from common.helpers import parse_timestamp_to_utc_datetime
+from common.testing_helpers import generate_ecc_key_pair
 from core.constants import VerificationResult
 from core.constants import VERIFICATION_RESULT_SUBTASK_STATE_ACCEPTED_LOG_MESSAGE
 from core.constants import VERIFICATION_RESULT_SUBTASK_STATE_FAILED_LOG_MESSAGE
@@ -19,10 +23,7 @@ from core.models import PendingResponse
 from core.models import Subtask
 from core.tasks import verification_result
 from core.tests.utils import ConcentIntegrationTestCase
-from common.constants import ErrorCode
-from common.helpers import get_current_utc_timestamp
-from common.helpers import parse_timestamp_to_utc_datetime
-from common.testing_helpers  import generate_ecc_key_pair
+from core.tests.utils import generate_uuid
 
 
 @override_settings(
@@ -34,19 +35,23 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
 
     def setUp(self):
         super().setUp()
+
+        task_id = self._get_uuid()
+        subtask_id = self._get_uuid()
+
         self.subtask = store_subtask(
-            task_id='1',
-            subtask_id='8',
+            task_id=task_id,
+            subtask_id=subtask_id,
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
             next_deadline=get_current_utc_timestamp() + settings.CONCENT_MESSAGING_TIME,
             task_to_compute=self._get_deserialized_task_to_compute(
-                task_id='1',
-                subtask_id='8',
+                task_id=task_id,
+                subtask_id=subtask_id,
             ),
             report_computed_task=self._get_deserialized_report_computed_task(
-                subtask_id='8',
+                subtask_id=subtask_id,
             )
         )
 
@@ -169,19 +174,22 @@ class VerifierVerificationResultTaskTransactionTest(TransactionTestCase):
         (self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
         (self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
+        task_id = generate_uuid()
+        subtask_id = generate_uuid()
+
         self.subtask = store_subtask(
-            task_id='1',
-            subtask_id='8',
+            task_id=task_id,
+            subtask_id=subtask_id,
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
             next_deadline=get_current_utc_timestamp() + settings.CONCENT_MESSAGING_TIME,
             task_to_compute=TaskToComputeFactory(
-                task_id='1',
-                subtask_id='8',
+                task_id=task_id,
+                subtask_id=subtask_id,
             ),
             report_computed_task=ReportComputedTaskFactory(
-                subtask_id='8',
+                subtask_id=subtask_id,
             )
         )
 
@@ -205,19 +213,22 @@ class VerificationResultAssertionTest(ConcentIntegrationTestCase):
         (self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
         (self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
+        task_id = self._get_uuid()
+        subtask_id = self._get_uuid()
+
         self.subtask = store_subtask(
-            task_id='1',
-            subtask_id='8',
+            task_id=task_id,
+            subtask_id=subtask_id,
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
             next_deadline=get_current_utc_timestamp() + settings.CONCENT_MESSAGING_TIME,
             task_to_compute=TaskToComputeFactory(
-                task_id='1',
-                subtask_id='8',
+                task_id=task_id,
+                subtask_id=subtask_id,
             ),
             report_computed_task=ReportComputedTaskFactory(
-                subtask_id='8',
+                subtask_id=subtask_id,
             )
         )
 

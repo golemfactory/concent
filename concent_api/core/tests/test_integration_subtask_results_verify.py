@@ -1,4 +1,3 @@
-import uuid
 from datetime import timedelta
 
 import mock
@@ -39,8 +38,8 @@ from common.testing_helpers import generate_ecc_key_pair
 class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
     def setUp(self):
         super().setUp()
-        self.task_id = str(uuid.uuid4())
-        self.subtask_id = str(uuid.uuid4())
+        self.task_id = self._get_uuid()
+        self.subtask_id = self._get_uuid()
         self.subtask_result_rejected_time_str = "2018-04-01 10:30:00"
         self.source_package_path = get_storage_source_file_path(
             subtask_id=self.subtask_id,

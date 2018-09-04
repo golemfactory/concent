@@ -5,11 +5,11 @@ from django.urls            import reverse
 from freezegun              import freeze_time
 from golem_messages         import message
 
+from common.testing_helpers import generate_ecc_key_pair
 from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
 from core.models import PendingResponse
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
-from common.testing_helpers  import generate_ecc_key_pair
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
@@ -32,23 +32,23 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         """
         subtask_results_accepted_list = [
             self._get_deserialized_subtask_results_accepted(
-                timestamp       = "2018-02-05 10:00:15",
-                payment_ts      = "2018-02-05 11:55:00",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp                       = "2018-02-05 10:00:00",
-                    deadline                        = "2018-02-05 10:00:10",
-                    subtask_id='2',
-                    price                           = 15000,
+                timestamp="2018-02-05 10:00:15",
+                payment_ts="2018-02-05 11:55:00",
+                task_to_compute=self._get_deserialized_task_to_compute(
+                    timestamp="2018-02-05 10:00:00",
+                    deadline="2018-02-05 10:00:10",
+                    subtask_id=self._get_uuid('1'),
+                    price=15000,
                 )
             ),
             self._get_deserialized_subtask_results_accepted(
-                timestamp       = "2018-02-05 9:00:15",
-                payment_ts      = "2018-02-05 11:55:00",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp                       = "2018-02-05 9:00:00",
-                    deadline                        = "2018-02-05 9:00:10",
-                    subtask_id='3',
-                    price                           = 7000,
+                timestamp="2018-02-05 9:00:15",
+                payment_ts="2018-02-05 11:55:00",
+                task_to_compute=self._get_deserialized_task_to_compute(
+                    timestamp="2018-02-05 9:00:00",
+                    deadline="2018-02-05 9:00:10",
+                    subtask_id=self._get_uuid('2'),
+                    price=7000,
                 )
             )
         ]

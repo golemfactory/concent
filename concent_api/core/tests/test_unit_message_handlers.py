@@ -34,7 +34,7 @@ class TestSubtaskStoreAndUpdate(ConcentIntegrationTestCase):
     def setUp(self):
         super().setUp()
         self.compute_task_def = self._get_deserialized_compute_task_def(
-            task_id='1',
+            task_id=self._get_uuid(),
             deadline="2017-12-01 11:00:00"
         )
 

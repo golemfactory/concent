@@ -390,15 +390,6 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
         task_to_compute,
     )
 
-    try:
-        subtask = Subtask.objects.select_for_update().get(subtask_id=task_to_compute.compute_task_def['subtask_id'])
-        if subtask.state_enum == Subtask.SubtaskState.FORCING_RESULT_TRANSFER:
-            return message.concents.ServiceRefused(
-                reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
-            )
-    except Subtask.DoesNotExist:
-        pass
-
     maximum_download_time = calculate_maximum_download_time(
         client_message.report_computed_task.size,
         settings.MINIMUM_UPLOAD_RATE,
@@ -420,22 +411,46 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
             reason=message.concents.ForceGetTaskResultRejected.REASON.AcceptanceTimeLimitExceeded,
         )
 
-    subtask = store_or_update_subtask(
-        task_id=task_to_compute.compute_task_def['task_id'],
+    subtask = get_one_or_none_subtask_from_database(
         subtask_id=task_to_compute.compute_task_def['subtask_id'],
-        provider_public_key=provider_public_key,
-        requestor_public_key=requestor_public_key,
-        state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
-        next_deadline=(
-            int(task_to_compute.compute_task_def['deadline']) +
-            2 * maximum_download_time +
-            3 * settings.CONCENT_MESSAGING_TIME
-        ),
-        set_next_deadline=True,
-        report_computed_task=client_message.report_computed_task,
-        task_to_compute=task_to_compute,
-        force_get_task_result=client_message,
+        lock_returned_subtasks_in_database=True,
     )
+    if subtask is None:
+        subtask = store_subtask(
+            task_id=task_to_compute.compute_task_def['task_id'],
+            subtask_id=task_to_compute.compute_task_def['subtask_id'],
+            provider_public_key=provider_public_key,
+            requestor_public_key=requestor_public_key,
+            state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
+            next_deadline=(
+                    int(task_to_compute.compute_task_def['deadline']) +
+                    2 * maximum_download_time +
+                    3 * settings.CONCENT_MESSAGING_TIME
+            ),
+            task_to_compute=task_to_compute,
+            report_computed_task=client_message.report_computed_task,
+            force_get_task_result=client_message,
+        )
+
+    else:
+        if subtask.state_enum==Subtask.SubtaskState.FORCING_RESULT_TRANSFER:
+            return message.concents.ServiceRefused(
+                reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
+            )
+        subtask = update_subtask(
+            subtask=subtask,
+            state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
+            next_deadline=(
+                    int(task_to_compute.compute_task_def['deadline']) +
+                    2 * maximum_download_time +
+                    3 * settings.CONCENT_MESSAGING_TIME
+            ),
+            set_next_deadline=True,
+            task_to_compute=task_to_compute,
+            report_computed_task=client_message.report_computed_task,
+            force_get_task_result=client_message,
+        )
+
     store_pending_message(
         response_type       = PendingResponse.ResponseType.ForceGetTaskResultUpload,
         client_public_key   = provider_public_key,

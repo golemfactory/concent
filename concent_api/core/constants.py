@@ -10,6 +10,9 @@ SCENE_FILE_EXTENSION = '.blend'
 # Defines max length of task_id passed in Golem Messages.
 MESSAGE_TASK_ID_MAX_LENGTH = 36
 
+#  Defines regex for database migrations to valid uuid
+REGEX_FOR_VALID_UUID = r'^[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab][a-f0-9]{3}-?[a-f0-9]{12}\Z'
+
 # Defines exact length of Ethereum key used to identify Golem clients.
 GOLEM_PUBLIC_KEY_LENGTH = 64
 

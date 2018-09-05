@@ -184,7 +184,7 @@ def test_case_multiple_requests_concerning_one_subtask_will_be_processed_one_by_
             break
 
     expected_responses = ['AckForceGetTaskResult', 'ServiceRefused', 'ServiceRefused']
-    assert len(expected_responses) == NUMBER_OF_TESTING_THREADS,'Did you changed number of testing threads and forgot to change expected_responses?'
+    assert len(expected_responses) == NUMBER_OF_TESTING_THREADS, 'Did you changed number of testing threads and forgot to change expected_responses?'
 
     print('Responses = ' + str(responses_global))
     error_message = f"Responses should be: {expected_responses}."

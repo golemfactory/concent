@@ -14,7 +14,7 @@ from golem_messages.message.concents import ForceReportComputedTask
 from golem_messages.message.tasks import AckReportComputedTask
 from golem_messages.message.tasks import ReportComputedTask
 
-from api_testing_common import compare_lists_regardless_of_order
+from api_testing_common import assert_iterables_content_is_equal
 from api_testing_common import count_fails
 from api_testing_common import PROVIDER_PRIVATE_KEY
 from api_testing_common import REQUESTOR_PRIVATE_KEY
@@ -188,7 +188,7 @@ def test_case_multiple_requests_concerning_one_subtask_will_be_processed_one_by_
 
     print('Responses = ' + str(responses_global))
     error_message = f"Responses should be: {expected_responses}."
-    assert compare_lists_regardless_of_order(actual=responses_global, expected=expected_responses), error_message
+    assert_iterables_content_is_equal(actual=responses_global, expected=expected_responses), error_message
     print('Single test passed successfully')
 
 

@@ -2,7 +2,7 @@ import argparse
 import sys
 
 import uuid
-from typing import List
+from typing import Iterable
 
 from freezegun import freeze_time
 
@@ -74,12 +74,9 @@ def assert_condition(actual, expected, error_message = None):
         raise TestAssertionException(message)
 
 
-def compare_lists_regardless_of_order(actual: List[str], expected: List[str]) -> bool:
-    assert isinstance(actual, list)
-    assert all(isinstance(item, str) for item in actual)
-    assert isinstance(expected, list)
-    assert all(isinstance(item, str) for item in expected)
-    return sorted(actual) == sorted(expected)
+def assert_iterables_content_is_equal(actual: Iterable[str], expected: Iterable[str]) -> None:
+    if not sorted(actual) == sorted(expected):
+        raise TestAssertionException(f'actual and expected lists are not equal. Actual {actual}. Expected {expected}')
 
 
 def print_golem_message(message, indent = 4):

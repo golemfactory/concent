@@ -1,24 +1,22 @@
 import asyncio
 import traceback
+from collections import OrderedDict
 from logging import getLogger
 
 import signal
 
-from django.conf import settings
-
-from middleman_protocol.constants import MAXIMUM_FRAME_LENGTH
-from middleman_protocol.exceptions import BrokenEscapingInFrameMiddlemanProtocolError
-from middleman_protocol.exceptions import MiddlemanProtocolError
-from middleman_protocol.message import AbstractFrame
-from middleman_protocol.message import ErrorFrame
-from middleman_protocol.stream_async import handle_frame_receive_async
-from middleman_protocol.stream_async import map_exception_to_error_code
-from middleman_protocol.stream_async import send_over_stream_async
-
+from middleman.constants import CONNECTION_COUNTER_LIMIT
 from middleman.constants import DEFAULT_EXTERNAL_PORT
 from middleman.constants import DEFAULT_INTERNAL_PORT
 from middleman.constants import ERROR_ADDRESS_ALREADY_IN_USE
 from middleman.constants import LOCALHOST_IP
+from middleman.constants import PROCESSING_TIMEOUT
+from middleman.queue_operations import request_consumer
+from middleman.queue_operations import request_producer
+from middleman.queue_operations import response_consumer
+from middleman.queue_operations import response_producer
+from middleman.utils import QueuePool
+from middleman_protocol.constants import MAXIMUM_FRAME_LENGTH
 
 logger = getLogger(__name__)
 crash_logger = getLogger('crash')
@@ -33,6 +31,10 @@ class MiddleMan:
         self._server_for_signing_service = None
         self._is_signing_service_connection_active = False
         self._loop = loop if loop is not None else asyncio.get_event_loop()
+        self._connection_id = 0
+        self._request_queue = asyncio.Queue(loop=self._loop)
+        self._response_queue_pool = QueuePool(loop=self._loop)
+        self._message_tracker = OrderedDict()
 
         # Handle shutdown signal.
         self._loop.add_signal_handler(signal.SIGTERM, self._terminate_connections)
@@ -120,52 +122,80 @@ class MiddleMan:
         self._loop.close()
 
     async def _handle_concent_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        tasks = []
+        response_queue = asyncio.Queue(loop=self._loop)
+        self._connection_id = (self._connection_id + 1) % CONNECTION_COUNTER_LIMIT
+        self._response_queue_pool[self._connection_id] = response_queue
         try:
-            frame = await handle_frame_receive_async(reader, settings.CONCENT_PUBLIC_KEY)
-            remote_address = writer.get_extra_info('peername')
-            print("Received %r from %r" % (frame, remote_address))
-            await self._respond_to_user(frame, writer)
-        except (BrokenEscapingInFrameMiddlemanProtocolError, asyncio.LimitOverrunError, MiddlemanProtocolError) as exception:
-            await self._send_immediate_error(writer, exception)
+            request_producer_task = self._loop.create_task(
+                request_producer(self._request_queue, response_queue, reader, self._connection_id)
+            )
+            response_consumer_task = self._loop.create_task(
+                response_consumer(response_queue, writer, self._connection_id)
+            )
+            tasks.append(request_producer_task)
+            tasks.append(response_consumer_task)
+            await request_producer_task  # 1. wait until producer task finishes (Concent will sent no more messages)
+            await asyncio.sleep(PROCESSING_TIMEOUT)  # 2. give some time to process items already put to request queue
+            await response_queue.join()  # 3. wait until items from response queue are processed (sent back to Concent)
+            response_consumer_task.cancel()
+
         except Exception as exception:  # pylint: disable=broad-except
             crash_logger.error(
                 f"Exception occurred: {exception}, Traceback: {traceback.format_exc()}"
             )
             raise
 
+        finally:
+            for task in tasks:  # regardless of exception's occurrence, all unfinished tasks should be cancelled
+                task.cancel()   # if exceptions occurs, producer task might need cancelling as well
+            removed_queue = self._response_queue_pool.pop(self._connection_id, None)  # remove response queue from the pool
+            if removed_queue is None:
+                logger.warning(f"Response queue for connection ID: {self._connection_id} has been already removed")
+            else:
+                logger.info(f"Removing response queue for connection ID: {self._connection_id}.")
+
     async def _handle_service_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         if self._is_signing_service_connection_active:
             writer.close()
         else:
             self._is_signing_service_connection_active = True
+            tasks = []
             try:
-                frame = await handle_frame_receive_async(reader, settings.CONCENT_PUBLIC_KEY)
-                remote_address = writer.get_extra_info('peername')
-                print("Received %r from %r" % (frame, remote_address))
-                await self._respond_to_user(frame, writer)
-            except (BrokenEscapingInFrameMiddlemanProtocolError, asyncio.LimitOverrunError, MiddlemanProtocolError) as exception:
-                await self._send_immediate_error(writer, exception)
+                request_consumer_task = self._loop.create_task(
+                    request_consumer(
+                        self._request_queue,
+                        self._response_queue_pool,
+                        self._message_tracker,
+                        writer
+                    )
+                )
+                response_producer_task = self._loop.create_task(
+                    response_producer(
+                        self._response_queue_pool,
+                        reader,
+                        self._message_tracker
+                    )
+                )
+                futures = [request_consumer_task, response_producer_task]
+                tasks = futures[:]
+                done_tasks, pending_tasks = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
+                for future in pending_tasks:
+                    future.cancel()
+                for future in done_tasks:
+                    exception_from_task = future.exception()
+                    if exception_from_task is not None:
+                        raise exception_from_task
             except Exception as exception:  # pylint: disable=broad-except
                 crash_logger.error(
                     f"Exception occurred: {exception}, Traceback: {traceback.format_exc()}"
                 )
                 raise
             finally:
+                for task in tasks:  # cancel all tasks - if task is already done/cancelled it makes no harm
+                    task.cancel()
                 self._is_signing_service_connection_active = False
-
-    async def _respond_to_user(self, frame: AbstractFrame, writer: asyncio.StreamWriter) -> None:  # pylint: disable=no-self-use
-        await send_over_stream_async(frame, writer, settings.CONCENT_PRIVATE_KEY)
-        writer.close()
 
     def _terminate_connections(self) -> None:
         logger.info('SIGTERM received - closing connections and exiting.')
         self._loop.stop()
-
-    async def _send_immediate_error(self, writer: asyncio.StreamWriter, exception: Exception):
-        error_code = map_exception_to_error_code(exception)
-        # TODO: update after this constant is added to MiddlemanProtocol
-        error_frame = ErrorFrame(
-            (error_code, str(exception)),
-            0,
-        )
-        await self._respond_to_user(error_frame, writer)

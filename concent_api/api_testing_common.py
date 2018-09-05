@@ -76,7 +76,7 @@ def assert_condition(actual, expected, error_message = None):
 
 def assert_iterables_content_is_equal(actual: Iterable[str], expected: Iterable[str]) -> None:
     if not sorted(actual) == sorted(expected):
-        raise TestAssertionException(f'Content of iterables is not equal. Actual {actual}. Expected {expected}')
+        raise TestAssertionException(f'Content of iterables is not equal. "Actual: {actual}". "Expected: {expected}"')
 
 
 def print_golem_message(message, indent = 4):

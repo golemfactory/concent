@@ -527,7 +527,6 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
 
     subtask = get_one_or_none_subtasks_from_database(
         subtask_id=task_to_compute.compute_task_def['subtask_id'],
-        lock_returned_subtasks_in_database=True,
     )
 
     if subtask is None:

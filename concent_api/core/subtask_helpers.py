@@ -2,7 +2,6 @@ from base64                     import b64encode
 from logging import getLogger
 from typing import Dict
 from typing import List
-from typing import Union
 from typing import Optional
 
 from django.db.models import Q
@@ -189,24 +188,18 @@ def are_subtask_results_accepted_messages_signed_by_the_same_requestor(subtask_r
     return are_all_signed_by_requestor
 
 
-def get_one_or_none_subtask_from_database(
+def get_one_or_none_subtasks_from_database(
     subtask_id: str,
     optional_condition_dict: Dict[str, str] = None,
-    lock_returned_subtasks_in_database: bool = False,
-) -> Union[Subtask, None]:
+) -> Optional[Subtask]:
 
-    condition_dict = {'subtask_id': subtask_id}
+    conditions_dict = {'subtask_id': subtask_id}
 
     if optional_condition_dict is not None:
-        assert all(isinstance(k, str) for k in optional_condition_dict.keys())
-        assert all(isinstance(v, str) for v in optional_condition_dict.values())
-        assert all(k in str(Subtask._meta.fields) for k in optional_condition_dict.keys())
-        condition_dict.update(optional_condition_dict)
+        conditions_dict.update(optional_condition_dict)
 
-    if lock_returned_subtasks_in_database:
-        query = Subtask.objects.select_for_update().filter(**condition_dict)
-    else:
-        query = Subtask.objects.filter(**condition_dict)
+    query = Subtask.objects.select_for_update().filter(**conditions_dict)
+
     assert len(query) <= 1
     if len(query) == 0:
         return None

@@ -2,7 +2,7 @@ from django.conf import settings
 
 from core.message_handlers import store_subtask
 from core.models import Subtask
-from core.subtask_helpers import get_one_or_none_subtask_from_database
+from core.subtask_helpers import get_one_or_none_subtasks_from_database
 from core.tests.utils import ConcentIntegrationTestCase
 
 
@@ -20,7 +20,7 @@ class TestGetOneOrNoneSubtaskFromDatabase(ConcentIntegrationTestCase):
             task_to_compute=self.task_to_compute,
         )
 
-        store_subtask(
+        self.subtask = store_subtask(
             task_id=self.task_to_compute.compute_task_def['task_id'],
             subtask_id=self.task_to_compute.compute_task_def['subtask_id'],
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
@@ -32,35 +32,19 @@ class TestGetOneOrNoneSubtaskFromDatabase(ConcentIntegrationTestCase):
         )
 
     def test_that_if_only_subtask_id_given_and_subtask_exist_function_returns_subtask(self):
-        subtask = get_one_or_none_subtask_from_database(self.task_to_compute.compute_task_def['subtask_id'])
-        self.assertIsInstance(subtask, Subtask)
-        self.assertEqual(subtask.subtask_id, self.task_to_compute.compute_task_def['subtask_id'])
+        subtask = get_one_or_none_subtasks_from_database(self.task_to_compute.compute_task_def['subtask_id'])
+        self.assertEqual(self.subtask, subtask)
 
     def test_that_if_subtask_id_and_optional_dict_given_and_subtask_exist_function_returns_subtask(self):
-        subtask = get_one_or_none_subtask_from_database(
+        subtask = get_one_or_none_subtasks_from_database(
             subtask_id=self.task_to_compute.compute_task_def['subtask_id'],
             optional_condition_dict={'state': Subtask.SubtaskState.FORCING_REPORT.name},  # pylint: disable=no-member
         )
-        self.assertIsInstance(subtask, Subtask)
-        self.assertEqual(subtask.subtask_id, self.task_to_compute.compute_task_def['subtask_id'])
+        self.assertEqual(self.subtask, subtask)
 
     def test_that_if_subtask_id_and_optional_dict_given_and_subtask_does_not_exist_function_returns_none(self):
-        subtask = get_one_or_none_subtask_from_database(
+        subtask = get_one_or_none_subtasks_from_database(
             subtask_id=self.task_to_compute.compute_task_def['subtask_id'],
             optional_condition_dict={'state': Subtask.SubtaskState.REPORTED.name},  # pylint: disable=no-member
         )
-        self.assertEqual(subtask, None)
-
-    def test_that_if_incorrect_dict_given_function_raises_assert_error(self):
-        with self.assertRaises(AssertionError):
-            get_one_or_none_subtask_from_database(
-                subtask_id=self.task_to_compute.compute_task_def['subtask_id'],
-                optional_condition_dict={'state': Subtask.SubtaskState.REPORTED},
-            )
-
-    def test_that_if_incorrect_dict_key_given_function_raises_assert_error(self):
-        with self.assertRaises(AssertionError):
-            get_one_or_none_subtask_from_database(
-                subtask_id=self.task_to_compute.compute_task_def['subtask_id'],
-                optional_condition_dict={'zzzyyy': Subtask.SubtaskState.REPORTED.name},  # pylint: disable=no-member
-            )
+        self.assertIsNone(subtask)

@@ -42,7 +42,7 @@ from core.payments import service as payments_service
 from core.payments.backends.sci_backend import TransactionType
 from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
-from core.subtask_helpers import get_one_or_none_subtask_from_database
+from core.subtask_helpers import get_one_or_none_subtasks_from_database
 from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
 from core.transfer_operations import store_pending_message
 from core.transfer_operations import create_file_transfer_token_for_golem_client
@@ -411,7 +411,7 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
             reason=message.concents.ForceGetTaskResultRejected.REASON.AcceptanceTimeLimitExceeded,
         )
 
-    subtask = get_one_or_none_subtask_from_database(
+    subtask = get_one_or_none_subtasks_from_database(
         subtask_id=task_to_compute.compute_task_def['subtask_id'],
         lock_returned_subtasks_in_database=True,
     )
@@ -526,7 +526,7 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
             reason=message.concents.ForceSubtaskResultsRejected.REASON.RequestPremature,
         )
 
-    subtask = get_one_or_none_subtask_from_database(
+    subtask = get_one_or_none_subtasks_from_database(
         subtask_id=task_to_compute.compute_task_def['subtask_id'],
         lock_returned_subtasks_in_database=True,
     )
@@ -1335,9 +1335,8 @@ def handle_send_subtask_results_verify(
             reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
         )
 
-    subtask = get_one_or_none_subtask_from_database(
+    subtask = get_one_or_none_subtasks_from_database(
         subtask_id=compute_task_def['subtask_id'],
-        lock_returned_subtasks_in_database=True,
     )
     if subtask is None:
         store_subtask(

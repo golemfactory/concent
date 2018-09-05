@@ -109,14 +109,14 @@ def update_timed_out_subtasks(
             )
 
             update_subtask_state(
-                subtask                 = subtask,
-                state                   = Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
+                subtask=subtask,
+                state=Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
             )
             store_pending_message(
-                response_type       = PendingResponse.ResponseType.SubtaskResultsSettled,
-                client_public_key   = subtask.provider.public_key_bytes,
-                queue               = PendingResponse.Queue.ReceiveOutOfBand,
-                subtask             = subtask,
+                response_type=PendingResponse.ResponseType.SubtaskResultsSettled,
+                client_public_key=subtask.provider.public_key_bytes,
+                queue=PendingResponse.Queue.ReceiveOutOfBand,
+                subtask=subtask,
             )
             store_pending_message(
                 response_type       = PendingResponse.ResponseType.SubtaskResultsSettled,

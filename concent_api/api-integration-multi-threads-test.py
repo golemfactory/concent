@@ -35,7 +35,7 @@ MAXIMUM_WAITING_TIME_FOR_ALL_RESPONSES = 3  # seconds
 responses_global = []  # type: list
 
 
-def clear_responses():
+def clear_responses() -> None:
     global responses_global
     responses_global.clear()
 

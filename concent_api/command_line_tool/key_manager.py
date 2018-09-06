@@ -42,7 +42,7 @@ def are_keys_predifined(party: str) -> bool:
     return is_pulbic_key_predefined and is_private_key_predefined
 
 
-def _get_predefined_keys(party: str) -> Tuple[None, None]:
+def _get_predefined_keys(party: str) -> Tuple:
     formatted_party = party.upper()
     public_key = f"{formatted_party}_PUBLIC_KEY"
     private_key = f"{formatted_party}_PRIVATE_KEY"

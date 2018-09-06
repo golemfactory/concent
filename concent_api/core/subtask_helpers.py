@@ -27,7 +27,7 @@ def update_timed_out_subtasks(
 ):
     verify_file_status(client_public_key)
 
-    clients_subtask_list = Subtask.objects.filter(
+    clients_subtask_list = Subtask.objects.select_for_update().filter(
         Q(requestor__public_key = b64encode(client_public_key)) | Q(provider__public_key = b64encode(client_public_key)),
         state__in               = [state.name for state in Subtask.ACTIVE_STATES],
         next_deadline__lte      = timezone.now()
@@ -80,27 +80,25 @@ def update_timed_out_subtasks(
                 subtask             = subtask,
             )
         elif subtask.state == Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER.name:  # pylint: disable=no-member
-            locked_subtask = Subtask.objects.select_for_update().get(pk=subtask.pk)
 
             update_subtask_state(
-                subtask=locked_subtask,
+                subtask=subtask,
                 state=Subtask.SubtaskState.FAILED.name,  # pylint: disable=no-member
             )
             store_pending_message(
                 response_type=PendingResponse.ResponseType.SubtaskResultsRejected,
-                client_public_key=locked_subtask.provider.public_key_bytes,
+                client_public_key=subtask.provider.public_key_bytes,
                 queue=PendingResponse.Queue.ReceiveOutOfBand,
-                subtask=locked_subtask,
+                subtask=subtask,
             )
             store_pending_message(
                 response_type=PendingResponse.ResponseType.SubtaskResultsRejected,
-                client_public_key=locked_subtask.requestor.public_key_bytes,
+                client_public_key=subtask.requestor.public_key_bytes,
                 queue=PendingResponse.Queue.ReceiveOutOfBand,
-                subtask=locked_subtask,
+                subtask=subtask,
             )
         elif subtask.state == Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name:  # pylint: disable=no-member
-            locked_subtask = Subtask.objects.select_for_update().get(pk=subtask.pk)
-            task_to_compute = deserialize_message(locked_subtask.task_to_compute.data.tobytes())
+            task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
 
             # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
             payments_service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
@@ -111,20 +109,20 @@ def update_timed_out_subtasks(
             )
 
             update_subtask_state(
-                subtask                 = locked_subtask,
-                state                   = Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
+                subtask=subtask,
+                state=Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
+            )
+            store_pending_message(
+                response_type=PendingResponse.ResponseType.SubtaskResultsSettled,
+                client_public_key=subtask.provider.public_key_bytes,
+                queue=PendingResponse.Queue.ReceiveOutOfBand,
+                subtask=subtask,
             )
             store_pending_message(
                 response_type       = PendingResponse.ResponseType.SubtaskResultsSettled,
-                client_public_key   = locked_subtask.provider.public_key_bytes,
+                client_public_key   = subtask.requestor.public_key_bytes,
                 queue               = PendingResponse.Queue.ReceiveOutOfBand,
-                subtask             = locked_subtask,
-            )
-            store_pending_message(
-                response_type       = PendingResponse.ResponseType.SubtaskResultsSettled,
-                client_public_key   = locked_subtask.requestor.public_key_bytes,
-                queue               = PendingResponse.Queue.ReceiveOutOfBand,
-                subtask             = locked_subtask,
+                subtask             = subtask,
             )
 
     logging.log_changes_in_subtask_states(

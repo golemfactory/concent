@@ -2,6 +2,8 @@ import argparse
 import sys
 
 import uuid
+from typing import Iterable
+
 from freezegun import freeze_time
 
 from golem_messages.exceptions      import MessageError
@@ -70,6 +72,11 @@ def assert_condition(actual, expected, error_message = None):
     message = error_message or f"Actual: {actual} != expected: {expected}"
     if actual != expected:
         raise TestAssertionException(message)
+
+
+def assert_iterables_content_is_equal(actual: Iterable[str], expected: Iterable[str]) -> None:
+    if not sorted(actual) == sorted(expected):
+        raise TestAssertionException(f'Content of iterables is not equal. "Actual: {actual}". "Expected: {expected}"')
 
 
 def print_golem_message(message, indent = 4):

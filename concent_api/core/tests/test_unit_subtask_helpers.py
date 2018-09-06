@@ -8,7 +8,7 @@ from core.tests.utils import ConcentIntegrationTestCase
 
 class TestGetOneOrNoneSubtaskFromDatabase(ConcentIntegrationTestCase):
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
 
         self.compute_task_def = self._get_deserialized_compute_task_def()
@@ -31,18 +31,18 @@ class TestGetOneOrNoneSubtaskFromDatabase(ConcentIntegrationTestCase):
             report_computed_task=self.report_computed_task,
         )
 
-    def test_that_if_only_subtask_id_given_and_subtask_exist_function_returns_subtask(self):
+    def test_that_if_only_subtask_id_given_and_subtask_exist_function_returns_subtask(self) -> None:
         subtask = get_one_or_none_subtasks_from_database(self.task_to_compute.compute_task_def['subtask_id'])
         self.assertEqual(self.subtask, subtask)
 
-    def test_that_if_subtask_id_and_optional_dict_given_and_subtask_exist_function_returns_subtask(self):
+    def test_that_if_subtask_id_and_optional_dict_given_and_subtask_exist_function_returns_subtask(self) -> None:
         subtask = get_one_or_none_subtasks_from_database(
             subtask_id=self.task_to_compute.compute_task_def['subtask_id'],
             optional_condition_dict={'state': Subtask.SubtaskState.FORCING_REPORT.name},  # pylint: disable=no-member
         )
         self.assertEqual(self.subtask, subtask)
 
-    def test_that_if_subtask_id_and_optional_dict_given_and_subtask_does_not_exist_function_returns_none(self):
+    def test_that_if_subtask_id_and_optional_dict_given_and_subtask_does_not_exist_function_returns_none(self) -> None:
         subtask = get_one_or_none_subtasks_from_database(
             subtask_id=self.task_to_compute.compute_task_def['subtask_id'],
             optional_condition_dict={'state': Subtask.SubtaskState.REPORTED.name},  # pylint: disable=no-member

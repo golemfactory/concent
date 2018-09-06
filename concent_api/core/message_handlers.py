@@ -42,8 +42,8 @@ from core.payments import service as payments_service
 from core.payments.backends.sci_backend import TransactionType
 from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
-from core.subtask_helpers import get_one_or_none_subtasks_from_database
 from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
+from core.subtask_helpers import get_one_or_none_subtasks_from_database
 from core.transfer_operations import store_pending_message
 from core.transfer_operations import create_file_transfer_token_for_golem_client
 from core.utils import calculate_additional_verification_call_time
@@ -422,9 +422,9 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
             requestor_public_key=requestor_public_key,
             state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             next_deadline=(
-                    int(task_to_compute.compute_task_def['deadline']) +
-                    2 * maximum_download_time +
-                    3 * settings.CONCENT_MESSAGING_TIME
+                int(task_to_compute.compute_task_def['deadline']) +
+                2 * maximum_download_time +
+                3 * settings.CONCENT_MESSAGING_TIME
             ),
             task_to_compute=task_to_compute,
             report_computed_task=client_message.report_computed_task,
@@ -432,7 +432,7 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
         )
 
     else:
-        if subtask.state_enum==Subtask.SubtaskState.FORCING_RESULT_TRANSFER:
+        if subtask.state_enum == Subtask.SubtaskState.FORCING_RESULT_TRANSFER:
             return message.concents.ServiceRefused(
                 reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
             )
@@ -440,9 +440,9 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
             subtask=subtask,
             state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             next_deadline=(
-                    int(task_to_compute.compute_task_def['deadline']) +
-                    2 * maximum_download_time +
-                    3 * settings.CONCENT_MESSAGING_TIME
+                int(task_to_compute.compute_task_def['deadline']) +
+                2 * maximum_download_time +
+                3 * settings.CONCENT_MESSAGING_TIME
             ),
             set_next_deadline=True,
             task_to_compute=task_to_compute,
@@ -481,8 +481,8 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
     current_time = get_current_utc_timestamp()
 
     if not payments_service.is_account_status_positive(  # pylint: disable=no-value-for-parameter
-            client_eth_address=task_to_compute.requestor_ethereum_address,
-            pending_value=task_to_compute.price,
+        client_eth_address=task_to_compute.requestor_ethereum_address,
+        pending_value=task_to_compute.price,
     ):
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
@@ -1158,12 +1158,6 @@ def update_subtask(
 
     next_deadline_datetime = parse_timestamp_to_utc_datetime(next_deadline) if next_deadline is not None else None
 
-    if task_to_compute is not None and subtask.task_to_compute is not None:
-        validate_all_messages_identical([
-            task_to_compute,
-            deserialize_message(subtask.task_to_compute.data.tobytes()),
-        ])
-
     set_subtask_messages(
         subtask,
         task_to_compute=task_to_compute,
@@ -1365,6 +1359,13 @@ def handle_send_subtask_results_verify(
                 "SubtaskResultsVerify is not allowed in current state",
                 error_code=ErrorCode.QUEUE_SUBTASK_STATE_TRANSITION_NOT_ALLOWED,
             )
+
+        if subtask is not None:
+            if task_to_compute is not None and subtask.task_to_compute is not None:
+                validate_all_messages_identical([
+                    task_to_compute,
+                    deserialize_message(subtask.task_to_compute.data.tobytes()),
+                ])
 
         update_subtask(
             subtask=subtask,

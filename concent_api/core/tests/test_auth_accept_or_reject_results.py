@@ -66,7 +66,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             'core.message_handlers.payments_service.is_account_status_positive',
             side_effect=self.is_account_status_positive_true_mock
         ) as is_account_status_positive_true_mock_function:
-            with freeze_time("2018-02-05 10:00:29"):
+            with freeze_time("2018-02-05 10:00:30"):
                 response = self.client.post(
                     reverse('core:send'),
                     data                                = serialized_force_subtask_results,

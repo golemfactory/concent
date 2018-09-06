@@ -1,11 +1,12 @@
 from base64                     import b64encode
 from logging import getLogger
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
 
 from django.db.models import Q
-from django.utils               import timezone
+from django.utils import timezone
 from golem_messages.message.tasks import SubtaskResultsAccepted
 
 from core.models                import PendingResponse
@@ -190,7 +191,7 @@ def are_subtask_results_accepted_messages_signed_by_the_same_requestor(subtask_r
 
 def get_one_or_none_subtasks_from_database(
     subtask_id: str,
-    optional_condition_dict: Dict[str, str] = None,
+    optional_condition_dict: Dict[str, Any] = None,
 ) -> Optional[Subtask]:
 
     conditions_dict = {'subtask_id': subtask_id}
@@ -198,10 +199,7 @@ def get_one_or_none_subtasks_from_database(
     if optional_condition_dict is not None:
         conditions_dict.update(optional_condition_dict)
 
-    query = Subtask.objects.select_for_update().filter(**conditions_dict)
-
-    assert len(query) <= 1
-    if len(query) == 0:
+    try:
+        return Subtask.objects.select_for_update().get(**conditions_dict)
+    except Subtask.DoesNotExist:
         return None
-    else:
-        return query[0]

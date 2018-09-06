@@ -1,4 +1,5 @@
 import enum
+from typing import Any
 
 from golem_messages.message.base import Message
 from golem_messages.register import library
@@ -21,7 +22,7 @@ class NonceAbstractMessage(Message):
         'nonce',
     ] + Message.__slots__
 
-    def deserialize_slot(self, key, value):
+    def deserialize_slot(self, key: str, value: Any) -> Any:
         value = super().deserialize_slot(key, value)
         if key == 'nonce':
             validate_integer(
@@ -49,7 +50,7 @@ class TransactionAbstractMessage(NonceAbstractMessage):
         'data',
     ] + NonceAbstractMessage.__slots__
 
-    def deserialize_slot(self, key, value):
+    def deserialize_slot(self, key: str, value: Any) -> Any:
         value = super().deserialize_slot(key, value)
         if key == 'to':
             validate_varchar(
@@ -86,7 +87,7 @@ class TransactionSigningRequest(TransactionAbstractMessage):
         'from',
     ] + TransactionAbstractMessage.__slots__
 
-    def deserialize_slot(self, key, value):
+    def deserialize_slot(self, key: str, value: Any) -> Any:
         value = super().deserialize_slot(key, value)
         if key == 'from':
             validate_varchar(
@@ -114,7 +115,7 @@ class SignedTransaction(TransactionAbstractMessage):
         's',
     ] + TransactionAbstractMessage.__slots__
 
-    def deserialize_slot(self, key, value):
+    def deserialize_slot(self, key: str, value: Any) -> Any:
         value = super().deserialize_slot(key, value)
         if key in ('v', 'r', 's'):
             validate_integer(

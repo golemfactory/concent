@@ -1,7 +1,7 @@
 from golem_messages.exceptions import FieldError
 
 
-def validate_bytes(field_name: str, value: bytes):
+def validate_bytes(field_name: str, value: bytes) -> None:
     assert isinstance(field_name, str)
     assert isinstance(value, bytes)
 
@@ -13,7 +13,7 @@ def validate_bytes(field_name: str, value: bytes):
         )
 
 
-def validate_maximum_int_length(field_name: str, value: int, maximum_allowed_length: int):
+def validate_maximum_int_length(field_name: str, value: int, maximum_allowed_length: int) -> None:
     assert isinstance(field_name, str)
     assert isinstance(value, int)
     assert isinstance(maximum_allowed_length, int)

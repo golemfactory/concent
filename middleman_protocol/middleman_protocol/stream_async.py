@@ -19,7 +19,7 @@ async def handle_frame_receive_async(reader: asyncio.StreamReader, public_key: b
 
 
 def map_exception_to_error_code(exception: MiddlemanProtocolError) -> ErrorCode:
-    return MIDDLEMAN_EXCEPTION_TO_ERROR_CODE_MAP.get(exception, ErrorCode.Unknown)
+    return MIDDLEMAN_EXCEPTION_TO_ERROR_CODE_MAP.get(exception, ErrorCode.Unknown)  # type: ignore
 
 
 async def send_over_stream_async(frame: AbstractFrame, writer: asyncio.StreamWriter, private_key: bytes) -> None:

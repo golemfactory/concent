@@ -4,7 +4,6 @@ from typing import Any
 from golem_messages.message.base import Message
 from golem_messages.register import library
 from golem_messages.validators import validate_integer
-from golem_messages.validators import validate_varchar
 
 from middleman_protocol.concent_golem_messages.validators import validate_bytes
 from middleman_protocol.concent_golem_messages.validators import validate_maximum_int_length
@@ -53,10 +52,10 @@ class TransactionAbstractMessage(NonceAbstractMessage):
     def deserialize_slot(self, key: str, value: Any) -> Any:
         value = super().deserialize_slot(key, value)
         if key == 'to':
-            validate_varchar(
+            validate_bytes(
                 field_name=key,
                 value=value,
-                max_length=20,
+                maximum_allowed_length=20,
             )
         if key == 'data':
             validate_bytes(
@@ -90,10 +89,10 @@ class TransactionSigningRequest(TransactionAbstractMessage):
     def deserialize_slot(self, key: str, value: Any) -> Any:
         value = super().deserialize_slot(key, value)
         if key == 'from':
-            validate_varchar(
+            validate_bytes(
                 field_name=key,
                 value=value,
-                max_length=20,
+                maximum_allowed_length=20,
             )
         return value
 

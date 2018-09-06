@@ -1,3 +1,9 @@
+from typing import Any
+from typing import Callable
+from typing import Optional
+from typing import Sequence
+from typing import Tuple
+from typing import Union
 import argparse
 import datetime
 import http.client
@@ -12,6 +18,7 @@ from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.message import Message
 from golem_messages.message.concents import ClientAuthorization
+from golem_messages.message.tasks import TaskToCompute
 from golem_messages.shortcuts import dump
 from golem_messages.shortcuts import load
 from golem_messages.utils import encode_hex
@@ -40,13 +47,13 @@ class count_fails(object):
     instances = []  # type: ignore
     number_of_run_tests = 0
 
-    def __init__(self, function):
-        self._function     = function
+    def __init__(self, function: Callable) -> None:
+        self._function = function
         self.__name__ = function.__name__
-        self.failed  = False
+        self.failed = False
         count_fails.instances.append(self)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         try:
             print("Running TC: " + self.__name__)
             count_fails.number_of_run_tests += 1
@@ -57,21 +64,21 @@ class count_fails(object):
             self.failed = True
 
     @classmethod
-    def get_fails(cls):
+    def get_fails(cls) -> int:
         return sum([instance.failed for instance in cls.instances])
 
     @classmethod
-    def print_fails(cls):
+    def print_fails(cls) -> None:
         print(f'Total failed tests : {cls.get_fails()} out of {cls.number_of_run_tests}')
 
 
-def assert_condition(actual, expected, error_message = None):
+def assert_condition(actual: Any, expected: Any, error_message: str=None) -> None:
     message = error_message or f"Actual: {actual} != expected: {expected}"
     if actual != expected:
         raise TestAssertionException(message)
 
 
-def print_golem_message(message, indent = 4):
+def print_golem_message(message: Message, indent: int=4) -> None:
     assert isinstance(message, Message)
     HEADER_FIELDS  = ['timestamp', 'encrypted', 'sig']
     PRIVATE_FIELDS = {'_payload', '_raw'}
@@ -90,7 +97,7 @@ def print_golem_message(message, indent = 4):
             print('{}{:30} = {}'.format(' ' * indent, field, value))
 
 
-def validate_response_status(actual_status_code, expected_status):
+def validate_response_status(actual_status_code: int, expected_status: Optional[int]=None) -> None:
     if expected_status is not None:
         assert_condition(
             actual_status_code,
@@ -99,7 +106,12 @@ def validate_response_status(actual_status_code, expected_status):
         )
 
 
-def validate_response_message(encoded_message, expected_message_type, private_key, public_key):
+def validate_response_message(
+    encoded_message: bytes,
+    expected_message_type: Message,
+    private_key: bytes,
+    public_key: bytes,
+) -> None:
     if expected_message_type is not None:
         decoded_message = try_to_decode_golem_message(private_key, public_key, encoded_message)
         assert_condition(
@@ -109,7 +121,7 @@ def validate_response_message(encoded_message, expected_message_type, private_ke
         )
 
 
-def validate_content_type(actual_content_type, expected_content_type):
+def validate_content_type(actual_content_type: str, expected_content_type: Optional[str]=None) -> None:
     if expected_content_type is not None:
         assert_condition(
             actual_content_type,
@@ -119,17 +131,17 @@ def validate_content_type(actual_content_type, expected_content_type):
 
 
 def api_request(
-    host,
-    endpoint,
-    private_key,
-    public_key,
-    data=None,
-    headers=None,
-    expected_status=None,
-    expected_message_type=None,
-    expected_content_type=None
-):
-    def _prepare_data(data):
+    host: str,
+    endpoint: str,
+    private_key: bytes,
+    public_key: bytes,
+    data: Optional[Union[bytes, str]]=None,
+    headers: Optional[dict]=None,
+    expected_status: Optional[int]=None,
+    expected_message_type: Optional[Message]=None,
+    expected_content_type: Optional[str]=None
+) -> Union[None, Message]:
+    def _prepare_data(data: Optional[Union[bytes, str]]=None) -> Union[str, bytes]:
         if data is None:
             return ''
         if isinstance(data, bytes):
@@ -140,7 +152,7 @@ def api_request(
             public_key,
         )
 
-    def _print_data(data, url):
+    def _print_data(data: Optional[Union[bytes, str]], url: str) -> None:
         if data is None:
             print('RECEIVE ({})'.format(url))
 
@@ -166,14 +178,14 @@ def api_request(
     if 'text/html' in content_type:
         return None
     elif content_type == 'json':
-        return json.loads(response._content)
+        return json.loads(response.content)
     elif content_type == 'application/octet-stream':
         return try_to_decode_golem_message(private_key, public_key, response.content)
     else:
         raise UnexpectedResponse(f'Unexpected response content_type. Response content type is {content_type}.')
 
 
-def _print_response(private_key, public_key, response):
+def _print_response(private_key: bytes, public_key: bytes, response: requests.Response) -> None:
     if response.content is None:
         print('RESPONSE: <empty>')
     else:
@@ -190,14 +202,14 @@ def _print_response(private_key, public_key, response):
             print('Unexpected content-type of response message')
 
 
-def _print_message_from_json(response):
+def _print_message_from_json(response: requests.Response) -> None:
     try:
         print(response.json())
     except json.decoder.JSONDecodeError:
         print('RAW RESPONSE: Failed to decode response content')
 
 
-def _print_message_from_stream(private_key, public_key, content):
+def _print_message_from_stream(private_key: bytes, public_key: bytes, content: bytes) -> None:
     decoded_response = try_to_decode_golem_message(private_key, public_key, content)
     if decoded_response is None:
         print("ERROR: Decoded Golem Message is 'None'")
@@ -205,7 +217,7 @@ def _print_message_from_stream(private_key, public_key, content):
         print_golem_message(decoded_response)
 
 
-def try_to_decode_golem_message(private_key, public_key, content):
+def try_to_decode_golem_message(private_key: bytes, public_key: bytes, content: bytes) -> Message:
     try:
         decoded_response = load(
             content,
@@ -219,17 +231,17 @@ def try_to_decode_golem_message(private_key, public_key, content):
     return decoded_response
 
 
-def timestamp_to_isoformat(timestamp):
+def timestamp_to_isoformat(timestamp: int) -> str:
     return datetime.datetime.fromtimestamp(timestamp).isoformat(' ')
 
 
-def create_client_auth_message(client_priv_key, client_public_key, concent_public_key):  # pylint: disable=no-self-use
+def create_client_auth_message(client_priv_key: bytes, client_public_key: bytes, concent_public_key: bytes) -> bytes:
     client_auth = ClientAuthorization()
     client_auth.client_public_key = client_public_key
     return dump(client_auth, client_priv_key, concent_public_key)
 
 
-def parse_command_line(command_line):
+def parse_command_line(command_line: list) -> str:
     if len(command_line) <= 1:
         sys.exit('Not enough arguments')
 
@@ -240,7 +252,7 @@ def parse_command_line(command_line):
     return cluster_url
 
 
-def parse_arguments():
+def parse_arguments() -> Tuple:
     parser = argparse.ArgumentParser()
     parser.add_argument("cluster_url")
     parser.add_argument("tc_patterns", nargs='*')
@@ -248,25 +260,25 @@ def parse_arguments():
     return (args.cluster_url, args.tc_patterns)
 
 
-def get_tests_list(patterns, all_objects):
-    def _is_a_test(x):
+def get_tests_list(patterns: Sequence, all_objects: list) -> list:
+    def _is_a_test(x: Sequence) -> bool:
         return "case_" in x
 
     tests = list(filter(lambda x: _is_a_test(x), all_objects))
     if len(patterns) > 0:
         safe_patterns = set(pattern for pattern in patterns if _is_a_test(pattern))
-        tests = set(test for pattern in safe_patterns for test in tests if pattern in test)
+        tests = set(test for pattern in safe_patterns for test in tests if pattern in test)  # type: ignore
     return sorted(tests)
 
 
-def execute_tests(tests_to_execute, objects, **kwargs):
+def execute_tests(tests_to_execute: list, objects: dict, **kwargs: Any) -> None:
     tests = [objects[name] for name in tests_to_execute]
     for test in tests:
         test(task_id=str(uuid.uuid4()), subtask_id=str(uuid.uuid4()), **kwargs)
         print("-" * 80)
 
 
-def run_tests(objects, additional_arguments=None):
+def run_tests(objects: dict, additional_arguments: Optional[dict]=None) -> None:
     if additional_arguments is None:
         additional_arguments = {}
     (cluster_url, patterns) = parse_arguments()
@@ -287,34 +299,34 @@ def run_tests(objects, additional_arguments=None):
     print("END")
 
 
-def _get_provider_hex_public_key():
+def _get_provider_hex_public_key() -> str:
     """ Returns provider hex public key """
     return encode_hex(PROVIDER_PUBLIC_KEY)
 
 
-def _get_requestor_hex_public_key():
+def _get_requestor_hex_public_key() -> str:
     return encode_hex(REQUESTOR_PUBLIC_KEY)
 
 
 def create_signed_task_to_compute(
-    task_id,
-    subtask_id,
-    deadline,
-    timestamp=None,
-    provider_public_key=None,
-    requestor_public_key=None,
-    requestor_ethereum_public_key=None,
-    provider_ethereum_public_key=None,
-    price=0,
-    size=1,
-    package_hash='sha1:57786d92d1a6f7eaaba1c984db5e108c68b03f0d',
-    script_src=None,
-):
+    task_id: str,
+    subtask_id: str,
+    deadline: int,
+    timestamp: Optional[Union[datetime.datetime, str]]=None,
+    provider_public_key: Optional[bytes]=None,
+    requestor_public_key: Optional[bytes]=None,
+    requestor_ethereum_public_key: Optional[bytes]=None,
+    provider_ethereum_public_key: Optional[bytes]=None,
+    price: int=0,
+    size: int=1,
+    package_hash: str='sha1:57786d92d1a6f7eaaba1c984db5e108c68b03f0d',
+    script_src: Optional[str]=None,
+) -> TaskToCompute:
     with freeze_time(timestamp):
         compute_task_def = ComputeTaskDefFactory(
             task_id=task_id,
             subtask_id=subtask_id,
-            deadline= deadline,
+            deadline=deadline,
             extra_data={
                 'output_format': 'png',
                 'scene_file': '/golem/resources/golem-header-light.blend',

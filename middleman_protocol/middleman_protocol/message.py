@@ -64,27 +64,27 @@ class AbstractFrame(ABC):
         self._validate_payload(payload)
         self.payload = payload
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         """Overrides the default implementation for our tests"""
         if isinstance(other, AbstractFrame):
             return (
                 self.payload == other.payload and
-                self.payload_type == other.payload_type and
+                self.payload_type == other.payload_type and  # type: ignore
                 self.request_id == other.request_id
             )
         return False
 
     @classmethod
     @abstractmethod
-    def _deserialize_payload(cls, payload: bytes):
+    def _deserialize_payload(cls, payload: bytes) -> Any:
         pass
 
     @abstractmethod
-    def _serialize_payload(self, payload: Any):
+    def _serialize_payload(self, payload: Any) -> bytes:
         pass
 
     @abstractmethod
-    def _validate_payload(self, payload: Any):
+    def _validate_payload(self, payload: Any) -> None:
         pass
 
     @classmethod
@@ -150,7 +150,7 @@ class AbstractFrame(ABC):
         return message
 
     @classmethod
-    def _validate_payload_type(cls, payload_type: int):
+    def _validate_payload_type(cls, payload_type: int) -> None:
         if (
             not hasattr(PayloadType, str(payload_type)) or
             PayloadType[str(payload_type)] not in PAYLOAD_TYPE_TO_MIDDLEMAN_MESSAGE_CLASS

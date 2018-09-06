@@ -1,3 +1,4 @@
+from typing import Any
 import importlib
 import os
 
@@ -11,12 +12,12 @@ from django.core.exceptions import ValidationError
 from golem_messages import constants
 
 from common.exceptions import ConcentValidationError
-from concent_api.constants  import AVAILABLE_CONCENT_FEATURES
+from concent_api.constants import AVAILABLE_CONCENT_FEATURES
 from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
 from core.validation import validate_bytes_public_key
 
 
-def create_error_13_ssl_cert_path_is_none():
+def create_error_13_ssl_cert_path_is_none() -> Error:
     return Error(
         "None is not a valid value for STORAGE_CLUSTER_SSL_CERTIFICATE_PATH",
         hint    = "If no SSL certificate should be use for storage cluster STORAGE_CLUSTER_SSL_CERTIFICATE_PATH should be an empty string",
@@ -24,14 +25,14 @@ def create_error_13_ssl_cert_path_is_none():
     )
 
 
-def create_error_14_cert_path_does_not_exist(path):
+def create_error_14_cert_path_does_not_exist(path: str) -> Error:
     return Error(
         f"'{path}' does not exist",
         id = "concent.E014",
     )
 
 
-def create_error_15_ssl_cert_path_is_not_a_file(path):
+def create_error_15_ssl_cert_path_is_not_a_file(path: str) -> Error:
     return Error(
         f"{path} is not a file",
         hint    = "STORAGE_CLUSTER_SSL_CERTIFICATE_PATH should be an OpenSSL certificate file",
@@ -39,7 +40,7 @@ def create_error_15_ssl_cert_path_is_not_a_file(path):
     )
 
 
-def create_error_17_if_geth_container_address_has_wrong_value():
+def create_error_17_if_geth_container_address_has_wrong_value() -> Error:
     return Error(
         "GETH_ADDRESS should be a valid url address",
         hint    = "Set correct value for GETH_ADDRESS in your local_settings.py",
@@ -47,7 +48,7 @@ def create_error_17_if_geth_container_address_has_wrong_value():
     )
 
 
-def create_error_18_invalid_setting_type(setting, value):
+def create_error_18_invalid_setting_type(setting: str, value: str) -> Error:
     return Error(
         f"Setting {setting} has incorrect value {value}",
         hint=f"Set correct value on setting {setting}",
@@ -55,7 +56,7 @@ def create_error_18_invalid_setting_type(setting, value):
     )
 
 
-def create_error_19_if_minimum_upload_rate_is_not_set():
+def create_error_19_if_minimum_upload_rate_is_not_set() -> Error:
     return Error(
         "MINIMUM_UPLOAD_RATE is not set",
         hint="MINIMUM_UPLOAD_RATE must be set to integer greater or equal to 1",
@@ -63,7 +64,7 @@ def create_error_19_if_minimum_upload_rate_is_not_set():
     )
 
 
-def create_error_20_if_minimum_upload_rate_has_wrong_value():
+def create_error_20_if_minimum_upload_rate_has_wrong_value() -> Error:
     return Error(
         "MINIMUM_UPLOAD_RATE has wrong value",
         hint="MINIMUM_UPLOAD_RATE must be set to integer greater or equal to 1",
@@ -71,7 +72,7 @@ def create_error_20_if_minimum_upload_rate_has_wrong_value():
     )
 
 
-def create_error_21_if_download_leadin_time_is_not_set():
+def create_error_21_if_download_leadin_time_is_not_set() -> Error:
     return Error(
         "DOWNLOAD_LEADIN_TIME is not set",
         hint="DOWNLOAD_LEADIN_TIME must be set to non-negative integer",
@@ -79,7 +80,7 @@ def create_error_21_if_download_leadin_time_is_not_set():
     )
 
 
-def create_error_22_if_download_leadin_time_has_wrong_value():
+def create_error_22_if_download_leadin_time_has_wrong_value() -> Error:
     return Error(
         "DOWNLOAD_LEADIN_TIME has wrong value",
         hint="DOWNLOAD_LEADIN_TIME must be set to non-negative integer",
@@ -87,7 +88,7 @@ def create_error_22_if_download_leadin_time_has_wrong_value():
     )
 
 
-def create_error_23_if_concent_time_settings_is_not_defined(concent_setting_name):
+def create_error_23_if_concent_time_settings_is_not_defined(concent_setting_name: str) -> Error:
     return Error(
         f"{concent_setting_name} is not defined",
         hint=f"{concent_setting_name} must be set to non-negative integer",
@@ -95,7 +96,7 @@ def create_error_23_if_concent_time_settings_is_not_defined(concent_setting_name
     )
 
 
-def create_error_24_if_concent_time_settings_have_wrong_value(concent_setting_name):
+def create_error_24_if_concent_time_settings_have_wrong_value(concent_setting_name: str) -> Error:
     return Error(
         f"{concent_setting_name} has wrong value",
         hint=f"{concent_setting_name} must be set to non-negative integer",
@@ -103,7 +104,7 @@ def create_error_24_if_concent_time_settings_have_wrong_value(concent_setting_na
     )
 
 
-def create_error_25_atomic_requests_not_set_for_database(database_name):
+def create_error_25_atomic_requests_not_set_for_database(database_name: str) -> Error:
     return Error(
         f"ATOMIC_REQUESTS for database {database_name} is not set to True",
         hint="ATOMIC_REQUESTS must be set to True for all databases because our views rely on the fact that on errors "
@@ -112,7 +113,7 @@ def create_error_25_atomic_requests_not_set_for_database(database_name):
     )
 
 
-def create_error_26_storage_server_internal_address_is_not_set():
+def create_error_26_storage_server_internal_address_is_not_set() -> Error:
     return Error(
         'STORAGE_SERVER_INTERNAL_ADDRESS setting is not defined',
         hint='Set STORAGE_SERVER_INTERNAL_ADDRESS in your local_settings.py to the address of a Concent storage cluster that offers the /upload/ and /download/ endpoints.',
@@ -120,7 +121,7 @@ def create_error_26_storage_server_internal_address_is_not_set():
     )
 
 
-def create_error_27_storage_server_internal_address_is_not_valid_url(error):
+def create_error_27_storage_server_internal_address_is_not_valid_url(error: str) -> Error:
     return Error(
         'STORAGE_SERVER_INTERNAL_ADDRESS is not a valid URL',
         hint='{}'.format(error),
@@ -128,7 +129,7 @@ def create_error_27_storage_server_internal_address_is_not_valid_url(error):
     )
 
 
-def create_error_28_verifier_storage_path_is_not_set():
+def create_error_28_verifier_storage_path_is_not_set() -> Error:
     return Error(
         'VERIFIER_STORAGE_PATH setting is not defined',
         hint='Set VERIFIER_STORAGE_PATH in your local_settings.py to the path to a directory where verifier can store files downloaded from the storage server, rendering results and any intermediate files.',
@@ -136,7 +137,7 @@ def create_error_28_verifier_storage_path_is_not_set():
     )
 
 
-def create_error_29_verifier_storage_path_is_does_not_exists():
+def create_error_29_verifier_storage_path_is_does_not_exists() -> Error:
     return Error(
         'VERIFIER_STORAGE_PATH directory does not exists',
         hint='Create directory {} or change VERIFIER_STORAGE_PATH setting'.format(settings.VERIFIER_STORAGE_PATH),
@@ -144,7 +145,7 @@ def create_error_29_verifier_storage_path_is_does_not_exists():
     )
 
 
-def create_error_30_verifier_storage_path_is_not_accessible():
+def create_error_30_verifier_storage_path_is_not_accessible() -> Error:
     return Error(
         'Cannot write to VERIFIER_STORAGE_PATH',
         hint='Current user does not have write permissions to directory {}'.format(settings.VERIFIER_STORAGE_PATH),
@@ -152,7 +153,7 @@ def create_error_30_verifier_storage_path_is_not_accessible():
     )
 
 
-def create_error_31_custom_protocol_times_is_not_set():
+def create_error_31_custom_protocol_times_is_not_set() -> Error:
     return Error(
         'CUSTOM_PROTOCOL_TIMES setting is not set',
         hint='Set CUSTOM_PROTOCOL_TIMES in your local_settings.py to the boolean value.',
@@ -160,7 +161,7 @@ def create_error_31_custom_protocol_times_is_not_set():
     )
 
 
-def create_error_32_custom_protocol_times_has_wrong_value():
+def create_error_32_custom_protocol_times_has_wrong_value() -> Error:
     return Error(
         'CUSTOM_PROTOCOL_TIMES setting has wrong value',
         hint='Set CUSTOM_PROTOCOL_TIMES in your local_settings.py to the boolean value.',
@@ -169,8 +170,8 @@ def create_error_32_custom_protocol_times_has_wrong_value():
 
 
 def create_error_33_custom_protocol_times_is_false_and_settings_does_not_match_golem_messages_constants(
-    concent_setting_name,
-):
+    concent_setting_name: str,
+) -> Error:
     return Error(
         f'CUSTOM_PROTOCOL_TIMES setting is False and Concent setting {concent_setting_name} does not match golem '
         'messages constant',
@@ -179,7 +180,7 @@ def create_error_33_custom_protocol_times_is_false_and_settings_does_not_match_g
     )
 
 
-def create_error_31_verifier_min_ssim_is_not_set():
+def create_error_31_verifier_min_ssim_is_not_set() -> Error:
     return Error(
         'VERIFIER_MIN_SSIM setting is not defined but `verifier` Concent feature is on',
         hint='Set VERIFIER_MIN_SSIM in your local settings when `verifier` Concent feature is on.',
@@ -187,7 +188,7 @@ def create_error_31_verifier_min_ssim_is_not_set():
     )
 
 
-def create_error_32_verifier_min_ssim_is_set():
+def create_error_32_verifier_min_ssim_is_set() -> Error:
     return Error(
         'VERIFIER_MIN_SSIM setting is defined but `verifier` Concent feature is off',
         hint='Unset or set to None VERIFIER_MIN_SSIM in your local settings when `verifier` Concent feature is off.',
@@ -195,7 +196,7 @@ def create_error_32_verifier_min_ssim_is_set():
     )
 
 
-def create_error_31_verifier_min_ssim_has_wrong_type():
+def create_error_31_verifier_min_ssim_has_wrong_type() -> Error:
     return Error(
         "VERIFIER_MIN_SSIM has wrong type",
         hint=f"VERIFIER_MIN_SSIM must be set to float.",
@@ -203,7 +204,7 @@ def create_error_31_verifier_min_ssim_has_wrong_type():
     )
 
 
-def create_error_32_verifier_min_ssim_has_wrong_value(verifier_min_ssim):
+def create_error_32_verifier_min_ssim_has_wrong_value(verifier_min_ssim: float) -> Error:
     return Error(
         "VERIFIER_MIN_SSIM has wrong value",
         hint=f"VERIFIER_MIN_SSIM must be have value between -1 and 1. Currently it has {verifier_min_ssim}.",
@@ -211,7 +212,7 @@ def create_error_32_verifier_min_ssim_has_wrong_value(verifier_min_ssim):
     )
 
 
-def create_error_34_additional_verification_time_multiplier_is_not_defined():
+def create_error_34_additional_verification_time_multiplier_is_not_defined() -> Error:
     return Error(
         "ADDITIONAL_VERIFICATION_TIME_MULTIPLIER is not defined",
         hint="Set ADDITIONAL_VERIFICATION_TIME_MULTIPLIER in your base.py to a float.",
@@ -219,7 +220,9 @@ def create_error_34_additional_verification_time_multiplier_is_not_defined():
     )
 
 
-def create_error_35_additional_verification_time_multiplier_has_wrong_type(additional_verification_time_multiplier_type):
+def create_error_35_additional_verification_time_multiplier_has_wrong_type(
+    additional_verification_time_multiplier_type: Any
+) -> Error:
     return Error(
         "ADDITIONAL_VERIFICATION_TIME_MULTIPLIER has wrong type",
         hint=f"ADDITIONAL_VERIFICATION_TIME_MULTIPLIER must be float instead of {additional_verification_time_multiplier_type}.",
@@ -227,7 +230,7 @@ def create_error_35_additional_verification_time_multiplier_has_wrong_type(addit
     )
 
 
-def create_error_36_storage_cluster_address_does_not_end_with_slash():
+def create_error_36_storage_cluster_address_does_not_end_with_slash() -> Error:
     return Error(
         "STORAGE_CLUSTER_ADDRESS must end with '/'",
         hint=f"STORAGE_CLUSTER_ADDRESS must end with '/'.",
@@ -235,7 +238,7 @@ def create_error_36_storage_cluster_address_does_not_end_with_slash():
     )
 
 
-def create_error_37_storage_server_internal_address_does_not_end_with_slash():
+def create_error_37_storage_server_internal_address_does_not_end_with_slash() -> Error:
     return Error(
         "STORAGE_SERVER_INTERNAL_ADDRESS must end with '/'",
         hint=f"STORAGE_SERVER_INTERNAL_ADDRESS must end with '/'.",
@@ -243,7 +246,7 @@ def create_error_37_storage_server_internal_address_does_not_end_with_slash():
     )
 
 
-def create_error_38_storage_cluster_address_is_not_valid_url(error):
+def create_error_38_storage_cluster_address_is_not_valid_url(error: str) -> Error:
     return Error(
         'STORAGE_CLUSTER_ADDRESS is not a valid URL',
         hint=f'{error}',
@@ -251,7 +254,7 @@ def create_error_38_storage_cluster_address_is_not_valid_url(error):
     )
 
 
-def create_error_39_storage_server_internal_address_is_not_set():
+def create_error_39_storage_server_internal_address_is_not_set() -> Error:
     return Error(
         'STORAGE_CLUSTER_ADDRESS setting is not defined',
         hint='Set STORAGE_CLUSTER_ADDRESS in your local_settings.py to the address of a Concent storage cluster that offers the /upload/ and /download/ endpoints.',
@@ -259,7 +262,7 @@ def create_error_39_storage_server_internal_address_is_not_set():
     )
 
 
-def create_error_40_verifier_download_chunk_size_is_not_defined():
+def create_error_40_verifier_download_chunk_size_is_not_defined() -> Error:
     return Error(
         'VERIFIER_DOWNLOAD_CHUNK_SIZE setting is not defined',
         hint='Set VERIFIER_DOWNLOAD_CHUNK_SIZE in your local_settings.py.',
@@ -267,7 +270,7 @@ def create_error_40_verifier_download_chunk_size_is_not_defined():
     )
 
 
-def create_error_41_verifier_download_chunk_size_has_wrong_type(verifier_download_chunk_size_type):
+def create_error_41_verifier_download_chunk_size_has_wrong_type(verifier_download_chunk_size_type: Any) -> Error:
     return Error(
         'VERIFIER_DOWNLOAD_CHUNK_SIZE has wrong type',
         hint=f"VERIFIER_DOWNLOAD_CHUNK_SIZE must be integer instead of {verifier_download_chunk_size_type}.",
@@ -275,7 +278,7 @@ def create_error_41_verifier_download_chunk_size_has_wrong_type(verifier_downloa
     )
 
 
-def create_error_42_verifier_download_chunk_size_has_wrong_value(verifier_download_chunk_size_value):
+def create_error_42_verifier_download_chunk_size_has_wrong_value(verifier_download_chunk_size_value: int) -> Error:
     return Error(
         'VERIFIER_DOWNLOAD_CHUNK_SIZE setting has wrong value',
         hint=f"VERIFIER_DOWNLOAD_CHUNK_SIZE must be greater or equal than 1. Currently it has {verifier_download_chunk_size_value}.",
@@ -283,7 +286,7 @@ def create_error_42_verifier_download_chunk_size_has_wrong_value(verifier_downlo
     )
 
 
-def create_error_43_signing_service_public_key_is_missing():
+def create_error_43_signing_service_public_key_is_missing() -> Error:
     return Error(
         'SIGNING_SERVICE_PUBLIC_KEY is not defined',
         hint='SIGNING_SERVICE_PUBLIC_KEY should be defined in settings if "middleman" feature is enabled.',
@@ -291,7 +294,7 @@ def create_error_43_signing_service_public_key_is_missing():
     )
 
 
-def create_error_44_signing_service_public_key_is_invalid():
+def create_error_44_signing_service_public_key_is_invalid() -> Error:
     return Error(
         'SIGNING_SERVICE_PUBLIC_KEY is not valid',
         hint='SIGNING_SERVICE_PUBLIC_KEY should be a valid public key.',
@@ -299,7 +302,7 @@ def create_error_44_signing_service_public_key_is_invalid():
     )
 
 
-def create_error_45_concent_ethereum_public_key_is_not_set():
+def create_error_45_concent_ethereum_public_key_is_not_set() -> Error:
     return Error(
         'CONCENT_ETHEREUM_PUBLIC_KEY setting is not defined',
         hint='Set CONCENT_ETHEREUM_PUBLIC_KEY in your local_settings.py to the one matching SigningService Ethereum private key.',
@@ -307,7 +310,7 @@ def create_error_45_concent_ethereum_public_key_is_not_set():
     )
 
 
-def create_error_46_concent_ethereum_public_key_has_wrong_type(concent_ethereum_public_key):
+def create_error_46_concent_ethereum_public_key_has_wrong_type(concent_ethereum_public_key: Any) -> Error:
     return Error(
         'CONCENT_ETHEREUM_PUBLIC_KEY has wrong type',
         hint=f"CONCENT_ETHEREUM_PUBLIC_KEY must be string instead of {type(concent_ethereum_public_key)}.",
@@ -315,7 +318,7 @@ def create_error_46_concent_ethereum_public_key_has_wrong_type(concent_ethereum_
     )
 
 
-def create_error_47_concent_ethereum_public_key_has_wrong_length(concent_ethereum_public_key):
+def create_error_47_concent_ethereum_public_key_has_wrong_length(concent_ethereum_public_key: str) -> Error:
     return Error(
         'CONCENT_ETHEREUM_PUBLIC_KEY has wrong length',
         hint=f"CONCENT_ETHEREUM_PUBLIC_KEY must have length {ETHEREUM_PUBLIC_KEY_LENGTH} instead of {len(concent_ethereum_public_key)}.",
@@ -324,7 +327,7 @@ def create_error_47_concent_ethereum_public_key_has_wrong_length(concent_ethereu
 
 
 @register()
-def check_settings_concent_features(app_configs, **kwargs):  # pylint: disable=unused-argument
+def check_settings_concent_features(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
 
     if not isinstance(settings.CONCENT_FEATURES, list):
         return [Error(
@@ -349,10 +352,10 @@ def check_settings_concent_features(app_configs, **kwargs):  # pylint: disable=u
         ))
 
     for feature in settings.CONCENT_FEATURES:
-        if not set(AVAILABLE_CONCENT_FEATURES[feature]['required_django_apps']).issubset(set(settings.INSTALLED_APPS)):
+        if not set(AVAILABLE_CONCENT_FEATURES[feature]['required_django_apps']).issubset(set(settings.INSTALLED_APPS)):  # type: ignore
             errors_and_warnings.append(Error(
                 'Not all apps required by feature "{}" are enabled in INSTALLED_APPS'.format(feature),
-                hint = 'Add the following apps to INSTALLED_APPS: {}'.format(AVAILABLE_CONCENT_FEATURES[feature]['required_django_apps']),
+                hint = 'Add the following apps to INSTALLED_APPS: {}'.format(AVAILABLE_CONCENT_FEATURES[feature]['required_django_apps']),  # type: ignore
                 id   = 'concent.E003',
             ))
 
@@ -360,7 +363,7 @@ def check_settings_concent_features(app_configs, **kwargs):  # pylint: disable=u
 
 
 @register()
-def check_settings_storage_cluster_address(app_configs=None, **kwargs):  # pylint: disable=unused-argument
+def check_settings_storage_cluster_address(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
     if not hasattr(settings, 'STORAGE_CLUSTER_ADDRESS') and 'gatekeeper' in settings.CONCENT_FEATURES:
         return [create_error_39_storage_server_internal_address_is_not_set()]
 
@@ -377,7 +380,7 @@ def check_settings_storage_cluster_address(app_configs=None, **kwargs):  # pylin
 
 
 @register()
-def check_settings_storage_server_internal_address(app_configs=None, **kwargs):  # pylint: disable=unused-argument
+def check_settings_storage_server_internal_address(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
     if not hasattr(settings, 'STORAGE_SERVER_INTERNAL_ADDRESS') and 'verifier' in settings.CONCENT_FEATURES:
         return [create_error_26_storage_server_internal_address_is_not_set()]
 
@@ -394,7 +397,7 @@ def check_settings_storage_server_internal_address(app_configs=None, **kwargs): 
 
 
 @register()
-def check_settings_verifier_storage_path(app_configs = None, **kwargs):  # pylint: disable=unused-argument
+def check_settings_verifier_storage_path(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
     if not hasattr(settings, 'VERIFIER_STORAGE_PATH') and 'verifier' in settings.CONCENT_FEATURES:
         return [create_error_28_verifier_storage_path_is_not_set()]
 
@@ -408,7 +411,7 @@ def check_settings_verifier_storage_path(app_configs = None, **kwargs):  # pylin
 
 
 @register()
-def check_payment_backend(app_configs, **kwargs):  # pylint: disable=unused-argument
+def check_payment_backend(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
     if 'concent-api' in settings.CONCENT_FEATURES and (
         not hasattr(settings, 'PAYMENT_BACKEND') or
         settings.PAYMENT_BACKEND in [None, '']
@@ -432,7 +435,7 @@ def check_payment_backend(app_configs, **kwargs):  # pylint: disable=unused-argu
 
 
 @register()
-def storage_cluster_certificate_path_check(app_configs = None, **kwargs):  # pylint: disable=unused-argument
+def storage_cluster_certificate_path_check(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
     errors = []
     certificate_path = settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH
     if certificate_path != '':
@@ -446,7 +449,7 @@ def storage_cluster_certificate_path_check(app_configs = None, **kwargs):  # pyl
 
 
 @register
-def geth_container_address_check(app_configs, **kwargs):  # pylint: disable=unused-argument
+def geth_container_address_check(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
     if (
         hasattr(settings, 'PAYMENT_BACKEND') and
         settings.PAYMENT_BACKEND == 'core.payments.backends.sci_backend'
@@ -463,7 +466,7 @@ def geth_container_address_check(app_configs, **kwargs):  # pylint: disable=unus
 
 
 @register
-def check_atomic_requests(app_configs = None, **kwargs):  # pylint: disable=unused-argument
+def check_atomic_requests(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
     errors = []
     if hasattr(settings, 'DATABASES') and isinstance(settings.DATABASES, dict):
         for database_name, database_config in settings.DATABASES.items():
@@ -483,8 +486,8 @@ def check_atomic_requests(app_configs = None, **kwargs):  # pylint: disable=unus
 
 
 @register()
-def check_minimum_upload_rate(app_configs=None, **kwargs):  # pylint: disable=unused-argument
-    errors = []
+def check_minimum_upload_rate(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
+    errors: list = []
     if not hasattr(settings, 'MINIMUM_UPLOAD_RATE'):
         return [create_error_19_if_minimum_upload_rate_is_not_set()]
     if not isinstance(settings.MINIMUM_UPLOAD_RATE, int) or settings.MINIMUM_UPLOAD_RATE < 1:
@@ -493,8 +496,8 @@ def check_minimum_upload_rate(app_configs=None, **kwargs):  # pylint: disable=un
 
 
 @register()
-def check_download_leadin_time(app_configs=None, **kwargs):  # pylint: disable=unused-argument
-    errors = []
+def check_download_leadin_time(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
+    errors: list = []
     if not hasattr(settings, 'DOWNLOAD_LEADIN_TIME'):
         return [create_error_21_if_download_leadin_time_is_not_set()]
     if not isinstance(settings.DOWNLOAD_LEADIN_TIME, int) or settings.DOWNLOAD_LEADIN_TIME < 0:
@@ -503,7 +506,7 @@ def check_download_leadin_time(app_configs=None, **kwargs):  # pylint: disable=u
 
 
 @register()
-def check_concents_time_settings(app_configs=None, **kwargs):  # pylint: disable=unused-argument
+def check_concents_time_settings(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
     CONCENT_TIME_SETTINGS = [
         'CONCENT_MESSAGING_TIME',
         'FORCE_ACCEPTANCE_TIME',
@@ -521,7 +524,7 @@ def check_concents_time_settings(app_configs=None, **kwargs):  # pylint: disable
 
 
 @register()
-def check_custom_protocol_times(app_configs=None, **kwargs):  # pylint: disable=unused-argument
+def check_custom_protocol_times(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
     errors = []
     if not hasattr(settings, 'CUSTOM_PROTOCOL_TIMES'):
         return [create_error_31_custom_protocol_times_is_not_set()]
@@ -545,7 +548,7 @@ def check_custom_protocol_times(app_configs=None, **kwargs):  # pylint: disable=
 
 
 @register()
-def check_verifier_min_ssim(app_configs=None, **kwargs):  # pylint: disable=unused-argument
+def check_verifier_min_ssim(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
     if hasattr(settings, 'VERIFIER_MIN_SSIM') and settings.VERIFIER_MIN_SSIM is not None:
         if not isinstance(settings.VERIFIER_MIN_SSIM, float):
             return [create_error_31_verifier_min_ssim_has_wrong_type()]
@@ -556,7 +559,7 @@ def check_verifier_min_ssim(app_configs=None, **kwargs):  # pylint: disable=unus
 
 
 @register()
-def check_additional_verification_time_multiplier(app_configs=None, **kwargs):  # pylint: disable=unused-argument
+def check_additional_verification_time_multiplier(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
     if not hasattr(settings, 'ADDITIONAL_VERIFICATION_TIME_MULTIPLIER'):
         return [create_error_34_additional_verification_time_multiplier_is_not_defined()]
     if not isinstance(settings.ADDITIONAL_VERIFICATION_TIME_MULTIPLIER, float):
@@ -568,7 +571,7 @@ def check_additional_verification_time_multiplier(app_configs=None, **kwargs):  
 
 
 @register()
-def check_verifier_download_chunk_size(app_configs=None, **kwargs):  # pylint: disable=unused-argument
+def check_verifier_download_chunk_size(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
     if 'verifier' in settings.CONCENT_FEATURES:
         if not hasattr(settings, 'VERIFIER_DOWNLOAD_CHUNK_SIZE'):
             return [create_error_40_verifier_download_chunk_size_is_not_defined()]
@@ -585,7 +588,7 @@ def check_verifier_download_chunk_size(app_configs=None, **kwargs):  # pylint: d
 
 
 @register()
-def check_signing_service_key_availability_for_middleman(app_configs=None, **kwargs):  # pylint: disable=unused-argument
+def check_signing_service_key_availability_for_middleman(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
     errors = []
     if "middleman" in settings.CONCENT_FEATURES:
         if not hasattr(settings, "SIGNING_SERVICE_PUBLIC_KEY"):
@@ -599,7 +602,7 @@ def check_signing_service_key_availability_for_middleman(app_configs=None, **kwa
 
 
 @register()
-def check_concent_ethereum_public_key(app_configs=None, **kwargs):  # pylint: disable=unused-argument
+def check_concent_ethereum_public_key(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
     if not hasattr(settings, 'CONCENT_ETHEREUM_PUBLIC_KEY') and 'core' in settings.CONCENT_FEATURES:
         return [create_error_45_concent_ethereum_public_key_is_not_set()]
 

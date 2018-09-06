@@ -36,7 +36,7 @@ crash_logger = logging.getLogger('concent.crash')
 FramesToParsedFilePaths = Dict[int, List[str]]
 
 
-def clean_directory(directory_path: str):
+def clean_directory(directory_path: str) -> None:
     """ Removes all files from given directory path. """
     for file in os.listdir(directory_path):
         file_path = os.path.join(directory_path, file)
@@ -69,7 +69,7 @@ def prepare_storage_request_headers(file_transfer_token: message.concents.FileTr
     return headers
 
 
-def store_file_from_response_in_chunks(response: requests.Response, file_path: str):
+def store_file_from_response_in_chunks(response: requests.Response, file_path: str) -> None:
     with open(file_path, 'xb') as f:
         for chunk in response.iter_content(chunk_size=settings.VERIFIER_DOWNLOAD_CHUNK_SIZE):
             f.write(chunk)
@@ -164,7 +164,7 @@ def are_image_sizes_and_color_channels_equal(image1: ndarray, image2: ndarray) -
     return image1.shape == image2.shape
 
 
-def import_cv2():
+def import_cv2():  # type: ignore
     import cv2
     return cv2
 
@@ -198,7 +198,7 @@ def compare_minimum_ssim_with_results(ssim_list: List[float], subtask_id: str) -
 
 def load_images(blender_output_file_name: str, result_file: str, subtask_id: str) -> Tuple[ndarray, ndarray]:
     # Read both files with OpenCV.
-    cv2 = import_cv2()
+    cv2 = import_cv2()  # type: ignore
     try:
         image_1 = cv2.imread(  # pylint: disable=no-member
             generate_verifier_storage_file_path(blender_output_file_name)

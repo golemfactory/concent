@@ -1,12 +1,15 @@
+import datetime
 from django.contrib import admin
 from django.db.models import Q
 from django.db.models import QuerySet
+from django.http.request import HttpRequest
 from common.admin import ModelAdminReadOnlyMixin
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from .models import PendingResponse
 from .models import StoredMessage
 from .models import Subtask
+from .models import SubtaskWithTimingColumnsManager
 
 ACTIVE_STATE_NAMES = [x.name for x in Subtask.ACTIVE_STATES]
 PASSIVE_STATE_NAMES = [x.name for x in Subtask.PASSIVE_STATES]
@@ -16,14 +19,14 @@ class ActivePassiveDownloadsStateFilter(admin.SimpleListFilter):
     title = 'Active/passive/downloads state'
     parameter_name = 'active_passive_state'
 
-    def lookups(self, request, model_admin):
+    def lookups(self, request: HttpRequest, model_admin: admin.ModelAdmin) -> tuple:
         return (
             ('active', 'Not timed out active'),
             ('passive', 'Passive or timed out active'),
             ('active_or_downloads', 'Not timed out active or active with pending downloads')
         )
 
-    def queryset(self, request, queryset: QuerySet) -> QuerySet:
+    def queryset(self, request: HttpRequest, queryset: QuerySet) -> QuerySet:
         assert self.value() in {'active', 'passive', 'active_or_downloads', None}
         current_timestamp = get_current_utc_timestamp()
         if self.value() == 'active':
@@ -67,21 +70,21 @@ class SubtaskAdmin(ModelAdminReadOnlyMixin, admin.ModelAdmin):
     ]
 
     @classmethod
-    def get_provider_public_key(cls, obj):
+    def get_provider_public_key(cls, obj: Subtask) -> str:
         return obj.provider.public_key
     get_provider_public_key.short_description = 'Provider public key'  # type: ignore
 
     @classmethod
-    def get_requestor_public_key(cls, obj):
+    def get_requestor_public_key(cls, obj: Subtask) -> str:
         return obj.requestor.public_key
     get_requestor_public_key.short_description = 'Requestor public key'  # type: ignore
 
     @classmethod
-    def get_queryset(cls, request):
+    def get_queryset(cls, request: HttpRequest) -> SubtaskWithTimingColumnsManager:
         return Subtask.objects_with_timing_columns
 
     @classmethod
-    def download_deadline(cls, obj):
+    def download_deadline(cls, obj: Subtask) -> datetime.datetime:
         return parse_timestamp_to_utc_datetime(obj.download_deadline)
     download_deadline.short_description = 'Download deadline'  # type: ignore
 
@@ -107,14 +110,14 @@ class PendingResponseAdmin(ModelAdminReadOnlyMixin, admin.ModelAdmin):
     ]
 
     @classmethod
-    def get_subtask_subtask_id(cls, obj):
+    def get_subtask_subtask_id(cls, obj: PendingResponse) -> str:
         if obj.subtask is not None:
             return obj.subtask.subtask_id
         return '-not available-'
     get_subtask_subtask_id.short_description = 'Subtask id'  # type: ignore
 
     @classmethod
-    def get_client_public_key(cls, obj):
+    def get_client_public_key(cls, obj: PendingResponse) -> str:
         return obj.client.public_key
     get_client_public_key.short_description = 'Client public key'  # type: ignore
 

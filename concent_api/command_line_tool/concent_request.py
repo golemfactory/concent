@@ -5,14 +5,14 @@ from message_extractor import MessageExtractor  # pylint: disable=import-error
 from key_manager import KeyManager  # pylint: disable=import-error
 
 
-def get_json_data(message_file, message_str):
+def get_json_data(message_file: str, message_str: str) -> dict:
     if message_file:
         return json.load(open(message_file))
     else:
         return json.loads(message_str)
 
 
-def parse_arguments():
+def parse_arguments() -> argparse.Namespace:
     # create the top-level parser
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
@@ -50,7 +50,7 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def print_keys(req_pub_key, req_priv_key, prov_pub_key, prov_priv_key, conc_pub_key):
+def print_keys(req_pub_key: str, req_priv_key: str, prov_pub_key: str, prov_priv_key: str, conc_pub_key: str) -> None:
     print('REQUESTOR_PRIVATE_KEY = ', req_priv_key)
     print('REQUESTOR_PUBLIC_KEY = ', req_pub_key)
     print('')

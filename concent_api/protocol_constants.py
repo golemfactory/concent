@@ -14,19 +14,19 @@ ProtocolConstants = NamedTuple(
 )
 
 
-def get_protocol_constants(cluster_url):
+def get_protocol_constants(cluster_url: str) -> ProtocolConstants:
     url = f"{cluster_url}/api/v1/protocol-constants/"
     response = requests.get(url, verify = False)
     json = response.json()
     return ProtocolConstants(**json)
 
 
-def print_protocol_constants(constants):
+def print_protocol_constants(constants: ProtocolConstants) -> None:
     print("PROTOCOL_CONSTANTS: ")
     print("\n".join(f"{field} = {getattr(constants, field)}" for field in constants._fields))
 
 
-def main():
+def main() -> None:
     try:
         cluster_url = sys.argv[1]
     except IndexError:

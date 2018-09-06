@@ -12,7 +12,7 @@ from core.exceptions import FileTransferTokenError
 from core.exceptions import HashingAlgorithmError
 
 
-def validate_file_transfer_token(file_transfer_token: message.concents.FileTransferToken):
+def validate_file_transfer_token(file_transfer_token: message.concents.FileTransferToken) -> None:
     """
     Function for check FileTransferToken each field, returns None when message is correct. In case of an error
     raise tuple with custom error message and error code
@@ -79,7 +79,7 @@ def validate_file_transfer_token(file_transfer_token: message.concents.FileTrans
         raise FileTransferTokenError("'category' field must be unique across FileInfo list.", ErrorCode.MESSAGE_FILES_CATEGORY_NOT_UNIQUE)
 
 
-def validate_secure_hash_algorithm(checksum: str):
+def validate_secure_hash_algorithm(checksum: str) -> None:
     if not isinstance(checksum, str):
         raise HashingAlgorithmError(
             "'checksum' must be a string.",

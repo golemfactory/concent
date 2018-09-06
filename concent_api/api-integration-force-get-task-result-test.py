@@ -23,13 +23,21 @@ from api_testing_common import REQUESTOR_PRIVATE_KEY
 from api_testing_common import REQUESTOR_PUBLIC_KEY
 from api_testing_common import run_tests
 from api_testing_common import timestamp_to_isoformat
+from protocol_constants import ProtocolConstants
 
 import requests
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
 
-def get_force_get_task_result(task_id, subtask_id, current_time, cluster_consts, size, package_hash):
+def get_force_get_task_result(
+    task_id: str,
+    subtask_id: str,
+    current_time: int,
+    cluster_consts: ProtocolConstants,
+    size: int,
+    package_hash: str,
+) -> message.concents.ForceGetTaskResult:
     task_to_compute = create_signed_task_to_compute(
         task_id=task_id,
         subtask_id=subtask_id,
@@ -55,7 +63,12 @@ def get_force_get_task_result(task_id, subtask_id, current_time, cluster_consts,
 
 
 @count_fails
-def test_case_1_test_for_existing_file(cluster_consts, cluster_url, task_id, subtask_id):
+def test_case_1_test_for_existing_file(
+    cluster_consts: ProtocolConstants,
+    cluster_url: str,
+    task_id: str,
+    subtask_id: str,
+) -> None:
     current_time    = get_current_utc_timestamp()
 
     file_content = task_id
@@ -105,7 +118,7 @@ def test_case_1_test_for_existing_file(cluster_consts, cluster_url, task_id, sub
     response = upload_file_to_storage_cluster(
         file_content,
         file_path,
-        force_get_task_result_upload.file_transfer_token,
+        force_get_task_result_upload.file_transfer_token,  # type: ignore
         PROVIDER_PRIVATE_KEY,
         PROVIDER_PUBLIC_KEY,
         CONCENT_PUBLIC_KEY,
@@ -135,7 +148,12 @@ def test_case_1_test_for_existing_file(cluster_consts, cluster_url, task_id, sub
 
 
 @count_fails
-def test_case_2_test_for_non_existing_file(cluster_consts, cluster_url, task_id, subtask_id):
+def test_case_2_test_for_non_existing_file(
+    cluster_consts: ProtocolConstants,
+    cluster_url: str,
+    task_id: str,
+    subtask_id: str,
+) -> None:
     current_time    = get_current_utc_timestamp()
 
     api_request(

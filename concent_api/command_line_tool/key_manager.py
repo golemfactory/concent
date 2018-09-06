@@ -1,4 +1,5 @@
 from typing import Optional  # noqa flake8 F401 issue  # pylint: disable=unused-import
+from typing import Tuple
 from django.conf import settings
 from common.testing_helpers import generate_ecc_key_pair
 
@@ -27,12 +28,12 @@ CONFIG = {
 
 
 class WrongConfigurationException(Exception):
-    def __init__(self, error_message):
+    def __init__(self, error_message: str) -> None:
         super().__init__()
         self.message = error_message
 
 
-def are_keys_predifined(party):
+def are_keys_predifined(party: str) -> bool:
     formatted_party = party.upper()
     public_key = f"{formatted_party}_PUBLIC_KEY"
     private_key = f"{formatted_party}_PRIVATE_KEY"
@@ -41,7 +42,7 @@ def are_keys_predifined(party):
     return is_pulbic_key_predefined and is_private_key_predefined
 
 
-def _get_predefined_keys(party):
+def _get_predefined_keys(party: str) -> Tuple[None, None]:
     formatted_party = party.upper()
     public_key = f"{formatted_party}_PUBLIC_KEY"
     private_key = f"{formatted_party}_PRIVATE_KEY"
@@ -49,24 +50,24 @@ def _get_predefined_keys(party):
 
 
 class KeyManager(object):
-    def __init__(self):
+    def __init__(self) -> None:
         self.requestor_private_key, self.requestor_public_key = self._get_or_generate_keys('requestor')
         self.provider_private_key, self.provider_public_key = self._get_or_generate_keys('provider')
 
     @staticmethod
-    def _get_or_generate_keys(party):
+    def _get_or_generate_keys(party: str) -> Tuple:
         if are_keys_predifined(party):
             return _get_predefined_keys(party)
         return generate_ecc_key_pair()
 
-    def get_requestor_keys(self):
+    def get_requestor_keys(self) -> Tuple[str, str]:
         return self.requestor_public_key, self.requestor_private_key
 
-    def get_provider_keys(self):
+    def get_provider_keys(self) -> Tuple[str, str]:
         return self.provider_public_key, self.provider_private_key
 
     @staticmethod
-    def get_concent_public_key():
+    def get_concent_public_key() -> bytes:
         if not hasattr(settings, "CONCENT_PUBLIC_KEY"):
             raise WrongConfigurationException("CONCENT_PUBLIC_KEY is not defined")
         concent_public_key = settings.CONCENT_PUBLIC_KEY

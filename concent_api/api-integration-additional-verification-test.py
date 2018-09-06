@@ -5,6 +5,7 @@ import os
 import sys
 import time
 from freezegun import freeze_time
+from typing import Optional
 
 from golem_messages import message
 
@@ -21,6 +22,7 @@ from api_testing_common import REQUESTOR_PRIVATE_KEY
 from api_testing_common import REQUESTOR_PUBLIC_KEY
 from api_testing_common import run_tests
 from api_testing_common import timestamp_to_isoformat
+from protocol_constants import ProtocolConstants
 
 import requests
 
@@ -33,19 +35,19 @@ CALCULATED_VERIFICATION_TIME = 25  # seconds
 
 
 def get_subtask_results_verify(
-    task_id,
-    subtask_id,
-    current_time,
-    reason,
-    report_computed_task_size,
-    report_computed_task_package_hash,
-    task_to_compute_size,
-    task_to_compute_package_hash,
-    requestor_ethereum_public_key=None,
-    provider_ethereum_public_key=None,
-    price=1,
-    script_src=None,
-):
+    task_id: str,
+    subtask_id: str,
+    current_time: int,
+    reason: message.tasks.SubtaskResultsRejected.REASON,
+    report_computed_task_size: int,
+    report_computed_task_package_hash: str,
+    task_to_compute_size: int,
+    task_to_compute_package_hash: str,
+    requestor_ethereum_public_key: Optional[bytes]=None,
+    provider_ethereum_public_key: Optional[bytes]=None,
+    price: int=1,
+    script_src: Optional[str]=None,
+) -> message.concents.SubtaskResultsVerify:
     task_to_compute = create_signed_task_to_compute(
         task_id=task_id,
         subtask_id=subtask_id,
@@ -87,7 +89,12 @@ def get_subtask_results_verify(
 
 
 @count_fails
-def test_case_1_test_for_positive_case(cluster_consts, cluster_url, task_id, subtask_id):  # pylint: disable=unused-argument
+def test_case_1_test_for_positive_case(
+    cluster_consts: ProtocolConstants,
+    cluster_url: str,
+    task_id: str,
+    subtask_id: str,
+) -> None:  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -127,8 +134,8 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, task_id, sub
 
     response = upload_file_to_storage_cluster(
         result_file_content,
-        ack_subtask_results_verify.file_transfer_token.files[0]['path'],
-        ack_subtask_results_verify.file_transfer_token,
+        ack_subtask_results_verify.file_transfer_token.files[0]['path'],  # type: ignore
+        ack_subtask_results_verify.file_transfer_token,  # type: ignore
         PROVIDER_PRIVATE_KEY,
         PROVIDER_PUBLIC_KEY,
         CONCENT_PUBLIC_KEY,
@@ -143,8 +150,8 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, task_id, sub
 
     response = upload_file_to_storage_cluster(
         source_file_content,
-        ack_subtask_results_verify.file_transfer_token.files[1]['path'],
-        ack_subtask_results_verify.file_transfer_token,
+        ack_subtask_results_verify.file_transfer_token.files[1]['path'],  # type: ignore
+        ack_subtask_results_verify.file_transfer_token,  # type: ignore
         PROVIDER_PRIVATE_KEY,
         PROVIDER_PUBLIC_KEY,
         CONCENT_PUBLIC_KEY,
@@ -190,7 +197,12 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, task_id, sub
 
 
 @count_fails
-def test_case_2_test_for_resources_failure_reason(cluster_consts, cluster_url, task_id, subtask_id):  # pylint: disable=unused-argument
+def test_case_2_test_for_resources_failure_reason(
+    cluster_consts: ProtocolConstants,
+    cluster_url: str,
+    task_id: str,
+    subtask_id: str,
+) -> None:  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
 
     file_content = task_id
@@ -222,7 +234,12 @@ def test_case_2_test_for_resources_failure_reason(cluster_consts, cluster_url, t
 
 
 @count_fails
-def test_case_3_test_for_invalid_time(cluster_consts, cluster_url, task_id, subtask_id):  # pylint: disable=unused-argument
+def test_case_3_test_for_invalid_time(
+    cluster_consts: ProtocolConstants,
+    cluster_url: str,
+    task_id: str,
+    subtask_id: str,
+) -> None:  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
 
     file_content = task_id
@@ -254,7 +271,12 @@ def test_case_3_test_for_invalid_time(cluster_consts, cluster_url, task_id, subt
 
 
 @count_fails
-def test_case_4_test_for_duplicated_request(cluster_consts, cluster_url, task_id, subtask_id):  # pylint: disable=unused-argument
+def test_case_4_test_for_duplicated_request(
+    cluster_consts: ProtocolConstants,
+    cluster_url: str,
+    task_id: str,
+    subtask_id: str,
+) -> None:  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
 
     result_file_content_1 = task_id
@@ -312,7 +334,12 @@ def test_case_4_test_for_duplicated_request(cluster_consts, cluster_url, task_id
 
 
 @count_fails
-def test_case_5_test_requestor_status_account_negative(cluster_consts, cluster_url, task_id, subtask_id):  # pylint: disable=unused-argument
+def test_case_5_test_requestor_status_account_negative(
+    cluster_consts: ProtocolConstants,
+    cluster_url: str,
+    task_id: str,
+    subtask_id: str,
+) -> None:  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
 
     result_file_content_1 = task_id
@@ -336,8 +363,8 @@ def test_case_5_test_requestor_status_account_negative(cluster_consts, cluster_u
             report_computed_task_package_hash=result_file_check_sum_1,
             task_to_compute_size=source_file_size_2,
             task_to_compute_package_hash=source_file_check_sum_2,
-            requestor_ethereum_public_key='33' * 64,
-            provider_ethereum_public_key='32' * 64,
+            requestor_ethereum_public_key=b'33' * 64,
+            provider_ethereum_public_key=b'32' * 64,
             price=0
         ),
         headers = {
@@ -350,7 +377,12 @@ def test_case_5_test_requestor_status_account_negative(cluster_consts, cluster_u
 
 
 @count_fails
-def test_case_6_test_without_script_src_in(cluster_consts, cluster_url, task_id, subtask_id):  # pylint: disable=unused-argument
+def test_case_6_test_without_script_src_in(
+    cluster_consts: ProtocolConstants,
+    cluster_url: str,
+    task_id: str,
+    subtask_id: str,
+) -> None:  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -389,8 +421,8 @@ def test_case_6_test_without_script_src_in(cluster_consts, cluster_url, task_id,
 
     response = upload_file_to_storage_cluster(
         result_file_content,
-        ack_subtask_results_verify.file_transfer_token.files[0]['path'],
-        ack_subtask_results_verify.file_transfer_token,
+        ack_subtask_results_verify.file_transfer_token.files[0]['path'],  # type: ignore
+        ack_subtask_results_verify.file_transfer_token,  # type: ignore
         PROVIDER_PRIVATE_KEY,
         PROVIDER_PUBLIC_KEY,
         CONCENT_PUBLIC_KEY,
@@ -405,8 +437,8 @@ def test_case_6_test_without_script_src_in(cluster_consts, cluster_url, task_id,
 
     response = upload_file_to_storage_cluster(
         source_file_content,
-        ack_subtask_results_verify.file_transfer_token.files[1]['path'],
-        ack_subtask_results_verify.file_transfer_token,
+        ack_subtask_results_verify.file_transfer_token.files[1]['path'],  # type: ignore
+        ack_subtask_results_verify.file_transfer_token,  # type: ignore
         PROVIDER_PRIVATE_KEY,
         PROVIDER_PUBLIC_KEY,
         CONCENT_PUBLIC_KEY,

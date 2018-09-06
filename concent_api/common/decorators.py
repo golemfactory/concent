@@ -1,12 +1,16 @@
-from functools                      import wraps
-from logging                        import getLogger
+from functools import wraps
+from logging import getLogger
+from typing import Any
+from typing import Callable
+from typing import Union
 import traceback
 
-from django.db                      import transaction
-from django.http                    import JsonResponse
-from django.http                    import HttpResponse
-from django.http                    import HttpResponseNotAllowed
-from django.conf                    import settings
+from django.db import transaction
+from django.http import JsonResponse
+from django.http import HttpRequest
+from django.http import HttpResponse
+from django.http import HttpResponseNotAllowed
+from django.conf import settings
 
 from golem_messages                 import dump
 from golem_messages                 import message
@@ -37,14 +41,14 @@ logger = getLogger(__name__)
 crash_logger = getLogger('concent.crash')
 
 
-def require_golem_auth_message(view):
+def require_golem_auth_message(view: Callable) -> Callable:
     """
     Decorator for authenticating golem clients
     Unpacks authorization message signed with the key it contains
     proof that the client indeed has the private part of that key
     """
     @wraps(view)
-    def wrapper(request, *args, **kwargs):
+    def wrapper(request: HttpRequest, *args: Any, **kwargs: Any) -> Union[HttpResponse, JsonResponse]:
         if request.content_type == '':
             log_string_message(logger, 'error: Content-Type is missing')
             return JsonResponse({'error': 'Content-Type is missing.'}, status = 400)
@@ -100,14 +104,14 @@ def require_golem_auth_message(view):
     return wrapper
 
 
-def require_golem_message(view):
+def require_golem_message(view: Callable) -> Callable:
     """
     Decorator for view accepting golem messages
     Unpacks golem message signed with the key it contains
     proof that the client indeed has the private part of that key
     """
     @wraps(view)
-    def wrapper(request, *args, **kwargs):
+    def wrapper(request: HttpRequest, *args: Any, **kwargs: Any) -> Union[HttpResponse, JsonResponse]:
         if request.content_type == '':
             log_string_message(logger, 'error: Content-Type is missing')
             return JsonResponse({'error': 'Content-Type is missing.'}, status = 400)
@@ -157,14 +161,20 @@ def require_golem_message(view):
     return wrapper
 
 
-def handle_errors_and_responses(database_name):
+def handle_errors_and_responses(database_name: str) -> Callable:
     """
     Decorator for handling responses from Concent
     for golem clients and handling transactions on given database name if it is not None.
     """
-    def decorator(view):
+    def decorator(view: Callable) -> Callable:
         @wraps(view)
-        def wrapper(request, client_message, client_public_key, *args, **kwargs):
+        def wrapper(
+            request: HttpRequest,
+            client_message: message.Message,
+            client_public_key: bytes,
+            *args: list,
+            **kwargs: dict,
+        ) -> Union[HttpRequest, JsonResponse]:
             assert database_name in settings.DATABASES or database_name is None
             try:
                 if database_name is not None:
@@ -256,16 +266,16 @@ def handle_errors_and_responses(database_name):
     return decorator
 
 
-def provides_concent_feature(concent_feature: str):
+def provides_concent_feature(concent_feature: str) -> Callable:
     """
     Decorator for declaring that given `concent_feature` is required to be in setting CONCENT_FEATURES
     for decorated view or celery task function.
     """
-    def decorator(_function):
+    def decorator(_function: Callable) -> Callable:
         assert callable(_function)
 
         @wraps(_function)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             if concent_feature not in settings.CONCENT_FEATURES:
                 raise ConcentFeatureIsNotAvailable(
                     f'Concent feature `{concent_feature}` is not enabled. Function `{_function.__name__}` cannot be called in this configuration.'
@@ -275,10 +285,10 @@ def provides_concent_feature(concent_feature: str):
     return decorator
 
 
-def log_communication(view):
+def log_communication(view: Callable) -> Callable:
 
     @wraps(view)
-    def wrapper(request, golem_message, client_public_key):
+    def wrapper(request: HttpRequest, golem_message: message.Message, client_public_key: bytes) -> HttpResponse:
         json_message_to_log = get_json_from_message_without_redundant_fields_for_logging(golem_message)
         log_json_message(logger, json_message_to_log)
         response_from_view = view(request,  golem_message, client_public_key)
@@ -286,10 +296,10 @@ def log_communication(view):
     return wrapper
 
 
-def log_task_errors(task):
+def log_task_errors(task: Callable) -> Callable:
 
     @wraps(task)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> None:
         try:
             return task(*args, **kwargs)
         except Exception as exception:

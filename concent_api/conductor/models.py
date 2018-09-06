@@ -37,7 +37,7 @@ class VerificationRequest(Model):
     # Indicates when Conductor has received the request.
     created_at = DateTimeField(auto_now_add=True)
 
-    def clean(self):
+    def clean(self) -> None:
         super().clean()
 
         # source_package_path cannot be used as result_package_path in any model instance.

@@ -222,7 +222,7 @@ def send_message_to_middleman_and_receive_response(
     config: configparser.ConfigParser,
     signing_service_public_key: bytes,
     concent_private_key: bytes
-) -> None:
+) -> GolemMessageFrame:
     """ Sends message to MiddleMan using MiddleMan protocol and retrieves response. """
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)

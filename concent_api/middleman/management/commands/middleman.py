@@ -1,3 +1,6 @@
+from argparse import ArgumentParser
+from typing import Any
+
 from django.core.management.base import BaseCommand
 
 from middleman.constants import DEFAULT_EXTERNAL_PORT
@@ -9,7 +12,7 @@ from middleman.middleman_server import MiddleMan
 class Command(BaseCommand):
     help = 'Starts MiddleMan app'
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(
             '-a',
             '--bind-address',
@@ -34,7 +37,7 @@ class Command(BaseCommand):
             help="A port MiddleMan will be listening for Signing Service to connect."
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         MiddleMan(
             bind_address=options['bind_address'],
             internal_port=options['internal_port'],

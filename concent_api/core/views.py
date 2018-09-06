@@ -1,20 +1,26 @@
 from logging import getLogger
-from django.conf                    import settings
-from django.http                    import JsonResponse
-from django.views.decorators.csrf   import csrf_exempt
-from django.views.decorators.http   import require_POST
-from django.views.decorators.http   import require_GET
+from typing import Union
 
-from core.message_handlers          import handle_message
-from core.message_handlers          import handle_messages_from_database
-from core.subtask_helpers           import update_timed_out_subtasks
-from common                          import logging
+from django.conf import settings
+from django.http import HttpRequest
+from django.http import HttpResponse
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET
+
+from golem_messages.message import Message
+
+from core.message_handlers import handle_message
+from core.message_handlers import handle_messages_from_database
+from core.subtask_helpers import update_timed_out_subtasks
+from common import logging
 from common.decorators import handle_errors_and_responses
 from common.decorators import log_communication
 from common.decorators import provides_concent_feature
-from common.decorators               import require_golem_auth_message
-from common.decorators               import require_golem_message
-from .models                        import PendingResponse
+from common.decorators import require_golem_auth_message
+from common.decorators import require_golem_message
+from .models import PendingResponse
 
 logger = getLogger(__name__)
 
@@ -25,7 +31,7 @@ logger = getLogger(__name__)
 @require_golem_message
 @handle_errors_and_responses(database_name='control')
 @log_communication
-def send(_request, client_message, client_public_key):
+def send(_request: HttpRequest, client_message: Message, client_public_key: bytes) -> Union[Message, HttpResponse]:
     assert isinstance(client_public_key, bytes) or client_public_key is None
     if client_public_key is not None:
         update_timed_out_subtasks(
@@ -46,7 +52,7 @@ def send(_request, client_message, client_public_key):
 @require_POST
 @require_golem_auth_message
 @handle_errors_and_responses(database_name='control')
-def receive(_request, message, _client_public_key):
+def receive(_request: HttpRequest, message: Message, _client_public_key: bytes) -> Union[Message, HttpResponse]:
     assert isinstance(message.client_public_key, bytes)
     update_timed_out_subtasks(
         client_public_key = message.client_public_key,
@@ -62,7 +68,7 @@ def receive(_request, message, _client_public_key):
 @require_POST
 @require_golem_auth_message
 @handle_errors_and_responses(database_name='control')
-def receive_out_of_band(_request, message, _client_public_key):
+def receive_out_of_band(_request: HttpRequest, message: Message, _client_public_key: bytes) -> Union[Message, HttpResponse]:
     assert isinstance(message.client_public_key, bytes)
     update_timed_out_subtasks(
         client_public_key = message.client_public_key,
@@ -74,7 +80,7 @@ def receive_out_of_band(_request, message, _client_public_key):
 
 
 @require_GET
-def protocol_constants(_request):
+def protocol_constants(_request: HttpRequest) -> JsonResponse:
     """ Endpoint which returns Concent time settings. """
     return JsonResponse(
         data = {

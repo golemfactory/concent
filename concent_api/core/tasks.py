@@ -1,6 +1,7 @@
 import logging
 
 from celery import shared_task
+from celery import Task
 from mypy.types import Optional
 
 from django.db import DatabaseError
@@ -32,7 +33,7 @@ logger = logging.getLogger(__name__)
 @shared_task
 @log_task_errors
 @transaction.atomic(using='control')
-def upload_finished(subtask_id: str):
+def upload_finished(subtask_id: str) -> None:
     try:
         subtask = Subtask.objects.get(subtask_id=subtask_id)
     except Subtask.DoesNotExist:
@@ -109,12 +110,12 @@ def upload_finished(subtask_id: str):
 @transaction.atomic(using='control')
 @log_task_errors
 def verification_result(
-    self,
+    self: Task,
     subtask_id: str,
     result: str,
     error_message: Optional[str] = None,
     error_code: Optional[str] = None,
-):
+) -> None:
     logger.info(f'verification_result_task starts with: SUBTASK_ID {subtask_id} -- RESULT {result}')
 
     assert isinstance(subtask_id, str)

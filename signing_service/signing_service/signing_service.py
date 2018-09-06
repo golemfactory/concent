@@ -5,6 +5,8 @@ import signal
 import socket
 from contextlib import closing
 from time import sleep
+from types import FrameType
+from typing import Optional
 
 from ethereum.transactions import InvalidTransaction
 from ethereum.transactions import Transaction
@@ -71,7 +73,7 @@ class SigningService:
         initial_reconnect_delay: int,
         concent_public_key: bytes,
         signing_service_private_key: bytes,
-        ethereum_private_key: bytes,
+        ethereum_private_key: str,
     ) -> None:
         assert isinstance(host, str)
         assert isinstance(port, int)
@@ -81,13 +83,13 @@ class SigningService:
         assert isinstance(ethereum_private_key, str)
         self.host = host  # type: str
         self.port = port  # type: int
-        self.initial_reconnect_delay = initial_reconnect_delay
+        self.initial_reconnect_delay: int = initial_reconnect_delay
         self.concent_public_key = concent_public_key  # type: bytes
         self.signing_service_private_key = signing_service_private_key  # type: bytes
         self.signing_service_public_key = privtopub(signing_service_private_key)
         self.ethereum_private_key = ethereum_private_key  # type: str
-        self.current_reconnect_delay = None  # type: Union[int, None]
-        self.was_sigterm_caught = False
+        self.current_reconnect_delay: Union[int, None] = None
+        self.was_sigterm_caught: bool = False
 
         self._validate_arguments()
 
@@ -101,7 +103,7 @@ class SigningService:
         If there was an unrecognized exception, it logs it and report to Sentry, then reraise and crash.
         """
 
-        def _set_was_sigterm_caught_true(signum, frame):  # pylint: disable=unused-argument
+        def _set_was_sigterm_caught_true(signum: int, frame: Optional[FrameType]) -> None:  # pylint: disable=unused-argument
             logger.info('Closing connection and exiting on SIGTERM.')
             self.was_sigterm_caught = True
 
@@ -116,7 +118,7 @@ class SigningService:
                     logger.error(f'Socket error occurred: {exception}')
 
                     # Only predefined list of exceptions should cause reconnect, others should be reraised.
-                    if isinstance(exception.args, tuple) and exception.args[0] not in SIGNING_SERVICE_RECOVERABLE_ERRORS:  # type: ignore
+                    if isinstance(exception.args, tuple) and exception.args[0] not in SIGNING_SERVICE_RECOVERABLE_ERRORS:
                         raise
 
                     # Increase delay and reconnect if the connection is interrupted due to a failure.
@@ -200,7 +202,7 @@ class SigningService:
             )
 
     @staticmethod
-    def _prepare_error_response(error_code, exception_object):
+    def _prepare_error_response(error_code: ErrorCode, exception_object: Exception) -> ErrorFrame:
         logger.info(
             f'Deserializing received Middleman protocol message failed with exception: {exception_object}.'
         )
@@ -214,15 +216,15 @@ class SigningService:
         assert self.current_reconnect_delay is None or self.current_reconnect_delay >= 0
 
         if self.current_reconnect_delay is None:
-            self.current_reconnect_delay = self.initial_reconnect_delay  # type: ignore
+            self.current_reconnect_delay = self.initial_reconnect_delay
         else:
             self.current_reconnect_delay = min(self.current_reconnect_delay * 2, SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME)
 
-    def _was_sigterm_caught(self):
+    def _was_sigterm_caught(self) -> bool:
         """ Helper function which checks if SIGTERM signal was caught. """
         return self.was_sigterm_caught
 
-    def _validate_arguments(self):
+    def _validate_arguments(self) -> None:
         if not 0 < self.port < 65535:
             raise SigningServiceValidationError('Port must be 0-65535.')
 
@@ -299,7 +301,7 @@ def _parse_arguments() -> argparse.Namespace:
         'concent_cluster_host',
         help='Host or IP address of a service on Concent cluster, to which SigningService connects over TCP.',
     )
-    parser.add_argument(
+    parser.add_argument(  # type: ignore
         'concent_public_key',
         action=make_secret_provider_factory(read_command_line=True, base64_convert=True),
         help="Concent's public key.",
@@ -328,19 +330,19 @@ def _parse_arguments() -> argparse.Namespace:
     )
 
     ethereum_private_key_parser_group = parser.add_mutually_exclusive_group(required=True)
-    ethereum_private_key_parser_group.add_argument(
+    ethereum_private_key_parser_group.add_argument(  # type: ignore
         '--ethereum-private-key',
         dest='ethereum_private_key',
         action=make_secret_provider_factory(read_command_line=True, base64_convert=True, string_decode=True),
         help='Ethereum private key for Singing Service.',
     )
-    ethereum_private_key_parser_group.add_argument(
+    ethereum_private_key_parser_group.add_argument(  # type: ignore
         '--ethereum-private-key-path',
         dest='ethereum_private_key',
         action=make_secret_provider_factory(use_file=True, base64_convert=True, string_decode=True),
         help='Ethereum private key for Singing Service.',
     )
-    ethereum_private_key_parser_group.add_argument(
+    ethereum_private_key_parser_group.add_argument(  # type: ignore
         '--ethereum-private-key-from-env',
         dest='ethereum_private_key',
         action=make_secret_provider_factory(env_variable_name='ETHEREUM_PRIVATE_KEY', base64_convert=True, string_decode=True),
@@ -348,19 +350,19 @@ def _parse_arguments() -> argparse.Namespace:
     )
 
     signing_service_private_key_parser_group = parser.add_mutually_exclusive_group(required=True)
-    signing_service_private_key_parser_group.add_argument(
+    signing_service_private_key_parser_group.add_argument(  # type: ignore
         '--signing-service-private-key',
         dest='signing_service_private_key',
         action=make_secret_provider_factory(read_command_line=True, base64_convert=True),
         help='Singing Service private key.',
     )
-    signing_service_private_key_parser_group.add_argument(
+    signing_service_private_key_parser_group.add_argument(  # type: ignore
         '--signing-service-private-key-path',
         dest='signing_service_private_key',
         action=make_secret_provider_factory(use_file=True, base64_convert=True),
         help='Singing Service private key.',
     )
-    signing_service_private_key_parser_group.add_argument(
+    signing_service_private_key_parser_group.add_argument(  # type: ignore
         '--signing-service-private-key-from-env',
         dest='signing_service_private_key',
         action=make_secret_provider_factory(env_variable_name='SIGNING_SERVICE_PRIVATE_KEY', base64_convert=True),
@@ -368,20 +370,20 @@ def _parse_arguments() -> argparse.Namespace:
     )
 
     sentry_dsn_parser_group = parser.add_mutually_exclusive_group()
-    sentry_dsn_parser_group.add_argument(
+    sentry_dsn_parser_group.add_argument(  # type: ignore
         '-s',
         '--sentry-dsn',
         dest='sentry_dsn',
         action=make_secret_provider_factory(read_command_line=True),
         help='Sentry DSN for error reporting.',
     )
-    sentry_dsn_parser_group.add_argument(
+    sentry_dsn_parser_group.add_argument(  # type: ignore
         '--sentry-dsn-path',
         dest='sentry_dsn',
         action=make_secret_provider_factory(use_file=True),
         help='Sentry DSN for error reporting.',
     )
-    sentry_dsn_parser_group.add_argument(
+    sentry_dsn_parser_group.add_argument(  # type: ignore
         '--sentry-dsn-from-env',
         dest='sentry_dsn',
         action=make_secret_provider_factory(env_variable_name='SENTRY_DSN'),

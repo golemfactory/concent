@@ -47,7 +47,7 @@ def blender_verification_order(
     verification_deadline: int,
     frames: List[int],
     blender_crop_script: Optional[str],
-):
+) -> None:
     log_string_message(
         logger,
         f'Blender_verification_order_starts. SUBTASK_ID: {subtask_id}.',

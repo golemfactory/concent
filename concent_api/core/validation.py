@@ -1,4 +1,5 @@
 from logging import getLogger
+from typing import Any
 from typing import List
 from typing import Union
 
@@ -27,7 +28,7 @@ from core.utils import hex_to_bytes_convert
 logger = getLogger(__name__)
 
 
-def validate_value_is_int_convertible_and_positive(value):
+def validate_value_is_int_convertible_and_positive(value: int) -> None:
     """
     Checks if value is an integer. If not, tries to cast it to an integer.
     Then checks if value is non-negative.
@@ -44,20 +45,20 @@ def validate_value_is_int_convertible_and_positive(value):
     validate_positive_integer_value(value)
 
 
-def validate_hex_public_key(value, field_name):
+def validate_hex_public_key(value: str, field_name: str) -> None:
     validate_key_with_desired_parameters(field_name, value, str, GOLEM_PUBLIC_KEY_HEX_LENGTH)
 
 
-def validate_bytes_public_key(value, field_name):
+def validate_bytes_public_key(value: bytes, field_name: str) -> None:
     validate_key_with_desired_parameters(field_name, value, bytes, GOLEM_PUBLIC_KEY_LENGTH)
 
 
 def validate_key_with_desired_parameters(
-        key_name: str,
-        key_value: Union[bytes, str],
-        expected_type,
-        expected_length: int
-):
+    key_name: str,
+    key_value: Union[bytes, str],
+    expected_type: Any,
+    expected_length: int
+) -> None:
     validate_expected_value_type(key_value, key_name, expected_type)
 
     if len(key_value) != expected_length:
@@ -67,7 +68,7 @@ def validate_key_with_desired_parameters(
         )
 
 
-def validate_task_to_compute(task_to_compute: message.TaskToCompute):
+def validate_task_to_compute(task_to_compute: message.TaskToCompute) -> None:
     if not isinstance(task_to_compute, message.TaskToCompute):
         raise ConcentValidationError(
             f"Expected TaskToCompute instead of {type(task_to_compute).__name__}.",
@@ -92,7 +93,7 @@ def validate_task_to_compute(task_to_compute: message.TaskToCompute):
     validate_positive_integer_value(task_to_compute.price)
 
 
-def validate_report_computed_task_time_window(report_computed_task):
+def validate_report_computed_task_time_window(report_computed_task: message.ReportComputedTask) -> None:
     assert isinstance(report_computed_task, message.ReportComputedTask)
 
     if report_computed_task.timestamp < report_computed_task.task_to_compute.timestamp:
@@ -102,7 +103,7 @@ def validate_report_computed_task_time_window(report_computed_task):
         )
 
 
-def validate_all_messages_identical(golem_messages_list: List[message.Message]):
+def validate_all_messages_identical(golem_messages_list: List[message.Message]) -> None:
     assert isinstance(golem_messages_list, list)
     assert len(golem_messages_list) >= 1
     assert all(isinstance(golem_message, message.Message) for golem_message in golem_messages_list)
@@ -155,7 +156,9 @@ def is_golem_message_signed_with_key(
     return is_valid
 
 
-def validate_golem_message_subtask_results_rejected(subtask_results_rejected: message.tasks.SubtaskResultsRejected):
+def validate_golem_message_subtask_results_rejected(
+    subtask_results_rejected: message.tasks.SubtaskResultsRejected
+) -> None:
     if not isinstance(subtask_results_rejected,  message.tasks.SubtaskResultsRejected):
         raise ConcentValidationError(
             "subtask_results_rejected should be of type:  SubtaskResultsRejected",
@@ -164,7 +167,7 @@ def validate_golem_message_subtask_results_rejected(subtask_results_rejected: me
     validate_task_to_compute(subtask_results_rejected.report_computed_task.task_to_compute)
 
 
-def validate_ethereum_addresses(requestor_ethereum_address, provider_ethereum_address):
+def validate_ethereum_addresses(requestor_ethereum_address: str, provider_ethereum_address: str) -> None:
     validate_key_with_desired_parameters(
         'requestor_ethereum_address',
         requestor_ethereum_address,
@@ -179,7 +182,7 @@ def validate_ethereum_addresses(requestor_ethereum_address, provider_ethereum_ad
     )
 
 
-def get_validated_client_public_key_from_client_message(golem_message: message.base.Message):
+def get_validated_client_public_key_from_client_message(golem_message: message.base.Message) -> Union[bytes, None]:
     if isinstance(golem_message, message.concents.ForcePayment):
         if (
             isinstance(golem_message.subtask_results_accepted_list, list) and
@@ -233,7 +236,7 @@ def get_validated_client_public_key_from_client_message(golem_message: message.b
     return None
 
 
-def validate_frames(frames_list: List[int]):
+def validate_frames(frames_list: List[int]) -> None:
     if not isinstance(frames_list, list) or not len(frames_list) > 0:
         raise FrameNumberValidationError(
             'TaskToCompute must contain list of frames.',
@@ -255,10 +258,10 @@ def validate_frames(frames_list: List[int]):
 
 
 def validate_expected_value_type(
-    value,
+    value: Any,
     value_name: str,
-    expected_type,
-):
+    expected_type: Any,
+) -> None:
     if not isinstance(value, expected_type):
         raise ConcentValidationError(
             f"{value_name} must be {expected_type.__name__}.",
@@ -266,7 +269,7 @@ def validate_expected_value_type(
         )
 
 
-def validate_positive_integer_value(value):
+def validate_positive_integer_value(value: int) -> None:
     validate_expected_value_type(value, 'value', int)
 
     if value < 0:
@@ -276,7 +279,7 @@ def validate_positive_integer_value(value):
         )
 
 
-def validate_scene_file(scene_file):
+def validate_scene_file(scene_file: str) -> None:
     if not scene_file.endswith(SCENE_FILE_EXTENSION):
         raise ConcentValidationError(
             f'{scene_file} must ends with {SCENE_FILE_EXTENSION} filename extension',
@@ -338,8 +341,7 @@ def validate_that_golem_messages_are_signed_with_key(
             )
 
 
-def validate_reject_report_computed_task(client_message: RejectReportComputedTask):
-
+def validate_reject_report_computed_task(client_message: RejectReportComputedTask) -> None:
     if (
         isinstance(client_message.cannot_compute_task, message.CannotComputeTask) and
         isinstance(client_message.task_failure, message.TaskFailure)
@@ -369,7 +371,7 @@ def validate_reject_report_computed_task(client_message: RejectReportComputedTas
     )
 
 
-def validate_uuid(id_):
+def validate_uuid(id_: str) -> None:
     if not isinstance(id_, str):
         raise ConcentValidationError(
             f'ID must be string with maximum {MESSAGE_TASK_ID_MAX_LENGTH} characters length',

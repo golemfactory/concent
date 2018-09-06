@@ -37,7 +37,7 @@ def blender_verification_request(
     verification_deadline: int,
     frames: List[int],
     blender_crop_script: Optional[str],
-):
+) -> None:
     log_string_message(
         logger,
         f'Blender verification request starts. SUBTASK_ID: {subtask_id}',
@@ -112,7 +112,7 @@ def upload_acknowledged(
     source_package_hash: str,
     result_file_size: str,
     result_package_hash: str,
-):
+) -> None:
     log_string_message(
         logger,
         f'Upload acknowledgment starts. SUBTASK_ID: {subtask_id}',
@@ -179,7 +179,7 @@ def store_verification_request_and_blender_subtask_definition(
     scene_file: str,
     verification_deadline: int,
     blender_crop_script: Optional[str],
-):
+) -> tuple:
     verification_request = VerificationRequest(
         subtask_id=subtask_id,
         source_package_path=source_package_path,
@@ -204,7 +204,7 @@ def store_verification_request_and_blender_subtask_definition(
 def store_frames(
     blender_subtask_definition: BlenderSubtaskDefinition,
     frame_list: List[int],
-):
+) -> None:
     for frame in frame_list:
         store_frame = Frame(
             blender_subtask_definition=blender_subtask_definition,
@@ -214,5 +214,5 @@ def store_frames(
         store_frame.save()
 
 
-def filter_frames_by_blender_subtask_definition(blender_subtask_definition: BlenderSubtaskDefinition):
+def filter_frames_by_blender_subtask_definition(blender_subtask_definition: BlenderSubtaskDefinition) -> list:
     return list(Frame.objects.filter(blender_subtask_definition=blender_subtask_definition).values_list('number', flat=True))

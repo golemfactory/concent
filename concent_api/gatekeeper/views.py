@@ -4,13 +4,14 @@ from base64                         import b64encode
 from logging import getLogger
 from typing                         import Union
 
-from django.conf                    import settings
-from django.http                    import JsonResponse
-from django.core.handlers.wsgi      import WSGIRequest
-from django.urls                    import reverse
-from django.views.decorators.csrf   import csrf_exempt
-from django.views.decorators.http   import require_POST
-from django.views.decorators.http   import require_safe
+from django.conf import settings
+from django.http import JsonResponse
+from django.http import HttpRequest
+from django.core.handlers.wsgi import WSGIRequest
+from django.urls import reverse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_safe
 
 from golem_messages.exceptions      import MessageError
 from golem_messages.message.concents import FileTransferToken
@@ -32,7 +33,7 @@ logger = getLogger(__name__)
 @provides_concent_feature('gatekeeper')
 @csrf_exempt
 @require_POST
-def upload(request):
+def upload(request: HttpRequest) -> JsonResponse:
     logging.log_request_received(
         logger,
         request.META['PATH_INFO'] if 'PATH_INFO' in request.META.keys() else '-path to file UNAVAILABLE-',
@@ -54,9 +55,9 @@ def upload(request):
         assert isinstance(response_or_file_info, JsonResponse)
         return response_or_file_info
 
-    response                           = JsonResponse({"message": "Request passed all upload validations."}, status = 200)
-    response["Concent-File-Size"]      = response_or_file_info["size"]
-    response["Concent-File-Checksum"]  = response_or_file_info["checksum"]
+    response = JsonResponse({"message": "Request passed all upload validations."}, status = 200)
+    response["Concent-File-Size"] = response_or_file_info["size"]
+    response["Concent-File-Checksum"] = response_or_file_info["checksum"]
 
     return response
 
@@ -64,7 +65,7 @@ def upload(request):
 @provides_concent_feature('gatekeeper')
 @csrf_exempt
 @require_safe
-def download(request):
+def download(request: HttpRequest) -> JsonResponse:
     logging.log_request_received(
         logger,
         request.META['PATH_INFO'] if 'PATH_INFO' in request.META.keys() else '-path to file UNAVAILABLE-',
@@ -89,7 +90,11 @@ def download(request):
     return JsonResponse({"message": "Request passed all download validations."}, status = 200)
 
 
-def parse_headers(request: WSGIRequest, path_to_file: str, operation: FileTransferToken.Operation) -> Union[FileTransferToken.FileInfo, JsonResponse]:
+def parse_headers(
+    request: WSGIRequest,
+    path_to_file: str,
+    operation: FileTransferToken.Operation,
+) -> Union[FileTransferToken.FileInfo, JsonResponse]:
     # Decode and check if request header contains a golem message:
     if 'HTTP_AUTHORIZATION' not in request.META:
         return gatekeeper_access_denied_response(
@@ -131,7 +136,12 @@ def parse_headers(request: WSGIRequest, path_to_file: str, operation: FileTransf
         )
 
     try:
-        loaded_golem_message = load(decoded_auth_header_content, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY, check_time = False)
+        loaded_golem_message = load(
+            decoded_auth_header_content,
+            settings.CONCENT_PRIVATE_KEY,
+            settings.CONCENT_PUBLIC_KEY,
+            check_time = False
+        )
     except MessageError:
         return gatekeeper_access_denied_response(
             "Token in the 'Authorization' header is not a valid Golem message.",

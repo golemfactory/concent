@@ -1,3 +1,6 @@
+from typing import Any
+from typing import Optional
+from typing import Union
 import base64
 import datetime
 
@@ -71,13 +74,13 @@ class SubtaskWithTimingColumnsManager(Manager):
         )
 
     @classmethod
-    def with_timing_columns(cls, query_set):
+    def with_timing_columns(cls, query_set: QuerySet) -> QuerySet:
         query_set_with_maximum_download_time = cls.with_maximum_download_time(query_set)
         query_set_with_subtask_verification_time = cls.with_subtask_verification_time(query_set_with_maximum_download_time)
         query_set_with_download_deadline = cls.with_download_deadline(query_set_with_subtask_verification_time)
         return query_set_with_download_deadline
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         return self.with_timing_columns(super().get_queryset())
 
 
@@ -89,13 +92,13 @@ class StoredMessage(Model):
     subtask_id = CharField(max_length=MESSAGE_TASK_ID_MAX_LENGTH)
     created_at = DateTimeField(auto_now_add=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'StoredMessage #{}, type:{}, {}'.format(self.id, self.type, self.timestamp)
 
 
 class ClientManager(Manager):
 
-    def get_or_create_full_clean(self, public_key: bytes):
+    def get_or_create_full_clean(self, public_key: bytes) -> 'Client':
         """
         Returns Model instance.
         Does the same as get_or_create method, but also performs full_clean() on newly created instance.
@@ -379,20 +382,20 @@ class Subtask(Model):
     subtask_results_rejected = OneToOneField(StoredMessage, blank=True, null=True, related_name='subtasks_for_subtask_results_rejected')
     force_get_task_result = OneToOneField(StoredMessage, blank=True, null=True, related_name='subtasks_for_force_get_task_result')
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: list, **kwargs: Optional[Union[str, int, datetime.datetime]]) -> None:
         super().__init__(*args, **kwargs)
         self._current_state_name = None
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Subtask: task_id={self.task_id}, subtask_id={self.subtask_id}, state={self.state_enum}"
 
     @classmethod
-    def from_db(cls, db, field_names, values):
+    def from_db(cls, db: str, field_names: list, values: tuple) -> 'Subtask':
         new = super().from_db(db, field_names, values)
         new._current_state_name = new.state  # pylint: disable=no-member
         return new
 
-    def clean(self):
+    def clean(self) -> None:
         super().clean()
 
         # Concent should not accept anything that cause a transition to an active state in soft shutdown mode.
@@ -421,7 +424,7 @@ class Subtask(Model):
         if (
             not self._state.adding and
             self._current_state_enum != self.state_enum and
-            self._current_state_enum not in self.POSSIBLE_TRANSITIONS_TO[self.state_enum]
+            self._current_state_enum not in self.POSSIBLE_TRANSITIONS_TO[self.state_enum]  # type: ignore
         ):
             raise ValidationError({
                 'state': 'Subtask cannot change its state from {} to {}.'.format(
@@ -492,12 +495,12 @@ class Subtask(Model):
             })
 
     @property
-    def state_enum(self):
+    def state_enum(self) -> 'SubtaskState':
         return Subtask.SubtaskState[self.state]
 
     @property
-    def _current_state_enum(self):
-        return Subtask.SubtaskState[self._current_state_name]
+    def _current_state_enum(self) -> 'SubtaskState':
+        return Subtask.SubtaskState[self._current_state_name]  # type: ignore
 
 
 class PendingResponse(Model):
@@ -524,7 +527,7 @@ class PendingResponse(Model):
         ReceiveOutOfBand    = 'receive_out_of_band'
 
     @property
-    def response_type_enum(self):
+    def response_type_enum(self) -> 'ResponseType':
         return PendingResponse.ResponseType[self.response_type]
 
     response_type        = CharField(max_length = 32, choices = ResponseType.choices())
@@ -539,7 +542,7 @@ class PendingResponse(Model):
     created_at = DateTimeField(auto_now_add=True)
     modified_at = DateTimeField(auto_now=True)
 
-    def clean(self):
+    def clean(self) -> None:
         # payment_message can be included only if current state is ForcePaymentCommitted
         if self.response_type != PendingResponse.ResponseType.ForcePaymentCommitted.name and self.payments.filter(pending_response__pk = self.pk).exists():  # pylint: disable=no-member
             raise ValidationError({
@@ -570,7 +573,7 @@ class PaymentInfo(Model):
     amount_pending          = IntegerField()
     pending_response        = ForeignKey(PendingResponse, related_name = 'payments')
 
-    def clean(self):
+    def clean(self) -> None:
         if self.task_owner_key == self.provider_eth_account:
             raise ValidationError({
                 'provider_eth_account': 'Provider ethereum account address must be diffrent than task owner key'
@@ -612,7 +615,7 @@ class GlobalTransactionState(Model):
 
     nonce = DecimalField(max_digits=32, decimal_places=0, default=0, unique=True)
 
-    def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
+    def save(self, *args: Any, **kwargs: Any) -> None:  # pylint: disable=arguments-differ
         self.pk = 0
         super().save(*args, **kwargs)
 

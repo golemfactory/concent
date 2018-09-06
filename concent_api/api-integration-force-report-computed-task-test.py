@@ -5,6 +5,7 @@ import sys
 
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.message.tasks import AckReportComputedTask
+from golem_messages.message.tasks import TaskToCompute
 from golem_messages.message.concents import ForceReportComputedTask
 from golem_messages.message.concents import ForceReportComputedTaskResponse
 
@@ -20,13 +21,14 @@ from api_testing_common import PROVIDER_PUBLIC_KEY
 from api_testing_common import REQUESTOR_PRIVATE_KEY
 from api_testing_common import REQUESTOR_PUBLIC_KEY
 from api_testing_common import run_tests
+from protocol_constants import ProtocolConstants
 
 import requests
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
 
-def force_report_computed_task(task_to_compute):
+def force_report_computed_task(task_to_compute: TaskToCompute) -> ForceReportComputedTask:
     report_computed_task = ReportComputedTaskFactory()
     report_computed_task.task_to_compute = task_to_compute
     sign_message(report_computed_task, PROVIDER_PRIVATE_KEY)
@@ -36,7 +38,7 @@ def force_report_computed_task(task_to_compute):
     return force_report_computed_task
 
 
-def ack_report_computed_task(task_to_compute):
+def ack_report_computed_task(task_to_compute: TaskToCompute) -> AckReportComputedTask:
     ack_report_computed_task = AckReportComputedTask()
     ack_report_computed_task.report_computed_task = ReportComputedTaskFactory()
     ack_report_computed_task.report_computed_task.task_to_compute = task_to_compute
@@ -45,7 +47,12 @@ def ack_report_computed_task(task_to_compute):
 
 
 @count_fails
-def test_case_1_provider_forces_report_computed_task_and_gets_accepted(cluster_consts, cluster_url, task_id, subtask_id):
+def test_case_1_provider_forces_report_computed_task_and_gets_accepted(
+    cluster_consts: ProtocolConstants,
+    cluster_url: str,
+    task_id: str,
+    subtask_id: str,
+) -> None:
     current_time = get_current_utc_timestamp()
     task_to_compute = create_signed_task_to_compute(
         task_id=task_id,

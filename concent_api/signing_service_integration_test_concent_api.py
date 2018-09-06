@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from configparser import ConfigParser
 import os
 import sys
 
@@ -15,7 +16,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
 
 @count_fails
-def test_case_(test_id, config):
+def test_case_(test_id: str, config: ConfigParser) -> None:
     """
 
     """

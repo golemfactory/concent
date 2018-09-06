@@ -6,6 +6,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Text
 from typing import Union
 import golem_messages.message as message_messages
@@ -20,20 +21,20 @@ GENERATE_ID_CHARS = (string.ascii_letters + string.digits)
 JsonType = Dict[Text, Any]
 
 
-def make_random_string(length=None, chars=None):
+def make_random_string(length: Optional[int]=None, chars: Optional[Sequence[str]]=None) -> str:
     length = length if length is not None else DEFAULT_ID_STRING_LENGTH
     chars = chars if chars is not None else GENERATE_ID_CHARS
     return ''.join(random.choice(chars) for _ in range(length))
 
 
-def split_uppercase(message):
+def split_uppercase(message: str) -> str:
     """change first letter of each word to lowercase and add underscore
     e.g. Input -> ForceComputedTask, Output -> force_computed_task
     """
     return (''.join([(word[:1].lower() + word[1:]) for word in re.sub(r'([A-Z])', r'_\1', message)]))[1:]
 
 
-def find_modules():
+def find_modules() -> list:
     message_modules = [message_tasks, message_concents]
     message_list = []
     for module in message_modules:
@@ -41,7 +42,7 @@ def find_modules():
     return message_list
 
 
-def get_field_names():
+def get_field_names() -> list:
     """Makes a list of available messages from golem messages with name converted to snake case.
     """
     field_names = []
@@ -66,7 +67,7 @@ def substitute_message(json: JsonType, message_name: str, message: Message) -> J
     return params
 
 
-def convert_message_name(message):
+def convert_message_name(message: str) -> str:
     """Remove underscore and change first letter of each word to uppercase
     e.g. Input -> force_computed_task, Output -> ForceComputedTask
     """
@@ -88,13 +89,13 @@ def _get_valid_message_name(messages: List[Text], json: JsonType) -> Optional[Te
         return names[0]
 
 
-def generate_subtask_id(base_name):
+def generate_subtask_id(base_name: str) -> str:
     subtask_id = f'{base_name}_{random.randrange(1, 1000)}'
     return subtask_id
 
 
 class MessageExtractor(object):
-    def __init__(self, requestor_public_key, provider_public_key):
+    def __init__(self, requestor_public_key: str, provider_public_key: str) -> None:
         self.messages = []  # type: List[Message]
         task_id = make_random_string(8)
         subtask_id = generate_subtask_id(task_id)
@@ -119,7 +120,7 @@ class MessageExtractor(object):
         else:
             return self._process_body(json, name)
 
-    def _process_top_level(self, json):
+    def _process_top_level(self, json: JsonType) -> Union[Message, Task]:
         try:
             name = json['name']
             body = json['body']
@@ -129,7 +130,7 @@ class MessageExtractor(object):
         return self.extract_message(body, name)
 
     def _process_body(self, json: JsonType, name: str) -> Message:
-        def supplement_data(params, supplement, keys):
+        def supplement_data(params: dict, supplement: dict, keys: list) -> dict:
             for k, v in params.items():
                 if isinstance(v, dict):
                     supplement_data(v, supplement, keys)

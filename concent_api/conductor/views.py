@@ -1,6 +1,7 @@
 from logging import getLogger
 
 from django.db.models import Q
+from django.http.request import HttpRequest
 from django.http.response import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -19,7 +20,7 @@ logger = getLogger(__name__)
 @provides_concent_feature('conductor-urls')
 @require_POST
 @csrf_exempt
-def report_upload(_request, file_path):
+def report_upload(_request: HttpRequest, file_path: str) -> HttpResponse:
 
     log_request_received(logger,  file_path, FileTransferToken.Operation.upload)
     # If there's a corresponding VerificationRequest, the load it and link it to UploadReport.

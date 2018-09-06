@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from golem_messages.message.concents import FileTransferToken
 
 from common import logging
+from common.constants import ErrorCode
 
 logger = getLogger(__name__)
 
@@ -11,11 +12,11 @@ logger = getLogger(__name__)
 def gatekeeper_access_denied_response(
     message: str,
     operation: FileTransferToken.Operation,
-    error_code,
-    path=None,
-    subtask_id=None,
-    client_key=None
-):
+    error_code: ErrorCode,
+    path: str=None,
+    subtask_id: str=None,
+    client_key: str=None
+) -> JsonResponse:
     data = {
         'message': message,
         'error_code': error_code.value,

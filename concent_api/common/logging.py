@@ -1,6 +1,7 @@
 import json
 from logging import Logger
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import Optional
 from typing import Union
@@ -18,8 +19,8 @@ from common.helpers import join_messages
 MessageAsDict = Dict[str, Union[str, Dict[str, Any]]]
 
 
-def replace_element_to_unavailable_instead_of_none(log_function):
-    def wrap(*args, **kwargs):
+def replace_element_to_unavailable_instead_of_none(log_function: Callable) -> Callable:
+    def wrap(*args: Any, **kwargs: Any) -> None:
         args_list = [arg if arg is not None else '-not available-' for arg in args]
         kwargs = {key: value if value is not None else '-not available-' for (key, value) in kwargs.items()}
         log_function(*args_list, **kwargs)
@@ -27,7 +28,7 @@ def replace_element_to_unavailable_instead_of_none(log_function):
 
 
 @replace_element_to_unavailable_instead_of_none
-def log_message_received(logger: Logger, message: Message, client_public_key: bytes):
+def log_message_received(logger: Logger, message: Message, client_public_key: bytes) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
     logger.info(
@@ -44,7 +45,7 @@ def log_message_returned(
     response_message: Message,
     client_public_key: bytes,
     endpoint: str
-):
+) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, response_message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, response_message)
 
@@ -57,7 +58,7 @@ def log_message_returned(
 
 
 @replace_element_to_unavailable_instead_of_none
-def log_message_accepted(logger: Logger, message: Message, client_public_key: bytes):
+def log_message_accepted(logger: Logger, message: Message, client_public_key: bytes) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
     logger.info(
@@ -69,7 +70,7 @@ def log_message_accepted(logger: Logger, message: Message, client_public_key: by
 
 
 @replace_element_to_unavailable_instead_of_none
-def log_message_added_to_queue(logger: Logger, message: Message, client_public_key: bytes):
+def log_message_added_to_queue(logger: Logger, message: Message, client_public_key: bytes) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
     logger.info(
@@ -86,7 +87,7 @@ def log_timeout(
     message: Message,
     client_public_key: bytes,
     deadline: int
-):
+) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
     logger.info(
@@ -103,7 +104,7 @@ def log_empty_queue(
     logger: Logger,
     endpoint: str,
     client_public_key: bytes
-):
+) -> None:
     logger.info(f"A message queue is empty in `{endpoint}()` -- "
                 f"CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)}")
 
@@ -116,7 +117,7 @@ def log_400_error(
     message: Message,
     error_code: str,
     error_message: str
-):
+) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
     logger.info(
@@ -136,7 +137,7 @@ def log_message_not_allowed(
     endpoint: str,
     client_public_key: bytes,
     method: str
-):
+) -> None:
     logger.info(f"Endpoint {endpoint} does not allow HTTP method {method} -- "
         f"CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)}")
 
@@ -152,7 +153,7 @@ def log_subtask_stored(
     computation_deadline: int,
     result_package_size: int,
     next_deadline: Optional[int] = None,
-):
+) -> None:
     logger.info(
         f"A subtask has been stored -- STATE: {state} -- "
         f"NEXT_DEADLINE: {next_deadline} -- "
@@ -174,7 +175,7 @@ def log_subtask_updated(
     provider_public_key: bytes,
     requestor_public_key: bytes,
     next_deadline:  Optional[int] = None,
-):
+) -> None:
     logger.info(
         f"A subtask has been updated -- STATE: {state} -- "
         f"NEXT_DEADLINE: {next_deadline} -- "
@@ -194,7 +195,7 @@ def log_stored_message_added_to_subtask(
     stored_message:  Message,
     provider_id: str,
     requestor_is: str
-):
+) -> None:
     logger.info(
         f"A stored message has beed added to subtask -- STATE: {state} "
         f"TASK_ID: {task_id} "
@@ -205,7 +206,7 @@ def log_stored_message_added_to_subtask(
     )
 
 
-def log_changes_in_subtask_states(logger: Logger, client_public_key: bytes, count: int):
+def log_changes_in_subtask_states(logger: Logger, client_public_key: bytes, count: int) -> None:
     assert isinstance(count, int)
     logger.info(
         f'{count} {"subtask changed its" if count == 1 else "subtasks changed their"} state -- '
@@ -213,7 +214,7 @@ def log_changes_in_subtask_states(logger: Logger, client_public_key: bytes, coun
     )
 
 
-def log_change_subtask_state_name(logger: Logger, old_state: str, new_state: str):
+def log_change_subtask_state_name(logger: Logger, old_state: str, new_state: str) -> None:
     logger.info(f'Subtask changed its state from {old_state} to {new_state}')
 
 
@@ -221,8 +222,8 @@ def log_new_pending_response(
     logger: Logger,
     response_type: str,
     queue_name: str,
-    subtask: Subtask
-):
+    subtask: Optional[Subtask]=None,
+) -> None:
     task_id = subtask.task_id if subtask is not None else '-not available-'
     subtask_id = subtask.subtask_id if subtask is not None else '-not available-'
     provider_key = subtask.provider.public_key_bytes if subtask is not None else '-not available-'
@@ -243,7 +244,7 @@ def log_receive_message_from_database(
     client_public_key: bytes,
     response_type: str,
     queue_name: str
-):
+) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
     logger.info(
@@ -262,7 +263,7 @@ def log_file_status(
     subtask_id: str,
     requestor_public_key: bytes,
     provider_public_key: bytes
-):
+) -> None:
     logger.info(
         f'File assigned to TASK_ID: {task_id} '
         f'SUBTASK_ID: {subtask_id} is already uploaded. -- '
@@ -271,7 +272,7 @@ def log_file_status(
     )
 
 
-def log_request_received(logger: Logger, path_to_file: str, operation: FileTransferToken.Operation):
+def log_request_received(logger: Logger, path_to_file: str, operation: FileTransferToken.Operation) -> None:
     logger.info(f"{operation.capitalize()} request received. Path to file: '{path_to_file}'")
 
 
@@ -283,7 +284,7 @@ def log_message_under_validation(
     file_path: str,
     subtask_id: str,
     public_key: bytes
-):
+) -> None:
 
     assert isinstance(subtask_id, str)
     logger.info(
@@ -301,7 +302,7 @@ def log_message_successfully_validated(
     file_path: str,
     subtask_id: bytes,
     public_key: bytes
-):
+) -> None:
     logger.info(
         f"{operation.capitalize()} request passed all validations. Message type: '{message_type}'. "
         f"File: '{file_path}', with subtask_id '{subtask_id}'. "
@@ -318,7 +319,7 @@ def log_operation_validation_failed(
     path: str,
     subtask_id: str,
     client_key: str
-):
+) -> None:
     logger.info(
         f"{operation.capitalize()} validation failed. Message: {message} Error code: '{error_code}'. "
         f"File '{path}', with subtask_id '{subtask_id}'. Client public key: '{client_key}'"
@@ -327,14 +328,14 @@ def log_operation_validation_failed(
 
 @replace_element_to_unavailable_instead_of_none
 def log_message_received_in_endpoint(
-    logger,
+    logger: Logger,
     application_and_endpoint: str,
     message_type: str,
     client_public_key: bytes,
     content_type: Optional[str] = None,
     task_id: Optional[str] = None,
     subtask_id: Optional[str] = None
-):
+) -> None:
     logger.info(
         f'A message has been received in `{application_and_endpoint}/` '
         f'Message type: {message_type} '
@@ -345,15 +346,15 @@ def log_message_received_in_endpoint(
     )
 
 
-def log_json_message(logger: Logger, message: JsonResponse):
+def log_json_message(logger: Logger, message: JsonResponse) -> None:
     logger.info(message)
 
 
-def log_string_message(logger: Logger, *messages_to_log: str):
+def log_string_message(logger: Logger, *messages_to_log: str) -> None:
     logger.info(join_messages(*messages_to_log))
 
 
-def log_error_message(logger: Logger, *messages_to_log: str):
+def log_error_message(logger: Logger, *messages_to_log: str) -> None:
     logger.error(join_messages(*messages_to_log))
 
 

@@ -1,7 +1,9 @@
+from typing import Any
 from typing import Dict
 from typing import Tuple
 
 import asyncio
+from asyncio.base_events import BaseEventLoop
 
 from logging import getLogger
 from logging import Logger
@@ -15,7 +17,7 @@ class QueuePool(dict):
     def __init__(
         self,
         initial_data: Dict[int, asyncio.Queue] = None,
-        loop: asyncio.BaseEventLoop = None,
+        loop: BaseEventLoop = None,
         logger: Logger = None
     ) -> None:
         super().__init__({k: v for k, v in initial_data.items()} if initial_data is not None else {})
@@ -33,12 +35,12 @@ class QueuePool(dict):
         if key in self:
             raise KeyError(STANDARD_ERROR_MESSAGE)
 
-    def update(self, mapping: Dict[int, asyncio.Queue], **kwargs) -> None:
+    def update(self, mapping: Dict[int, asyncio.Queue], **kwargs: Any) -> None:  # type: ignore
         for key in mapping.keys():
             self._ensure_key_uniqueness(key)
         super().update(mapping, **kwargs)
 
-    def pop(self, key: int, **kwargs) -> asyncio.Queue:
+    def pop(self, key: int, **kwargs: Any) -> asyncio.Queue:  # type: ignore
         value = super().pop(key, **kwargs)
         if value is not None:
             self.loop.run_until_complete(

@@ -2,7 +2,7 @@ from asyncio import IncompleteReadError
 from asyncio import Queue
 from asyncio import StreamReader
 from asyncio import StreamWriter
-from collections import OrderedDict  # noqa, pylint: disable=unused-import
+from collections import OrderedDict
 from logging import getLogger
 from logging import Logger
 from typing import Dict
@@ -75,10 +75,9 @@ async def request_producer(
 async def request_consumer(
     request_queue: Queue,
     response_queue_pool: QueuePool,
-    message_tracker: Dict[int, MessageTrackerItem],
+    message_tracker: OrderedDict,
     signing_service_writer: StreamWriter
 ) -> None:
-    message_tracker = message_tracker  # type: OrderedDict[int, MessageTrackerItem]
     signing_service_request_id = 0
     while True:
         item: RequestQueueItem = await request_queue.get()
@@ -103,9 +102,8 @@ async def request_consumer(
 async def response_producer(
     response_queue_pool: Dict[int, Queue],
     signing_service_reader: StreamReader,
-    message_tracker: Dict[int, MessageTrackerItem],
+    message_tracker: OrderedDict,
 ) -> None:
-    message_tracker = message_tracker  # type: OrderedDict[int, MessageTrackerItem]
     while True:
         try:
             frame = await handle_frame_receive_async(signing_service_reader, settings.SIGNING_SERVICE_PUBLIC_KEY)
@@ -166,10 +164,9 @@ async def response_consumer(
 
 def discard_entries_for_lost_messages(
     current_request_id: int,
-    message_tracker: Dict[int, MessageTrackerItem],
+    message_tracker: OrderedDict,
     logger_: Logger
 ) -> None:
-    message_tracker = message_tracker  # type: OrderedDict[int, MessageTrackerItem]
     lost_messages_counter = 0
     for signinig_service_request_id in message_tracker.keys():
         if signinig_service_request_id == current_request_id:

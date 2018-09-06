@@ -31,9 +31,7 @@ from common.validations import validate_file_transfer_token
 logger = getLogger(__name__)
 
 
-def verify_file_status(
-    client_public_key: bytes,
-):
+def verify_file_status(client_public_key: bytes) -> None:
     """
     Function to verify existence of a file on cluster storage
     """
@@ -69,12 +67,12 @@ def verify_file_status(
 
 
 def store_pending_message(
-    response_type       = None,
-    client_public_key   = None,
-    queue               = None,
-    subtask             = None,
-    payment_message     = None,
-):
+    response_type: PendingResponse.ResponseType,
+    client_public_key: bytes,
+    queue: PendingResponse.Queue,
+    subtask: Optional[Subtask]=None,
+    payment_message: Optional[message.concents.ForcePaymentCommitted]=None,
+) -> None:
     client          = Client.objects.get_or_create_full_clean(client_public_key)
     receive_queue   = PendingResponse(
         response_type   = response_type.name,
@@ -269,7 +267,7 @@ def request_upload_status(report_computed_task: message.ReportComputedTask) -> b
         raise exceptions.UnexpectedResponse(f'Cluster storage returned HTTP {storage_cluster_response.status_code}')
 
 
-def send_request_to_storage_cluster(headers, request_http_address, method='head'):
+def send_request_to_storage_cluster(headers: dict, request_http_address: str, method: str='head') -> requests.Response:
     assert method in ['get', 'head']
 
     stream = True if method == 'get' else False

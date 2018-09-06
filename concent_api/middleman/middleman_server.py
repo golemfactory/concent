@@ -1,7 +1,9 @@
 import asyncio
+from asyncio.base_events import BaseEventLoop
 import traceback
 from collections import OrderedDict
 from logging import getLogger
+from typing import Optional
 
 import signal
 
@@ -23,18 +25,24 @@ crash_logger = getLogger('crash')
 
 
 class MiddleMan:
-    def __init__(self, bind_address=None, internal_port=None, external_port=None, loop=None):
+    def __init__(
+        self,
+        bind_address: Optional[str]=None,
+        internal_port: Optional[int]=None,
+        external_port: Optional[int]=None,
+        loop: Optional[BaseEventLoop]=None
+    ) -> None:
         self._bind_address = bind_address if bind_address is not None else LOCALHOST_IP
         self._internal_port = internal_port if internal_port is not None else DEFAULT_INTERNAL_PORT
         self._external_port = external_port if external_port is not None else DEFAULT_EXTERNAL_PORT
-        self._server_for_concent = None
+        self._server_for_concent: Optional[BaseEventLoop] = None
         self._server_for_signing_service = None
         self._is_signing_service_connection_active = False
         self._loop = loop if loop is not None else asyncio.get_event_loop()
         self._connection_id = 0
-        self._request_queue = asyncio.Queue(loop=self._loop)
+        self._request_queue: asyncio.Queue = asyncio.Queue(loop=self._loop)
         self._response_queue_pool = QueuePool(loop=self._loop)
-        self._message_tracker = OrderedDict()
+        self._message_tracker: OrderedDict = OrderedDict()
 
         # Handle shutdown signal.
         self._loop.add_signal_handler(signal.SIGTERM, self._terminate_connections)
@@ -76,12 +84,12 @@ class MiddleMan:
             # Serve requests until Ctrl+C is pressed
             logger.info(
                 'MiddleMan is serving for Concent on {}'.format(
-                    self._server_for_concent.sockets[0].getsockname()
+                    self._server_for_concent.sockets[0].getsockname()  # type: ignore
                 )
             )
             logger.info(
                 'MiddleMan is serving for Signing Service on {}'.format(
-                    self._server_for_signing_service.sockets[0].getsockname()
+                    self._server_for_signing_service.sockets[0].getsockname()  # type: ignore
                 )
             )
             self._run_forever()
@@ -115,15 +123,15 @@ class MiddleMan:
         self._server_for_signing_service = self._loop.run_until_complete(service_server_coroutine)
 
     def _close_middleman(self) -> None:
-        self._server_for_concent.close()
-        self._loop.run_until_complete(self._server_for_concent.wait_closed())
-        self._server_for_signing_service.close()
-        self._loop.run_until_complete(self._server_for_signing_service.wait_closed())
+        self._server_for_concent.close()  # type: ignore
+        self._loop.run_until_complete(self._server_for_concent.wait_closed())  # type: ignore
+        self._server_for_signing_service.close()  # type: ignore
+        self._loop.run_until_complete(self._server_for_signing_service.wait_closed())  # type: ignore
         self._loop.close()
 
     async def _handle_concent_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         tasks = []
-        response_queue = asyncio.Queue(loop=self._loop)
+        response_queue: asyncio.Queue = asyncio.Queue(loop=self._loop)
         self._connection_id = (self._connection_id + 1) % CONNECTION_COUNTER_LIMIT
         self._response_queue_pool[self._connection_id] = response_queue
         try:
@@ -149,7 +157,8 @@ class MiddleMan:
         finally:
             for task in tasks:  # regardless of exception's occurrence, all unfinished tasks should be cancelled
                 task.cancel()   # if exceptions occurs, producer task might need cancelling as well
-            removed_queue = self._response_queue_pool.pop(self._connection_id, None)  # remove response queue from the pool
+            # remove response queue from the pool
+            removed_queue = self._response_queue_pool.pop(self._connection_id, None)  # type: ignore
             if removed_queue is None:
                 logger.warning(f"Response queue for connection ID: {self._connection_id} has been already removed")
             else:
@@ -160,7 +169,7 @@ class MiddleMan:
             writer.close()
         else:
             self._is_signing_service_connection_active = True
-            tasks = []
+            tasks: list = []
             try:
                 request_consumer_task = self._loop.create_task(
                     request_consumer(

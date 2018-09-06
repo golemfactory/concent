@@ -1,11 +1,12 @@
-import datetime
-import copy
-
 from base64 import b64encode
 from logging import getLogger
+from typing import Any
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Union
+import copy
+import datetime
 
 from django.conf import settings
 from django.core.mail import mail_admins
@@ -62,7 +63,7 @@ from .utils import hex_to_bytes_convert
 logger = getLogger(__name__)
 
 
-def handle_send_force_report_computed_task(client_message):
+def handle_send_force_report_computed_task(client_message: message.ReportComputedTask) -> HttpResponse:
     task_to_compute = client_message.report_computed_task.task_to_compute
     provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
@@ -122,7 +123,7 @@ def handle_send_force_report_computed_task(client_message):
     return HttpResponse("", status = 202)
 
 
-def handle_send_ack_report_computed_task(client_message):
+def handle_send_ack_report_computed_task(client_message: message.tasks.AckReportComputedTask) -> HttpResponse:
     task_to_compute = client_message.report_computed_task.task_to_compute
     report_computed_task = client_message.report_computed_task
     provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
@@ -221,7 +222,7 @@ def handle_send_ack_report_computed_task(client_message):
         )
 
 
-def handle_send_reject_report_computed_task(client_message):
+def handle_send_reject_report_computed_task(client_message: message.tasks.RejectReportComputedTask) -> HttpResponse:
 
     validate_reject_report_computed_task(client_message)
 
@@ -374,7 +375,9 @@ def handle_send_reject_report_computed_task(client_message):
         )
 
 
-def handle_send_force_get_task_result(client_message: message.concents.ForceGetTaskResult) -> message.concents:
+def handle_send_force_get_task_result(
+    client_message: message.concents.ForceGetTaskResult
+) -> Union[message.concents.ForceGetTaskResultRejected, message.concents.AckForceGetTaskResult]:
     task_to_compute = client_message.report_computed_task.task_to_compute
     provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
@@ -445,7 +448,9 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
     )
 
 
-def handle_send_force_subtask_results(client_message: message.concents.ForceSubtaskResults):
+def handle_send_force_subtask_results(
+    client_message: message.concents.ForceSubtaskResults
+) -> Union[message.concents.ServiceRefused, message.concents.ForceSubtaskResultsRejected, HttpResponse]:
     report_computed_task = client_message.ack_report_computed_task.report_computed_task
     task_to_compute = report_computed_task.task_to_compute
     provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
@@ -543,7 +548,9 @@ def handle_send_force_subtask_results(client_message: message.concents.ForceSubt
     return HttpResponse("", status = 202)
 
 
-def handle_send_force_subtask_results_response(client_message):
+def handle_send_force_subtask_results_response(
+    client_message: message.concents.ForceSubtaskResultsResponse
+) -> HttpResponse:
     if client_message.subtask_results_accepted is not None and client_message.subtask_results_rejected is not None:
         raise Http400(
             f"ForceSubtaskResultsResponse contains both subtask_results_accepted and subtask_results_rejected",
@@ -642,13 +649,13 @@ def handle_send_force_subtask_results_response(client_message):
     return HttpResponse("", status = 202)
 
 
-def sum_payments(payments: List[Union[ForcedPaymentEvent, BatchTransferEvent]]):
+def sum_payments(payments: List[Union[ForcedPaymentEvent, BatchTransferEvent]]) -> int:
     assert isinstance(payments, list)
 
     return sum([item.amount for item in payments])
 
 
-def sum_subtask_price(subtask_results_accepted_list: List[message.tasks.SubtaskResultsAccepted]):
+def sum_subtask_price(subtask_results_accepted_list: List[message.tasks.SubtaskResultsAccepted]) -> int:
     assert isinstance(subtask_results_accepted_list, list)
 
     return sum([subtask_results_accepted.task_to_compute.price for subtask_results_accepted in subtask_results_accepted_list])
@@ -658,7 +665,7 @@ def sum_amount_price_for_provider(
     list_of_forced_payments:        List[ForcedPaymentEvent],
     list_of_payments:               List[BatchTransferEvent],
     subtask_results_accepted_list:  List[message.tasks.SubtaskResultsAccepted],
-):
+) -> Tuple[int, int]:
     assert isinstance(list_of_payments,                 list)
     assert isinstance(list_of_forced_payments,          list)
     assert isinstance(subtask_results_accepted_list,    list)
@@ -673,7 +680,7 @@ def sum_amount_price_for_provider(
     return (amount_paid, amount_pending)
 
 
-def get_clients_eth_accounts(task_to_compute: message.tasks.TaskToCompute):
+def get_clients_eth_accounts(task_to_compute: message.tasks.TaskToCompute) -> Tuple[str, str]:
     assert isinstance(task_to_compute, message.tasks.TaskToCompute)
 
     requestor_eth_address   = task_to_compute.requestor_ethereum_address
@@ -810,7 +817,7 @@ def handle_send_force_payment(
         return provider_force_payment_commited
 
 
-def handle_unsupported_golem_messages_type(client_message):
+def handle_unsupported_golem_messages_type(client_message: Any) -> None:
     if hasattr(client_message, 'header') and hasattr(client_message.header, 'type_'):
         raise Http400(
             f"This message type ({type(client_message).__name__}) is either not supported or cannot be submitted to Concent.",
@@ -900,7 +907,7 @@ def store_subtask(
 def handle_messages_from_database(
     client_public_key: bytes,
     response_type: PendingResponse.Queue,
-):
+) -> Union[message.Message, None]:
     assert client_public_key    not in ['', None]
 
     encoded_client_public_key = b64encode(client_public_key)
@@ -1094,7 +1101,7 @@ def handle_messages_from_database(
         return None
 
 
-def mark_message_as_delivered_and_log(undelivered_message, log_message):
+def mark_message_as_delivered_and_log(undelivered_message: PendingResponse, log_message: str) -> None:
     undelivered_message.delivered = True
     undelivered_message.full_clean()
     undelivered_message.save()
@@ -1120,7 +1127,7 @@ def update_subtask(
     subtask_results_accepted: Optional[message.tasks.SubtaskResultsAccepted] = None,
     subtask_results_rejected: Optional[message.tasks.SubtaskResultsRejected] = None,
     force_get_task_result: Optional[message.concents.ForceGetTaskResult] = None,
-)->Subtask:
+) -> Subtask:
     """
     Validates and updates subtask and its data.
     Stores related messages in StoredMessage table and adds relation to newly created subtask.
@@ -1294,7 +1301,7 @@ def store_message(
     golem_message:          message.base.Message,
     task_id:                str,
     subtask_id:             str,
-):
+) -> StoredMessage:
     assert golem_message.header.type_ in library
 
     message_timestamp = parse_timestamp_to_utc_datetime(golem_message.timestamp)
@@ -1313,7 +1320,7 @@ def store_message(
 
 def handle_send_subtask_results_verify(
     subtask_results_verify: message.concents.SubtaskResultsVerify
-):
+) -> Union[message.concents.AckSubtaskResultsVerify, message.concents.ServiceRefused]:
     subtask_results_rejected = subtask_results_verify.subtask_results_rejected
     report_computed_task = subtask_results_rejected.report_computed_task
     task_to_compute = report_computed_task.task_to_compute
@@ -1414,7 +1421,7 @@ def handle_send_subtask_results_verify(
     return ack_subtask_results_verify
 
 
-def handle_message(client_message):
+def handle_message(client_message: message.Message) -> Union[message.Message, HttpResponse]:
     if isinstance(client_message, message.concents.ForceReportComputedTask):
         return handle_send_force_report_computed_task(client_message)
 
@@ -1451,12 +1458,12 @@ def handle_message(client_message):
         return handle_unsupported_golem_messages_type(client_message)
 
 
-def is_subtask_in_wrong_state(subtask_id, forbidden_states):
+def is_subtask_in_wrong_state(subtask_id: str, forbidden_states: list) -> bool:
     return Subtask.objects.filter(  # pylint: disable=no-member
         subtask_id=subtask_id,
         state__in=forbidden_states
     ).exists()
 
 
-def are_items_unique(items: list):
+def are_items_unique(items: list) -> bool:
     return len(items) == len(set(items))

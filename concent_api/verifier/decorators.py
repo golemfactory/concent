@@ -1,4 +1,6 @@
 from functools import wraps
+from typing import Any
+from typing import Callable
 
 from django.conf import settings
 
@@ -9,9 +11,9 @@ from verifier.exceptions import VerificationMismatch
 from verifier.utils import clean_directory
 
 
-def handle_verification_results(task):
+def handle_verification_results(task: Callable) -> Callable:
     @wraps(task)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> None:
         try:
             return task(*args, **kwargs)
         except VerificationError as exception:

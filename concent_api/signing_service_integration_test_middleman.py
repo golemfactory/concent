@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from configparser import ConfigParser
 import os
 import sys
 
@@ -41,15 +42,15 @@ def correct_transaction_signing_request(request_id: int) -> TransactionSigningRe
     return transaction_siging_request
 
 
-def create_golem_message_frame_with_correct_transaction_signing_request(request_id: str) -> GolemMessageFrame:
+def create_golem_message_frame_with_correct_transaction_signing_request(request_id: int) -> GolemMessageFrame:
     return create_golem_message_frame(
         payload=correct_transaction_signing_request(request_id),
-        request_id=int(request_id),
+        request_id=request_id,
     )
 
 
 @count_fails
-def test_case_send_golem_message_frame_with_correct_transaction_signing_request(test_id, config):
+def test_case_send_golem_message_frame_with_correct_transaction_signing_request(test_id: str, config: ConfigParser) -> None:
     """
     1. Client sends GolemMessageFrame with correct TransactionSigningRequest to MiddleMan.
     2. MiddleMan responds with GolemMessageFrame with SignedTransaction.

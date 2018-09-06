@@ -22,9 +22,7 @@ from common                      import logging
 logger = getLogger(__name__)
 
 
-def update_timed_out_subtasks(
-    client_public_key: bytes,
-):
+def update_timed_out_subtasks(client_public_key: bytes) -> None:
     verify_file_status(client_public_key)
 
     clients_subtask_list = Subtask.objects.filter(
@@ -134,11 +132,7 @@ def update_timed_out_subtasks(
     )
 
 
-def update_subtask_state(
-    subtask,
-    state,
-    next_deadline: Optional[int] = None
-):
+def update_subtask_state(subtask: Subtask, state: str, next_deadline: Optional[int] = None) -> None:
     logging.log_change_subtask_state_name(
         logger,
         subtask.state,
@@ -150,7 +144,9 @@ def update_subtask_state(
     subtask.save()
 
 
-def are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_results_accepted_list: List[SubtaskResultsAccepted]) -> bool:
+def are_keys_and_addresses_unique_in_message_subtask_results_accepted(
+    subtask_results_accepted_list: List[SubtaskResultsAccepted]
+) -> bool:
 
     unique_requestor_public_keys = set(subtask_results_accepted.task_to_compute.requestor_public_key for subtask_results_accepted in subtask_results_accepted_list)
     unique_requestor_ethereum_addresses = set(subtask_results_accepted.task_to_compute.requestor_ethereum_address for subtask_results_accepted in subtask_results_accepted_list)
@@ -178,7 +174,9 @@ def are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_re
     )
 
 
-def are_subtask_results_accepted_messages_signed_by_the_same_requestor(subtask_results_accepted_list: List[SubtaskResultsAccepted]) -> bool:
+def are_subtask_results_accepted_messages_signed_by_the_same_requestor(
+    subtask_results_accepted_list: List[SubtaskResultsAccepted]
+) -> bool:
     requestor_public_key = subtask_results_accepted_list[0].task_to_compute.requestor_public_key
     are_all_signed_by_requestor = all(
         is_golem_message_signed_with_key(

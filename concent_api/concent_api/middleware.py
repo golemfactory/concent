@@ -1,10 +1,12 @@
+from typing import Callable
 import logging
 import os
 import sys
 import traceback
 
-from django.conf    import settings
+from django.conf import settings
 from django.db import transaction
+from django.http import HttpRequest
 from django.http import HttpResponse
 from django.http import JsonResponse
 from django.views.debug import technical_500_response
@@ -22,10 +24,10 @@ class GolemMessagesVersionMiddleware(object):
 
     """
 
-    def __init__(self, get_response):
+    def __init__(self, get_response: Callable) -> None:
         self.get_response = get_response
 
-    def __call__(self, request):
+    def __call__(self, request: HttpRequest) -> HttpResponse:
         response = self.get_response(request)
         response['Concent-Golem-Messages-Version'] = __version__
         return response
@@ -39,10 +41,10 @@ class ConcentVersionMiddleware(object):
 
     _concent_version = None
 
-    def __init__(self, get_response):
+    def __init__(self, get_response: Callable) -> None:
         self.get_response = get_response
 
-    def __call__(self, request):
+    def __call__(self, request: HttpRequest) -> HttpResponse:
         if self._concent_version is None:
             with open(os.path.join(settings.BASE_DIR, '..', 'RELEASE-VERSION')) as f:
                 self._concent_version = f.read()
@@ -52,7 +54,7 @@ class ConcentVersionMiddleware(object):
         return response
 
 
-def determine_return_type(request_meta):
+def determine_return_type(request_meta: dict) -> str:
     try:
         # The list of preferred mime-types should be sorted in order of increasing desirability,
         # in case of a situation where there is a tie.
@@ -71,20 +73,20 @@ class HandleServerErrorMiddleware(object):
     """
     Used to catch all unhandled exceptions and return JSON response containing error information.
     """
-    def __init__(self, get_response):
+    def __init__(self, get_response: Callable) -> None:
         self.get_response = get_response
         self.sid = None
 
-    def __call__(self, request):
+    def __call__(self, request: HttpRequest) -> HttpResponse:
         self.sid = transaction.savepoint()
         response = self.get_response(request)
         transaction.savepoint_commit(self.sid)
         return response
 
-    def process_exception(self, request, exception):  # pylint: disable=unused-argument
+    def process_exception(self, request: HttpRequest, exception: Exception) -> HttpResponse:  # pylint: disable=unused-argument
         transaction.savepoint_rollback(self.sid)
         request_logger = logging.getLogger('django.request')
-        request_logger.error(
+        request_logger.error(  # type: ignore
             'Internal Server Error: %s', request.path,
             exc_info=sys.exc_info(),
             extra={'status_code': 500, 'request': request},
@@ -99,13 +101,13 @@ class HandleServerErrorMiddleware(object):
             return HttpResponse(status=406)
 
     @staticmethod
-    def _build_html_response(request, debug_info_enabled):
+    def _build_html_response(request: HttpRequest, debug_info_enabled: bool) -> HttpResponse:
         if debug_info_enabled:
             return technical_500_response(request, *sys.exc_info())
         return server_error(request)
 
     @staticmethod
-    def _build_json_response(exception, debug_info_enabled):
+    def _build_json_response(exception: Exception, debug_info_enabled: bool) -> JsonResponse:
         message = {
             "error_message": str(exception) or DEFAULT_ERROR_MESSAGE,
             "error_code": getattr(exception, "error_code", ErrorCode.CONCENT_APPLICATION_CRASH).value,

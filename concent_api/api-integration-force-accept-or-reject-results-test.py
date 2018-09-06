@@ -4,6 +4,7 @@ import os
 import sys
 import time
 from freezegun import freeze_time
+from typing import Optional
 
 from golem_messages import message
 from golem_messages.utils import encode_hex
@@ -21,6 +22,7 @@ from api_testing_common import REQUESTOR_PRIVATE_KEY
 from api_testing_common import REQUESTOR_PUBLIC_KEY
 from api_testing_common import run_tests
 from api_testing_common import timestamp_to_isoformat
+from protocol_constants import ProtocolConstants
 
 import requests
 
@@ -32,14 +34,20 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 REPORT_COMPUTED_TASK_SIZE = 10
 
 
-def force_subtask_results(timestamp = None, ack_report_computed_task = None):
+def force_subtask_results(
+    timestamp: Optional[str]=None,
+    ack_report_computed_task: Optional[message.tasks.AckReportComputedTask]=None,
+) -> message.concents.ForceSubtaskResults:
     with freeze_time(timestamp):
         return message.concents.ForceSubtaskResults(
             ack_report_computed_task = ack_report_computed_task,
         )
 
 
-def ack_report_computed_task(timestamp = None, report_computed_task = None):
+def ack_report_computed_task(
+    timestamp: Optional[str]=None,
+    report_computed_task: Optional[message.tasks.AckReportComputedTask]=None,
+) -> message.tasks.AckReportComputedTask:
     with freeze_time(timestamp):
         return sign_message(
             message.tasks.AckReportComputedTask(
@@ -49,7 +57,11 @@ def ack_report_computed_task(timestamp = None, report_computed_task = None):
         )
 
 
-def force_subtask_results_response(timestamp = None, subtask_results_accepted = None, subtask_results_rejected = None):
+def force_subtask_results_response(
+    timestamp: Optional[str]=None,
+    subtask_results_accepted: Optional[message.tasks.SubtaskResultsAccepted]=None,
+    subtask_results_rejected: Optional[message.tasks.SubtaskResultsRejected]=None,
+) -> message.concents.ForceSubtaskResultsResponse:
     with freeze_time(timestamp):
         return message.concents.ForceSubtaskResultsResponse(
             subtask_results_accepted = subtask_results_accepted,
@@ -57,7 +69,11 @@ def force_subtask_results_response(timestamp = None, subtask_results_accepted = 
         )
 
 
-def subtask_results_accepted(timestamp = None, payment_ts = None, task_to_compute = None):
+def subtask_results_accepted(
+    timestamp: Optional[str]=None,
+    payment_ts: Optional[str]=None,
+    task_to_compute: Optional[message.tasks.TaskToCompute]=None,
+) -> message.tasks.SubtaskResultsAccepted:
     with freeze_time(timestamp):
         return sign_message(
             message.tasks.SubtaskResultsAccepted(
@@ -68,7 +84,11 @@ def subtask_results_accepted(timestamp = None, payment_ts = None, task_to_comput
         )
 
 
-def subtask_results_rejected(timestamp = None, reason = None, report_computed_task = None):
+def subtask_results_rejected(
+    timestamp: Optional[str]=None,
+    reason: Optional[message.tasks.SubtaskResultsRejected.REASON]=None,
+    report_computed_task: Optional[message.tasks.ReportComputedTask]=None,
+) -> message.tasks.SubtaskResultsRejected:
     with freeze_time(timestamp):
         return sign_message(
             message.tasks.SubtaskResultsRejected(
@@ -79,7 +99,10 @@ def subtask_results_rejected(timestamp = None, reason = None, report_computed_ta
         )
 
 
-def report_computed_task(timestamp = None, task_to_compute = None):
+def report_computed_task(
+    timestamp: Optional[str]=None,
+    task_to_compute: Optional[message.tasks.TaskToCompute]=None
+) -> message.tasks.ReportComputedTask:
     with freeze_time(timestamp):
         return sign_message(
             message.tasks.ReportComputedTask(
@@ -90,21 +113,21 @@ def report_computed_task(timestamp = None, task_to_compute = None):
         )
 
 
-def calculate_timestamp(current_time, concent_messaging_time, minimum_upload_rate):
+def calculate_timestamp(current_time: int, concent_messaging_time: int, minimum_upload_rate: int) -> str:
     return timestamp_to_isoformat(
         current_time - (2 * concent_messaging_time + _precalculate_subtask_verification_time(minimum_upload_rate, concent_messaging_time))
     )
 
 
-def calculate_deadline(current_time, concent_messaging_time, minimum_upload_rate):
+def calculate_deadline(current_time: int, concent_messaging_time: int, minimum_upload_rate: int) -> int:
     return current_time - (concent_messaging_time + _precalculate_subtask_verification_time(minimum_upload_rate, concent_messaging_time))
 
 
-def calculate_deadline_too_far_in_the_future(current_time, minimum_upload_rate, concent_messaging_time):
+def calculate_deadline_too_far_in_the_future(current_time: int, minimum_upload_rate: int, concent_messaging_time: int) -> int:
     return current_time - (1 + (20 * _precalculate_subtask_verification_time(minimum_upload_rate, concent_messaging_time)))
 
 
-def _precalculate_subtask_verification_time(minimum_upload_rate, concent_messaging_time):
+def _precalculate_subtask_verification_time(minimum_upload_rate: int, concent_messaging_time: int) -> int:
     maxiumum_download_time = calculate_maximum_download_time(
         size=REPORT_COMPUTED_TASK_SIZE,
         rate=minimum_upload_rate,
@@ -116,7 +139,12 @@ def _precalculate_subtask_verification_time(minimum_upload_rate, concent_messagi
 
 
 @count_fails
-def test_case_2d_requestor_rejects_subtask_results(cluster_consts, cluster_url, task_id, subtask_id):
+def test_case_2d_requestor_rejects_subtask_results(
+    cluster_consts: ProtocolConstants,
+    cluster_url: str,
+    task_id: str,
+    subtask_id: str,
+) -> None:
     # Test CASE 2D + 3 + 4B + 5. Requestor sends ForceSubtaskResultsResponse with SubtaskResultsRejected
     current_time = get_current_utc_timestamp()
     signed_task_to_compute = create_signed_task_to_compute(
@@ -194,7 +222,12 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts, cluster_url, 
 
 
 @count_fails
-def test_case_4b_requestor_accepts_subtaks_results(cluster_consts, cluster_url, task_id, subtask_id):
+def test_case_4b_requestor_accepts_subtaks_results(
+    cluster_consts: ProtocolConstants,
+    cluster_url: str,
+    task_id: str,
+    subtask_id: str,
+) -> None:
     # Test CASE 4B + 5. Requestor sends ForceSubtaskResultsResponse with SubtaskResultsAccepted
     #  Step 1. Provider sends ForceSubtaskResults
     current_time = get_current_utc_timestamp()
@@ -275,7 +308,12 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts, cluster_url, 
 
 
 @count_fails
-def test_case_2c_wrong_timestamps(cluster_consts, cluster_url, task_id, subtask_id):
+def test_case_2c_wrong_timestamps(
+    cluster_consts: ProtocolConstants,
+    cluster_url: str,
+    task_id: str,
+    subtask_id: str,
+) -> None:
     # Test CASE 2C - Send ForceSubtaskResults with wrong timestamps
     current_time = get_current_utc_timestamp()
     api_request(
@@ -308,7 +346,12 @@ def test_case_2c_wrong_timestamps(cluster_consts, cluster_url, task_id, subtask_
 
 
 @count_fails
-def test_case_2b_not_enough_funds(cluster_consts, cluster_url, task_id, subtask_id):
+def test_case_2b_not_enough_funds(
+    cluster_consts: ProtocolConstants,
+    cluster_url: str,
+    task_id: str,
+    subtask_id: str,
+) -> None:
     #  Test CASE 2B - Send ForceSubtaskResults with not enough amount of funds on account
     current_time = get_current_utc_timestamp()
     api_request(
@@ -343,7 +386,12 @@ def test_case_2b_not_enough_funds(cluster_consts, cluster_url, task_id, subtask_
 
 
 @count_fails
-def test_case_2a_send_duplicated_force_subtask_results(cluster_consts, cluster_url, task_id, subtask_id):
+def test_case_2a_send_duplicated_force_subtask_results(
+    cluster_consts: ProtocolConstants,
+    cluster_url: str,
+    task_id: str,
+    subtask_id: str,
+) -> None:
     #  Test CASE 2A + 2D + 3 - Send ForceSubtaskResults with same task_id as stored by Concent before
     #  Step 1. Send ForceSubtaskResults first time
     current_time = get_current_utc_timestamp()

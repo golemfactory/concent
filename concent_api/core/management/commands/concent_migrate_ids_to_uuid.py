@@ -1,4 +1,5 @@
 from logging import getLogger
+from typing import Any
 
 from django.core.management.base import BaseCommand
 from django.db.models import Q
@@ -13,7 +14,7 @@ logger = getLogger(__name__)
 class Command(BaseCommand):
     help = 'Removes Subtask and StoredMessage objects with subtask_id and task_id not matching UUID standard.'
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         subtasks_deleted = Subtask.objects.exclude(
             Q(task_id__iregex=REGEX_FOR_VALID_UUID) |
             Q(subtask_id__iregex=REGEX_FOR_VALID_UUID)

@@ -1,5 +1,6 @@
 from enum import Enum
 
+from golem_sci import SmartContractsInterface
 from golem_sci.blockshelper import BlocksHelper
 from web3 import Web3
 
@@ -7,13 +8,18 @@ from core.constants import ETHEREUM_ADDRESS_LENGTH
 from common.singleton import PaymentInterface
 
 
+class TransactionType(Enum):
+    BATCH = 'batch'
+    FORCE = 'force'
+
+
 def get_list_of_payments(
     requestor_eth_address:  str,
     provider_eth_address:   str,
     payment_ts:             int,
     current_time:           int,
-    transaction_type:       str,
-):
+    transaction_type:       TransactionType,
+) -> list:
     """
     Function which return list of transactions from payment API
     where timestamp >= T0
@@ -24,7 +30,7 @@ def get_list_of_payments(
     assert isinstance(current_time,             int) and current_time   > 0
     assert isinstance(transaction_type,         Enum) and transaction_type in TransactionType
 
-    payment_interface = PaymentInterface()
+    payment_interface: SmartContractsInterface = PaymentInterface()
 
     last_block_before_payment = BlocksHelper(payment_interface).get_first_block_after(payment_ts).number
 
@@ -51,7 +57,7 @@ def make_force_payment_to_provider(
     provider_eth_address:   str,
     value:                  int,
     payment_ts:             int,
-):
+) -> None:
     """
     Concent makes transaction from requestor's deposit to provider's account on amount 'value'.
     If there is less then 'value' on requestor's deposit, Concent transfers as much as possible.
@@ -75,8 +81,8 @@ def make_force_payment_to_provider(
 
 def is_account_status_positive(
     client_eth_address:     str,
-    pending_value = 0,
-):
+    pending_value: int = 0,
+) -> bool:
     assert isinstance(client_eth_address,       str) and len(client_eth_address) == ETHEREUM_ADDRESS_LENGTH
     assert isinstance(pending_value,            int) and pending_value >= 0
 
@@ -87,8 +93,3 @@ def is_account_status_positive(
 
 def get_transaction_count() -> int:
     return PaymentInterface().get_transaction_count()  # type: ignore  # pylint: disable=no-member
-
-
-class TransactionType(Enum):
-    BATCH = 'batch'
-    FORCE = 'force'

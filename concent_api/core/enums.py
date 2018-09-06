@@ -7,5 +7,5 @@ class HashingAlgorithm(Enum):
     SHA1 = 'sha1'
 
     @staticmethod
-    def values():
+    def values() -> list:
         return [algorithm.value for algorithm in HashingAlgorithm]

@@ -1,3 +1,5 @@
+from typing import Any
+from typing import Optional
 import base64
 import binascii
 import enum
@@ -20,24 +22,30 @@ class Base64Field(models.TextField):
         'not_base64': "'%(value)s' value must be a base64 encoded string.",
     }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.field_name = None
+        self.field_name: Optional[str] = None
 
-    def contribute_to_class(self, cls, name, private_only = False, virtual_only=models.fields.NOT_PROVIDED):
-        if self.db_column is None:
+    def contribute_to_class(
+        self,
+        cls: models.Model,
+        name: str,
+        private_only: bool=False,
+        virtual_only: Any=models.fields.NOT_PROVIDED,
+    ) -> None:
+        if self.db_column is None:  # type: ignore
             self.db_column = name
         self.field_name = name + '_bytes'
         super().contribute_to_class(cls, name, private_only = private_only, virtual_only = virtual_only)
         setattr(cls, self.field_name, property(self.get_data, self.set_data))
 
-    def get_data(self, obj):
+    def get_data(self, obj: models.Model) -> bytes:
         return base64.b64decode(getattr(obj, self.name), validate = True)
 
-    def set_data(self, obj, data):
+    def set_data(self, obj: models.Model, data: bytes) -> None:
         setattr(obj, self.name, base64.b64encode(data))
 
-    def validate(self, value, model_instance):
+    def validate(self, value: Any, model_instance: models.Model) -> None:
         super().validate(value, model_instance)
         try:
             base64.b64decode(
@@ -58,5 +66,5 @@ class ChoiceEnum(enum.Enum):
     """
 
     @classmethod
-    def choices(cls):
+    def choices(cls) -> tuple:
         return tuple((x.name, x.value) for x in cls)

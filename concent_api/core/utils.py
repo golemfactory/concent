@@ -90,7 +90,7 @@ def calculate_additional_verification_call_time(
     )
 
 
-def hex_to_bytes_convert(client_public_key: str):
+def hex_to_bytes_convert(client_public_key: str) -> bytes:
     if not isinstance(client_public_key, str):
         raise Http400(
             "Client public key must be string",
@@ -106,7 +106,7 @@ def hex_to_bytes_convert(client_public_key: str):
     return key_bytes
 
 
-def extract_name_from_scene_file_path(absoulte_scene_file_path_in_docker):
+def extract_name_from_scene_file_path(absoulte_scene_file_path_in_docker: str) -> str:
     for golem_resources_path in VALID_SCENE_FILE_PREFIXES:
         if absoulte_scene_file_path_in_docker.startswith(golem_resources_path):
             relative_scene_file_path_in_archive = absoulte_scene_file_path_in_docker[len(golem_resources_path):]

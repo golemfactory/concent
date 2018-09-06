@@ -1,6 +1,12 @@
 import os
 from argparse import Action
+from argparse import Namespace
+from argparse import ArgumentParser
 from base64 import b64decode
+from typing import Any
+from typing import Callable
+from typing import Optional
+from typing import Union
 
 from golem_messages.cryptography import verify_pubkey
 from golem_messages.exceptions import InvalidKeys
@@ -34,13 +40,13 @@ def is_private_key_valid(key: str) -> bool:
 
 
 def make_secret_provider_factory(
-    read_command_line=False,
-    env_variable_name=None,
-    use_file=False,
-    base64_convert=False,
-    string_decode=False,
-):
-    def wrapper(**kwargs):
+    read_command_line: bool=False,
+    env_variable_name: Union[str, None]=None,
+    use_file: bool=False,
+    base64_convert: bool=False,
+    string_decode: bool=False,
+) -> Callable:
+    def wrapper(**kwargs: Any) -> 'SecretProvider':
         return SecretProvider(
             read_command_line,
             env_variable_name,
@@ -56,16 +62,16 @@ class SecretProvider(Action):
 
     def __init__(
         self,
-        read_command_line,
-        env_variable_name,
-        use_file,
-        base64_convert,
-        string_decode,
-        option_strings,
-        dest,
-        required=False,
-        help=None  # pylint: disable=redefined-builtin
-    ):
+        read_command_line: bool,
+        env_variable_name: Union[str, None],
+        use_file: bool,
+        base64_convert: bool,
+        string_decode: bool,
+        option_strings: list,
+        dest: str,
+        required: bool=False,
+        help: Optional[str]=None  # pylint: disable=redefined-builtin
+    ) -> None:
         self.read_command_line = read_command_line
         self.env_variable_name = env_variable_name
         self.use_file = use_file
@@ -80,7 +86,13 @@ class SecretProvider(Action):
             nargs=0 if self.env_variable_name is not None else None,
         )
 
-    def __call__(self, parser, namespace, values, option_string=None):
+    def __call__(  # type: ignore
+        self,
+        parser: ArgumentParser,
+        namespace: Namespace,
+        values: str,
+        option_string: Optional[str]=None
+    ) -> None:
         if values is not None and self.use_file:
             with open(values) as file:
                 self.const = file.read()

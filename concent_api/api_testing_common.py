@@ -1,27 +1,26 @@
 import argparse
+import datetime
+import http.client
+import json
 import sys
-
 import uuid
-from freezegun import freeze_time
 
-from golem_messages.exceptions      import MessageError
+import requests
+from freezegun import freeze_time
+from golem_messages.exceptions import MessageError
 from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.message import Message
 from golem_messages.message.concents import ClientAuthorization
-from golem_messages.shortcuts       import dump
-from golem_messages.shortcuts       import load
+from golem_messages.shortcuts import dump
+from golem_messages.shortcuts import load
 from golem_messages.utils import encode_hex
 
-import datetime
-import json
-import requests
-import http.client
-
-from protocol_constants import get_protocol_constants
-from protocol_constants import print_protocol_constants
 from common.helpers import sign_message
 from common.testing_helpers import generate_ecc_key_pair
+from core.exceptions import UnexpectedResponse
+from protocol_constants import get_protocol_constants
+from protocol_constants import print_protocol_constants
 
 (PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)  = generate_ecc_key_pair()
 (REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
@@ -163,33 +162,32 @@ def api_request(
     validate_content_type(response.headers['Content-Type'], expected_content_type)
     validate_response_message(response.content, expected_message_type, private_key, public_key)
     print()
-    if response.status_code in [202, 204]:
+    content_type = response.headers['Content-Type']
+    if 'text/html' in content_type:
         return None
-    else:
+    elif content_type == 'json':
+        return json.loads(response._content)
+    elif content_type == 'application/octet-stream':
         return try_to_decode_golem_message(private_key, public_key, response.content)
+    else:
+        raise UnexpectedResponse(f'Unexpected response content_type. Response content type is {content_type}.')
 
 
 def _print_response(private_key, public_key, response):
     if response.content is None:
         print('RESPONSE: <empty>')
-    elif len(response.content) != 0:
-        _print_message_from_response(private_key, public_key, response)
     else:
-        print('STATUS: {} {}'.format(response.status_code, http.client.responses[response.status_code]))
-        if response.text not in ['', None]:
-            print('RAW RESPONSE (text): {}'.format(response.text))
-
-
-def _print_message_from_response(private_key, public_key, response):
-    print('STATUS: {} {}'.format(response.status_code, http.client.responses[response.status_code]))
-    print('MESSAGE:')
-    print('Concent-Golem-Messages-Version = {}'.format(response.headers['concent-golem-messages-version']))
-    if response.headers['Content-Type'] == 'application/octet-stream':
-        _print_message_from_stream(private_key, public_key, response.content)
-    elif response.headers['Content-Type'] == 'application/json':
-        _print_message_from_json(response)
-    else:
-        print('ERROR: Unexpected content-type of response message')
+        print(f'STATUS: {response.status_code} {http.client.responses[response.status_code]}')
+        print('MESSAGE:')
+        print(f'Concent-Golem-Messages-Version = {response.headers["concent-golem-messages-version"]}')
+        if response.headers['Content-Type'] == 'application/octet-stream':
+            _print_message_from_stream(private_key, public_key, response.content)
+        elif response.headers['Content-Type'] == 'application/json':
+            _print_message_from_json(response)
+        elif response.headers['Content-Type'] == 'text/html; charset=utf-8':
+            pass
+        else:
+            print('Unexpected content-type of response message')
 
 
 def _print_message_from_json(response):

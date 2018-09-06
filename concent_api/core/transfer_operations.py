@@ -32,39 +32,47 @@ logger = getLogger(__name__)
 
 
 def verify_file_status(
-    client_public_key: bytes,
-):
+    client_public_key: Optional[bytes] = None,
+    subtask: Optional[Subtask] = None,
+) -> None:
     """
-    Function to verify existence of a file on cluster storage
+    Function to verify existence of a file on cluster storage. It verifies files concerned to particular subtask or
+    with all clients subtasks. It should be passed only one - subtask object OR client key.
     """
+    assert (client_public_key is None and subtask is not None or client_public_key is not None and subtask is None)
 
-    encoded_client_public_key = b64encode(client_public_key)
-    subtasks_list = Subtask.objects.select_for_update().filter(
-        requestor__public_key  =encoded_client_public_key,
-        state                  = Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name,  # pylint: disable=no-member
-    )
+    if client_public_key is not None:
+        encoded_client_public_key = b64encode(client_public_key)
+        subtask_list = Subtask.objects.select_for_update().filter(
+            requestor__public_key=encoded_client_public_key,
+            state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name,  # pylint: disable=no-member
+        )
+    if subtask is not None:
+        if subtask.state_enum == Subtask.SubtaskState.FORCING_RESULT_TRANSFER:
+            subtask_list = [subtask]
+        else:
+            return
 
-    for subtask in subtasks_list:
-        report_computed_task    = deserialize_message(subtask.report_computed_task.data.tobytes())
+    for _subtask in subtask_list:
+        report_computed_task = deserialize_message(_subtask.report_computed_task.data.tobytes())
         if request_upload_status(report_computed_task):
-            subtask               = subtask
-            subtask.state         = Subtask.SubtaskState.RESULT_UPLOADED.name  # pylint: disable=no-member
-            subtask.next_deadline = None
-            subtask.full_clean()
-            subtask.save()
+            _subtask.state = Subtask.SubtaskState.RESULT_UPLOADED.name  # pylint: disable=no-member
+            _subtask.next_deadline = None
+            _subtask.full_clean()
+            _subtask.save()
 
             store_pending_message(
-                response_type       = PendingResponse.ResponseType.ForceGetTaskResultDownload,
-                client_public_key   = subtask.requestor.public_key_bytes,
-                queue               = PendingResponse.Queue.Receive,
-                subtask             = subtask,
+                response_type=PendingResponse.ResponseType.ForceGetTaskResultDownload,
+                client_public_key=_subtask.requestor.public_key_bytes,
+                queue=PendingResponse.Queue.Receive,
+                subtask=_subtask,
             )
             logging.log_file_status(
                 logger,
-                subtask.task_id,
-                subtask.subtask_id,
-                subtask.requestor.public_key_bytes,
-                subtask.provider.public_key_bytes,
+                _subtask.task_id,
+                _subtask.subtask_id,
+                _subtask.requestor.public_key_bytes,
+                _subtask.provider.public_key_bytes,
             )
 
 

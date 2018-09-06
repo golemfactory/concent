@@ -229,7 +229,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         # STEP 2: Requestor again forces get task result via Concent.
         # Concent rejects request immediately because message was already sent.
         with mock.patch(
-            'core.transfer_operations.request_upload_status',
+            'core.subtask_helpers.update_timed_out_subtask',
             side_effect=request_upload_status_false_mock
         ) as request_upload_status_false_mock_function:
             with freeze_time("2017-12-01 11:00:09"):
@@ -240,7 +240,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         request_upload_status_false_mock_function.assert_called_with(
-            deserialized_report_computed_task
+            deserialized_report_computed_task.task_to_compute.subtask_id
         )
 
         self.assertEqual(response.status_code,  200)

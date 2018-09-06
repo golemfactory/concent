@@ -7,7 +7,8 @@ from django.views.decorators.http   import require_GET
 
 from core.message_handlers          import handle_message
 from core.message_handlers          import handle_messages_from_database
-from core.subtask_helpers           import update_timed_out_subtasks
+from core.subtask_helpers import update_all_clients_timed_out_subtasks
+from core.subtask_helpers import update_timed_out_subtasks_in_message
 from common                          import logging
 from common.decorators import handle_errors_and_responses
 from common.decorators import log_communication
@@ -27,11 +28,8 @@ logger = getLogger(__name__)
 @log_communication
 def send(_request, client_message, client_public_key):
     assert isinstance(client_public_key, bytes) or client_public_key is None
-    if client_public_key is not None:
-        update_timed_out_subtasks(
-            client_public_key = client_public_key,
-        )
 
+    update_timed_out_subtasks_in_message(client_message)
     logging.log_message_received(
         logger,
         client_message,
@@ -48,7 +46,7 @@ def send(_request, client_message, client_public_key):
 @handle_errors_and_responses(database_name='control')
 def receive(_request, message, _client_public_key):
     assert isinstance(message.client_public_key, bytes)
-    update_timed_out_subtasks(
+    update_all_clients_timed_out_subtasks(
         client_public_key = message.client_public_key,
     )
     return handle_messages_from_database(
@@ -64,7 +62,7 @@ def receive(_request, message, _client_public_key):
 @handle_errors_and_responses(database_name='control')
 def receive_out_of_band(_request, message, _client_public_key):
     assert isinstance(message.client_public_key, bytes)
-    update_timed_out_subtasks(
+    update_all_clients_timed_out_subtasks(
         client_public_key = message.client_public_key,
     )
     return handle_messages_from_database(

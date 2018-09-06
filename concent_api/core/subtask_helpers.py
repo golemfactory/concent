@@ -7,8 +7,11 @@ from typing import Optional
 
 from django.db.models import Q
 from django.utils import timezone
+from golem_messages.message import Message
+from golem_messages.message.concents import ForcePayment
 from golem_messages.message.tasks import SubtaskResultsAccepted
 
+from common.logging import log_string_message
 from core.models                import PendingResponse
 from core.models                import Subtask
 from core.payments import service as payments_service
@@ -24,9 +27,115 @@ from common                      import logging
 logger = getLogger(__name__)
 
 
-def update_timed_out_subtasks(
-    client_public_key: bytes,
-):
+def _update_timed_out_subtask(subtask: Subtask) -> None:
+
+    subtasks_initial_state = subtask.state
+    if subtask.state == Subtask.SubtaskState.FORCING_REPORT.name:  # pylint: disable=no-member
+        update_subtask_state(
+            subtask=subtask,
+            state=Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
+        )
+        store_pending_message(
+            response_type=PendingResponse.ResponseType.ForceReportComputedTaskResponse,
+            client_public_key=subtask.provider.public_key_bytes,
+            queue=PendingResponse.Queue.Receive,
+            subtask=subtask,
+        )
+        store_pending_message(
+            response_type=PendingResponse.ResponseType.VerdictReportComputedTask,
+            client_public_key=subtask.requestor.public_key_bytes,
+            queue=PendingResponse.Queue.ReceiveOutOfBand,
+            subtask=subtask,
+        )
+    elif subtask.state == Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name:  # pylint: disable=no-member
+        update_subtask_state(
+            subtask=subtask,
+            state=Subtask.SubtaskState.FAILED.name,  # pylint: disable=no-member
+        )
+        store_pending_message(
+            response_type=PendingResponse.ResponseType.ForceGetTaskResultFailed,
+            client_public_key=subtask.requestor.public_key_bytes,
+            queue=PendingResponse.Queue.Receive,
+            subtask=subtask,
+        )
+    elif subtask.state == Subtask.SubtaskState.FORCING_ACCEPTANCE.name:  # pylint: disable=no-member
+        update_subtask_state(
+            subtask=subtask,
+            state=Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
+        )
+        store_pending_message(
+            response_type=PendingResponse.ResponseType.SubtaskResultsSettled,
+            client_public_key=subtask.provider.public_key_bytes,
+            queue=PendingResponse.Queue.Receive,
+            subtask=subtask,
+        )
+        store_pending_message(
+            response_type=PendingResponse.ResponseType.SubtaskResultsSettled,
+            client_public_key=subtask.requestor.public_key_bytes,
+            queue=PendingResponse.Queue.ReceiveOutOfBand,
+            subtask=subtask,
+        )
+    elif subtask.state == Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER.name:  # pylint: disable=no-member
+
+        update_subtask_state(
+            subtask=subtask,
+            state=Subtask.SubtaskState.FAILED.name,  # pylint: disable=no-member
+        )
+        store_pending_message(
+            response_type=PendingResponse.ResponseType.SubtaskResultsRejected,
+            client_public_key=subtask.provider.public_key_bytes,
+            queue=PendingResponse.Queue.ReceiveOutOfBand,
+            subtask=subtask,
+        )
+        store_pending_message(
+            response_type=PendingResponse.ResponseType.SubtaskResultsRejected,
+            client_public_key=subtask.requestor.public_key_bytes,
+            queue=PendingResponse.Queue.ReceiveOutOfBand,
+            subtask=subtask,
+        )
+    elif subtask.state == Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name:  # pylint: disable=no-member
+        task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
+
+        # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
+        payments_service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
+            requestor_eth_address=task_to_compute.requestor_ethereum_address,
+            provider_eth_address=task_to_compute.provider_ethereum_address,
+            value=task_to_compute.price,
+            payment_ts=get_current_utc_timestamp(),
+        )
+
+        update_subtask_state(
+            subtask=subtask,
+            state=Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
+        )
+        store_pending_message(
+            response_type=PendingResponse.ResponseType.SubtaskResultsSettled,
+            client_public_key=subtask.provider.public_key_bytes,
+            queue=PendingResponse.Queue.ReceiveOutOfBand,
+            subtask=subtask,
+        )
+        store_pending_message(
+            response_type=PendingResponse.ResponseType.SubtaskResultsSettled,
+            client_public_key=subtask.requestor.public_key_bytes,
+            queue=PendingResponse.Queue.ReceiveOutOfBand,
+            subtask=subtask,
+        )
+    log_string_message(
+        logger,
+        f"Subtask with id: {subtask.subtask_id} changed it's state from: {subtasks_initial_state} to: {subtask.state}. "
+        f"Provider id: {subtask.provider_id}. Requestor id: {subtask.requestor_id}."
+    )
+
+
+def update_timed_out_subtasks_in_message(client_message: Message) -> None:
+    if isinstance(client_message, ForcePayment):
+        for subtask_result_accepted in client_message.subtask_results_accepted_list:
+            update_timed_out_subtask(subtask_result_accepted.subtask_id)
+    else:
+        update_timed_out_subtask(client_message.subtask_id)
+
+
+def update_all_clients_timed_out_subtasks(client_public_key: bytes) -> None:
     verify_file_status(client_public_key)
 
     clients_subtask_list = Subtask.objects.select_for_update().filter(
@@ -36,102 +145,20 @@ def update_timed_out_subtasks(
     )
 
     for subtask in clients_subtask_list:
-        if subtask.state == Subtask.SubtaskState.FORCING_REPORT.name:  # pylint: disable=no-member
-            update_subtask_state(
-                subtask                 = subtask,
-                state                   = Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
-            )
-            store_pending_message(
-                response_type       = PendingResponse.ResponseType.ForceReportComputedTaskResponse,
-                client_public_key   = subtask.provider.public_key_bytes,
-                queue               = PendingResponse.Queue.Receive,
-                subtask             = subtask,
-            )
-            store_pending_message(
-                response_type       = PendingResponse.ResponseType.VerdictReportComputedTask,
-                client_public_key   = subtask.requestor.public_key_bytes,
-                queue               = PendingResponse.Queue.ReceiveOutOfBand,
-                subtask             = subtask,
-            )
-        elif subtask.state == Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name:  # pylint: disable=no-member
-            update_subtask_state(
-                subtask                 = subtask,
-                state                   = Subtask.SubtaskState.FAILED.name,  # pylint: disable=no-member
-            )
-            store_pending_message(
-                response_type       = PendingResponse.ResponseType.ForceGetTaskResultFailed,
-                client_public_key   = subtask.requestor.public_key_bytes,
-                queue               = PendingResponse.Queue.Receive,
-                subtask             = subtask,
-            )
-        elif subtask.state == Subtask.SubtaskState.FORCING_ACCEPTANCE.name:  # pylint: disable=no-member
-            update_subtask_state(
-                subtask                 = subtask,
-                state                   = Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
-            )
-            store_pending_message(
-                response_type       = PendingResponse.ResponseType.SubtaskResultsSettled,
-                client_public_key   = subtask.provider.public_key_bytes,
-                queue               = PendingResponse.Queue.Receive,
-                subtask             = subtask,
-            )
-            store_pending_message(
-                response_type       = PendingResponse.ResponseType.SubtaskResultsSettled,
-                client_public_key   = subtask.requestor.public_key_bytes,
-                queue               = PendingResponse.Queue.ReceiveOutOfBand,
-                subtask             = subtask,
-            )
-        elif subtask.state == Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER.name:  # pylint: disable=no-member
+        _update_timed_out_subtask(subtask)
 
-            update_subtask_state(
-                subtask=subtask,
-                state=Subtask.SubtaskState.FAILED.name,  # pylint: disable=no-member
-            )
-            store_pending_message(
-                response_type=PendingResponse.ResponseType.SubtaskResultsRejected,
-                client_public_key=subtask.provider.public_key_bytes,
-                queue=PendingResponse.Queue.ReceiveOutOfBand,
-                subtask=subtask,
-            )
-            store_pending_message(
-                response_type=PendingResponse.ResponseType.SubtaskResultsRejected,
-                client_public_key=subtask.requestor.public_key_bytes,
-                queue=PendingResponse.Queue.ReceiveOutOfBand,
-                subtask=subtask,
-            )
-        elif subtask.state == Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name:  # pylint: disable=no-member
-            task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
 
-            # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
-            payments_service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
-                requestor_eth_address=task_to_compute.requestor_ethereum_address,
-                provider_eth_address=task_to_compute.provider_ethereum_address,
-                value=task_to_compute.price,
-                payment_ts=get_current_utc_timestamp(),
-            )
-
-            update_subtask_state(
-                subtask                 = subtask,
-                state                   = Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
-            )
-            store_pending_message(
-                response_type       = PendingResponse.ResponseType.SubtaskResultsSettled,
-                client_public_key   = subtask.provider.public_key_bytes,
-                queue               = PendingResponse.Queue.ReceiveOutOfBand,
-                subtask             = subtask,
-            )
-            store_pending_message(
-                response_type       = PendingResponse.ResponseType.SubtaskResultsSettled,
-                client_public_key   = subtask.requestor.public_key_bytes,
-                queue               = PendingResponse.Queue.ReceiveOutOfBand,
-                subtask             = subtask,
-            )
-
-    logging.log_changes_in_subtask_states(
-        logger,
-        client_public_key,
-        clients_subtask_list.count(),
-    )
+def update_timed_out_subtask(subtask_id: str) -> None:
+    try:
+        subtask = Subtask.objects.select_for_update().get(
+            subtask_id=subtask_id,
+            state__in=[state.name for state in Subtask.ACTIVE_STATES],
+            next_deadline__lte=timezone.now()
+        )
+        verify_file_status(subtask=subtask)
+        _update_timed_out_subtask(subtask)
+    except Subtask.DoesNotExist:
+        pass
 
 
 def update_subtask_state(

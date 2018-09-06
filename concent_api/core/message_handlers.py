@@ -436,6 +436,12 @@ def handle_send_force_get_task_result(client_message: message.concents.ForceGetT
             return message.concents.ServiceRefused(
                 reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
             )
+        if subtask is not None:
+            if task_to_compute is not None and subtask.task_to_compute is not None:
+                validate_all_messages_identical([
+                    task_to_compute,
+                    deserialize_message(subtask.task_to_compute.data.tobytes()),
+                ])
         subtask = update_subtask(
             subtask=subtask,
             state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,

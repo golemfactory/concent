@@ -1,4 +1,4 @@
-from base64                     import b64encode
+from base64 import b64encode
 from logging import getLogger
 from typing import Any
 from typing import Dict
@@ -11,18 +11,18 @@ from golem_messages.message import Message
 from golem_messages.message.concents import ForcePayment
 from golem_messages.message.tasks import SubtaskResultsAccepted
 
-from common.logging import log_string_message
-from core.models                import PendingResponse
-from core.models                import Subtask
-from core.payments import service as payments_service
-from core.transfer_operations   import store_pending_message
-from core.transfer_operations   import verify_file_status
-from core.validation import is_golem_message_signed_with_key
-from core.utils import hex_to_bytes_convert
-from common.helpers              import deserialize_message
-from common.helpers              import get_current_utc_timestamp
+from common import logging
+from common.helpers import deserialize_message
+from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
-from common                      import logging
+from common.logging import log_string_message
+from core.models import PendingResponse
+from core.models import Subtask
+from core.payments import service as payments_service
+from core.transfer_operations import store_pending_message
+from core.transfer_operations import verify_file_status
+from core.utils import hex_to_bytes_convert
+from core.validation import is_golem_message_signed_with_key
 
 logger = getLogger(__name__)
 

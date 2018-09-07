@@ -115,7 +115,7 @@ def test_case_2d_send_correct_force_payment(
     time.sleep(5)
     api_request(
         cluster_url,
-        'receive-out-of-band',
+        'receive',
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),

@@ -529,7 +529,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2018-02-05 11:00:01"):
             response = self.client.post(
-                reverse('core:receive_out_of_band'),
+                reverse('core:receive'),
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
@@ -1459,7 +1459,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2018-02-05 10:00:51"):
             response_4a = self.client.post(
-                reverse('core:receive_out_of_band'),
+                reverse('core:receive'),
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
@@ -1477,7 +1477,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2018-02-05 10:00:52"):
             response_4b = self.client.post(
-                reverse('core:receive_out_of_band'),
+                reverse('core:receive'),
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
@@ -1583,7 +1583,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2018-02-05 10:00:51"):
             response_3 = self.client.post(
-                reverse('core:receive_out_of_band'),
+                reverse('core:receive'),
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
@@ -1636,7 +1636,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2018-02-05 10:00:52"):
             response_5 = self.client.post(
-                reverse('core:receive_out_of_band'),
+                reverse('core:receive'),
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )

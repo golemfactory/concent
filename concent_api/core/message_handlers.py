@@ -908,17 +908,13 @@ def store_subtask(
     return subtask
 
 
-def handle_messages_from_database(
-    client_public_key: bytes,
-    response_type: PendingResponse.Queue,
-) -> Union[message.Message, None]:
-    assert client_public_key    not in ['', None]
+def handle_messages_from_database(client_public_key: bytes) -> Union[message.Message, None]:
+    assert client_public_key not in ['', None]
 
     encoded_client_public_key = b64encode(client_public_key)
     pending_response = PendingResponse.objects.select_for_update().filter(
-        client__public_key = encoded_client_public_key,
-        queue              = response_type.name,
-        delivered          = False,
+        client__public_key=encoded_client_public_key,
+        delivered=False,
     ).order_by('created_at').first()
 
     if pending_response is None:

@@ -920,16 +920,6 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
 
-        with freeze_time("2017-12-01 11:00:15"):
-            response = self.client.post(
-                reverse('core:receive'),
-                data                           = self._create_requestor_auth_message(),
-                content_type                   = 'application/octet-stream',
-            )
-
-        self.assertEqual(response.status_code,        204)
-        self.assertEqual(len(response.content),       0)
-
         # STEP 7: Concent overrides computed task rejection and sends acceptance message to the provider with correct key
 
         with freeze_time("2017-12-01 11:00:15"):
@@ -957,7 +947,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
-                reverse('core:receive_out_of_band'),
+                reverse('core:receive'),
                 data                           = self._create_diff_requestor_auth_message(),
                 content_type                   = 'application/octet-stream',
             )
@@ -967,7 +957,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
-                reverse('core:receive_out_of_band'),
+                reverse('core:receive'),
                 data                           = self._create_provider_auth_message(),
                 content_type                   = 'application/octet-stream',
             )
@@ -979,7 +969,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
-                reverse('core:receive_out_of_band'),
+                reverse('core:receive'),
                 data                           = self._create_requestor_auth_message(),
                 content_type                   = 'application/octet-stream',
             )
@@ -1102,19 +1092,19 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 4: Concent do not accepts computed task due to lack of response from the requestor with different or mixed key
 
+        with freeze_time("2017-12-01 11:00:09"):
+            response = self.client.post(
+                reverse('core:receive'),
+                data=self._create_requestor_auth_message(),
+                content_type='application/octet-stream',
+            )
+
+        self.assertEqual(response.status_code, 204)
+
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
                 reverse('core:receive'),
                 data                           = self._create_diff_requestor_auth_message(),
-                content_type                   = 'application/octet-stream',
-            )
-
-        self.assertEqual(response.status_code,        204)
-
-        with freeze_time("2017-12-01 11:00:15"):
-            response = self.client.post(
-                reverse('core:receive'),
-                data                           = self._create_requestor_auth_message(),
                 content_type                   = 'application/octet-stream',
             )
 
@@ -1157,7 +1147,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
-                reverse('core:receive_out_of_band'),
+                reverse('core:receive'),
                 data                           = self._create_diff_requestor_auth_message(),
                 content_type                   = 'application/octet-stream',
             )
@@ -1166,7 +1156,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
-                reverse('core:receive_out_of_band'),
+                reverse('core:receive'),
                 data                           = self._create_provider_auth_message(),
                 content_type                   = 'application/octet-stream',
             )
@@ -1177,7 +1167,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 11:00:15"):
             response = self.client.post(
-                reverse('core:receive_out_of_band'),
+                reverse('core:receive'),
                 data                           = self._create_requestor_auth_message(),
                 content_type                   = 'application/octet-stream',
             )

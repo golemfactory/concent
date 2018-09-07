@@ -585,7 +585,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 11:00:15"):
             response_5 = self.client.post(
-                reverse('core:receive_out_of_band'),
+                reverse('core:receive'),
                 data         = self._create_requestor_auth_message(),
                 content_type = 'application/octet-stream',
             )
@@ -744,7 +744,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 11:00:11"):
             response_4 = self.client.post(
-                reverse('core:receive_out_of_band'),
+                reverse('core:receive'),
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )

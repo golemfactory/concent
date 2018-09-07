@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 @transaction.atomic(using='control')
 def upload_finished(subtask_id: str) -> None:
     try:
-        subtask = Subtask.objects.get(subtask_id=subtask_id)
+        subtask = Subtask.objects.select_for_update().get(subtask_id=subtask_id)
     except Subtask.DoesNotExist:
         logging.error(f'Task `upload_finished` tried to get Subtask object with ID {subtask_id} but it does not exist.')
         return

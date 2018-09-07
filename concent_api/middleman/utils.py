@@ -40,8 +40,8 @@ class QueuePool(dict):
             self._ensure_key_uniqueness(key)
         super().update(mapping, **kwargs)
 
-    def pop(self, key: int, **kwargs: Any) -> asyncio.Queue:  # type: ignore
-        value = super().pop(key, **kwargs)
+    def pop(self, key: int, *args: Any, **kwargs: Any) -> asyncio.Queue:  # type: ignore
+        value = super().pop(key, *args, **kwargs)
         if value is not None:
             self.loop.create_task(
                 self._log_discarded_items_from_the_queue(key, value)

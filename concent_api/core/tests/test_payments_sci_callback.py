@@ -18,9 +18,10 @@ from middleman_protocol.message import ErrorFrame
 from common.testing_helpers import generate_ecc_key_pair
 from core.exceptions import SCICallbackFrameError
 from core.exceptions import SCICallbackPayloadError
+from core.exceptions import SCICallbackPayloadSignatureError
 from core.exceptions import SCICallbackRequestIdError
-from core.exceptions import SCICallbackSignatureError
 from core.exceptions import SCICallbackTimeoutError
+from core.exceptions import SCICallbackTransactionSignatureError
 from core.payments.sci_callback import RequestIDGenerator
 from core.payments.sci_callback import sci_callback
 
@@ -49,10 +50,12 @@ class SCICallbackTest(TestCase):
 
         self.request_id = RequestIDGenerator.generate_request_id() + 1
         self.transaction = self._create_unsigned_transaction()
+        self.signed_transaction_golem_message = self._create_signed_transaction()
+        self.signed_transaction_golem_message.sign_message(SIGNING_SERVICE_PRIVATE_KEY)
         self.frame = GolemMessageFrame(
-            payload=self._create_signed_transaction(),
+            payload=self.signed_transaction_golem_message,
             request_id=self.request_id,
-        ).serialize(private_key=SIGNING_SERVICE_PRIVATE_KEY)
+        ).serialize(private_key=CONCENT_PRIVATE_KEY)
 
         def iterator(connection):  # pylint: disable=unused-argument
             yield self.frame
@@ -98,11 +101,7 @@ class SCICallbackTest(TestCase):
         with mock.patch('core.payments.sci_callback.socket.socket.connect'):
             with mock.patch('core.payments.sci_callback.send_over_stream'):
                 with mock.patch('core.payments.sci_callback.unescape_stream', side_effect=self.frame_iterator):
-                    with mock.patch(
-                        'middleman_protocol.message.AbstractFrame.deserialize',
-                        return_value=GolemMessageFrame(payload=self._create_signed_transaction(), request_id=self.request_id),
-                    ):
-                        signed_transaction = sci_callback(self.transaction)
+                    signed_transaction = sci_callback(self.transaction)
 
         self.assertEqual(signed_transaction.v, self.v)
         self.assertEqual(signed_transaction.r, self.r)
@@ -128,6 +127,20 @@ class SCICallbackTest(TestCase):
                 with mock.patch('core.payments.sci_callback.unescape_stream', side_effect=self.frame_iterator):
                     with mock.patch('middleman_protocol.message.AbstractFrame.deserialize', side_effect=MessageError):
                         with self.assertRaises(SCICallbackPayloadError):
+                            sci_callback(self.transaction)
+
+    def test_that_sci_callback_should_raise_exception_when_golem_message_is_not_signed_by_signing_service(self):
+        wrong_signed_golem_message = self._create_signed_transaction()
+        wrong_signed_golem_message.sign_message(DIFFERENT_CONCENT_PRIVATE_KEY)
+
+        with mock.patch('core.payments.sci_callback.socket.socket.connect'):
+            with mock.patch('core.payments.sci_callback.send_over_stream'):
+                with mock.patch('core.payments.sci_callback.unescape_stream', side_effect=self.frame_iterator):
+                    with mock.patch(
+                        'middleman_protocol.message.AbstractFrame.deserialize',
+                        return_value=GolemMessageFrame(payload=wrong_signed_golem_message, request_id=self.request_id),
+                    ):
+                        with self.assertRaises(SCICallbackPayloadSignatureError):
                             sci_callback(self.transaction)
 
     def test_that_sci_callback_should_raise_exception_when_messages_request_ids_do_not_match(self):
@@ -180,6 +193,7 @@ class SCICallbackTest(TestCase):
     def test_that_sci_callback_should_raise_exception_when_response_signature_is_not_correct(self):
         wrong_signed_transaction = self._create_signed_transaction()
         wrong_signed_transaction.v = self.v - 10
+        wrong_signed_transaction.sign_message(SIGNING_SERVICE_PRIVATE_KEY)
 
         with mock.patch('core.payments.sci_callback.socket.socket.connect'):
             with mock.patch('core.payments.sci_callback.send_over_stream'):
@@ -188,5 +202,5 @@ class SCICallbackTest(TestCase):
                         'middleman_protocol.message.AbstractFrame.deserialize',
                         return_value=GolemMessageFrame(payload=wrong_signed_transaction, request_id=self.request_id),
                     ):
-                        with self.assertRaises(SCICallbackSignatureError):
+                        with self.assertRaises(SCICallbackTransactionSignatureError):
                             sci_callback(self.transaction)

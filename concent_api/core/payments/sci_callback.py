@@ -5,6 +5,7 @@ from bitcoin import ecdsa_raw_verify
 from ethereum.utils import sha3
 from ethereum.transactions import UnsignedTransaction
 from ethereum.transactions import Transaction
+from golem_messages.exceptions import InvalidSignature
 from golem_messages.exceptions import MessageError
 from rlp import encode
 
@@ -14,9 +15,10 @@ from common.helpers import generate_ethereum_address_from_ethereum_public_key_by
 from core.constants import SCI_CALLBACK_MAXIMUM_TIMEOUT
 from core.exceptions import SCICallbackFrameError
 from core.exceptions import SCICallbackPayloadError
+from core.exceptions import SCICallbackPayloadSignatureError
 from core.exceptions import SCICallbackRequestIdError
-from core.exceptions import SCICallbackSignatureError
 from core.exceptions import SCICallbackTimeoutError
+from core.exceptions import SCICallbackTransactionSignatureError
 
 from middleman_protocol.concent_golem_messages.message import SignedTransaction
 from middleman_protocol.concent_golem_messages.message import TransactionRejected
@@ -145,7 +147,7 @@ def deserialize_response_and_handle_errors(raw_response: bytes, request_id: int)
     # Received data frame is invalid or the signature does not match its content.
     except MiddlemanProtocolError as exception:
         raise SCICallbackFrameError() from exception
-    # If the received Golem message is malformed or not signed by the Signing Service.
+    # If the received Golem message is malformed.
     except MessageError as exception:
         raise SCICallbackPayloadError() from exception
 
@@ -164,6 +166,12 @@ def deserialize_response_and_handle_errors(raw_response: bytes, request_id: int)
 
     if not isinstance(deserialized_message.payload, SignedTransaction):
         raise SCICallbackPayloadError('Received frame payload is not Golem message SignedTransaction instance.')
+
+    # If the received Golem message is not signed by the Signing Service.
+    try:
+        deserialized_message.payload.verify_signature(settings.SIGNING_SERVICE_PUBLIC_KEY)
+    except InvalidSignature as exception:
+        raise SCICallbackPayloadSignatureError() from exception
 
     return deserialized_message.payload
 
@@ -195,7 +203,7 @@ def verify_data_and_signature(signed_transaction: SignedTransaction, transaction
         ),
         settings.CONCENT_ETHEREUM_PUBLIC_KEY,
     ):
-        raise SCICallbackSignatureError(
+        raise SCICallbackTransactionSignatureError(
             'Received SignedTransaction signature data is not signed by right Ethereum private key.'
         )
 

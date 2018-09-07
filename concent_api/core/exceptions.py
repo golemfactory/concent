@@ -53,5 +53,9 @@ class SCICallbackFrameError(SCICallbackError):
     pass
 
 
-class SCICallbackSignatureError(SCICallbackError):
+class SCICallbackTransactionSignatureError(SCICallbackError):
+    pass
+
+
+class SCICallbackPayloadSignatureError(SCICallbackError):
     pass

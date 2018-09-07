@@ -40,10 +40,10 @@ class QueuePool(dict):
             self._ensure_key_uniqueness(key)
         super().update(mapping, **kwargs)
 
-    def pop(self, key: int, **kwargs: Any) -> asyncio.Queue:  # type: ignore
-        value = super().pop(key, **kwargs)
+    def pop(self, key: int, *args: Any, **kwargs: Any) -> asyncio.Queue:  # type: ignore
+        value = super().pop(key, *args, **kwargs)
         if value is not None:
-            self.loop.run_until_complete(
+            self.loop.create_task(
                 self._log_discarded_items_from_the_queue(key, value)
             )
         return value
@@ -51,14 +51,14 @@ class QueuePool(dict):
     def popitem(self) -> Tuple[int, asyncio.Queue]:
         key, value = super().popitem()
         if value is not None:
-            self.loop.run_until_complete(
+            self.loop.create_task(
                 self._log_discarded_items_from_the_queue(key, value)
             )
         return key, value
 
     def __delitem__(self, key: int) -> None:
         if key in self:
-            self.loop.run_until_complete(
+            self.loop.create_task(
                 self._log_discarded_items_from_the_queue(key, self.__getitem__(key))
             )
         super().__delitem__(key)

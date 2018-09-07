@@ -1,5 +1,6 @@
-from asyncio import Queue
 from logging import Logger
+
+import asyncio
 import pytest
 from assertpy import assert_that
 from freezegun import freeze_time
@@ -17,7 +18,7 @@ from middleman.utils import validate_connection_to_queue_mapping
 
 class TestQueuePoolInitialization:  # pylint: disable=no-self-use
     def test_that_queue_pool_is_created_with_given_params(self, event_loop):
-        initial_data = {1: Queue(loop=event_loop)}
+        initial_data = {1: asyncio.Queue(loop=event_loop)}
         loop = event_loop
         logger = create_autospec(spec=Logger, spec_set=True)
 
@@ -51,8 +52,8 @@ class TestQueuePoolOperations:
             ResponseQueueItem(ping_message, 1001, get_current_utc_timestamp()),
             ResponseQueueItem(ping_message, 1007, get_current_utc_timestamp()),
         ]
-        first_queue = Queue(loop=event_loop)
-        second_queue = Queue(loop=event_loop)
+        first_queue = asyncio.Queue(loop=event_loop)
+        second_queue = asyncio.Queue(loop=event_loop)
 
         self.number_of_items_in_first_queue = 3
         event_loop.run_until_complete(self._populate_queues(first_queue, resposne_queue_items, second_queue))
@@ -66,26 +67,34 @@ class TestQueuePoolOperations:
 
     def test_that_when_already_existing_connection_is_added_exception_is_thrown(self):
         with pytest.raises(KeyError):
-            self.queue_pool[1] = Queue()
+            self.queue_pool[1] = asyncio.Queue()
 
     def test_that_when_already_existing_connection_is_added_during_update_exception_is_thrown(self):
         with pytest.raises(KeyError):
             self.queue_pool.update(self.initial_dict)
 
-    def test_that_deleting_mapping_with_non_empty_queue_logs_untretrived_queue_items(self):
-        with freeze_time("2018-09-01 11:48:04"):
-            del self.queue_pool[self.first_index]
+    def test_that_deleting_mapping_with_non_empty_queue_logs_untretrived_queue_items(self, event_loop):
+        async def inner():
+            with freeze_time("2018-09-01 11:48:04"):
+                del self.queue_pool[self.first_index]
+                await asyncio.sleep(0.0001)
 
-            assert_that(self.queue_pool.keys()).does_not_contain(self.first_index)
-            assert_that(self.logger_mock.info.call_count).is_equal_to(self.number_of_items_in_first_queue)
+                assert_that(self.queue_pool.keys()).does_not_contain(self.first_index)
+                assert_that(self.logger_mock.info.call_count).is_equal_to(self.number_of_items_in_first_queue)
 
-    def test_that_popping_mapping_with_non_empty_queue_logs_untretrived_queue_items(self):
-        with freeze_time("2018-09-01 11:48:04"):
-            retrived_item = self.queue_pool.pop(self.second_index)
+        event_loop.run_until_complete(inner())
 
-            assert_that(retrived_item.empty()).is_true()
-            assert_that(self.queue_pool.keys()).does_not_contain(self.second_index)
-            assert_that(self.logger_mock.info.call_count).is_equal_to(1)
+    def test_that_popping_mapping_with_non_empty_queue_logs_untretrived_queue_items(self, event_loop):
+        async def inner():
+            with freeze_time("2018-09-01 11:48:04"):
+                retrived_item = self.queue_pool.pop(self.second_index)
+                await asyncio.sleep(0.0001)
+
+                assert_that(retrived_item.empty()).is_true()
+                assert_that(self.queue_pool.keys()).does_not_contain(self.second_index)
+                assert_that(self.logger_mock.info.call_count).is_equal_to(1)
+
+        event_loop.run_until_complete(inner())
 
     async def _populate_queues(self, first_queue, resposne_queue_items, second_queue):
         for item in resposne_queue_items[:self.number_of_items_in_first_queue]:
@@ -96,8 +105,8 @@ class TestQueuePoolOperations:
 
 @pytest.mark.parametrize(
     "key, value", [
-        ("this_is_not_int", Queue()),
-        (123.4, Queue()),
+        ("this_is_not_int", asyncio.Queue()),
+        (123.4, asyncio.Queue()),
         (777, "this_is_not_a_queue"),
         (888, sentinel.queue),
     ]

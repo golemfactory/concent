@@ -49,8 +49,10 @@ cd middleman_protocol/
 pytest -p no:django                 \
     --cov-report term-missing       \
     --cov-config ../coverage-config \
-    --cov=$MODULE $PATTERN          \
-    ${TEST_RUNNER_EXTRA_ARGUMENTS}
+    --cov=$MODULE $PATTERN
+    # temporarily disabled due to a BUG in pytest-django / pytest-xdist
+    # https://github.com/pytest-dev/pytest/issues/1618
+    # ${TEST_RUNNER_EXTRA_ARGUMENTS}
 rm .coverage
 cd ..
 
@@ -58,7 +60,9 @@ cd signing_service/
 pytest -p no:django                 \
     --cov-report term-missing       \
     --cov-config ../coverage-config \
-    --cov=$MODULE $PATTERN          \
-    ${TEST_RUNNER_EXTRA_ARGUMENTS}
+    --cov=$MODULE $PATTERN
+    # temporarily disabled due to a BUG in pytest-django / pytest-xdist
+    # https://github.com/pytest-dev/pytest/issues/1618
+    # ${TEST_RUNNER_EXTRA_ARGUMENTS}
 rm .coverage
 cd ..

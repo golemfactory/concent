@@ -1,4 +1,3 @@
-import uuid
 from unittest import TestCase
 from assertpy import assert_that
 import mock
@@ -25,6 +24,7 @@ from core.exceptions import HashingAlgorithmError
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
 from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
 from core.tests.utils import ConcentIntegrationTestCase
+from core.tests.utils import generate_uuid
 from core.validation import validate_all_messages_identical
 from core.validation import validate_compute_task_def
 from core.validation import validate_ethereum_addresses
@@ -116,11 +116,14 @@ class TestValidateAllMessagesIdentical(ConcentIntegrationTestCase):
             validate_all_messages_identical([self.report_computed_task, different_report_computed_task])
 
 
-class TestValidateIdValue():
+UUID: str = generate_uuid()
+
+
+class TestValidateIdValue:
 
     @pytest.mark.parametrize('id_', [
-        str(uuid.uuid4()).replace('-', ''),
-        str(uuid.uuid4()),
+        UUID.replace('-', ''),
+        UUID,
     ])  # pylint: disable=no-self-use
     def test_that_function_should_pass_when_value_is_allowed(self, id_):
 
@@ -130,10 +133,10 @@ class TestValidateIdValue():
             pytest.fail(f'{exception}')
 
     @pytest.mark.parametrize('id_', [
-        f'{str(uuid.uuid4())}{str(uuid.uuid4())}',
-        str(uuid.uuid4())[1:],
-        str(uuid.uuid4())[:-1],
-        str(uuid.uuid4()) + '1',
+        f'{UUID}{UUID}',
+        UUID[1:],
+        UUID[:-1],
+        UUID + '1',
         '',
     ])  # pylint: disable=no-self-use
     def test_that_function_should_raise_exception_when_value_is_not_allowed(self, id_):

@@ -20,7 +20,6 @@ from common.decorators import log_communication
 from common.decorators import provides_concent_feature
 from common.decorators import require_golem_auth_message
 from common.decorators import require_golem_message
-from .models import PendingResponse
 
 logger = getLogger(__name__)
 
@@ -57,26 +56,7 @@ def receive(_request: HttpRequest, message: Message, _client_public_key: bytes) 
     update_timed_out_subtasks(
         client_public_key = message.client_public_key,
     )
-    return handle_messages_from_database(
-        client_public_key  = message.client_public_key,
-        response_type      = PendingResponse.Queue.Receive,
-    )
-
-
-@provides_concent_feature('concent-api')
-@csrf_exempt
-@require_POST
-@require_golem_auth_message
-@handle_errors_and_responses(database_name='control')
-def receive_out_of_band(_request: HttpRequest, message: Message, _client_public_key: bytes) -> Union[Message, HttpResponse]:
-    assert isinstance(message.client_public_key, bytes)
-    update_timed_out_subtasks(
-        client_public_key = message.client_public_key,
-    )
-    return handle_messages_from_database(
-        client_public_key  = message.client_public_key,
-        response_type      = PendingResponse.Queue.ReceiveOutOfBand,
-    )
+    return handle_messages_from_database(client_public_key=message.client_public_key)
 
 
 @require_GET

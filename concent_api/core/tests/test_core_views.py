@@ -774,7 +774,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-11-17 12:00:00"):
             response = self.client.post(
-                reverse('core:receive_out_of_band'),
+                reverse('core:receive'),
                 content_type                   = 'application/octet-stream',
                 data                           = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
             )
@@ -895,7 +895,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
     def test_view_receive_out_of_band_should_accept_valid_message(self):
 
         response = self.client.post(
-            reverse('core:receive_out_of_band'),
+            reverse('core:receive'),
             data                                = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
             content_type                        = 'application/octet-stream',
         )
@@ -905,7 +905,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
     @freeze_time("2017-11-17 9:20:00")
     def test_view_receive_out_of_band_return_http_204_if_no_messages_in_database(self):
         response = self.client.post(
-            reverse('core:receive_out_of_band'),
+            reverse('core:receive'),
             data                                = self._create_client_auth_message(self.DIFFERENT_REQUESTOR_PRIVATE_KEY, self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
             content_type                        = 'application/octet-stream',
         )

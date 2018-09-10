@@ -169,7 +169,7 @@ def test_case_1_test_for_positive_case(
 
     api_request(
         cluster_url,
-        'receive-out-of-band',
+        'receive',
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
@@ -183,7 +183,7 @@ def test_case_1_test_for_positive_case(
 
     api_request(
         cluster_url,
-        'receive-out-of-band',
+        'receive',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
@@ -456,7 +456,7 @@ def test_case_6_test_without_script_src_in(
 
     api_request(
         cluster_url,
-        'receive-out-of-band',
+        'receive',
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
@@ -470,7 +470,7 @@ def test_case_6_test_without_script_src_in(
 
     api_request(
         cluster_url,
-        'receive-out-of-band',
+        'receive',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, CONCENT_PUBLIC_KEY),

@@ -1141,7 +1141,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # STEP 6: Different requestor does not receive subtask result settled via Concent with different key.
         with freeze_time("2018-02-05 10:00:51"):
             response = self.client.post(
-                reverse('core:receive_out_of_band'),
+                reverse('core:receive'),
                 data                            = self._create_diff_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
@@ -1151,7 +1151,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # STEP 7: Requestor receives subtask result settled via Concent with correct key.
         with freeze_time("2018-02-05 10:00:51"):
             response = self.client.post(
-                reverse('core:receive_out_of_band'),
+                reverse('core:receive'),
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
@@ -1292,7 +1292,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # STEP 4: Different provider does not receive subtask result settled via Concent with different key.
         with freeze_time("2018-02-05 10:00:51"):
             response = self.client.post(
-                reverse('core:receive_out_of_band'),
+                reverse('core:receive'),
                 data                            = self._create_diff_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )
@@ -1302,7 +1302,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # STEP 5: Provider receives subtask result settled via Concent with correct key.
         with freeze_time("2018-02-05 10:00:51"):
             response = self.client.post(
-                reverse('core:receive_out_of_band'),
+                reverse('core:receive'),
                 data                            = self._create_requestor_auth_message(),
                 content_type                    = 'application/octet-stream',
             )

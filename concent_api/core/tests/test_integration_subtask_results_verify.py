@@ -437,7 +437,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         )
 
         response_2 = self.client.post(
-            reverse('core:receive_out_of_band'),
+            reverse('core:receive'),
             data         = self._create_requestor_auth_message(),
             content_type = 'application/octet-stream',
         )
@@ -454,7 +454,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         )
 
         response_3 = self.client.post(
-            reverse('core:receive_out_of_band'),
+            reverse('core:receive'),
             data=self._create_provider_auth_message(),
             content_type='application/octet-stream',
         )
@@ -502,13 +502,13 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         too_late = subtask_results_verify_date_time + timedelta((self.compute_task_def['deadline'] - self.task_to_compute.timestamp))
         with freeze_time(too_late):
             response_2 = self.client.post(
-                reverse('core:receive_out_of_band'),
+                reverse('core:receive'),
                 data=self._create_requestor_auth_message(),
                 content_type='application/octet-stream',
             )
 
             response_3 = self.client.post(
-                reverse('core:receive_out_of_band'),
+                reverse('core:receive'),
                 data=self._create_provider_auth_message(),
                 content_type='application/octet-stream',
             )

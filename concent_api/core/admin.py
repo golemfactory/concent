@@ -70,13 +70,13 @@ class SubtaskAdmin(ModelAdminReadOnlyMixin, admin.ModelAdmin):
     ]
 
     @classmethod
-    def get_provider_public_key(cls, obj: Subtask) -> str:
-        return obj.provider.public_key
+    def get_provider_public_key(cls, subtask: Subtask) -> str:
+        return subtask.provider.public_key
     get_provider_public_key.short_description = 'Provider public key'  # type: ignore
 
     @classmethod
-    def get_requestor_public_key(cls, obj: Subtask) -> str:
-        return obj.requestor.public_key
+    def get_requestor_public_key(cls, subtask: Subtask) -> str:
+        return subtask.requestor.public_key
     get_requestor_public_key.short_description = 'Requestor public key'  # type: ignore
 
     @classmethod
@@ -84,8 +84,8 @@ class SubtaskAdmin(ModelAdminReadOnlyMixin, admin.ModelAdmin):
         return Subtask.objects_with_timing_columns
 
     @classmethod
-    def download_deadline(cls, obj: Subtask) -> datetime.datetime:
-        return parse_timestamp_to_utc_datetime(obj.download_deadline)
+    def download_deadline(cls, subtask: Subtask) -> datetime.datetime:
+        return parse_timestamp_to_utc_datetime(subtask.download_deadline)
     download_deadline.short_description = 'Download deadline'  # type: ignore
 
 
@@ -110,15 +110,15 @@ class PendingResponseAdmin(ModelAdminReadOnlyMixin, admin.ModelAdmin):
     ]
 
     @classmethod
-    def get_subtask_subtask_id(cls, obj: PendingResponse) -> str:
-        if obj.subtask is not None:
-            return obj.subtask.subtask_id
+    def get_subtask_subtask_id(cls, pending_response: PendingResponse) -> str:
+        if pending_response.subtask is not None:
+            return pending_response.subtask.subtask_id
         return '-not available-'
     get_subtask_subtask_id.short_description = 'Subtask id'  # type: ignore
 
     @classmethod
-    def get_client_public_key(cls, obj: PendingResponse) -> str:
-        return obj.client.public_key
+    def get_client_public_key(cls, pending_response: PendingResponse) -> str:
+        return pending_response.client.public_key
     get_client_public_key.short_description = 'Client public key'  # type: ignore
 
 

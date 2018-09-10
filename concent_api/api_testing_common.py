@@ -142,7 +142,7 @@ def api_request(
     endpoint: str,
     private_key: bytes,
     public_key: bytes,
-    data: Optional[Union[bytes, str]]=None,
+    data: Optional[Message]=None,
     headers: Optional[dict]=None,
     expected_status: Optional[int]=None,
     expected_message_type: Optional[Message]=None,

@@ -74,7 +74,7 @@ def get_field_from_message(golem_message: message.base.Message, field_name: str)
     Returns None if field is not available.
     """
 
-    def check_task_id(golem_message: message.Message) -> Union[str, None]:
+    def check_task_id(golem_message: message.Message) -> Optional[str]:
         assert isinstance(golem_message, (message.base.Message, FrozenDict))
         if isinstance(golem_message, FrozenDict):
             if field_name in golem_message:

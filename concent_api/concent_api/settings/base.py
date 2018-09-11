@@ -342,3 +342,6 @@ BLENDER_THREADS = 1
 
 # Defines public part of the key used by Signing Service to sign Middleman protocol frames and Golem messages.
 # SIGNING_SERVICE_PUBLIC_KEY = ''
+
+# Defines if Concent should use SigningService for signing Ethereum transactions.
+USE_SIGNING_SERVICE = False

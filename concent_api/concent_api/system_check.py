@@ -369,7 +369,7 @@ def create_error_52_middleman_port_has_wrong_value(value: int) -> Error:
 def create_error_53_use_signing_service_not_set() -> Error:
     return Error(
         'USE_SIGNING_SERVICE setting is not defined',
-        hint='Set USE_SIGNING_SERVICE to True if you want to use SigningService, otherwise to False.',
+        hint='Set USE_SIGNING_SERVICE to True if you want to use SigningService, otherwise False.',
         id='concent.E053',
     )
 
@@ -699,5 +699,23 @@ def check_middleman_port(app_configs: None=None, **kwargs: Any) -> list:  # pyli
             return [create_error_51_middleman_port_has_wrong_type(settings.MIDDLEMAN_PORT)]
         if not 0 < settings.MIDDLEMAN_PORT < 65535:
             return [create_error_52_middleman_port_has_wrong_value(settings.MIDDLEMAN_PORT)]
+
+    return []
+
+
+@register()
+def check_use_signing_service(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
+    if (
+        hasattr(settings, 'PAYMENT_BACKEND') and
+        settings.PAYMENT_BACKEND == 'core.payments.backends.sci_backend'
+    ):
+        if not hasattr(settings, 'USE_SIGNING_SERVICE'):
+            return [create_error_53_use_signing_service_not_set()]
+
+        if not isinstance(settings.USE_SIGNING_SERVICE, bool):
+            return [create_error_54_use_signing_service_has_wrong_type(settings.USE_SIGNING_SERVICE)]
+
+        if settings.USE_SIGNING_SERVICE is True and 'middleman' not in settings.CONCENT_FEATURES:
+            return [create_error_55_use_signing_service_is_true_but_middleman_is_missing()]
 
     return []

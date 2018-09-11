@@ -26,6 +26,9 @@ class PaymentInterface:
                 ),
                 chain=chains.RINKEBY,
                 storage=DatabaseTransactionsStorage(),
-                tx_sign=sci_callback,
+                tx_sign=(
+                    sci_callback if settings.USE_SIGNING_SERVICE else
+                    lambda tx: tx.sign(settings.CONCENT_ETHEREUM_PRIVATE_KEY)
+                ),
             )
         return cls.__instance

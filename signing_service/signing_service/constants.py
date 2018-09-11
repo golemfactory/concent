@@ -35,3 +35,6 @@ SIGNING_SERVICE_RECOVERABLE_ERRORS = [
 ]
 
 ETHEREUM_PRIVATE_KEY_REGEXP = re.compile(r'^[a-f0-9]{64}$')
+
+# Defines how much time in seconds should SigningService wait for AuthenticationChallengeFrame.
+RECEIVE_AUTHENTICATION_CHALLENGE_TIMEOUT = 20

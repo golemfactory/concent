@@ -35,12 +35,6 @@ signing_service_ecc_keys = ECCx(None)
 
 class TestSigningServiceHandleConnection(SigningServiceIntegrationTestCase):
 
-    host = None
-    port = None
-    initial_reconnect_delay = None
-    ethereum_private_key = None
-    signing_service_port = None
-
     @pytest.fixture(autouse=True)
     def setUp(self, unused_tcp_port_factory):
         self.host = '127.0.0.1'

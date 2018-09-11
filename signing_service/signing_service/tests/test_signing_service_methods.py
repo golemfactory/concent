@@ -5,6 +5,7 @@ import sys
 import tempfile
 
 from golem_messages.cryptography import ECCx
+from golem_messages.cryptography import ecdsa_verify
 import assertpy
 import mock
 import pytest
@@ -30,7 +31,7 @@ signing_service_ecc_keys = ECCx(None)
 (SIGNING_SERVICE_PRIVATE_KEY, SIGNING_SERVICE_PUBLIC_KEY) = signing_service_ecc_keys.raw_privkey, signing_service_ecc_keys.raw_pubkey
 
 
-class SigningServiceSingTransactionTestCase(SigningServiceIntegrationTestCase, TestCase):
+class SigningServiceGetSignedTransactionTestCase(SigningServiceIntegrationTestCase, TestCase):
 
     def setUp(self):
         self.host = '127.0.0.1'
@@ -82,9 +83,39 @@ class SigningServiceSingTransactionTestCase(SigningServiceIntegrationTestCase, T
         self.assertEqual(transaction_rejected.reason, TransactionRejected.REASON.UnauthorizedAccount)  # pylint: disable=no-member
 
 
-class TestSigningServiceIncreaseDelay:
+class SigningServiceGetAuthenticationChallengeSignatureTestCase(SigningServiceIntegrationTestCase, TestCase):
 
-    signing_service = None
+    def setUp(self):
+        self.host = '127.0.0.1'
+        self.port = 8000
+        self.initial_reconnect_delay = 2
+
+        with mock.patch('signing_service.signing_service.SigningService.run'):
+            self.signing_service = SigningService(
+                self.host,
+                self.port,
+                self.initial_reconnect_delay,
+                CONCENT_PUBLIC_KEY,
+                SIGNING_SERVICE_PRIVATE_KEY,
+                TEST_ETHEREUM_PRIVATE_KEY,
+            )
+
+    def test_that_get_authentication_challenge_signature_should_return_signature_of_passed_bytes(self):
+        authentication_challenge = bytes(os.urandom(1000))
+
+        signature = self.signing_service._get_authentication_challenge_signature(authentication_challenge)
+
+        self.assertIsInstance(signature, bytes)
+        self.assertTrue(
+            ecdsa_verify(
+                self.signing_service.signing_service_public_key,
+                signature,
+                authentication_challenge,
+            )
+        )
+
+
+class TestSigningServiceIncreaseDelay:
 
     @pytest.fixture(autouse=True)
     def setUp(self, unused_tcp_port_factory):

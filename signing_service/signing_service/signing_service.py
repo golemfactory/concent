@@ -10,6 +10,7 @@ from typing import Optional
 
 from ethereum.transactions import InvalidTransaction
 from ethereum.transactions import Transaction
+from golem_messages.cryptography import ecdsa_sign
 from golem_messages.cryptography import privtopub
 from golem_messages.exceptions import MessageError
 from mypy.types import Union
@@ -22,16 +23,20 @@ from middleman_protocol.constants import ErrorCode
 from middleman_protocol.constants import PayloadType
 from middleman_protocol.constants import REQUEST_ID_FOR_RESPONSE_FOR_INVALID_FRAME
 from middleman_protocol.exceptions import FrameInvalidMiddlemanProtocolError
+from middleman_protocol.exceptions import MiddlemanProtocolError
 from middleman_protocol.exceptions import PayloadInvalidMiddlemanProtocolError
 from middleman_protocol.exceptions import PayloadTypeInvalidMiddlemanProtocolError
 from middleman_protocol.exceptions import RequestIdInvalidTypeMiddlemanProtocolError
 from middleman_protocol.exceptions import SignatureInvalidMiddlemanProtocolError
 from middleman_protocol.message import AbstractFrame
+from middleman_protocol.message import AuthenticationChallengeFrame
+from middleman_protocol.message import AuthenticationResponseFrame
 from middleman_protocol.message import ErrorFrame
 from middleman_protocol.message import GolemMessageFrame
 from middleman_protocol.stream import send_over_stream
 from middleman_protocol.stream import unescape_stream
 
+from signing_service.constants import RECEIVE_AUTHENTICATION_CHALLENGE_TIMEOUT
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_PORT
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY  # pylint: disable=no-name-in-module
 from signing_service.constants import SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME
@@ -64,6 +69,8 @@ class SigningService:
         'signing_service_private_key',
         'signing_service_public_key',
         'ethereum_private_key',
+        # TODO: Remove after https://github.com/golemfactory/concent/issues/630 is implemented.
+        'enable_authentication',
     )
 
     def __init__(
@@ -74,6 +81,8 @@ class SigningService:
         concent_public_key: bytes,
         signing_service_private_key: bytes,
         ethereum_private_key: str,
+        # TODO: Remove after https://github.com/golemfactory/concent/issues/630 is implemented.
+        enable_authentication: bool=False,
     ) -> None:
         assert isinstance(host, str)
         assert isinstance(port, int)
@@ -81,6 +90,8 @@ class SigningService:
         assert isinstance(concent_public_key, bytes)
         assert isinstance(signing_service_private_key, bytes)
         assert isinstance(ethereum_private_key, str)
+        # TODO: Remove after https://github.com/golemfactory/concent/issues/630 is implemented.
+        assert isinstance(enable_authentication, bool)
         self.host = host  # type: str
         self.port = port  # type: int
         self.initial_reconnect_delay: int = initial_reconnect_delay
@@ -88,6 +99,8 @@ class SigningService:
         self.signing_service_private_key = signing_service_private_key  # type: bytes
         self.signing_service_public_key = privtopub(signing_service_private_key)
         self.ethereum_private_key = ethereum_private_key  # type: str
+        # TODO: Remove after https://github.com/golemfactory/concent/issues/630 is implemented.
+        self.enable_authentication = enable_authentication  # type: bool
         self.current_reconnect_delay: Union[int, None] = None
         self.was_sigterm_caught: bool = False
 
@@ -144,7 +157,63 @@ class SigningService:
 
         # Reset delay on successful connection and set flag that connection is established.
         self.current_reconnect_delay = None
+        if self.enable_authentication:  # TODO: Remove after https://github.com/golemfactory/concent/issues/630 is implemented.
+            self._authenticate(tcp_socket)
         self._handle_connection(tcp_socket)
+
+    def _authenticate(self, tcp_socket: socket.socket) -> None:
+        """ Handles authentication challenge. """
+
+        # Set timeout on socket, after which, if AuthenticationChallengeFrame is not received,
+        # SigningService will have to reconnect.
+        tcp_socket.settimeout(RECEIVE_AUTHENTICATION_CHALLENGE_TIMEOUT)
+
+        # After establishing a TCP connection start listening for the AuthenticationChallengeFrame.
+        try:
+            receive_frame_generator = unescape_stream(connection=tcp_socket)
+            raw_message_received = next(receive_frame_generator)
+            authentication_challenge_frame = AbstractFrame.deserialize(
+                raw_message_received,
+                public_key=self.concent_public_key,
+            )
+            # If SigningService receive any other message that AuthenticationChallengeFrame
+            # disconnect, log the incident and treat it as a failure to connect.
+            if not isinstance(authentication_challenge_frame, AuthenticationChallengeFrame):
+                logger.info(
+                    f'SigningService received {type(authentication_challenge_frame)} instead of AuthenticationChallengeFrame.'
+                )
+                raise socket.error(SIGNING_SERVICE_RECOVERABLE_ERRORS[0])
+        # If received message is invalid or
+        # if nothing was received in a predefined time,
+        # disconnect, log the incident and treat it as a failure to connect.
+        except (MiddlemanProtocolError, socket.timeout) as exception:
+            logger.info(f'SigningService failed to receive AuthenticationChallengeFrame with exception: {exception}.')
+            raise socket.error(SIGNING_SERVICE_RECOVERABLE_ERRORS[0])
+
+        # If you receive a valid challenge, sign it with the private key of the service and
+        # send AuthenticationResponseFrame with signature as payload.
+        authentication_response_frame = AuthenticationResponseFrame(
+            payload=self._get_authentication_challenge_signature(
+                authentication_challenge_frame.payload,
+            ),
+            request_id=authentication_challenge_frame.request_id,
+        )
+
+        try:
+            send_over_stream(
+                connection=tcp_socket,
+                raw_message=authentication_response_frame,
+                private_key=self.signing_service_private_key,
+            )
+        # If the server disconnects, log the incident and treat it as a failure to connect.
+        except socket.error as exception:
+            logger.info(
+                f'MiddleMan server disconnects after receiving AuthenticationResponseFrame with exception: {exception}.'
+            )
+            raise socket.error(SIGNING_SERVICE_RECOVERABLE_ERRORS[0])
+
+        # Set socket back to blocking mode.
+        tcp_socket.setblocking(True)
 
     def _handle_connection(self, tcp_socket: socket.socket) -> None:
         """ Inner loop that handles data exchange over socket. """
@@ -293,6 +362,15 @@ class SigningService:
             s        = transaction.s,
         )
 
+    def _get_authentication_challenge_signature(self, authentication_challenge: bytes) -> bytes:
+        """ Returns signed authentication challenge with SigningService private key. """
+        assert isinstance(authentication_challenge, bytes)
+
+        return ecdsa_sign(
+            self.signing_service_private_key,
+            authentication_challenge,
+        )
+
 
 def _parse_arguments() -> argparse.Namespace:
 
@@ -390,6 +468,15 @@ def _parse_arguments() -> argparse.Namespace:
         help='Sentry DSN for error reporting.',
     )
 
+    # TODO: Remove after https://github.com/golemfactory/concent/issues/630 is implemented.
+    parser.add_argument(
+        '-a',
+        '--enable-authentication',
+        dest='enable_authentication',
+        default=False,
+        help='Enable authentication between MiddleMan and SigningService.',
+    )
+
     return parser.parse_args()
 
 
@@ -414,6 +501,8 @@ if __name__ == '__main__':
     arg_concent_public_key = args.concent_public_key
     arg_signing_service_private_key = args.signing_service_private_key
     arg_ethereum_private_key = args.ethereum_private_key
+    # TODO: Remove after https://github.com/golemfactory/concent/issues/630 is implemented.
+    arg_enable_authentication = args.enable_authentication
 
     SigningService(
         arg_host,
@@ -422,4 +511,6 @@ if __name__ == '__main__':
         arg_concent_public_key,
         arg_signing_service_private_key,
         arg_ethereum_private_key,
+        # TODO: Remove after https://github.com/golemfactory/concent/issues/630 is implemented.
+        arg_enable_authentication,
     ).run()

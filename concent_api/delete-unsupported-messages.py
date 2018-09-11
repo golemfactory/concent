@@ -23,10 +23,10 @@ def main() -> None:
         try:
             report_computed_task = deserialize_message(subtask.report_computed_task.data.tobytes())
             if not isinstance(report_computed_task.size, int):
-                delete_unsupported_messages(subtask.subtask_id)
+                delete_unsupported_messages(subtask)
         except MessageError as golem_messages_exception:
             logger.info(f'During message deserialization exception raised: {golem_messages_exception}')
-            delete_unsupported_messages(subtask.subtask_id)
+            delete_unsupported_messages(subtask)
 
 
 def delete_unsupported_messages(subtask: Subtask) -> None:

@@ -2,9 +2,10 @@ import asyncio
 from asyncio.base_events import BaseEventLoop
 import traceback
 from collections import OrderedDict
+from contextlib import suppress
 from logging import getLogger
+from typing import Iterable
 from typing import Optional
-
 import signal
 
 from middleman.constants import CONNECTION_COUNTER_LIMIT
@@ -127,19 +128,20 @@ class MiddleMan:
         self._loop.run_until_complete(self._server_for_concent.wait_closed())  # type: ignore
         self._server_for_signing_service.close()  # type: ignore
         self._loop.run_until_complete(self._server_for_signing_service.wait_closed())  # type: ignore
+        self._cancel_pending_tasks(asyncio.Task.all_tasks(), await_cancellation=True)
         self._loop.close()
 
     async def _handle_concent_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         tasks = []
         response_queue: asyncio.Queue = asyncio.Queue(loop=self._loop)
-        self._connection_id = (self._connection_id + 1) % CONNECTION_COUNTER_LIMIT
-        self._response_queue_pool[self._connection_id] = response_queue
+        connection_id = self._connection_id = (self._connection_id + 1) % CONNECTION_COUNTER_LIMIT
+        self._response_queue_pool[connection_id] = response_queue
         try:
             request_producer_task = self._loop.create_task(
-                request_producer(self._request_queue, response_queue, reader, self._connection_id)
+                request_producer(self._request_queue, response_queue, reader, connection_id)
             )
             response_consumer_task = self._loop.create_task(
-                response_consumer(response_queue, writer, self._connection_id)
+                response_consumer(response_queue, writer, connection_id)
             )
             tasks.append(request_producer_task)
             tasks.append(response_consumer_task)
@@ -148,6 +150,10 @@ class MiddleMan:
             await response_queue.join()  # 3. wait until items from response queue are processed (sent back to Concent)
             response_consumer_task.cancel()
 
+        except asyncio.CancelledError:
+            # CancelledError shall not be treated as crash and logged in Sentry
+            raise
+
         except Exception as exception:  # pylint: disable=broad-except
             crash_logger.error(
                 f"Exception occurred: {exception}, Traceback: {traceback.format_exc()}"
@@ -155,14 +161,15 @@ class MiddleMan:
             raise
 
         finally:
-            for task in tasks:  # regardless of exception's occurrence, all unfinished tasks should be cancelled
-                task.cancel()   # if exceptions occurs, producer task might need cancelling as well
+            # regardless of exception's occurrence, all unfinished tasks should be cancelled
+            # if exceptions occurs, producer task might need cancelling as well
+            self._cancel_pending_tasks(tasks)
             # remove response queue from the pool
-            removed_queue = self._response_queue_pool.pop(self._connection_id, None)  # type: ignore
+            removed_queue: Optional[asyncio.Queue] = self._response_queue_pool.pop(connection_id, None)
             if removed_queue is None:
-                logger.warning(f"Response queue for connection ID: {self._connection_id} has been already removed")
+                logger.warning(f"Response queue for connection ID: {connection_id} has been already removed")
             else:
-                logger.info(f"Removing response queue for connection ID: {self._connection_id}.")
+                logger.info(f"Removing response queue for connection ID: {connection_id}.")
 
     async def _handle_service_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         if self._is_signing_service_connection_active:
@@ -195,16 +202,31 @@ class MiddleMan:
                     exception_from_task = future.exception()
                     if exception_from_task is not None:
                         raise exception_from_task
+
+            except asyncio.CancelledError:
+                # CancelledError shall not be treated as crash and logged in Sentry
+                pass
+
             except Exception as exception:  # pylint: disable=broad-except
                 crash_logger.error(
                     f"Exception occurred: {exception}, Traceback: {traceback.format_exc()}"
                 )
                 raise
+
             finally:
-                for task in tasks:  # cancel all tasks - if task is already done/cancelled it makes no harm
-                    task.cancel()
+                # cancel all tasks - if task is already done/cancelled it makes no harm
+                self._cancel_pending_tasks(tasks)
                 self._is_signing_service_connection_active = False
 
     def _terminate_connections(self) -> None:
         logger.info('SIGTERM received - closing connections and exiting.')
         self._loop.stop()
+
+    def _cancel_pending_tasks(self, tasks: Iterable[asyncio.Task], await_cancellation: bool = False) -> None:
+        for task in tasks:
+            task.cancel()
+            if await_cancellation:
+                # Now we should await task to execute it's cancellation.
+                # Cancelled task raises asyncio.CancelledError that we can suppress:
+                with suppress(asyncio.CancelledError):
+                    self._loop.run_until_complete(task)

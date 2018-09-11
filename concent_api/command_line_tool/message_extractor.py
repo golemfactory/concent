@@ -2,6 +2,7 @@ from base64 import b64decode
 import re
 import random
 import string
+import uuid
 from typing import Any
 from typing import Dict
 from typing import List
@@ -89,16 +90,11 @@ def _get_valid_message_name(messages: List[Text], json: JsonType) -> Optional[Te
         return names[0]
 
 
-def generate_subtask_id(base_name: str) -> str:
-    subtask_id = f'{base_name}_{random.randrange(1, 1000)}'
-    return subtask_id
-
-
 class MessageExtractor(object):
     def __init__(self, requestor_public_key: str, provider_public_key: str) -> None:
         self.messages = []  # type: List[Message]
-        task_id = make_random_string(8)
-        subtask_id = generate_subtask_id(task_id)
+        task_id = str(uuid.uuid4())
+        subtask_id = str(uuid.uuid4())
         requestor_id = make_random_string()
         self.data_replacement = {
             'provider_public_key': provider_public_key,

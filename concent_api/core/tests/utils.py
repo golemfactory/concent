@@ -17,9 +17,9 @@ from django.test import TestCase
 from django.utils import timezone
 from freezegun import freeze_time
 
-from golem_messages         import dump
-from golem_messages         import load
-from golem_messages         import message
+from golem_messages import dump
+from golem_messages import load
+from golem_messages import message
 from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
@@ -41,17 +41,18 @@ from golem_messages.message.tasks import TaskToCompute
 from golem_messages.register import library
 from golem_messages.utils import encode_hex
 
-from core.models            import Client
-from core.models            import PendingResponse
-from core.models            import StoredMessage
-from core.models            import Subtask
-from core.utils import calculate_additional_verification_call_time
 
-from common.helpers          import sign_message
-from common.helpers          import get_current_utc_timestamp
-from common.helpers          import parse_timestamp_to_utc_datetime
-from common.testing_helpers  import generate_ecc_key_pair
-from common.testing_helpers  import generate_priv_and_pub_eth_account_key
+from common.helpers import get_current_utc_timestamp
+from common.helpers import parse_timestamp_to_utc_datetime
+from common.helpers import sign_message
+from common.testing_helpers import generate_ecc_key_pair
+from common.testing_helpers import generate_priv_and_pub_eth_account_key
+
+from core.models import Client
+from core.models import PendingResponse
+from core.models import StoredMessage
+from core.models import Subtask
+from core.utils import calculate_additional_verification_call_time
 
 
 def get_timestamp_string() -> str:
@@ -568,7 +569,7 @@ class ConcentIntegrationTestCase(TestCase):
                 report_computed_task = (
                     report_computed_task or
                     self._get_deserialized_report_computed_task(
-                        subtask_id      = '1',
+                        subtask_id      = self._get_uuid(),
                         task_to_compute = self._get_deserialized_task_to_compute()
                     )
                 ),
@@ -966,5 +967,6 @@ class ConcentIntegrationTestCase(TestCase):
         )
 
     @staticmethod
-    def _get_uuid() -> str:
-        return generate_uuid()
+    def _get_uuid(last_char: Optional[str] = None) -> str:
+        assert last_char is None or (isinstance(last_char, str) and len(last_char) == 1)
+        return generate_uuid(last_char)

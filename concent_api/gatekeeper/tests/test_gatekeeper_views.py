@@ -10,10 +10,10 @@ from golem_messages.shortcuts       import dump
 from golem_messages.message.concents import FileTransferToken
 from golem_messages.factories.concents import FileTransferTokenFactory
 
-from core.tests.utils                import ConcentIntegrationTestCase
-from common.constants                import ErrorCode
-from common.helpers                  import get_current_utc_timestamp
-from common.helpers                  import get_storage_result_file_path
+from common.constants import ErrorCode
+from common.helpers import get_current_utc_timestamp
+from common.helpers import get_storage_result_file_path
+from core.tests.utils import ConcentIntegrationTestCase
 
 
 @override_settings(
@@ -305,8 +305,8 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             '{}{}'.format(
                 reverse('gatekeeper:upload'),
                 get_storage_result_file_path(
-                    task_id=1,
-                    subtask_id=2,
+                    task_id=self._get_uuid(),
+                    subtask_id=self._get_uuid(),
                 ),
             ),
             HTTP_AUTHORIZATION             = 'Golem D6UAAAAAWoG9YgGsJib/zgj2cAHGXunyxI7t2NYnHKPvrdzVkdT/B58TpQHpdfonuWy8sWq9nrpc9+/1nUTm8O9szLOrFrCPKL7hAQRWLO4JCR6cVGILFbqRKX6abR1AKMLqRUa/ucH5t0YrLe/OPEp6+2swgbRgcnu0dlvfaupn9bwRPZhjVc2hJlDlkz+7aRx+NDEFWQeRHt3q7b8vA0xd/UUvPGudSnzGR6DaM1+Ji4PifQ7AUdYkQHmRNP4yZH+xjCq706J8mftrySj2geoP+TLKZFgpqHhng5I9v0xKpjOnZk9MRTWkzPyxIMwl535ZVLte0J5VRIIaZFEyYFRXgZGVyGinnEIfXZKZdUdRpRELUBK086A/w4aG3shpEPXEzfo42hjdrDEfyx5bZTANyrGwj1hTLKPoVaPMN9wb3MdQ1D1B5Os3+5YdfASnQRZfZmaEJqNAHNlZveLHpA2DcPFNvltcwUy3Jj1gTI43IbbuXNsIXhMKgNaZrNgJKKpQpc+qF9D7CwfugtiD6y/g71UrrUgvVIcZ9UXVTu5OJg2agGiaIvRWrGxfhyzv/HyHR530p7fNTt/dJBCDO55Mx3uhxA/XGYxmz2uk/xIQMR8QU7Cc/tOdvzdHJ+WHhNBo2fe5oLk03AXIhpqOOgJb8nnM',
@@ -322,8 +322,8 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
     def test_upload_should_return_401_if_specific_file_info_data(self):
         file = FileTransferToken.FileInfo(
             path     = get_storage_result_file_path(
-                task_id=1,
-                subtask_id=2
+                task_id=self._get_uuid(),
+                subtask_id=self._get_uuid()
             ),
             size     = 1,
             checksum = 'sha1:356a192b7913b04c54574d18c28d46e6395428ab\n',
@@ -337,8 +337,8 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             '{}{}'.format(
                 reverse('gatekeeper:upload'),
                 get_storage_result_file_path(
-                    task_id=1,
-                    subtask_id=2,
+                    task_id=self._get_uuid(),
+                    subtask_id=self._get_uuid(),
                 ),
             ),
             HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,

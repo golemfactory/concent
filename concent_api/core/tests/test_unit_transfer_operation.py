@@ -48,11 +48,13 @@ def mock_send_incorrect_request_to_cluster_unexpected_response(_headers, _reques
 class RequestUploadStatusTest(ConcentIntegrationTestCase):
     def test_properly_work_of_request_upload_status_function(self):
 
+        subtask_id = self._get_uuid()
+
         report_computed_task=self._get_deserialized_report_computed_task(
-            subtask_id='1',
+            subtask_id=subtask_id,
             task_to_compute=self._get_deserialized_task_to_compute(
-                task_id='1/1',
-                subtask_id='1',
+                task_id=self._get_uuid(),
+                subtask_id=subtask_id,
             )
         )
 

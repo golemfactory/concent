@@ -11,6 +11,7 @@ from common.shortcuts import load_without_public_key
 from common.testing_helpers import generate_ecc_key_pair
 
 from core.exceptions import Http400
+from core.tests.utils import generate_uuid
 from core.validation import validate_that_golem_messages_are_signed_with_key
 from core.validation import validate_all_messages_identical
 
@@ -32,8 +33,8 @@ class LoadWithoutPublicKeyUnitTest(TestCase):
 
         # Create and fill some data into ComputeTaskDef
         compute_task_def = tasks.ComputeTaskDefFactory(
-            task_id='1',
-            subtask_id='2',
+            task_id=generate_uuid(),
+            subtask_id=generate_uuid(),
             deadline=1510912800,
         )
 

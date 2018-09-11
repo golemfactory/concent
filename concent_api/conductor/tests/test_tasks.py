@@ -98,8 +98,10 @@ class ConductorTaskTestCase(ConcentIntegrationTestCase):
     @mock.patch("conductor.tasks.log_error_message")
     @mock.patch("conductor.tasks.logger")
     def test_that_upload_acknowledged_task_should_log_error_when_verification_request_with_given_subtask_id_does_not_exist(self, mock_logger, mock_logging_error):
+        subtask_id = self._get_uuid('o')
+
         upload_acknowledged(
-            subtask_id='non_existing_subtask_id',
+            subtask_id=subtask_id,
             source_file_size=self.report_computed_task.task_to_compute.size,
             source_package_hash=self.report_computed_task.task_to_compute.package_hash,
             result_file_size=self.report_computed_task.size,
@@ -111,7 +113,7 @@ class ConductorTaskTestCase(ConcentIntegrationTestCase):
         self.assertFalse(self.verification_request.upload_acknowledged)
         mock_logging_error.assert_called_once_with(
             mock_logger,
-            'Task `upload_acknowledged` tried to get VerificationRequest object with ID non_existing_subtask_id but it '
+            f'Task `upload_acknowledged` tried to get VerificationRequest object with ID {subtask_id} but it '
             'does not exist.'
         )
 

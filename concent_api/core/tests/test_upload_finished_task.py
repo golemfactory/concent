@@ -24,8 +24,8 @@ class UploadFinishedTaskTest(ConcentIntegrationTestCase):
             task_to_compute=self.task_to_compute,
         )
         self.subtask = store_subtask(
-            task_id='1',
-            subtask_id='8',
+            task_id=self._get_uuid(),
+            subtask_id=self._get_uuid(),
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,

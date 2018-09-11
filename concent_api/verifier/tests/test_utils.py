@@ -13,6 +13,7 @@ import pytest
 
 from common.constants import ErrorCode
 from core.constants import VerificationResult
+from core.tests.utils import generate_uuid
 from verifier.exceptions import VerificationError
 from verifier.exceptions import VerificationMismatch
 from verifier.utils import adjust_format_name
@@ -45,7 +46,7 @@ class VerifierUtilsTest(TestCase):
             2: ['/tmp/result_240002.png'],
         }
         self.scene_file = 'scene-Helicopter-27-internal.blend'
-        self.subtask_id = '1234-5678-9101-1213'
+        self.subtask_id = generate_uuid()
         self.correct_parsed_all_files = {
             1: [
                 '/tmp/result_240001.png',
@@ -305,7 +306,7 @@ class TestValidateDownloadedArchives(object):
     @pytest.fixture(autouse=True)
     def setUp(self):
         self.scene_file = "kitten.blend"
-        self.subtask_id = "777"
+        self.subtask_id = generate_uuid()
         self.archives_list = ["source.zip", "result.zip"]
 
     def test_that_if_archive_is_not_a_zip_file_verification_mismatch_is_raised(self):

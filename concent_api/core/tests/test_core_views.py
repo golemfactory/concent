@@ -3,28 +3,28 @@ import datetime
 from freezegun import freeze_time
 import dateutil.parser
 from django.conf import settings
-from django.test import override_settings
-from django.urls import reverse
 from django.http import HttpResponse
 from django.http import JsonResponse
+from django.test import override_settings
+from django.urls import reverse
 from django.utils import timezone
-from golem_messages.factories.tasks import ComputeTaskDefFactory
 
 from golem_messages import message
 from golem_messages import settings as golem_settings
 from golem_messages.factories import tasks
+from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.shortcuts import dump
 from golem_messages.shortcuts import load
 
-from core.models import Client
-from core.models import StoredMessage
-from core.models import PendingResponse
-from core.tests.utils import ConcentIntegrationTestCase
-from core.models import Subtask
 from common.constants import ErrorCode
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
-from common.testing_helpers         import generate_ecc_key_pair
+from common.testing_helpers import generate_ecc_key_pair
+from core.models import Client
+from core.models import StoredMessage
+from core.models import PendingResponse
+from core.models import Subtask
+from core.tests.utils import ConcentIntegrationTestCase
 
 
 (CONCENT_PRIVATE_KEY,   CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
@@ -56,13 +56,13 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         )
 
         self.want_to_compute = message.WantToComputeTask(
-            node_name           = 1,
-            task_id             = 2,
-            perf_index          = 3,
-            price               = 4,
-            max_resource_size   = 5,
-            max_memory_size     = 6,
-            num_cores           = 7,
+            node_name=1,
+            task_id=self._get_uuid(),
+            perf_index=3,
+            price=4,
+            max_resource_size=5,
+            max_memory_size=6,
+            num_cores=7,
         )
 
         self.cannot_compute_task = message.CannotComputeTask(

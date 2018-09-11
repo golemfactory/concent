@@ -16,13 +16,14 @@ from golem_messages.factories       import tasks
 from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.utils import encode_hex
 
-from core.exceptions                import Http400
-from core.models                    import Client
-from common.constants                import ErrorCode
-from common.decorators               import require_golem_message
-from common.decorators               import handle_errors_and_responses
-from common.helpers                  import get_current_utc_timestamp
-from common.testing_helpers          import generate_ecc_key_pair
+from common.constants import ErrorCode
+from common.decorators import require_golem_message
+from common.decorators import handle_errors_and_responses
+from common.helpers import get_current_utc_timestamp
+from common.testing_helpers import generate_ecc_key_pair
+from core.exceptions import Http400
+from core.models import Client
+from core.tests.utils import generate_uuid
 
 
 (CONCENT_PRIVATE_KEY,   CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
@@ -38,13 +39,13 @@ class ApiViewTestCase(TestCase):
     def setUp(self):
         self.request_factory = RequestFactory()
         self.want_to_compute = message.WantToComputeTask(
-            node_name           = 1,
-            task_id             = 2,
-            perf_index          = 3,
-            price               = 4,
-            max_resource_size   = 5,
-            max_memory_size     = 6,
-            num_cores           = 7,
+            node_name=1,
+            task_id=generate_uuid(),
+            perf_index=3,
+            price=4,
+            max_resource_size=5,
+            max_memory_size=6,
+            num_cores=7,
         )
         self.message_to_view = {
             "node_name":            self.want_to_compute.node_name,             # pylint: disable=no-member

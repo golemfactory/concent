@@ -59,8 +59,8 @@ You can put the output of the script above directly in your `local_settings.py`
 
     # Extra stuff for development that's not normally installed in production. Linter, debugger, etc.
     pip install --requirement requirements-development.txt
-    
-    # All dependencies needed for developers. Concent, Singing Service, MiddleMan Protocol and requirements placed in requirements-development.txt
+
+    # All dependencies needed for developers. Concent, Singing Service, Middleman Protocol and requirements placed in requirements-development.txt
     ./install-development-requirements.sh
     ```
 
@@ -162,3 +162,34 @@ You can run automated tests, code analysis and Django configuration checks with:
 ```
 
 Always run this command before submitting code in a pull request and make sure that there are no warnings or failed tests.
+
+
+### Running Middleman
+
+Concent signs Ethereum transactions by passing them to an external signing service provided by Golem.
+To decrease the attack surface the service is not serving any requests.
+Instead, Concent runs a component that opens a TCP port, and allows the signing service to connect at will.
+This component (internally called "Middleman") needs to be started separately from the main server:
+
+``` bash
+concent_api/manage.py middleman
+```
+
+The command should work fine without any extra arguments.
+You can use `--help` option to see all the available options.
+
+Note that in development you need to run an instance of the Signing Service yourself.
+The application is maintained by the Concent team as well and you can find it in this repository.
+See [Signing Service README](signing_service/README.md)
+
+### Running Celery workers in development
+
+Concent uses Celery asynchronous task queue to perform additional verification for Golem clients.
+Concent works fine without them, they are required only if you want to perform additional verification use case.
+To use workers you should have a message broker like RabbitMQ or Redis running locally.
+
+You can run Celery workers for Concent with:
+
+``` bash
+concent_api/celery worker --app concent_api --loglevel info --queues concent,conductor,verifier
+```

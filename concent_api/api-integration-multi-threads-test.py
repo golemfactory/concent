@@ -15,8 +15,7 @@ from golem_messages.message.concents import ForceReportComputedTask
 from golem_messages.message.tasks import AckReportComputedTask
 from golem_messages.message.tasks import ReportComputedTask
 
-from api_testing_common import assert_content_equal
-from api_testing_common import count_fails
+from api_testing_common import count_fails, assert_content_equal
 from api_testing_common import PROVIDER_PRIVATE_KEY
 from api_testing_common import REQUESTOR_PRIVATE_KEY
 from api_testing_common import api_request
@@ -52,15 +51,15 @@ def call_function_in_treads(
         thread.start()
 
 
-def create_ack_report_computed_task(report_computed_task: ReportComputedTask) -> AckReportComputedTask:
+def get_ack_report_computed_task(report_computed_task: ReportComputedTask) -> AckReportComputedTask:
     return AckReportComputedTask(report_computed_task=report_computed_task)
 
 
-def create_force_get_task_result(report_computed_task: ReportComputedTask) -> ForceGetTaskResult:
+def get_force_get_task_result(report_computed_task: ReportComputedTask) -> ForceGetTaskResult:
     return message.concents.ForceGetTaskResult(report_computed_task=report_computed_task)
 
 
-def create_force_report_computed_task(report_computed_task: ReportComputedTask) -> ForceReportComputedTask:
+def get_force_report_computed_task(report_computed_task: ReportComputedTask) -> ForceReportComputedTask:
     return ForceReportComputedTask(report_computed_task = report_computed_task)
 
 
@@ -74,7 +73,7 @@ def create_report_computed_task(
         timestamp=timestamp_to_isoformat(current_time),
         task_id=task_id,
         subtask_id=subtask_id,
-        deadline=(current_time + CONCENT_MESSAGING_TIME),
+        deadline=(current_time + 100),
         price=10000,
     )
 
@@ -95,7 +94,7 @@ def send_correct_force_report_computed_task(
         'send',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        create_force_report_computed_task(
+        get_force_report_computed_task(
             report_computed_task=report_computed_task,
         ),
         headers={
@@ -116,7 +115,7 @@ def send_correct_ack_report_computed_task(
         'send',
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        create_ack_report_computed_task(
+        get_ack_report_computed_task(
             report_computed_task=report_computed_task
         ),
         headers={
@@ -136,7 +135,7 @@ def send_correct_force_get_task_result(
         'send',
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        create_force_get_task_result(
+        get_force_get_task_result(
             report_computed_task=report_computed_task,
         ),
         headers={
@@ -185,7 +184,7 @@ def test_case_multiple_requests_concerning_one_subtask_will_be_processed_one_by_
             break
 
     expected_responses = ['AckForceGetTaskResult', 'ServiceRefused', 'ServiceRefused']
-    assert len(expected_responses) == NUMBER_OF_TESTING_THREADS, 'Did you change number of testing threads and forgot to change expected_responses?'
+    assert len(expected_responses) == NUMBER_OF_TESTING_THREADS, 'Did you changed number of testing threads and forgot to change expected_responses?'
 
     print('Responses = ' + str(responses_global))
     assert_content_equal(actual=responses_global, expected=expected_responses)
@@ -194,9 +193,7 @@ def test_case_multiple_requests_concerning_one_subtask_will_be_processed_one_by_
 
 if __name__ == '__main__':
     try:
-        from concent_api.settings import CONCENT_MESSAGING_TIME
         from concent_api.settings import CONCENT_PUBLIC_KEY
-
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file=sys.stderr)

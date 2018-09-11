@@ -1,10 +1,16 @@
-from base64                     import b64encode
+from base64 import b64encode
 from logging import getLogger
+from typing import Any
 from typing import List
 from typing import Optional
+from typing import Type
+from typing import Union
 
-from django.db.models           import Q
-from django.utils               import timezone
+from django.db.models import Model
+from django.db.models import Q
+from django.db.models import QuerySet
+from django.db.models.base import ModelBase
+from django.utils import timezone
 from golem_messages.message.tasks import SubtaskResultsAccepted
 
 from core.models                import PendingResponse
@@ -183,3 +189,17 @@ def are_subtask_results_accepted_messages_signed_by_the_same_requestor(
         ) for subtask_results_accepted in subtask_results_accepted_list
     )
     return are_all_signed_by_requestor
+
+
+def get_one_or_none(
+    query_set_or_model: Union[Type[Model], QuerySet],
+    **conditions: Any
+)-> Optional[Model]:
+    if isinstance(query_set_or_model, ModelBase):
+        instances = query_set_or_model.objects.filter(**conditions)
+        assert len(instances) <= 1
+        return None if len(instances) == 0 else instances[0]
+    else:
+        instances = query_set_or_model.filter(**conditions)
+        assert len(instances) <= 1
+        return None if len(instances) == 0 else instances[0]

@@ -44,6 +44,7 @@ from core.payments.backends.sci_backend import TransactionType
 from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
 from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
+from core.subtask_helpers import get_one_or_none
 from core.transfer_operations import store_pending_message
 from core.transfer_operations import create_file_transfer_token_for_golem_client
 from core.utils import calculate_additional_verification_call_time
@@ -189,7 +190,7 @@ def handle_send_ack_report_computed_task(client_message: message.tasks.AckReport
         except ConcentValidationError:
             new_report_computed_task = report_computed_task
 
-        subtask = update_subtask(
+        subtask = update_and_return_updated_subtask(
             subtask                     = subtask,
             state                       = Subtask.SubtaskState.REPORTED,
             next_deadline               = None,
@@ -308,7 +309,7 @@ def handle_send_reject_report_computed_task(client_message: message.tasks.Reject
 
     if client_message.reason == message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded:
 
-        subtask = update_subtask(
+        subtask = update_and_return_updated_subtask(
             subtask                     = subtask,
             state                       = Subtask.SubtaskState.REPORTED,
             next_deadline               = None,
@@ -343,7 +344,7 @@ def handle_send_reject_report_computed_task(client_message: message.tasks.Reject
                 error_code=ErrorCode.SUBTASK_DUPLICATE_REQUEST,
             )
 
-        subtask = update_subtask(
+        subtask = update_and_return_updated_subtask(
             subtask                     = subtask,
             state                       = Subtask.SubtaskState.FAILED,
             next_deadline               = None,
@@ -392,16 +393,6 @@ def handle_send_force_get_task_result(
         task_to_compute,
     )
 
-    try:
-        subtask = Subtask.objects.select_for_update().get(subtask_id=task_to_compute.compute_task_def['subtask_id'])
-    except Subtask.DoesNotExist:
-        pass
-    else:
-        if subtask.state_enum == Subtask.SubtaskState.FORCING_RESULT_TRANSFER:
-            return message.concents.ServiceRefused(
-                reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
-            )
-
     maximum_download_time = calculate_maximum_download_time(
         client_message.report_computed_task.size,
         settings.MINIMUM_UPLOAD_RATE,
@@ -423,22 +414,51 @@ def handle_send_force_get_task_result(
             reason=message.concents.ForceGetTaskResultRejected.REASON.AcceptanceTimeLimitExceeded,
         )
 
-    subtask = store_or_update_subtask(
-        task_id=task_to_compute.compute_task_def['task_id'],
+    subtask = get_one_or_none(
+        Subtask.objects.select_for_update(),
         subtask_id=task_to_compute.compute_task_def['subtask_id'],
-        provider_public_key=provider_public_key,
-        requestor_public_key=requestor_public_key,
-        state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
-        next_deadline=(
-            int(task_to_compute.compute_task_def['deadline']) +
-            2 * maximum_download_time +
-            3 * settings.CONCENT_MESSAGING_TIME
-        ),
-        set_next_deadline=True,
-        report_computed_task=client_message.report_computed_task,
-        task_to_compute=task_to_compute,
-        force_get_task_result=client_message,
     )
+    if subtask is None:
+        subtask = store_subtask(
+            task_id=task_to_compute.compute_task_def['task_id'],
+            subtask_id=task_to_compute.compute_task_def['subtask_id'],
+            provider_public_key=provider_public_key,
+            requestor_public_key=requestor_public_key,
+            state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
+            next_deadline=(
+                int(task_to_compute.compute_task_def['deadline']) +
+                2 * maximum_download_time +
+                3 * settings.CONCENT_MESSAGING_TIME
+            ),
+            task_to_compute=task_to_compute,
+            report_computed_task=client_message.report_computed_task,
+            force_get_task_result=client_message,
+        )
+
+    else:
+        if subtask.state_enum == Subtask.SubtaskState.FORCING_RESULT_TRANSFER:
+            return message.concents.ServiceRefused(
+                reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
+            )
+        if task_to_compute is not None and subtask.task_to_compute is not None:
+            validate_all_messages_identical([
+                task_to_compute,
+                deserialize_message(subtask.task_to_compute.data.tobytes()),
+            ])
+        subtask = update_and_return_updated_subtask(
+            subtask=subtask,
+            state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
+            next_deadline=(
+                int(task_to_compute.compute_task_def['deadline']) +
+                2 * maximum_download_time +
+                3 * settings.CONCENT_MESSAGING_TIME
+            ),
+            set_next_deadline=True,
+            task_to_compute=task_to_compute,
+            report_computed_task=client_message.report_computed_task,
+            force_get_task_result=client_message,
+        )
+
     store_pending_message(
         response_type       = PendingResponse.ResponseType.ForceGetTaskResultUpload,
         client_public_key   = provider_public_key,
@@ -470,16 +490,6 @@ def handle_send_force_subtask_results(
     )
 
     current_time = get_current_utc_timestamp()
-
-    try:
-        subtask = Subtask.objects.select_for_update().get(subtask_id=task_to_compute.compute_task_def['subtask_id'])
-    except Subtask.DoesNotExist:
-        pass
-    else:
-        if subtask.state_enum == Subtask.SubtaskState.FORCING_ACCEPTANCE:
-            return message.concents.ServiceRefused(
-                reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
-            )
 
     if not payments_service.is_account_status_positive(  # pylint: disable=no-value-for-parameter
         client_eth_address=task_to_compute.requestor_ethereum_address,
@@ -526,18 +536,42 @@ def handle_send_force_subtask_results(
             reason=message.concents.ForceSubtaskResultsRejected.REASON.RequestPremature,
         )
 
-    subtask = store_or_update_subtask(
-        task_id                     = task_to_compute.compute_task_def['task_id'],
-        subtask_id                  = task_to_compute.compute_task_def['subtask_id'],
-        provider_public_key         = provider_public_key,
-        requestor_public_key        = requestor_public_key,
-        state                       = Subtask.SubtaskState.FORCING_ACCEPTANCE,
-        next_deadline               = forcing_acceptance_deadline + settings.CONCENT_MESSAGING_TIME,
-        set_next_deadline           = True,
-        ack_report_computed_task    = client_message.ack_report_computed_task,
-        task_to_compute             = client_message.ack_report_computed_task.report_computed_task.task_to_compute,
-        report_computed_task        = client_message.ack_report_computed_task.report_computed_task,
+    subtask = get_one_or_none(
+        Subtask.objects.select_for_update(),
+        subtask_id=task_to_compute.compute_task_def['subtask_id'],
     )
+
+    if subtask is None:
+        subtask = store_subtask(
+            task_id=task_to_compute.compute_task_def['task_id'],
+            subtask_id=task_to_compute.compute_task_def['subtask_id'],
+            provider_public_key=provider_public_key,
+            requestor_public_key=requestor_public_key,
+            state=Subtask.SubtaskState.FORCING_ACCEPTANCE,
+            next_deadline=forcing_acceptance_deadline + settings.CONCENT_MESSAGING_TIME,
+            task_to_compute=client_message.ack_report_computed_task.report_computed_task.task_to_compute,
+            report_computed_task=client_message.ack_report_computed_task.report_computed_task,
+            ack_report_computed_task=client_message.ack_report_computed_task,
+        )
+    else:
+        if subtask.state_enum == Subtask.SubtaskState.FORCING_ACCEPTANCE:
+            return message.concents.ServiceRefused(
+                reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
+            )
+        if task_to_compute is not None and subtask.task_to_compute is not None:
+            validate_all_messages_identical([
+                task_to_compute,
+                deserialize_message(subtask.task_to_compute.data.tobytes()),
+            ])
+        subtask = update_and_return_updated_subtask(
+            subtask=subtask,
+            state=Subtask.SubtaskState.FORCING_ACCEPTANCE,
+            next_deadline=forcing_acceptance_deadline + settings.CONCENT_MESSAGING_TIME,
+            set_next_deadline=True,
+            task_to_compute=client_message.ack_report_computed_task.report_computed_task.task_to_compute,
+            report_computed_task=client_message.ack_report_computed_task.report_computed_task,
+            ack_report_computed_task=client_message.ack_report_computed_task,
+        )
     store_pending_message(
         response_type       = PendingResponse.ResponseType.ForceSubtaskResults,
         client_public_key   = requestor_public_key,
@@ -631,7 +665,7 @@ def handle_send_force_subtask_results_response(
         deserialize_message(subtask.task_to_compute.data.tobytes()),
     ])
 
-    subtask = update_subtask(
+    subtask = update_and_return_updated_subtask(
         subtask                     = subtask,
         state                       = state,
         next_deadline               = None,
@@ -1115,7 +1149,7 @@ def mark_message_as_delivered_and_log(undelivered_message: PendingResponse, log_
     )
 
 
-def update_subtask(
+def update_and_return_updated_subtask(
     subtask: Subtask,
     state: Subtask.SubtaskState,
     next_deadline: Optional[int] = None,
@@ -1236,67 +1270,6 @@ def set_subtask_messages(
             )
 
 
-def store_or_update_subtask(
-    task_id: str,
-    subtask_id: str,
-    provider_public_key: bytes,
-    requestor_public_key: bytes,
-    state: Subtask.SubtaskState,
-    next_deadline: Optional[int] = None,
-    set_next_deadline: Optional[bool] = False,
-    task_to_compute: Optional[message.TaskToCompute] = None,
-    report_computed_task: Optional[message.ReportComputedTask] = None,
-    ack_report_computed_task: Optional[message.tasks.AckReportComputedTask] = None,
-    reject_report_computed_task: Optional[message.tasks.RejectReportComputedTask] = None,
-    subtask_results_accepted: Optional[message.tasks.SubtaskResultsAccepted] = None,
-    subtask_results_rejected: Optional[message.tasks.SubtaskResultsRejected] = None,
-    force_get_task_result: Optional[message.concents.ForceGetTaskResult] = None,
-) -> Subtask:
-    try:
-        subtask = Subtask.objects.select_for_update().get(
-            subtask_id = subtask_id,
-        )
-    except Subtask.DoesNotExist:
-        subtask = None
-
-    if subtask is not None:
-        if task_to_compute is not None and subtask.task_to_compute is not None:
-            validate_all_messages_identical([
-                task_to_compute,
-                deserialize_message(subtask.task_to_compute.data.tobytes()),
-            ])
-        subtask = update_subtask(
-            subtask=subtask,
-            state=state,
-            next_deadline=next_deadline,
-            set_next_deadline=set_next_deadline,
-            task_to_compute=task_to_compute,
-            report_computed_task=report_computed_task,
-            ack_report_computed_task=ack_report_computed_task,
-            reject_report_computed_task=reject_report_computed_task,
-            subtask_results_accepted=subtask_results_accepted,
-            subtask_results_rejected= subtask_results_rejected,
-            force_get_task_result=force_get_task_result,
-        )
-    else:
-        subtask = store_subtask(
-            task_id=task_id,
-            subtask_id=subtask_id,
-            provider_public_key=provider_public_key,
-            requestor_public_key=requestor_public_key,
-            state=state,
-            next_deadline=next_deadline,
-            task_to_compute=task_to_compute,
-            report_computed_task=report_computed_task,
-            ack_report_computed_task=ack_report_computed_task,
-            reject_report_computed_task=reject_report_computed_task,
-            subtask_results_accepted=subtask_results_accepted,
-            subtask_results_rejected=subtask_results_rejected,
-            force_get_task_result=force_get_task_result,
-        )
-    return subtask
-
-
 def store_message(
     golem_message:          message.base.Message,
     task_id:                str,
@@ -1361,10 +1334,31 @@ def handle_send_subtask_results_verify(
             reason=message.concents.ServiceRefused.REASON.InvalidRequest,
         )
 
-    try:
-        subtask = Subtask.objects.select_for_update().get(subtask_id=compute_task_def['subtask_id'])
-    except Subtask.DoesNotExist:
-        pass
+    if not payments_service.is_account_status_positive(  # pylint: disable=no-value-for-parameter
+        client_eth_address=task_to_compute.requestor_ethereum_address,
+        pending_value=task_to_compute.price,
+    ):
+        return message.concents.ServiceRefused(
+            reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
+        )
+
+    subtask = get_one_or_none(
+        Subtask.objects.select_for_update(),
+        subtask_id=compute_task_def['subtask_id'],
+    )
+    if subtask is None:
+        store_subtask(
+            task_id=compute_task_def['task_id'],
+            subtask_id=compute_task_def['subtask_id'],
+            provider_public_key=provider_public_key,
+            requestor_public_key=requestor_public_key,
+            state=Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
+            next_deadline=verification_deadline,
+            task_to_compute=task_to_compute,
+            report_computed_task=report_computed_task,
+            subtask_results_rejected=subtask_results_rejected,
+        )
+
     else:
         if subtask.state_enum in[
             Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
@@ -1382,26 +1376,21 @@ def handle_send_subtask_results_verify(
                 error_code=ErrorCode.QUEUE_SUBTASK_STATE_TRANSITION_NOT_ALLOWED,
             )
 
-    if not payments_service.is_account_status_positive(  # pylint: disable=no-value-for-parameter
-        client_eth_address=task_to_compute.requestor_ethereum_address,
-        pending_value=task_to_compute.price,
-    ):
-        return message.concents.ServiceRefused(
-            reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
-        )
+        if task_to_compute is not None and subtask.task_to_compute is not None:
+            validate_all_messages_identical([
+                task_to_compute,
+                deserialize_message(subtask.task_to_compute.data.tobytes()),
+            ])
 
-    store_or_update_subtask(
-        task_id=compute_task_def['task_id'],
-        subtask_id=compute_task_def['subtask_id'],
-        provider_public_key=provider_public_key,
-        requestor_public_key=requestor_public_key,
-        state=Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
-        next_deadline=verification_deadline,
-        set_next_deadline=True,
-        task_to_compute=task_to_compute,
-        report_computed_task=report_computed_task,
-        subtask_results_rejected=subtask_results_rejected,
-    )
+        update_and_return_updated_subtask(
+            subtask=subtask,
+            state=Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
+            next_deadline=verification_deadline,
+            set_next_deadline=True,
+            task_to_compute=task_to_compute,
+            report_computed_task=report_computed_task,
+            subtask_results_rejected= subtask_results_rejected,
+        )
 
     send_blender_verification_request(
         compute_task_def,

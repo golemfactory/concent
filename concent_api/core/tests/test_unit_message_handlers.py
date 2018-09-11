@@ -8,7 +8,7 @@ from golem_messages import message
 from common.helpers import parse_timestamp_to_utc_datetime
 from core.exceptions import GolemMessageValidationError
 from core.message_handlers import are_items_unique
-from core.message_handlers import update_subtask
+from core.message_handlers import update_and_return_updated_subtask
 from core.message_handlers import store_subtask
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
@@ -94,7 +94,7 @@ class TestSubtaskStoreAndUpdate(ConcentIntegrationTestCase):
         self.assertEqual(subtask.next_deadline, None)
 
         next_deadline = int(self.task_to_compute.compute_task_def['deadline']) + settings.CONCENT_MESSAGING_TIME
-        update_subtask(
+        update_and_return_updated_subtask(
             subtask=subtask,
             state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             next_deadline=next_deadline,
@@ -121,7 +121,7 @@ class TestSubtaskStoreAndUpdate(ConcentIntegrationTestCase):
         self.assertEqual(subtask_state, Subtask.SubtaskState.FORCING_REPORT.name)  # pylint: disable=no-member
         self.assertEqual(subtask.next_deadline, parse_timestamp_to_utc_datetime(next_deadline))
 
-        update_subtask(
+        update_and_return_updated_subtask(
             subtask=subtask,
             state=Subtask.SubtaskState.REPORTED,
             next_deadline=None,

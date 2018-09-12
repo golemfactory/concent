@@ -2,6 +2,7 @@ from logging import getLogger
 from typing import Union
 
 from django.conf import settings
+from django.db import transaction
 from django.http import HttpRequest
 from django.http import HttpResponse
 from django.http import JsonResponse
@@ -31,6 +32,7 @@ logger = getLogger(__name__)
 @require_golem_message
 @handle_errors_and_responses(database_name='control')
 @log_communication
+@transaction.non_atomic_requests(using='control')
 def send(_request: HttpRequest, client_message: Message, client_public_key: bytes) -> Union[Message, HttpResponse]:
     assert isinstance(client_public_key, bytes) or client_public_key is None
     if client_public_key is not None:
@@ -49,10 +51,11 @@ def send(_request: HttpRequest, client_message: Message, client_public_key: byte
 @require_POST
 @require_golem_auth_message
 @handle_errors_and_responses(database_name='control')
+@transaction.non_atomic_requests(using='control')
 def receive(_request: HttpRequest, message: Message, _client_public_key: bytes) -> Union[Message, HttpResponse]:
     assert isinstance(message.client_public_key, bytes)
     update_all_timed_out_subtasks_of_client(
-        client_public_key = message.client_public_key,
+        client_public_key=message.client_public_key,
     )
     return handle_messages_from_database(client_public_key=message.client_public_key)
 

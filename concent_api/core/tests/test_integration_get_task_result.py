@@ -230,8 +230,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         # Concent rejects request immediately because message was already sent.
         with mock.patch(
             'core.transfer_operations.request_upload_status',
-            side_effect=request_upload_status_false_mock
-        ) as request_upload_status_false_mock_function:
+        ) as request_upload_status_mock_function:
             with freeze_time("2017-12-01 11:00:09"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -239,10 +238,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     content_type='application/octet-stream',
                 )
 
-        request_upload_status_false_mock_function.assert_called_with(
-            deserialized_report_computed_task
-        )
-
+        request_upload_status_mock_function.assert_not_called()
         self.assertEqual(response.status_code,  200)
 
         message_from_concent = load(response.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)

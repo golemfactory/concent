@@ -15,13 +15,14 @@ cffi==1.11.5
 chardet==3.0.4
 cloudpickle==0.5.3
 coincurve==7.1.0
+construct==2.9.45
 coverage==4.5.1
 cycler==0.10.0
 cytoolz==0.9.0.1
 dask==0.18.1
 decorator==4.3.0
 Django==1.11.13
-django-constance[database]==2.2.0
+django-constance==2.2.0
 django-picklefield==1.0.0
 eth-abi==1.1.1
 eth-account==0.2.3
@@ -35,8 +36,8 @@ execnet==1.5.0
 factory-boy==2.11.1
 Faker==0.8.16
 freezegun==0.3.10
--e git://github.com/golemfactory/golem-messages.git@58da6420ab5e25735eef25cd8b2ecfd30b062e0f#egg=Golem_Messages
--e git://github.com/golemfactory/golem-smart-contracts-interface.git@fa21ed6925a6228f0298e853a5ff64890a38a94c#egg=Golem_Smart_Contracts_Interface
+--editable git://github.com/golemfactory/golem-messages.git@58da6420ab5e25735eef25cd8b2ecfd30b062e0f#egg=Golem_Messages
+--editable git://github.com/golemfactory/golem-smart-contracts-interface.git@fa21ed6925a6228f0298e853a5ff64890a38a94c#egg=Golem_Smart_Contracts_Interface
 hexbytes==0.1.0
 idna==2.7
 kiwisolver==1.0.1
@@ -93,3 +94,4 @@ urllib3==1.23
 vine==1.1.4
 web3==4.2.1
 websockets==5.0.1
+--editable ../middleman_protocol

@@ -24,3 +24,4 @@ pytest-xdist
 pytest-cov
 pytest-asyncio
 web3
+-e ../middleman_protocol

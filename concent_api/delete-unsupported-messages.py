@@ -1,13 +1,12 @@
-import django
+from logging import getLogger
 import os
 import sys
 
+import django
 from django.db import transaction
-from logging import getLogger
 
 from common.helpers import deserialize_message
 
-from golem_messages.exceptions import MessageError
 
 sys.path.append('concent_api')
 os.environ['DJANGO_SETTINGS_MODULE'] = "concent_api.settings"
@@ -24,11 +23,11 @@ def main() -> None:
         for subtask in Subtask.objects.select_for_update().all():
             try:
                 report_computed_task = deserialize_message(subtask.report_computed_task.data.tobytes())
-                if isinstance(report_computed_task.size, int):
+                if not isinstance(report_computed_task.size, int):
                     logger.info(f'Size inside ReportComputedTask message inside subtask with subtask_id: {subtask.subtask_id} is: {report_computed_task.size}')
                     delete_unsupported_messages(subtask)
-            except MessageError as golem_messages_exception:
-                logger.info(f'During message deserialization exception raised: {golem_messages_exception}')
+            except Exception as exception:
+                logger.info(f'During message deserialization exception raised: {exception}')
                 delete_unsupported_messages(subtask)
 
 

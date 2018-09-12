@@ -28,7 +28,7 @@ logger = getLogger(__name__)
 
 def verify_file_status(subtask: Subtask, client_public_key: bytes) -> None:
     """
-    Function to verify existence of a file on cluster storage by checking `result_upload_finished` flag on Subtask.
+     It is checked only when client is a requestor and subtask's state is FORCING_RESULT_TRANSFER.
     """
     if (
         subtask.state_enum == Subtask.SubtaskState.FORCING_RESULT_TRANSFER and

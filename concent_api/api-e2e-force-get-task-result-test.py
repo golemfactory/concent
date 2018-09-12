@@ -3,6 +3,8 @@
 import os
 import sys
 import hashlib
+import time
+
 from freezegun import freeze_time
 
 from golem_messages import message
@@ -32,7 +34,6 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
 def get_force_get_task_result(
     current_time: int,
-    cluster_consts: ProtocolConstants,
     size: int,
     package_hash: str,
 ) -> message.concents.ForceGetTaskResult:
@@ -67,7 +68,6 @@ def test_case_1_test_for_existing_file(cluster_consts: ProtocolConstants, cluste
 
     force_get_task_result = get_force_get_task_result(
         current_time,
-        cluster_consts,
         size=file_size,
         package_hash=file_check_sum,
     )
@@ -122,6 +122,7 @@ def test_case_1_test_for_existing_file(cluster_consts: ProtocolConstants, cluste
         file_check_sum,
         file_size
     ))
+    time.sleep(0.5)
 
     api_request(
         cluster_url,
@@ -149,7 +150,6 @@ def test_case_2_test_for_non_existing_file(cluster_consts: ProtocolConstants, cl
         CONCENT_PUBLIC_KEY,
         get_force_get_task_result(
             current_time,
-            cluster_consts,
             size    = 1024,
             package_hash = 'sha1:b3ff7013c4644cdcbb6c7e4f1e5fdb10b9ceda5d'
         ),

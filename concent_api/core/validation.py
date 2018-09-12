@@ -1,5 +1,6 @@
 from logging import getLogger
 from typing import Any
+from typing import Optional
 from typing import List
 from typing import Union
 
@@ -10,6 +11,7 @@ from django.core.exceptions import ValidationError
 from golem_messages import message
 from golem_messages.exceptions import MessageError
 from golem_messages.message.tasks import RejectReportComputedTask
+from golem_messages.message.tasks import ReportComputedTask
 
 from common.constants import ErrorCode
 from common.exceptions import ConcentValidationError
@@ -410,3 +412,24 @@ def validate_database_report_computed_task(
                 'Nested ReportComputedTask message must be the same as ReportComputedTask stored separately'
             )
         })
+
+
+def substitute_new_report_computed_task_if_needed(
+        report_computed_task_from_acknowledgement: ReportComputedTask,
+        stored_report_computed_task: ReportComputedTask
+) -> Optional[ReportComputedTask]:
+    """
+    If stored ReportComputedTask (previously sent by Provider in ForceReportComputedTask message) is different than
+    ReportComputedTask sent by Requestor (in AckReportComputedTask), it means that Provider had sent different
+    ReportComputedTask to Requestor and the message stored in the DB must be replaced.
+    """
+    new_report_computed_task = None
+    try:
+        validate_all_messages_identical([
+            report_computed_task_from_acknowledgement,
+            stored_report_computed_task,
+        ])
+    except ConcentValidationError:
+        new_report_computed_task = report_computed_task_from_acknowledgement
+
+    return new_report_computed_task

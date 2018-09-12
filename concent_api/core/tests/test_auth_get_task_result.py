@@ -69,12 +69,6 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             report_computed_task = deserialized_report_computed_task,
             timestamp            = "2017-12-01 11:00:08",
         )
-        deserialized_original_serialized_force_get_task_result = load(
-            original_serialized_force_get_task_result,
-            CONCENT_PRIVATE_KEY,
-            self.REQUESTOR_PUBLIC_KEY,
-            check_time=False
-        )
 
         with freeze_time("2017-12-01 11:00:08"):
             response = self.client.post(
@@ -133,19 +127,15 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.transfer_operations.request_upload_status',
-            side_effect=request_upload_status_false_mock
-        ) as request_upload_status_false_mock_function:
+            'core.subtask_helpers.verify_file_status',
+        ) as verify_file_status_mock_function:
             with freeze_time("2017-12-01 11:00:05"):
                 response = self.client.post(
                     reverse('core:send'),
                     data=serialized_force_get_task_result,
                     content_type='application/octet-stream',
                 )
-
-        request_upload_status_false_mock_function.assert_called_with(
-            deserialized_original_serialized_force_get_task_result.report_computed_task
-        )
+        verify_file_status_mock_function.assert_not_called()
 
         self._test_400_response(
             response,
@@ -175,9 +165,8 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.transfer_operations.request_upload_status',
-            side_effect=request_upload_status_false_mock
-        ) as request_upload_status_false_mock_function:
+            'core.subtask_helpers.verify_file_status',
+        ) as verify_file_status_mock_function:
             with freeze_time("2017-12-01 11:00:05"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -185,10 +174,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     content_type='application/octet-stream',
                 )
 
-        request_upload_status_false_mock_function.assert_called_with(
-            deserialized_original_serialized_force_get_task_result.report_computed_task
-        )
-
+        verify_file_status_mock_function.assert_not_called()
         self.assertEqual(response.status_code,  200)
 
         message_from_concent = load(response.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
@@ -200,9 +186,8 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         # STEP 3: Requestor again forces get task result via Concent with correct key.
         # Concent rejects request immediately because message was already sent.
         with mock.patch(
-            'core.transfer_operations.request_upload_status',
-            side_effect=request_upload_status_false_mock
-        ) as request_upload_status_false_mock_function:
+            'core.subtask_helpers.verify_file_status',
+        ) as verify_file_status_mock_function:
             with freeze_time("2017-12-01 11:00:08"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -210,10 +195,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
                     content_type='application/octet-stream',
                 )
 
-        request_upload_status_false_mock_function.assert_called_with(
-            deserialized_original_serialized_force_get_task_result.report_computed_task
-        )
-
+        verify_file_status_mock_function.assert_not_called()
         self.assertEqual(response.status_code, 200)
 
         message_from_concent = load(response.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time=False)

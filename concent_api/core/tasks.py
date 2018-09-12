@@ -6,6 +6,7 @@ from mypy.types import Optional
 
 from django.db import DatabaseError
 from django.db import transaction
+from django.utils import timezone
 
 from common.decorators import log_task_errors
 from common.decorators import provides_concent_feature
@@ -18,6 +19,7 @@ from core.models import PendingResponse
 from core.models import Subtask
 from core.payments import service as payments_service
 from core.subtask_helpers import update_subtask_state
+from core.subtask_helpers import update_timed_out_subtask
 from core.transfer_operations import store_pending_message
 from core.utils import calculate_subtask_verification_time
 from .constants import CELERY_LOCKED_SUBTASK_DELAY
@@ -39,6 +41,9 @@ def upload_finished(subtask_id: str) -> None:
     except Subtask.DoesNotExist:
         logging.error(f'Task `upload_finished` tried to get Subtask object with ID {subtask_id} but it does not exist.')
         return
+
+    if subtask.state_enum in Subtask.ACTIVE_STATES and subtask.next_deadline <= timezone.now():
+        update_timed_out_subtask(subtask)
 
     report_computed_task = deserialize_message(subtask.report_computed_task.data.tobytes())
 
@@ -143,6 +148,9 @@ def verification_result(
             throw=False,
         )
         return
+
+    if subtask.state_enum in Subtask.ACTIVE_STATES and subtask.next_deadline <= timezone.now():
+        update_timed_out_subtask(subtask)
 
     if subtask.state_enum == Subtask.SubtaskState.ACCEPTED:
         logger.warning(VERIFICATION_RESULT_SUBTASK_STATE_ACCEPTED_LOG_MESSAGE.format(subtask_id))

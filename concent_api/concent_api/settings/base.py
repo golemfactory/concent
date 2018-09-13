@@ -333,3 +333,15 @@ CONCENT_FEATURES = []  # type: ignore
 
 # Verifier setting defining number of threads used by Blender
 BLENDER_THREADS = 1
+
+# Defines IP or domain name that can be used to connect to Middleman.
+# MIDDLEMAN_ADDRESS = ''
+
+# The port on which Middleman is accepting requests.
+# MIDDLEMAN_PORT =
+
+# Defines public part of the key used by Signing Service to sign Middleman protocol frames and Golem messages.
+# SIGNING_SERVICE_PUBLIC_KEY = ''
+
+# Defines if Concent should use SigningService for signing Ethereum transactions.
+USE_SIGNING_SERVICE = False

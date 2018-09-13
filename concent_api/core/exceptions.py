@@ -31,3 +31,31 @@ class TransactionNonceMismatch(Exception):
 
 class SceneFilePathError(ConcentBaseException):
     pass
+
+
+class SCICallbackError(Exception):
+    pass
+
+
+class SCICallbackTimeoutError(SCICallbackError):
+    pass
+
+
+class SCICallbackRequestIdError(SCICallbackError):
+    pass
+
+
+class SCICallbackPayloadError(SCICallbackError):
+    pass
+
+
+class SCICallbackFrameError(SCICallbackError):
+    pass
+
+
+class SCICallbackTransactionSignatureError(SCICallbackError):
+    pass
+
+
+class SCICallbackPayloadSignatureError(SCICallbackError):
+    pass

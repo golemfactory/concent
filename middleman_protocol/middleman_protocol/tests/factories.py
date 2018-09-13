@@ -29,11 +29,18 @@ class TransactionAbstractMessage(NonceAbstractMessageFactory):
     startgas = factory.LazyFunction(
         lambda: random.randint(0, denoms.turing)
     )
-    to = factory.fuzzy.FuzzyText(length=20, chars='0123456789abcdef')
     value = factory.LazyFunction(
         lambda: random.randint(0, denoms.turing)
     )
     data = b''
+
+    # pylint: disable=no-self-argument
+
+    @factory.post_generation
+    def set_to(msg, _create, _extracted, **kwargs):  # pylint: disable=unused-argument
+        msg.to = (factory.fuzzy.FuzzyText(length=20, chars='0123456789abcdef').fuzz()).encode()  # pylint: disable=attribute-defined-outside-init
+
+        # pylint: enable=no-self-argument
 
 
 class TransactionSigningRequestFactory(TransactionAbstractMessage):
@@ -44,8 +51,7 @@ class TransactionSigningRequestFactory(TransactionAbstractMessage):
 
     @factory.post_generation
     def set_from(msg, _create, _extracted, **kwargs):  # pylint: disable=unused-argument
-        """ As `from` is reserved keyword in Python, it has to be set using `setattr` function. """
-        setattr(msg, 'from', factory.fuzzy.FuzzyText(length=20, chars='0123456789abcdef').fuzz())
+        msg.from_address = (factory.fuzzy.FuzzyText(length=20, chars='0123456789abcdef').fuzz()).encode()  # pylint: disable=attribute-defined-outside-init
 
         # pylint: enable=no-self-argument
 

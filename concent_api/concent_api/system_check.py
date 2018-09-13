@@ -326,6 +326,70 @@ def create_error_47_concent_ethereum_public_key_has_wrong_length(concent_ethereu
     )
 
 
+def create_error_48_middleman_address_has_wrong_type(value: Any) -> Error:
+    return Error(
+        f"Setting MIDDLEMAN_ADDRESS has incorrect type `{type(value)}` instead of `str`.",
+        hint=f"Set setting MIDDLEMAN_ADDRESS to be a string.",
+        id="concent.E048",
+    )
+
+
+def create_error_49_middleman_address_is_not_set() -> Error:
+    return Error(
+        'MIDDLEMAN_ADDRESS setting is not defined.',
+        hint='Set MIDDLEMAN_ADDRESS to host which MiddleMan instance is working on.',
+        id='concent.E049',
+    )
+
+
+def create_error_50_middleman_port_is_not_set() -> Error:
+    return Error(
+        'MIDDLEMAN_PORT setting is not defined',
+        hint='Set MIDDLEMAN_PORT to port on which MiddleMan instance is accepting connections.',
+        id='concent.E050',
+    )
+
+
+def create_error_51_middleman_port_has_wrong_type(value: Any) -> Error:
+    return Error(
+        f"Setting MIDDLEMAN_PORT has incorrect type `{type(value)}` instead of `int`.",
+        hint=f"Set setting MIDDLEMAN_PORT to be an integer.",
+        id="concent.E051",
+    )
+
+
+def create_error_52_middleman_port_has_wrong_value(value: int) -> Error:
+    return Error(
+        f"Setting MIDDLEMAN_PORT has incorrect value `{value}`.",
+        hint="Set setting MIDDLEMAN_PORT to be integer value between 0 and 65535 (exclusive).",
+        id="concent.E052",
+    )
+
+
+def create_error_53_use_signing_service_not_set() -> Error:
+    return Error(
+        'USE_SIGNING_SERVICE setting is not defined',
+        hint='Set USE_SIGNING_SERVICE to True if you want to use SigningService, otherwise False.',
+        id='concent.E053',
+    )
+
+
+def create_error_54_use_signing_service_has_wrong_type(value: Any) -> Error:
+    return Error(
+        f"Setting USE_SIGNING_SERVICE has incorrect type `{type(value)}` instead of `bool`.",
+        hint=f"Set setting USE_SIGNING_SERVICE to be a boolean.",
+        id="concent.E054",
+    )
+
+
+def create_error_55_use_signing_service_is_true_but_middleman_is_missing() -> Error:
+    return Error(
+        'USE_SIGNING_SERVICE is set to True but MiddleMan is not available.',
+        hint='Add `middleman` to CONCENT_FEATURES.',
+        id='concent.E055',
+    )
+
+
 @register()
 def check_settings_concent_features(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
 
@@ -611,5 +675,47 @@ def check_concent_ethereum_public_key(app_configs: None=None, **kwargs: Any) -> 
             return [create_error_46_concent_ethereum_public_key_has_wrong_type(settings.CONCENT_ETHEREUM_PUBLIC_KEY)]
         if len(settings.CONCENT_ETHEREUM_PUBLIC_KEY) != ETHEREUM_PUBLIC_KEY_LENGTH:
             return [create_error_47_concent_ethereum_public_key_has_wrong_length(settings.CONCENT_ETHEREUM_PUBLIC_KEY)]
+
+    return []
+
+
+@register()
+def check_middleman_address(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
+    if 'middleman' in settings.CONCENT_FEATURES:
+        if not hasattr(settings, 'MIDDLEMAN_ADDRESS'):
+            return [create_error_49_middleman_address_is_not_set()]
+        if not isinstance(settings.MIDDLEMAN_ADDRESS, str):
+            return [create_error_48_middleman_address_has_wrong_type(settings.MIDDLEMAN_ADDRESS)]
+
+    return []
+
+
+@register()
+def check_middleman_port(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
+    if 'middleman' in settings.CONCENT_FEATURES:
+        if not hasattr(settings, 'MIDDLEMAN_PORT'):
+            return [create_error_50_middleman_port_is_not_set()]
+        if not isinstance(settings.MIDDLEMAN_PORT, int):
+            return [create_error_51_middleman_port_has_wrong_type(settings.MIDDLEMAN_PORT)]
+        if not 0 < settings.MIDDLEMAN_PORT < 65535:
+            return [create_error_52_middleman_port_has_wrong_value(settings.MIDDLEMAN_PORT)]
+
+    return []
+
+
+@register()
+def check_use_signing_service(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
+    if (
+        hasattr(settings, 'PAYMENT_BACKEND') and
+        settings.PAYMENT_BACKEND == 'core.payments.backends.sci_backend'
+    ):
+        if not hasattr(settings, 'USE_SIGNING_SERVICE'):
+            return [create_error_53_use_signing_service_not_set()]
+
+        if not isinstance(settings.USE_SIGNING_SERVICE, bool):
+            return [create_error_54_use_signing_service_has_wrong_type(settings.USE_SIGNING_SERVICE)]
+
+        if settings.USE_SIGNING_SERVICE is True and 'middleman' not in settings.CONCENT_FEATURES:
+            return [create_error_55_use_signing_service_is_true_but_middleman_is_missing()]
 
     return []

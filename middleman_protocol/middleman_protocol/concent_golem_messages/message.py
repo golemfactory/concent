@@ -83,12 +83,12 @@ class TransactionSigningRequest(TransactionAbstractMessage):
     """
 
     __slots__ = [
-        'from',
+        'from_address',
     ] + TransactionAbstractMessage.__slots__
 
     def deserialize_slot(self, key: str, value: Any) -> Any:
         value = super().deserialize_slot(key, value)
-        if key == 'from':
+        if key == 'from_address':
             validate_bytes(
                 field_name=key,
                 value=value,

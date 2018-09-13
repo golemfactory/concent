@@ -51,8 +51,7 @@ class TransactionSigningRequestFactory(TransactionAbstractMessage):
 
     @factory.post_generation
     def set_from(msg, _create, _extracted, **kwargs):  # pylint: disable=unused-argument
-        """ As `from` is reserved keyword in Python, it has to be set using `setattr` function. """
-        setattr(msg, 'from', (factory.fuzzy.FuzzyText(length=20, chars='0123456789abcdef').fuzz()).encode())
+        msg.from_address = (factory.fuzzy.FuzzyText(length=20, chars='0123456789abcdef').fuzz()).encode()  # pylint: disable=attribute-defined-outside-init
 
         # pylint: enable=no-self-argument
 

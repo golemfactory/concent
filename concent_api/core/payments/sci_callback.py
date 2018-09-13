@@ -83,18 +83,13 @@ def create_transaction_signing_request(transaction: Transaction) -> TransactionS
     assert isinstance(transaction, Transaction)
 
     transaction_signing_request = TransactionSigningRequest(
-        nonce    = transaction.nonce,
-        gasprice = transaction.gasprice,
-        startgas = transaction.startgas,
-        to       = transaction.to,
-        value    = transaction.value,
-        data     = transaction.data,
-    )
-
-    setattr(
-        transaction_signing_request,
-        'from',
-        generate_ethereum_address_from_ethereum_public_key_bytes(settings.CONCENT_ETHEREUM_PUBLIC_KEY),
+        nonce        = transaction.nonce,
+        gasprice     = transaction.gasprice,
+        startgas     = transaction.startgas,
+        to           = transaction.to,
+        value        = transaction.value,
+        data         = transaction.data,
+        from_address = generate_ethereum_address_from_ethereum_public_key_bytes(settings.CONCENT_ETHEREUM_PUBLIC_KEY),
     )
 
     return transaction_signing_request

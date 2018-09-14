@@ -141,35 +141,41 @@ def update_timed_out_subtasks_in_message(client_message: Message, client_public_
 
 def update_all_clients_timed_out_subtasks(client_public_key: bytes) -> None:
 
-    verify_file_status(client_public_key=client_public_key)
+    encoded_client_public_key = b64encode(client_public_key)
 
     clients_subtask_list = Subtask.objects.select_for_update().filter(
-        Q(requestor__public_key = b64encode(client_public_key)) | Q(provider__public_key = b64encode(client_public_key)),
-        state__in               = [state.name for state in Subtask.ACTIVE_STATES],
-        next_deadline__lte      = timezone.now()
+        Q(requestor__public_key=encoded_client_public_key) | Q(provider__public_key = encoded_client_public_key),
+        state__in=[state.name for state in Subtask.ACTIVE_STATES],
     )
 
     for subtask in clients_subtask_list:
-        update_timed_out_subtask(subtask)
+        if subtask.state_enum == Subtask.SubtaskState.FORCING_RESULT_TRANSFER and subtask.requestor.public_key_bytes == client_public_key:
+            verify_file_status(subtask=subtask)
+
+# Subtask may change it's state in verify_file_status, so it is necessary to check the state again. If state will change
+# to passive, there is no need to call update_timed_out_subtask any more. State has to be checked first, if is passive
+# second condition is not checked. If it would be it will raise Error because of comparing datetime and NoneType
+        if subtask.state_enum in Subtask.ACTIVE_STATES and subtask.next_deadline <= timezone.now():
+            update_timed_out_subtask(subtask)
 
 
 def _update_timed_out_subtask(
     subtask_id: str,
     client_public_key: bytes,
 ) -> None:
-
     try:
         subtask = Subtask.objects.select_for_update().get(
             subtask_id=subtask_id,
             state__in=[state.name for state in Subtask.ACTIVE_STATES],
             next_deadline__lte=timezone.now()
         )
-
-        verify_file_status(subtask_from_send_message=subtask, client_public_key=client_public_key)
-
-        update_timed_out_subtask(subtask)
     except Subtask.DoesNotExist:
-        pass
+        return
+
+    if subtask.state_enum == Subtask.SubtaskState.FORCING_RESULT_TRANSFER and client_public_key == subtask.requestor.public_key_bytes:
+        verify_file_status(subtask=subtask)
+
+    update_timed_out_subtask(subtask)
 
 
 def update_subtask_state(subtask: Subtask, state: str, next_deadline: Optional[int] = None) -> None:

@@ -32,47 +32,32 @@ logger = getLogger(__name__)
 
 
 def verify_file_status(
-    client_public_key: bytes,
-    subtask_from_send_message: Optional[Subtask] = None,
+    subtask: Subtask,
 ) -> None:
     """
     Function to verify existence of a file on cluster storage
     """
-    # messages from receive
-    if subtask_from_send_message is None:
-        encoded_client_public_key = b64encode(client_public_key)
-        subtask_list = Subtask.objects.select_for_update().filter(
-            requestor__public_key=encoded_client_public_key,
-            state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name,  # pylint: disable=no-member
+
+    report_computed_task = deserialize_message(subtask.report_computed_task.data.tobytes())
+    if request_upload_status(report_computed_task):
+        subtask.state = Subtask.SubtaskState.RESULT_UPLOADED.name  # pylint: disable=no-member
+        subtask.next_deadline = None
+        subtask.full_clean()
+        subtask.save()
+
+        store_pending_message(
+            response_type=PendingResponse.ResponseType.ForceGetTaskResultDownload,
+            client_public_key=subtask.requestor.public_key_bytes,
+            queue=PendingResponse.Queue.Receive,
+            subtask=subtask,
         )
-    # messages from send
-    else:
-        if subtask_from_send_message.state_enum == Subtask.SubtaskState.FORCING_RESULT_TRANSFER and client_public_key == subtask_from_send_message.requestor.public_key_bytes:
-            subtask_list = [subtask_from_send_message]
-        else:
-            subtask_list = []
-
-    for subtask in subtask_list:
-        report_computed_task = deserialize_message(subtask.report_computed_task.data.tobytes())
-        if request_upload_status(report_computed_task):
-            subtask.state = Subtask.SubtaskState.RESULT_UPLOADED.name  # pylint: disable=no-member
-            subtask.next_deadline = None
-            subtask.full_clean()
-            subtask.save()
-
-            store_pending_message(
-                response_type=PendingResponse.ResponseType.ForceGetTaskResultDownload,
-                client_public_key=subtask.requestor.public_key_bytes,
-                queue=PendingResponse.Queue.Receive,
-                subtask=subtask,
-            )
-            logging.log_file_status(
-                logger,
-                subtask.task_id,
-                subtask.subtask_id,
-                subtask.requestor.public_key_bytes,
-                subtask.provider.public_key_bytes,
-            )
+        logging.log_file_status(
+            logger,
+            subtask.task_id,
+            subtask.subtask_id,
+            subtask.requestor.public_key_bytes,
+            subtask.provider.public_key_bytes,
+        )
 
 
 def store_pending_message(

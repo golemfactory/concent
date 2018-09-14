@@ -1,7 +1,11 @@
 #!/bin/bash -e
+# Run this script only directly, without changing folders, because of relative paths
+# ./install-development-requirements.sh - OK, ./concent/install-development-requirements.sh - incorrect
 
 printf "=================== INSTALL CONCENT_API REQUIREMENTS ====================\n"
-pip install -r concent_api/requirements.lock
+cd concent_api
+pip install -r requirements.lock
+cd ..
 
 printf "=================== INSTALL MIDDLEMAN_PROTOCOL REQUIREMENTS ====================\n"
 cd middleman_protocol

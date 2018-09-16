@@ -173,26 +173,23 @@ class TestInvalidHashAlgorithms(TestCase):
             self.assertEqual(context.exception.error_code, error_code)
 
 
-class TestAreEthereumAddressesAndKeysUnique(object):
+class TestAreEthereumAddressesAndKeysUnique(TestCase):
 
-    @pytest.fixture(autouse=True)
     def setUp(self):
         self.task_to_compute_1 = TaskToComputeFactory(
-            requestor_ethereum_address=encode_hex(REQUESTOR_PUBLIC_KEY),
             requestor_ethereum_public_key=encode_hex(REQUESTOR_PUB_ETH_KEY),
             requestor_public_key=encode_hex(REQUESTOR_PUBLIC_KEY),
-            provider_ethereum_address=encode_hex(PROVIDER_PUBLIC_KEY),
             provider_ethereum_public_key=encode_hex(PROVIDER_PUB_ETH_KEY),
             provider_public_key=encode_hex(PROVIDER_PUBLIC_KEY),
         )
+        self.task_to_compute_1.generate_ethsig(REQUESTOR_PRIV_ETH_KEY)
         self.task_to_compute_2 = TaskToComputeFactory(
-            requestor_ethereum_address=encode_hex(REQUESTOR_PUBLIC_KEY),
             requestor_ethereum_public_key=encode_hex(REQUESTOR_PUB_ETH_KEY),
             requestor_public_key=encode_hex(REQUESTOR_PUBLIC_KEY),
-            provider_ethereum_address=encode_hex(PROVIDER_PUBLIC_KEY),
             provider_ethereum_public_key=encode_hex(PROVIDER_PUB_ETH_KEY),
             provider_public_key=encode_hex(PROVIDER_PUBLIC_KEY),
         )
+        self.task_to_compute_2.generate_ethsig(REQUESTOR_PRIV_ETH_KEY)
 
     def create_subtask_results_accepted_list(  # pylint: disable=no-self-use
         self,
@@ -224,24 +221,28 @@ class TestAreEthereumAddressesAndKeysUnique(object):
 
     def test_that_if_different_requestor_ethereum_public_keys_are_given_method_should_return_false(self):
         self.task_to_compute_2.requestor_ethereum_public_key = encode_hex(DIFFERENT_REQUESTOR_PUB_ETH_KEY)
+        self.task_to_compute_2.generate_ethsig(DIFFERENT_REQUESTOR_PRIV_ETH_KEY)
         subtask_results_accepted_list = self.create_subtask_results_accepted_list(self.task_to_compute_1, self.task_to_compute_2)
         result = are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_results_accepted_list)
         assert_that(result).is_false()
 
     def test_that_if_different_requestor_public_keys_are_given_method_should_return_false(self):
         self.task_to_compute_2.requestor_public_key = encode_hex(DIFFERENT_REQUESTOR_PUBLIC_KEY)
+        self.task_to_compute_2.generate_ethsig(REQUESTOR_PRIV_ETH_KEY)
         subtask_results_accepted_list = self.create_subtask_results_accepted_list(self.task_to_compute_1, self.task_to_compute_2)
         result = are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_results_accepted_list)
         assert_that(result).is_false()
 
     def test_that_if_different_provider_ethereum_public_keys_are_given_method_should_return_false(self):
         self.task_to_compute_2.provider_ethereum_public_key = encode_hex(DIFFERENT_PROVIDER_PUB_ETH_KEY)
+        self.task_to_compute_2.generate_ethsig(REQUESTOR_PRIV_ETH_KEY)
         subtask_results_accepted_list = self.create_subtask_results_accepted_list(self.task_to_compute_1, self.task_to_compute_2)
         result = are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_results_accepted_list)
         assert_that(result).is_false()
 
     def test_that_if_different_provider_public_keys_are_given_method_should_return_false(self):
         self.task_to_compute_2.provider_public_key = encode_hex(DIFFERENT_PROVIDER_PUBLIC_KEY)
+        self.task_to_compute_2.generate_ethsig(REQUESTOR_PRIV_ETH_KEY)
         subtask_results_accepted_list = self.create_subtask_results_accepted_list(self.task_to_compute_1, self.task_to_compute_2)
         result = are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_results_accepted_list)
         assert_that(result).is_false()

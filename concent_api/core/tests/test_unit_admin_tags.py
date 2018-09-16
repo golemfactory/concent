@@ -9,7 +9,6 @@ from core.models import Subtask
 from core.templatetags.admin_tags import get_longest_lasting_subtask_timestamp, get_time_until_concent_can_be_shut_down
 from core.tests.utils import ConcentIntegrationTestCase
 from core.utils import hex_to_bytes_convert
-from api_testing_common import create_signed_task_to_compute
 from api_testing_common import timestamp_to_isoformat
 
 
@@ -19,7 +18,7 @@ class TestAdminTagsQuerySet(ConcentIntegrationTestCase):
         file_content = '1'
         file_size = len(file_content)
         file_check_sum = 'sha1:' + hashlib.sha1(file_content.encode()).hexdigest()
-        task_to_compute = create_signed_task_to_compute(
+        task_to_compute = self._get_deserialized_task_to_compute(
             task_id=task_id,
             subtask_id=subtask_id,
             deadline=deadline,

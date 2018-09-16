@@ -73,3 +73,6 @@ class ErrorCode(enum.Enum):
 class MessageIdField(enum.Enum):
     TASK_ID = 'task_id'
     SUBTASK_ID = 'subtask_id'
+
+
+ERROR_IN_GOLEM_MESSAGE = 'Error in Golem Message.'

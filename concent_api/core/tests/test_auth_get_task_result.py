@@ -160,6 +160,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         task_to_compute.sig = None
         task_to_compute.requestor_public_key = self._get_requestor_hex_public_key()
         task_to_compute.provider_id = 'different_id'
+        self._generate_ethereum_signature(task_to_compute)
         task_to_compute = self._sign_message(
             task_to_compute,
             self.REQUESTOR_PRIVATE_KEY,

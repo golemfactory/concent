@@ -11,11 +11,11 @@ import uuid
 from freezegun import freeze_time
 
 from golem_messages import message
-from golem_messages.utils import encode_hex
 
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.helpers import sign_message
+from common.testing_helpers import generate_priv_and_pub_eth_account_key
 
 from api_testing_common import api_request
 from api_testing_common import count_fails
@@ -37,6 +37,8 @@ Average time for 2 blocks
 Constans needed for test to get last 2 blocks
 """
 AVERAGE_TIME_FOR_TWO_BLOCKS = 30
+
+(DIFFERENT_REQUESTOR_ETHEREUM_PRIVATE_KEY, DIFFERENT_REQUESTOR_ETHEREUM_PUBLIC_KEY) = generate_priv_and_pub_eth_account_key()
 
 
 def force_payment(
@@ -267,7 +269,8 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
                         subtask_id=subtask_id,
                         deadline=current_time,
                         price=15000,
-                        requestor_ethereum_public_key=encode_hex(b'0' * GOLEM_PUBLIC_KEY_LENGTH)
+                        requestor_ethereum_public_key=DIFFERENT_REQUESTOR_ETHEREUM_PUBLIC_KEY,
+                        requestor_ethereum_private_key=DIFFERENT_REQUESTOR_ETHEREUM_PRIVATE_KEY,
                     )
                 )
             ]
@@ -285,7 +288,6 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
-        from core.constants import GOLEM_PUBLIC_KEY_LENGTH
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file = sys.stderr)

@@ -402,7 +402,6 @@ def create_error_57_gntdeposit_has_wrong_type(value: Any) -> Error:
     return Error(
         f"Setting GNT_DEPOSIT_CONTRACT_ADDRESS has incorrect type `{type(value)}` instead of `string`.",
         hint=f"Set setting GNT_DEPOSIT_CONTRACT_ADDRESS to be a string.",
-        id="concent.E057",
     )
 
 
@@ -427,6 +426,22 @@ def create_error_60_additional_verification_cost_is_not_non_negative_integer() -
         f"Setting ADDITIONAL_VERIFICATION_COST is not non-negative `int`.",
         hint=f"Set setting ADDITIONAL_VERIFICATION_COST to be a non-negative integer.",
         id='concent.E060',
+    )
+
+
+def create_error_61_additional_verification_call_time_is_not_set() -> Error:
+    return Error(
+        "ADDITIONAL_VERIFICATION_CALL_TIME is not set",
+        hint="ADDITIONAL_VERIFICATION_CALL_TIME must be set to non-negative integer",
+        id="concent.E061",
+    )
+
+
+def create_error_62_additional_verification_call_time_has_wrong_value() -> Error:
+    return Error(
+        "ADDITIONAL_VERIFICATION_CALL_TIME has wrong value",
+        hint="ADDITIONAL_VERIFICATION_CALL_TIME must be set to non-negative integer",
+        id="concent.E062",
     )
 
 
@@ -788,3 +803,12 @@ def check_additional_verification_cost(app_configs: None=None, **kwargs: Any) ->
             return [create_error_60_additional_verification_cost_is_not_non_negative_integer()]
 
     return []
+
+
+def check_additional_verification_call_time(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
+    errors: list = []
+    if not hasattr(settings, 'ADDITIONAL_VERIFICATION_CALL_TIME'):
+        return [create_error_61_additional_verification_call_time_is_not_set()]
+    if not isinstance(settings.ADDITIONAL_VERIFICATION_CALL_TIME, int) or settings.ADDITIONAL_VERIFICATION_CALL_TIME < 0:
+        return [create_error_62_additional_verification_call_time_has_wrong_value()]
+    return errors

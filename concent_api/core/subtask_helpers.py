@@ -6,6 +6,7 @@ from typing import Optional
 from typing import Type
 from typing import Union
 
+from django.db import transaction
 from django.db.models import Model
 from django.db.models import Q
 from django.db.models import QuerySet
@@ -143,22 +144,25 @@ def update_all_clients_timed_out_subtasks(client_public_key: bytes) -> None:
 
     encoded_client_public_key = b64encode(client_public_key)
 
-    clients_subtask_list = Subtask.objects.select_for_update().filter(
+    clients_subtask_list = Subtask.objects.filter(
         Q(requestor__public_key=encoded_client_public_key) | Q(provider__public_key = encoded_client_public_key),
         state__in=[state.name for state in Subtask.ACTIVE_STATES],
     )
 
     for subtask in clients_subtask_list:
-        if subtask.state_enum == Subtask.SubtaskState.FORCING_RESULT_TRANSFER and subtask.requestor.public_key_bytes == client_public_key:
-            verify_file_status(subtask=subtask)
+        with transaction.atomic(using='control'):
+            Subtask.objects.select_for_update().filter(subtask_id=subtask.subtask_id)
+            if subtask.state_enum == Subtask.SubtaskState.FORCING_RESULT_TRANSFER and subtask.requestor.public_key_bytes == client_public_key:
+                verify_file_status(subtask=subtask)
 
 # Subtask may change it's state in verify_file_status, so it is necessary to check the state again. If state will change
 # to passive, there is no need to call update_timed_out_subtask any more. State has to be checked first, if is passive
 # second condition is not checked. If it would be it will raise Error because of comparing datetime and NoneType
-        if subtask.state_enum in Subtask.ACTIVE_STATES and subtask.next_deadline <= timezone.now():
-            update_timed_out_subtask(subtask)
+            if subtask.state_enum in Subtask.ACTIVE_STATES and subtask.next_deadline <= timezone.now():
+                update_timed_out_subtask(subtask)
 
 
+@transaction.atomic(using='control')
 def _update_timed_out_subtask(
     subtask_id: str,
     client_public_key: bytes,

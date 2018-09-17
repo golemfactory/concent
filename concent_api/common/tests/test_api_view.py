@@ -22,9 +22,11 @@ from common.decorators import handle_errors_and_responses
 from common.helpers import get_current_utc_timestamp
 from common.testing_helpers import generate_ecc_key_pair
 from core.exceptions import Http400
+from core.message_handlers import store_subtask
 from core.models import Client
+from core.models import Subtask
 from core.tests.utils import generate_uuid
-
+from core.utils import hex_to_bytes_convert
 
 (CONCENT_PRIVATE_KEY,   CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
 (PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)  = generate_ecc_key_pair()
@@ -169,11 +171,18 @@ def _update_timed_out_subtask_500_mock(_subtask_id, _client_public_key):
     raise TypeError
 
 
-def _update_timed_out_subtask_400_mock(_subtask_id, _client_public_key):
+def _create_client_and_raise_http400_error_mock(*_args, **_kwargs):
     Client.objects.get_or_create_full_clean(
         CONCENT_PUBLIC_KEY
     )
     raise Http400('', error_code=ErrorCode.MESSAGE_UNEXPECTED)
+
+
+def _create_client_and_raise_http500_error_mock(*_args, **_kwargs):
+    Client.objects.get_or_create_full_clean(
+        CONCENT_PUBLIC_KEY
+    )
+    raise TypeError
 
 
 def _update_timed_out_subtask_correct_response_mock(_subtask_id, _client_public_key):
@@ -216,15 +225,15 @@ class ApiViewTransactionTestCase(TransactionTestCase):
 
         deadline_offset = 10
         message_timestamp = get_current_utc_timestamp() + deadline_offset
-        compute_task_def = ComputeTaskDefFactory()
-        compute_task_def['deadline'] = message_timestamp
+        self.compute_task_def = ComputeTaskDefFactory()
+        self.compute_task_def['deadline'] = message_timestamp
         task_to_compute = tasks.TaskToComputeFactory(
-            compute_task_def=compute_task_def,
+            compute_task_def=self.compute_task_def,
             requestor_public_key=encode_hex(REQUESTOR_PUBLIC_KEY),
             provider_public_key=encode_hex(PROVIDER_PUBLIC_KEY),
             price=0,
         )
-        task_to_compute = load(
+        self.task_to_compute = load(
             dump(
                 task_to_compute,
                 REQUESTOR_PRIVATE_KEY,
@@ -235,9 +244,9 @@ class ApiViewTransactionTestCase(TransactionTestCase):
             check_time=False,
         )
         report_computed_task = tasks.ReportComputedTaskFactory(
-            task_to_compute=task_to_compute
+            task_to_compute=self.task_to_compute
         )
-        report_computed_task = load(
+        self.report_computed_task = load(
             dump(
                 report_computed_task,
                 PROVIDER_PRIVATE_KEY,
@@ -248,49 +257,102 @@ class ApiViewTransactionTestCase(TransactionTestCase):
             check_time=False,
         )
         self.force_report_computed_task = message.concents.ForceReportComputedTask(
-            report_computed_task=report_computed_task
+            report_computed_task=self.report_computed_task
         )
+
+        self.force_get_task_result = message.concents.ForceGetTaskResult(
+            report_computed_task=self.report_computed_task
+        )
+
+    def test_api_view_should_not_rollback_changes_from_first_transaction_in_second(self):
+        with mock.patch(
+            'core.subtask_helpers._update_timed_out_subtask',
+            side_effect=_update_timed_out_subtask_correct_response_mock
+        ) as _update_timed_out_subtask_correct_response_mock_function, \
+            mock.patch(
+            'core.message_handlers.get_one_or_none',
+            side_effect=_create_client_and_raise_http400_error_mock
+        ) as _create_client_and_raise_http400_error_mock_function:
+
+            self.client.post(
+                reverse('core:send'),
+                data=dump(
+                    self.force_get_task_result,
+                    PROVIDER_PRIVATE_KEY,
+                    CONCENT_PUBLIC_KEY
+                ),
+                content_type='application/octet-stream',
+            )
+        _update_timed_out_subtask_correct_response_mock_function.assert_called()
+        _create_client_and_raise_http400_error_mock_function.assert_called()
+
+        self.assertEqual(Client.objects.count(), 1)
 
     def test_api_view_should_rollback_changes_on_500_error(self):
 
+        store_subtask(
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
+            provider_public_key=hex_to_bytes_convert(self.report_computed_task.task_to_compute.provider_public_key),
+            requestor_public_key=hex_to_bytes_convert(self.report_computed_task.task_to_compute.requestor_public_key),
+            state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
+            next_deadline=(get_current_utc_timestamp() - 10),
+            task_to_compute=self.task_to_compute,
+            report_computed_task=self.report_computed_task,
+            force_get_task_result=self.force_get_task_result,
+        )
+        self.assertEqual(Client.objects.count(), 2)
+
         with mock.patch(
-            'core.subtask_helpers._update_timed_out_subtask',
-            side_effect=_update_timed_out_subtask_500_mock
-        ) as _update_timed_out_subtask_mock_function:
+            'core.subtask_helpers.verify_file_status',
+            side_effect=_create_client_and_raise_http500_error_mock
+        ) as _create_client_and_raise_http500_error_mock_function:
             try:
                 self.client.post(
                     reverse('core:send'),
                     data=dump(
-                        self.force_report_computed_task,
+                        self.force_get_task_result,
                         PROVIDER_PRIVATE_KEY,
                         CONCENT_PUBLIC_KEY
                     ),
-                    content_type                        = 'application/octet-stream',
+                    content_type='application/octet-stream',
                 )
             except TypeError:
                 pass
 
-        _update_timed_out_subtask_mock_function.assert_called()
-        self.assertEqual(Client.objects.count(), 0)
+        _create_client_and_raise_http500_error_mock_function.assert_called()
+        self.assertEqual(Client.objects.count(), 2)
 
     def test_api_view_should_rollback_changes_on_400_error(self):
 
+        store_subtask(
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
+            provider_public_key=hex_to_bytes_convert(self.report_computed_task.task_to_compute.provider_public_key),
+            requestor_public_key=hex_to_bytes_convert(self.report_computed_task.task_to_compute.requestor_public_key),
+            state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
+            next_deadline=(get_current_utc_timestamp() - 10),
+            task_to_compute=self.task_to_compute,
+            report_computed_task= self.report_computed_task,
+            force_get_task_result=self.force_get_task_result,
+        )
+        self.assertEqual(Client.objects.count(), 2)
         with mock.patch(
-            'core.subtask_helpers._update_timed_out_subtask',
-            side_effect=_update_timed_out_subtask_400_mock
-        ) as _update_timed_out_subtask_mock_function:
+            'core.subtask_helpers.verify_file_status',
+            side_effect=_create_client_and_raise_http400_error_mock
+        ) as _create_client_and_raise_error_mock_function:
             self.client.post(
                 reverse('core:send'),
                 data=dump(
-                    self.force_report_computed_task,
+                    self.force_get_task_result,
                     PROVIDER_PRIVATE_KEY,
                     CONCENT_PUBLIC_KEY
                 ),
                 content_type='application/octet-stream',
             )
 
-        _update_timed_out_subtask_mock_function.assert_called()
-        self.assertEqual(Client.objects.count(), 0)
+        _create_client_and_raise_error_mock_function.assert_called()
+        self.assertEqual(Client.objects.count(), 2)
 
     def test_api_view_should_not_rollback_changes_on_correct_response(self):
         with mock.patch(

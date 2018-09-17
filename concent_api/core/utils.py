@@ -91,6 +91,17 @@ def calculate_additional_verification_call_time(
     )
 
 
+def calculate_concent_verification_time(task_to_compute: message.TaskToCompute) -> int:
+    """ This function calculates a value referenced in documentation as CONCENT VERIFICATION TIME. """
+    assert isinstance(task_to_compute, message.TaskToCompute)
+
+    return int(
+        (task_to_compute.compute_task_def['deadline'] - task_to_compute.timestamp) *
+        settings.ADDITIONAL_VERIFICATION_TIME_MULTIPLIER /
+        settings.BLENDER_THREADS
+    )
+
+
 def hex_to_bytes_convert(client_public_key: str) -> bytes:
     if not isinstance(client_public_key, str):
         raise Http400(

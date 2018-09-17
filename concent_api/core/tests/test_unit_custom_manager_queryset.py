@@ -6,6 +6,7 @@ import pytest
 from golem_messages import constants
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 from common.helpers import get_current_utc_timestamp
+from common.helpers import parse_datetime_to_timestamp
 from core.message_handlers import store_subtask
 from core.models import Subtask
 from core.utils import calculate_maximum_download_time
@@ -151,11 +152,13 @@ class TestSubtaskWithTimingColumnsManagerQuerySet():
                 Subtask.objects_with_timing_columns.
                 get(subtask_id=self.report_computed_task.task_to_compute.subtask_id).download_deadline
             ).is_equal_to(
-                Subtask.objects_with_timing_columns.
-                get(subtask_id=self.report_computed_task.task_to_compute.subtask_id).
-                computation_deadline.timestamp() +
-                Subtask.objects_with_timing_columns.
-                get(subtask_id=self.report_computed_task.task_to_compute.subtask_id).subtask_verification_time,
+                parse_datetime_to_timestamp(
+                    Subtask.objects_with_timing_columns.get(
+                        subtask_id=self.report_computed_task.task_to_compute.subtask_id
+                    ).computation_deadline
+                ) + Subtask.objects_with_timing_columns.get(
+                    subtask_id=self.report_computed_task.task_to_compute.subtask_id
+                ).subtask_verification_time,
             )
 
     @pytest.mark.django_db
@@ -165,9 +168,11 @@ class TestSubtaskWithTimingColumnsManagerQuerySet():
                 Subtask.objects_with_timing_columns.
                 get(subtask_id=self.report_computed_task.task_to_compute.subtask_id).download_deadline
             ).is_equal_to(
-                Subtask.objects_with_timing_columns.
-                get(subtask_id=self.report_computed_task.task_to_compute.subtask_id).
-                computation_deadline.timestamp() +
-                Subtask.objects_with_timing_columns.
-                get(subtask_id=self.report_computed_task.task_to_compute.subtask_id).subtask_verification_time,
+                parse_datetime_to_timestamp(
+                    Subtask.objects_with_timing_columns.get(
+                        subtask_id=self.report_computed_task.task_to_compute.subtask_id
+                    ).computation_deadline
+                ) + Subtask.objects_with_timing_columns.get(
+                    subtask_id=self.report_computed_task.task_to_compute.subtask_id
+                ).subtask_verification_time,
             )

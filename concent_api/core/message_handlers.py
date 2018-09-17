@@ -6,7 +6,6 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 import copy
-import datetime
 
 from django.conf import settings
 from django.core.mail import mail_admins
@@ -29,6 +28,7 @@ from common.exceptions import ConcentInSoftShutdownMode
 from common.exceptions import ConcentValidationError
 from common.helpers import deserialize_message
 from common.helpers import get_current_utc_timestamp
+from common.helpers import parse_datetime_to_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.helpers import sign_message
 from common.validations import validate_secure_hash_algorithm
@@ -1117,7 +1117,7 @@ def handle_messages_from_database(client_public_key: bytes) -> Union[message.Mes
         ).order_by('id').last()
 
         response_to_client = message.concents.ForcePaymentCommitted(
-            payment_ts              = datetime.datetime.timestamp(payment_message.payment_ts),
+            payment_ts              = parse_datetime_to_timestamp(payment_message.payment_ts),
             task_owner_key          = payment_message.task_owner_key.tobytes(),
             provider_eth_account    = payment_message.provider_eth_account,
             amount_paid             = payment_message.amount_paid,

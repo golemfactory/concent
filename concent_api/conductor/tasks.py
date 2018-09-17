@@ -10,6 +10,7 @@ from core.validation import validate_frames
 from common.constants import ErrorCode
 from common.decorators import log_task_errors
 from common.decorators import provides_concent_feature
+from common.helpers import parse_datetime_to_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.logging import log_error_message
 from common.logging import log_string_message
@@ -157,7 +158,7 @@ def upload_acknowledged(
         result_package_hash=result_package_hash,
         output_format=verification_request.blender_subtask_definition.output_format,
         scene_file=verification_request.blender_subtask_definition.scene_file,
-        verification_deadline=int(verification_request.verification_deadline.timestamp()),
+        verification_deadline=parse_datetime_to_timestamp(verification_request.verification_deadline),
         frames=frames,
         blender_crop_script=verification_request.blender_subtask_definition.blender_crop_script,
     )

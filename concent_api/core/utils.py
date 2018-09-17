@@ -11,6 +11,7 @@ from golem_messages.utils import decode_hex
 from core.exceptions import Http400
 from core.exceptions import SceneFilePathError
 from common.constants import ErrorCode
+from common.helpers import parse_timestamp_to_utc_datetime
 from .constants import VALID_SCENE_FILE_PREFIXES
 from .constants import GOLEM_PUBLIC_KEY_LENGTH
 from .constants import GOLEM_PUBLIC_KEY_HEX_LENGTH
@@ -56,10 +57,10 @@ def calculate_subtask_verification_time(report_computed_task: message.ReportComp
             size=report_computed_task.size,
             rate=settings.MINIMUM_UPLOAD_RATE
         )
-        ttc_dt = datetime.datetime.utcfromtimestamp(
+        ttc_dt = parse_timestamp_to_utc_datetime(
             report_computed_task.task_to_compute.timestamp,
         )
-        subtask_dt = datetime.datetime.utcfromtimestamp(
+        subtask_dt = parse_timestamp_to_utc_datetime(
             report_computed_task.task_to_compute.compute_task_def['deadline'],
         )
         subtask_timeout = subtask_dt - ttc_dt

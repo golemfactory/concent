@@ -16,6 +16,7 @@ from mock import patch
 
 from golem_messages.message import Ping
 
+from common.helpers import parse_datetime_to_timestamp
 from common.helpers import sign_message
 from common.testing_helpers import generate_ecc_key_pair
 from middleman.constants import MessageTrackerItem
@@ -46,7 +47,7 @@ from middleman_protocol.tests.utils import prepare_mocked_writer
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 (SIGNING_SERVICE_PRIVATE_KEY, SIGNING_SERVICE_PUBLIC_KEY) = generate_ecc_key_pair()
 FROZEN_DATE_AND_TIME = "2012-01-14 12:00:01"
-FROZEN_TIMESTAMP = datetime.datetime.strptime(FROZEN_DATE_AND_TIME, "%Y-%m-%d %H:%M:%S").timestamp()
+FROZEN_TIMESTAMP = parse_datetime_to_timestamp(datetime.datetime.strptime(FROZEN_DATE_AND_TIME, "%Y-%m-%d %H:%M:%S"))
 
 
 async def get_item(queue):

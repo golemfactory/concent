@@ -8,6 +8,13 @@ from freezegun import freeze_time
 from golem_messages import load
 from golem_messages import message
 
+from common.constants import ErrorCode
+from common.helpers import get_current_utc_timestamp
+from common.helpers import get_storage_result_file_path
+from common.helpers import get_storage_source_file_path
+from common.helpers import parse_datetime_to_timestamp
+from common.helpers import parse_timestamp_to_utc_datetime
+from common.testing_helpers import generate_ecc_key_pair
 from conductor.models import BlenderSubtaskDefinition
 from core.message_handlers import store_subtask
 from core.models import PendingResponse
@@ -17,12 +24,6 @@ from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
 from core.transfer_operations import create_file_transfer_token_for_verification_use_case
 from core.utils import extract_name_from_scene_file_path
-from common.constants import ErrorCode
-from common.helpers import get_current_utc_timestamp
-from common.helpers import get_storage_result_file_path
-from common.helpers import get_storage_source_file_path
-from common.helpers import parse_timestamp_to_utc_datetime
-from common.testing_helpers import generate_ecc_key_pair
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
@@ -416,7 +417,11 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 report_computed_task=self.report_computed_task,
             )
 
-        with freeze_time(parse_timestamp_to_utc_datetime(subtask.next_deadline.timestamp() + 1)):
+        with freeze_time(
+            parse_timestamp_to_utc_datetime(
+                parse_datetime_to_timestamp(subtask.next_deadline) + 1
+            )
+        ):
             serialized_subtask_results_verify = self._get_serialized_subtask_results_verify(
                 subtask_results_verify=self._get_deserialized_subtask_results_verify(
                     subtask_results_rejected=subtask_results_rejected

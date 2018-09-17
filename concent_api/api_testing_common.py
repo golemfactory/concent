@@ -26,6 +26,7 @@ from golem_messages.shortcuts import dump
 from golem_messages.shortcuts import load
 from golem_messages.utils import encode_hex
 
+from common.helpers import parse_timestamp_to_utc_datetime
 from common.helpers import sign_message
 from common.testing_helpers import generate_ecc_key_pair
 from core.exceptions import UnexpectedResponse
@@ -242,7 +243,7 @@ def try_to_decode_golem_message(private_key: bytes, public_key: bytes, content: 
 
 
 def timestamp_to_isoformat(timestamp: int) -> str:
-    return datetime.datetime.fromtimestamp(timestamp).isoformat(' ')
+    return parse_timestamp_to_utc_datetime(timestamp).isoformat(' ')
 
 
 def create_client_auth_message(client_priv_key: bytes, client_public_key: bytes, concent_public_key: bytes) -> bytes:

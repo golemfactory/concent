@@ -14,7 +14,6 @@ from numpy import ndarray
 from django.conf import settings
 from django.shortcuts import reverse
 from django.test import TestCase
-from django.utils import timezone
 from freezegun import freeze_time
 
 from golem_messages import dump
@@ -43,6 +42,7 @@ from golem_messages.utils import encode_hex
 
 
 from common.helpers import get_current_utc_timestamp
+from common.helpers import parse_datetime_to_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.helpers import sign_message
 from common.testing_helpers import generate_ecc_key_pair
@@ -56,15 +56,15 @@ from core.utils import calculate_additional_verification_call_time
 
 
 def get_timestamp_string() -> str:
-    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return parse_timestamp_to_utc_datetime(get_current_utc_timestamp()).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def parse_iso_date_to_timestamp(date_string: str) -> int:
-    return int(dateutil.parser.parse(date_string).timestamp())
+    return parse_datetime_to_timestamp(dateutil.parser.parse(date_string))
 
 
 def add_time_offset_to_date(base_time: str, offset: int) -> str:
-    return datetime.datetime.fromtimestamp(parse_iso_date_to_timestamp(base_time) + offset).strftime(
+    return parse_timestamp_to_utc_datetime(parse_iso_date_to_timestamp(base_time) + offset).strftime(
         '%Y-%m-%d %H:%M:%S'
     )
 
@@ -397,7 +397,7 @@ class ConcentIntegrationTestCase(TestCase):
 
         subtask_deadline = None
         if subtask.state_enum in Subtask.ACTIVE_STATES:
-            subtask_deadline = subtask.next_deadline.timestamp()
+            subtask_deadline = parse_datetime_to_timestamp(subtask.next_deadline)
         self.assertEqual(subtask_deadline, next_deadline)
 
         self._test_subtask_nested_messages(subtask, expected_nested_messages)
@@ -827,7 +827,7 @@ class ConcentIntegrationTestCase(TestCase):
         task_id,
     ):  # pylint: disable=no-self-use
         with freeze_time(timestamp or get_timestamp_string()):
-            message_timestamp = datetime.datetime.now(timezone.utc)
+            message_timestamp = get_current_utc_timestamp()
             golem_message = StoredMessage(
                 type        = message_type,
                 timestamp   = message_timestamp,
@@ -946,7 +946,15 @@ class ConcentIntegrationTestCase(TestCase):
 
     @staticmethod
     def _create_datetime_from_string(date_time_str):
-        return datetime.datetime.strptime(date_time_str, "%Y-%m-%d %H:%M:%S")
+        """ Creates a datetime object from iso date format string. """
+        assert date_time_str
+        return parse_timestamp_to_utc_datetime(
+            parse_iso_date_to_timestamp(date_time_str)
+        )
+
+    @staticmethod
+    def _create_timestamp_from_string(date_time_str):
+        return parse_iso_date_to_timestamp(date_time_str)
 
     def _prepare_cv2_mock(self, desired_behaviour='image'):  # pylint: disable=no-self-use
         mocked_cv2 = mock.Mock()

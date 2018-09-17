@@ -1,4 +1,3 @@
-import datetime
 
 from base64 import b64encode
 from logging import getLogger
@@ -7,11 +6,18 @@ from typing import Optional
 import requests
 
 from django.conf import settings
-from django.utils import timezone
 from golem_messages import message
 from golem_messages import shortcuts
 from golem_messages.message.concents import FileTransferToken
 
+from common import logging
+from common.helpers import deserialize_message
+from common.helpers import get_current_utc_timestamp
+from common.helpers import get_storage_result_file_path
+from common.helpers import get_storage_source_file_path
+from common.helpers import parse_timestamp_to_utc_datetime
+from common.helpers import sign_message
+from common.validations import validate_file_transfer_token
 from core import exceptions
 from core.models import Client
 from core.models import PaymentInfo
@@ -21,13 +27,6 @@ from core.utils import calculate_additional_verification_call_time
 from core.utils import calculate_maximum_download_time
 from core.utils import calculate_subtask_verification_time
 from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
-from common import logging
-from common.helpers import deserialize_message
-from common.helpers import get_current_utc_timestamp
-from common.helpers import get_storage_result_file_path
-from common.helpers import get_storage_source_file_path
-from common.helpers import sign_message
-from common.validations import validate_file_transfer_token
 
 logger = getLogger(__name__)
 
@@ -84,13 +83,13 @@ def store_pending_message(
     receive_queue.save()
     if payment_message is not None:
         payment_committed_message = PaymentInfo(
-            payment_ts                  = datetime.datetime.fromtimestamp(payment_message.payment_ts, timezone.utc),
-            task_owner_key              = payment_message.task_owner_key,
-            provider_eth_account        = payment_message.provider_eth_account,
-            amount_paid                 = payment_message.amount_paid,
-            recipient_type              = payment_message.recipient_type.name,  # pylint: disable=no-member
-            amount_pending              = payment_message.amount_pending,
-            pending_response            = receive_queue
+            payment_ts=parse_timestamp_to_utc_datetime(payment_message.payment_ts),
+            task_owner_key=payment_message.task_owner_key,
+            provider_eth_account=payment_message.provider_eth_account,
+            amount_paid=payment_message.amount_paid,
+            recipient_type=payment_message.recipient_type.name,  # pylint: disable=no-member
+            amount_pending=payment_message.amount_pending,
+            pending_response=receive_queue
         )
         payment_committed_message.full_clean()
         payment_committed_message.save()

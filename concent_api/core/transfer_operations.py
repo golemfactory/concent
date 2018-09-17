@@ -17,6 +17,7 @@ from core.models import Client
 from core.models import PaymentInfo
 from core.models import PendingResponse
 from core.models import Subtask
+from core.utils import calculate_additional_verification_call_time
 from core.utils import calculate_maximum_download_time
 from core.utils import calculate_subtask_verification_time
 from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
@@ -150,6 +151,54 @@ def create_file_transfer_token_for_golem_client(
         authorized_client_public_key=authorized_client_public_key,
         operation=operation,
         token_expiration_deadline=calculate_token_expiration_deadline(operation, report_computed_task)
+    )
+
+
+def create_file_transfer_token_for_verification_use_case(
+    subtask_results_verify: message.concents.SubtaskResultsVerify,
+    authorized_client_public_key: bytes,
+) -> FileTransferToken:
+    """
+    Due to a different token expiration deadline, this function (and not  create_file_transfer_token_for_golem_client)
+    should be used in verification UC.
+    """
+    subtask_id = subtask_results_verify.subtask_id
+    task_id = subtask_results_verify.task_id
+    return _create_file_transfer_token(
+        subtask_id=subtask_id,
+        source_package_path=get_storage_source_file_path(
+            subtask_id=subtask_id,
+            task_id=task_id,
+        ),
+        source_size=subtask_results_verify.task_to_compute.size,
+        source_package_hash=subtask_results_verify.task_to_compute.package_hash,
+        result_package_path=get_storage_result_file_path(
+            subtask_id=subtask_id,
+            task_id=task_id,
+        ),
+        result_size=subtask_results_verify.subtask_results_rejected.report_computed_task.size,
+        result_package_hash=subtask_results_verify.subtask_results_rejected.report_computed_task.package_hash,
+        authorized_client_public_key=authorized_client_public_key,
+        operation=FileTransferToken.Operation.upload,
+        token_expiration_deadline=calculate_token_expiration_deadline_for_verification_case(subtask_results_verify)
+    )
+
+
+def calculate_token_expiration_deadline_for_verification_case(
+    subtask_results_verify: message.concents.SubtaskResultsVerify
+) -> int:
+    subtask_results_rejected = subtask_results_verify.subtask_results_rejected
+    return int(
+        subtask_results_rejected.timestamp +
+        calculate_additional_verification_call_time(
+            subtask_results_rejected.timestamp,
+            subtask_results_verify.task_to_compute.compute_task_def['deadline'],
+            subtask_results_verify.task_to_compute.timestamp
+        ) +
+        calculate_maximum_download_time(
+            subtask_results_rejected.report_computed_task.size,
+            settings.MINIMUM_UPLOAD_RATE
+        )
     )
 
 

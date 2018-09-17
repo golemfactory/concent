@@ -45,8 +45,9 @@ from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
 from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
 from core.subtask_helpers import get_one_or_none
-from core.transfer_operations import store_pending_message
 from core.transfer_operations import create_file_transfer_token_for_golem_client
+from core.transfer_operations import create_file_transfer_token_for_verification_use_case
+from core.transfer_operations import store_pending_message
 from core.utils import calculate_additional_verification_call_time
 from core.utils import calculate_maximum_download_time
 from core.utils import calculate_subtask_verification_time
@@ -1399,10 +1400,9 @@ def handle_send_subtask_results_verify(
 
     ack_subtask_results_verify = message.concents.AckSubtaskResultsVerify(
         subtask_results_verify=subtask_results_verify,
-        file_transfer_token=create_file_transfer_token_for_golem_client(
-            report_computed_task,
+        file_transfer_token=create_file_transfer_token_for_verification_use_case(
+            subtask_results_verify,
             provider_public_key,
-            FileTransferToken.Operation.upload,
         ),
     )
     return ack_subtask_results_verify

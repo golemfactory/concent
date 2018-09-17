@@ -15,7 +15,7 @@ from core.models import Subtask
 from core.tests.utils import add_time_offset_to_date
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
-from core.transfer_operations import create_file_transfer_token_for_golem_client
+from core.transfer_operations import create_file_transfer_token_for_verification_use_case
 from core.utils import extract_name_from_scene_file_path
 from common.constants import ErrorCode
 from common.helpers import get_current_utc_timestamp
@@ -361,14 +361,15 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         )
 
         # then
+        subtask_results_verify = self._prepare_subtask_results_verify(serialized_subtask_results_verify)
         self._test_response(
             response,
             status=200,
             key=self.PROVIDER_PRIVATE_KEY,
             message_type=message.concents.AckSubtaskResultsVerify,
             fields={
-                'subtask_results_verify': self._prepare_subtask_results_verify(serialized_subtask_results_verify),
-                'file_transfer_token': self._prepare_file_transfer_token(subtask_results_verify_time_str),
+                'subtask_results_verify': subtask_results_verify,
+                'file_transfer_token': self._prepare_file_transfer_token(subtask_results_verify),
                 'file_transfer_token.files': [
                     message.concents.FileTransferToken.FileInfo(
                         path=f'blender/result/{self.task_id}/{self.task_id}.{self.subtask_id}.zip',
@@ -559,12 +560,12 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         subtask_results_verify.encrypted = False
         return subtask_results_verify
 
-    def _prepare_file_transfer_token(self, subtask_results_verify_time_str):
-        with freeze_time(subtask_results_verify_time_str):
-            file_transfer_token = create_file_transfer_token_for_golem_client(
-                self.report_computed_task,
+    def _prepare_file_transfer_token(self, subtask_results_verify):
+        date_time = parse_timestamp_to_utc_datetime(subtask_results_verify.timestamp)
+        with freeze_time(date_time):
+            file_transfer_token = create_file_transfer_token_for_verification_use_case(
+                subtask_results_verify,
                 self.PROVIDER_PUBLIC_KEY,
-                message.concents.FileTransferToken.Operation.upload,
             )
         return file_transfer_token
 

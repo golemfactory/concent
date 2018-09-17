@@ -163,6 +163,17 @@ class ConcentIntegrationTestCase(TestCase):
             self.REQUESTOR_PRIVATE_KEY if client_private_key is None else client_private_key,
         )
 
+    def _generate_ethereum_signature(
+        self,
+        task_to_compute: TaskToCompute,
+        requestor_ethereum_private_key: Optional[bytes]=None
+    ):
+        assert isinstance(task_to_compute, TaskToCompute)
+        assert requestor_ethereum_private_key is None or isinstance(requestor_ethereum_private_key, bytes)
+        task_to_compute.generate_ethsig(
+            requestor_ethereum_private_key if requestor_ethereum_private_key is not None else self.REQUESTOR_PRIV_ETH_KEY
+        )
+
     def _get_serialized_force_get_task_result(
         self,
         report_computed_task: ReportComputedTask,
@@ -222,6 +233,7 @@ class ConcentIntegrationTestCase(TestCase):
         requestor_id: Optional[bytes] = None,
         requestor_public_key: Optional[bytes] = None,
         requestor_ethereum_public_key: Optional[bytes] = None,
+        requestor_ethereum_private_key: Optional[bytes] = None,
         provider_id: Optional[bytes] = None,
         provider_public_key: Optional[bytes] = None,
         provider_ethereum_public_key: Optional[bytes] = None,
@@ -272,6 +284,10 @@ class ConcentIntegrationTestCase(TestCase):
                 package_hash=package_hash,
                 size=size,
             )
+        self._generate_ethereum_signature(
+            task_to_compute,
+            requestor_ethereum_private_key,
+        )
         task_to_compute = self._sign_message(
             task_to_compute,
             signer_private_key,

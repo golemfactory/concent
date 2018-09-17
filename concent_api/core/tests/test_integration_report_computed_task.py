@@ -1,16 +1,18 @@
 from base64 import b64encode
 
-from django.test                    import override_settings
-from django.urls                    import reverse
-from freezegun                      import freeze_time
+from freezegun import freeze_time
+from golem_messages import message
 
-from golem_messages                 import message
-from core.models                    import PendingResponse
-from core.models                    import Subtask
+from django.test import override_settings
+from django.urls import reverse
+
+from common.constants import ErrorCode
+from common.constants import ERROR_IN_GOLEM_MESSAGE
+from common.testing_helpers import generate_ecc_key_pair
+from core.models import PendingResponse
+from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
-from common.constants                import ErrorCode
-from common.testing_helpers          import generate_ecc_key_pair
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
@@ -1621,12 +1623,12 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             timestamp           = "2017-12-01 10:00:00",
             compute_task_def    = compute_task_def,
         )
-        del task_to_compute.provider_public_key
 
         report_computed_task = self._get_deserialized_report_computed_task(
             timestamp = "2017-12-01 10:59:00",
             task_to_compute = task_to_compute,
         )
+        del report_computed_task.task_to_compute.provider_public_key
 
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
             timestamp = "2017-12-01 10:59:00",
@@ -1645,7 +1647,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
         self._test_400_response(
             response_1,
-            error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE,
+            error_message=ERROR_IN_GOLEM_MESSAGE,
         )
         self._assert_stored_message_counter_not_increased()
 

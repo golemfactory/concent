@@ -96,6 +96,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     timestamp                       = "2018-02-05 9:00:00",
                     deadline                        = "2018-02-05 9:00:10",
                     requestor_ethereum_public_key   = self._get_requestor_ethereum_hex_public_key_different(),
+                    requestor_ethereum_private_key  = self.DIFFERENT_REQUESTOR_PRIV_ETH_KEY,
                     subtask_id=self._get_uuid('2'),
                 )
             )
@@ -495,59 +496,6 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self._test_400_response(response)
-        self._assert_stored_message_counter_not_increased()
-
-    def test_provider_send_force_payment_with_empty_requestor_ethereum_public_key_concent_should_refuse(self):
-        """
-        Expected message exchange:
-        Provider  -> Concent:    ForcePayment
-        Concent   -> Provider:   ServiceRefused
-        """
-        subtask_results_accepted_list = [
-            self._get_deserialized_subtask_results_accepted(
-                timestamp       = "2018-02-05 10:00:15",
-                payment_ts      = "2018-02-05 12:00:00",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp                       = "2018-02-05 10:00:00",
-                    deadline                        = "2018-02-05 10:00:10",
-                    task_id                         = self._get_uuid('1'),
-                    price                           = 15000,
-                )
-            ),
-            self._get_deserialized_subtask_results_accepted(
-                timestamp       = "2018-02-05 9:00:15",
-                payment_ts      = "2018-02-05 11:00:00",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp                       = "2018-02-05 9:00:00",
-                    deadline                        = "2018-02-05 9:00:10",
-                    task_id                         = self._get_uuid('2'),
-                    requestor_ethereum_public_key   = '',
-                    price                           = 15000,
-                )
-            )
-        ]
-        serialized_force_payment = self._get_serialized_force_payment(
-            timestamp                     = "2018-02-05 12:00:20",
-            subtask_results_accepted_list = subtask_results_accepted_list
-        )
-
-        with freeze_time("2018-02-05 12:00:20"):
-            response = self.client.post(
-                reverse('core:send'),
-                data                                = serialized_force_payment,
-                content_type                        = 'application/octet-stream',
-            )
-
-        self._test_response(
-            response,
-            status       = 200,
-            key          = self.PROVIDER_PRIVATE_KEY,
-            message_type = message.concents.ServiceRefused,
-            fields       = {
-                'reason':    message.concents.ServiceRefused.REASON.InvalidRequest,
-                'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
-            }
-        )
         self._assert_stored_message_counter_not_increased()
 
     def test_provider_send_force_payment_with_same_subtasks_id_concent_should_refuse(self):

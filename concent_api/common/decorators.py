@@ -21,6 +21,7 @@ from golem_messages.exceptions      import MessageTooOldError
 from golem_messages.exceptions      import TimestampError
 
 from common.constants import ErrorCode
+from common.constants import ERROR_IN_GOLEM_MESSAGE
 from common.exceptions import ConcentBaseException
 from common.exceptions import ConcentFeatureIsNotAvailable
 from common.exceptions import ConcentInSoftShutdownMode
@@ -94,8 +95,8 @@ def require_golem_auth_message(view: Callable) -> Callable:
                 log_string_message(logger, 'Error:', exception.__class__.__name__)
                 return JsonResponse({'error': f'{exception}'}, status = 400)
             except MessageError as exception:
-                log_string_message(logger, 'Error in Golem Message.', exception.__class__.__name__)
-                return JsonResponse({'error': join_messages('Error in Golem Message.', str(exception))}, status = 400)
+                log_string_message(logger, ERROR_IN_GOLEM_MESSAGE, exception.__class__.__name__)
+                return JsonResponse({'error': join_messages(ERROR_IN_GOLEM_MESSAGE, str(exception))}, status = 400)
         else:
             log_string_message(logger, 'error: Concent supports only application/octet-stream.')
             return JsonResponse({'error': "Concent supports only application/octet-stream."}, status = 415)
@@ -151,8 +152,8 @@ def require_golem_message(view: Callable) -> Callable:
                 log_string_message(logger, 'Error:', exception.__class__.__name__)
                 return JsonResponse({'error': f'{exception}'}, status = 400)
             except MessageError as exception:
-                log_string_message(logger, 'Error in Golem Message.', exception.__class__.__name__)
-                return JsonResponse({'error': join_messages('Error in Golem Message.', str(exception))}, status = 400)
+                log_string_message(logger, ERROR_IN_GOLEM_MESSAGE, exception.__class__.__name__)
+                return JsonResponse({'error': join_messages(ERROR_IN_GOLEM_MESSAGE, str(exception))}, status = 400)
         else:
             log_string_message(logger, 'error: Concent supports only application/octet-stream.')
             return JsonResponse({'error': "Concent supports only application/octet-stream."}, status = 415)

@@ -11,6 +11,7 @@ from golem_messages import message
 
 from common.helpers import get_current_utc_timestamp
 from common.helpers import upload_file_to_storage_cluster
+from common.testing_helpers import generate_priv_and_pub_eth_account_key
 from api_testing_common import api_request
 from api_testing_common import assert_condition
 from api_testing_common import count_fails
@@ -30,6 +31,9 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
 CALCULATED_VERIFICATION_TIME = 25  # seconds
 
+(DIFFERENT_REQUESTOR_ETHEREUM_PRIVATE_KEY, DIFFERENT_REQUESTOR_ETHEREUM_PUBLIC_KEY) = generate_priv_and_pub_eth_account_key()
+(DIFFERENT_PROVIDER_ETHEREUM_PRIVATE_KEY, DIFFERENT_PROVIDER_ETHEREUM_PUBLIC_KEY) = generate_priv_and_pub_eth_account_key()
+
 
 #  TODO NEGATIVE TEST CASES
 
@@ -44,6 +48,7 @@ def get_subtask_results_verify(
     task_to_compute_size: int,
     task_to_compute_package_hash: str,
     requestor_ethereum_public_key: Optional[bytes]=None,
+    requestor_ethereum_private_key: Optional[bytes]=None,
     provider_ethereum_public_key: Optional[bytes]=None,
     price: int=1,
     script_src: Optional[str]=None,
@@ -56,6 +61,7 @@ def get_subtask_results_verify(
         size=task_to_compute_size,
         package_hash=task_to_compute_package_hash,
         requestor_ethereum_public_key=requestor_ethereum_public_key,
+        requestor_ethereum_private_key=requestor_ethereum_private_key,
         provider_ethereum_public_key=provider_ethereum_public_key,
         script_src=script_src,
     )
@@ -363,8 +369,9 @@ def test_case_5_test_requestor_status_account_negative(
             report_computed_task_package_hash=result_file_check_sum_1,
             task_to_compute_size=source_file_size_2,
             task_to_compute_package_hash=source_file_check_sum_2,
-            requestor_ethereum_public_key=b'33' * 64,
-            provider_ethereum_public_key=b'32' * 64,
+            requestor_ethereum_public_key=DIFFERENT_REQUESTOR_ETHEREUM_PUBLIC_KEY,
+            requestor_ethereum_private_key=DIFFERENT_REQUESTOR_ETHEREUM_PRIVATE_KEY,
+            provider_ethereum_public_key=DIFFERENT_PROVIDER_ETHEREUM_PUBLIC_KEY,
             price=0
         ),
         headers = {

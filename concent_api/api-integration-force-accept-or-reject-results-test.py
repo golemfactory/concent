@@ -7,10 +7,10 @@ from freezegun import freeze_time
 from typing import Optional
 
 from golem_messages import message
-from golem_messages.utils import encode_hex
 
 from common.helpers import get_current_utc_timestamp
 from common.helpers import sign_message
+from common.testing_helpers import generate_priv_and_pub_eth_account_key
 
 from api_testing_common import api_request
 from api_testing_common import count_fails
@@ -32,6 +32,9 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
 
 REPORT_COMPUTED_TASK_SIZE = 10
+
+(DIFFERENT_REQUESTOR_ETHEREUM_PRIVATE_KEY, DIFFERENT_REQUESTOR_ETHEREUM_PUBLIC_KEY) = generate_priv_and_pub_eth_account_key()
+(DIFFERENT_PROVIDER_ETHEREUM_PRIVATE_KEY, DIFFERENT_PROVIDER_ETHEREUM_PUBLIC_KEY) = generate_priv_and_pub_eth_account_key()
 
 
 def force_subtask_results(
@@ -369,8 +372,9 @@ def test_case_2b_not_enough_funds(
                         task_id=task_id,
                         subtask_id=subtask_id,
                         deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
-                        requestor_ethereum_public_key=encode_hex(b'0' * GOLEM_PUBLIC_KEY_LENGTH),
-                        provider_ethereum_public_key=encode_hex(b'1' * GOLEM_PUBLIC_KEY_LENGTH),
+                        requestor_ethereum_public_key=DIFFERENT_REQUESTOR_ETHEREUM_PUBLIC_KEY,
+                        requestor_ethereum_private_key=DIFFERENT_REQUESTOR_ETHEREUM_PRIVATE_KEY,
+                        provider_ethereum_public_key=DIFFERENT_PROVIDER_ETHEREUM_PUBLIC_KEY,
                         price=0,
                     )
                 )
@@ -463,7 +467,6 @@ def test_case_2a_send_duplicated_force_subtask_results(
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
-        from core.constants import GOLEM_PUBLIC_KEY_LENGTH
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file = sys.stderr)

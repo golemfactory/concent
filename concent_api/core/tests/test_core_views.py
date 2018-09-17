@@ -17,6 +17,7 @@ from golem_messages.shortcuts import dump
 from golem_messages.shortcuts import load
 
 from common.constants import ErrorCode
+from common.constants import ERROR_IN_GOLEM_MESSAGE
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.testing_helpers import generate_ecc_key_pair
@@ -101,24 +102,24 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
     def test_send_should_return_http_200_if_message_timeout(self):
         assert StoredMessage.objects.count() == 0
 
-        task_to_compute = self.task_to_compute
-        task_to_compute.compute_task_def['deadline'] = self.message_timestamp - 1   # pylint: disable=no-member
-        task_to_compute.sig = None
-        task_to_compute = self._sign_message(task_to_compute)
+        task_to_compute = self._get_deserialized_task_to_compute(
+            deadline=self.message_timestamp - 1
+        )
         report_computed_task = self._get_deserialized_report_computed_task(
-            task_to_compute = task_to_compute
+            task_to_compute=task_to_compute
         )
         correct_golem_data = self._get_deserialized_force_report_computed_task(
-            report_computed_task = report_computed_task)
+            report_computed_task=report_computed_task
+        )
 
         response = self.client.post(
             reverse('core:send'),
-            data = dump(
+            data=dump(
                 correct_golem_data,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY
             ),
-            content_type                        = 'application/octet-stream',
+            content_type='application/octet-stream',
         )
 
         self.assertEqual(response.status_code, 200)
@@ -276,7 +277,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 requestor_public_key=self._get_requestor_hex_public_key(),
             )
 
-        task_to_compute.sign_message(self.REQUESTOR_PRIVATE_KEY)
+        task_to_compute = self._sign_message(task_to_compute, self.REQUESTOR_PRIVATE_KEY)
 
         report_computed_task = message.ReportComputedTask(
             task_to_compute=task_to_compute
@@ -480,7 +481,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
             self._test_400_response(
                 response,
-                error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE
+                error_message=ERROR_IN_GOLEM_MESSAGE
             )
             self._assert_stored_message_counter_not_increased()
             self._assert_client_count_is_equal(0)
@@ -503,7 +504,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
             self._test_400_response(
                 response,
-                error_code=ErrorCode.MESSAGE_VALUE_WRONG_LENGTH
+                error_message=ERROR_IN_GOLEM_MESSAGE,
             )
             self._assert_stored_message_counter_not_increased()
             self._assert_client_count_is_equal(0)

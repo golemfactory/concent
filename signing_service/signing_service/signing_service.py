@@ -6,6 +6,7 @@ import socket
 from contextlib import closing
 from time import sleep
 from types import FrameType
+from typing import Iterator
 from typing import Optional
 
 from ethereum.transactions import InvalidTransaction
@@ -38,7 +39,7 @@ from middleman_protocol.stream import unescape_stream
 
 from signing_service.constants import RECEIVE_AUTHENTICATION_CHALLENGE_TIMEOUT
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_PORT
-from signing_service.constants import SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY  # pylint: disable=no-name-in-module
+from signing_service.constants import SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY
 from signing_service.constants import SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME
 from signing_service.constants import SIGNING_SERVICE_RECOVERABLE_ERRORS
 from signing_service.exceptions import SigningServiceUnexpectedMessageError
@@ -154,14 +155,21 @@ class SigningService:
         logger.info(f'Connecting to {self.host}:{self.port}.')
         tcp_socket.connect((self.host, self.port))
         logger.info(f'Connection established.')
+        # Frame generator must be created here and passed to _authenticate() and _handle_connection, because upon its
+        # destruction it closes the socket.
+        receive_frame_generator = unescape_stream(connection=tcp_socket)
 
         # Reset delay on successful connection and set flag that connection is established.
         self.current_reconnect_delay = None
         if self.enable_authentication:  # TODO: Remove after https://github.com/golemfactory/concent/issues/630 is implemented.
-            self._authenticate(tcp_socket)
-        self._handle_connection(tcp_socket)
+            self._authenticate(receive_frame_generator, tcp_socket)
+        self._handle_connection(receive_frame_generator, tcp_socket)
 
-    def _authenticate(self, tcp_socket: socket.socket) -> None:
+    def _authenticate(
+        self,
+        receive_frame_generator: Iterator[Optional[bytes]],
+        tcp_socket: socket.socket
+    ) -> None:
         """ Handles authentication challenge. """
 
         # Set timeout on socket, after which, if AuthenticationChallengeFrame is not received,
@@ -170,7 +178,6 @@ class SigningService:
 
         # After establishing a TCP connection start listening for the AuthenticationChallengeFrame.
         try:
-            receive_frame_generator = unescape_stream(connection=tcp_socket)
             raw_message_received = next(receive_frame_generator)
             authentication_challenge_frame = AbstractFrame.deserialize(
                 raw_message_received,
@@ -215,10 +222,12 @@ class SigningService:
         # Set socket back to blocking mode.
         tcp_socket.setblocking(True)
 
-    def _handle_connection(self, tcp_socket: socket.socket) -> None:
+    def _handle_connection(
+        self,
+        receive_frame_generator: Iterator[Optional[bytes]],
+        tcp_socket: socket.socket
+    ) -> None:
         """ Inner loop that handles data exchange over socket. """
-        receive_frame_generator = unescape_stream(connection=tcp_socket)
-
         for raw_message_received in receive_frame_generator:
             try:
                 middleman_message = AbstractFrame.deserialize(

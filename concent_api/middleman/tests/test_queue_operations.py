@@ -14,16 +14,19 @@ from mock import create_autospec
 from mock import Mock
 from mock import patch
 
+from golem_messages.cryptography import ecdsa_sign
 from golem_messages.message import Ping
 
 from common.helpers import parse_datetime_to_timestamp
 from common.helpers import sign_message
 from common.testing_helpers import generate_ecc_key_pair
+from middleman.constants import AUTHENTICATION_CHALLENGE_SIZE
 from middleman.constants import MessageTrackerItem
 from middleman.constants import RequestQueueItem
 from middleman.constants import ResponseQueueItem
 from middleman.queue_operations import create_error_frame
 from middleman.queue_operations import discard_entries_for_lost_messages
+from middleman.queue_operations import is_authenticated
 from middleman.queue_operations import request_consumer
 from middleman.queue_operations import request_producer
 from middleman.queue_operations import response_consumer
@@ -36,6 +39,9 @@ from middleman_protocol.exceptions import BrokenEscapingInFrameMiddlemanProtocol
 from middleman_protocol.exceptions import FrameInvalidMiddlemanProtocolError
 from middleman_protocol.exceptions import PayloadTypeInvalidMiddlemanProtocolError
 from middleman_protocol.exceptions import SignatureInvalidMiddlemanProtocolError
+from middleman_protocol.message import AbstractFrame
+from middleman_protocol.message import AuthenticationChallengeFrame
+from middleman_protocol.message import AuthenticationResponseFrame
 from middleman_protocol.message import ErrorFrame
 from middleman_protocol.message import GolemMessageFrame
 from middleman_protocol.registry import create_middleman_protocol_message
@@ -46,6 +52,7 @@ from middleman_protocol.tests.utils import prepare_mocked_writer
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 (SIGNING_SERVICE_PRIVATE_KEY, SIGNING_SERVICE_PUBLIC_KEY) = generate_ecc_key_pair()
+(WRONG_SIGNING_SERVICE_PRIVATE_KEY, WRONG_SIGNING_SERVICE_PUBLIC_KEY) = generate_ecc_key_pair()
 FROZEN_DATE_AND_TIME = "2012-01-14 12:00:01"
 FROZEN_TIMESTAMP = parse_datetime_to_timestamp(datetime.datetime.strptime(FROZEN_DATE_AND_TIME, "%Y-%m-%d %H:%M:%S"))
 
@@ -175,7 +182,7 @@ class TestRequestConsumer:
                 consumer_task = event_loop.create_task(
                     request_consumer(
                         self.queue,
-                        {},
+                        QueuePool({}),
                         self.message_tracker,
                         self.mocked_writer
                     )
@@ -313,10 +320,12 @@ class TestResponseProducer:
             (self.ss_request_id_3, MessageTrackerItem(self.different_concent_request_id, self.connection_id_3, self.golem_message, FROZEN_TIMESTAMP)),
             (self.ss_request_id_4, MessageTrackerItem(self.different_concent_request_id, self.connection_id_4, self.golem_message, FROZEN_TIMESTAMP)),
         ])
-        self.response_queue_pool = {
-            self.connection_id_1: Queue(loop=event_loop),
-            self.connection_id_4: Queue(loop=event_loop),
-        }
+        self.response_queue_pool = QueuePool(
+            {
+                self.connection_id_1: Queue(loop=event_loop),
+                self.connection_id_4: Queue(loop=event_loop),
+            }
+        )
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -497,3 +506,106 @@ class TestResponseConsumer:
 
             mocked_writer.write.assert_called_once_with(expected_data)
             mocked_writer.drain.mock.assert_called_once_with()
+
+
+class TestIsAuthenticated:
+    @pytest.fixture(autouse=True)
+    def setUp(self):
+        self.mocked_writer = prepare_mocked_writer()
+        self.request_id = 7
+        self.wrong_request_id = 8
+        self.mocked_challenge = b'f' * AUTHENTICATION_CHALLENGE_SIZE
+
+    @pytest.mark.asyncio
+    async def test_that_if_received_frame_has_wrong_request_id_then_function_returns_false(self):
+        with override_settings(
+            SIGNING_SERVICE_PRIVATE_KEY=SIGNING_SERVICE_PRIVATE_KEY,
+            SIGNING_SERVICE_PUBLIC_KEY=SIGNING_SERVICE_PUBLIC_KEY,
+            CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+        ):
+            with patch("middleman.queue_operations.RequestIDGenerator.generate_request_id", return_value=self.request_id):
+                frame_with_wrong_request_id = AuthenticationResponseFrame(
+                    payload=ecdsa_sign(
+                        WRONG_SIGNING_SERVICE_PRIVATE_KEY,
+                        self.mocked_challenge,
+                    ),
+                    request_id=self.wrong_request_id,
+                )
+                mocked_reader = self._prepare_mocked_reader(frame_with_wrong_request_id)
+
+                authentication_successful = await is_authenticated(mocked_reader, self.mocked_writer)
+
+                self.mocked_writer.write.assert_called_once()
+                assert_that(authentication_successful).is_false()
+
+    @pytest.mark.asyncio
+    async def test_that_if_received_frame_is_not_authentication_response_frame_then_function_returns_false(self):
+        with override_settings(
+            SIGNING_SERVICE_PRIVATE_KEY=SIGNING_SERVICE_PRIVATE_KEY,
+            SIGNING_SERVICE_PUBLIC_KEY=SIGNING_SERVICE_PUBLIC_KEY,
+            CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+        ):
+            with patch("middleman.queue_operations.RequestIDGenerator.generate_request_id", return_value=self.request_id):
+                wrong_frame = AuthenticationChallengeFrame(b"some_bytes", self.request_id)
+                mocked_reader = self._prepare_mocked_reader(wrong_frame)
+
+                authentication_successful = await is_authenticated(mocked_reader, self.mocked_writer)
+
+                self.mocked_writer.write.assert_called_once()
+                assert_that(authentication_successful).is_false()
+
+    @pytest.mark.asyncio
+    async def test_that_if_received_authentication_response_frame_has_invalid_signature_then_function_returns_false(self):
+        with override_settings(
+            SIGNING_SERVICE_PRIVATE_KEY=SIGNING_SERVICE_PRIVATE_KEY,
+            SIGNING_SERVICE_PUBLIC_KEY=SIGNING_SERVICE_PUBLIC_KEY,
+            CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+        ):
+            with patch("middleman.queue_operations.RequestIDGenerator.generate_request_id", return_value=self.request_id):
+                with patch("middleman.queue_operations.create_random_challenge", return_value=self.mocked_challenge):
+                    authentication_response_frame = AuthenticationResponseFrame(
+                        payload=ecdsa_sign(
+                            WRONG_SIGNING_SERVICE_PRIVATE_KEY,
+                            self.mocked_challenge,
+                        ),
+                        request_id=self.request_id,
+                    )
+                    mocked_reader = self._prepare_mocked_reader(authentication_response_frame)
+
+                    authentication_successful = await is_authenticated(mocked_reader, self.mocked_writer)
+
+                    self.mocked_writer.write.assert_called_once()
+                    assert_that(authentication_successful).is_false()
+
+    @pytest.mark.asyncio
+    async def test_that_if_authentication_response_frame_has_valid_signature_then_function_returns_true(self):
+        with override_settings(
+            SIGNING_SERVICE_PRIVATE_KEY=SIGNING_SERVICE_PRIVATE_KEY,
+            SIGNING_SERVICE_PUBLIC_KEY=SIGNING_SERVICE_PUBLIC_KEY,
+            CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+        ):
+            with patch("middleman.queue_operations.RequestIDGenerator.generate_request_id", return_value=self.request_id):
+                with patch("middleman.queue_operations.create_random_challenge", return_value=self.mocked_challenge):
+                    authentication_response_frame = AuthenticationResponseFrame(
+                        payload=ecdsa_sign(
+                            SIGNING_SERVICE_PRIVATE_KEY,
+                            self.mocked_challenge,
+                        ),
+                        request_id=self.request_id,
+                    )
+                    mocked_reader = self._prepare_mocked_reader(authentication_response_frame)
+
+                    authentication_successful = await is_authenticated(mocked_reader, self.mocked_writer)
+
+                    self.mocked_writer.write.assert_called_once()
+                    assert_that(authentication_successful).is_true()
+
+    @staticmethod
+    def _prepare_mocked_reader(frame: AbstractFrame, private_key: bytes = SIGNING_SERVICE_PRIVATE_KEY):
+        serialized = frame.serialize(private_key)
+        data_to_send = append_frame_separator(escape_encode_raw_message(serialized))
+        return prepare_mocked_reader(data_to_send)

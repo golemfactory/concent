@@ -5,11 +5,15 @@ from asyncio import StreamWriter
 from collections import OrderedDict
 from logging import getLogger
 from logging import Logger
-from typing import Dict
+from random import choices
 
 from django.conf import settings
 
-from common.helpers import get_current_utc_timestamp
+from golem_messages.cryptography import ecdsa_verify
+from golem_messages.exceptions import InvalidSignature
+
+from common.helpers import get_current_utc_timestamp, RequestIDGenerator
+from middleman.constants import AUTHENTICATION_CHALLENGE_SIZE
 from middleman.constants import CONNECTION_COUNTER_LIMIT
 from middleman.constants import MessageTrackerItem
 from middleman.constants import RequestQueueItem
@@ -22,6 +26,8 @@ from middleman_protocol.exceptions import FrameInvalidMiddlemanProtocolError
 from middleman_protocol.exceptions import MiddlemanProtocolError
 from middleman_protocol.exceptions import PayloadTypeInvalidMiddlemanProtocolError
 from middleman_protocol.exceptions import SignatureInvalidMiddlemanProtocolError
+from middleman_protocol.message import AuthenticationChallengeFrame
+from middleman_protocol.message import AuthenticationResponseFrame
 from middleman_protocol.message import ErrorFrame
 from middleman_protocol.message import GolemMessageFrame
 from middleman_protocol.registry import create_middleman_protocol_message
@@ -100,7 +106,7 @@ async def request_consumer(
 
 
 async def response_producer(
-    response_queue_pool: Dict[int, Queue],
+    response_queue_pool: QueuePool,
     signing_service_reader: StreamReader,
     message_tracker: OrderedDict,
 ) -> None:
@@ -112,7 +118,6 @@ async def response_producer(
             break
         except ERRORS_THAT_CAUSE_CURRENT_ITERATION_ENDS as exception:
             logger.info(f"Received invalid message: error code={map_exception_to_error_code(exception)}")
-            print(exception)
             continue
 
         logger.info(
@@ -160,6 +165,28 @@ async def response_consumer(
             f"Message (request ID={frame.request_id}) for Concent has been sent for connection ID={connection_id}"
         )
         response_queue.task_done()
+
+
+async def is_authenticated(reader: StreamReader, writer: StreamWriter) -> bool:
+    challenge = create_random_challenge()
+
+    request_id = RequestIDGenerator.generate_request_id() % CONNECTION_COUNTER_LIMIT
+    frame = AuthenticationChallengeFrame(challenge, request_id)
+    await send_over_stream_async(frame, writer, settings.CONCENT_PRIVATE_KEY)
+    logger.info(f"Challenge has been sent for request ID: {request_id}.")
+    received_frame = await handle_frame_receive_async(reader, settings.SIGNING_SERVICE_PUBLIC_KEY)
+    logger.info(f"Response has been received for request ID: {request_id}.")
+    if not isinstance(received_frame, AuthenticationResponseFrame) or received_frame.request_id != request_id:
+        return False
+    try:
+        ecdsa_verify(settings.SIGNING_SERVICE_PUBLIC_KEY, received_frame.payload, challenge)
+    except InvalidSignature:
+        return False
+    return True
+
+
+def create_random_challenge() -> bytes:
+    return "".join(choices("abcdef0123456789", k=AUTHENTICATION_CHALLENGE_SIZE)).encode()
 
 
 def discard_entries_for_lost_messages(

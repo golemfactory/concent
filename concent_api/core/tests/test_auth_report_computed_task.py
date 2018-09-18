@@ -1,19 +1,18 @@
-from base64                 import b64encode
-import dateutil.parser
+from base64 import b64encode
 
-from django.test            import override_settings
-from django.urls            import reverse
-from freezegun              import freeze_time
-from golem_messages         import dump
-from golem_messages         import load
-from golem_messages         import message
+from django.test import override_settings
+from django.urls import reverse
+from freezegun import freeze_time
+from golem_messages import dump
+from golem_messages import load
+from golem_messages import message
 
+from common.constants import ErrorCode
+from common.testing_helpers import generate_ecc_key_pair
+from core.models import PendingResponse
+from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
-from core.models            import PendingResponse
-from core.models            import Subtask
-from common.constants        import ErrorCode
-from common.testing_helpers  import generate_ecc_key_pair
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
@@ -29,7 +28,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
     def setUp(self):
         super().setUp()
         self.compute_task_def = self._get_deserialized_compute_task_def(
-            deadline=int(dateutil.parser.parse("2017-12-01 11:00:00").timestamp())
+            deadline=self._create_timestamp_from_string("2017-12-01 11:00:00")
         )
 
         with freeze_time("2017-12-01 10:00:00"):
@@ -984,9 +983,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         message_from_concent_to_requestor = load(response.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
-        self.assertIsInstance(message_from_concent_to_requestor,                                message.concents.VerdictReportComputedTask)
-        self.assertGreaterEqual(message_from_concent_to_requestor.timestamp,                    int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))
-        self.assertLessEqual(   message_from_concent_to_requestor.timestamp,                    int(dateutil.parser.parse("2017-12-01 11:00:15").timestamp()))
+        self.assertIsInstance(message_from_concent_to_requestor, message.concents.VerdictReportComputedTask)
+        self.assertGreaterEqual(message_from_concent_to_requestor.timestamp, self._create_timestamp_from_string("2017-12-01 11:00:05"))
+        self.assertLessEqual(   message_from_concent_to_requestor.timestamp, self._create_timestamp_from_string("2017-12-01 11:00:15"))
         self.assertEqual(message_from_concent_to_requestor.ack_report_computed_task.subtask_id, message_from_concent_to_provider.ack_report_computed_task.subtask_id)
 
         self._test_subtask_state(
@@ -1128,8 +1127,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response.status_code,        200)
 
         message_from_concent_to_provider = load(response.content, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time=False)
-        self.assertIsInstance(message_from_concent_to_provider,                                     message.concents.ForceReportComputedTaskResponse)
-        self.assertEqual(message_from_concent_to_provider.timestamp,                                int(dateutil.parser.parse("2017-12-01 11:00:15").timestamp()))
+        self.assertIsInstance(message_from_concent_to_provider, message.concents.ForceReportComputedTaskResponse)
+        self.assertEqual(message_from_concent_to_provider.timestamp, self._create_timestamp_from_string("2017-12-01 11:00:15"))
         self.assertEqual(message_from_concent_to_provider.ack_report_computed_task.report_computed_task.task_to_compute, self.deserialized_task_to_compute)
 
         self._test_subtask_state(
@@ -1187,9 +1186,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             check_time = False
         )
 
-        self.assertIsInstance(message_from_concent_to_requestor,                                message.concents.VerdictReportComputedTask)
-        self.assertGreaterEqual(message_from_concent_to_requestor.timestamp,                    int(dateutil.parser.parse("2017-12-01 11:00:05").timestamp()))
-        self.assertLessEqual(message_from_concent_to_requestor.timestamp,                       int(dateutil.parser.parse("2017-12-01 11:00:15").timestamp()))
+        self.assertIsInstance(message_from_concent_to_requestor, message.concents.VerdictReportComputedTask)
+        self.assertGreaterEqual(message_from_concent_to_requestor.timestamp, self._create_timestamp_from_string("2017-12-01 11:00:05"))
+        self.assertLessEqual(message_from_concent_to_requestor.timestamp, self._create_timestamp_from_string("2017-12-01 11:00:15"))
         self.assertEqual(message_from_concent_to_requestor.ack_report_computed_task.subtask_id, message_from_concent_to_provider.ack_report_computed_task.subtask_id)
 
         self._test_subtask_state(

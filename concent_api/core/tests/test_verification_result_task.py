@@ -12,6 +12,7 @@ from golem_messages.factories.tasks import ReportComputedTaskFactory
 
 from common.constants import ErrorCode
 from common.helpers import get_current_utc_timestamp
+from common.helpers import parse_datetime_to_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.testing_helpers import generate_ecc_key_pair
 from core.constants import VerificationResult
@@ -150,7 +151,11 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
         self.assertTrue(PendingResponse.objects.filter(client=self.subtask.requestor).exists())
 
     def test_that_verification_result_after_deadline_should_add_pending_messages_subtask_results_settled_and_change_subtask_state_to_accepted(self):
-        with freeze_time(parse_timestamp_to_utc_datetime(self.subtask.next_deadline.timestamp() + 1)):
+        with freeze_time(
+            parse_timestamp_to_utc_datetime(
+                parse_datetime_to_timestamp(self.subtask.next_deadline) + 1
+            )
+        ):
             verification_result(  # pylint: disable=no-value-for-parameter
                 self.subtask.subtask_id,
                 VerificationResult.MATCH.name,

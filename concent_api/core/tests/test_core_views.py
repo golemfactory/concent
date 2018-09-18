@@ -1,13 +1,9 @@
-import datetime
-
 from freezegun import freeze_time
-import dateutil.parser
 from django.conf import settings
 from django.http import HttpResponse
 from django.http import JsonResponse
 from django.test import override_settings
 from django.urls import reverse
-from django.utils import timezone
 
 from golem_messages import message
 from golem_messages import settings as golem_settings
@@ -270,7 +266,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         compute_task_def = ComputeTaskDefFactory()
         compute_task_def['deadline'] = self.message_timestamp - 9000
 
-        with freeze_time(datetime.datetime.fromtimestamp(self.message_timestamp - 10000)):
+        with freeze_time(parse_timestamp_to_utc_datetime(self.message_timestamp - 10000)):
             task_to_compute = tasks.TaskToComputeFactory(
                 compute_task_def=self.compute_task_def,
                 provider_public_key=self._get_provider_hex_public_key(),
@@ -354,8 +350,8 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             ping = message.Ping()
 
         with freeze_time("2017-11-17 10:00:00"):
-            timestamp = dateutil.parser.parse("2017-11-17 09:40:00")
-            assert datetime.datetime.now() - timestamp > golem_settings.MSG_TTL
+            timestamp = self._create_datetime_from_string("2017-11-17 09:40:00")
+            assert parse_timestamp_to_utc_datetime(get_current_utc_timestamp()) - timestamp > golem_settings.MSG_TTL
             response = self.client.post(
                 reverse('core:send'),
                 data = dump(
@@ -373,8 +369,8 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             ping = message.Ping()
 
         with freeze_time("2017-11-17 10:00:00"):
-            timestamp = dateutil.parser.parse("2017-11-17 10:10:00")
-            assert timestamp - datetime.datetime.now() > golem_settings.FUTURE_TIME_TOLERANCE
+            timestamp = self._create_datetime_from_string("2017-11-17 10:10:00")
+            assert timestamp - parse_timestamp_to_utc_datetime(get_current_utc_timestamp()) > golem_settings.FUTURE_TIME_TOLERANCE
             response = self.client.post(
                 reverse('core:send'),
                 data = dump(
@@ -574,7 +570,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def test_receive_should_accept_valid_message(self):
-        message_timestamp = datetime.datetime.now(timezone.utc)
+        message_timestamp = parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
         new_message = StoredMessage(
             type=self.force_golem_data.report_computed_task.header.type_,
             timestamp=message_timestamp,
@@ -671,13 +667,13 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             )
 
     def test_receive_should_return_first_messages_in_order_they_were_added_to_queue_if_the_receive_queue_contains_only_force_report_and_its_past_deadline(self):
-        message_timestamp = datetime.datetime.now(timezone.utc)
-        new_message       = StoredMessage(
-            type        = self.force_golem_data.report_computed_task.header.type_,
-            timestamp   = message_timestamp,
-            data        = self.force_golem_data.report_computed_task.serialize(),
-            task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
-            subtask_id  = self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+        message_timestamp = parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
+        new_message = StoredMessage(
+            type=self.force_golem_data.report_computed_task.header.type_,
+            timestamp=message_timestamp,
+            data=self.force_golem_data.report_computed_task.serialize(),
+            task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
         )
         new_message.full_clean()
         new_message.save()
@@ -769,7 +765,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
 
         self.assertIsInstance(decoded_message,                                                  message.concents.ForceReportComputedTask)
         self.assertEqual(response.status_code,                                                  200)
-        self.assertEqual(decoded_message.timestamp,                                             int(dateutil.parser.parse("2017-11-17 12:00:00").timestamp()))
+        self.assertEqual(decoded_message.timestamp,                                             self._create_timestamp_from_string("2017-11-17 12:00:00"))
         self.assertEqual(decoded_message.report_computed_task.task_to_compute.compute_task_def, self.task_to_compute.compute_task_def)  # pylint: disable=no-member
         self.assertEqual(decoded_message.report_computed_task.task_to_compute.sig,              self.task_to_compute.sig)
 
@@ -789,7 +785,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
 
         self.assertIsInstance(decoded_message,                                                      message.concents.VerdictReportComputedTask)
         self.assertEqual(response.status_code,                                                      200)
-        self.assertEqual(decoded_message.timestamp,                                                 int(dateutil.parser.parse("2017-11-17 12:00:00").timestamp()))
+        self.assertEqual(decoded_message.timestamp,                                                 self._create_timestamp_from_string("2017-11-17 12:00:00"))
         self.assertEqual(decoded_message.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def, self.task_to_compute.compute_task_def)  # pylint: disable=no-member
         self.assertEqual(decoded_message.ack_report_computed_task.report_computed_task.task_to_compute.sig,              self.task_to_compute.sig)
 
@@ -819,7 +815,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
                     size=self.size
                 )
             )
-        message_timestamp = datetime.datetime.now(timezone.utc)
+        message_timestamp = parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
         new_message       = StoredMessage(
             type        = self.force_golem_data.report_computed_task.header.type_,
             timestamp   = message_timestamp,

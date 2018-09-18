@@ -26,10 +26,11 @@ from django.db.models       import Value
 from constance              import config
 from golem_messages         import message
 
-from common.exceptions      import ConcentInSoftShutdownMode
-from common.fields          import Base64Field
-from common.fields          import ChoiceEnum
-from common.helpers         import deserialize_message
+from common.exceptions import ConcentInSoftShutdownMode
+from common.fields import Base64Field
+from common.fields import ChoiceEnum
+from common.helpers import deserialize_message
+from common.helpers import parse_datetime_to_timestamp
 
 from .constants             import TASK_OWNER_KEY_LENGTH
 from .constants             import ETHEREUM_ADDRESS_LENGTH
@@ -489,7 +490,7 @@ class Subtask(Model):
         else:
             deserialized_task_to_compute = deserialize_message(self.task_to_compute.data.tobytes())  # pylint: disable=no-member
 
-        if not self.computation_deadline.timestamp() == deserialized_task_to_compute.compute_task_def['deadline']:
+        if not parse_datetime_to_timestamp(self.computation_deadline) == deserialized_task_to_compute.compute_task_def['deadline']:
             raise ValidationError({
                 'computation_deadline': "TaskToCompute deadline mismatch"
             })

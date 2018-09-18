@@ -11,6 +11,7 @@ from common.decorators import log_task_errors
 from common.decorators import provides_concent_feature
 from common.helpers import deserialize_message
 from common.helpers import get_current_utc_timestamp
+from common.helpers import parse_datetime_to_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from conductor import tasks
 from core.constants import VerificationResult
@@ -46,7 +47,7 @@ def upload_finished(subtask_id: str) -> None:
     if subtask.state_enum == Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER:
 
         # If subtask is past the deadline, processes the timeout.
-        if subtask.next_deadline.timestamp() < get_current_utc_timestamp():
+        if parse_datetime_to_timestamp(subtask.next_deadline) < get_current_utc_timestamp():
             # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
             payments_service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
                 requestor_eth_address=report_computed_task.task_to_compute.requestor_ethereum_address,
@@ -75,7 +76,7 @@ def upload_finished(subtask_id: str) -> None:
         update_subtask_state(
             subtask=subtask,
             state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name,  # pylint: disable=no-member
-            next_deadline=int(subtask.next_deadline.timestamp()) + calculate_subtask_verification_time(report_computed_task)
+            next_deadline=parse_datetime_to_timestamp(subtask.next_deadline) + calculate_subtask_verification_time(report_computed_task)
         )
 
         # Add upload_acknowledged task to the work queue.

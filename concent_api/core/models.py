@@ -512,7 +512,6 @@ class PendingResponse(Model):
         ForceReportComputedTask         = 'ForceReportComputedTask'
         ForceReportComputedTaskResponse = 'ForceReportComputedTaskResponse'
         VerdictReportComputedTask       = 'VerdictReportComputedTask'
-        ForceGetTaskResultRejected      = 'ForceGetTaskResultRejected'
         ForceGetTaskResultFailed        = 'ForceGetTaskResultFailed'
         ForceGetTaskResultUpload        = 'ForceGetTaskResultUpload'
         ForceGetTaskResultDownload      = 'ForceGetTaskResultDownload'

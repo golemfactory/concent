@@ -6,3 +6,4 @@ pytest
 pytest-django
 pytest-xdist
 raven
+-e ../middleman_protocol

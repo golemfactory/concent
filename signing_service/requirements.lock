@@ -7,9 +7,10 @@ bitcoin==1.1.42
 cbor2==3.0.4
 cffi==1.11.5
 coincurve==8.0.2
+construct==2.9.45
 ethereum==1.6.1
 execnet==1.5.0
--e git://github.com/golemfactory/golem-messages.git@58da6420ab5e25735eef25cd8b2ecfd30b062e0f#egg=Golem_Messages
+--editable git://github.com/golemfactory/golem-messages.git@58da6420ab5e25735eef25cd8b2ecfd30b062e0f#egg=Golem_Messages
 mock==2.0.0
 more-itertools==4.3.0
 mypy==0.620
@@ -36,3 +37,4 @@ secp256k1==0.13.2
 semantic-version==2.6.0
 six==1.11.0
 typed-ast==1.1.0
+--editable ../middleman_protocol

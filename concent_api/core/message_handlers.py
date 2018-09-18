@@ -1019,16 +1019,6 @@ def handle_messages_from_database(client_public_key: bytes) -> Union[message.Mes
         mark_message_as_delivered_and_log(pending_response, response_to_client)
         return response_to_client
 
-    elif pending_response.response_type == PendingResponse.ResponseType.ForceGetTaskResultRejected.name:  # pylint: disable=no-member
-        report_computed_task = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
-        response_to_client = message.concents.ForceGetTaskResultRejected(
-            force_get_task_result = message.concents.ForceGetTaskResult(
-                report_computed_task = report_computed_task,
-            )
-        )
-        mark_message_as_delivered_and_log(pending_response, response_to_client)
-        return response_to_client
-
     elif pending_response.response_type == PendingResponse.ResponseType.ForceGetTaskResultFailed.name:  # pylint: disable=no-member
         task_to_compute = deserialize_message(pending_response.subtask.task_to_compute.data.tobytes())
         response_to_client = message.concents.ForceGetTaskResultFailed(

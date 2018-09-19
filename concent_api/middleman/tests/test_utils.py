@@ -84,7 +84,7 @@ class TestQueuePoolOperations:
 
         event_loop.run_until_complete(inner())
 
-    def test_that_popping_mapping_with_non_empty_queue_logs_untretrived_queue_items(self, event_loop):
+    def test_that_popping_mapping_with_non_empty_queue_logs_unretrieved_queue_items(self, event_loop):
         async def inner():
             with freeze_time("2018-09-01 11:48:04"):
                 retrived_item = self.queue_pool.pop(self.second_index)
@@ -92,6 +92,18 @@ class TestQueuePoolOperations:
 
                 assert_that(retrived_item.empty()).is_true()
                 assert_that(self.queue_pool.keys()).does_not_contain(self.second_index)
+                assert_that(self.logger_mock.info.call_count).is_equal_to(1)
+
+        event_loop.run_until_complete(inner())
+
+    def test_that_using_popitem_on_mapping_with_non_empty_queue_logs_unretrieved_queue_items(self, event_loop):
+        async def inner():
+            with freeze_time("2018-09-01 11:48:04"):
+                index, queue = self.queue_pool.popitem()
+                await asyncio.sleep(0.0001)
+
+                assert_that(queue.empty()).is_true()
+                assert_that(self.queue_pool.keys()).does_not_contain(index)
                 assert_that(self.logger_mock.info.call_count).is_equal_to(1)
 
         event_loop.run_until_complete(inner())

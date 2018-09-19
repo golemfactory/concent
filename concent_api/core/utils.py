@@ -74,23 +74,6 @@ def calculate_subtask_verification_time(report_computed_task: message.ReportComp
         return int(subtask_verification_time(report_computed_task).total_seconds())
 
 
-def calculate_additional_verification_call_time(
-    subtask_results_rejected_timestamp: int,
-    task_to_compute_deadline: int,
-    task_to_compute_timestamp: int,
-) -> int:
-    """
-    Calculates additional verification deadline using:
-    * SubtaskResultRejected timestamp,
-    * TaskToCompute deadline,
-    * TaskToCompute timestamp.
-    """
-    return subtask_results_rejected_timestamp + int(
-        (task_to_compute_deadline - task_to_compute_timestamp) *
-        (settings.ADDITIONAL_VERIFICATION_TIME_MULTIPLIER / settings.BLENDER_THREADS)
-    )
-
-
 def calculate_concent_verification_time(task_to_compute: message.TaskToCompute) -> int:
     """ This function calculates a value referenced in documentation as CONCENT VERIFICATION TIME. """
     assert isinstance(task_to_compute, message.TaskToCompute)

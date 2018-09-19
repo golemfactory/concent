@@ -53,6 +53,7 @@ from core.models import Client
 from core.models import PendingResponse
 from core.models import StoredMessage
 from core.models import Subtask
+from core.utils import calculate_concent_verification_time
 from core.utils import calculate_maximum_download_time
 
 
@@ -1033,6 +1034,20 @@ class ConcentIntegrationTestCase(TestCase):
                 report_computed_task_size,
                 settings.MINIMUM_UPLOAD_RATE,
             )
+        )
+
+    def _get_blender_rendering_deadline_as_timestamp(
+        self,
+        subtask_results_rejected_timestamp: int,
+        report_computed_task_size: int,
+        task_to_compute: TaskToCompute,
+    ) -> int:
+        return (
+            self._get_verification_deadline_as_timestamp(
+                subtask_results_rejected_timestamp,
+                report_computed_task_size,
+            ) + calculate_concent_verification_time(task_to_compute)
+
         )
 
     @staticmethod

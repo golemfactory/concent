@@ -388,9 +388,10 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             scene_file=extract_name_from_scene_file_path(
                 self.report_computed_task.task_to_compute.compute_task_def['extra_data']['scene_file']
             ),
-            verification_deadline=self._get_verification_deadline_as_timestamp(
+            verification_deadline=self._get_blender_rendering_deadline_as_timestamp(
                 parse_iso_date_to_timestamp(self.subtask_result_rejected_time_str),
                 self.report_computed_task.size,
+                self.report_computed_task.task_to_compute,
             ),
             blender_crop_script=self.report_computed_task.task_to_compute.compute_task_def['extra_data']['script_src'],
         )

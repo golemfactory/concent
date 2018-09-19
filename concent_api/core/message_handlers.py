@@ -56,6 +56,7 @@ from core.subtask_helpers import get_one_or_none
 from core.transfer_operations import create_file_transfer_token_for_golem_client
 from core.transfer_operations import create_file_transfer_token_for_verification_use_case
 from core.transfer_operations import store_pending_message
+from core.utils import calculate_concent_verification_time
 from core.utils import calculate_maximum_download_time
 from core.utils import calculate_subtask_verification_time
 from core.validation import is_golem_message_signed_with_key
@@ -1364,10 +1365,12 @@ def handle_send_subtask_results_verify(
                 subtask_results_rejected=subtask_results_rejected,
             )
 
-        send_blender_verification_request(
-            compute_task_def,
-            verification_deadline,
-        )
+    blender_rendering_deadline = verification_deadline + calculate_concent_verification_time(task_to_compute)
+
+    send_blender_verification_request(
+        compute_task_def,
+        blender_rendering_deadline,
+    )
 
     ack_subtask_results_verify = message.concents.AckSubtaskResultsVerify(
         subtask_results_verify=subtask_results_verify,

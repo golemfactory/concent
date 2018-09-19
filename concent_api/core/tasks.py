@@ -22,7 +22,7 @@ from core.models import Subtask
 from core.payments import bankster
 from core.subtask_helpers import update_subtask_state
 from core.transfer_operations import store_pending_message
-from core.utils import calculate_subtask_verification_time
+from core.utils import calculate_concent_verification_time
 from .constants import CELERY_LOCKED_SUBTASK_DELAY
 from .constants import MAXIMUM_VERIFICATION_RESULT_TASK_RETRIES
 from .constants import VERIFICATION_RESULT_SUBTASK_STATE_ACCEPTED_LOG_MESSAGE
@@ -84,7 +84,10 @@ def upload_finished(subtask_id: str) -> None:
         update_subtask_state(
             subtask=subtask,
             state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name,  # pylint: disable=no-member
-            next_deadline=parse_datetime_to_timestamp(subtask.next_deadline) + calculate_subtask_verification_time(report_computed_task)
+            next_deadline=(
+                parse_datetime_to_timestamp(subtask.next_deadline) +
+                calculate_concent_verification_time(report_computed_task.task_to_compute)
+            )
         )
 
         # Add upload_acknowledged task to the work queue.

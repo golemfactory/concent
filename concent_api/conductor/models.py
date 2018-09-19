@@ -53,6 +53,23 @@ class VerificationRequest(Model):
             })
 
 
+class ResultTransferRequest(Model):
+    """
+    Transfer request created during `get-task-results` use case.
+    """
+
+    subtask_id = CharField(max_length=MESSAGE_TASK_ID_MAX_LENGTH, unique=True)
+
+    # Relative path of the .zip file that contains the rendering result received from the provider.
+    result_package_path = TextField(validators=[MaxLengthValidator(MESSAGE_PATH_LENGTH)], unique=True)
+
+    # True when upload_finished task for this subtask has already been sent to the work queue.
+    upload_finished = BooleanField(default=False)
+
+    created_at = DateTimeField(auto_now_add=True)
+    modified_at = DateTimeField(auto_now=True)
+
+
 class BlenderSubtaskDefinition(Model):
     """
     For each VerificationRequest there must be exactly one BlenderSubtaskDefinition in the database.
@@ -90,8 +107,11 @@ class UploadReport(Model):
     # Foreign key to VerificationRequest. Can be NULL if there's no corresponding request.
     verification_request = ForeignKey(VerificationRequest, related_name='upload_reports', blank=True, null=True)
 
+    # Foreign key to ResultTransferRequest. Can be NULL if there's no corresponding request.
+    result_transfer_request = ForeignKey(ResultTransferRequest, related_name='upload_reports', blank=True, null=True)
+
     # Indicates when conductor has been notified about the upload.
-    created_at      = DateTimeField(default=timezone.now)
+    created_at = DateTimeField(default=timezone.now)
 
 
 class Frame(Model):

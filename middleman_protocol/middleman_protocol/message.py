@@ -69,7 +69,7 @@ class AbstractFrame(ABC):
         if isinstance(other, AbstractFrame):
             return (
                 self.payload == other.payload and
-                self.payload_type == other.payload_type and  # type: ignore
+                self.payload_type == other.payload_type and  # type: ignore  # pylint: disable=no-member
                 self.request_id == other.request_id
             )
         return False

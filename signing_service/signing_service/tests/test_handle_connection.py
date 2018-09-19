@@ -49,12 +49,12 @@ class TestSigningServiceHandleConnection(SigningServiceIntegrationTestCase):
         )
         raw_message = middleman_message.serialize(private_key=CONCENT_PRIVATE_KEY)
 
-        def handle_connection_wrapper(signing_service, connection):
+        def handle_connection_wrapper(signing_service, connection, receive_frame_generator):
             with mock.patch(
                 'signing_service.signing_service.SigningService._get_signed_transaction',
                 return_value=self._get_deserialized_signed_transaction(),
             ):
-                signing_service._handle_connection(connection)
+                signing_service._handle_connection(receive_frame_generator, connection)
 
         raw_message_received = self._prepare_and_execute_handle_connection(
             raw_message,
@@ -195,40 +195,36 @@ class TestSigningServiceHandleConnection(SigningServiceIntegrationTestCase):
         assertpy.assert_that(deserialized_message.request_id).is_equal_to(REQUEST_ID_FOR_RESPONSE_FOR_INVALID_FRAME)
 
     def _prepare_and_execute_handle_connection(self, raw_message, handle_connection_wrapper=None):
-        def mocked_generator(connection):  # pylint: disable=unused-argument
+        def mocked_generator():
             yield raw_message
             raise SigningServiceValidationError()
 
         with mock.patch('signing_service.signing_service.SigningService.run'):
-            with mock.patch(
-                'signing_service.signing_service.unescape_stream',
-                side_effect=mocked_generator,
-            ):
-                with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as signing_service_socket:
-                    signing_service_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as client_socket:
-                        client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                        signing_service = SigningService(
-                            self.host,
-                            self.port,
-                            self.initial_reconnect_delay,
-                            CONCENT_PUBLIC_KEY,
-                            SIGNING_SERVICE_PRIVATE_KEY,
-                            TEST_ETHEREUM_PRIVATE_KEY,
-                        )
+            with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as signing_service_socket:
+                signing_service_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as client_socket:
+                    client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                    signing_service = SigningService(
+                        self.host,
+                        self.port,
+                        self.initial_reconnect_delay,
+                        CONCENT_PUBLIC_KEY,
+                        SIGNING_SERVICE_PRIVATE_KEY,
+                        TEST_ETHEREUM_PRIVATE_KEY,
+                    )
 
-                        # For test purposes we reverse roles, so signing service works as server.
-                        signing_service_socket.bind(('127.0.0.1', self.signing_service_port))
-                        signing_service_socket.listen(1)
-                        client_socket.connect(('127.0.0.1', self.signing_service_port))
-                        (connection, _address) = signing_service_socket.accept()
+                    # For test purposes we reverse roles, so signing service works as server.
+                    signing_service_socket.bind(('127.0.0.1', self.signing_service_port))
+                    signing_service_socket.listen(1)
+                    client_socket.connect(('127.0.0.1', self.signing_service_port))
+                    (connection, _address) = signing_service_socket.accept()
 
-                        with pytest.raises(SigningServiceValidationError):
-                            if handle_connection_wrapper is not None:
-                                handle_connection_wrapper(signing_service, connection)
-                            else:
-                                signing_service._handle_connection(connection)
+                    with pytest.raises(SigningServiceValidationError):
+                        if handle_connection_wrapper is not None:
+                            handle_connection_wrapper(signing_service, connection, mocked_generator())
+                        else:
+                            signing_service._handle_connection(mocked_generator(), connection)
 
-                        raw_message_received = next(unescape_stream(connection=client_socket))
+                    raw_message_received = next(unescape_stream(connection=client_socket))
 
         return raw_message_received

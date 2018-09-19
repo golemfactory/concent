@@ -11,7 +11,8 @@ class TestMiddlemanAddressCheck(TestCase):
 
     @override_settings(
         CONCENT_FEATURES=[
-            'middleman'
+            'concent-worker',
+            'concent-api',
         ]
     )
     def test_that_middleman_address_not_set_will_produce_error_when_middleman_is_in_concent_features(self):
@@ -34,7 +35,8 @@ class TestMiddlemanAddressCheck(TestCase):
 
     @override_settings(
         CONCENT_FEATURES=[
-            'middleman'
+            'concent-worker',
+            'concent-api',
         ],
         MIDDLEMAN_ADDRESS=1
     )
@@ -46,7 +48,8 @@ class TestMiddlemanAddressCheck(TestCase):
 
     @override_settings(
         CONCENT_FEATURES=[
-            'middleman'
+             'concent-worker',
+             'concent-api',
         ],
         MIDDLEMAN_ADDRESS='127.0.0.1'
     )

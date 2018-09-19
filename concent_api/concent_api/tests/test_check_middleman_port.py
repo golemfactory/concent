@@ -15,7 +15,8 @@ class MiddlemanPortCheckTestCase(TestCase):
 
     @override_settings(
         CONCENT_FEATURES=[
-            'middleman'
+            'concent-worker',
+            'concent-api',
         ]
     )
     def test_that_middleman_port_not_set_will_produce_error_when_middleman_is_in_concent_features(self):
@@ -38,7 +39,8 @@ class MiddlemanPortCheckTestCase(TestCase):
 
     @override_settings(
         CONCENT_FEATURES=[
-            'middleman'
+            'concent-worker',
+            'concent-api',
         ],
         MIDDLEMAN_PORT='1'
     )
@@ -58,7 +60,8 @@ class TestMiddlemanPortCheck:
     def test_that_checking_middleman_port_setting_in_allowed_range_should_not_produce_error(self, middleman_port_value):  # pylint: disable=no-self-use
         with override_settings(
             CONCENT_FEATURES=[
-                'middleman'
+                 'concent-worker',
+                 'concent-api',
             ],
             MIDDLEMAN_PORT=middleman_port_value
         ):
@@ -75,7 +78,8 @@ class TestMiddlemanPortCheck:
     def test_that_checking_middleman_port_setting_not_in_allowed_range_should_produce_error(self, middleman_port_value):  # pylint: disable=no-self-use
         with override_settings(
             CONCENT_FEATURES=[
-                'middleman'
+                'concent-worker',
+                'concent-api',
             ],
             MIDDLEMAN_PORT=middleman_port_value
         ):

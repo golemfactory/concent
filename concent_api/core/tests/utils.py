@@ -53,7 +53,7 @@ from core.models import Client
 from core.models import PendingResponse
 from core.models import StoredMessage
 from core.models import Subtask
-from core.utils import calculate_additional_verification_call_time
+from core.utils import calculate_maximum_download_time
 
 
 def get_timestamp_string() -> str:
@@ -1012,24 +1012,27 @@ class ConcentIntegrationTestCase(TestCase):
     def _get_verification_deadline_as_datetime(
         self,
         subtask_results_rejected_timestamp: int,
-        task_to_compute: message.tasks.TaskToCompute,
+        report_computed_task_size: int,
     ) -> datetime.datetime:
         return parse_timestamp_to_utc_datetime(
             self._get_verification_deadline_as_timestamp(
                 subtask_results_rejected_timestamp,
-                task_to_compute,
+                report_computed_task_size,
             )
         )
 
     @staticmethod
     def _get_verification_deadline_as_timestamp(
         subtask_results_rejected_timestamp: int,
-        task_to_compute: message.tasks.TaskToCompute,
+        report_computed_task_size: int,
     ) -> int:
-        return calculate_additional_verification_call_time(
-            subtask_results_rejected_timestamp,
-            task_to_compute.compute_task_def['deadline'],
-            task_to_compute.timestamp,
+        return (
+            subtask_results_rejected_timestamp +
+            settings.ADDITIONAL_VERIFICATION_CALL_TIME +
+            calculate_maximum_download_time(
+                report_computed_task_size,
+                settings.MINIMUM_UPLOAD_RATE,
+            )
         )
 
     @staticmethod

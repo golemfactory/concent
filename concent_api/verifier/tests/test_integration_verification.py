@@ -126,7 +126,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             subtask_id=self.subtask_id,
             verification_deadline=self._get_verification_deadline_as_timestamp(
                 current_time,
-                self.report_computed_task.task_to_compute,
+                self.report_computed_task.size,
             ),
             blender_crop_script=self.compute_task_def['extra_data']['script_src'],
         )
@@ -166,7 +166,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             subtask_id=self.subtask_id,
             verification_deadline=self._get_verification_deadline_as_timestamp(
                 current_time,
-                self.report_computed_task.task_to_compute,
+                self.report_computed_task.size,
             ),
             blender_crop_script=self.compute_task_def['extra_data']['script_src'],
         )
@@ -310,7 +310,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             subtask_id=self.subtask_id,
             verification_deadline=self._get_verification_deadline_as_timestamp(
                 current_time,
-                self.report_computed_task.task_to_compute,
+                self.report_computed_task.size,
             ),
             blender_crop_script=self.compute_task_def['extra_data']['script_src'],
         )
@@ -359,7 +359,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             subtask_id=self.subtask_id,
             verification_deadline=self._get_verification_deadline_as_timestamp(
                 current_time,
-                self.report_computed_task.task_to_compute,
+                self.report_computed_task.size,
             ),
             blender_crop_script=self.compute_task_def['extra_data']['script_src'],
         )
@@ -402,7 +402,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             subtask_id=self.subtask_id,
             verification_deadline=self._get_verification_deadline_as_timestamp(
                 current_time,
-                self.report_computed_task.task_to_compute,
+                self.report_computed_task.size,
             ),
             blender_crop_script=self.compute_task_def['extra_data']['script_src'],
         )
@@ -456,7 +456,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             scene_file=self.scene_file,
             verification_deadline=self._get_verification_deadline_as_timestamp(
                 current_time,
-                self.report_computed_task.task_to_compute,
+                self.report_computed_task.size,
             ),
             frames=frames if frames is not None else self.frames,
             blender_crop_script=self.compute_task_def['extra_data']['script_src'],

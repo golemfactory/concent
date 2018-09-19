@@ -40,7 +40,7 @@ class ConductorUploadAcknowledgedTaskTestCase(ConcentIntegrationTestCase):
             result_package_path=self.result_package_path,
             verification_deadline=self._get_verification_deadline_as_datetime(
                 get_current_utc_timestamp(),
-                self.report_computed_task.task_to_compute,
+                self.report_computed_task.size,
             )
         )
         self.verification_request.full_clean()

@@ -51,7 +51,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
             result_package_path=self.result_package_path,
             verification_deadline=self._get_verification_deadline_as_datetime(
                 get_current_utc_timestamp(),
-                self.report_computed_task.task_to_compute,
+                self.report_computed_task.size,
             ),
         )
         verification_request.full_clean()
@@ -121,7 +121,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
             result_package_path='blender/result/bad/bad.bad.zip',
             verification_deadline=self._get_verification_deadline_as_datetime(
                 get_current_utc_timestamp(),
-                self.report_computed_task.task_to_compute,
+                self.report_computed_task.size,
             ),
         )
         verification_request.full_clean()
@@ -328,7 +328,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
             scene_file = self.compute_task_def['extra_data']['scene_file'],
             verification_deadline=self._get_verification_deadline_as_timestamp(
                 get_current_utc_timestamp(),
-                self.report_computed_task.task_to_compute,
+                self.report_computed_task.size,
             ),
             blender_crop_script=self.compute_task_def['extra_data']['script_src'],
         )
@@ -358,7 +358,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
             scene_file = self.compute_task_def['extra_data']['scene_file'],
             verification_deadline=self._get_verification_deadline_as_timestamp(
                 get_current_utc_timestamp(),
-                self.report_computed_task.task_to_compute,
+                self.report_computed_task.size,
             ),
             blender_crop_script=self.compute_task_def['extra_data']['script_src'],
         )
@@ -392,7 +392,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
                 scene_file = self.compute_task_def['extra_data']['scene_file'],
                 verification_deadline=self._get_verification_deadline_as_timestamp(
                     get_current_utc_timestamp(),
-                    self.report_computed_task.task_to_compute,
+                    self.report_computed_task.size,
                 ),
                 blender_crop_script=self.compute_task_def['extra_data']['script_src'],
             )

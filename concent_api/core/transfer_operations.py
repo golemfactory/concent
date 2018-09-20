@@ -31,18 +31,11 @@ from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
 logger = getLogger(__name__)
 
 
-def verify_file_status(client_public_key: bytes) -> None:
+def verify_file_status(subtask: Subtask, client_public_key: bytes) -> None:
     """
     Function to verify existence of a file on cluster storage
     """
-
-    encoded_client_public_key = b64encode(client_public_key)
-    subtasks_list = Subtask.objects.select_for_update().filter(
-        requestor__public_key=encoded_client_public_key,
-        state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER.name,  # pylint: disable=no-member
-    )
-
-    for subtask in subtasks_list:
+    if subtask.state_enum == Subtask.SubtaskState.FORCING_RESULT_TRANSFER and subtask.requestor.public_key_bytes == client_public_key:
         report_computed_task = deserialize_message(subtask.report_computed_task.data.tobytes())
         if request_upload_status(report_computed_task):
             subtask.state = Subtask.SubtaskState.RESULT_UPLOADED.name  # pylint: disable=no-member
@@ -51,10 +44,10 @@ def verify_file_status(client_public_key: bytes) -> None:
             subtask.save()
 
             store_pending_message(
-                response_type       = PendingResponse.ResponseType.ForceGetTaskResultDownload,
-                client_public_key   = subtask.requestor.public_key_bytes,
-                queue               = PendingResponse.Queue.Receive,
-                subtask             = subtask,
+                response_type=PendingResponse.ResponseType.ForceGetTaskResultDownload,
+                client_public_key=subtask.requestor.public_key_bytes,
+                queue=PendingResponse.Queue.Receive,
+                subtask=subtask,
             )
             logging.log_file_status(
                 logger,

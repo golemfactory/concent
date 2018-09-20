@@ -681,7 +681,7 @@ def check_concent_ethereum_public_key(app_configs: None=None, **kwargs: Any) -> 
 
 @register()
 def check_middleman_address(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
-    if 'middleman' in settings.CONCENT_FEATURES:
+    if 'concent-api' in settings.CONCENT_FEATURES and 'concent-worker' in settings.CONCENT_FEATURES:
         if not hasattr(settings, 'MIDDLEMAN_ADDRESS'):
             return [create_error_49_middleman_address_is_not_set()]
         if not isinstance(settings.MIDDLEMAN_ADDRESS, str):
@@ -692,7 +692,7 @@ def check_middleman_address(app_configs: None=None, **kwargs: Any) -> list:  # p
 
 @register()
 def check_middleman_port(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
-    if 'middleman' in settings.CONCENT_FEATURES:
+    if 'concent-api' in settings.CONCENT_FEATURES and 'concent-worker' in settings.CONCENT_FEATURES:
         if not hasattr(settings, 'MIDDLEMAN_PORT'):
             return [create_error_50_middleman_port_is_not_set()]
         if not isinstance(settings.MIDDLEMAN_PORT, int):

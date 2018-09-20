@@ -14,7 +14,7 @@ from common.helpers import parse_datetime_to_timestamp
 from ..exceptions import VerificationRequestAlreadyAcknowledgedError
 
 
-class ConductorTaskTestCase(ConcentIntegrationTestCase):
+class ConductorUploadAcknowledgedTaskTestCase(ConcentIntegrationTestCase):
 
     multi_db = True
 

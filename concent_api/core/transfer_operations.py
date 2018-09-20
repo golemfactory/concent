@@ -33,29 +33,31 @@ logger = getLogger(__name__)
 
 def verify_file_status(subtask: Subtask, client_public_key: bytes) -> None:
     """
-    Function to verify existence of a file on cluster storage
+    Function to verify existence of a file on cluster storage by checking `result_upload_finished` flag on Subtask.
     """
-    if subtask.state_enum == Subtask.SubtaskState.FORCING_RESULT_TRANSFER and subtask.requestor.public_key_bytes == client_public_key:
-        report_computed_task = deserialize_message(subtask.report_computed_task.data.tobytes())
-        if request_upload_status(report_computed_task):
-            subtask.state = Subtask.SubtaskState.RESULT_UPLOADED.name  # pylint: disable=no-member
-            subtask.next_deadline = None
-            subtask.full_clean()
-            subtask.save()
+    if (
+        subtask.state_enum == Subtask.SubtaskState.FORCING_RESULT_TRANSFER and
+        subtask.requestor.public_key_bytes == client_public_key and
+        subtask.result_upload_finished
+    ):
+        subtask.state = Subtask.SubtaskState.RESULT_UPLOADED.name  # pylint: disable=no-member
+        subtask.next_deadline = None
+        subtask.full_clean()
+        subtask.save()
 
-            store_pending_message(
-                response_type=PendingResponse.ResponseType.ForceGetTaskResultDownload,
-                client_public_key=subtask.requestor.public_key_bytes,
-                queue=PendingResponse.Queue.Receive,
-                subtask=subtask,
-            )
-            logging.log_file_status(
-                logger,
-                subtask.task_id,
-                subtask.subtask_id,
-                subtask.requestor.public_key_bytes,
-                subtask.provider.public_key_bytes,
-            )
+        store_pending_message(
+            response_type=PendingResponse.ResponseType.ForceGetTaskResultDownload,
+            client_public_key=subtask.requestor.public_key_bytes,
+            queue=PendingResponse.Queue.Receive,
+            subtask=subtask,
+        )
+        logging.log_file_status(
+            logger,
+            subtask.task_id,
+            subtask.subtask_id,
+            subtask.requestor.public_key_bytes,
+            subtask.provider.public_key_bytes,
+        )
 
 
 def store_pending_message(

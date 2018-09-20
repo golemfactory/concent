@@ -59,3 +59,7 @@ class SCICallbackTransactionSignatureError(SCICallbackError):
 
 class SCICallbackPayloadSignatureError(SCICallbackError):
     pass
+
+
+class SubtaskStatusError(Exception):
+    pass

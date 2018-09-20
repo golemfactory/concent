@@ -8,12 +8,14 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from golem_messages.message.concents import FileTransferToken
 
-from core.tasks import upload_finished
 from common.decorators import provides_concent_feature
 from common.logging import log_request_received
 from common.logging import log_string_message
-from .models import UploadReport
-from .models import VerificationRequest
+from conductor.models import ResultTransferRequest
+from conductor.models import UploadReport
+from conductor.models import VerificationRequest
+from conductor.service import update_upload_report
+from core.tasks import upload_finished
 
 logger = getLogger(__name__)
 
@@ -34,12 +36,12 @@ def report_upload(_request: HttpRequest, file_path: str) -> HttpResponse:
         verification_request = None
 
     # The app creates a new instance of UploadReport in the database.
-    upload_report_obj = UploadReport(
+    upload_report = UploadReport(
         path = file_path,
         verification_request = verification_request,
     )
-    upload_report_obj.full_clean()
-    upload_report_obj.save()
+    upload_report.full_clean()
+    upload_report.save()
 
     # The app gets the VerificationRequest and checks if both source and result packages have reports.
     if (
@@ -63,6 +65,14 @@ def report_upload(_request: HttpRequest, file_path: str) -> HttpResponse:
             f'Subtask ID: {verification_request.subtask_id}.'
             f'Result package path: {verification_request.result_package_path}.'
             f'Source package path: {verification_request.source_package_path}.'
+        )
+
+    # If ResultTransferRequest matching the file exists, report finished upload.
+    result_transfer_request = ResultTransferRequest.objects.filter(result_package_path=file_path).first()
+    if result_transfer_request is not None:
+        update_upload_report(
+            file_path=file_path,
+            result_transfer_request=result_transfer_request,
         )
 
     return HttpResponse()

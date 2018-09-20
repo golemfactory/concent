@@ -2,17 +2,13 @@ import datetime
 from django.conf import settings
 from django.test import override_settings
 from django.test import TestCase
-import mock
 from freezegun import freeze_time
 
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.message.concents import FileTransferToken
 
-from core.tests.utils import ConcentIntegrationTestCase
-from core.exceptions import UnexpectedResponse
 from core.transfer_operations import create_file_transfer_token_for_concent
 from core.transfer_operations import create_file_transfer_token_for_golem_client
-from core.transfer_operations import request_upload_status
 from core.utils import calculate_maximum_download_time
 from common.helpers import get_storage_source_file_path
 from common.helpers import get_storage_result_file_path
@@ -20,71 +16,7 @@ from common.helpers import parse_datetime_to_timestamp
 from common.testing_helpers import generate_ecc_key_pair
 
 
-def mock_send_request_to_cluster_correct_response(_headers, _request_http):
-    mocked_object = mock.Mock()
-    mocked_object.status_code = 200
-    return mocked_object
-
-
-def mock_send_incorrect_request_to_cluster_incorrect_response(_headers, _request_http):
-    mocked_object = mock.Mock()
-    mocked_object.status_code = 404
-    return mocked_object
-
-
-def mock_send_incorrect_request_to_cluster_unexpected_response(_headers, _request_http):
-    mocked_object = mock.Mock()
-    mocked_object.status_code = 500
-    return mocked_object
-
-
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)       = generate_ecc_key_pair()
-
-
-@override_settings(
-    CONCENT_PRIVATE_KEY       = CONCENT_PRIVATE_KEY,
-    CONCENT_PUBLIC_KEY        = CONCENT_PUBLIC_KEY,
-)
-class RequestUploadStatusTest(ConcentIntegrationTestCase):
-    def test_properly_work_of_request_upload_status_function(self):
-
-        subtask_id = self._get_uuid()
-
-        report_computed_task=self._get_deserialized_report_computed_task(
-            subtask_id=subtask_id,
-            task_to_compute=self._get_deserialized_task_to_compute(
-                task_id=self._get_uuid(),
-                subtask_id=subtask_id,
-            )
-        )
-
-        with mock.patch(
-            'core.transfer_operations.send_request_to_storage_cluster',
-            side_effect=mock_send_request_to_cluster_correct_response
-        ) as mock_send_request_to_cluster_correct_response_function:
-            cluster_response = request_upload_status(report_computed_task)
-
-        self.assertEqual(cluster_response, True)
-        mock_send_request_to_cluster_correct_response_function.assert_called()
-
-        with mock.patch(
-            'core.transfer_operations.send_request_to_storage_cluster',
-            side_effect=mock_send_incorrect_request_to_cluster_incorrect_response
-        ) as mock_send_incorrect_request_to_cluster_incorrect_response_function:
-            cluster_response_2 = request_upload_status(
-                report_computed_task)
-
-        self.assertEqual(cluster_response_2, False)
-        mock_send_incorrect_request_to_cluster_incorrect_response_function.assert_called()
-
-        with self.assertRaises(UnexpectedResponse):
-            with mock.patch(
-                'core.transfer_operations.send_request_to_storage_cluster',
-                side_effect=mock_send_incorrect_request_to_cluster_unexpected_response
-            ) as mock_send_incorrect_request_to_cluster_unexpected_response_function:
-                request_upload_status(report_computed_task)
-
-        mock_send_incorrect_request_to_cluster_unexpected_response_function.assert_called()
 
 
 @override_settings(

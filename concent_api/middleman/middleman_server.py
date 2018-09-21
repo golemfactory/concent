@@ -5,7 +5,9 @@ from collections import OrderedDict
 from contextlib import suppress
 from logging import getLogger
 from typing import Iterable
+from typing import List
 from typing import Optional
+from typing import Tuple
 import signal
 
 from middleman.constants import CONNECTION_COUNTER_LIMIT
@@ -14,6 +16,7 @@ from middleman.constants import DEFAULT_INTERNAL_PORT
 from middleman.constants import ERROR_ADDRESS_ALREADY_IN_USE
 from middleman.constants import LOCALHOST_IP
 from middleman.constants import PROCESSING_TIMEOUT
+from middleman.queue_operations import is_authenticated
 from middleman.queue_operations import request_consumer
 from middleman.queue_operations import request_producer
 from middleman.queue_operations import response_consumer
@@ -23,6 +26,9 @@ from middleman_protocol.constants import MAXIMUM_FRAME_LENGTH
 
 logger = getLogger(__name__)
 crash_logger = getLogger('crash')
+
+# TODO: remove together with corresponding flag in signing_service.py when testing on cluster is finished.
+ENABLE_AUTHENTICATION = False
 
 
 class MiddleMan:
@@ -44,6 +50,7 @@ class MiddleMan:
         self._request_queue: asyncio.Queue = asyncio.Queue(loop=self._loop)
         self._response_queue_pool = QueuePool(loop=self._loop)
         self._message_tracker: OrderedDict = OrderedDict()
+        self._ss_connection_candidates: List[Tuple[asyncio.Task, asyncio.StreamWriter]] = []
 
         # Handle shutdown signal.
         self._loop.add_signal_handler(signal.SIGTERM, self._terminate_connections)
@@ -175,9 +182,12 @@ class MiddleMan:
         if self._is_signing_service_connection_active:
             writer.close()
         else:
-            self._is_signing_service_connection_active = True
             tasks: list = []
             try:
+                successful = await self._authenticate_signing_service(reader, writer)
+                if not successful:
+                    writer.close()
+                    return
                 request_consumer_task = self._loop.create_task(
                     request_consumer(
                         self._request_queue,
@@ -230,3 +240,34 @@ class MiddleMan:
                 # Cancelled task raises asyncio.CancelledError that we can suppress:
                 with suppress(asyncio.CancelledError):
                     self._loop.run_until_complete(task)
+
+    async def _authenticate_signing_service(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> bool:
+        if not ENABLE_AUTHENTICATION:
+            return True
+        logger.info("Signing Service candidate has connected, authenticating...")
+        authentication_task = self._loop.create_task(is_authenticated(reader, writer))
+        index = len(self._ss_connection_candidates)
+        self._ss_connection_candidates.append((authentication_task, writer))
+
+        await authentication_task
+        self._ss_connection_candidates.pop(index)
+
+        is_signing_service_authenticated = authentication_task.result()
+        if is_signing_service_authenticated:
+            logger.info("Authentication successful: Signing Service has connected.")
+            self._is_signing_service_connection_active = True
+            self._abort_ongoing_authentication()
+        else:
+            logger.info("Authentication unsuccessful, closing connection with candidate.")
+        return is_signing_service_authenticated
+
+    def _abort_ongoing_authentication(self) -> None:
+        counter = 0
+        length = len(self._ss_connection_candidates)
+        for task, writer in self._ss_connection_candidates:
+            logger.info(f"Canceling task {counter}/{length}...")
+            task.cancel()
+            writer.close()
+            logger.info("Canceled!")
+            counter += 1
+        self._ss_connection_candidates.clear()

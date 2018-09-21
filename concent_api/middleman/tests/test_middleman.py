@@ -17,30 +17,19 @@ from middleman_protocol.stream import append_frame_separator
 from middleman_protocol.stream import escape_encode_raw_message
 from middleman_protocol.stream_async import map_exception_to_error_code
 from middleman_protocol.tests.utils import async_stream_actor_mock
+from middleman_protocol.tests.utils import prepare_mocked_reader
+from middleman_protocol.tests.utils import prepare_mocked_writer
 
 from common.testing_helpers import generate_ecc_key_pair
 from middleman.constants import DEFAULT_EXTERNAL_PORT
 from middleman.constants import DEFAULT_INTERNAL_PORT
 from middleman.constants import ERROR_ADDRESS_ALREADY_IN_USE
 from middleman.constants import LOCALHOST_IP
+from middleman.middleman_server import ENABLE_AUTHENTICATION
 from middleman.middleman_server import MiddleMan
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 (SIGNING_SERVICE_PRIVATE_KEY, SIGNING_SERVICE_PUBLIC_KEY) = generate_ecc_key_pair()
-
-
-class Connections():
-    def __init__(self):
-        self.counter = 0
-
-
-def assert_connection(port, delay, connection_counter, data_to_send, expected_data):
-    fake_client = socket.socket()
-    send_data(fake_client, data_to_send, port, delay)
-    received_data = fake_client.recv(1024)
-    fake_client.close()
-    assert_that(received_data).is_equal_to(expected_data)
-    connection_counter.counter += 1
 
 
 def send_data(fake_client, data_to_send, port, delay):
@@ -175,8 +164,9 @@ class TestMiddleManServer:
 
             error_message = "Connection_error"
 
-            with mock.patch(
-                "middleman.middleman_server.request_consumer",
+            with mock.patch.object(
+                self.middleman,
+                "_authenticate_signing_service",
                 new=async_stream_actor_mock(side_effect=Exception(error_message))
             ):
                 with pytest.raises(SystemExit):
@@ -185,3 +175,89 @@ class TestMiddleManServer:
             fake_client.close()
             self.crash_logger_mock.error.assert_called_once()
             assert_that(self.crash_logger_mock.error.mock_calls[0][1][0]).contains(error_message)
+
+    def test_that_when_signing_service_connection_is_active_subsequent_attempts_will_fail(self, event_loop):
+        self.middleman._is_signing_service_connection_active = True
+        mocked_reader = prepare_mocked_reader(b"some bytes")
+        mocked_writer = prepare_mocked_writer()
+
+        event_loop.run_until_complete(
+            self.middleman._handle_service_connection(mocked_reader, mocked_writer)
+        )
+
+        mocked_writer.close.assert_called_once_with()
+
+    def test_that_when_authentication_is_unsuccessful_then_connection_ends(self, event_loop):
+        if not ENABLE_AUTHENTICATION:
+            return
+        self.middleman._is_signing_service_connection_active = False
+        mocked_reader = prepare_mocked_reader(b"some bytes")
+        mocked_writer = prepare_mocked_writer()
+
+        with mock.patch.object(
+            self.middleman,
+            "_authenticate_signing_service",
+            new=async_stream_actor_mock(return_value=False)
+        ):
+            event_loop.run_until_complete(
+                self.middleman._handle_service_connection(mocked_reader, mocked_writer)
+            )
+
+            mocked_writer.close.assert_called_once_with()
+
+    def test_that_when_authentication_is_successful_connection_lasts_until_its_end(self, event_loop):
+        with override_settings(
+            CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+            SIGNING_SERVICE_PUBLIC_KEY=SIGNING_SERVICE_PUBLIC_KEY,
+        ):
+            self.middleman._is_signing_service_connection_active = False
+            some_bytes = b"some bytes"
+            mocked_reader = prepare_mocked_reader(
+                some_bytes,
+                side_effect=asyncio.IncompleteReadError(some_bytes, 123)
+            )
+            mocked_writer = prepare_mocked_writer()
+
+            with mock.patch.object(
+                self.middleman,
+                "_authenticate_signing_service",
+                new=async_stream_actor_mock(return_value=True)
+            ):
+                event_loop.run_until_complete(
+                    self.middleman._handle_service_connection(mocked_reader, mocked_writer)
+                )
+
+                self.crash_logger_mock.assert_not_called()
+
+    def test_that_when_one_authentication_task_is_successful_remaining_ones_are_cancelled(self, event_loop):
+        with override_settings(
+            CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+            SIGNING_SERVICE_PUBLIC_KEY=SIGNING_SERVICE_PUBLIC_KEY,
+        ):
+            if not ENABLE_AUTHENTICATION:
+                return
+
+            async def mock_coro():
+                await asyncio.sleep(3)
+
+            some_bytes = b"some bytes"
+            mocked_reader = prepare_mocked_reader(some_bytes)
+            mocked_writer = prepare_mocked_writer()
+            mocked_writer2 = prepare_mocked_writer()
+            mock_authentication_task = event_loop.create_task(mock_coro())
+            with mock.patch(
+                "middleman.middleman_server.is_authenticated",
+                new=async_stream_actor_mock(return_value=True)
+            ):
+                self.middleman._ss_connection_candidates.append((mock_authentication_task, mocked_writer2))
+
+                event_loop.run_until_complete(
+                    self.middleman._authenticate_signing_service(mocked_reader, mocked_writer)
+                )
+
+                assert_that(mock_authentication_task.cancelled()).is_true()
+                mocked_writer2.close.assert_called_once_with()
+                assert_that(self.middleman._ss_connection_candidates).is_empty()
+                assert_that(self.middleman._is_signing_service_connection_active).is_true()

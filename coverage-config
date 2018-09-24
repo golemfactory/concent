@@ -1,13 +1,22 @@
 # .coveragerc to control coverage.py
 [run]
 omit=
-    api-integration-*-test.py
-    api-integration-force-payment.py
+    api-integration-*.py
     api_testing_common.py
     manage.py
+    protocol_constants.py
+    signing_service_integration_test_concent_api.py
+    signing_service_integration_test_middleman.py
+    signing_service_testing_common.py
+    command_line_tool/message_handler.py
+    command_line_tool/concent_request.py
+    command_line_tool/pathmagic.py
+    core/payments/backends/mock.py
     */__init__.py
     */admin.py
     */apps.py
+    */setup.py
+    */urls.py
     */wsgi.py
     */management/*
     */migrations/*

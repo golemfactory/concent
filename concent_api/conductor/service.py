@@ -3,12 +3,11 @@ import logging
 from django.db.models import Q
 
 from common.constants import ErrorCode
+from conductor.exceptions import VerificationRequestAlreadyInitiatedError
+from conductor.models import ResultTransferRequest
+from conductor.models import UploadReport
+from conductor.models import VerificationRequest
 from core.tasks import result_upload_finished
-
-from .exceptions import VerificationRequestAlreadyInitiatedError
-from .models import ResultTransferRequest
-from .models import UploadReport
-from .models import VerificationRequest
 
 
 logger = logging.getLogger(__name__)

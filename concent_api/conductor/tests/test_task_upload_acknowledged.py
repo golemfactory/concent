@@ -1,17 +1,19 @@
 import mock
+
 from freezegun import freeze_time
 from django.conf import settings
+
+from common.helpers import get_current_utc_timestamp
+from common.helpers import get_storage_result_file_path
+from common.helpers import get_storage_source_file_path
+from common.helpers import parse_datetime_to_timestamp
+from conductor.exceptions import VerificationRequestAlreadyAcknowledgedError
 from conductor.models import BlenderSubtaskDefinition
 from conductor.models import VerificationRequest
 from conductor.tasks import upload_acknowledged
 from core.message_handlers import store_subtask
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
-from common.helpers import get_current_utc_timestamp
-from common.helpers import get_storage_result_file_path
-from common.helpers import get_storage_source_file_path
-from common.helpers import parse_datetime_to_timestamp
-from ..exceptions import VerificationRequestAlreadyAcknowledgedError
 
 
 class ConductorUploadAcknowledgedTaskTestCase(ConcentIntegrationTestCase):

@@ -2,8 +2,9 @@ import logging
 from typing import List
 
 from celery import shared_task
-from mypy.types import Optional
 from django.db import transaction
+from mypy.types import Optional
+
 
 from common.constants import ErrorCode
 from common.decorators import log_task_errors
@@ -22,7 +23,6 @@ from conductor.service import update_upload_report
 from core import tasks
 from core.validation import validate_frames
 from verifier.tasks import blender_verification_order
-
 
 logger = logging.getLogger(__name__)
 

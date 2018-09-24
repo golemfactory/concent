@@ -10,9 +10,9 @@ from django.db.models import PositiveIntegerField
 from django.db.models import TextField
 from django.utils import timezone
 
-from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
 from common.fields import ChoiceEnum
-from .constants import MESSAGE_PATH_LENGTH
+from conductor.constants import MESSAGE_PATH_LENGTH
+from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
 
 
 class VerificationRequest(Model):

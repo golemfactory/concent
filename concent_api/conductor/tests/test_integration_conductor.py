@@ -5,14 +5,14 @@ from django.urls import reverse
 from common.helpers import get_current_utc_timestamp
 from common.helpers import get_storage_result_file_path
 from common.helpers import get_storage_source_file_path
+from conductor.models import BlenderSubtaskDefinition
+from conductor.models import ResultTransferRequest
+from conductor.models import UploadReport
+from conductor.models import VerificationRequest
+from conductor.tasks import blender_verification_request
 from core.message_handlers import store_subtask
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
-from ..models import BlenderSubtaskDefinition
-from ..models import ResultTransferRequest
-from ..models import UploadReport
-from ..models import VerificationRequest
-from ..tasks import blender_verification_request
 
 
 class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):

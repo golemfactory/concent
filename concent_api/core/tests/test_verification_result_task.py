@@ -7,7 +7,6 @@ from django.test import TransactionTestCase
 
 from celery.exceptions import Retry
 from freezegun import freeze_time
-from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 
 from common.constants import ErrorCode
@@ -40,6 +39,11 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
         task_id = self._get_uuid()
         subtask_id = self._get_uuid()
 
+        report_computed_task = ReportComputedTaskFactory(
+            subtask_id=subtask_id,
+            task_id=task_id
+        )
+
         self.subtask = store_subtask(
             task_id=task_id,
             subtask_id=subtask_id,
@@ -47,13 +51,8 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
             next_deadline=get_current_utc_timestamp() + settings.CONCENT_MESSAGING_TIME,
-            task_to_compute=self._get_deserialized_task_to_compute(
-                task_id=task_id,
-                subtask_id=subtask_id,
-            ),
-            report_computed_task=self._get_deserialized_report_computed_task(
-                subtask_id=subtask_id,
-            )
+            task_to_compute=report_computed_task.task_to_compute,
+            report_computed_task=report_computed_task
         )
 
     def test_that_quering_for_subtask_with_accepted_state_should_log_warning_and_finish_task(self):
@@ -182,6 +181,11 @@ class VerifierVerificationResultTaskTransactionTest(TransactionTestCase):
         task_id = generate_uuid()
         subtask_id = generate_uuid()
 
+        report_computed_task = ReportComputedTaskFactory(
+            subtask_id=subtask_id,
+            task_id=task_id,
+        )
+
         self.subtask = store_subtask(
             task_id=task_id,
             subtask_id=subtask_id,
@@ -189,13 +193,8 @@ class VerifierVerificationResultTaskTransactionTest(TransactionTestCase):
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
             next_deadline=get_current_utc_timestamp() + settings.CONCENT_MESSAGING_TIME,
-            task_to_compute=TaskToComputeFactory(
-                task_id=task_id,
-                subtask_id=subtask_id,
-            ),
-            report_computed_task=ReportComputedTaskFactory(
-                subtask_id=subtask_id,
-            )
+            task_to_compute=report_computed_task.task_to_compute,
+            report_computed_task=report_computed_task
         )
 
     def test_that_verification_result_querying_locked_row_should_reschedule_task(self):
@@ -221,6 +220,11 @@ class VerificationResultAssertionTest(ConcentIntegrationTestCase):
         task_id = self._get_uuid()
         subtask_id = self._get_uuid()
 
+        report_computed_task = ReportComputedTaskFactory(
+            subtask_id=subtask_id,
+            task_id=task_id
+        )
+
         self.subtask = store_subtask(
             task_id=task_id,
             subtask_id=subtask_id,
@@ -228,13 +232,8 @@ class VerificationResultAssertionTest(ConcentIntegrationTestCase):
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
             next_deadline=get_current_utc_timestamp() + settings.CONCENT_MESSAGING_TIME,
-            task_to_compute=TaskToComputeFactory(
-                task_id=task_id,
-                subtask_id=subtask_id,
-            ),
-            report_computed_task=ReportComputedTaskFactory(
-                subtask_id=subtask_id,
-            )
+            task_to_compute=report_computed_task.task_to_compute,
+            report_computed_task=report_computed_task
         )
 
     def test_that_assertion_in_verification_result_method_doesnt_rise_exception_when_empty_string_is_passed_in_error_message(self):

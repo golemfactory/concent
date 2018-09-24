@@ -561,11 +561,12 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
                 requestor_public_key=self._get_requestor_hex_public_key(),
             )
             self.size = 58
+            self.report_computed_task = message.tasks.ReportComputedTask(
+                task_to_compute=self.task_to_compute,
+                size=self.size
+            )
             self.force_golem_data = message.concents.ForceReportComputedTask(
-                report_computed_task=message.tasks.ReportComputedTask(
-                    task_to_compute=self.task_to_compute,
-                    size=self.size
-                )
+                report_computed_task=self.report_computed_task,
             )
 
     @freeze_time("2017-11-17 10:00:00")
@@ -689,9 +690,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         task_to_compute_message.save()
 
         ack_report_computed_task = message.tasks.AckReportComputedTask(
-            report_computed_task=message.ReportComputedTask(
-                task_to_compute=self.task_to_compute,
-            )
+            report_computed_task=self.report_computed_task
         )
 
         stored_ack_report_computed_task = StoredMessage(
@@ -809,11 +808,12 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
         self.size = 58
 
         with freeze_time("2017-11-17 10:00:00"):
+            self.report_computed_task = message.tasks.ReportComputedTask(
+                task_to_compute=self.task_to_compute,
+                size=self.size
+            )
             self.force_golem_data = message.concents.ForceReportComputedTask(
-                report_computed_task = message.tasks.ReportComputedTask(
-                    task_to_compute=self.task_to_compute,
-                    size=self.size
-                )
+                report_computed_task=self.report_computed_task
             )
         message_timestamp = parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
         new_message       = StoredMessage(
@@ -837,9 +837,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
         task_to_compute_message.save()
 
         ack_report_computed_task = message.tasks.AckReportComputedTask(
-            report_computed_task=message.tasks.ReportComputedTask(
-                task_to_compute=self.task_to_compute,
-            )
+            report_computed_task=self.report_computed_task
         )
 
         stored_ack_report_computed_task = StoredMessage(

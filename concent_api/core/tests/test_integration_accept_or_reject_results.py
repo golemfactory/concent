@@ -1,9 +1,10 @@
 import mock
 
-from django.test            import override_settings
-from django.urls            import reverse
-from freezegun              import freeze_time
-from golem_messages         import message
+from django.test import override_settings
+from django.urls import reverse
+from freezegun import freeze_time
+from golem_messages import dump
+from golem_messages import message
 
 from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
 from core.exceptions import Http400
@@ -729,13 +730,19 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             deadline    = "2018-02-05 10:00:15",
         )
 
-        serialized_force_subtask_results = self._get_serialized_force_subtask_results(
+        deserialized_force_subtask_results = self._get_deserialized_force_subtask_results(
             timestamp="2018-02-05 10:00:30",
             ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
                 timestamp="2018-02-05 10:00:20",
                 task_to_compute=task_to_compute,
                 signer_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
+        )
+
+        serialized_force_subtask_results = dump(
+            deserialized_force_subtask_results,
+            self.PROVIDER_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY,
         )
 
         with mock.patch(
@@ -745,8 +752,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             with freeze_time("2018-02-05 10:00:30"):
                 response_1 = self.client.post(
                     reverse('core:send'),
-                    data                                = serialized_force_subtask_results,
-                    content_type                        = 'application/octet-stream',
+                    data=serialized_force_subtask_results,
+                    content_type='application/octet-stream',
                 )
 
         is_account_status_positive_true_mock_function.assert_called_with(
@@ -809,11 +816,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_results_rejected=self._get_deserialized_subtask_results_rejected(
                 timestamp="2018-02-05 10:00:43",
                 reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-                report_computed_task=self._get_deserialized_report_computed_task(
-                    timestamp="2018-02-05 10:00:44",
-                    subtask_id=task_to_compute.subtask_id,
-                    task_to_compute=task_to_compute,
-                )
+                report_computed_task=deserialized_force_subtask_results.ack_report_computed_task.report_computed_task  # pylint: disable=no-member
             )
         )
 
@@ -869,7 +872,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp': parse_iso_date_to_timestamp("2018-02-05 11:00:02"),
                 'subtask_results_rejected.timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
                 'subtask_results_rejected.reason': message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-                'subtask_results_rejected.report_computed_task.timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:44"),
+                'subtask_results_rejected.report_computed_task.timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:20"),
                 'subtask_results_rejected.report_computed_task.subtask_id': task_to_compute.subtask_id
             }
         )
@@ -1662,21 +1665,23 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent     -> Requestor: HTTP 400
         """
 
-        deserialized_force_subtask_results = self._get_deserialized_force_subtask_results(
-            timestamp                   = "2018-02-05 10:00:15",
-            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp   = "2018-02-05 10:00:00",
-                    deadline    = "2018-02-05 10:00:10",
-                )
-            )
-        )
-
         subtask_id = self._get_uuid()
 
         compute_task_def = self._get_deserialized_compute_task_def(
             subtask_id=subtask_id,
             deadline="2018-02-05 11:00:00",
+        )
+
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp="2018-02-05 10:00:00",
+            deadline="2018-02-05 10:00:10",
+        )
+
+        deserialized_force_subtask_results = self._get_deserialized_force_subtask_results(
+            timestamp="2018-02-05 10:00:15",
+            ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
+                task_to_compute=task_to_compute
+            )
         )
 
         task_to_compute = deserialized_force_subtask_results.ack_report_computed_task.report_computed_task.task_to_compute  # pylint: disable=no-member,
@@ -1691,12 +1696,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             report_computed_task=deserialized_force_subtask_results.ack_report_computed_task.report_computed_task,  # pylint: disable=no-member,
             task_to_compute=task_to_compute,
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
-                timestamp   = "2018-02-05 11:00:00",
-                payment_ts = "2018-02-05 11:00:01",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp           = "2018-02-05 10:00:00",
-                    compute_task_def    = compute_task_def,
-                ),
+                timestamp="2018-02-05 11:00:00",
+                payment_ts="2018-02-05 11:00:01",
+                task_to_compute=task_to_compute,
             ),
         )
         subtask.state = Subtask.SubtaskState.FORCING_ACCEPTANCE.name  # pylint: disable=no-member,
@@ -1705,15 +1707,12 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_increased(increased_by=3)
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
-            requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
-            timestamp               = "2018-02-05 11:00:01",
-            subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
-                timestamp               = "2018-02-05 11:00:01",
-                payment_ts              = "2018-02-05 11:00:02",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp           = "2018-02-05 10:00:00",
-                    compute_task_def    = compute_task_def,
-                ),
+            requestor_private_key=self.REQUESTOR_PRIVATE_KEY,
+            timestamp="2018-02-05 11:00:01",
+            subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
+                timestamp="2018-02-05 11:00:01",
+                payment_ts="2018-02-05 11:00:02",
+                task_to_compute=task_to_compute,
             )
         )
 
@@ -1774,24 +1773,29 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Requestor   -> Concent: SubtaskResultsRejected
         Concent     -> Requestor: HTTP 400
         """
-        deserialized_force_subtask_results = self._get_deserialized_force_subtask_results(
-            timestamp                   = "2018-02-05 10:00:15",
-            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp   = "2018-02-05 10:00:00",
-                    deadline    = "2018-02-05 10:00:10",
-                )
-            )
-        )
 
         subtask_id = self._get_uuid()
+
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp="2018-02-05 10:00:00",
+            deadline="2018-02-05 10:00:10",
+        )
+
+        report_computed_task = self._get_deserialized_report_computed_task(
+            subtask_id=subtask_id,
+            task_to_compute=task_to_compute,
+        )
+
+        deserialized_subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
+            timestamp="2018-02-05 11:00:00",
+            reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
+            report_computed_task=report_computed_task
+        )
 
         compute_task_def = self._get_deserialized_compute_task_def(
             deadline="2018-02-05 11:00:00",
             subtask_id=subtask_id,
         )
-
-        task_to_compute = deserialized_force_subtask_results.ack_report_computed_task.report_computed_task.task_to_compute  # pylint: disable=no-member,
 
         subtask = store_subtask(
             task_id=task_to_compute.compute_task_def['task_id'],
@@ -1800,26 +1804,23 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ACCEPTED,
             next_deadline=None,
-            report_computed_task=deserialized_force_subtask_results.ack_report_computed_task.report_computed_task,  # pylint: disable=no-member,
+            report_computed_task=report_computed_task,
             task_to_compute=task_to_compute,
-            subtask_results_rejected=self._get_deserialized_subtask_results_rejected(
-                timestamp   = "2018-02-05 11:00:00",
-                reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative
-            ),
+            subtask_results_rejected=deserialized_subtask_results_rejected,
         )
         subtask.state = Subtask.SubtaskState.FORCING_ACCEPTANCE.name  # pylint: disable=no-member,
         subtask.save()  # full_clean() is omitted here on purpose
 
         self._assert_stored_message_counter_increased(increased_by=3)
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
-            requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
-            timestamp               = "2018-02-05 11:00:01",
-            subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
-                timestamp               = "2018-02-05 11:00:01",
-                payment_ts              = "2018-02-05 11:00:02",
-                task_to_compute         = self._get_deserialized_task_to_compute(
-                    timestamp           = "2018-02-05 10:00:00",
-                    compute_task_def    = compute_task_def,
+            requestor_private_key=self.REQUESTOR_PRIVATE_KEY,
+            timestamp="2018-02-05 11:00:01",
+            subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
+                timestamp="2018-02-05 11:00:01",
+                payment_ts="2018-02-05 11:00:02",
+                task_to_compute=self._get_deserialized_task_to_compute(
+                    timestamp="2018-02-05 10:00:00",
+                    compute_task_def=compute_task_def,
                 ),
             )
         )
@@ -1837,19 +1838,12 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
-            requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
-            timestamp               = "2018-02-05 11:00:01",
-            subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
-                timestamp               = "2018-02-05 11:00:01",
-                reason                  = message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-                report_computed_task    = self._get_deserialized_report_computed_task(
-                    timestamp   = "2018-02-05 11:00:01",
-                    task_to_compute = self._get_deserialized_task_to_compute(
-                        timestamp   = "2018-02-05 11:00:01",
-                        deadline    = "2018-02-05 11:00:06",
-                        compute_task_def=compute_task_def,
-                    )
-                )
+            requestor_private_key=self.REQUESTOR_PRIVATE_KEY,
+            timestamp="2018-02-05 11:00:01",
+            subtask_results_rejected=self._get_deserialized_subtask_results_rejected(
+                timestamp="2018-02-05 11:00:01",
+                reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
+                report_computed_task=report_computed_task
             )
         )
 

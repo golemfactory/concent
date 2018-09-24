@@ -24,6 +24,7 @@ from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
 from core.transfer_operations import create_file_transfer_token_for_verification_use_case
 from core.utils import extract_name_from_scene_file_path
+from core.utils import hex_to_bytes_convert
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
@@ -403,8 +404,8 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             subtask = store_subtask(
                 task_id=self.task_id,
                 subtask_id=self.subtask_id,
-                provider_public_key=self.PROVIDER_PUBLIC_KEY,
-                requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
+                provider_public_key=hex_to_bytes_convert(self.report_computed_task.task_to_compute.provider_public_key),
+                requestor_public_key=hex_to_bytes_convert(self.report_computed_task.task_to_compute.requestor_public_key),
                 state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
                 next_deadline=get_current_utc_timestamp() + (self.compute_task_def['deadline'] - self.task_to_compute.timestamp),
                 task_to_compute=self.report_computed_task.task_to_compute,

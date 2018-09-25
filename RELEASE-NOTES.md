@@ -1,3 +1,70 @@
+### 0.9.0
+#### Signing Service and Middleman
+- Signing Service and Middleman are now fully implemented but disabled by default (#673, #633, #616, #629, #618, #625, #632).
+- Concent can now be configured to use Signing Service instead of signing transaction by itself (#635).
+- Authentication between Middleman and Signing Service - disabled by default (#631, #630).
+- More consistent command-line options for passing secrets to the Signing Service (#671).
+- Signing Service can now be configured to send crash reports to Sentry (#762).
+- Bugfix: The installation script (`setup.py`) no longer requires golem-messages to be already installed (#800).
+- Bugfix: Middleman was not properly cancelling asyncio tasks (#799).
+- Bugfix: Fixed error in task scheduling in `QueuePool` in Middleman (#790).
+- Bugfix: Fixed incorrect handling of escaped byte followed by related escape sequence in Middleman protocol (#844).
+
+#### Admin panel
+- Admin panel can show tasks that might still have active downloads (#329).
+- Creation and modification timestamps are now displayed for more models in the admin panel (#709).
+- Timed out tasks whose state has not been updated yet are no longer displayed as active in the admin panel (#668).
+- The shutdown bar in the admin panel now shows the time limit for active downloads (#444).
+
+#### Endpoints and uses cases in general
+- receive-out-of-band/ and receive/ now return the same messages and receive-out-of-band/ is deprecated (#787).
+- Concent now expects `task_id` and `subtask_id` to always be valid UUIDs (#705).
+- Bugfix: Starting another use case in the same subtask caused a crash (#195).
+- Bugfix: Concent now properly locks subtasks before modifying them to prevent race conditions (#753).
+- Bugfix: Concent could start a use case twice in some cases due to a race condition in the endpoints (#770).
+
+#### Payments
+- Bugfix: Concent would try to remove confirmed transaction from transaction pool multiple times and fail (#693).
+
+#### Additional verfication use case (UC4)
+- Bugfix: FileUploadToken had completely wrong deadline in verification use case (#827).
+- Bugfix: Celery workers were not checking if a subtask is timed out before processing it (#779).
+- Bugfix: File names and paths in verification tasks were not being parsed and validated correctly (#715, #716).
+- Bugfix: Verifier used a very inefficient method to download files from the storage server, which caused timeouts (#714, #675).
+- Bugfix: Verifier sometimes interpreted exceptions caused by malformed zip file as a crash that needs to be reported (#708).
+
+#### Documentation
+- Concent timing diagram (#431).
+
+#### Other
+- Bugfix: Added a migration that fixes cached timestamps on messages stored in the database by the previous versions (#690).
+- Bugfix: Cluster tests were ignoring Content-Type when decoding server responses (#772).
+
+#### Compatibility
+- golem-messages: 2.13.0
+- golem-smart-contracts-interface: 1.5.0
+
+#### Manual migrations
+Manual configuration, database and scripting changes that may be necessary to successfully migrate from the previous version:
+
+##### New settings
+- `MIDDLEMAN_ADDRESS`
+- `MIDDLEMAN_PORT`
+- `SIGNING_SERVICE_PUBLIC_KEY`
+
+##### Modified settings
+- `CONCENT_ETHEREUM_ADDRESS` has been replaced with `CONCENT_ETHEREUM_PUBLIC_KEY`.
+
+##### Removed settings
+- `MOCK_VERIFICATION_ENABLED`
+
+##### New features
+- The use of the Signing Service is disabled by default.
+  Change the value of the `USE_SIGNING_SERVICE` setting if you want to enable it.
+
+#### Installation
+- A file called `RELEASE-VERSION` must now exist in the `middleman_protocol/` and `signing_service/` subdirectories at installation time.
+
 ### 0.8.0
 #### Forced payment use case (UC5)
 - Bugfix: ForcePaymentRejected.force_payment was not being filled in the forced payment use case (#548).

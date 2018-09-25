@@ -1,10 +1,10 @@
 ### 0.8.0
-Forced payment use case (UC5):
+#### Forced payment use case (UC5)
 - Bugfix: ForcePaymentRejected.force_payment was not being filled in the forced payment use case (#548).
 - Bugfix: Concent would accept ForcePayment containing SubtaskResultsAccepted from multiple requestors or providers or with multiple Ethereum accounts of the same requestor or provider (#545, #664, #665).
 - Implemented a mechanism to properly synchronize nonce between different SCI instances: DatabaseTransactionsStorage (#584).
 
-Additional verfication use case (UC4):
+#### Additional verfication use case (UC4)
 - Added support for subtasks that render multiple images in additional verification use case (#537).
 - In the additional verification use case Concent now renders only the fragment of the image defined in the subtask definition (#520).
 - Lower time limits in result transfer and verification use cases are no longer enforced (#532, #538).
@@ -19,32 +19,32 @@ Additional verfication use case (UC4):
 - Bugfix: Corrupted or invalid achives uploaded in additional verification use case resulted in verifictation failures rather than a mismatch (#610).
 - Bugfix: Very long subtask_id or task_id could result in an error due to the maximum path length being exceeded (#598).
 
-Concent Signing Service:
+#### Concent Signing Service
 - Partial implementation of Signing Service and Middleman. Not usable yet (#599, #623, #615).
 
-Validations and error handling:
+#### Validations and error handling
 - Stronger validations for ForceSubtaskResultsResponse (#666, #662).
 - Bugfix: Signatures of nested messages were not always verified (#458, #547)
 - Bugfix: Some error messages included numeric message type codes rather than their class names (#457).
 - Bugfix: TaskToCompute.ComputeTaskDef was not being validated which resulted in crashes in cases where the client should get a HTTP 4xx response (#600).
 
-Database:
+#### Database
 - Modification and creation timestamps are now stored for more objects in the database (#604).
 - Bugfix: Added missing migration for a change introduced in in 0.7.3 - ForceGetTaskResult should have been added to older messages in the database (#573).
 - Bugfix: Concent was storing received messages with current time instead of the actual timestamp (#627). This may have affected deadline calculations.
 
-Deployment and administration:
+#### Deployment and administration
 - Time in dates displayed in the admin panel is now in 24-hour format (#552).
 - Now we display creation and modification time in the admin panel whenever available (#553).
 - More validity checks for settings (#589).
 - Dependencies updated to the latest versions (#554).
 
-Development:
+#### Development
 - Default settings in development that contain local URLs adjusted to work better with the virtual machine for testing.
 - pytest is now used by default for running unit tests (#539).
 - Bugfix: SVT and MDT were not being calculated based on settings even if custom protocol times were enabled.
 
-Compatibility:
+#### Compatibility
 - golem-messages v2.10.1
 - golem-smart-contracts-interface: 1.5.0
 

@@ -51,9 +51,9 @@ def escape_decode_raw_message(raw_message: bytes) -> bytes:
         raise BrokenEscapingInFrameMiddlemanProtocolError()
     else:
         return raw_message.replace(
-            ESCAPE_SEQUENCES[ESCAPE_CHARACTER], ESCAPE_CHARACTER
-        ).replace(
             ESCAPE_SEQUENCES[FRAME_SEPARATOR], FRAME_SEPARATOR
+        ).replace(
+            ESCAPE_SEQUENCES[ESCAPE_CHARACTER], ESCAPE_CHARACTER
         )
 
 

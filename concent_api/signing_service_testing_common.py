@@ -12,6 +12,7 @@ from golem_sci.transactionsstorage import JsonTransactionsStorage
 from middleman_protocol.message import AbstractFrame
 from middleman_protocol.message import GolemMessageFrame
 from middleman_protocol.stream import send_over_stream
+from middleman_protocol.stream import unescape_stream
 import requests
 
 from api_testing_common import count_fails
@@ -67,7 +68,7 @@ def read_command_line() -> argparse.Namespace:
         type=str,
     )
     parser.add_argument(
-        '-h',
+        '-a',
         '--middleman-host',
         dest='middleman_host',
         type=str,
@@ -220,8 +221,8 @@ def is_ethereum_blockchain_running(geth_address: str, concent_ethereum_address: 
 def send_message_to_middleman_and_receive_response(
     message: AbstractFrame,
     config: configparser.ConfigParser,
-    signing_service_public_key: bytes,
-    concent_private_key: bytes
+    concent_private_key: bytes,
+    concent_public_key: bytes,
 ) -> GolemMessageFrame:
     """ Sends message to MiddleMan using MiddleMan protocol and retrieves response. """
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -234,14 +235,16 @@ def send_message_to_middleman_and_receive_response(
                 int(config.get(Components.MIDDLEMAN.value, 'port')),
             )
         )
-        raw_response = send_over_stream(
+        send_over_stream(
             connection=client_socket,
             raw_message=message,
             private_key=concent_private_key,
         )
+        receive_frame_generator = unescape_stream(connection=client_socket)
+        raw_response = next(receive_frame_generator)
         return GolemMessageFrame.deserialize(
             raw_message=raw_response,
-            public_key=signing_service_public_key,
+            public_key=concent_public_key,
         )
     finally:
         client_socket.close()

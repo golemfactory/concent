@@ -45,7 +45,7 @@
 - Bugfix: SVT and MDT were not being calculated based on settings even if custom protocol times were enabled.
 
 #### Compatibility
-- golem-messages v2.10.1
+- golem-messages: 2.10.1
 - golem-smart-contracts-interface: 1.5.0
 
 ### 0.7.3

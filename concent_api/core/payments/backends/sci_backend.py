@@ -5,7 +5,7 @@ from golem_sci.blockshelper import BlocksHelper
 from web3 import Web3
 
 from core.constants import ETHEREUM_ADDRESS_LENGTH
-from common.singleton import PaymentInterface
+from core.payments.payment_interface import PaymentInterface
 
 
 class TransactionType(Enum):

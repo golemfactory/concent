@@ -413,6 +413,7 @@ def handle_send_force_get_task_result(
         )
         return message.concents.ForceGetTaskResultRejected(
             reason=message.concents.ForceGetTaskResultRejected.REASON.AcceptanceTimeLimitExceeded,
+            force_get_task_result=client_message,
         )
 
     subtask = get_one_or_none(

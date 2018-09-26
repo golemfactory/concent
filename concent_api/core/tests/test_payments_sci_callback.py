@@ -15,6 +15,7 @@ from middleman_protocol.constants import ErrorCode
 from middleman_protocol.exceptions import MiddlemanProtocolError
 from middleman_protocol.message import GolemMessageFrame
 from middleman_protocol.message import ErrorFrame
+from common.helpers import RequestIDGenerator
 from common.testing_helpers import generate_ecc_key_pair
 from core.exceptions import SCICallbackFrameError
 from core.exceptions import SCICallbackPayloadError
@@ -22,7 +23,6 @@ from core.exceptions import SCICallbackPayloadSignatureError
 from core.exceptions import SCICallbackRequestIdError
 from core.exceptions import SCICallbackTimeoutError
 from core.exceptions import SCICallbackTransactionSignatureError
-from core.payments.sci_callback import RequestIDGenerator
 from core.payments.sci_callback import sci_callback
 
 

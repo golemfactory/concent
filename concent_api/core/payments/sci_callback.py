@@ -12,6 +12,7 @@ from rlp import encode
 from django.conf import settings
 
 from common.helpers import generate_ethereum_address_from_ethereum_public_key_bytes
+from common.helpers import RequestIDGenerator
 from core.constants import SCI_CALLBACK_MAXIMUM_TIMEOUT
 from core.exceptions import SCICallbackFrameError
 from core.exceptions import SCICallbackPayloadError
@@ -28,16 +29,6 @@ from middleman_protocol.message import ErrorFrame
 from middleman_protocol.message import GolemMessageFrame
 from middleman_protocol.stream import send_over_stream
 from middleman_protocol.stream import unescape_stream
-
-
-class RequestIDGenerator:
-
-    _request_id = 0
-
-    @classmethod
-    def generate_request_id(cls) -> int:
-        cls._request_id += 1
-        return cls._request_id
 
 
 def sci_callback(transaction: Transaction) -> Transaction:

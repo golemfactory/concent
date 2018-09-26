@@ -77,9 +77,9 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         message_from_concent = load(response.content, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY, check_time = False)
 
-        self.assertIsInstance(message_from_concent,         message.concents.ForceGetTaskResultRejected)
+        self.assertIsInstance(message_from_concent, message.concents.ForceGetTaskResultRejected)
         self.assertEqual(message_from_concent.timestamp, parse_iso_date_to_timestamp("2017-12-01 11:02:31"))
-        self.assertEqual(message_from_concent.reason,       message_from_concent.REASON.AcceptanceTimeLimitExceeded)
+        self.assertEqual(message_from_concent.reason, message_from_concent.REASON.AcceptanceTimeLimitExceeded)
         self._assert_stored_message_counter_not_increased()
 
     def test_that_requestor_forces_get_task_result_and_concent_should_immediately_sends_rejection_because_message_is_sent_too_late(self):

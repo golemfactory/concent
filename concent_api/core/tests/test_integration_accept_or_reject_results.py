@@ -3,8 +3,8 @@ import mock
 from django.test import override_settings
 from django.urls import reverse
 from freezegun import freeze_time
-from golem_messages import dump
 from golem_messages import message
+from golem_messages.shortcuts import dump
 
 from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
 from core.exceptions import Http400
@@ -17,7 +17,6 @@ from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
 from common.constants import ErrorCode
 from common.testing_helpers import generate_ecc_key_pair
-
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
@@ -1251,72 +1250,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         self._assert_client_count_is_equal(0)
 
-    def test_subtask_results_accepted_without_task_to_compute_should_return_http_400(self):
-        """
-        Test if Provider want to submit ForceSubtaskResults with SubtaskResultsAccepted without TaskToCompute.
-
-        Expected message exchange:
-        Requestor   -> Concent:     ForceSubtaskResultsResponse
-        Concent     -> Provider:    HTTP 400
-        """
-
-        serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
-            requestor_private_key=self.REQUESTOR_PRIVATE_KEY,
-            subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
-                payment_ts="2018-02-05 11:00:01",
-                task_to_compute=None
-            )
-        )
-
-        response_1 = self.client.post(
-            reverse('core:send'),
-            data= serialized_force_subtask_results_response,
-            content_type= 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY= self._get_encoded_requestor_public_key(),
-            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_provider_public_key(),
-        )
-
-        self._test_400_response(
-            response_1,
-            error_code=ErrorCode.MESSAGE_INVALID
-        )
-        self._assert_stored_message_counter_not_increased()
-
-        self._assert_client_count_is_equal(0)
-
-    def test_subtask_results_rejected_without_task_to_compute_should_return_http_400(self):
-        """
-        Test if Provider want to submit ForceSubtaskResults with SubtaskResultsRejected without TaskToCompute.
-
-        Expected message exchange:
-        Requestor   -> Concent:     ForceSubtaskResultsResponse
-        Concent     -> Provider:    HTTP 400
-        """
-
-        serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
-            requestor_private_key=self.REQUESTOR_PRIVATE_KEY,
-            subtask_results_rejected=self._get_deserialized_subtask_results_rejected(
-                reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-                report_computed_task=message.ReportComputedTask()
-            )
-        )
-
-        response_1 = self.client.post(
-            reverse('core:send'),
-            data= serialized_force_subtask_results_response,
-            content_type= 'application/octet-stream',
-            HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
-            HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_provider_public_key(),
-        )
-
-        self._test_400_response(
-            response_1,
-            error_code=ErrorCode.MESSAGE_INVALID
-        )
-        self._assert_stored_message_counter_not_increased()
-
-        self._assert_client_count_is_equal(0)
-
     def test_requestor_doesnt_provide_response_should_end_with_subtask_results_settled_received_from_concent(self):
         """
         Expected message exchange:
@@ -1665,30 +1598,21 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent     -> Requestor: HTTP 400
         """
 
-        subtask_id = self._get_uuid()
-
-        compute_task_def = self._get_deserialized_compute_task_def(
-            subtask_id=subtask_id,
-            deadline="2018-02-05 11:00:00",
-        )
-
-        task_to_compute = self._get_deserialized_task_to_compute(
-            timestamp="2018-02-05 10:00:00",
-            deadline="2018-02-05 10:00:10",
-        )
-
         deserialized_force_subtask_results = self._get_deserialized_force_subtask_results(
             timestamp="2018-02-05 10:00:15",
             ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
-                task_to_compute=task_to_compute
+                task_to_compute=self._get_deserialized_task_to_compute(
+                    timestamp="2018-02-05 10:00:00",
+                    deadline="2018-02-05 10:00:10",
+                )
             )
         )
 
         task_to_compute = deserialized_force_subtask_results.ack_report_computed_task.report_computed_task.task_to_compute  # pylint: disable=no-member,
 
         subtask = store_subtask(
-            task_id=task_to_compute.compute_task_def['task_id'],
-            subtask_id=subtask_id,
+            task_id=task_to_compute.task_id,
+            subtask_id=task_to_compute.subtask_id,
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ACCEPTED,
@@ -1719,8 +1643,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 11:00:02"):
             response_1 = self.client.post(
                 reverse('core:send'),
-                data                            = serialized_force_subtask_results_response,
-                content_type                    = 'application/octet-stream',
+                data=serialized_force_subtask_results_response,
+                content_type='application/octet-stream',
             )
 
         self._test_400_response(
@@ -1730,18 +1654,14 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
-            requestor_private_key   = self.REQUESTOR_PRIVATE_KEY,
-            timestamp               = "2018-02-05 11:00:01",
-            subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
-                timestamp               = "2018-02-05 11:00:01",
-                reason                  = message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-                report_computed_task    = self._get_deserialized_report_computed_task(
-                    timestamp   = "2018-02-05 11:00:01",
-                    task_to_compute = self._get_deserialized_task_to_compute(
-                        timestamp   = "2018-02-05 11:00:01",
-                        deadline    = "2018-02-05 11:00:06",
-                        compute_task_def=compute_task_def,
-                    )
+            requestor_private_key=self.REQUESTOR_PRIVATE_KEY,
+            timestamp="2018-02-05 11:00:01",
+            subtask_results_rejected=self._get_deserialized_subtask_results_rejected(
+                timestamp="2018-02-05 11:00:01",
+                reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
+                report_computed_task=self._get_deserialized_report_computed_task(
+                    timestamp="2018-02-05 11:00:01",
+                    task_to_compute=task_to_compute
                 )
             )
         )
@@ -1749,8 +1669,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 11:00:02"):
             response_2 = self.client.post(
                 reverse('core:send'),
-                data                            = serialized_force_subtask_results_response,
-                content_type                    = 'application/octet-stream',
+                data=serialized_force_subtask_results_response,
+                content_type='application/octet-stream',
             )
 
         self._test_400_response(
@@ -1774,39 +1694,32 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent     -> Requestor: HTTP 400
         """
 
-        subtask_id = self._get_uuid()
-
-        task_to_compute = self._get_deserialized_task_to_compute(
-            timestamp="2018-02-05 10:00:00",
-            deadline="2018-02-05 10:00:10",
+        deserialized_force_subtask_results = self._get_deserialized_force_subtask_results(
+            timestamp="2018-02-05 10:00:15",
+            ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
+                task_to_compute=self._get_deserialized_task_to_compute(
+                    timestamp="2018-02-05 10:00:00",
+                    deadline="2018-02-05 10:00:10",
+                )
+            )
         )
 
-        report_computed_task = self._get_deserialized_report_computed_task(
-            subtask_id=subtask_id,
-            task_to_compute=task_to_compute,
-        )
-
-        deserialized_subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
-            timestamp="2018-02-05 11:00:00",
-            reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-            report_computed_task=report_computed_task
-        )
-
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline="2018-02-05 11:00:00",
-            subtask_id=subtask_id,
-        )
+        task_to_compute = deserialized_force_subtask_results.ack_report_computed_task.report_computed_task.task_to_compute  # pylint: disable=no-member,
 
         subtask = store_subtask(
-            task_id=task_to_compute.compute_task_def['task_id'],
-            subtask_id=subtask_id,
+            task_id=task_to_compute.task_id,
+            subtask_id=task_to_compute.subtask_id,
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ACCEPTED,
             next_deadline=None,
-            report_computed_task=report_computed_task,
+            report_computed_task=deserialized_force_subtask_results.ack_report_computed_task.report_computed_task,  # pylint: disable=no-member,
             task_to_compute=task_to_compute,
-            subtask_results_rejected=deserialized_subtask_results_rejected,
+            subtask_results_rejected=self._get_deserialized_subtask_results_rejected(
+                timestamp="2018-02-05 11:00:00",
+                reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
+                report_computed_task=deserialized_force_subtask_results.ack_report_computed_task.report_computed_task,  # pylint: disable=no-member,,
+            ),
         )
         subtask.state = Subtask.SubtaskState.FORCING_ACCEPTANCE.name  # pylint: disable=no-member,
         subtask.save()  # full_clean() is omitted here on purpose
@@ -1818,18 +1731,15 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 11:00:01",
                 payment_ts="2018-02-05 11:00:02",
-                task_to_compute=self._get_deserialized_task_to_compute(
-                    timestamp="2018-02-05 10:00:00",
-                    compute_task_def=compute_task_def,
-                ),
+                task_to_compute=task_to_compute,
             )
         )
 
         with freeze_time("2018-02-05 11:00:02"):
             response_1 = self.client.post(
                 reverse('core:send'),
-                data                            = serialized_force_subtask_results_response,
-                content_type                    = 'application/octet-stream',
+                data=serialized_force_subtask_results_response,
+                content_type='application/octet-stream',
             )
         self._test_400_response(
             response_1,
@@ -1843,15 +1753,18 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_results_rejected=self._get_deserialized_subtask_results_rejected(
                 timestamp="2018-02-05 11:00:01",
                 reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-                report_computed_task=report_computed_task
+                report_computed_task=self._get_deserialized_report_computed_task(
+                    timestamp="2018-02-05 11:00:01",
+                    task_to_compute=task_to_compute
+                )
             )
         )
 
         with freeze_time("2018-02-05 11:00:02"):
             response_2 = self.client.post(
                 reverse('core:send'),
-                data                            = serialized_force_subtask_results_response,
-                content_type                    = 'application/octet-stream',
+                data=serialized_force_subtask_results_response,
+                content_type='application/octet-stream',
             )
 
         self._test_400_response(

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from configparser import ConfigParser
+from typing import Any
 import os
 import sys
 
@@ -50,7 +51,7 @@ def create_golem_message_frame_with_correct_transaction_signing_request(request_
 
 
 @count_fails
-def test_case_send_golem_message_frame_with_correct_transaction_signing_request(test_id: str, config: ConfigParser) -> None:
+def test_case_send_golem_message_frame_with_correct_transaction_signing_request(config: ConfigParser, **kwargs: Any) -> None:
     """
     1. Client sends GolemMessageFrame with correct TransactionSigningRequest to MiddleMan.
     2. MiddleMan responds with GolemMessageFrame with SignedTransaction.
@@ -65,8 +66,8 @@ def test_case_send_golem_message_frame_with_correct_transaction_signing_request(
     response = send_message_to_middleman_and_receive_response(
         message=golem_message_frame,
         config=config,
-        signing_service_public_key=SIGNING_SERVICE_PUBLIC_KEY,
         concent_private_key=CONCENT_PRIVATE_KEY,
+        concent_public_key=CONCENT_PUBLIC_KEY,
     )
 
     # Check response.
@@ -76,8 +77,8 @@ def test_case_send_golem_message_frame_with_correct_transaction_signing_request(
 
 if __name__ == '__main__':
     try:
-        from concent_api.settings import SIGNING_SERVICE_PUBLIC_KEY
         from concent_api.settings import CONCENT_PRIVATE_KEY
+        from concent_api.settings import CONCENT_PUBLIC_KEY
         run_tests(globals())
     except Exception as exception:
         print("\nERROR: Tests failed with exception:\n", file=sys.stderr)

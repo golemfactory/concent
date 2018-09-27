@@ -24,13 +24,13 @@ from middleman.constants import AUTHENTICATION_CHALLENGE_SIZE
 from middleman.constants import MessageTrackerItem
 from middleman.constants import RequestQueueItem
 from middleman.constants import ResponseQueueItem
-from middleman.queue_operations import create_error_frame
-from middleman.queue_operations import discard_entries_for_lost_messages
-from middleman.queue_operations import is_authenticated
-from middleman.queue_operations import request_consumer
-from middleman.queue_operations import request_producer
-from middleman.queue_operations import response_consumer
-from middleman.queue_operations import response_producer
+from middleman.asynchronous_operations import create_error_frame
+from middleman.asynchronous_operations import discard_entries_for_lost_messages
+from middleman.asynchronous_operations import is_authenticated
+from middleman.asynchronous_operations import request_consumer
+from middleman.asynchronous_operations import request_producer
+from middleman.asynchronous_operations import response_consumer
+from middleman.asynchronous_operations import response_producer
 from middleman.utils import QueuePool
 from middleman_protocol.constants import ErrorCode
 from middleman_protocol.constants import MIDDLEMAN_EXCEPTION_TO_ERROR_CODE_MAP
@@ -173,7 +173,7 @@ class TestRequestConsumer:
 
     @pytest.mark.asyncio
     async def test_that_when_connection_id_no_longer_exists_corresponding_item_is_dropped(self,  event_loop):
-        with patch("middleman.queue_operations.logger") as mocked_logger:
+        with patch("middleman.asynchronous_operations.logger") as mocked_logger:
             with override_settings(
                 CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
@@ -198,7 +198,7 @@ class TestRequestConsumer:
 
     @pytest.mark.asyncio
     async def test_that_when_connection_exists_item_from_the_queue_is_sent_via_writer(self, event_loop):
-        with patch("middleman.queue_operations.logger") as mocked_logger:
+        with patch("middleman.asynchronous_operations.logger") as mocked_logger:
             with override_settings(
                 CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
@@ -337,7 +337,7 @@ class TestResponseProducer:
         )
     )
     async def test_that_if_received_message_is_invalid_it_is_dropped_and_info_is_logged(self, exception, event_loop):
-        with patch("middleman.queue_operations.logger") as mocked_logger:
+        with patch("middleman.asynchronous_operations.logger") as mocked_logger:
             with override_settings(
                 CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
@@ -364,7 +364,7 @@ class TestResponseProducer:
 
     @pytest.mark.asyncio
     async def test_that_if_received_messages_request_id_is_not_in_message_tracker_it_is_dropped_and_info_is_logged(self, event_loop):
-        with patch("middleman.queue_operations.logger") as mocked_logger:
+        with patch("middleman.asynchronous_operations.logger") as mocked_logger:
             with override_settings(
                 CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
@@ -393,7 +393,7 @@ class TestResponseProducer:
 
     @pytest.mark.asyncio
     async def test_that_if_response_queue_for_corresponding_connection_no_longer_exists_entry_is_removed_from_tracker(self, event_loop):
-        with patch("middleman.queue_operations.logger") as mocked_logger:
+        with patch("middleman.asynchronous_operations.logger") as mocked_logger:
             with override_settings(
                 CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
@@ -422,7 +422,7 @@ class TestResponseProducer:
 
     @pytest.mark.asyncio
     async def test_that_lost_messages_are_discarded_and_valid_message_is_sent_via_response_queue(self, event_loop):
-        with patch("middleman.queue_operations.logger"):
+        with patch("middleman.asynchronous_operations.logger"):
             with override_settings(
                 CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
@@ -451,7 +451,7 @@ class TestResponseProducer:
 
     @pytest.mark.asyncio
     async def test_that_if_signing_service_closes_connection_coroutine_ends(self, event_loop):
-        with patch("middleman.queue_operations.logger") as mocked_logger:
+        with patch("middleman.asynchronous_operations.logger") as mocked_logger:
             with override_settings(
                 CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
@@ -524,7 +524,7 @@ class TestIsAuthenticated:
             CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
         ):
-            with patch("middleman.queue_operations.RequestIDGenerator.generate_request_id", return_value=self.request_id):
+            with patch("middleman.asynchronous_operations.RequestIDGenerator.generate_request_id", return_value=self.request_id):
                 frame_with_wrong_request_id = AuthenticationResponseFrame(
                     payload=ecdsa_sign(
                         WRONG_SIGNING_SERVICE_PRIVATE_KEY,
@@ -547,7 +547,7 @@ class TestIsAuthenticated:
             CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
         ):
-            with patch("middleman.queue_operations.RequestIDGenerator.generate_request_id", return_value=self.request_id):
+            with patch("middleman.asynchronous_operations.RequestIDGenerator.generate_request_id", return_value=self.request_id):
                 wrong_frame = AuthenticationChallengeFrame(b"some_bytes", self.request_id)
                 mocked_reader = self._prepare_mocked_reader(wrong_frame)
 
@@ -564,8 +564,8 @@ class TestIsAuthenticated:
             CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
         ):
-            with patch("middleman.queue_operations.RequestIDGenerator.generate_request_id", return_value=self.request_id):
-                with patch("middleman.queue_operations.create_random_challenge", return_value=self.mocked_challenge):
+            with patch("middleman.asynchronous_operations.RequestIDGenerator.generate_request_id", return_value=self.request_id):
+                with patch("middleman.asynchronous_operations.create_random_challenge", return_value=self.mocked_challenge):
                     authentication_response_frame = AuthenticationResponseFrame(
                         payload=ecdsa_sign(
                             WRONG_SIGNING_SERVICE_PRIVATE_KEY,
@@ -588,8 +588,8 @@ class TestIsAuthenticated:
             CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
         ):
-            with patch("middleman.queue_operations.RequestIDGenerator.generate_request_id", return_value=self.request_id):
-                with patch("middleman.queue_operations.create_random_challenge", return_value=self.mocked_challenge):
+            with patch("middleman.asynchronous_operations.RequestIDGenerator.generate_request_id", return_value=self.request_id):
+                with patch("middleman.asynchronous_operations.create_random_challenge", return_value=self.mocked_challenge):
                     authentication_response_frame = AuthenticationResponseFrame(
                         payload=ecdsa_sign(
                             SIGNING_SERVICE_PRIVATE_KEY,

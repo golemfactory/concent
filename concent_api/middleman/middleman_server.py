@@ -16,11 +16,11 @@ from middleman.constants import DEFAULT_INTERNAL_PORT
 from middleman.constants import ERROR_ADDRESS_ALREADY_IN_USE
 from middleman.constants import LOCALHOST_IP
 from middleman.constants import PROCESSING_TIMEOUT
-from middleman.queue_operations import is_authenticated
-from middleman.queue_operations import request_consumer
-from middleman.queue_operations import request_producer
-from middleman.queue_operations import response_consumer
-from middleman.queue_operations import response_producer
+from middleman.asynchronous_operations import is_authenticated
+from middleman.asynchronous_operations import request_consumer
+from middleman.asynchronous_operations import request_producer
+from middleman.asynchronous_operations import response_consumer
+from middleman.asynchronous_operations import response_producer
 from middleman.utils import QueuePool
 from middleman_protocol.constants import MAXIMUM_FRAME_LENGTH
 

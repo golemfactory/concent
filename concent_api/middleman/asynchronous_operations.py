@@ -12,7 +12,8 @@ from django.conf import settings
 from golem_messages.cryptography import ecdsa_verify
 from golem_messages.exceptions import InvalidSignature
 
-from common.helpers import get_current_utc_timestamp, RequestIDGenerator
+from common.helpers import get_current_utc_timestamp
+from common.helpers import RequestIDGenerator
 from middleman.constants import AUTHENTICATION_CHALLENGE_SIZE
 from middleman.constants import CONNECTION_COUNTER_LIMIT
 from middleman.constants import MessageTrackerItem
@@ -117,7 +118,7 @@ async def response_producer(
             logger.info(f"Signing Service has closed the connection. Ending 'response_producer' coroutine")
             break
         except ERRORS_THAT_CAUSE_CURRENT_ITERATION_ENDS as exception:
-            logger.info(f"Received invalid message: error code={map_exception_to_error_code(exception)}")
+            logger.info(f"Received invalid message: error code = {map_exception_to_error_code(exception)}")
             continue
 
         logger.info(
@@ -162,7 +163,7 @@ async def response_consumer(
 
         await send_over_stream_async(frame, writer, settings.CONCENT_PRIVATE_KEY)
         logger.info(
-            f"Message (request ID={frame.request_id}) for Concent has been sent for connection ID={connection_id}"
+            f"Message (request ID = {frame.request_id}) for Concent has been sent for connection ID = {connection_id}"
         )
         response_queue.task_done()
 
@@ -207,9 +208,9 @@ def discard_entries_for_lost_messages(
     for _ in range(lost_messages_counter):
         request_id, item = message_tracker.popitem(last=False)
         logger_.info(
-            f"Dropped message: Signing Service request ID={request_id}, "
-            f"Concent connection ID={item.connection_id}, "
-            f"messsage={item.message}, "
+            f"Dropped message: Signing Service request ID = {request_id}, "
+            f"Concent connection ID = {item.connection_id}, "
+            f"messsage = {item.message}, "
             f"received at: {item.timestamp}"
         )
 

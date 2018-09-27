@@ -32,8 +32,6 @@ class TestSigningServiceRun:
             CONCENT_PUBLIC_KEY,
             SIGNING_SERVICE_PRIVATE_KEY,
             TEST_ETHEREUM_PRIVATE_KEY,
-            # TODO: Remove after https://github.com/golemfactory/concent/issues/630 is implemented.
-            True,
         ]
 
     def test_that_signing_service_should_be_instantiated_correctly_with_all_parameters(self):

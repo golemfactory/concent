@@ -70,8 +70,6 @@ class SigningService:
         'signing_service_private_key',
         'signing_service_public_key',
         'ethereum_private_key',
-        # TODO: Remove after https://github.com/golemfactory/concent/issues/630 is implemented.
-        'enable_authentication',
     )
 
     def __init__(
@@ -82,8 +80,6 @@ class SigningService:
         concent_public_key: bytes,
         signing_service_private_key: bytes,
         ethereum_private_key: str,
-        # TODO: Remove after https://github.com/golemfactory/concent/issues/630 is implemented.
-        enable_authentication: bool=False,
     ) -> None:
         assert isinstance(host, str)
         assert isinstance(port, int)
@@ -91,8 +87,6 @@ class SigningService:
         assert isinstance(concent_public_key, bytes)
         assert isinstance(signing_service_private_key, bytes)
         assert isinstance(ethereum_private_key, str)
-        # TODO: Remove after https://github.com/golemfactory/concent/issues/630 is implemented.
-        assert isinstance(enable_authentication, bool)
         self.host = host  # type: str
         self.port = port  # type: int
         self.initial_reconnect_delay: int = initial_reconnect_delay
@@ -100,8 +94,6 @@ class SigningService:
         self.signing_service_private_key = signing_service_private_key  # type: bytes
         self.signing_service_public_key = privtopub(signing_service_private_key)
         self.ethereum_private_key = ethereum_private_key  # type: str
-        # TODO: Remove after https://github.com/golemfactory/concent/issues/630 is implemented.
-        self.enable_authentication = enable_authentication  # type: bool
         self.current_reconnect_delay: Union[int, None] = None
         self.was_sigterm_caught: bool = False
 
@@ -161,8 +153,7 @@ class SigningService:
 
         # Reset delay on successful connection and set flag that connection is established.
         self.current_reconnect_delay = None
-        if self.enable_authentication:  # TODO: Remove after https://github.com/golemfactory/concent/issues/630 is implemented.
-            self._authenticate(receive_frame_generator, tcp_socket)
+        self._authenticate(receive_frame_generator, tcp_socket)
         self._handle_connection(receive_frame_generator, tcp_socket)
 
     def _authenticate(
@@ -477,15 +468,6 @@ def _parse_arguments() -> argparse.Namespace:
         help='Sentry DSN for error reporting.',
     )
 
-    # TODO: Remove after https://github.com/golemfactory/concent/issues/630 is implemented.
-    parser.add_argument(
-        '-a',
-        '--enable-authentication',
-        dest='enable_authentication',
-        default=False,
-        help='Enable authentication between MiddleMan and SigningService.',
-    )
-
     return parser.parse_args()
 
 
@@ -510,8 +492,6 @@ if __name__ == '__main__':
     arg_concent_public_key = args.concent_public_key
     arg_signing_service_private_key = args.signing_service_private_key
     arg_ethereum_private_key = args.ethereum_private_key
-    # TODO: Remove after https://github.com/golemfactory/concent/issues/630 is implemented.
-    arg_enable_authentication = args.enable_authentication
 
     SigningService(
         arg_host,
@@ -520,6 +500,4 @@ if __name__ == '__main__':
         arg_concent_public_key,
         arg_signing_service_private_key,
         arg_ethereum_private_key,
-        # TODO: Remove after https://github.com/golemfactory/concent/issues/630 is implemented.
-        arg_enable_authentication,
     ).run()

@@ -63,16 +63,11 @@ def get_force_report_computed_task(report_computed_task: ReportComputedTask) -> 
     return ForceReportComputedTask(report_computed_task = report_computed_task)
 
 
-def create_report_computed_task(
-    task_id: str,
-    subtask_id: str
-) -> ReportComputedTask:
+def create_report_computed_task() -> ReportComputedTask:
     current_time = get_current_utc_timestamp()
 
     task_to_compute = create_signed_task_to_compute(
         timestamp=timestamp_to_isoformat(current_time),
-        task_id=task_id,
-        subtask_id=subtask_id,
         deadline=(current_time + 100),
         price=10000,
     )
@@ -150,10 +145,8 @@ def send_correct_force_get_task_result(
 def test_case_multiple_requests_concerning_one_subtask_will_be_processed_one_by_one_if_subtask_exists_in_database(
     cluster_consts: str,
     cluster_url: str,
-    task_id: str,
-    subtask_id: str
 ) -> None:
-    report_computed_task = create_report_computed_task(task_id=task_id, subtask_id=subtask_id)
+    report_computed_task = create_report_computed_task()
 
     # send messages to save subtask in database and change state to REPORTED. Next message ForceGetTaskResult
     # requires REPORTED state and this is the simplest way to get it

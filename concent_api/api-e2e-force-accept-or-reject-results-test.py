@@ -142,18 +142,11 @@ def _precalculate_subtask_verification_time(minimum_upload_rate: int, concent_me
 
 
 @count_fails
-def test_case_2d_requestor_rejects_subtask_results(
-    cluster_consts: ProtocolConstants,
-    cluster_url: str,
-    task_id: str,
-    subtask_id: str,
-) -> None:
+def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConstants, cluster_url: str) -> None:
     # Test CASE 2D + 3 + 4B + 5. Requestor sends ForceSubtaskResultsResponse with SubtaskResultsRejected
     current_time = get_current_utc_timestamp()
     signed_task_to_compute = create_signed_task_to_compute(
         timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
-        task_id=task_id,
-        subtask_id=subtask_id,
         deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
         price=10000,
     )
@@ -225,19 +218,12 @@ def test_case_2d_requestor_rejects_subtask_results(
 
 
 @count_fails
-def test_case_4b_requestor_accepts_subtaks_results(
-    cluster_consts: ProtocolConstants,
-    cluster_url: str,
-    task_id: str,
-    subtask_id: str,
-) -> None:
+def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConstants, cluster_url: str) -> None:
     # Test CASE 4B + 5. Requestor sends ForceSubtaskResultsResponse with SubtaskResultsAccepted
     #  Step 1. Provider sends ForceSubtaskResults
     current_time = get_current_utc_timestamp()
     signed_task_to_compute = create_signed_task_to_compute(
         timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
-        task_id=task_id,
-        subtask_id=subtask_id,
         deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
         price=10000,
     )
@@ -311,12 +297,7 @@ def test_case_4b_requestor_accepts_subtaks_results(
 
 
 @count_fails
-def test_case_2c_wrong_timestamps(
-    cluster_consts: ProtocolConstants,
-    cluster_url: str,
-    task_id: str,
-    subtask_id: str,
-) -> None:
+def test_case_2c_wrong_timestamps(cluster_consts: ProtocolConstants, cluster_url: str) -> None:
     # Test CASE 2C - Send ForceSubtaskResults with wrong timestamps
     current_time = get_current_utc_timestamp()
     api_request(
@@ -331,8 +312,6 @@ def test_case_2c_wrong_timestamps(
                 report_computed_task=report_computed_task(
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
-                        task_id=task_id,
-                        subtask_id=subtask_id,
                         deadline=calculate_deadline_too_far_in_the_future(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
                         price=10000,
                     )
@@ -349,12 +328,7 @@ def test_case_2c_wrong_timestamps(
 
 
 @count_fails
-def test_case_2b_not_enough_funds(
-    cluster_consts: ProtocolConstants,
-    cluster_url: str,
-    task_id: str,
-    subtask_id: str,
-) -> None:
+def test_case_2b_not_enough_funds(cluster_consts: ProtocolConstants, cluster_url: str) -> None:
     #  Test CASE 2B - Send ForceSubtaskResults with not enough amount of funds on account
     current_time = get_current_utc_timestamp()
     api_request(
@@ -369,8 +343,6 @@ def test_case_2b_not_enough_funds(
                 report_computed_task=report_computed_task(
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
-                        task_id=task_id,
-                        subtask_id=subtask_id,
                         deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
                         requestor_ethereum_public_key=DIFFERENT_REQUESTOR_ETHEREUM_PUBLIC_KEY,
                         requestor_ethereum_private_key=DIFFERENT_REQUESTOR_ETHEREUM_PRIVATE_KEY,
@@ -390,19 +362,12 @@ def test_case_2b_not_enough_funds(
 
 
 @count_fails
-def test_case_2a_send_duplicated_force_subtask_results(
-    cluster_consts: ProtocolConstants,
-    cluster_url: str,
-    task_id: str,
-    subtask_id: str,
-) -> None:
+def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolConstants, cluster_url: str) -> None:
     #  Test CASE 2A + 2D + 3 - Send ForceSubtaskResults with same task_id as stored by Concent before
     #  Step 1. Send ForceSubtaskResults first time
     current_time = get_current_utc_timestamp()
     signed_task_to_compute = create_signed_task_to_compute(
         timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
-        task_id=task_id,
-        subtask_id=subtask_id,
         deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
         price=10000,
     )

@@ -12,7 +12,6 @@ import http.client
 import json
 import requests
 import sys
-import uuid
 
 from freezegun import freeze_time
 
@@ -285,7 +284,7 @@ def get_tests_list(patterns: Sequence, all_objects: list) -> list:
 def execute_tests(tests_to_execute: list, objects: dict, **kwargs: Any) -> None:
     tests = [objects[name] for name in tests_to_execute]
     for test in tests:
-        test(task_id=str(uuid.uuid4()), subtask_id=str(uuid.uuid4()), **kwargs)
+        test(**kwargs)
         print("-" * 80)
 
 
@@ -320,8 +319,6 @@ def _get_requestor_hex_public_key() -> str:
 
 
 def create_signed_task_to_compute(
-    task_id: str,
-    subtask_id: str,
     deadline: int,
     timestamp: Optional[Union[datetime.datetime, str]]=None,
     provider_public_key: Optional[bytes]=None,
@@ -336,8 +333,6 @@ def create_signed_task_to_compute(
 ) -> TaskToCompute:
     with freeze_time(timestamp):
         compute_task_def = ComputeTaskDefFactory(
-            task_id=task_id,
-            subtask_id=subtask_id,
             deadline=deadline,
             extra_data={
                 'output_format': 'png',

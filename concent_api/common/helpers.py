@@ -22,6 +22,16 @@ from core.exceptions import Http400
 from common.constants import ErrorCode
 
 
+class RequestIDGenerator:
+
+    _request_id = 0
+
+    @classmethod
+    def generate_request_id(cls) -> int:
+        cls._request_id += 1
+        return cls._request_id
+
+
 def is_base64(data: str) -> bool:
     """
     Checks if given data is properly base64-encoded data.

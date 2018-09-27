@@ -95,6 +95,22 @@ class TestEscapingAndHandlingSeparatorMiddlemanProtocol(TestCase):
         with self.assertRaises(BrokenEscapingInFrameMiddlemanProtocolError):
             escape_decode_raw_message(wrong_escape_sequence)
 
+    def test_that_escape_character_followed_by_related_escape_sequence_should_be_encoded_and_decoded_correctly(self):
+        raw = ESCAPE_CHARACTER + ESCAPE_SEQUENCES[ESCAPE_CHARACTER]
+
+        raw_escaped = escape_encode_raw_message(raw)
+        raw_unescaped = escape_decode_raw_message(raw_escaped)
+
+        self.assertEqual(raw, raw_unescaped)
+
+    def test_that_frame_separator_followed_by_related_escape_sequence_should_be_encoded_and_decoded_correctly(self):
+        raw = FRAME_SEPARATOR + ESCAPE_SEQUENCES[FRAME_SEPARATOR]
+
+        raw_escaped = escape_encode_raw_message(raw)
+        raw_unescaped = escape_decode_raw_message(raw_escaped)
+
+        self.assertEqual(raw, raw_unescaped)
+
 
 class TestUnescapeStreamHelperMiddlemanProtocol:
 

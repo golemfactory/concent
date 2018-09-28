@@ -27,9 +27,6 @@ from middleman_protocol.constants import MAXIMUM_FRAME_LENGTH
 logger = getLogger(__name__)
 crash_logger = getLogger('crash')
 
-# TODO: remove together with corresponding flag in signing_service.py when testing on cluster is finished.
-ENABLE_AUTHENTICATION = False
-
 
 class MiddleMan:
     def __init__(
@@ -242,8 +239,6 @@ class MiddleMan:
                     self._loop.run_until_complete(task)
 
     async def _authenticate_signing_service(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> bool:
-        if not ENABLE_AUTHENTICATION:
-            return True
         logger.info("Signing Service candidate has connected, authenticating...")
         authentication_task = self._loop.create_task(is_authenticated(reader, writer))
         index = len(self._ss_connection_candidates)

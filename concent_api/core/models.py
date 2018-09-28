@@ -235,6 +235,16 @@ class Subtask(Model):
             SubtaskState.ACCEPTED,
             SubtaskState.FAILED,
         },
+        'want_to_compute_task': {
+            SubtaskState.FORCING_REPORT,
+            SubtaskState.REPORTED,
+            SubtaskState.FORCING_RESULT_TRANSFER,
+            SubtaskState.RESULT_UPLOADED,
+            SubtaskState.FORCING_ACCEPTANCE,
+            SubtaskState.REJECTED,
+            SubtaskState.ACCEPTED,
+            SubtaskState.FAILED,
+        },
         'report_computed_task': {
             SubtaskState.FORCING_REPORT,
             SubtaskState.REPORTED,
@@ -257,6 +267,7 @@ class Subtask(Model):
     # Defines in which states given related message must be None.
     UNSET_RELATED_MESSAGES_IN_STATES = {
         'task_to_compute': {},
+        'want_to_compute_task': {},
         'report_computed_task': {},
         'ack_report_computed_task': {
             SubtaskState.FORCING_REPORT,
@@ -287,6 +298,7 @@ class Subtask(Model):
     # Defines related golem message for related stored messages
     MESSAGE_FOR_FIELD = {
         'task_to_compute':              message.TaskToCompute,
+        'want_to_compute_task':         message.WantToComputeTask,
         'report_computed_task':         message.ReportComputedTask,
         'ack_report_computed_task':     message.tasks.AckReportComputedTask,
         'reject_report_computed_task':  message.tasks.RejectReportComputedTask,
@@ -379,6 +391,7 @@ class Subtask(Model):
 
     # Related messages
     task_to_compute = OneToOneField(StoredMessage, related_name='subtasks_for_task_to_compute')
+    want_to_compute_task = OneToOneField(StoredMessage, related_name='subtasks_for_want_to_compute_task')
     report_computed_task = OneToOneField(StoredMessage, related_name='subtasks_for_report_computed_task')
     ack_report_computed_task = OneToOneField(StoredMessage, blank=True, null=True, related_name='subtasks_for_ack_report_computed_task')
     reject_report_computed_task = OneToOneField(StoredMessage, blank=True, null=True, related_name='subtasks_for_reject_report_computed_task')

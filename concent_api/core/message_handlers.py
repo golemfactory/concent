@@ -914,6 +914,7 @@ def store_subtask(
         next_deadline=parse_timestamp_to_utc_datetime(next_deadline) if next_deadline is not None else None,
         computation_deadline=parse_timestamp_to_utc_datetime(computation_deadline),
         task_to_compute=store_message(task_to_compute, task_id, subtask_id),
+        want_to_compute_task=store_message(task_to_compute.want_to_compute_task, task_id, subtask_id),
         report_computed_task=store_message(report_computed_task, task_id, subtask_id),
     )
 

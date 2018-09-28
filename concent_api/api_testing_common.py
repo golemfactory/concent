@@ -19,9 +19,11 @@ from freezegun import freeze_time
 from golem_messages.exceptions import MessageError
 from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
+from golem_messages.factories.tasks import WantToComputeTaskFactory
 from golem_messages.message import Message
 from golem_messages.message.concents import ClientAuthorization
 from golem_messages.message.tasks import TaskToCompute
+from golem_messages.message.tasks import WantToComputeTask
 from golem_messages.shortcuts import dump
 from golem_messages.shortcuts import load
 from golem_messages.utils import encode_hex
@@ -327,6 +329,7 @@ def create_signed_task_to_compute(
     requestor_ethereum_public_key: Optional[bytes]=None,
     requestor_ethereum_private_key: Optional[bytes]=None,
     provider_ethereum_public_key: Optional[bytes]=None,
+    want_to_compute_task: Optional[WantToComputeTask] = None,
     price: int=0,
     size: int=1,
     package_hash: str='sha1:57786d92d1a6f7eaaba1c984db5e108c68b03f0d',
@@ -344,12 +347,16 @@ def create_signed_task_to_compute(
         )
         if script_src is not None:
             compute_task_def['extra_data']['script_src'] = script_src
-        task_to_compute = TaskToComputeFactory(
+        want_to_compute_task = want_to_compute_task if want_to_compute_task is not None else WantToComputeTaskFactory(
             provider_public_key=provider_public_key if provider_public_key is not None else _get_provider_hex_public_key(),
+            provider_ethereum_public_key=encode_hex(provider_ethereum_public_key) if provider_ethereum_public_key is not None else encode_hex(PROVIDER_ETHEREUM_PUBLIC_KEY),
+        )
+        want_to_compute_task = sign_message(want_to_compute_task, PROVIDER_PRIVATE_KEY)
+        task_to_compute = TaskToComputeFactory(
             requestor_public_key=requestor_public_key if requestor_public_key is not None else _get_requestor_hex_public_key(),
             compute_task_def=compute_task_def,
+            want_to_compute_task=want_to_compute_task,
             requestor_ethereum_public_key=encode_hex(requestor_ethereum_public_key) if requestor_ethereum_public_key is not None else encode_hex(REQUESTOR_ETHEREUM_PUBLIC_KEY),
-            provider_ethereum_public_key=encode_hex(provider_ethereum_public_key) if provider_ethereum_public_key is not None else encode_hex(PROVIDER_ETHEREUM_PUBLIC_KEY),
             price=price,
             size=size,
             package_hash=package_hash,

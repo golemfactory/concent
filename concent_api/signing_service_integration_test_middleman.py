@@ -5,53 +5,81 @@ from typing import Any
 import os
 import sys
 
-from golem_messages.message import Message
-from middleman_protocol.message import GolemMessageFrame
-from middleman_protocol.concent_golem_messages.message import SignedTransaction
-from middleman_protocol.concent_golem_messages.message import TransactionSigningRequest
-
 from api_testing_common import assert_condition
+from api_testing_common import call_function_in_threads
 from api_testing_common import count_fails
 from common.helpers import get_current_utc_timestamp
+from common.helpers import RequestIDGenerator
+from middleman_protocol.message import GolemMessageFrame
+from middleman_protocol.concent_golem_messages.message import SignedTransaction
 from signing_service_testing_common import Components
+from signing_service_testing_common import create_golem_message_frame_with_correct_transaction_signing_request
+from signing_service_testing_common import create_golem_message_frame_with_incorrect_transaction_signing_request
 from signing_service_testing_common import run_tests
 from signing_service_testing_common import send_message_to_middleman_and_receive_response
+from signing_service_testing_common import send_message_to_middleman_without_response
 
 
 REQUIRED_COMPONENTS = [Components.MIDDLEMAN]
 
+NUMBER_OF_CONCENTS_FOR_SEVERAL_CONCENTS_TEST_CASE = 4
+NUMBER_OF_CONCENTS_FOR_MAYHEM_TEST_CASE = 20
+NUMBER_OF_REQUEST_PER_CONCENT_FOR_MAYHEM_TEST_CASE = 40
+
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
 
-def create_golem_message_frame(payload: Message, request_id: int) -> GolemMessageFrame:
-    return GolemMessageFrame(
-        payload=payload,
+def send_golem_message_frame_with_correct_transaction_signing_request(config: ConfigParser) -> None:
+    request_id = RequestIDGenerator.generate_request_id()
+
+    # Create GolemMessageFrame with correct TransactionSigningRequest.
+    golem_message_frame = create_golem_message_frame_with_correct_transaction_signing_request(
         request_id=request_id,
     )
 
-
-def correct_transaction_signing_request(request_id: int) -> TransactionSigningRequest:
-    transaction_siging_request = TransactionSigningRequest(
-        nonce=request_id,
-        gasprice=10 ** 6,
-        startgas=80000,
-        value=10,
-        to=b'7917bc33eea648809c28',
-        data=b'3078666333323333396130303030303030303030303030303030303030303030303032393662363963383738613734393865663463343531363436353231336564663834666334623330303030303030303030303030303030303030303030303030333431336437363161356332633362656130373531373064333239363566636161386261303533633030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303237313030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303562343336643666',
-        from_address=b'7917bc33eea648809c29',
+    # Send message through wrapper and receive deserialized response.
+    response = send_message_to_middleman_and_receive_response(
+        message=golem_message_frame,
+        config=config,
+        concent_private_key=CONCENT_PRIVATE_KEY,
+        concent_public_key=CONCENT_PUBLIC_KEY,
     )
-    return transaction_siging_request
+
+    # Check response.
+    assert_condition(
+        type(response),
+        GolemMessageFrame,
+        f'Deserialized response type is {type(response)} instead of GolemMessageFrame.'
+    )
+    assert_condition(
+        type(response.payload),
+        SignedTransaction,
+        f'Deserialized response payload type is {type(response.payload)} instead of SignedTransaction.'
+    )
+    assert_condition(
+        response.request_id,
+        request_id,
+        f'Deserialized response request_id is {response.request_id} instead of {request_id}.'
+    )
 
 
-def create_golem_message_frame_with_correct_transaction_signing_request(request_id: int) -> GolemMessageFrame:
-    return create_golem_message_frame(
-        payload=correct_transaction_signing_request(request_id),
-        request_id=request_id,
+def send_golem_message_frame_with_incorrect_transaction_signing_request(config: ConfigParser) -> None:
+    # Create GolemMessageFrame with incorrect TransactionSigningRequest.
+    golem_message_frame = create_golem_message_frame_with_incorrect_transaction_signing_request(
+        request_id=get_current_utc_timestamp(),
+    )
+
+    # Send message through wrapper and do not wait for response.
+    send_message_to_middleman_without_response(
+        message=golem_message_frame,
+        config=config,
+        concent_private_key=CONCENT_PRIVATE_KEY,
     )
 
 
 @count_fails
-def test_case_send_golem_message_frame_with_correct_transaction_signing_request(config: ConfigParser, **kwargs: Any) -> None:
+def test_case_1_send_golem_message_frame_with_correct_transaction_signing_request(config: ConfigParser, **kwargs: Any) -> None:
     """
     1. Client sends GolemMessageFrame with correct TransactionSigningRequest to MiddleMan.
     2. MiddleMan responds with GolemMessageFrame with SignedTransaction.
@@ -71,8 +99,98 @@ def test_case_send_golem_message_frame_with_correct_transaction_signing_request(
     )
 
     # Check response.
-    assert_condition(type(response), GolemMessageFrame, f'Deserialized response type is {type(response)} instead of GolemMessageFrame.')
-    assert_condition(type(response.payload), SignedTransaction, f'Deserialized response payload type is {type(response.payload)} instead of SignedTransaction.')
+    assert_condition(
+        type(response),
+        GolemMessageFrame,
+        f'Deserialized response type is {type(response)} instead of GolemMessageFrame.'
+    )
+    assert_condition(
+        type(response.payload),
+        SignedTransaction,
+        f'Deserialized response payload type is {type(response.payload)} instead of SignedTransaction.'
+    )
+
+
+@count_fails
+def test_case_2_send_golem_message_frame_with_incorrect_then_correct_transaction_signing_request(config: ConfigParser, **kwargs: Any) -> None:
+    """
+    1. Client sends GolemMessageFrame with incorrect TransactionSigningRequest to MiddleMan.
+    2  Client sends GolemMessageFrame with correct TransactionSigningRequest to MiddleMan.
+    3. MiddleMan responds with GolemMessageFrame with SignedTransaction.
+    """
+
+    # Create GolemMessageFrame with incorrect TransactionSigningRequest.
+    golem_message_frame = create_golem_message_frame_with_incorrect_transaction_signing_request(
+        request_id=get_current_utc_timestamp(),
+    )
+
+    # Send message through wrapper and do not wait for response.
+    send_message_to_middleman_without_response(
+        message=golem_message_frame,
+        config=config,
+        concent_private_key=CONCENT_PRIVATE_KEY,
+    )
+
+    # Create GolemMessageFrame with correct TransactionSigningRequest.
+    golem_message_frame = create_golem_message_frame_with_correct_transaction_signing_request(
+        request_id=get_current_utc_timestamp(),
+    )
+
+    # Send message through wrapper and receive deserialized response.
+    response = send_message_to_middleman_and_receive_response(
+        message=golem_message_frame,
+        config=config,
+        concent_private_key=CONCENT_PRIVATE_KEY,
+        concent_public_key=CONCENT_PUBLIC_KEY,
+    )
+
+    # Check response.
+    assert_condition(
+        type(response),
+        GolemMessageFrame,
+        f'Deserialized response type is {type(response)} instead of GolemMessageFrame.'
+    )
+    assert_condition(
+        type(response.payload),
+        SignedTransaction,
+        f'Deserialized response payload type is {type(response.payload)} instead of SignedTransaction.'
+    )
+
+
+@count_fails
+def test_case_3_send_golem_message_frame_with_correct_transaction_signing_request_by_several_concents(config: ConfigParser, **kwargs: Any) -> None:
+    """
+    1. Several clients sends GolemMessageFrame with correct TransactionSigningRequest to MiddleMan.
+    2. MiddleMan responds with GolemMessageFrame with SignedTransaction to each client.
+    """
+
+    call_function_in_threads(
+        send_golem_message_frame_with_correct_transaction_signing_request,
+        NUMBER_OF_CONCENTS_FOR_SEVERAL_CONCENTS_TEST_CASE,
+        config,
+    )
+
+
+@count_fails
+def test_case_4_mayhem(config: ConfigParser, **kwargs: Any) -> None:
+    """
+    In this test case a defined number of Concents
+    will send a defined number of requests
+    of which half will be correct.
+    """
+
+    def send_golem_message_frames(config: ConfigParser) -> None:
+        for i in range(NUMBER_OF_REQUEST_PER_CONCENT_FOR_MAYHEM_TEST_CASE):
+            if bool(i % 2):
+                send_golem_message_frame_with_correct_transaction_signing_request(config)
+            else:
+                send_golem_message_frame_with_incorrect_transaction_signing_request(config)
+
+    call_function_in_threads(
+        send_golem_message_frames,
+        NUMBER_OF_CONCENTS_FOR_MAYHEM_TEST_CASE,
+        config,
+    )
 
 
 if __name__ == '__main__':

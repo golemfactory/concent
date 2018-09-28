@@ -2,19 +2,17 @@
 import os
 import sys
 import time
-from threading import Thread
-from typing import Callable
 from typing import Optional
 import requests
 
 from golem_messages import message
 from golem_messages.factories.tasks import ReportComputedTaskFactory
-from golem_messages.message import Message
 from golem_messages.message.concents import ForceGetTaskResult
 from golem_messages.message.concents import ForceReportComputedTask
 from golem_messages.message.tasks import AckReportComputedTask
 from golem_messages.message.tasks import ReportComputedTask
 
+from api_testing_common import call_function_in_threads
 from api_testing_common import count_fails, assert_content_equal
 from api_testing_common import PROVIDER_PRIVATE_KEY
 from api_testing_common import REQUESTOR_PRIVATE_KEY
@@ -38,17 +36,6 @@ responses_global = []  # type: list
 def clear_responses() -> None:
     global responses_global
     responses_global.clear()
-
-
-def call_function_in_treads(
-    func: Callable,
-    number_of_threads: int,
-    cluster_url: str,
-    golem_message: Message,
-) -> None:
-    for i in range(number_of_threads):
-        thread = Thread(target=func, args=(cluster_url, golem_message,))
-        thread.start()
 
 
 def get_ack_report_computed_task(report_computed_task: ReportComputedTask) -> AckReportComputedTask:
@@ -163,7 +150,7 @@ def test_case_multiple_requests_concerning_one_subtask_will_be_processed_one_by_
 
     clear_responses()
     # this is test- sending some messages in one time
-    call_function_in_treads(
+    call_function_in_threads(
         func=send_correct_force_get_task_result,  # Subtask state changed to: FORCING_RESULT_TRANSFER
         number_of_threads=NUMBER_OF_TESTING_THREADS,
         cluster_url=cluster_url,

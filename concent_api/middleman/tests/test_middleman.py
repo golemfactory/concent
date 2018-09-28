@@ -25,7 +25,6 @@ from middleman.constants import DEFAULT_EXTERNAL_PORT
 from middleman.constants import DEFAULT_INTERNAL_PORT
 from middleman.constants import ERROR_ADDRESS_ALREADY_IN_USE
 from middleman.constants import LOCALHOST_IP
-from middleman.middleman_server import ENABLE_AUTHENTICATION
 from middleman.middleman_server import MiddleMan
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
@@ -188,8 +187,6 @@ class TestMiddleManServer:
         mocked_writer.close.assert_called_once_with()
 
     def test_that_when_authentication_is_unsuccessful_then_connection_ends(self, event_loop):
-        if not ENABLE_AUTHENTICATION:
-            return
         self.middleman._is_signing_service_connection_active = False
         mocked_reader = prepare_mocked_reader(b"some bytes")
         mocked_writer = prepare_mocked_writer()
@@ -236,8 +233,6 @@ class TestMiddleManServer:
             CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
             SIGNING_SERVICE_PUBLIC_KEY=SIGNING_SERVICE_PUBLIC_KEY,
         ):
-            if not ENABLE_AUTHENTICATION:
-                return
 
             async def mock_coro():
                 await asyncio.sleep(3)

@@ -22,6 +22,7 @@ from golem_messages import message
 from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
+from golem_messages.factories.tasks import WantToComputeTaskFactory
 from golem_messages.message.base import Message
 from golem_messages.message.concents import ForcePayment
 from golem_messages.message.concents import ForceReportComputedTask
@@ -37,6 +38,7 @@ from golem_messages.message.tasks import SubtaskResultsAccepted
 from golem_messages.message.tasks import SubtaskResultsRejected
 from golem_messages.message.tasks import TaskFailure
 from golem_messages.message.tasks import TaskToCompute
+from golem_messages.message.tasks import WantToComputeTask
 from golem_messages.register import library
 from golem_messages.utils import encode_hex
 
@@ -230,6 +232,7 @@ class ConcentIntegrationTestCase(TestCase):
         task_id: Optional[str] = None,
         subtask_id: Optional[str] = None,
         compute_task_def: Optional[ComputeTaskDef] = None,
+        want_to_compute_task: Optional[WantToComputeTask] = None,
         requestor_id: Optional[bytes] = None,
         requestor_public_key: Optional[bytes] = None,
         requestor_ethereum_public_key: Optional[bytes] = None,
@@ -274,11 +277,13 @@ class ConcentIntegrationTestCase(TestCase):
                 provider_id                     = (
                     provider_id if provider_id is not None else self._get_provider_hex_public_key()
                 ),
-                provider_public_key             = (
-                    provider_public_key if provider_public_key is not None else self._get_provider_hex_public_key()
-                ),
-                provider_ethereum_public_key    = (
-                    provider_ethereum_public_key if provider_ethereum_public_key is not None else self._get_provider_ethereum_hex_public_key()
+                want_to_compute_task=want_to_compute_task if want_to_compute_task is not None else WantToComputeTaskFactory(
+                    provider_public_key=(
+                        provider_public_key if provider_public_key is not None else self._get_provider_hex_public_key()
+                    ),
+                    provider_ethereum_public_key=(
+                        provider_ethereum_public_key if provider_ethereum_public_key is not None else self._get_provider_ethereum_hex_public_key()
+                    ),
                 ),
                 price=price,
                 package_hash=package_hash,

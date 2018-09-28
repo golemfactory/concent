@@ -6,9 +6,11 @@ import pytest
 from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.factories.tasks import SubtaskResultsAcceptedFactory
+from golem_messages.factories.tasks import WantToComputeTaskFactory
 from golem_messages.message.tasks import ReportComputedTask
 from golem_messages.message.tasks import SubtaskResultsRejected
 from golem_messages.message.tasks import TaskToCompute
+from golem_messages.message.tasks import WantToComputeTask
 from golem_messages.utils import encode_hex
 from common.constants import ErrorCode
 from common.exceptions import ConcentValidationError
@@ -52,7 +54,8 @@ class TestValidateGolemMessageSubtaskResultsRejected(TestCase):
             validate_golem_message_subtask_results_rejected(None)
 
     def test_that_exception_is_raised_when_subtask_results_rejected_contains_invalid_task_to_compute(self):
-        report_computed_task = ReportComputedTask(task_to_compute=TaskToCompute())
+        task_to_compute = TaskToCompute(want_to_compute_task=WantToComputeTask())
+        report_computed_task = ReportComputedTask(task_to_compute=task_to_compute)
         subtask_results_rejected = SubtaskResultsRejected(report_computed_task=report_computed_task)
         with self.assertRaises(ConcentValidationError):
             validate_golem_message_subtask_results_rejected(subtask_results_rejected)
@@ -179,15 +182,19 @@ class TestAreEthereumAddressesAndKeysUnique(TestCase):
         self.task_to_compute_1 = TaskToComputeFactory(
             requestor_ethereum_public_key=encode_hex(REQUESTOR_PUB_ETH_KEY),
             requestor_public_key=encode_hex(REQUESTOR_PUBLIC_KEY),
-            provider_ethereum_public_key=encode_hex(PROVIDER_PUB_ETH_KEY),
-            provider_public_key=encode_hex(PROVIDER_PUBLIC_KEY),
+            want_to_compute_task=WantToComputeTaskFactory(
+                provider_ethereum_public_key=encode_hex(PROVIDER_PUB_ETH_KEY),
+                provider_public_key=encode_hex(PROVIDER_PUBLIC_KEY),
+            ),
         )
         self.task_to_compute_1.generate_ethsig(REQUESTOR_PRIV_ETH_KEY)
         self.task_to_compute_2 = TaskToComputeFactory(
             requestor_ethereum_public_key=encode_hex(REQUESTOR_PUB_ETH_KEY),
             requestor_public_key=encode_hex(REQUESTOR_PUBLIC_KEY),
-            provider_ethereum_public_key=encode_hex(PROVIDER_PUB_ETH_KEY),
-            provider_public_key=encode_hex(PROVIDER_PUBLIC_KEY),
+            want_to_compute_task=WantToComputeTaskFactory(
+                provider_ethereum_public_key=encode_hex(PROVIDER_PUB_ETH_KEY),
+                provider_public_key=encode_hex(PROVIDER_PUBLIC_KEY),
+            ),
         )
         self.task_to_compute_2.generate_ethsig(REQUESTOR_PRIV_ETH_KEY)
 
@@ -234,14 +241,14 @@ class TestAreEthereumAddressesAndKeysUnique(TestCase):
         assert_that(result).is_false()
 
     def test_that_if_different_provider_ethereum_public_keys_are_given_method_should_return_false(self):
-        self.task_to_compute_2.provider_ethereum_public_key = encode_hex(DIFFERENT_PROVIDER_PUB_ETH_KEY)
+        self.task_to_compute_2.want_to_compute_task.provider_ethereum_public_key = encode_hex(DIFFERENT_PROVIDER_PUB_ETH_KEY)
         self.task_to_compute_2.generate_ethsig(REQUESTOR_PRIV_ETH_KEY)
         subtask_results_accepted_list = self.create_subtask_results_accepted_list(self.task_to_compute_1, self.task_to_compute_2)
         result = are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_results_accepted_list)
         assert_that(result).is_false()
 
     def test_that_if_different_provider_public_keys_are_given_method_should_return_false(self):
-        self.task_to_compute_2.provider_public_key = encode_hex(DIFFERENT_PROVIDER_PUBLIC_KEY)
+        self.task_to_compute_2.want_to_compute_task.provider_public_key = encode_hex(DIFFERENT_PROVIDER_PUBLIC_KEY)
         self.task_to_compute_2.generate_ethsig(REQUESTOR_PRIV_ETH_KEY)
         subtask_results_accepted_list = self.create_subtask_results_accepted_list(self.task_to_compute_1, self.task_to_compute_2)
         result = are_keys_and_addresses_unique_in_message_subtask_results_accepted(subtask_results_accepted_list)

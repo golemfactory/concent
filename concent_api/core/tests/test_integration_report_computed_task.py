@@ -1630,7 +1630,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             timestamp = "2017-12-01 10:59:00",
             task_to_compute = task_to_compute,
         )
-        del report_computed_task.task_to_compute.provider_public_key
+        del report_computed_task.task_to_compute.want_to_compute_task.provider_public_key
 
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
             timestamp = "2017-12-01 10:59:00",

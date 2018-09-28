@@ -11,7 +11,6 @@ from golem_messages.message.base import Message
 from golem_messages.message.concents import FileTransferToken
 from golem_messages.utils import encode_hex
 
-from core.models import Subtask
 from common.constants import MessageIdField
 from common.helpers import get_field_from_message
 from common.helpers import join_messages
@@ -222,7 +221,7 @@ def log_new_pending_response(
     logger: Logger,
     response_type: str,
     queue_name: str,
-    subtask: Optional[Subtask]=None,
+    subtask: Optional['Subtask']=None,  # type: ignore
 ) -> None:
     task_id = subtask.task_id if subtask is not None else '-not available-'
     subtask_id = subtask.subtask_id if subtask is not None else '-not available-'

@@ -5,6 +5,8 @@ from typing import Union
 
 from uuid import UUID
 
+from django.core.exceptions import ValidationError
+
 from golem_messages import message
 from golem_messages.exceptions import MessageError
 from golem_messages.message.tasks import RejectReportComputedTask
@@ -384,3 +386,27 @@ def validate_uuid(id_: str) -> None:
             'ID must be a UUID derivative.',
             error_code=ErrorCode.MESSAGE_WRONG_UUID_VALUE,
         )
+
+
+def validate_database_task_to_compute(
+        task_to_compute: message.tasks.TaskToCompute,
+        message_to_compare: message.Message
+) -> None:
+    if message_to_compare.task_to_compute != task_to_compute:
+        raise ValidationError({
+            message_to_compare.__class__.__name__: (
+                'Nested TaskToCompute message must be the same as TaskToCompute stored separately'
+            )
+        })
+
+
+def validate_database_report_computed_task(
+        report_computed_task: message.tasks.ReportComputedTask,
+        message_to_compare: message.Message
+) -> None:
+    if message_to_compare.report_computed_task != report_computed_task:
+        raise ValidationError({
+            message_to_compare.__class__.__name__: (
+                'Nested ReportComputedTask message must be the same as ReportComputedTask stored separately'
+            )
+        })

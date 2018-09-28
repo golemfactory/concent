@@ -23,14 +23,13 @@ from core.models import PendingResponse
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
 
-
-(CONCENT_PRIVATE_KEY,   CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
+(CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
 @override_settings(
-    CONCENT_PRIVATE_KEY    = CONCENT_PRIVATE_KEY,
-    CONCENT_PUBLIC_KEY     = CONCENT_PUBLIC_KEY,
-    CONCENT_MESSAGING_TIME = 3600,
+    CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+    CONCENT_MESSAGING_TIME=3600,
 )
 class CoreViewSendTest(ConcentIntegrationTestCase):
 
@@ -43,10 +42,10 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             deadline=self.message_timestamp + settings.CONCENT_MESSAGING_TIME
         )
         self.task_to_compute = self._get_deserialized_task_to_compute(
-            compute_task_def = self.compute_task_def,
+            compute_task_def=self.compute_task_def,
         )
         self.report_computed_task = self._get_deserialized_report_computed_task(
-            task_to_compute = self.task_to_compute
+            task_to_compute=self.task_to_compute
         )
         self.correct_golem_data = self._get_deserialized_force_report_computed_task(
             report_computed_task=self.report_computed_task
@@ -76,15 +75,15 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
         response = self.client.post(
             reverse('core:send'),
-            data = dump(
+            data=dump(
                 self.correct_golem_data,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY),
-            content_type                        = 'application/octet-stream',
+            content_type='application/octet-stream',
         )
 
-        self.assertEqual(response.status_code,                   202)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self.assertEqual(response.status_code, 202)
+        self._assert_stored_message_counter_increased(increased_by=2)
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
@@ -125,7 +124,8 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             CONCENT_PUBLIC_KEY,
         )
         self.assertIsInstance(response_message, message.concents.ForceReportComputedTaskResponse)
-        self.assertEqual(response_message.reason, message.concents.ForceReportComputedTaskResponse.REASON.SubtaskTimeout)
+        self.assertEqual(response_message.reason,
+                         message.concents.ForceReportComputedTaskResponse.REASON.SubtaskTimeout)
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_accept_valid_message_with_non_numeric_task_id(self):
@@ -134,27 +134,27 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         compute_task_def = self._get_deserialized_compute_task_def(
             deadline=self.message_timestamp
         )
-        task_to_compute                 = self._get_deserialized_task_to_compute(
+        task_to_compute = self._get_deserialized_task_to_compute(
             compute_task_def=compute_task_def,
         )
         report_computed_task = self._get_deserialized_report_computed_task(
-            task_to_compute = task_to_compute
+            task_to_compute=task_to_compute
         )
         correct_golem_data = self._get_deserialized_force_report_computed_task(
-            report_computed_task = report_computed_task,
+            report_computed_task=report_computed_task,
         )
 
         response = self.client.post(
             reverse('core:send'),
-            data = dump(
+            data=dump(
                 correct_golem_data,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY),
-            content_type = 'application/octet-stream',
+            content_type='application/octet-stream',
         )
 
-        self.assertEqual(response.status_code,                   202)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self.assertEqual(response.status_code, 202)
+        self._assert_stored_message_counter_increased(increased_by=2)
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
@@ -173,37 +173,37 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             requestor_public_key=self._get_encoded_requestor_public_key(),
         )
         report_computed_task = message.tasks.ReportComputedTask(
-            task_to_compute = task_to_compute
+            task_to_compute=task_to_compute
         )
         with freeze_time("2017-11-17 9:56:00"):
             force_report_computed_task = message.concents.ForceReportComputedTask(
-                report_computed_task = report_computed_task
+                report_computed_task=report_computed_task
             )
 
         response = self.client.post(
             reverse('core:send'),
-            data = dump(
+            data=dump(
                 force_report_computed_task,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
-            content_type                        = 'application/octet-stream',
+            content_type='application/octet-stream',
         )
         self._test_400_response(response)
 
-        data                                        = message.concents.ForceReportComputedTask()
-        data.report_computed_task                   = message.tasks.ReportComputedTask()
-        compute_task_def['deadline']                = self.message_timestamp - 3600
-        data.report_computed_task.task_to_compute   = message.TaskToCompute(compute_task_def = compute_task_def)
+        data = message.concents.ForceReportComputedTask()
+        data.report_computed_task = message.tasks.ReportComputedTask()
+        compute_task_def['deadline'] = self.message_timestamp - 3600
+        data.report_computed_task.task_to_compute = message.TaskToCompute(compute_task_def=compute_task_def)
 
         response = self.client.post(
             reverse('core:send'),
-            data = dump(
+            data=dump(
                 data,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
-            content_type                        = 'application/octet-stream',
+            content_type='application/octet-stream',
         )
         self._test_400_response(response)
         self.assertTrue(response.json()['error'].startswith('Error in Golem Message'))
@@ -213,26 +213,26 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
         response_202 = self.client.post(
             reverse('core:send'),
-            data = dump(
+            data=dump(
                 self.correct_golem_data,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
-            content_type                        = 'application/octet-stream',
+            content_type='application/octet-stream',
         )
 
         self.assertIsInstance(response_202, HttpResponse)
         self.assertEqual(response_202.status_code, 202)
-        self.correct_golem_data.encrypted  = None
-        self.correct_golem_data.sig        = None
+        self.correct_golem_data.encrypted = None
+        self.correct_golem_data.sig = None
         response_400 = self.client.post(
             reverse('core:send'),
-            data = dump(
+            data=dump(
                 self.correct_golem_data,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
-            content_type                        = 'application/octet-stream',
+            content_type='application/octet-stream',
         )
 
         self.assertIsInstance(response_400, JsonResponse)
@@ -248,12 +248,12 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
         response_400 = self.client.post(
             reverse('core:send'),
-            data = dump(
+            data=dump(
                 self.want_to_compute,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY
             ),
-            content_type                   = 'application/octet-stream',
+            content_type='application/octet-stream',
         )
 
         self._test_400_response(
@@ -286,12 +286,12 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
         response_400 = self.client.post(
             reverse('core:send'),
-            data = dump(
+            data=dump(
                 ack_report_computed_task,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY
             ),
-            content_type                    = 'application/octet-stream',
+            content_type='application/octet-stream',
         )
 
         self._test_400_response(
@@ -304,19 +304,19 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         assert StoredMessage.objects.count() == 0
 
         self.correct_golem_data.report_computed_task = self._get_deserialized_report_computed_task(
-            task_to_compute = self.cannot_compute_task.task_to_compute  # pylint: disable=no-member
+            task_to_compute=self.cannot_compute_task.task_to_compute  # pylint: disable=no-member
         )
 
         force_response = self.client.post(
             reverse('core:send'),
-            data = dump(
+            data=dump(
                 self.correct_golem_data,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY),
-            content_type                        = 'application/octet-stream',
+            content_type='application/octet-stream',
         )
 
-        self.assertEqual(force_response.status_code,                                202)
+        self.assertEqual(force_response.status_code, 202)
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
@@ -328,15 +328,15 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
         reject_response = self.client.post(
             reverse('core:send'),
-            data = dump(
+            data=dump(
                 self.reject_report_computed_task,
                 self.REQUESTOR_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY
             ),
-            content_type                   = 'application/octet-stream',
+            content_type='application/octet-stream',
         )
 
-        self.assertEqual(reject_response.status_code,       202)
+        self.assertEqual(reject_response.status_code, 202)
         self._test_last_stored_messages(
             expected_messages=[
                 message.tasks.RejectReportComputedTask,
@@ -354,12 +354,12 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             assert parse_timestamp_to_utc_datetime(get_current_utc_timestamp()) - timestamp > golem_settings.MSG_TTL
             response = self.client.post(
                 reverse('core:send'),
-                data = dump(
+                data=dump(
                     ping,
                     self.PROVIDER_PRIVATE_KEY,
                     CONCENT_PUBLIC_KEY
                 ),
-                content_type                   = 'application/octet-stream',
+                content_type='application/octet-stream',
             )
 
         self._test_400_response(response)
@@ -373,12 +373,12 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             assert timestamp - parse_timestamp_to_utc_datetime(get_current_utc_timestamp()) > golem_settings.FUTURE_TIME_TOLERANCE
             response = self.client.post(
                 reverse('core:send'),
-                data = dump(
+                data=dump(
                     ping,
                     self.PROVIDER_PRIVATE_KEY,
                     CONCENT_PUBLIC_KEY
                 ),
-                content_type                   = 'application/octet-stream',
+                content_type='application/octet-stream',
             )
 
         self._test_400_response(response)
@@ -405,13 +405,22 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 requestor_public_key=self._get_requestor_hex_public_key(),
             )
 
-            serialized_task_to_compute   = dump(task_to_compute, self.REQUESTOR_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY)
-            deserialized_task_to_compute = load(serialized_task_to_compute, self.PROVIDER_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY, check_time = False)
+            serialized_task_to_compute = dump(
+                task_to_compute,
+                self.REQUESTOR_PRIVATE_KEY,
+                self.PROVIDER_PUBLIC_KEY,
+            )
+            deserialized_task_to_compute = load(
+                serialized_task_to_compute,
+                self.PROVIDER_PRIVATE_KEY,
+                self.REQUESTOR_PUBLIC_KEY,
+                check_time=False,
+            )
 
             with freeze_time("2017-11-17 10:00:00"):
                 force_report_computed_task = message.concents.ForceReportComputedTask(
-                    report_computed_task = message.tasks.ReportComputedTask(
-                        task_to_compute = deserialized_task_to_compute
+                    report_computed_task=message.tasks.ReportComputedTask(
+                        task_to_compute=deserialized_task_to_compute
                     )
                 )
 
@@ -422,7 +431,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                         self.PROVIDER_PRIVATE_KEY,
                         CONCENT_PUBLIC_KEY
                     ),
-                    content_type = 'application/octet-stream',
+                    content_type='application/octet-stream',
                 )
 
             self._test_400_response(response_400)
@@ -439,26 +448,26 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         ]
         for deadline in valid_values:
             StoredMessage.objects.all().delete()
-            compute_task_def['deadline']    = deadline
+            compute_task_def['deadline'] = deadline
 
             deserialized_task_to_compute = self._get_deserialized_task_to_compute(
-                compute_task_def     = compute_task_def,
+                compute_task_def=compute_task_def,
             )
 
             force_report_computed_task = self._get_deserialized_force_report_computed_task(
-                report_computed_task = self._get_deserialized_report_computed_task(
-                    task_to_compute = deserialized_task_to_compute
+                report_computed_task=self._get_deserialized_report_computed_task(
+                    task_to_compute=deserialized_task_to_compute
                 )
             )
 
             response_202 = self.client.post(
                 reverse('core:send'),
-                data = dump(
+                data=dump(
                     force_report_computed_task,
                     self.PROVIDER_PRIVATE_KEY,
                     CONCENT_PUBLIC_KEY
                 ),
-                content_type                        = 'application/octet-stream',
+                content_type='application/octet-stream',
             )
 
             self.assertIn(response_202.status_code, [200, 202])
@@ -508,8 +517,8 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
     def test_send_with_empty_data_should_return_http_400_error(self):
         response = self.client.post(
             reverse('core:send'),
-            data                                = '',
-            content_type                        = 'application/octet-stream',
+            data='',
+            content_type='application/octet-stream',
         )
 
         self.assertEqual(response.status_code, 400)
@@ -529,12 +538,12 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
             response = self.client.post(
                 reverse('core:send'),
-                data = dump(
+                data=dump(
                     force_report_computed_task,
                     self.PROVIDER_PRIVATE_KEY,
                     CONCENT_PUBLIC_KEY
                 ),
-                content_type                        = 'application/octet-stream',
+                content_type='application/octet-stream',
             )
 
         self._test_400_response(
@@ -544,9 +553,9 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
 
 @override_settings(
-    CONCENT_PRIVATE_KEY    = CONCENT_PRIVATE_KEY,
-    CONCENT_PUBLIC_KEY     = CONCENT_PUBLIC_KEY,
-    CONCENT_MESSAGING_TIME = 3600,
+    CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+    CONCENT_MESSAGING_TIME=3600,
 )
 class CoreViewReceiveTest(ConcentIntegrationTestCase):
 
@@ -561,11 +570,12 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
                 requestor_public_key=self._get_requestor_hex_public_key(),
             )
             self.size = 58
+            self.report_computed_task = message.tasks.ReportComputedTask(
+                task_to_compute=self.task_to_compute,
+                size=self.size
+            )
             self.force_golem_data = message.concents.ForceReportComputedTask(
-                report_computed_task=message.tasks.ReportComputedTask(
-                    task_to_compute=self.task_to_compute,
-                    size=self.size
-                )
+                report_computed_task=self.report_computed_task,
             )
 
     @freeze_time("2017-11-17 10:00:00")
@@ -594,23 +604,23 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         client_requestor.save()
 
         task_to_compute_message = StoredMessage(
-            type        = self.task_to_compute.header.type_,
-            timestamp   = message_timestamp,
-            data        = self.task_to_compute.serialize(),
-            task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
-            subtask_id  = self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            type=self.task_to_compute.header.type_,
+            timestamp=message_timestamp,
+            data=self.task_to_compute.serialize(),
+            task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
         )
         task_to_compute_message.full_clean()
         task_to_compute_message.save()
 
         subtask = Subtask(
-            task_id                 = self.compute_task_def['task_id'],
-            subtask_id              = self.compute_task_def['subtask_id'],
-            task_to_compute         = task_to_compute_message,
-            report_computed_task    = new_message,
-            state                   = Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
-            provider                = client_provider,
-            requestor               = client_requestor,
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
+            task_to_compute=task_to_compute_message,
+            report_computed_task=new_message,
+            state=Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
+            provider=client_provider,
+            requestor=client_requestor,
             result_package_size=self.size,
             computation_deadline=parse_timestamp_to_utc_datetime(self.compute_task_def['deadline'])
         )
@@ -618,34 +628,36 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         subtask.save()
 
         new_message_inbox = PendingResponse(
-            response_type = PendingResponse.ResponseType.ForceReportComputedTask.name,  # pylint: disable=no-member
-            client        = client_requestor,
-            queue         = PendingResponse.Queue.Receive.name,  # pylint: disable=no-member
-            subtask       = subtask,
+            response_type=PendingResponse.ResponseType.ForceReportComputedTask.name,  # pylint: disable=no-member
+            client=client_requestor,
+            queue=PendingResponse.Queue.Receive.name,  # pylint: disable=no-member
+            subtask=subtask,
         )
         new_message_inbox.full_clean()
         new_message_inbox.save()
 
         response = self.client.post(
             reverse('core:receive'),
-            content_type                   = 'application/octet-stream',
-            data                           = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+            content_type='application/octet-stream',
+            data=self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
         )
         decoded_response = load(
             response.content,
             self.REQUESTOR_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY,
         )
-        self.assertEqual(response.status_code,   200)
-        self.assertEqual(new_message.task_id,    decoded_response.report_computed_task.task_to_compute.compute_task_def['task_id'])
-        self.assertEqual(new_message.subtask_id, decoded_response.report_computed_task.task_to_compute.compute_task_def['subtask_id'])
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(new_message.task_id,
+                         decoded_response.report_computed_task.task_to_compute.compute_task_def['task_id'])
+        self.assertEqual(new_message.subtask_id,
+                         decoded_response.report_computed_task.task_to_compute.compute_task_def['subtask_id'])
 
     @freeze_time("2017-11-17 10:00:00")
     def test_receive_return_http_204_if_no_messages_in_database(self):
         response = self.client.post(
             reverse('core:receive'),
-            data                           = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
-            content_type                   = 'application/octet-stream',
+            data=self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+            content_type='application/octet-stream',
         )
 
         self.assertEqual(response.status_code, 204)
@@ -666,7 +678,8 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
                 )
             )
 
-    def test_receive_should_return_first_messages_in_order_they_were_added_to_queue_if_the_receive_queue_contains_only_force_report_and_its_past_deadline(self):
+    def test_receive_should_return_first_messages_in_order_they_were_added_to_queue_if_the_receive_queue_contains_only_force_report_and_its_past_deadline(
+            self):
         message_timestamp = parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
         new_message = StoredMessage(
             type=self.force_golem_data.report_computed_task.header.type_,
@@ -679,27 +692,25 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         new_message.save()
 
         task_to_compute_message = StoredMessage(
-            type        = self.task_to_compute.header.type_,
-            timestamp   = message_timestamp,
-            data        = self.task_to_compute.serialize(),
-            task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
-            subtask_id  = self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            type=self.task_to_compute.header.type_,
+            timestamp=message_timestamp,
+            data=self.task_to_compute.serialize(),
+            task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
         )
         task_to_compute_message.full_clean()
         task_to_compute_message.save()
 
         ack_report_computed_task = message.tasks.AckReportComputedTask(
-            report_computed_task=message.ReportComputedTask(
-                task_to_compute=self.task_to_compute,
-            )
+            report_computed_task=self.report_computed_task
         )
 
         stored_ack_report_computed_task = StoredMessage(
-            type        = ack_report_computed_task.header.type_,
-            timestamp   = message_timestamp,
-            data        = ack_report_computed_task.serialize(),
-            task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
-            subtask_id  = self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            type=ack_report_computed_task.header.type_,
+            timestamp=message_timestamp,
+            data=ack_report_computed_task.serialize(),
+            task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
         )
         stored_ack_report_computed_task.full_clean()
         stored_ack_report_computed_task.save()
@@ -717,14 +728,14 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         client_requestor.save()
 
         subtask = Subtask(
-            task_id                  = self.compute_task_def['task_id'],
-            subtask_id               = self.compute_task_def['subtask_id'],
-            report_computed_task     = new_message,
-            task_to_compute          = task_to_compute_message,
-            ack_report_computed_task = stored_ack_report_computed_task,
-            state                    = Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
-            provider                 = client_provider,
-            requestor                = client_requestor,
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
+            report_computed_task=new_message,
+            task_to_compute=task_to_compute_message,
+            ack_report_computed_task=stored_ack_report_computed_task,
+            state=Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
+            provider=client_provider,
+            requestor=client_requestor,
             result_package_size=self.size,
             computation_deadline=parse_timestamp_to_utc_datetime(self.compute_task_def['deadline'])
         )
@@ -732,19 +743,19 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         subtask.save()
 
         new_message_inbox = PendingResponse(
-            response_type = PendingResponse.ResponseType.ForceReportComputedTask.name,  # pylint: disable=no-member
-            client        = client_requestor,
-            queue         = PendingResponse.Queue.Receive.name,  # pylint: disable=no-member
-            subtask       = subtask,
+            response_type=PendingResponse.ResponseType.ForceReportComputedTask.name,  # pylint: disable=no-member
+            client=client_requestor,
+            queue=PendingResponse.Queue.Receive.name,  # pylint: disable=no-member
+            subtask=subtask,
         )
         new_message_inbox.full_clean()
         new_message_inbox.save()
 
         new_message_inbox_out_of_band = PendingResponse(
-            response_type = PendingResponse.ResponseType.VerdictReportComputedTask.name,  # pylint: disable=no-member
-            client        = client_requestor,
-            queue         = PendingResponse.Queue.ReceiveOutOfBand.name,  # pylint: disable=no-member
-            subtask       = subtask,
+            response_type=PendingResponse.ResponseType.VerdictReportComputedTask.name,  # pylint: disable=no-member
+            client=client_requestor,
+            queue=PendingResponse.Queue.ReceiveOutOfBand.name,  # pylint: disable=no-member
+            subtask=subtask,
         )
         new_message_inbox_out_of_band.full_clean()
         new_message_inbox_out_of_band.save()
@@ -752,48 +763,51 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         with freeze_time("2017-11-17 12:00:00"):
             response = self.client.post(
                 reverse('core:receive'),
-                content_type                   = 'application/octet-stream',
-                data                           = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                content_type='application/octet-stream',
+                data=self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
             )
 
         decoded_message = load(
             response.content,
             self.REQUESTOR_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY,
-            check_time = False,
+            check_time=False,
         )
 
-        self.assertIsInstance(decoded_message,                                                  message.concents.ForceReportComputedTask)
-        self.assertEqual(response.status_code,                                                  200)
-        self.assertEqual(decoded_message.timestamp,                                             self._create_timestamp_from_string("2017-11-17 12:00:00"))
-        self.assertEqual(decoded_message.report_computed_task.task_to_compute.compute_task_def, self.task_to_compute.compute_task_def)  # pylint: disable=no-member
-        self.assertEqual(decoded_message.report_computed_task.task_to_compute.sig,              self.task_to_compute.sig)
+        self.assertIsInstance(decoded_message, message.concents.ForceReportComputedTask)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(decoded_message.timestamp, self._create_timestamp_from_string("2017-11-17 12:00:00"))
+        self.assertEqual(decoded_message.report_computed_task.task_to_compute.compute_task_def,
+                         self.task_to_compute.compute_task_def)  # pylint: disable=no-member
+        self.assertEqual(decoded_message.report_computed_task.task_to_compute.sig, self.task_to_compute.sig)
 
         with freeze_time("2017-11-17 12:00:00"):
             response = self.client.post(
                 reverse('core:receive'),
-                content_type                   = 'application/octet-stream',
-                data                           = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+                content_type='application/octet-stream',
+                data=self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
             )
 
         decoded_message = load(
             response.content,
             self.REQUESTOR_PRIVATE_KEY,
             CONCENT_PUBLIC_KEY,
-            check_time = False,
+            check_time=False,
         )
 
-        self.assertIsInstance(decoded_message,                                                      message.concents.VerdictReportComputedTask)
-        self.assertEqual(response.status_code,                                                      200)
-        self.assertEqual(decoded_message.timestamp,                                                 self._create_timestamp_from_string("2017-11-17 12:00:00"))
-        self.assertEqual(decoded_message.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def, self.task_to_compute.compute_task_def)  # pylint: disable=no-member
-        self.assertEqual(decoded_message.ack_report_computed_task.report_computed_task.task_to_compute.sig,              self.task_to_compute.sig)
+        self.assertIsInstance(decoded_message, message.concents.VerdictReportComputedTask)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(decoded_message.timestamp, self._create_timestamp_from_string("2017-11-17 12:00:00"))
+        self.assertEqual(decoded_message.ack_report_computed_task.report_computed_task.task_to_compute.compute_task_def,
+                         self.task_to_compute.compute_task_def)  # pylint: disable=no-member
+        self.assertEqual(decoded_message.ack_report_computed_task.report_computed_task.task_to_compute.sig,
+                         self.task_to_compute.sig)
 
 
 @override_settings(
-    CONCENT_PRIVATE_KEY    = CONCENT_PRIVATE_KEY,
-    CONCENT_PUBLIC_KEY     = CONCENT_PUBLIC_KEY,
-    CONCENT_MESSAGING_TIME = 3600,
+    CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+    CONCENT_MESSAGING_TIME=3600,
 )
 class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
 
@@ -809,70 +823,69 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
         self.size = 58
 
         with freeze_time("2017-11-17 10:00:00"):
+            self.report_computed_task = message.tasks.ReportComputedTask(
+                task_to_compute=self.task_to_compute,
+                size=self.size
+            )
             self.force_golem_data = message.concents.ForceReportComputedTask(
-                report_computed_task = message.tasks.ReportComputedTask(
-                    task_to_compute=self.task_to_compute,
-                    size=self.size
-                )
+                report_computed_task=self.report_computed_task
             )
         message_timestamp = parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
-        new_message       = StoredMessage(
-            type        = self.force_golem_data.report_computed_task.header.type_,
-            timestamp   = message_timestamp,
-            data        = self.force_golem_data.report_computed_task.serialize(),
-            task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
-            subtask_id  = self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+        new_message = StoredMessage(
+            type=self.force_golem_data.report_computed_task.header.type_,
+            timestamp=message_timestamp,
+            data=self.force_golem_data.report_computed_task.serialize(),
+            task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
         )
         new_message.full_clean()
         new_message.save()
 
         task_to_compute_message = StoredMessage(
-            type        = self.task_to_compute.header.type_,
-            timestamp   = message_timestamp,
-            data        = self.task_to_compute.serialize(),
-            task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
-            subtask_id  = self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            type=self.task_to_compute.header.type_,
+            timestamp=message_timestamp,
+            data=self.task_to_compute.serialize(),
+            task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
         )
         task_to_compute_message.full_clean()
         task_to_compute_message.save()
 
         ack_report_computed_task = message.tasks.AckReportComputedTask(
-            report_computed_task=message.tasks.ReportComputedTask(
-                task_to_compute=self.task_to_compute,
-            )
+            report_computed_task=self.report_computed_task
         )
 
         stored_ack_report_computed_task = StoredMessage(
-            type        = ack_report_computed_task.header.type_,
-            timestamp   = message_timestamp,
-            data        = ack_report_computed_task.serialize(),
-            task_id     = self.compute_task_def['task_id'],  # pylint: disable=no-member
-            subtask_id  = self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            type=ack_report_computed_task.header.type_,
+            timestamp=message_timestamp,
+            data=ack_report_computed_task.serialize(),
+            task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
         )
         stored_ack_report_computed_task.full_clean()
         stored_ack_report_computed_task.save()
 
         client_provider = Client(
-            public_key_bytes = self.PROVIDER_PUBLIC_KEY
+            public_key_bytes=self.PROVIDER_PUBLIC_KEY
         )
         client_provider.full_clean()
         client_provider.save()
 
         client_requestor = Client(
-            public_key_bytes = self.REQUESTOR_PUBLIC_KEY
+            public_key_bytes=self.REQUESTOR_PUBLIC_KEY
         )
         client_requestor.full_clean()
         client_requestor.save()
 
         subtask = Subtask(
-            task_id                  = self.compute_task_def['task_id'],
-            subtask_id               = self.compute_task_def['subtask_id'],
-            report_computed_task     = new_message,
-            task_to_compute          = task_to_compute_message,
-            ack_report_computed_task = stored_ack_report_computed_task,
-            state                    = Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
-            provider                 = client_provider,
-            requestor                = client_requestor,
+            task_id=self.compute_task_def['task_id'],
+            subtask_id=self.compute_task_def['subtask_id'],
+            report_computed_task=new_message,
+            task_to_compute=task_to_compute_message,
+            ack_report_computed_task=stored_ack_report_computed_task,
+            state=Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
+            provider=client_provider,
+            requestor=client_requestor,
             result_package_size=self.size,
             computation_deadline=parse_timestamp_to_utc_datetime(self.compute_task_def['deadline'])
         )
@@ -880,21 +893,20 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
         subtask.save()
 
         new_message_inbox = PendingResponse(
-            response_type = PendingResponse.ResponseType.ForceReportComputedTask.name,  # pylint: disable=no-member
-            client        = client_requestor,
-            queue         = PendingResponse.Queue.ReceiveOutOfBand.name,  # pylint: disable=no-member
-            subtask       = subtask,
+            response_type=PendingResponse.ResponseType.ForceReportComputedTask.name,  # pylint: disable=no-member
+            client=client_requestor,
+            queue=PendingResponse.Queue.ReceiveOutOfBand.name,  # pylint: disable=no-member
+            subtask=subtask,
         )
         new_message_inbox.full_clean()
         new_message_inbox.save()
 
     @freeze_time("2017-11-17 11:40:00")
     def test_view_receive_out_of_band_should_accept_valid_message(self):
-
         response = self.client.post(
             reverse('core:receive'),
-            data                                = self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
-            content_type                        = 'application/octet-stream',
+            data=self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
+            content_type='application/octet-stream',
         )
 
         self.assertEqual(response.status_code, 200)
@@ -903,8 +915,9 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
     def test_view_receive_out_of_band_return_http_204_if_no_messages_in_database(self):
         response = self.client.post(
             reverse('core:receive'),
-            data                                = self._create_client_auth_message(self.DIFFERENT_REQUESTOR_PRIVATE_KEY, self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
-            content_type                        = 'application/octet-stream',
+            data=self._create_client_auth_message(self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
+                                                  self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
+            content_type='application/octet-stream',
         )
 
         self.assertEqual(response.status_code, 204)

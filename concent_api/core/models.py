@@ -4,38 +4,41 @@ from typing import Union
 import base64
 import datetime
 
-from django.conf            import settings
+from django.conf import settings
 from django.core.validators import ValidationError
-from django.db.models       import BinaryField
-from django.db.models       import BooleanField
-from django.db.models       import CharField
-from django.db.models       import DateTimeField
-from django.db.models       import DecimalField
-from django.db.models       import ExpressionWrapper
-from django.db.models       import F
-from django.db.models       import ForeignKey
-from django.db.models       import Func
-from django.db.models       import IntegerField
-from django.db.models       import Manager
-from django.db.models       import Model
-from django.db.models       import OneToOneField
-from django.db.models       import PositiveSmallIntegerField
-from django.db.models       import QuerySet
-from django.db.models       import Value
+from django.db.models import BinaryField
+from django.db.models import BooleanField
+from django.db.models import CharField
+from django.db.models import DateTimeField
+from django.db.models import DecimalField
+from django.db.models import ExpressionWrapper
+from django.db.models import F
+from django.db.models import ForeignKey
+from django.db.models import Func
+from django.db.models import IntegerField
+from django.db.models import Manager
+from django.db.models import Model
+from django.db.models import OneToOneField
+from django.db.models import PositiveSmallIntegerField
+from django.db.models import QuerySet
+from django.db.models import Value
 
-from constance              import config
-from golem_messages         import message
+from constance import config
+from golem_messages import message
 
 from common.exceptions import ConcentInSoftShutdownMode
 from common.fields import Base64Field
 from common.fields import ChoiceEnum
+from common.helpers import deserialize_database_message
 from common.helpers import deserialize_message
 from common.helpers import parse_datetime_to_timestamp
 
-from .constants             import TASK_OWNER_KEY_LENGTH
-from .constants             import ETHEREUM_ADDRESS_LENGTH
-from .constants             import GOLEM_PUBLIC_KEY_LENGTH
-from .constants             import MESSAGE_TASK_ID_MAX_LENGTH
+from .constants import TASK_OWNER_KEY_LENGTH
+from .constants import ETHEREUM_ADDRESS_LENGTH
+from .constants import GOLEM_PUBLIC_KEY_LENGTH
+from .constants import MESSAGE_TASK_ID_MAX_LENGTH
+from .validation import validate_database_report_computed_task
+from .validation import validate_database_task_to_compute
 
 
 class SubtaskWithTimingColumnsManager(Manager):
@@ -494,6 +497,33 @@ class Subtask(Model):
             raise ValidationError({
                 'computation_deadline': "TaskToCompute deadline mismatch"
             })
+
+        # Validation for every nested message which is stored in Control database
+        # Every nested message must be the same as message stored separately.
+        MESSAGES_TO_VALIDATE_TASK_TO_COMPUTE = [
+            self.report_computed_task,
+            self.subtask_results_accepted,
+            self.reject_report_computed_task,
+        ]
+        MESSAGES_TO_VALIDATE_REPORT_COMPUTED_TASK = [
+            self.ack_report_computed_task,
+            self.subtask_results_rejected,
+            self.force_get_task_result,
+        ]
+
+        for task_to_compute_to_validate in MESSAGES_TO_VALIDATE_TASK_TO_COMPUTE:
+            if task_to_compute_to_validate is not None:
+                validate_database_task_to_compute(
+                    task_to_compute=deserialized_task_to_compute,
+                    message_to_compare=deserialize_database_message(task_to_compute_to_validate),
+                )
+
+        for report_computed_task_to_validate in MESSAGES_TO_VALIDATE_REPORT_COMPUTED_TASK:
+            if report_computed_task_to_validate is not None:
+                validate_database_report_computed_task(
+                    report_computed_task=deserialized_report_computed_task,
+                    message_to_compare=deserialize_database_message(report_computed_task_to_validate),
+                )
 
     @property
     def state_enum(self) -> 'SubtaskState':

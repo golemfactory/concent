@@ -1,3 +1,4 @@
+  # noqa  # pylint: disable=too-many-lines
 from base64 import b64encode
 
 from freezegun import freeze_time

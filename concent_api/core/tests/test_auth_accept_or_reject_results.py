@@ -654,18 +654,24 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent                   -> Provider:                ForceSubtaskResultsResponse (with SubtaskResultsRejected)
         """
 
-        task_to_compute = self._get_deserialized_task_to_compute(
-            timestamp   = "2018-02-05 10:00:00",
-            deadline    = "2018-02-05 10:00:15",
-        )
-
         # STEP 1: Provider forces subtask results via Concent.
         # Request is processed correctly.
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp="2018-02-05 10:00:00",
+            deadline="2018-02-05 10:00:15",
+        )
+
+        report_computed_task = self._get_deserialized_report_computed_task(
+            task_to_compute=task_to_compute,
+            timestamp="2018-02-05 10:00:20",
+
+        )
+
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-            timestamp                   = "2018-02-05 10:00:30",
-            ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
-                timestamp       = "2018-02-05 10:00:20",
-                task_to_compute = task_to_compute,
+            timestamp="2018-02-05 10:00:30",
+            ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
+                timestamp="2018-02-05 10:00:20",
+                report_computed_task=report_computed_task,
                 signer_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
@@ -886,10 +892,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
                 timestamp               = "2018-02-05 10:00:43",
                 reason                  = message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-                report_computed_task    = self._get_deserialized_report_computed_task(
-                    timestamp   = "2018-02-05 10:00:43",
-                    task_to_compute = task_to_compute
-                )
+                report_computed_task    = report_computed_task
             )
         )
 
@@ -967,7 +970,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp': parse_iso_date_to_timestamp("2018-02-05 11:00:02"),
                 'subtask_results_rejected.timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
                 'subtask_results_rejected.reason': message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-                'subtask_results_rejected.report_computed_task.timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
+                'subtask_results_rejected.report_computed_task.timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:20"),
                 'subtask_results_rejected.report_computed_task.subtask_id': task_to_compute.subtask_id
             }
         )

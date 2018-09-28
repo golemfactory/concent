@@ -199,3 +199,12 @@ def generate_ethereum_address_from_ethereum_public_key(ethereum_public_key: str)
     assert len(ethereum_public_key) == ETHEREUM_PUBLIC_KEY_LENGTH
 
     return generate_ethereum_address_from_ethereum_public_key_bytes(ethereum_public_key).hex()
+
+
+def deserialize_database_message(serialized_message: 'StoredMessage') -> message.Message:  # type: ignore # noqa
+    if isinstance(serialized_message.data, bytes):
+        return deserialize_message(serialized_message.data)
+    elif isinstance(serialized_message.data, memoryview):
+        return deserialize_message(serialized_message.data.tobytes())
+    else:
+        raise ValueError('Given serialized_messages data must be `bytes` or `memoryview` instance')

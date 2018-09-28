@@ -2,7 +2,7 @@
 #### Signing Service and Middleman
 - Signing Service and Middleman are now fully implemented but disabled by default (#673, #633, #616, #629, #618, #625, #632).
 - Concent can now be configured to use Signing Service instead of signing transaction by itself (#635).
-- Authentication between Middleman and Signing Service - disabled by default (#631, #630).
+- Authentication between Middleman and Signing Service (#631, #630).
 - More consistent command-line options for passing secrets to the Signing Service (#671).
 - Signing Service can now be configured to send crash reports to Sentry (#762).
 - Bugfix: The installation script (`setup.py`) no longer requires golem-messages to be already installed (#800).
@@ -17,8 +17,9 @@
 - The shutdown bar in the admin panel now shows the time limit for active downloads (#444).
 
 #### Endpoints and uses cases in general
-- receive-out-of-band/ and receive/ now return the same messages and receive-out-of-band/ is deprecated (#787).
+- `receive-out-of-band/` and `receive/` now return the same messages and receive-out-of-band/ is deprecated (#787).
 - Concent now expects `task_id` and `subtask_id` to always be valid UUIDs (#705).
+- Additional consistency checks for nested messages in messages stored in the database (#177).
 - Bugfix: Starting another use case in the same subtask caused a crash (#195).
 - Bugfix: Concent now properly locks subtasks before modifying them to prevent race conditions (#753).
 - Bugfix: Concent could start a use case twice in some cases due to a race condition in the endpoints (#770).

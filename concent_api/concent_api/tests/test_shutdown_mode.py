@@ -106,7 +106,7 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
             )
             config.SOFT_SHUTDOWN_MODE = True
 
-        self.stored_message_counter = 2
+        self.stored_message_counter = 3
 
         serialized_ack_report_computed_task = self._get_serialized_ack_report_computed_task(
             timestamp="2017-12-01 11:00:05",

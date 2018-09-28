@@ -91,6 +91,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=self.compute_task_def['task_id'],
@@ -387,6 +388,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=self.compute_task_def['task_id'],
@@ -696,6 +698,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=self.compute_task_def['task_id'],
@@ -1039,6 +1042,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=self.compute_task_def['task_id'],

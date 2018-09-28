@@ -69,7 +69,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             task_to_compute=self.report_computed_task.task_to_compute,
             report_computed_task=self.report_computed_task,
         )
-        self._assert_stored_message_counter_increased(2)
+        self._assert_stored_message_counter_increased(3)
 
         # when
         with mock.patch(
@@ -116,7 +116,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             task_to_compute=self.report_computed_task.task_to_compute,  # pylint: disable=no-member
             report_computed_task=self.report_computed_task,
         )
-        self._assert_stored_message_counter_increased(increased_by=2)
+        self._assert_stored_message_counter_increased(increased_by=3)
 
         # when
         with mock.patch(
@@ -158,7 +158,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             task_to_compute=self.report_computed_task.task_to_compute,  # pylint: disable=no-member
             report_computed_task=self.report_computed_task,
         )
-        self._assert_stored_message_counter_increased(increased_by=2)
+        self._assert_stored_message_counter_increased(increased_by=3)
 
         # when
         with mock.patch(
@@ -385,7 +385,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 ]
             }
         )
-        self._assert_stored_message_counter_increased(increased_by=3)
+        self._assert_stored_message_counter_increased(increased_by=4)
 
     def test_that_concent_should_change_subtask_state_if_verification_is_after_deadline(self):
         """
@@ -408,7 +408,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 task_to_compute=self.report_computed_task.task_to_compute,
                 report_computed_task=self.report_computed_task,
             )
-            self._assert_stored_message_counter_increased(2)
+            self._assert_stored_message_counter_increased(3)
 
             subtask_results_rejected = self._get_deserialized_subtask_results_rejected(
                 reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,

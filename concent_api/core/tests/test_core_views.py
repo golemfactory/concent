@@ -84,10 +84,11 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         )
 
         self.assertEqual(response.status_code, 202)
-        self._assert_stored_message_counter_increased(increased_by=2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=self.correct_golem_data.task_id,
@@ -155,10 +156,11 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         )
 
         self.assertEqual(response.status_code, 202)
-        self._assert_stored_message_counter_increased(increased_by=2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=task_to_compute.task_id,
@@ -319,6 +321,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=self.correct_golem_data.report_computed_task.task_id,
@@ -551,8 +554,18 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             super().setUp()
             self.compute_task_def = ComputeTaskDefFactory()
             self.compute_task_def['deadline'] = get_current_utc_timestamp() + (60 * 37)
+            self.want_to_compute_task = WantToComputeTaskFactory(
+                node_name=1,
+                task_id=self._get_uuid(),
+                perf_index=3,
+                price=4,
+                max_resource_size=5,
+                max_memory_size=6,
+                num_cores=7,
+            )
             self.task_to_compute = tasks.TaskToComputeFactory(
                 compute_task_def=self.compute_task_def,
+                want_to_compute_task=self.want_to_compute_task,
                 provider_public_key=self._get_provider_hex_public_key(),
                 requestor_public_key=self._get_requestor_hex_public_key(),
             )
@@ -590,6 +603,16 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         client_requestor.full_clean()
         client_requestor.save()
 
+        want_to_compute_message = StoredMessage(
+            type=self.want_to_compute_task.header.type_,
+            timestamp=message_timestamp,
+            data=self.want_to_compute_task.serialize(),
+            task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+        )
+        want_to_compute_message.full_clean()
+        want_to_compute_message.save()
+
         task_to_compute_message = StoredMessage(
             type=self.task_to_compute.header.type_,
             timestamp=message_timestamp,
@@ -601,13 +624,14 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         task_to_compute_message.save()
 
         subtask = Subtask(
-            task_id=self.compute_task_def['task_id'],
-            subtask_id=self.compute_task_def['subtask_id'],
-            task_to_compute=task_to_compute_message,
-            report_computed_task=new_message,
-            state=Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
-            provider=client_provider,
-            requestor=client_requestor,
+            task_id                 = self.compute_task_def['task_id'],
+            subtask_id              = self.compute_task_def['subtask_id'],
+            task_to_compute         = task_to_compute_message,
+            want_to_compute_task=want_to_compute_message,
+            report_computed_task    = new_message,
+            state                   = Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
+            provider                = client_provider,
+            requestor               = client_requestor,
             result_package_size=self.size,
             computation_deadline=parse_timestamp_to_utc_datetime(self.compute_task_def['deadline'])
         )
@@ -662,6 +686,16 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         new_message.full_clean()
         new_message.save()
 
+        want_to_compute_message = StoredMessage(
+            type=self.want_to_compute_task.header.type_,
+            timestamp=message_timestamp,
+            data=self.want_to_compute_task.serialize(),
+            task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+        )
+        want_to_compute_message.full_clean()
+        want_to_compute_message.save()
+
         task_to_compute_message = StoredMessage(
             type=self.task_to_compute.header.type_,
             timestamp=message_timestamp,
@@ -699,14 +733,15 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         client_requestor.save()
 
         subtask = Subtask(
-            task_id=self.compute_task_def['task_id'],
-            subtask_id=self.compute_task_def['subtask_id'],
-            report_computed_task=new_message,
-            task_to_compute=task_to_compute_message,
-            ack_report_computed_task=stored_ack_report_computed_task,
-            state=Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
-            provider=client_provider,
-            requestor=client_requestor,
+            task_id                  = self.compute_task_def['task_id'],
+            subtask_id               = self.compute_task_def['subtask_id'],
+            report_computed_task     = new_message,
+            task_to_compute          = task_to_compute_message,
+            want_to_compute_task=want_to_compute_message,
+            ack_report_computed_task = stored_ack_report_computed_task,
+            state                    = Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
+            provider                 = client_provider,
+            requestor                = client_requestor,
             result_package_size=self.size,
             computation_deadline=parse_timestamp_to_utc_datetime(self.compute_task_def['deadline'])
         )
@@ -786,8 +821,18 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
         super().setUp()
         self.compute_task_def = ComputeTaskDefFactory()
         self.compute_task_def['deadline'] = get_current_utc_timestamp() - 60
+        self.want_to_compute_task = WantToComputeTaskFactory(
+            node_name=1,
+            task_id=self._get_uuid(),
+            perf_index=3,
+            price=4,
+            max_resource_size=5,
+            max_memory_size=6,
+            num_cores=7,
+        )
         self.task_to_compute = tasks.TaskToComputeFactory(
             compute_task_def=self.compute_task_def,
+            want_to_compute_task=self.want_to_compute_task,
             provider_public_key=self._get_provider_hex_public_key(),
             requestor_public_key=self._get_requestor_hex_public_key(),
         )
@@ -811,6 +856,16 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
         )
         new_message.full_clean()
         new_message.save()
+
+        want_to_compute_message = StoredMessage(
+            type=self.want_to_compute_task.header.type_,
+            timestamp=message_timestamp,
+            data=self.want_to_compute_task.serialize(),
+            task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
+            subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+        )
+        want_to_compute_message.full_clean()
+        want_to_compute_message.save()
 
         task_to_compute_message = StoredMessage(
             type=self.task_to_compute.header.type_,
@@ -849,14 +904,15 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
         client_requestor.save()
 
         subtask = Subtask(
-            task_id=self.compute_task_def['task_id'],
-            subtask_id=self.compute_task_def['subtask_id'],
-            report_computed_task=new_message,
-            task_to_compute=task_to_compute_message,
-            ack_report_computed_task=stored_ack_report_computed_task,
-            state=Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
-            provider=client_provider,
-            requestor=client_requestor,
+            task_id                  = self.compute_task_def['task_id'],
+            subtask_id               = self.compute_task_def['subtask_id'],
+            report_computed_task     = new_message,
+            task_to_compute          = task_to_compute_message,
+            want_to_compute_task=want_to_compute_message,
+            ack_report_computed_task = stored_ack_report_computed_task,
+            state                    = Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
+            provider                 = client_provider,
+            requestor                = client_requestor,
             result_package_size=self.size,
             computation_deadline=parse_timestamp_to_utc_datetime(self.compute_task_def['deadline'])
         )

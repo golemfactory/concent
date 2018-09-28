@@ -81,7 +81,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         assert len(response.content)  == 0
         assert response.status_code   == 202
 
-        self._assert_stored_message_counter_increased(increased_by=3)
+        self._assert_stored_message_counter_increased(increased_by=4)
         self._test_subtask_state(
             task_id=task_to_compute.task_id,
             subtask_id=task_to_compute.subtask_id,
@@ -94,6 +94,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
                 message.tasks.AckReportComputedTask,
             ],
@@ -223,7 +224,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         assert len(response.content) == 0
         assert response.status_code  == 202
 
-        self._assert_stored_message_counter_increased(increased_by=3)
+        self._assert_stored_message_counter_increased(increased_by=4)
         self._test_subtask_state(
             task_id=task_to_compute.task_id,
             subtask_id=task_to_compute.subtask_id,
@@ -236,6 +237,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
                 message.tasks.AckReportComputedTask,
             ],
@@ -347,7 +349,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         assert len(response.content)  == 0
         assert response.status_code   == 202
 
-        self._assert_stored_message_counter_increased(increased_by=3)
+        self._assert_stored_message_counter_increased(increased_by=4)
         self._test_subtask_state(
             task_id=task_to_compute.task_id,
             subtask_id=task_to_compute.subtask_id,
@@ -360,6 +362,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
                 message.tasks.AckReportComputedTask,
             ],
@@ -686,7 +689,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         assert len(response.content)  == 0
         assert response.status_code   == 202
 
-        self._assert_stored_message_counter_increased(increased_by=3)
+        self._assert_stored_message_counter_increased(increased_by=4)
         self._test_subtask_state(
             task_id=task_to_compute.task_id,
             subtask_id=task_to_compute.subtask_id,
@@ -699,6 +702,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
                 message.tasks.AckReportComputedTask,
             ],
@@ -1022,7 +1026,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         assert len(response.content) == 0
         assert response.status_code  == 202
 
-        self._assert_stored_message_counter_increased(increased_by=3)
+        self._assert_stored_message_counter_increased(increased_by=4)
         self._test_subtask_state(
             task_id=task_to_compute.task_id,
             subtask_id=task_to_compute.subtask_id,
@@ -1035,6 +1039,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
                 message.tasks.AckReportComputedTask,
             ],
@@ -1221,7 +1226,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         assert len(response.content) == 0
         assert response.status_code  == 202
 
-        self._assert_stored_message_counter_increased(increased_by=3)
+        self._assert_stored_message_counter_increased(increased_by=4)
         self._test_subtask_state(
             task_id=task_to_compute.task_id,
             subtask_id=task_to_compute.subtask_id,
@@ -1234,6 +1239,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
                 message.tasks.AckReportComputedTask,
             ],

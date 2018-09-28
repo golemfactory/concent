@@ -79,7 +79,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code, 200)
 
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by=4)
         self._test_subtask_state(
             task_id=deserialized_task_to_compute.task_id,
             subtask_id=deserialized_task_to_compute.subtask_id,
@@ -92,6 +92,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.tasks.TaskToCompute,
+                message.tasks.WantToComputeTask,
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],
@@ -261,7 +262,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,        200)
 
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by=4)
         self._test_subtask_state(
             task_id=deserialized_task_to_compute.task_id,
             subtask_id=deserialized_task_to_compute.subtask_id,
@@ -274,6 +275,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.tasks.TaskToCompute,
+                message.tasks.WantToComputeTask,
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],
@@ -497,7 +499,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,      200)
 
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by=4)
         self._test_subtask_state(
             task_id=deserialized_task_to_compute.task_id,
             subtask_id=deserialized_task_to_compute.subtask_id,
@@ -510,6 +512,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.tasks.TaskToCompute,
+                message.tasks.WantToComputeTask,
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],
@@ -749,7 +752,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,      200)
 
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by=4)
         self._test_subtask_state(
             task_id=deserialized_task_to_compute.task_id,
             subtask_id=deserialized_task_to_compute.subtask_id,
@@ -762,6 +765,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.tasks.TaskToCompute,
+                message.tasks.WantToComputeTask,
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],
@@ -990,7 +994,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code,      200)
 
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by=4)
         self._test_subtask_state(
             task_id=deserialized_task_to_compute.task_id,
             subtask_id=deserialized_task_to_compute.subtask_id,
@@ -1003,6 +1007,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.tasks.TaskToCompute,
+                message.tasks.WantToComputeTask,
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],

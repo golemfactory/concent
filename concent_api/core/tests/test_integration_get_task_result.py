@@ -199,7 +199,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
 
         assert response.status_code == 200
 
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by=4)
         self._test_subtask_state(
             task_id=deserialized_task_to_compute.task_id,
             subtask_id=deserialized_task_to_compute.subtask_id,
@@ -212,6 +212,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.tasks.TaskToCompute,
+                message.tasks.WantToComputeTask,
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],
@@ -296,7 +297,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self.assertIsInstance(message_from_concent,         message.concents.AckForceGetTaskResult)
         self.assertEqual(message_from_concent.timestamp, parse_iso_date_to_timestamp("2017-12-01 11:00:10"))
 
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by=4)
         self._test_subtask_state(
             task_id=deserialized_task_to_compute.task_id,
             subtask_id=deserialized_task_to_compute.subtask_id,
@@ -309,6 +310,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.tasks.TaskToCompute,
+                message.tasks.WantToComputeTask,
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],
@@ -367,7 +369,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response_1.status_code, 200)
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by=4)
         self._test_subtask_state(
             task_id=deserialized_task_to_compute.task_id,
             subtask_id=deserialized_task_to_compute.subtask_id,
@@ -380,6 +382,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.tasks.TaskToCompute,
+                message.tasks.WantToComputeTask,
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],
@@ -522,7 +525,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response_1.status_code, 200)
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by=4)
         self._test_subtask_state(
             task_id=deserialized_task_to_compute.task_id,
             subtask_id=deserialized_task_to_compute.subtask_id,
@@ -643,7 +646,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response_1.status_code, 200)
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by=4)
         self._test_subtask_state(
             task_id=deserialized_task_to_compute.task_id,
             subtask_id=deserialized_task_to_compute.subtask_id,
@@ -656,6 +659,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.tasks.TaskToCompute,
+                message.tasks.WantToComputeTask,
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],
@@ -797,7 +801,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response_1.status_code, 200)
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by=4)
         self._test_subtask_state(
             task_id=deserialized_task_to_compute.task_id,
             subtask_id=deserialized_task_to_compute.subtask_id,
@@ -810,6 +814,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.tasks.TaskToCompute,
+                message.tasks.WantToComputeTask,
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],
@@ -955,7 +960,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             )
 
         self.assertEqual(response_1.status_code, 200)
-        self._assert_stored_message_counter_increased(increased_by = 3)
+        self._assert_stored_message_counter_increased(increased_by=4)
         self._test_subtask_state(
             task_id=deserialized_task_to_compute.task_id,
             subtask_id=deserialized_task_to_compute.subtask_id,
@@ -968,6 +973,7 @@ class GetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.tasks.TaskToCompute,
+                message.tasks.WantToComputeTask,
                 message.tasks.ReportComputedTask,
                 message.concents.ForceGetTaskResult,
             ],

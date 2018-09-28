@@ -117,7 +117,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
 
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
@@ -130,6 +130,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -276,7 +277,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
@@ -289,6 +290,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -448,7 +450,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
@@ -461,6 +463,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -656,7 +659,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
 
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
@@ -669,6 +672,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -816,7 +820,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
@@ -829,6 +833,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -992,7 +997,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
@@ -1005,6 +1010,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -1157,7 +1163,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
@@ -1170,6 +1176,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -1325,7 +1332,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
@@ -1338,6 +1345,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -1448,7 +1456,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
@@ -1461,6 +1469,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -2038,7 +2047,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
@@ -2051,6 +2060,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -2205,7 +2215,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by=2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
@@ -2218,6 +2228,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -2378,7 +2389,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
@@ -2391,6 +2402,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -2492,7 +2504,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code, 202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by=2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
@@ -2505,6 +2517,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -2663,7 +2676,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
 
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=task_to_compute.task_id,
             subtask_id=task_to_compute.subtask_id,
@@ -2676,6 +2689,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=task_to_compute.task_id,

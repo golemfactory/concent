@@ -6,6 +6,7 @@ from typing import Sequence
 from typing import Tuple
 from typing import Union
 
+from threading import Thread
 import argparse
 import datetime
 import http.client
@@ -358,3 +359,14 @@ def create_signed_task_to_compute(
         )
         task_to_compute = sign_message(task_to_compute, REQUESTOR_PRIVATE_KEY)
         return task_to_compute
+
+
+def call_function_in_threads(
+    func: Callable,
+    number_of_threads: int,
+    *args: Any,
+    **kwargs: Any,
+) -> None:
+    for _ in range(number_of_threads):
+        thread = Thread(target=func, args=args, kwargs=kwargs)
+        thread.start()

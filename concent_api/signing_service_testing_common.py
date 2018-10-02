@@ -5,10 +5,12 @@ import enum
 import random
 import socket
 
+from golem_messages.message import Message
 from golem_messages.message import Ping
 from golem_sci import chains
 from golem_sci import new_sci_rpc
 from golem_sci.transactionsstorage import JsonTransactionsStorage
+from middleman_protocol.concent_golem_messages.message import TransactionSigningRequest
 from middleman_protocol.message import AbstractFrame
 from middleman_protocol.message import GolemMessageFrame
 from middleman_protocol.stream import send_over_stream
@@ -248,3 +250,65 @@ def send_message_to_middleman_and_receive_response(
         )
     finally:
         client_socket.close()
+
+
+def send_message_to_middleman_without_response(
+    message: AbstractFrame,
+    config: configparser.ConfigParser,
+    concent_private_key: bytes,
+) -> GolemMessageFrame:
+    """ Sends message to MiddleMan using MiddleMan protocol and does not retrieve response. """
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
+
+    try:
+        client_socket.connect(
+            (
+                config.get(Components.MIDDLEMAN.value, 'host'),
+                int(config.get(Components.MIDDLEMAN.value, 'port')),
+            )
+        )
+        send_over_stream(
+            connection=client_socket,
+            raw_message=message,
+            private_key=concent_private_key,
+        )
+    finally:
+        client_socket.close()
+
+
+def create_golem_message_frame(payload: Message, request_id: int) -> GolemMessageFrame:
+    return GolemMessageFrame(
+        payload=payload,
+        request_id=request_id,
+    )
+
+
+def correct_transaction_signing_request(request_id: int) -> TransactionSigningRequest:
+    return TransactionSigningRequest(
+        nonce=request_id,
+        gasprice=10 ** 6,
+        startgas=80000,
+        value=10,
+        to=b'7917bc33eea648809c28',
+        data=b'3078666333323333396130303030303030303030303030303030303030303030303032393662363963383738613734393865663463343531363436353231336564663834666334623330303030303030303030303030303030303030303030303030333431336437363161356332633362656130373531373064333239363566636161386261303533633030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303237313030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303562343336643666',
+        from_address=b'7917bc33eea648809c29',
+    )
+
+
+def incorrect_transaction_signing_request() -> TransactionSigningRequest:
+    return TransactionSigningRequest()
+
+
+def create_golem_message_frame_with_correct_transaction_signing_request(request_id: int) -> GolemMessageFrame:
+    return create_golem_message_frame(
+        payload=correct_transaction_signing_request(request_id),
+        request_id=request_id,
+    )
+
+
+def create_golem_message_frame_with_incorrect_transaction_signing_request(request_id: int) -> GolemMessageFrame:
+    return create_golem_message_frame(
+        payload=incorrect_transaction_signing_request(),
+        request_id=request_id,
+    )

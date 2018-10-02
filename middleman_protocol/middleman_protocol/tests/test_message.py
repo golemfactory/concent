@@ -22,6 +22,7 @@ from middleman_protocol.message import AuthenticationChallengeFrame
 from middleman_protocol.message import AuthenticationResponseFrame
 from middleman_protocol.message import ErrorFrame
 from middleman_protocol.message import GolemMessageFrame
+from middleman_protocol.message import HeartbeatFrame
 from middleman_protocol.registry import create_middleman_protocol_message
 from middleman_protocol.registry import PAYLOAD_TYPE_TO_MIDDLEMAN_MESSAGE_CLASS
 from middleman_protocol.stream import send_over_stream
@@ -37,10 +38,11 @@ class TestMessageMiddlemanProtocol:
     request_id = 99
 
     @pytest.mark.parametrize(('expected_middleman_message_type', 'payload_type', 'payload'), [
-        (GolemMessageFrame,            PayloadType.GOLEM_MESSAGE,            Ping()),
-        (ErrorFrame,                   PayloadType.ERROR,                    (111, 'error_message')),
+        (GolemMessageFrame, PayloadType.GOLEM_MESSAGE, Ping()),
+        (ErrorFrame, PayloadType.ERROR, (111, 'error_message')),
         (AuthenticationChallengeFrame, PayloadType.AUTHENTICATION_CHALLENGE, b'random_bytes'),
-        (AuthenticationResponseFrame,  PayloadType.AUTHENTICATION_RESPONSE,  b'TODO'),
+        (AuthenticationResponseFrame, PayloadType.AUTHENTICATION_RESPONSE, b'TODO'),
+        (HeartbeatFrame, PayloadType.HEARTBEAT, None),
     ])
     def test_that_create_middleman_protocol_message_with_various_payload_types_should_create_proper_middleman_message(
         self,
@@ -65,10 +67,11 @@ class TestMessageMiddlemanProtocol:
             )
 
     @pytest.mark.parametrize(('middleman_message_type', 'payload'), [
-        (GolemMessageFrame,            Ping()),
-        (ErrorFrame,                   (111, 'error_message')),
+        (GolemMessageFrame, Ping()),
+        (ErrorFrame, (111, 'error_message')),
         (AuthenticationChallengeFrame, b'random_bytes'),
-        (AuthenticationResponseFrame,  b'TODO'),
+        (AuthenticationResponseFrame, b'TODO'),
+        (HeartbeatFrame, None),
     ])
     def test_that_serializing_and_deserializing_message_should_preserve_original_data(
         self,
@@ -87,10 +90,11 @@ class TestMessageMiddlemanProtocol:
         assertpy.assert_that(deserialized_message.payload).is_equal_to(payload)
 
     @pytest.mark.parametrize(('middleman_message_type', 'payload'), [
-        (GolemMessageFrame,            Ping()),
-        (ErrorFrame,                   (111, 'error_message')),
+        (GolemMessageFrame, Ping()),
+        (ErrorFrame, (111, 'error_message')),
         (AuthenticationChallengeFrame, b'random_bytes'),
-        (AuthenticationResponseFrame,  b'TODO'),
+        (AuthenticationResponseFrame, b'TODO'),
+        (HeartbeatFrame, None),
     ])
     def test_that_sending_message_over_tcp_socket_should_preserve_original_data(
         self,
@@ -143,10 +147,11 @@ class TestMessageMiddlemanProtocol:
         )
 
     @pytest.mark.parametrize(('middleman_message_type', 'payload'), [
-        (GolemMessageFrame,            Ping()),
-        (ErrorFrame,                   (111, 'error_message')),
+        (GolemMessageFrame, Ping()),
+        (ErrorFrame, (111, 'error_message')),
         (AuthenticationChallengeFrame, b'random_bytes'),
-        (AuthenticationResponseFrame,  b'TODO'),
+        (AuthenticationResponseFrame, b'TODO'),
+        (HeartbeatFrame, None),
     ])
     def test_that_serializing_and_deserializing_message_with_wrong_signature_should_raise_exception(
         self,
@@ -191,10 +196,11 @@ class TestMessageMiddlemanProtocol:
             AbstractFrame.deserialize(raw_message_with_new_signature, CONCENT_PUBLIC_KEY)
 
     @pytest.mark.parametrize(('middleman_message_type', 'payload'), [
-        (GolemMessageFrame,            Ping()),
-        (ErrorFrame,                   (111, 'error_message')),
+        (GolemMessageFrame, Ping()),
+        (ErrorFrame, (111, 'error_message')),
         (AuthenticationChallengeFrame, b'random_bytes'),
-        (AuthenticationResponseFrame,  b'TODO'),
+        (AuthenticationResponseFrame, b'TODO'),
+        (HeartbeatFrame, None),
     ])
     def test_that_serializing_and_deserializing_message_too_short_should_raise_exception(
         self,

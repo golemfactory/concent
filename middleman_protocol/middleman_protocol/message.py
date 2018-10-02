@@ -314,3 +314,23 @@ class AuthenticationResponseFrame(AbstractFrame):
 
     def _validate_payload(self, payload: bytes) -> None:
         pass
+
+
+@register
+class HeartbeatFrame(AbstractFrame):
+    """ Subclass of AbstractFrame for sending heartbeats (notifying the peer that connection is still active). """
+
+    payload_type = PayloadType.HEARTBEAT
+
+    def _serialize_payload(self, payload: Any) -> bytes:
+        return b""
+
+    def _validate_payload(self, payload: Any) -> None:
+        if payload is not None:
+            PayloadTypeInvalidMiddlemanProtocolError(
+                "HeartbeatFrame must not contain any payload."
+            )
+
+    @classmethod
+    def _deserialize_payload(cls, payload: bytes) -> Any:
+        return None

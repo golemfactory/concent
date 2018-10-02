@@ -10,6 +10,7 @@ class PayloadType(IntEnum):
     ERROR                       = 1  # An error code and an error message.
     AUTHENTICATION_CHALLENGE    = 2  # A random string of bytes.
     AUTHENTICATION_RESPONSE     = 3  # A digital signature of the content sent as authentication challenge.
+    HEARTBEAT                   = 4  # Empty message for indicating that peer is still alive.
 
 
 @unique

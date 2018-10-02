@@ -15,6 +15,7 @@ from middleman_protocol.concent_golem_messages.message import TransactionRejecte
 
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_PORT
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY
+from signing_service.constants import SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS
 from signing_service.constants import SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME
 from signing_service.exceptions import SigningServiceValidationError
 from signing_service.signing_service import _parse_arguments
@@ -46,6 +47,7 @@ class SigningServiceGetSignedTransactionTestCase(SigningServiceIntegrationTestCa
                 CONCENT_PUBLIC_KEY,
                 SIGNING_SERVICE_PRIVATE_KEY,
                 TEST_ETHEREUM_PRIVATE_KEY,
+                SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS,
             )
 
     def test_that_get_signed_transaction_should_return_transaction_signed_if_transaction_was_signed_correctly(self):
@@ -98,6 +100,7 @@ class SigningServiceGetAuthenticationChallengeSignatureTestCase(SigningServiceIn
                 CONCENT_PUBLIC_KEY,
                 SIGNING_SERVICE_PRIVATE_KEY,
                 TEST_ETHEREUM_PRIVATE_KEY,
+                SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS,
             )
 
     def test_that_get_authentication_challenge_signature_should_return_signature_of_passed_bytes(self):
@@ -126,6 +129,7 @@ class TestSigningServiceIncreaseDelay:
             CONCENT_PUBLIC_KEY,
             SIGNING_SERVICE_PRIVATE_KEY,
             TEST_ETHEREUM_PRIVATE_KEY,
+            SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS,
         )
 
     def test_that_initial_reconnect_delay_should_be_set_to_passed_value(self):
@@ -157,6 +161,7 @@ class SigningServiceParseArgumentsTestCase(TestCase):
         self.signing_service_private_key_encoded = b64encode(SIGNING_SERVICE_PRIVATE_KEY).decode()
         self.ethereum_private_key_encoded = b64encode(TEST_ETHEREUM_PRIVATE_KEY.encode('ascii')).decode()
         self.sentry_dsn = 'http://test.sentry@dsn.com'
+        self.maximum_reconnection_attempts = 3
 
     def test_that_argument_parser_should_parse_correct_input(self):
         sys.argv += [
@@ -167,6 +172,7 @@ class SigningServiceParseArgumentsTestCase(TestCase):
             '--sentry-dsn', self.sentry_dsn,
             '--ethereum-private-key', self.ethereum_private_key_encoded,
             '--signing-service-private-key', self.signing_service_private_key_encoded,
+            f'--max-reconnect-attempts={self.maximum_reconnection_attempts}',
         ]
 
         args = _parse_arguments()
@@ -191,6 +197,7 @@ class SigningServiceParseArgumentsTestCase(TestCase):
 
         self.assertEqual(args.concent_cluster_port, SIGNING_SERVICE_DEFAULT_PORT)
         self.assertEqual(args.initial_reconnect_delay, SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY)
+        self.assertEqual(args.max_reconnect_attempts, SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS)
 
     def test_that_argument_parser_should_fail_if_port_cannot_be_casted_to_int(self):
         sys.argv += [
@@ -276,6 +283,7 @@ class SigningServiceValidateArgumentsTestCase(TestCase):
             CONCENT_PUBLIC_KEY,
             SIGNING_SERVICE_PRIVATE_KEY,
             TEST_ETHEREUM_PRIVATE_KEY,
+            SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS,
         )
 
     def test_that_signing_service__validate_arguments_should_raise_exception_on_port_number_below_or_above_range(self):

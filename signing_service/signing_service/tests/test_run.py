@@ -5,6 +5,7 @@ import assertpy
 import mock
 import pytest
 
+from signing_service.constants import SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS
 from signing_service.constants import SIGNING_SERVICE_RECOVERABLE_ERRORS
 from signing_service.signing_service import SigningService
 
@@ -32,6 +33,7 @@ class TestSigningServiceRun:
             CONCENT_PUBLIC_KEY,
             SIGNING_SERVICE_PRIVATE_KEY,
             TEST_ETHEREUM_PRIVATE_KEY,
+            SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS,
         ]
 
     def test_that_signing_service_should_be_instantiated_correctly_with_all_parameters(self):

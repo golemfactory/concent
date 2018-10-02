@@ -37,6 +37,7 @@ from middleman_protocol.message import GolemMessageFrame
 from middleman_protocol.stream import send_over_stream
 from middleman_protocol.stream import unescape_stream
 
+from signing_service.constants import SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS
 from signing_service.constants import RECEIVE_AUTHENTICATION_CHALLENGE_TIMEOUT
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_PORT
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY
@@ -70,6 +71,8 @@ class SigningService:
         'signing_service_private_key',
         'signing_service_public_key',
         'ethereum_private_key',
+        'reconnect_counter',
+        'maximum_reconnect_attempts',
     )
 
     def __init__(
@@ -80,6 +83,7 @@ class SigningService:
         concent_public_key: bytes,
         signing_service_private_key: bytes,
         ethereum_private_key: str,
+        maximum_reconnect_attempts: int,
     ) -> None:
         assert isinstance(host, str)
         assert isinstance(port, int)
@@ -96,6 +100,8 @@ class SigningService:
         self.ethereum_private_key = ethereum_private_key  # type: str
         self.current_reconnect_delay: Union[int, None] = None
         self.was_sigterm_caught: bool = False
+        self.reconnect_counter = 0
+        self.maximum_reconnect_attempts = maximum_reconnect_attempts
 
         self._validate_arguments()
 
@@ -392,6 +398,13 @@ def _parse_arguments() -> argparse.Namespace:
         help='Initial delay between reconnections, doubles after each unsuccessful attempt and is reset after success.',
     )
     parser.add_argument(
+        '-m',
+        '--max-reconnect-attempts',
+        default=SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS,
+        type=int,
+        help='Maximum number of reconnect attempts after socket error.',
+    )
+    parser.add_argument(
         '-p',
         '--concent-cluster-port',
         default=SIGNING_SERVICE_DEFAULT_PORT,
@@ -486,18 +499,12 @@ if __name__ == '__main__':
     )
     crash_logger.handlers[0].client = raven_client  # type: ignore
 
-    arg_host = args.concent_cluster_host
-    arg_port = args.concent_cluster_port
-    arg_initial_reconnect_delay = args.initial_reconnect_delay
-    arg_concent_public_key = args.concent_public_key
-    arg_signing_service_private_key = args.signing_service_private_key
-    arg_ethereum_private_key = args.ethereum_private_key
-
     SigningService(
-        arg_host,
-        arg_port,
-        arg_initial_reconnect_delay,
-        arg_concent_public_key,
-        arg_signing_service_private_key,
-        arg_ethereum_private_key,
+        args.concent_cluster_host,
+        args.concent_cluster_port,
+        args.initial_reconnect_delay,
+        args.concent_public_key,
+        args.signing_service_private_key,
+        args.ethereum_private_key,
+        args.max_reconnect_attempts,
     ).run()

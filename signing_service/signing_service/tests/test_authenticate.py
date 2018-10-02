@@ -13,6 +13,7 @@ from middleman_protocol.message import AuthenticationChallengeFrame
 from middleman_protocol.message import AuthenticationResponseFrame
 from middleman_protocol.stream import unescape_stream
 
+from signing_service.constants import SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS
 from signing_service.constants import SIGNING_SERVICE_RECOVERABLE_ERRORS
 from signing_service.signing_service import SigningService
 from .utils import SigningServiceIntegrationTestCase
@@ -132,6 +133,7 @@ class TestSigningServiceAuthenticate(SigningServiceIntegrationTestCase):
                         CONCENT_PUBLIC_KEY,
                         SIGNING_SERVICE_PRIVATE_KEY,
                         TEST_ETHEREUM_PRIVATE_KEY,
+                        SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS,
                     )
 
                     # For test purposes we reverse roles, so signing service works as server.

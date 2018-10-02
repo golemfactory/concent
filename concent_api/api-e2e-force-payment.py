@@ -6,7 +6,6 @@ import datetime
 import os
 import sys
 import time
-import uuid
 
 from freezegun import freeze_time
 
@@ -67,12 +66,7 @@ def subtask_results_accepted(
 
 
 @count_fails
-def test_case_2d_send_correct_force_payment(
-    cluster_consts: ProtocolConstants,
-    cluster_url: str,
-    task_id: str,
-    subtask_id: str,
-) -> None:
+def test_case_2d_send_correct_force_payment(cluster_consts: ProtocolConstants, cluster_url: str) -> None:
     # Test CASE 2D - Send correct ForcePayment
     current_time = get_current_utc_timestamp()
     correct_force_payment = force_payment(
@@ -81,8 +75,6 @@ def test_case_2d_send_correct_force_payment(
                 payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                 task_to_compute=create_signed_task_to_compute(
                     timestamp=parse_timestamp_to_utc_datetime(current_time),
-                    task_id=task_id,
-                    subtask_id=subtask_id,
                     deadline=current_time,
                     price=1000,
                 )
@@ -91,8 +83,6 @@ def test_case_2d_send_correct_force_payment(
                 payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                 task_to_compute=create_signed_task_to_compute(
                     timestamp=parse_timestamp_to_utc_datetime(current_time),
-                    task_id=subtask_id,
-                    subtask_id=task_id,
                     deadline=current_time,
                     price=1000,
                 )
@@ -131,12 +121,7 @@ def test_case_2d_send_correct_force_payment(
 
 
 @count_fails
-def test_case_2c_send_force_payment_with_no_value_to_be_paid(
-    cluster_consts: ProtocolConstants,
-    cluster_url: str,
-    task_id: str,
-    subtask_id: str,
-) -> None:
+def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts: ProtocolConstants, cluster_url: str) -> None:
     #  Test CASE 2C - Send ForcePayment with no value to be paid
     current_time = get_current_utc_timestamp()
     api_request(
@@ -152,8 +137,6 @@ def test_case_2c_send_force_payment_with_no_value_to_be_paid(
                     payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=parse_timestamp_to_utc_datetime(current_time),
-                        task_id=task_id,
-                        subtask_id=subtask_id,
                         deadline=current_time,
                         price=0,
                     )
@@ -163,8 +146,6 @@ def test_case_2c_send_force_payment_with_no_value_to_be_paid(
                     payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=parse_timestamp_to_utc_datetime(current_time),
-                        task_id=task_id,
-                        subtask_id=str(uuid.uuid4()),
                         deadline=current_time,
                         price=0,
                     )
@@ -182,12 +163,7 @@ def test_case_2c_send_force_payment_with_no_value_to_be_paid(
 
 
 @count_fails
-def test_case_2b_send_force_payment_beyond_payment_time(
-    cluster_consts: ProtocolConstants,
-    cluster_url: str,
-    task_id: str,
-    subtask_id: str,
-) -> None:
+def test_case_2b_send_force_payment_beyond_payment_time(cluster_consts: ProtocolConstants, cluster_url: str) -> None:
     #  Test CASE 2B - Send ForcePayment beyond payment time
     current_time = get_current_utc_timestamp()
     api_request(
@@ -203,8 +179,6 @@ def test_case_2b_send_force_payment_beyond_payment_time(
                     payment_ts=current_time,
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=parse_timestamp_to_utc_datetime(current_time),
-                        task_id=task_id,
-                        subtask_id=subtask_id,
                         deadline=current_time,
                         price=15000,
                     )
@@ -214,8 +188,6 @@ def test_case_2b_send_force_payment_beyond_payment_time(
                     payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=parse_timestamp_to_utc_datetime(current_time),
-                        task_id=task_id,
-                        subtask_id=str(uuid.uuid4()),
                         deadline=current_time,
                         price=15000,
                     )
@@ -236,8 +208,6 @@ def test_case_2b_send_force_payment_beyond_payment_time(
 def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_accounts_are_different(
     cluster_consts: ProtocolConstants,
     cluster_url: str,
-    task_id: str,
-    subtask_id: str,
 ) -> None:
     # Test CASE 2A - Send ForcePayment with SubtaskResultsAccepted where ethereum accounts are different
     current_time = get_current_utc_timestamp()
@@ -254,8 +224,6 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
                     payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=parse_timestamp_to_utc_datetime(current_time),
-                        task_id=task_id,
-                        subtask_id=subtask_id,
                         deadline=current_time,
                         price=15000,
                     )
@@ -265,8 +233,6 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
                     payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=parse_timestamp_to_utc_datetime(current_time),
-                        task_id=task_id,
-                        subtask_id=subtask_id,
                         deadline=current_time,
                         price=15000,
                         requestor_ethereum_public_key=DIFFERENT_REQUESTOR_ETHEREUM_PUBLIC_KEY,

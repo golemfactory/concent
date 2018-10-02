@@ -115,14 +115,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
                 timestamp="2018-02-05 10:00:15",
                 report_computed_task=self._get_deserialized_report_computed_task(
-                    task_to_compute=self._get_deserialized_task_to_compute(
-                        timestamp="2018-02-05 10:00:00",
-                        deadline="2018-02-05 10:00:10",
-                        provider_public_key=self._get_diffrent_provider_hex_public_key(),
-                        requestor_public_key=self._get_diffrent_requestor_hex_public_key(),
-                        signer_private_key=self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
-                        compute_task_def=task_to_compute.compute_task_def,
-                    ),
+                    task_to_compute=task_to_compute,
                     signer_private_key=self.DIFFERENT_PROVIDER_PRIVATE_KEY,
                 ),
                 signer_private_key=self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
@@ -141,15 +134,13 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     content_type='application/octet-stream',
                 )
 
-        self._test_response(
+        self._test_400_response(
             response,
-            status=200,
-            key=self.DIFFERENT_PROVIDER_PRIVATE_KEY,
-            message_type=message.concents.ServiceRefused,
-            fields={
-                'reason': message.concents.ServiceRefused.REASON.DuplicateRequest,
-                'timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:31"),
-            }
+            error_message='There was an exception when validating if golem_message {} is signed with public key {}'.format(
+                message.tasks.AckReportComputedTask.__name__,
+                self.REQUESTOR_PUBLIC_KEY,
+            ),
+            error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG
         )
         self._assert_stored_message_counter_not_increased()
 

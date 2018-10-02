@@ -3,6 +3,7 @@ from base64 import b64encode
 
 from freezegun import freeze_time
 from golem_messages import message
+from golem_messages import factories
 
 from django.test import override_settings
 from django.urls import reverse
@@ -1499,8 +1500,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
             timestamp="2017-12-01 11:00:09",
-            cannot_compute_task=message.tasks.CannotComputeTask(),
-            task_failure=message.tasks.TaskFailure(),
+            cannot_compute_task=factories.tasks.CannotComputeTaskFactory(),
+            task_failure=factories.tasks.TaskFailureFactory(),
             reason=message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
             task_to_compute=task_to_compute,
         )
@@ -1583,7 +1584,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             timestamp="2017-12-01 11:00:09",
             reason=message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
             task_to_compute=task_to_compute,
-            task_failure=message.tasks.TaskFailure(),
+            task_failure=factories.tasks.TaskFailureFactory(),
         )
 
         serialized_reject_report_computed_task = self._get_serialized_reject_report_computed_task(

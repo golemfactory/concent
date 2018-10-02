@@ -50,13 +50,10 @@ def ack_report_computed_task(task_to_compute: TaskToCompute) -> AckReportCompute
 def test_case_1_provider_forces_report_computed_task_and_gets_accepted(
     cluster_consts: ProtocolConstants,
     cluster_url: str,
-    task_id: str,
-    subtask_id: str,
+
 ) -> None:
     current_time = get_current_utc_timestamp()
     task_to_compute = create_signed_task_to_compute(
-        task_id=task_id,
-        subtask_id=subtask_id,
         deadline=current_time + 1
     )
     api_request(

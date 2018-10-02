@@ -504,31 +504,22 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         Provider  -> Concent:    ForcePayment
         Concent   -> Provider:   ServiceRefused
         """
-        task_id = self._get_uuid()
-        subtask_id = self._get_uuid()
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp="2018-02-05 10:00:00",
+            deadline="2018-02-05 10:00:10",
+            price=15000,
+        )
 
         subtask_results_accepted_list = [
             self._get_deserialized_subtask_results_accepted(
-                timestamp       = "2018-02-05 10:00:15",
-                payment_ts      = "2018-02-05 12:00:00",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp                       = "2018-02-05 10:00:00",
-                    deadline                        = "2018-02-05 10:00:10",
-                    task_id                         = task_id,
-                    subtask_id                      = subtask_id,
-                    price                           = 15000,
-                )
+                timestamp="2018-02-05 10:00:15",
+                payment_ts="2018-02-05 12:00:00",
+                task_to_compute=task_to_compute
             ),
             self._get_deserialized_subtask_results_accepted(
-                timestamp       = "2018-02-05 9:00:15",
-                payment_ts      = "2018-02-05 11:00:00",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp                       = "2018-02-05 9:00:00",
-                    deadline                        = "2018-02-05 9:00:10",
-                    task_id                         = task_id,
-                    subtask_id                      = subtask_id,
-                    price                           = 15000,
-                )
+                timestamp="2018-02-05 9:00:15",
+                payment_ts="2018-02-05 11:00:00",
+                task_to_compute=task_to_compute
             )
         ]
         serialized_force_payment = self._get_serialized_force_payment(

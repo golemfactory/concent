@@ -31,16 +31,12 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
 
 def get_force_get_task_result(
-    task_id: str,
-    subtask_id: str,
     current_time: int,
     cluster_consts: ProtocolConstants,
     size: int,
     package_hash: str,
 ) -> message.concents.ForceGetTaskResult:
     task_to_compute = create_signed_task_to_compute(
-        task_id=task_id,
-        subtask_id=subtask_id,
         deadline=current_time,
         price=0,
     )
@@ -50,7 +46,6 @@ def get_force_get_task_result(
             task_to_compute=task_to_compute,
             size=size,
             package_hash=package_hash,
-            subtask_id=subtask_id,
         )
         sign_message(report_computed_task, PROVIDER_PRIVATE_KEY)
 
@@ -63,20 +58,23 @@ def get_force_get_task_result(
 
 
 @count_fails
-def test_case_1_test_for_existing_file(
-    cluster_consts: ProtocolConstants,
-    cluster_url: str,
-    task_id: str,
-    subtask_id: str,
-) -> None:
-    current_time    = get_current_utc_timestamp()
+def test_case_1_test_for_existing_file(cluster_consts: ProtocolConstants, cluster_url: str) -> None:
+    current_time = get_current_utc_timestamp()
 
-    file_content = task_id
+    file_content = 'test'
     file_size = len(file_content)
     file_check_sum = 'sha1:' + hashlib.sha1(file_content.encode()).hexdigest()
+
+    force_get_task_result = get_force_get_task_result(
+        current_time,
+        cluster_consts,
+        size=file_size,
+        package_hash=file_check_sum,
+    )
+
     file_path = get_storage_result_file_path(
-        task_id=task_id,
-        subtask_id=subtask_id,
+        task_id=force_get_task_result.task_id,
+        subtask_id=force_get_task_result.subtask_id,
     )
 
     # Case 1 - test for existing file
@@ -85,14 +83,7 @@ def test_case_1_test_for_existing_file(
         'send',
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        get_force_get_task_result(
-            task_id,
-            subtask_id,
-            current_time,
-            cluster_consts,
-            size         = file_size,
-            package_hash = file_check_sum,
-        ),
+        force_get_task_result,
         headers = {
             'Content-Type': 'application/octet-stream',
         },
@@ -127,7 +118,7 @@ def test_case_1_test_for_existing_file(
 
     assert_condition(response.status_code, 200, 'File has not been stored on cluster')
     print('\nUploaded file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(
-        task_id,
+        force_get_task_result.task_id,
         file_check_sum,
         file_size
     ))
@@ -148,12 +139,7 @@ def test_case_1_test_for_existing_file(
 
 
 @count_fails
-def test_case_2_test_for_non_existing_file(
-    cluster_consts: ProtocolConstants,
-    cluster_url: str,
-    task_id: str,
-    subtask_id: str,
-) -> None:
+def test_case_2_test_for_non_existing_file(cluster_consts: ProtocolConstants, cluster_url: str) -> None:
     current_time    = get_current_utc_timestamp()
 
     api_request(
@@ -162,8 +148,6 @@ def test_case_2_test_for_non_existing_file(
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         get_force_get_task_result(
-            task_id,
-            subtask_id,
             current_time,
             cluster_consts,
             size    = 1024,

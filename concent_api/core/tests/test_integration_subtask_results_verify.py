@@ -24,7 +24,6 @@ from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
 from core.transfer_operations import create_file_transfer_token_for_verification_use_case
 from core.utils import extract_name_from_scene_file_path
-from core.utils import hex_to_bytes_convert
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
@@ -40,18 +39,16 @@ from core.utils import hex_to_bytes_convert
 class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
     def setUp(self):
         super().setUp()
-        self.task_id = self._get_uuid()
-        self.subtask_id = self._get_uuid()
         self.subtask_result_rejected_time_str = "2018-04-01 10:30:00"
+        self.report_computed_task = self._create_report_computed_task()
         self.source_package_path = get_storage_source_file_path(
-            subtask_id=self.subtask_id,
-            task_id=self.task_id,
+            subtask_id=self.task_to_compute.subtask_id,
+            task_id=self.task_to_compute.task_id,
         )
         self.result_package_path = get_storage_result_file_path(
-            subtask_id=self.subtask_id,
-            task_id=self.task_id,
+            subtask_id=self.task_to_compute.subtask_id,
+            task_id=self.task_to_compute.task_id,
         )
-        self.report_computed_task = self._create_report_computed_task()
 
     def test_that_concent_responds_with_service_refused_when_verification_for_this_subtask_is_duplicated(self):
         """
@@ -63,8 +60,8 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
          subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify()
 
         store_subtask(
-            task_id=self.task_id,
-            subtask_id=self.subtask_id,
+            task_id=self.task_to_compute.task_id,
+            subtask_id=self.task_to_compute.subtask_id,
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
@@ -110,8 +107,8 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
          subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify()
 
         store_subtask(
-            task_id=self.task_id,
-            subtask_id=self.subtask_id,
+            task_id=self.task_to_compute.task_id,
+            subtask_id=self.task_to_compute.subtask_id,
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ACCEPTED,
@@ -152,8 +149,8 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
          subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify()
 
         store_subtask(
-            task_id=self.task_id,
-            subtask_id=self.subtask_id,
+            task_id=self.task_to_compute.task_id,
+            subtask_id=self.task_to_compute.subtask_id,
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.FAILED,
@@ -348,7 +345,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         )
         send_verification_request_mock.assert_called_once_with(
             frames=[1],
-            subtask_id=self.subtask_id,
+            subtask_id=self.task_to_compute.subtask_id,
             source_package_path=self.source_package_path,
             result_package_path=self.result_package_path,
             output_format=self.report_computed_task.task_to_compute.compute_task_def['extra_data']['output_format'],
@@ -374,13 +371,13 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 'file_transfer_token': self._prepare_file_transfer_token(subtask_results_verify),
                 'file_transfer_token.files': [
                     message.concents.FileTransferToken.FileInfo(
-                        path=f'blender/result/{self.task_id}/{self.task_id}.{self.subtask_id}.zip',
+                        path=f'blender/result/{self.task_to_compute.task_id}/{self.task_to_compute.task_id}.{self.task_to_compute.subtask_id}.zip',
                         checksum='sha1:4452d71687b6bc2c9389c3349fdc17fbd73b833b',
                         size=1,
                         category=message.concents.FileTransferToken.FileInfo.Category.results,
                     ),
                     message.concents.FileTransferToken.FileInfo(
-                        path=f'blender/source/{self.task_id}/{self.task_id}.{self.subtask_id}.zip',
+                        path=f'blender/source/{self.task_to_compute.task_id}/{self.task_to_compute.task_id}.{self.task_to_compute.subtask_id}.zip',
                         checksum='sha1:230fb0cad8c7ed29810a2183f0ec1d39c9df3f4a',
                         size=1,
                         category=message.concents.FileTransferToken.FileInfo.Category.resources,
@@ -402,10 +399,10 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2018-04-01 10:30:00"):
             subtask = store_subtask(
-                task_id=self.task_id,
-                subtask_id=self.subtask_id,
-                provider_public_key=hex_to_bytes_convert(self.report_computed_task.task_to_compute.provider_public_key),
-                requestor_public_key=hex_to_bytes_convert(self.report_computed_task.task_to_compute.requestor_public_key),
+                task_id=self.task_to_compute.task_id,
+                subtask_id=self.task_to_compute.subtask_id,
+                provider_public_key=self.PROVIDER_PUBLIC_KEY,
+                requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
                 state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
                 next_deadline=get_current_utc_timestamp() + (self.compute_task_def['deadline'] - self.task_to_compute.timestamp),
                 task_to_compute=self.report_computed_task.task_to_compute,
@@ -608,8 +605,6 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         time_str = "2018-04-01 10:00:00"
         self.compute_task_def = self._get_deserialized_compute_task_def(
             deadline=add_time_offset_to_date(time_str, 3600),
-            task_id=self.task_id,
-            subtask_id=self.subtask_id,
             extra_data={
                 'end_task': 6,
                 'frames': [1],
@@ -629,7 +624,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
 
         report_computed_task = self._get_deserialized_report_computed_task(
             timestamp="2018-04-01 10:01:00",
-            subtask_id=self.subtask_id,
+            subtask_id=self.task_to_compute.subtask_id,
             task_to_compute=self.task_to_compute
         )
         return report_computed_task

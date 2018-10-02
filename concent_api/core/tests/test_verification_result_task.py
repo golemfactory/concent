@@ -8,6 +8,7 @@ from django.test import TransactionTestCase
 from celery.exceptions import Retry
 from freezegun import freeze_time
 from golem_messages.factories.tasks import ReportComputedTaskFactory
+from golem_messages.factories.tasks import TaskToComputeFactory
 
 from common.constants import ErrorCode
 from common.helpers import get_current_utc_timestamp
@@ -23,7 +24,6 @@ from core.models import PendingResponse
 from core.models import Subtask
 from core.tasks import verification_result
 from core.tests.utils import ConcentIntegrationTestCase
-from core.tests.utils import generate_uuid
 
 
 @override_settings(
@@ -178,23 +178,20 @@ class VerifierVerificationResultTaskTransactionTest(TransactionTestCase):
         (self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
         (self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
-        task_id = generate_uuid()
-        subtask_id = generate_uuid()
-
-        report_computed_task = ReportComputedTaskFactory(
-            subtask_id=subtask_id,
-            task_id=task_id,
-        )
+        task_to_compute = TaskToComputeFactory()
 
         self.subtask = store_subtask(
-            task_id=task_id,
-            subtask_id=subtask_id,
+            task_id=task_to_compute.task_id,
+            subtask_id=task_to_compute.subtask_id,
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
             next_deadline=get_current_utc_timestamp() + settings.CONCENT_MESSAGING_TIME,
-            task_to_compute=report_computed_task.task_to_compute,
-            report_computed_task=report_computed_task
+            task_to_compute=task_to_compute,
+            report_computed_task=ReportComputedTaskFactory(
+                subtask_id=task_to_compute.subtask_id,
+                task_to_compute=task_to_compute,
+            )
         )
 
     def test_that_verification_result_querying_locked_row_should_reschedule_task(self):
@@ -217,23 +214,20 @@ class VerificationResultAssertionTest(ConcentIntegrationTestCase):
         (self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
         (self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
-        task_id = self._get_uuid()
-        subtask_id = self._get_uuid()
-
-        report_computed_task = ReportComputedTaskFactory(
-            subtask_id=subtask_id,
-            task_id=task_id
-        )
+        task_to_compute = TaskToComputeFactory()
 
         self.subtask = store_subtask(
-            task_id=task_id,
-            subtask_id=subtask_id,
+            task_id=task_to_compute.task_id,
+            subtask_id=task_to_compute.subtask_id,
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
             next_deadline=get_current_utc_timestamp() + settings.CONCENT_MESSAGING_TIME,
-            task_to_compute=report_computed_task.task_to_compute,
-            report_computed_task=report_computed_task
+            task_to_compute=task_to_compute,
+            report_computed_task=ReportComputedTaskFactory(
+                subtask_id=task_to_compute.subtask_id,
+                task_to_compute=task_to_compute,
+            )
         )
 
     def test_that_assertion_in_verification_result_method_doesnt_rise_exception_when_empty_string_is_passed_in_error_message(self):

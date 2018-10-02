@@ -39,8 +39,6 @@ CALCULATED_VERIFICATION_TIME = 25  # seconds
 
 
 def get_subtask_results_verify(
-    task_id: str,
-    subtask_id: str,
     current_time: int,
     reason: message.tasks.SubtaskResultsRejected.REASON,
     report_computed_task_size: int,
@@ -54,8 +52,6 @@ def get_subtask_results_verify(
     script_src: Optional[str]=None,
 ) -> message.concents.SubtaskResultsVerify:
     task_to_compute = create_signed_task_to_compute(
-        task_id=task_id,
-        subtask_id=subtask_id,
         deadline=current_time + CALCULATED_VERIFICATION_TIME,
         price=price if price is not None else 1,
         size=task_to_compute_size,
@@ -68,7 +64,6 @@ def get_subtask_results_verify(
 
     report_computed_task = message.ReportComputedTask(
         task_to_compute=task_to_compute,
-        subtask_id=subtask_id,
         size=report_computed_task_size,
         package_hash=report_computed_task_package_hash,
     )
@@ -95,12 +90,7 @@ def get_subtask_results_verify(
 
 
 @count_fails
-def test_case_1_test_for_positive_case(
-    cluster_consts: ProtocolConstants,
-    cluster_url: str,
-    task_id: str,
-    subtask_id: str,
-) -> None:  # pylint: disable=unused-argument
+def test_case_1_test_for_positive_case(cluster_consts: ProtocolConstants, cluster_url: str) -> None:  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -114,22 +104,22 @@ def test_case_1_test_for_positive_case(
     result_file_checksum = 'sha1:' + hashlib.sha1(result_file_content).hexdigest()
     source_file_checksum = 'sha1:' + hashlib.sha1(source_file_content).hexdigest()
 
+    subtask_results_verify = get_subtask_results_verify(
+        current_time,
+        reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
+        report_computed_task_size=result_file_size,
+        report_computed_task_package_hash=result_file_checksum,
+        task_to_compute_size=source_file_size,
+        task_to_compute_package_hash=source_file_checksum,
+        script_src='# This template is rendered by\n# apps.blender.resources.scenefileeditor.generate_blender_crop_file(),\n# written to tempfile and passed as arg to blender.\nimport bpy\n\nclass EngineWarning(bpy.types.Operator):\n    bl_idname = "wm.engine_warning"\n    bl_label = "Inform about not supported rendering engine"\n\n    def execute(self, context):\n        self.report({"ERROR"}, "Engine " + bpy.context.scene.render.engine + \\\n                               " not supported by Golem")\n        return {"FINISHED"}\n\nclass ShowInformation(bpy.types.Operator):\n    bl_idname = "wm.scene_information"\n    bl_label = "Inform user about scene settings"\n\n\n    def execute(self, context):\n        self.report({"INFO"}, "Resolution: " +\n                              str(bpy.context.scene.render.resolution_x) +\n                               " x " +\n                               str(bpy.context.scene.render.resolution_y))\n        self.report({"INFO"}, "File format: " +\n                               str(bpy.context.scene.render.file_extension))\n        self.report({"INFO"}, "Filepath: " +\n                              str(bpy.context.scene.render.filepath))\n        self.report({"INFO"}, "Frames: " +\n                              str(bpy.context.scene.frame_start) + "-" +\n                              str(bpy.context.scene.frame_end) + ";" +\n                              str(bpy.context.scene.frame_step))\n\n        return {"FINISHED"}\n\n\nbpy.utils.register_class(EngineWarning)\nengine = bpy.context.scene.render.engine\nif engine not in ("BLENDER_RENDER", "CYCLES"):\n    bpy.ops.wm.engine_warning()\n\nbpy.utils.register_class(ShowInformation)\nbpy.ops.wm.scene_information()\n\n\nfor scene in bpy.data.scenes:\n\n    scene.render.tile_x = 0\n    scene.render.tile_y = 0\n    scene.render.resolution_x = 1024\n    scene.render.resolution_y = 768\n    scene.render.resolution_percentage = 100\n    scene.render.use_border = True\n    scene.render.use_crop_to_border = True\n    scene.render.border_max_x = 1.0\n    scene.render.border_min_x = 0.0\n    scene.render.border_min_y = 0.0\n    scene.render.border_max_y = 1.0\n    scene.render.use_compositing = bool(False)\n\n#and check if additional files aren\'t missing\nbpy.ops.file.report_missing_files()\n',
+    )
+
     ack_subtask_results_verify = api_request(
         cluster_url,
         'send',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        get_subtask_results_verify(
-            task_id,
-            subtask_id,
-            current_time,
-            reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-            report_computed_task_size=result_file_size,
-            report_computed_task_package_hash=result_file_checksum,
-            task_to_compute_size=source_file_size,
-            task_to_compute_package_hash=source_file_checksum,
-            script_src='# This template is rendered by\n# apps.blender.resources.scenefileeditor.generate_blender_crop_file(),\n# written to tempfile and passed as arg to blender.\nimport bpy\n\nclass EngineWarning(bpy.types.Operator):\n    bl_idname = "wm.engine_warning"\n    bl_label = "Inform about not supported rendering engine"\n\n    def execute(self, context):\n        self.report({"ERROR"}, "Engine " + bpy.context.scene.render.engine + \\\n                               " not supported by Golem")\n        return {"FINISHED"}\n\nclass ShowInformation(bpy.types.Operator):\n    bl_idname = "wm.scene_information"\n    bl_label = "Inform user about scene settings"\n\n\n    def execute(self, context):\n        self.report({"INFO"}, "Resolution: " +\n                              str(bpy.context.scene.render.resolution_x) +\n                               " x " +\n                               str(bpy.context.scene.render.resolution_y))\n        self.report({"INFO"}, "File format: " +\n                               str(bpy.context.scene.render.file_extension))\n        self.report({"INFO"}, "Filepath: " +\n                              str(bpy.context.scene.render.filepath))\n        self.report({"INFO"}, "Frames: " +\n                              str(bpy.context.scene.frame_start) + "-" +\n                              str(bpy.context.scene.frame_end) + ";" +\n                              str(bpy.context.scene.frame_step))\n\n        return {"FINISHED"}\n\n\nbpy.utils.register_class(EngineWarning)\nengine = bpy.context.scene.render.engine\nif engine not in ("BLENDER_RENDER", "CYCLES"):\n    bpy.ops.wm.engine_warning()\n\nbpy.utils.register_class(ShowInformation)\nbpy.ops.wm.scene_information()\n\n\nfor scene in bpy.data.scenes:\n\n    scene.render.tile_x = 0\n    scene.render.tile_y = 0\n    scene.render.resolution_x = 1024\n    scene.render.resolution_y = 768\n    scene.render.resolution_percentage = 100\n    scene.render.use_border = True\n    scene.render.use_crop_to_border = True\n    scene.render.border_max_x = 1.0\n    scene.render.border_min_x = 0.0\n    scene.render.border_min_y = 0.0\n    scene.render.border_max_y = 1.0\n    scene.render.use_compositing = bool(False)\n\n#and check if additional files aren\'t missing\nbpy.ops.file.report_missing_files()\n',
-        ),
+        subtask_results_verify,
         headers = {
             'Content-Type': 'application/octet-stream',
         },
@@ -149,7 +139,7 @@ def test_case_1_test_for_positive_case(
     )
     assert_condition(response.status_code, 200, 'File has not been stored on cluster')
     print('\nUploaded file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(
-        task_id,
+        subtask_results_verify.task_id,
         result_file_checksum,
         result_file_size
     ))
@@ -165,7 +155,7 @@ def test_case_1_test_for_positive_case(
     )
     assert_condition(response.status_code, 200, 'File has not been stored on cluster')
     print('\nUploaded file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(
-        task_id,
+        subtask_results_verify.task_id,
         source_file_checksum,
         source_file_size
     ))
@@ -203,15 +193,10 @@ def test_case_1_test_for_positive_case(
 
 
 @count_fails
-def test_case_2_test_for_resources_failure_reason(
-    cluster_consts: ProtocolConstants,
-    cluster_url: str,
-    task_id: str,
-    subtask_id: str,
-) -> None:  # pylint: disable=unused-argument
+def test_case_2_test_for_resources_failure_reason(cluster_consts: ProtocolConstants, cluster_url: str) -> None:  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
 
-    file_content = task_id
+    file_content = 'test'
     file_size = len(file_content)
     file_check_sum = 'sha1:' + hashlib.sha1(file_content.encode()).hexdigest()
 
@@ -221,8 +206,6 @@ def test_case_2_test_for_resources_failure_reason(
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         get_subtask_results_verify(
-            task_id,
-            subtask_id,
             current_time,
             reason=message.tasks.SubtaskResultsRejected.REASON.ResourcesFailure,
             report_computed_task_size=file_size,
@@ -240,15 +223,10 @@ def test_case_2_test_for_resources_failure_reason(
 
 
 @count_fails
-def test_case_3_test_for_invalid_time(
-    cluster_consts: ProtocolConstants,
-    cluster_url: str,
-    task_id: str,
-    subtask_id: str,
-) -> None:  # pylint: disable=unused-argument
+def test_case_3_test_for_invalid_time(cluster_consts: ProtocolConstants, cluster_url: str) -> None:  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
 
-    file_content = task_id
+    file_content = 'test'
     file_size = len(file_content)
     file_check_sum = 'sha1:' + hashlib.sha1(file_content.encode()).hexdigest()
 
@@ -258,8 +236,6 @@ def test_case_3_test_for_invalid_time(
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         get_subtask_results_verify(
-            task_id,
-            subtask_id,
             current_time - (CALCULATED_VERIFICATION_TIME * (ADDITIONAL_VERIFICATION_TIME_MULTIPLIER / BLENDER_THREADS)),
             reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
             report_computed_task_size=file_size,
@@ -277,36 +253,31 @@ def test_case_3_test_for_invalid_time(
 
 
 @count_fails
-def test_case_4_test_for_duplicated_request(
-    cluster_consts: ProtocolConstants,
-    cluster_url: str,
-    task_id: str,
-    subtask_id: str,
-) -> None:  # pylint: disable=unused-argument
+def test_case_4_test_for_duplicated_request(cluster_consts: ProtocolConstants, cluster_url: str) -> None:  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
 
-    result_file_content_1 = task_id
-    source_file_content_2 = subtask_id
+    result_file_content_1 = 'test'
+    source_file_content_2 = 'test'
     result_file_size_1 = len(result_file_content_1)
     source_file_size_2 = len(source_file_content_2)
     result_file_check_sum_1 = 'sha1:' + hashlib.sha1(result_file_content_1.encode()).hexdigest()
     source_file_check_sum_2 = 'sha1:' + hashlib.sha1(source_file_content_2.encode()).hexdigest()
+
+    subtask_results_verify = get_subtask_results_verify(
+        current_time,
+        reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
+        report_computed_task_size=result_file_size_1,
+        report_computed_task_package_hash=result_file_check_sum_1,
+        task_to_compute_size=source_file_size_2,
+        task_to_compute_package_hash=source_file_check_sum_2,
+    )
 
     api_request(
         cluster_url,
         'send',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        get_subtask_results_verify(
-            task_id,
-            subtask_id,
-            current_time,
-            reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-            report_computed_task_size=result_file_size_1,
-            report_computed_task_package_hash=result_file_check_sum_1,
-            task_to_compute_size=source_file_size_2,
-            task_to_compute_package_hash=source_file_check_sum_2,
-        ),
+        subtask_results_verify,
         headers = {
             'Content-Type': 'application/octet-stream',
         },
@@ -315,21 +286,15 @@ def test_case_4_test_for_duplicated_request(
         expected_content_type='application/octet-stream',
     )
 
+    # Set signature to None so message can be serialized again.
+    subtask_results_verify.sig = None
+
     api_request(
         cluster_url,
         'send',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        get_subtask_results_verify(
-            task_id,
-            subtask_id,
-            current_time,
-            reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-            report_computed_task_size=result_file_size_1,
-            report_computed_task_package_hash=result_file_check_sum_1,
-            task_to_compute_size=source_file_size_2,
-            task_to_compute_package_hash=source_file_check_sum_2,
-        ),
+        subtask_results_verify,
         headers = {
             'Content-Type': 'application/octet-stream',
         },
@@ -340,16 +305,11 @@ def test_case_4_test_for_duplicated_request(
 
 
 @count_fails
-def test_case_5_test_requestor_status_account_negative(
-    cluster_consts: ProtocolConstants,
-    cluster_url: str,
-    task_id: str,
-    subtask_id: str,
-) -> None:  # pylint: disable=unused-argument
+def test_case_5_test_requestor_status_account_negative(cluster_consts: ProtocolConstants, cluster_url: str) -> None:  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
 
-    result_file_content_1 = task_id
-    source_file_content_2 = subtask_id
+    result_file_content_1 = 'test'
+    source_file_content_2 = 'test'
     result_file_size_1 = len(result_file_content_1)
     source_file_size_2 = len(source_file_content_2)
     result_file_check_sum_1 = 'sha1:' + hashlib.sha1(result_file_content_1.encode()).hexdigest()
@@ -361,8 +321,6 @@ def test_case_5_test_requestor_status_account_negative(
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         get_subtask_results_verify(
-            task_id,
-            subtask_id,
             current_time,
             reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
             report_computed_task_size=result_file_size_1,
@@ -384,12 +342,7 @@ def test_case_5_test_requestor_status_account_negative(
 
 
 @count_fails
-def test_case_6_test_without_script_src_in(
-    cluster_consts: ProtocolConstants,
-    cluster_url: str,
-    task_id: str,
-    subtask_id: str,
-) -> None:  # pylint: disable=unused-argument
+def test_case_6_test_without_script_src_in(cluster_consts: ProtocolConstants, cluster_url: str) -> None:  # pylint: disable=unused-argument
     current_time = get_current_utc_timestamp()
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -403,21 +356,21 @@ def test_case_6_test_without_script_src_in(
     result_file_checksum = 'sha1:' + hashlib.sha1(result_file_content).hexdigest()
     source_file_checksum = 'sha1:' + hashlib.sha1(source_file_content).hexdigest()
 
+    subtask_results_verify= get_subtask_results_verify(
+        current_time,
+        reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
+        report_computed_task_size=result_file_size,
+        report_computed_task_package_hash=result_file_checksum,
+        task_to_compute_size=source_file_size,
+        task_to_compute_package_hash=source_file_checksum,
+    )
+
     ack_subtask_results_verify = api_request(
         cluster_url,
         'send',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        get_subtask_results_verify(
-            task_id,
-            subtask_id,
-            current_time,
-            reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-            report_computed_task_size=result_file_size,
-            report_computed_task_package_hash=result_file_checksum,
-            task_to_compute_size=source_file_size,
-            task_to_compute_package_hash=source_file_checksum,
-        ),
+        subtask_results_verify,
         headers = {
             'Content-Type': 'application/octet-stream',
         },
@@ -437,7 +390,7 @@ def test_case_6_test_without_script_src_in(
     )
     assert_condition(response.status_code, 200, 'File has not been stored on cluster')
     print('\nUploaded file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(
-        task_id,
+        subtask_results_verify.task_id,
         result_file_checksum,
         result_file_size
     ))
@@ -453,7 +406,7 @@ def test_case_6_test_without_script_src_in(
     )
     assert_condition(response.status_code, 200, 'File has not been stored on cluster')
     print('\nUploaded file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(
-        task_id,
+        subtask_results_verify.task_id,
         source_file_checksum,
         source_file_size
     ))

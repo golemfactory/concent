@@ -408,9 +408,7 @@ class ConcentIntegrationTestCase(TestCase):
         self._test_subtask_nested_messages(subtask, expected_nested_messages)
 
     def _test_subtask_nested_messages(self, subtask, expected_nested_messages):
-        all_possible_messages = {
-            'task_to_compute', 'report_computed_task', 'ack_report_computed_task', 'reject_report_computed_task', 'subtask_results_accepted', 'subtask_results_rejected'
-        }
+        all_possible_messages = Subtask.MESSAGE_FOR_FIELD.keys()
         required_messages = all_possible_messages & expected_nested_messages
         for nested_message in required_messages:
             self.assertIsNotNone(getattr(subtask, nested_message))

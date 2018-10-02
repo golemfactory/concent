@@ -88,7 +88,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.FORCING_ACCEPTANCE,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'ack_report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
         self._test_last_stored_messages(
@@ -231,7 +231,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.FORCING_ACCEPTANCE,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'ack_report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
         self._test_last_stored_messages(
@@ -356,7 +356,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.FORCING_ACCEPTANCE,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'ack_report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
         self._test_last_stored_messages(
@@ -567,6 +567,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             requestor_key=self._get_encoded_requestor_public_key(),
             expected_nested_messages={
                 'task_to_compute',
+                'want_to_compute_task',
                 'report_computed_task',
                 'ack_report_computed_task',
                 'subtask_results_accepted'
@@ -696,7 +697,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.FORCING_ACCEPTANCE,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'ack_report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
         self._test_last_stored_messages(
@@ -907,6 +908,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             requestor_key=self._get_encoded_requestor_public_key(),
             expected_nested_messages={
                 'task_to_compute',
+                'want_to_compute_task',
                 'report_computed_task',
                 'ack_report_computed_task',
                 'subtask_results_rejected'
@@ -1033,7 +1035,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.FORCING_ACCEPTANCE,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'ack_report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
         self._test_last_stored_messages(
@@ -1131,7 +1133,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.ACCEPTED,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'ack_report_computed_task'},
         )
         self._test_undelivered_pending_responses(
             subtask_id=task_to_compute.subtask_id,
@@ -1233,7 +1235,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.FORCING_ACCEPTANCE,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'ack_report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
         self._test_last_stored_messages(
@@ -1328,7 +1330,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.ACCEPTED,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'ack_report_computed_task'},
         )
         self._test_undelivered_pending_responses(
             subtask_id=task_to_compute.subtask_id,

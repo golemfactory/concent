@@ -86,7 +86,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'force_get_task_result'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'force_get_task_result'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
@@ -269,7 +269,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'force_get_task_result'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'force_get_task_result'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
@@ -446,10 +446,10 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
         self._test_subtask_state(
             task_id=deserialized_task_to_compute.task_id,
             subtask_id=deserialized_task_to_compute.subtask_id,
-            subtask_state=Subtask.SubtaskState.FAILED,  # Should be FAILED?
+            subtask_state=Subtask.SubtaskState.FAILED,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'force_get_task_result'},
         )
 
         self._assert_client_count_is_equal(2)
@@ -506,7 +506,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'force_get_task_result'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'force_get_task_result'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
@@ -702,7 +702,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.FAILED,  # Should be FAILED?
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'force_get_task_result'},
         )
 
         self._assert_client_count_is_equal(2)
@@ -759,7 +759,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'force_get_task_result'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'force_get_task_result'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
@@ -944,7 +944,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.FAILED,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'force_get_task_result'},
         )
 
         self._assert_client_count_is_equal(2)
@@ -1001,7 +1001,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'force_get_task_result'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'force_get_task_result'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:52"),
         )
         self._test_last_stored_messages(
@@ -1203,7 +1203,7 @@ class AuthGetTaskResultIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.RESULT_UPLOADED,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'force_get_task_result'},
         )
 
         self._assert_client_count_is_equal(2)

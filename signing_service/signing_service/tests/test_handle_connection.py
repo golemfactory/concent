@@ -19,6 +19,7 @@ from middleman_protocol.message import AbstractFrame
 from middleman_protocol.message import GolemMessageFrame
 from middleman_protocol.stream import unescape_stream
 
+from signing_service.constants import SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS
 from signing_service.exceptions import SigningServiceValidationError
 from signing_service.signing_service import SigningService
 from .utils import SigningServiceIntegrationTestCase
@@ -211,6 +212,7 @@ class TestSigningServiceHandleConnection(SigningServiceIntegrationTestCase):
                         CONCENT_PUBLIC_KEY,
                         SIGNING_SERVICE_PRIVATE_KEY,
                         TEST_ETHEREUM_PRIVATE_KEY,
+                        SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS,
                     )
 
                     # For test purposes we reverse roles, so signing service works as server.

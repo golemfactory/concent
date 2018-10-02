@@ -38,3 +38,6 @@ ETHEREUM_PRIVATE_KEY_REGEXP = re.compile(r'^[a-f0-9]{64}$')
 
 # Defines how much time in seconds should SigningService wait for AuthenticationChallengeFrame.
 RECEIVE_AUTHENTICATION_CHALLENGE_TIMEOUT = 20
+
+# Defines how many times Signing Service should try reconnecting on socket error, before giving up and crashing.
+SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS = 5

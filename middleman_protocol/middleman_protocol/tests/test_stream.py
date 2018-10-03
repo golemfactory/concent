@@ -392,3 +392,20 @@ class TestSplitStreamHelperMiddlemanProtocol:
                             next(split_stream_generator)
 
                 mock_socket_close.assert_called_once()
+
+    def test_that_when_socket_receives_no_bytes_socket_error_is_raised(self, unused_tcp_port):  # pylint: disable=no-self-use
+        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as server_socket:
+            server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
+            with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as client_socket:
+                client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
+                server_socket.bind(('127.0.0.1', unused_tcp_port))
+                server_socket.listen(1)
+
+                client_socket.connect(('127.0.0.1', unused_tcp_port))
+
+                (connection, _address) = server_socket.accept()
+
+                # Closing client socket will cause that socket.recv() function will read 0 bytes.
+                client_socket.close()
+                with pytest.raises(socket.error):
+                    next(split_stream(connection=connection))

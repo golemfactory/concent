@@ -260,6 +260,7 @@ We never create `DepositAccount` for the payee because the payee may be Concent 
 |-------------------------------|-----------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
 | `client`                      | `Client`              | no       | `Client` who owns the deposit on this account.
 | `ethereum_public_key`         | string                | no       | Address of the Ethereum account belonging to the client who owns the deposit account.
+| `created_at`                  | timestamp             | no       | The creation time of the object.
 
 #### `ConcentUseCase` enum
 - `ForcedAcceptance`

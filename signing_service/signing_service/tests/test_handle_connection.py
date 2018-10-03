@@ -17,6 +17,7 @@ from middleman_protocol.constants import FRAME_SIGNATURE_BYTES_LENGTH
 from middleman_protocol.constants import REQUEST_ID_FOR_RESPONSE_FOR_INVALID_FRAME
 from middleman_protocol.message import AbstractFrame
 from middleman_protocol.message import GolemMessageFrame
+from middleman_protocol.message import HeartbeatFrame
 from middleman_protocol.stream import unescape_stream
 
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS
@@ -195,7 +196,26 @@ class TestSigningServiceHandleConnection(SigningServiceIntegrationTestCase):
         assertpy.assert_that(deserialized_message.payload[0]).is_equal_to(ErrorCode.UnexpectedMessage)
         assertpy.assert_that(deserialized_message.request_id).is_equal_to(REQUEST_ID_FOR_RESPONSE_FOR_INVALID_FRAME)
 
-    def _prepare_and_execute_handle_connection(self, raw_message, handle_connection_wrapper=None):
+    def test_that__handle_connection_should_continue_loop_when_heartbeat_frame_is_received(self):
+        heartbeat_frame = HeartbeatFrame(
+            payload=None,
+            request_id=777,
+        )
+        raw_message = heartbeat_frame.serialize(private_key=CONCENT_PRIVATE_KEY)
+        with mock.patch('signing_service.signing_service.send_over_stream') as send_mock:
+            with mock.patch('signing_service.signing_service.logger') as logger_mock:
+                response = self._prepare_and_execute_handle_connection(raw_message, expect_response_from_scoket=False)
+
+                assertpy.assert_that(response).is_equal_to(mock.sentinel.no_response)
+                send_mock.assert_not_called()
+                logger_mock.info.assert_not_called()
+
+    def _prepare_and_execute_handle_connection(
+        self,
+        raw_message,
+        handle_connection_wrapper=None,
+        expect_response_from_scoket=True
+    ):
         def mocked_generator():
             yield raw_message
             raise SigningServiceValidationError()
@@ -220,6 +240,7 @@ class TestSigningServiceHandleConnection(SigningServiceIntegrationTestCase):
                     signing_service_socket.listen(1)
                     client_socket.connect(('127.0.0.1', self.signing_service_port))
                     (connection, _address) = signing_service_socket.accept()
+                    client_socket.setblocking(False)
 
                     with pytest.raises(SigningServiceValidationError):
                         if handle_connection_wrapper is not None:
@@ -227,6 +248,10 @@ class TestSigningServiceHandleConnection(SigningServiceIntegrationTestCase):
                         else:
                             signing_service._handle_connection(mocked_generator(), connection)
 
-                    raw_message_received = next(unescape_stream(connection=client_socket))
+                    if expect_response_from_scoket:
+                        response = next(unescape_stream(connection=client_socket))
+                    else:
+                        # We do not expect to get anything from the socket, dummy response is returned.
+                        response = mock.sentinel.no_response
 
-        return raw_message_received
+        return response

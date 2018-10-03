@@ -50,7 +50,6 @@ from signing_service.utils import is_private_key_valid
 from signing_service.utils import is_public_key_valid
 from signing_service.utils import make_secret_provider_factory
 
-
 logger = logging.getLogger()
 crash_logger = logging.getLogger('crash')
 
@@ -236,6 +235,9 @@ class SigningService:
                     raw_message_received,
                     public_key=self.concent_public_key,
                 )
+                # Heartbeat is received: connection is still active and Signing Service doesn't have to respond.
+                if middleman_message.payload_type == PayloadType.HEARTBEAT:
+                    continue
 
                 if (
                     not middleman_message.payload_type == PayloadType.GOLEM_MESSAGE or

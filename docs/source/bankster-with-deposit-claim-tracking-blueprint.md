@@ -96,17 +96,13 @@ The actual amount paid will depend on the outcome of the use case.
     They stay in the database even if the operation fails and even after all the `DepositClaim`s that refer to them are removed.
 
 #### `finalize payment` operation
-This operation tells Bankster to either pay out claimed funds or discard the claim.
+This operation tells Bankster to pay out claimed funds.
 
 Concent Core performs this operation at the end of any use case that may require payment from deposit within a single subtask, for all `DepositClaims` created in that use case.
 Currently those are `ForcedAcceptance` and `AdditionalVerification`.
 `ForcedPayment` use case operates on more than one subtask and for that reason requires a separate operation.
 
-Claims for which the disposition is not to pay are simply discarded, freeing the funds.
-This may happen for example when verification confirms requestor's claim and he's freed from the responsibility of covering computation cost.
-Note that the provider still has to pay Concent for additional verification in that case.
-
-If the disposition says to pay the claim, Bankster uses SCI to submit an Ethereum transaction to the Ethereum client which then propagates it to the rest of the network.
+Bankster uses SCI to submit an Ethereum transaction to the Ethereum client which then propagates it to the rest of the network.
 Hopefully the transaction is included in one of the upcoming blocks on the blockchain.
 Bankster updates `DepositClaim` with the transaction ID and starts listening for blockchain events.
 The claim is removed from the database once the transaction actually appears on the blockchain.
@@ -117,8 +113,7 @@ If there's nothing at all, the claim is discarded without payment.
 ##### Input
 | Parameter                     | Type                              | Optional | Remarks                                                                                                                 |
 |-------------------------------|-----------------------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
-| `deposit_claim`               | `DepositClaim`                    | no       | The claim to pay or discard.
-| `pay`                         | bool                              | no       | `True` if the claim should actually be paid. `False` if it should be discarded.
+| `deposit_claim`               | `DepositClaim`                    | no       | The claim to pay.
 
 ##### Output
 | Parameter                     | Type                              | Optional | Remarks                                                                                                                 |
@@ -127,21 +122,16 @@ If there's nothing at all, the claim is discarded without payment.
 
 ##### Sequence of operation
 1. **Deposit query**
-    - If `pay` is `True`:
-        - Bankster asks SCI about the amount of funds available on the deposit account listed in the `DepositClaim`.
+    - Bankster asks SCI about the amount of funds available on the deposit account listed in the `DepositClaim`.
 2. **Claim freeze**:
     - Bankster begins a database transaction.
     - Bankster puts a database lock on the `DepositAccount` object.
-3. **Claim cancellation**:
-    - If `pay` is `False`:
-        - Bankster simply removes the `DepositClaim` object.
-4. **Payment calculation**:
-    - If `pay` is `True`:
-        - Bankster sums the `amount`s of all existing `DepositClaim`s that have the same payer as the one being processed.
-        - Bankster subtracts that value from the amount of funds available in the deposit.
-        - If the result is negative or zero, Bankster removes the `DepositClaim` object being processed.
-        - Otherwise if the result is lower than `DepositAccount.amount`, Bankster sets this field to the amount that's actually available.
-5. **Transaction**:
+3. **Payment calculation**:
+    - Bankster sums the `amount`s of all existing `DepositClaim`s that have the same payer as the one being processed.
+    - Bankster subtracts that value from the amount of funds available in the deposit.
+    - If the result is negative or zero, Bankster removes the `DepositClaim` object being processed.
+    - Otherwise if the result is lower than `DepositAccount.amount`, Bankster sets this field to the amount that's actually available.
+4. **Transaction**:
     - If the `DepositClaim` still exists at this point:
         - Bankster uses SCI to create an Ethereum transaction.
         - Bankster puts transaction ID in `DepositClaim.tx_hash`.
@@ -154,6 +144,49 @@ If there's nothing at all, the claim is discarded without payment.
 ##### Expected Concent Core behavior
 - Concent Core executes this operation at the end of a use case, when the service has already been performed and it is known that a payment is necessary.
 - Concent Core can access `DepositClaim` objects created by Bankster (they're in the same database).
+
+#### `discard claim` operation
+This operation tells Bankster to discard the claim.
+Claim is simply removed, freeing the funds.
+
+This operation is only possible if the payment has not been finalized.
+If it has, the claim stays in the database until Bankster determines whether the corresponding Ethereum transaction has succeeded.
+If it has succeeded, the claim is discarded automatically.
+If it has failed, the claim stays.
+We may want to add a mechanism to submit a new transaction to retry a failed payment later but for now it's going to be a manual process.
+
+Concent Core performs this operation for all `DepositClaims` created in a use case for which payment is not necessary.
+This is the case for example if it's determined that the provider has not computed the subtask correctly or when the use case times out.
+Currently those use cases are `ForcedAcceptance` and `AdditionalVerification`.
+`ForcedPayment` use case operates on more than one subtask and for that reason requires a separate operation.
+
+Note that the provider has to pay for additional verification, regardless of the result.
+The fee may be waived only if Concent fails to perform the service and the use case times out.
+
+##### Input
+| Parameter                     | Type                              | Optional | Remarks                                                                                                                 |
+|-------------------------------|-----------------------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
+| `deposit_claim`               | `DepositClaim`                    | no       | The to discard.
+
+##### Output
+| Parameter                     | Type                              | Optional | Remarks                                                                                                                 |
+|-------------------------------|-----------------------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
+| `claim_removed`               | bool                              | no       | `True` if the claim has actually been removed.
+
+##### Sequence of operation
+1. **Claim freeze**:
+    - Bankster begins a database transaction.
+    - Bankster puts a database lock on the `DepositAccount` object.
+2. **Claim cancellation**:
+    - If `DepositClaim.tx_hash` not empty:
+        - Bankster simply removes the `DepositClaim` object from the database.
+        - `claim_removed` is `True`.
+    - Otherwise
+        - `claim_removed` is `False`.
+3. **Unfreeze and result**: If everything goes well, the operation returns.
+    - Bankster commits the database transaction.
+        Database locks on `DepositAccount`s are released.
+    - Bankster returns `claim_removed`.
 
 #### `settle overdue acceptances` operation
 The purpose of this operation is to calculate the total amount that the requestor owes provider for completed computations and transfer that amount from requestor's deposit.
@@ -349,7 +382,6 @@ Deposits:
     - **[t=1161]** Concent updates `Subtask` S10 due to the timeout.
     - **[t=1164]** Concent calls `finalize payments` operation.
         - `deposit_claim`: 10
-        - 'pay': True
 
 - **[t=1170]** Bankster handles `finalize payments` operation.
     - Deposit query

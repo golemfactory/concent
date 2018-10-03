@@ -41,3 +41,6 @@ RECEIVE_AUTHENTICATION_CHALLENGE_TIMEOUT = 20
 
 # Defines how many times Signing Service should try reconnecting on socket error, before giving up and crashing.
 SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS = 5
+
+# Defines how much time in seconds should SigningService wait for connection before deeming it unsuccessful.
+CONNECTION_TIMEOUT = 10

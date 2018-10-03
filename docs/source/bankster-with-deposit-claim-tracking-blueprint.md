@@ -95,10 +95,10 @@ The actual amount paid will depend on the outcome of the use case.
 - `Client` and `DepositAccount` objects are never removed.
     They stay in the database even if the operation fails and even after all the `DepositClaim`s that refer to them are removed.
 
-#### `finalize payments` operation
-This operation tells Bankster to either pay out claimed funds or discard the claims.
+#### `finalize payment` operation
+This operation tells Bankster to either pay out claimed funds or discard the claim.
 
-Concent Core performs this operation at the end of any use case that may require payment from deposit within a single subtask.
+Concent Core performs this operation at the end of any use case that may require payment from deposit within a single subtask, for all `DepositClaims` created in that use case.
 Currently those are `ForcedAcceptance` and `AdditionalVerification`.
 `ForcedPayment` use case operates on more than one subtask and for that reason requires a separate operation.
 
@@ -106,7 +106,7 @@ Claims for which the disposition is not to pay are simply discarded, freeing the
 This may happen for example when verification confirms requestor's claim and he's freed from the responsibility of covering computation cost.
 Note that the provider still has to pay Concent for additional verification in that case.
 
-For each claim for which the disposition says to pay it, Bankster uses SCI to submit an Ethereum transaction to the Ethereum client which then propagates it to the rest of the network.
+If the disposition says to pay the claim, Bankster uses SCI to submit an Ethereum transaction to the Ethereum client which then propagates it to the rest of the network.
 Hopefully the transaction is included in one of the upcoming blocks on the blockchain.
 Bankster updates `DepositClaim` with the transaction ID and starts listening for blockchain events.
 The claim is removed from the database once the transaction actually appears on the blockchain.
@@ -117,22 +117,15 @@ If there's nothing at all, the claim is discarded without payment.
 ##### Input
 | Parameter                     | Type                              | Optional | Remarks                                                                                                                 |
 |-------------------------------|-----------------------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
-| deposit_claim_dispositions    | list of `DepositClaimDisposition` | no       |
-
-###### `DepositClaimDisposition`
-| Field                         | Type                              | Optional | Remarks                                                                                                                 |
-|-------------------------------|-----------------------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
-| `deposit_claim`               | `DepositClaim`                    | no       | The claim the disposition refers to.
+| `deposit_claim`               | `DepositClaim`                    | no       | The claim to pay or discard.
 | `pay`                         | bool                              | no       | `True` if the claim should actually be paid. `False` if it should be discarded.
 
 ##### Output
 | Parameter                     | Type                              | Optional | Remarks                                                                                                                 |
 |-------------------------------|-----------------------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
-| `success`                     | dict of (int, bool)               | no       | A dict indicating for each `DepositClaim` whether the transaction has been successfully submitted.
+| `tx_hash`                     | string                            | no       | Hash of an Ethereum transaction that was created. Empty value if no transaction was actually submitted.
 
 ##### Sequence of operation
-This is performed in a loop, separately for each `DepositClaimDisposition`.
-
 1. **Deposit query**
     - If `pay` is `True`:
         - Bankster asks SCI about the amount of funds available on the deposit account listed in the `DepositClaim`.
@@ -153,17 +146,10 @@ This is performed in a loop, separately for each `DepositClaimDisposition`.
         - Bankster uses SCI to create an Ethereum transaction.
         - Bankster puts transaction ID in `DepositClaim.tx_hash`.
     - This part must be done while the `DepositAccount` is still locked to prevent two simultaneous operations from independently making two separate payments for the same claim.
-6. **Unfreeze**:
+6. **Unfreeze and result**: If everything goes well, the operation returns.
     - Bankster commits the database transaction.
         Database locks on `DepositAccount`s are released.
-
-An exception during the processing should interrupt the current transaction and roll back the changes related to the disposition being processed but all the previous disposition should stay in the database.
-
-After processing all the dispositions or encountering an exception, Bankster prepares the result.
-
-7. **Result**:
-    - `success` dict has a key for each claim included in `deposit_claim_dispositions`.
-        The value is `True` if and only if Banker actually started processing the corresponding disposition and finished it without errors.
+    - Bankster returns `DepositClaim.tx_hash` if a transaction has been created.
 
 ##### Expected Concent Core behavior
 - Concent Core executes this operation at the end of a use case, when the service has already been performed and it is known that a payment is necessary.
@@ -362,8 +348,8 @@ Deposits:
     - The requestor has not submitted `ForceSubtaskResultsResponse` and it's already past deadline + SVT + FAT + CMT.
     - **[t=1161]** Concent updates `Subtask` S10 due to the timeout.
     - **[t=1164]** Concent calls `finalize payments` operation.
-        - `deposit_claim_dispositions`:
-            - `{'deposit_claim': 10, 'pay': True}`
+        - `deposit_claim`: 10
+        - 'pay': True
 
 - **[t=1170]** Bankster handles `finalize payments` operation.
     - Deposit query

@@ -20,7 +20,7 @@ A more complete version that tracks deposit claims is described in #479.
 
 The purpose of this endpoint is to check whether the clients participating in a use case have enough funds in their deposits to cover all the costs associated with the use case in the pessimistic scenario.
 
-Concent core communicates with this endpoint at the beginning of any use case that may require payment from deposit within a single subtask.
+Concent Core communicates with this endpoint at the beginning of any use case that may require payment from deposit within a single subtask.
 Currently those are `ForcedAcceptance` and `AdditionalVerification`.
 `ForcedPayment` use case operates on more than one subtask and for that reason requires a separate endpoint.
 

@@ -54,7 +54,7 @@ The actual amount paid will depend on the outcome of the use case.
     - Bankster asks SCI about the amount of funds available in requestor's deposit.
     - If the amount claimed from provider's deposit is non-zero, Bankster asks SCI about the amount of funds available in his deposit.
 4. **Claim freeze**:
-    - Bankster puts a database locks on all `DepositAccount` objects that will be used as payers in newly created `DatabaseClaim`s.
+    - Bankster puts database locks on all `DepositAccount` objects that will be used as payers in newly created `DatabaseClaim`s.
         - If the objects are already locked, waits and retries a few times and eventually fails.
     - The freeze is done after the deposit check to avoid holding the lock for too long.
         Deposit check requires one or more HTTP requests and is a relatively slow operation.
@@ -82,7 +82,7 @@ The actual amount paid will depend on the outcome of the use case.
 8. **Unfreeze and result**: If everything goes well, the operation returns.
     - All the created `DepositClaim`s are included in the result.
         At least one claim must have been created.
-    - Database locks on `EthereumAccount`s are released.
+    - Database locks on `DepositAccount`s are released.
 
 ##### Expected Concent Core behavior
 - Concent Core executes this operation at the beginning of a use case, after validating client's message and determining that the service can be performed.
@@ -225,7 +225,7 @@ After this operation the provider can no longer claim any other overdue payments
         - `amount`: The amount actually used in the transaction.
 8. **Unfreeze and result**: If everything goes well, the operation returns.
     - The created `DepositClaim` is included in the result.
-    - Database locks on `EthereumAccount`s are released.
+    - Database locks on `DepositAccount`s are released.
 
 ### Database
 

@@ -250,6 +250,37 @@ After this operation the provider can no longer claim any other overdue payments
     - Bankster commits the database transaction.
         Database locks on `DepositAccount`s are released.
 
+### Background operations
+
+#### Blockchain event subscriptions
+SCI actively monitors forced payments on the blockchain and offers a way to be notified about them.
+Bankster subscribes to these notifications and uses them to discard claims that have been satisfied.
+
+Claims are only ever dropped if a transaction is not successful.
+A failed transaction means that a claim remains in effect (it has not been paid after all) and may require intervention of a person managing the cluster.
+
+Every payment type (forced payment, forced subtask payment, verification fee) should be covered by a subscription.
+
+Subscription handler is running in every container that hosts SCI.
+Since every SCI instance monitors blockchain independently, this means that one event can be reported and processed multiple times.
+The handler should silently ignore events for which the corresponding claim no longer exists.
+
+##### Sequence of operation
+The assumption here is that the event is only reported when a transaction has been successfully included in the blockchain and has enough confirmations to make its reversal very unlikely.
+
+1. **Claim identification**:
+    - Bankster begins a database transaction.
+    - Bankster checks if `DepositClaim` with `tx_hash` reported in the event exists in the database.
+        - If it does not, the handler ends.
+        - If it does, the handler locks it (to prevent it from being modified between this step and the next).
+2. **Claim freeze**:
+    - Bankster locks the `DepositAccount` object associated with the claim.
+3. **Claim removal**:
+    - Bankster removes the `DepositClaim` object.
+4. **Unfreeze**:
+    - Bankster commits the database transaction.
+        Database locks on `DepositAccount`s are released.
+
 ### Database
 
 #### `DepositClaim` model

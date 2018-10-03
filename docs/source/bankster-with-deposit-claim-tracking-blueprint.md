@@ -244,7 +244,7 @@ After this operation the provider can no longer claim any other overdue payments
     - Bankster uses SCI to create an Ethereum transaction.
 7. **Deposit lock**:
     - Bankster creates a `DepositClaim` object
-        - `subtask_id` is empty since the claim may refer to multiple subtasks.
+        - `subtask` is empty since the claim may refer to multiple subtasks.
         - `amount`: The amount actually used in the transaction.
 8. **Unfreeze and result**: If everything goes well, the operation returns.
     - The created `DepositClaim` is included in the result.
@@ -289,7 +289,7 @@ The assumption here is that the event is only reported when a transaction has be
 
 | Column name                     | Type                  | Optional | Remarks                                                                                                                 |
 |---------------------------------|-----------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
-| `subtask_id`                    | string                | yes      | ID of the subtask. It's not a foreign key to `Subtask` because in some use cases (e.g. payment use case) we do not store the subtask details. Can be `NULL` if and only if `concent_use_case` is `ForcedPayment`.
+| `subtask`                       | `Subtask`             | yes      | Foreign key to a subtask object. Can be `NULL` if and only if `concent_use_case` is `ForcedPayment`.
 | `payer_deposit_account`         | `DepositAccount`      | no       | The deposit account belonging to the client who is supposed to pay the claim. `payer_deposit_account.ethereum_public_key` cannot be the same as `payee_ethereum_public_key`.
 | `payee_ethereum_public_key`     | string                | no       | Address of the Ethereum account belonging to the entity (requestor, provider or Concent) who is supposed to receive the claim. Cannot be the same as `payer_deposit_account.ethereum_public_key`.
 | `concent_use_case`              | `ConcentUseCase`      | no       | Use case in which Concent claim the deposit.
@@ -358,7 +358,7 @@ Deposits:
 
 - **[t=1001]** Client D submits `ForceSubtaskResults` message to `send/` endpoint.
     - Task parameters:
-        - subtask_id: S10
+        - subtask: S10
         - total price (`TaskToCompute.price` * task duration): 10 GNT
         - requestor's Ethereum account: A1
         - provider's Ethereum account: D1

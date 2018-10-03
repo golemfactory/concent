@@ -133,7 +133,8 @@ If there's nothing at all, the claim is discarded without payment.
 
 #### `settle overdue acceptances` operation
 The purpose of this operation is to calculate the total amount that the requestor owes provider for completed computations and transfer that amount from requestor's deposit.
-Concent Core is responsible for validating provider's claims and Bankster only calculates and executes the payment.
+The caller is responsible for making sure that the payment is legitimate and should be performed.
+Bankster simply calculates the amount and executes it.
 
 The provider proves to Concent that the computations were performed and accepted and Concent Core asks Bankster to compare the total value with the amount actually paid by the requestor, either directly or from deposit.
 If it turns out that the total value of provider's claims was not covered completely, Concent transfers the missing amount from requestor's deposit.

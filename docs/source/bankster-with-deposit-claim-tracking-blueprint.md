@@ -48,16 +48,17 @@ The actual amount paid will depend on the outcome of the use case.
         - Requestor may have to pay `subtask_cost`.
         - Provider needs to pay verification cost (which is constant and determined by Concent's settings).
 2. **Initialization**:
+    - Bankster begins a database transaction.
     - Bankster creates `Client` and `DepositAccount` objects (if they don't exist yet) for the requestor and also for the provider if there's a non-zero claim against his account.
-        - The transaction is committed at this point to prevent these objects from being rolled back in case of failure.
+    - Bankster commits the database transaction to prevent these objects from being rolled back in case of failure.
 3. **Deposit query**:
     - Bankster asks SCI about the amount of funds available in requestor's deposit.
     - If the amount claimed from provider's deposit is non-zero, Bankster asks SCI about the amount of funds available in his deposit.
+    - The check is intentionally performed outside of a database transaction.
+        It does not affect the database and it's a relatively slow operation (requires one or more HTTP requests).
 4. **Claim freeze**:
+    - Bankster begins a database transaction.
     - Bankster puts database locks on all `DepositAccount` objects that will be used as payers in newly created `DatabaseClaim`s.
-        - If the objects are already locked, waits and retries a few times and eventually fails.
-    - The freeze is done after the deposit check to avoid holding the lock for too long.
-        Deposit check requires one or more HTTP requests and is a relatively slow operation.
 5. **Requestor's spare deposit check**:
     - Bankster sums the `amount`s of all existing `DepositClaim`s where the requestor is the payer.
     - **Claims against requestor's deposit can be paid partially** because the service has already been performed by the provider and giving him something is better than giving nothing.
@@ -82,7 +83,8 @@ The actual amount paid will depend on the outcome of the use case.
 8. **Unfreeze and result**: If everything goes well, the operation returns.
     - All the created `DepositClaim`s are included in the result.
         At least one claim must have been created.
-    - Database locks on `DepositAccount`s are released.
+    - Bankster commits the database transaction.
+        Database locks on `DepositAccount`s are released.
 
 ##### Expected Concent Core behavior
 - Concent Core executes this operation at the beginning of a use case, after validating client's message and determining that the service can be performed.
@@ -135,8 +137,8 @@ This is performed in a loop, separately for each `DepositClaimDisposition`.
     - If `pay` is `True`:
         - Bankster asks SCI about the amount of funds available on the deposit account listed in the `DepositClaim`.
 2. **Claim freeze**:
-    - If the `DepositAccount` belonging to the payer is locked, Bankster waits, retries a few times and eventually fails.
-    - Otherwise Bankster puts a database lock on the `DepositAccount` object.
+    - Bankster begins a database transaction.
+    - Bankster puts a database lock on the `DepositAccount` object.
 3. **Claim cancellation**:
     - If `pay` is `False`:
         - Bankster simply removes the `DepositClaim` object.
@@ -150,11 +152,12 @@ This is performed in a loop, separately for each `DepositClaimDisposition`.
     - If the `DepositClaim` still exists at this point:
         - Bankster uses SCI to create an Ethereum transaction.
         - Bankster puts transaction ID in `DepositClaim.tx_hash`.
+    - This part must be done while the `DepositAccount` is still locked to prevent two simultaneous operations from independently making two separate payments for the same claim.
 6. **Unfreeze**:
-    - Bankster releases the lock on `DepositAccount`.
+    - Bankster commits the database transaction.
+        Database locks on `DepositAccount`s are released.
 
-The database transaction is committed after processing each disposition.
-An exception during the processing should release the lock and roll back the changes related to the current disposition but all the previous ones should stay in the database.
+An exception during the processing should interrupt the current transaction and roll back the changes related to the disposition being processed but all the previous disposition should stay in the database.
 
 After processing all the dispositions or encountering an exception, Bankster prepares the result.
 
@@ -203,8 +206,8 @@ After this operation the provider can no longer claim any other overdue payments
 2. **Deposit query**:
     - Bankster asks SCI about the amount of funds available in requestor's deposit.
 3. **Claim freeze**:
-    - If the `DepositAccount` belonging to the requestor is locked, Bankster waits, retries a few times and eventually fails.
-    - Otherwise Bankster puts a database lock on the `DepositAccount` object.
+    - Bankster begins a database transaction.
+    - Bankster puts a database lock on the `DepositAccount` object.
 4. **Requestor's spare deposit check**:
     - Bankster sums the `amount`s of all existing `DepositClaim`s where the requestor is the payer.
     - If the existing claims against requestor's deposit are greater or equal to his current deposit, we can't add a new claim.
@@ -225,7 +228,8 @@ After this operation the provider can no longer claim any other overdue payments
         - `amount`: The amount actually used in the transaction.
 8. **Unfreeze and result**: If everything goes well, the operation returns.
     - The created `DepositClaim` is included in the result.
-    - Database locks on `DepositAccount`s are released.
+    - Bankster commits the database transaction.
+        Database locks on `DepositAccount`s are released.
 
 ### Database
 
@@ -246,7 +250,8 @@ After this operation the provider can no longer claim any other overdue payments
 #### `DepositAccount` model
 - **Database**: `control`
 
-The main purpose of this object is to allow us to put a database lock on all `DepositClaim`s belonging to a specific payer, though it may get another purpose in the future.
+It would be possible to have the account address directly in `DepositClaim`.
+The main reason for having a separate object for it is to allow us to put a database lock on all `DepositClaim`s belonging to a specific payer.
 Putting locks directly on `DepositClaim` would not work when there are no claims yet.
 
 We never create `DepositAccount` for the payee because the payee may be Concent itself.
@@ -315,13 +320,16 @@ Deposits:
         - claim against requestor: 10 GNT
         - claim against provider: 0 GNT
     - **[t=1011]** Initialization
+        - Bankster begins a database transaction.
         - `Client` instance for client A already exists.
         - `DepositAccount` instance for ethereum account A1 already exists.
+        - Bankster commits the database transaction.
     - **[t=1012]** Deposit query
         - Bankster calls `get_deposit_value(A1)` from SCI.
         - SCI makes a HTTP request to the Ethereum client.
         - The response is 5 GNT.
     - **[t=1020]** Claim freeze
+        - Bankster begins a database transaction.
         - Bankster puts a database lock on `DepositAccount` A1.
     - **[t=1021]** Requestor's spare deposit check
         - Sum of deposit claims against A1: 3 GNT.
@@ -335,8 +343,7 @@ Deposits:
             - amount: 10 GNT
             - `tx_hash`: `None`
     - **[t=1023]** Unfreeze and response
-        - Bankster releases the lock from `DepositAccount` A1.
-        - Bankster commits database transaction.
+        - Bankster commits the database transaction.
         - Bankster returns a response.
             - `claim_against_requestor`: DC10
             - `claim_against_provider`: `None`
@@ -363,6 +370,7 @@ Deposits:
         - SCI makes a HTTP request to the Ethereum client.
         - The response is 6 GNT
     - **[t=1180]** Claim freeze
+        - Bankster begins a database transaction.
         - Bankster puts a database lock on `DepositAccount` A1
     - **[t=1181]** Payment calculation
         - Sum of other deposit claims against deposit account A1: 3 GNT
@@ -372,8 +380,7 @@ Deposits:
         - Transaction successfully created with `tx_hash` `101010`
         - Bankster sets `DepositClaim.tx_hash` to `101010`
     - **[t=1190]** Unfreeze
-        - Bankster releases the lock from `DepositAccount` A1
-        - Bankster commits database transaction
+        - Bankster commits the database transaction.
     - **[t=1195]** Response
         - `success`
             - DC10: `True`

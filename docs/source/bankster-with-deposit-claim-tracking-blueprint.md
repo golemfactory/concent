@@ -293,7 +293,7 @@ The assumption here is that the event is only reported when a transaction has be
 | `payee_ethereum_public_key`     | string                | no       | Address of the Ethereum account belonging to the entity (requestor, provider or Concent) who is supposed to receive the claim. Cannot be the same as `payer_deposit_account.ethereum_public_key`.
 | `concent_use_case`              | `ConcentUseCase`      | no       | Use case in which Concent claim the deposit.
 | `amount`                        | decimal               | no       | The amount claimed. Must be greater than zero.
-| `tx_hash`                       | string                | yes      | The hash of the Ethereum transaction that will cover the claim. Empty if the transaction has not been created yet.
+| `tx_hash`                       | string                | yes      | The hash of the Ethereum transaction that will cover the claim. Empty if the transaction has not been created yet. Must be unique - one transaction can satisfy only one claim.
 | `created_at`                    | timestamp             | no       | The creation time of the object.
 | `updated_at`                    | timestamp             | no       | Time of the last modification of any field in the object.
 

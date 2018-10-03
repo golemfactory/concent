@@ -65,7 +65,7 @@ The actual amount paid will depend on the outcome of the use case.
 5. **Result**: If everything goes well, the operation returns.
     - Bankster returns the values of `requestor_has_enough_deposit` and `provider_has_enough_deposit`.
 
-#### `finalize payments` operation
+#### `finalize payment` operation
 This operation tells Bankster to pay out funds from deposit.
 
 Concent Core performs this operation at the end of any use case that may require payment from deposit within a single subtask.

@@ -98,7 +98,7 @@ The actual amount paid will depend on the outcome of the use case.
 
 This endpoint tells Bankster to either pay out claimed funds or discard the claims.
 
-Concent core communicates with this endpoint at the end of any use case that may require payment from deposit within a single subtask.
+Concent Core communicates with this endpoint at the end of any use case that may require payment from deposit within a single subtask.
 Currently those are `ForcedAcceptance` and `AdditionalVerification`.
 `ForcedPayment` use case operates on more than one subtask and for that reason requires a separate endpoint.
 
@@ -172,7 +172,7 @@ After processing all the dispositions or encountering an exception, Bankster pre
 - **Input format**: JSON
 - **Output format**: JSON
 
-The purpose of this endpoint is calculate the total amount that the requestor owes provider for completed computations and transfer that amount from requestor's deposit.
+The purpose of this endpoint is to calculate the total amount that the requestor owes provider for completed computations and transfer that amount from requestor's deposit.
 Concent Core is responsible for validating provider's claims and Bankster only calculates and executes the payment.
 
 The provider proves to Concent that the computations were performed and accepted and Concent Core asks Bankster to compare the total value with the amount actually paid by the requestor, either directly or from deposit.
@@ -235,7 +235,7 @@ After this operation the provider can no longer claim any other overdue payments
 ### Database
 
 #### `DepositClaim` model
-- **Database**: control
+- **Database**: `control`
 
 | Column name                     | Type                  | Optional | Remarks                                                                                                                 |
 |---------------------------------|-----------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
@@ -249,7 +249,7 @@ After this operation the provider can no longer claim any other overdue payments
 | `updated_at`                    | timestamp             | no       | Time of the last modification of any field in the object.
 
 #### `DepositAccount` model
-- **Database**: control
+- **Database**: `control`
 
 The main purpose of this object is to allow us to put a database lock on all `DepositClaim`s belonging to a specific payer, though it may get another purpose in the future.
 Putting locks directly on `DepositClaim` would not work when there are no claims yet.

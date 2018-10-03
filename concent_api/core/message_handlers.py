@@ -74,6 +74,7 @@ def handle_send_force_report_computed_task(client_message: message.ReportCompute
     validate_that_golem_messages_are_signed_with_key(
         provider_public_key,
         client_message.report_computed_task,
+        task_to_compute.want_to_compute_task
     )
     validate_task_to_compute(task_to_compute)
     validate_report_computed_task_time_window(client_message.report_computed_task)
@@ -135,6 +136,7 @@ def handle_send_ack_report_computed_task(client_message: message.tasks.AckReport
     validate_that_golem_messages_are_signed_with_key(
         provider_public_key,
         report_computed_task,
+        task_to_compute.want_to_compute_task
     )
     validate_that_golem_messages_are_signed_with_key(
         requestor_public_key,
@@ -244,6 +246,7 @@ def handle_send_reject_report_computed_task(client_message: message.tasks.Reject
         validate_that_golem_messages_are_signed_with_key(
             provider_public_key,
             client_message.cannot_compute_task,
+            task_to_compute.want_to_compute_task
         )
 
     # If reason is GotMessageTaskFailure,
@@ -258,6 +261,7 @@ def handle_send_reject_report_computed_task(client_message: message.tasks.Reject
         validate_that_golem_messages_are_signed_with_key(
             provider_public_key,
             client_message.task_failure,
+            task_to_compute.want_to_compute_task
         )
 
     # RejectReportComputedTask should contain empty cannot_compute_task and task_failure
@@ -387,6 +391,7 @@ def handle_send_force_get_task_result(
     validate_that_golem_messages_are_signed_with_key(
         provider_public_key,
         client_message.report_computed_task,
+        task_to_compute.want_to_compute_task
     )
     validate_task_to_compute(task_to_compute)
     validate_that_golem_messages_are_signed_with_key(
@@ -489,6 +494,7 @@ def handle_send_force_subtask_results(
     validate_that_golem_messages_are_signed_with_key(
         provider_public_key,
         report_computed_task,
+        task_to_compute.want_to_compute_task
     )
 
     current_time = get_current_utc_timestamp()
@@ -632,6 +638,7 @@ def handle_send_force_subtask_results_response(
         validate_that_golem_messages_are_signed_with_key(
             provider_public_key,
             subtask_results_rejected.report_computed_task,
+            task_to_compute.want_to_compute_task
         )
 
     try:
@@ -1301,6 +1308,7 @@ def handle_send_subtask_results_verify(
     validate_that_golem_messages_are_signed_with_key(
         provider_public_key,
         report_computed_task,
+        task_to_compute.want_to_compute_task
     )
 
     if subtask_results_rejected.reason != SubtaskResultsRejected.REASON.VerificationNegative:

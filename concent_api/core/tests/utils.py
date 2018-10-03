@@ -277,13 +277,9 @@ class ConcentIntegrationTestCase(TestCase):
                 provider_id                     = (
                     provider_id if provider_id is not None else self._get_provider_hex_public_key()
                 ),
-                want_to_compute_task=want_to_compute_task if want_to_compute_task is not None else WantToComputeTaskFactory(
-                    provider_public_key=(
-                        provider_public_key if provider_public_key is not None else self._get_provider_hex_public_key()
-                    ),
-                    provider_ethereum_public_key=(
-                        provider_ethereum_public_key if provider_ethereum_public_key is not None else self._get_provider_ethereum_hex_public_key()
-                    ),
+                want_to_compute_task=want_to_compute_task if want_to_compute_task is not None else self._get_deserialized_want_to_compute_task(
+                    provider_public_key=provider_public_key,
+                    provider_ethereum_public_key=provider_ethereum_public_key,
                 ),
                 price=price,
                 package_hash=package_hash,
@@ -298,6 +294,47 @@ class ConcentIntegrationTestCase(TestCase):
             signer_private_key,
         )
         return task_to_compute
+
+    def _get_deserialized_want_to_compute_task(
+        self,
+        timestamp: Union[str, datetime.datetime, None] = None,
+        node_name: int = None,
+        task_id: Optional[str] = None,
+        perf_index = None,
+        max_resource_size = None,
+        max_memory_size = None,
+        num_cores = None,
+        price = None,
+        concent_enabled = None,
+        extra_data = None,
+        provider_public_key: Optional[str] = None,
+        provider_ethereum_public_key: Optional[str] = None,
+    ) -> WantToComputeTask:
+
+        """ Returns WantToComputeTask deserialized. """
+        with freeze_time(timestamp or get_timestamp_string()):
+            want_to_compute_task = WantToComputeTaskFactory(
+                node_name=node_name,
+                task_id=task_id,
+                perf_index=perf_index,
+                max_resource_size=max_resource_size,
+                max_memory_size=max_memory_size,
+                num_cores=num_cores,
+                price=price,
+                concent_enabled=concent_enabled,
+                extra_data=extra_data,
+                provider_public_key=(
+                    provider_public_key if provider_public_key is not None else self._get_provider_hex_public_key()
+                ),
+                provider_ethereum_public_key=(
+                    provider_ethereum_public_key if provider_ethereum_public_key is not None else self._get_provider_ethereum_hex_public_key()
+                ),
+            )
+        want_to_compute_task = self._sign_message(
+            want_to_compute_task,
+            self.PROVIDER_PRIVATE_KEY,
+        )
+        return want_to_compute_task
 
     def _get_deserialized_ack_report_computed_task(
         self,

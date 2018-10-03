@@ -3,20 +3,14 @@
 Bankster is an intermediate layer between Concent Core and the Ethereum client (Geth).
 All communication with the Ethereum client is performed via Golem's Smart Contracts Interface (SCI) which is used as a library.
 
-### Components and communication
-![bankster-components](https://user-images.githubusercontent.com/137030/41231712-4e124bfa-6d84-11e8-8be2-3f085ff1d3dc.png)
+### Operations
 
-### API
+#### `claim deposit` operation
+The purpose of this operation is to check whether the clients participating in a use case have enough funds in their deposits to cover all the costs associated with the use case in the pessimistic scenario and to mark those funds as locked until they get paid out.
 
-#### `POST bankster/claim-deposit/` endpoint
-- **Input format**: JSON
-- **Output format**: JSON
-
-The purpose of this endpoint is to check whether the clients participating in a use case have enough funds in their deposits to cover all the costs associated with the use case in the pessimistic scenario and to mark those funds as locked until they get paid out.
-
-Concent core communicates with this endpoint at the beginning of any use case that may require payment from deposit within a single subtask.
+Concent core performs this operation at the beginning of any use case that may require payment from deposit within a single subtask.
 Currently those are `ForcedAcceptance` and `AdditionalVerification`.
-`ForcedPayment` use case operates on more than one subtask and for that reason requires a separate endpoint.
+`ForcedPayment` use case operates on more than one subtask and for that reason requires a separate operation.
 
 The funds are locked in anticipation of a future payment but it does not necessarily mean that exactly that amount will be paid out or even that it will actually be paid.
 The actual amount paid will depend on the outcome of the use case.
@@ -24,7 +18,7 @@ The actual amount paid will depend on the outcome of the use case.
 ##### Input
 | Parameter                       | Type                  | Optional | Remarks                                                                                                                 |
 |---------------------------------|-----------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
-| `subtask_id`                    | string                | no       | ID of the subtask.
+| `subtask`                       | `Subtask`             | no       | Subtask object.
 | `concent_use_case`              | `ConcentUseCase`      | no       | Use case in which Concent claims the deposit.
 | `requestor_public_key`          | string                | no       | Public key of the requestor. Comes from `TaskToCompute`.
 | `provider_public_key`           | string                | no       | Public key of the provider. Comes from `TaskToCompute`.
@@ -35,8 +29,8 @@ The actual amount paid will depend on the outcome of the use case.
 ##### Output
 | Parameter                       | Type                  | Optional | Remarks                                                                                                                 |
 |---------------------------------|-----------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
-| `claim_against_requestor`       | int                   | no       | The database ID of the `DepositClaim` object that was created to lock a part of requestor's deposit.
-| `claim_against_provider`        | int                   | yes      | The database ID of the `DepositClaim` object that was created to lock a part of provider's deposit. May be empty if nothing is claimed from the provider.
+| `claim_against_requestor`       | `DepositClaim`        | no       | The `DepositClaim` object that was created to lock a part of requestor's deposit.
+| `claim_against_provider`        | `DepositClaim`        | yes      | The `DepositClaim` object that was created to lock a part of provider's deposit. May be empty if nothing is claimed from the provider.
 
 ##### Sequence of operation
 1. **Claim calculation**: Bankster determines the amount that needs to be claimed from each account:
@@ -78,29 +72,26 @@ The actual amount paid will depend on the outcome of the use case.
             Even if there's not enough deposit, we don't reduce the claim until the moment when we actually create a transaction.
             The situation may change in the meantime - some claims may be canceled or the client may increase (or reduce) the deposit.
         - `tx_hash`: We're not creating a transaction yet so this field is left empty.
-8. **Unfreeze and response**: If everything goes well, Bankster sends a HTTP 200 response.
-    - IDs of all the created `DepositClaim`s are included in the response.
+8. **Unfreeze and result**: If everything goes well, the operation returns.
+    - All the created `DepositClaim`s are included in the result.
         At least one claim must have been created.
     - Database locks on `EthereumAccount`s are released.
 
 ##### Expected Concent Core behavior
-- Concent Core contacts this endpoint at the beginning of a use case, after validating client's message and determining that the service can be performed.
-- Concent Core can access `DepositClaim` objects created by Bankster.
-- Concent Core is responsible for removing `DepositClaim` objects if it fails at any point after receiving a positive response from Bankster.
+- Concent Core executes this operation at the beginning of a use case, after validating client's message and determining that the service can be performed.
+- Concent Core can access `DepositClaim` objects created by Bankster (they're in the same database).
+- Concent Core is responsible for removing `DepositClaim` objects if it fails at any point after the operation if the operation has succeeded.
     - Bankster removes `DepositClaim` objects only after they're successfully paid for.
 - Concent Core is responsible for removing `DepositClaim` objects if the outcome of the use case indicates that they don't need to be paid (e.g. if additional verification confirms requestor's decision to reject the result).
 - `Client` and `DepositAccount` objects are never removed.
     They stay in the database even if the operation fails and even after all the `DepositClaim`s that refer to them are removed.
 
-#### `POST bankster/finalize-payments/` endpoint
-- **Input format**: JSON
-- **Output format**: JSON
+#### `finalize payments` operation
+This operation tells Bankster to either pay out claimed funds or discard the claims.
 
-This endpoint tells Bankster to either pay out claimed funds or discard the claims.
-
-Concent Core communicates with this endpoint at the end of any use case that may require payment from deposit within a single subtask.
+Concent Core performs this operation at the end of any use case that may require payment from deposit within a single subtask.
 Currently those are `ForcedAcceptance` and `AdditionalVerification`.
-`ForcedPayment` use case operates on more than one subtask and for that reason requires a separate endpoint.
+`ForcedPayment` use case operates on more than one subtask and for that reason requires a separate operation.
 
 Claims for which the disposition is not to pay are simply discarded, freeing the funds.
 This may happen for example when verification confirms requestor's claim and he's freed from the responsibility of covering computation cost.
@@ -122,7 +113,7 @@ If there's nothing at all, the claim is discarded without payment.
 ###### `DepositClaimDisposition`
 | Field                         | Type                              | Optional | Remarks                                                                                                                 |
 |-------------------------------|-----------------------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
-| `deposit_claim`               | int                               | no       | ID of a `DepositClaim` object.
+| `deposit_claim`               | `DepositClaim`                    | no       | The claim the disposition refers to.
 | `pay`                         | bool                              | no       | `True` if the claim should actually be paid. `False` if it should be discarded.
 
 ##### Output
@@ -158,21 +149,18 @@ This is performed in a loop, separately for each `DepositClaimDisposition`.
 The database transaction is committed after processing each disposition.
 An exception during the processing should release the lock and roll back the changes related to the current disposition but all the previous ones should stay in the database.
 
-After processing all the dispositions or encountering an exception, Bankster prepares the response.
+After processing all the dispositions or encountering an exception, Bankster prepares the result.
 
-7. **Response**:
+7. **Result**:
     - `success` dict has a key for each claim included in `deposit_claim_dispositions`.
         The value is `True` if and only if Banker actually started processing the corresponding disposition and finished it without errors.
 
 ##### Expected Concent Core behavior
-- Concent Core contacts this endpoint at the end of a use case, when the service has already been performed and it is known that a payment is necessary.
-- Concent Core can access `DepositClaim` objects created by Bankster.
+- Concent Core executes this operation at the end of a use case, when the service has already been performed and it is known that a payment is necessary.
+- Concent Core can access `DepositClaim` objects created by Bankster (they're in the same database).
 
-#### `POST bankster/settle-overdue-acceptances/` endpoint
-- **Input format**: JSON
-- **Output format**: JSON
-
-The purpose of this endpoint is to calculate the total amount that the requestor owes provider for completed computations and transfer that amount from requestor's deposit.
+#### `settle overdue acceptances` operation
+The purpose of this operation is to calculate the total amount that the requestor owes provider for completed computations and transfer that amount from requestor's deposit.
 Concent Core is responsible for validating provider's claims and Bankster only calculates and executes the payment.
 
 The provider proves to Concent that the computations were performed and accepted and Concent Core asks Bankster to compare the total value with the amount actually paid by the requestor, either directly or from deposit.
@@ -192,14 +180,14 @@ After this operation the provider can no longer claim any other overdue payments
 ###### `SubtaskAcceptance`
 | Field                           | Type                        | Optional | Remarks                                                                                                                 |
 |---------------------------------|-----------------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
-| `subtask_id`                    | string                      | no       | ID of the subtask.
+| `subtask`                       | `Subtask`                   | no       | Subtask object.
 | `payment_ts`                    | timestamp                   | no       | `payment_ts` timestamp from the acceptance message.
 | `amount`                        | decimal                     | no       | Amount to be paid.
 
 ##### Output
 | Parameter                       | Type                        | Optional | Remarks                                                                                                                 |
 |---------------------------------|-----------------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
-| `claim_against_requestor`       | int                         | yes      | The database ID of the `DepositClaim` object that was created to lock a part of requestor's deposit. If this is empty, the requestor either has no deposit or the deposit is completely covered by existing claims.
+| `claim_against_requestor`       | `DepositClaim`              | yes      | The `DepositClaim` object that was created to lock a part of requestor's deposit. If this is empty, the requestor either has no deposit or the deposit is completely covered by existing claims.
 
 ##### Sequence of operation
 1. **Initialization**:
@@ -228,8 +216,8 @@ After this operation the provider can no longer claim any other overdue payments
     - Bankster creates a `DepositClaim` object
         - `subtask_id` is empty since the claim may refer to multiple subtasks.
         - `amount`: The amount actually used in the transaction.
-8. **Unfreeze and response**: If everything goes well, Bankster sends a HTTP 200 response.
-    - ID of the created `DepositClaim` is included in the response.
+8. **Unfreeze and result**: If everything goes well, the operation returns.
+    - The created `DepositClaim` is included in the result.
     - Database locks on `EthereumAccount`s are released.
 
 ### Database
@@ -311,11 +299,11 @@ Deposits:
         - requestor's Ethereum account: A1
         - provider's Ethereum account: D1
     - **[t=1002]** Concent validates the message and determines that the request is valid.
-    - **[t=1003]** Concent makes a HTTP request to `bankster/claim-deposit/` endpoint.
+    - **[t=1003]** Concent calls `claim deposit` operation.
         - `concent_use_case`: `ForcedAcceptance`
         - `subtask_cost`: 10 GNT
 
-- **[t=1010]** Bankster handles a request to `bankster/claim-deposit/` endpoint.
+- **[t=1010]** Bankster handles `claim deposit` operation.
     - Claim calculation:
         - claim against requestor: 10 GNT
         - claim against provider: 0 GNT
@@ -358,11 +346,11 @@ Deposits:
 - **[t=1160]** Client D makes a request to the `receive/` endpoint.
     - The requestor has not submitted `ForceSubtaskResultsResponse` and it's already past deadline + SVT + FAT + CMT.
     - **[t=1161]** Concent updates `Subtask` S10 due to the timeout.
-    - **[t=1164]** Concent makes a HTTP request to `bankster/finalize-payments/` endpoint
+    - **[t=1164]** Concent calls `finalize payments` operation.
         - `deposit_claim_dispositions`:
             - `{'deposit_claim': 10, 'pay': True}`
 
-- **[t=1170]** Bankster handles a request to `bankster/finalize-payments/` endpoint.
+- **[t=1170]** Bankster handles `finalize payments` operation.
     - Deposit query
         - Bankster calls `get_deposit_value(A1)` from SCI
         - SCI makes a HTTP request to the Ethereum client.

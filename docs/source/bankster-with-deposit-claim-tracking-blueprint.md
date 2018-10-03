@@ -3,7 +3,14 @@
 Bankster is an intermediate layer between Concent Core and the Ethereum client (Geth).
 All communication with the Ethereum client is performed via Golem's Smart Contracts Interface (SCI) which is used as a library.
 
+Bankster's purpose is to encapsulate the logic involved in paying out funds from deposits in the course of a Concent use case.
+
 ### Operations
+The process of making a payment from deposit has three stages:
+- Claiming a piece of the deposit in anticipation of a future payment.
+    This involves checking whether the funds are available on the blockchain and then marking the amount as reserved in Concent's database.
+- Posting the transaction to the blockchain.
+- Unlocking funds when the operation either succeeds or fails.
 
 #### `claim deposit` operation
 The purpose of this operation is to check whether the clients participating in a use case have enough funds in their deposits to cover all the costs associated with the use case in the pessimistic scenario and to mark those funds as locked until they get paid out.

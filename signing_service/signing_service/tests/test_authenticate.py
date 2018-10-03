@@ -14,7 +14,6 @@ from middleman_protocol.message import AuthenticationResponseFrame
 from middleman_protocol.stream import unescape_stream
 
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS
-from signing_service.constants import SIGNING_SERVICE_RECOVERABLE_ERRORS
 from signing_service.signing_service import SigningService
 from .utils import SigningServiceIntegrationTestCase
 
@@ -71,12 +70,10 @@ class TestSigningServiceAuthenticate(SigningServiceIntegrationTestCase):
         )
         raw_message = middleman_message.serialize(private_key=CONCENT_PRIVATE_KEY)
 
-        with pytest.raises(socket.error) as exception:
+        with pytest.raises(socket.error):
             self._prepare_and_execute_handle_connection(
                 raw_message,
             )
-
-        assertpy.assert_that(exception.value.args[0]).is_equal_to(SIGNING_SERVICE_RECOVERABLE_ERRORS[0])
 
     def test_that_authenticate_should_raise_socket_error_if_received_frame_is_invalid(self):
         middleman_message = AuthenticationResponseFrame(
@@ -86,21 +83,17 @@ class TestSigningServiceAuthenticate(SigningServiceIntegrationTestCase):
         raw_message = middleman_message.serialize(private_key=CONCENT_PRIVATE_KEY)
         malformed_raw_message = raw_message[:-1]
 
-        with pytest.raises(socket.error) as exception:
+        with pytest.raises(socket.error):
             self._prepare_and_execute_handle_connection(
                 malformed_raw_message,
             )
 
-        assertpy.assert_that(exception.value.args[0]).is_equal_to(SIGNING_SERVICE_RECOVERABLE_ERRORS[0])
-
     def test_that_authenticate_should_raise_socket_error_if_receiving_frame_is_timeouted(self):
         with mock.patch('signing_service.signing_service.send_over_stream', side_effect=socket.timeout()):
-            with pytest.raises(socket.error) as exception:
+            with pytest.raises(socket.error):
                 self._prepare_and_execute_handle_connection(
                     b'',
                 )
-
-        assertpy.assert_that(exception.value.args[0]).is_equal_to(SIGNING_SERVICE_RECOVERABLE_ERRORS[0])
 
     def test_that_authenticate_should_raise_socket_error_if_socket_error_is_raised_after_sending_authentication_response(self):
         middleman_message = AuthenticationChallengeFrame(
@@ -110,12 +103,10 @@ class TestSigningServiceAuthenticate(SigningServiceIntegrationTestCase):
         raw_message = middleman_message.serialize(private_key=CONCENT_PRIVATE_KEY)
 
         with mock.patch('signing_service.signing_service.send_over_stream', side_effect=socket.error()):
-            with pytest.raises(socket.error) as exception:
+            with pytest.raises(socket.error):
                 self._prepare_and_execute_handle_connection(
                     raw_message,
                 )
-
-        assertpy.assert_that(exception.value.args[0]).is_equal_to(SIGNING_SERVICE_RECOVERABLE_ERRORS[0])
 
     def _prepare_and_execute_handle_connection(self, raw_message):
         def mocked_generator():

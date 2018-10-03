@@ -9,20 +9,14 @@ It's stateless - does not store existing claims in the database and check them w
 
 A more complete version that tracks deposit claims is described in #479.
 
-### Components and communication
-![bankster-components](https://user-images.githubusercontent.com/137030/41231712-4e124bfa-6d84-11e8-8be2-3f085ff1d3dc.png)
+### Operations
 
-### API
+#### `claim deposit` operation
+The purpose of this operation is to check whether the clients participating in a use case have enough funds in their deposits to cover all the costs associated with the use case in the pessimistic scenario.
 
-#### `POST bankster/claim-deposit/` endpoint
-- **Input format**: JSON
-- **Output format**: JSON
-
-The purpose of this endpoint is to check whether the clients participating in a use case have enough funds in their deposits to cover all the costs associated with the use case in the pessimistic scenario.
-
-Concent Core communicates with this endpoint at the beginning of any use case that may require payment from deposit within a single subtask.
+Concent core performs this operation at the beginning of any use case that may require payment from deposit within a single subtask.
 Currently those are `ForcedAcceptance` and `AdditionalVerification`.
-`ForcedPayment` use case operates on more than one subtask and for that reason requires a separate endpoint.
+`ForcedPayment` use case operates on more than one subtask and for that reason requires a separate operation.
 
 The funds are checked in anticipation of a future payment but it does not necessarily mean that exactly that amount will be paid out or even that it will actually be paid.
 The actual amount paid will depend on the outcome of the use case.
@@ -30,7 +24,7 @@ The actual amount paid will depend on the outcome of the use case.
 ##### Input
 | Parameter                       | Type                  | Optional | Remarks                                                                                                                 |
 |---------------------------------|-----------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
-| `subtask_id`                    | string                | no       | ID of the subtask.
+| `subtask`                       | `Subtask`             | no       | Subtask object.
 | `concent_use_case`              | `ConcentUseCase`      | no       | Use case in which Concent claims the deposit.
 | `requestor_ethereum_public_key` | string                | no       | Address of the Ethereum account belonging to the requestor. Cannot be the same as `provider_ethereum_public_key`. Comes from `TaskToCompute`.
 | `provider_ethereum_public_key`  | string                | no       | Address of the Ethereum account belonging to the provider. Cannot be the same as `requestor_ethereum_public_key`. Comes from `TaskToCompute`.
@@ -68,18 +62,15 @@ The actual amount paid will depend on the outcome of the use case.
       If the provider's claim is greater than his current deposit, we can't add a new claim.
         - `provider_has_enough_deposit` is `False`.
     - Otherwise `provider_has_enough_deposit` is `True`.
-5. **Response**: If everything goes well, Bankster sends a HTTP 200 response.
+5. **Result**: If everything goes well, the operation returns.
     - Bankster returns the values of `requestor_has_enough_deposit` and `provider_has_enough_deposit`.
 
-#### `POST bankster/finalize-payments/` endpoint
-- **Input format**: JSON
-- **Output format**: JSON
+#### `finalize payments` operation
+This operation tells Bankster to pay out funds from deposit.
 
-This endpoint tells Bankster to pay out funds from deposit.
-
-Concent core communicates with this endpoint at the end of any use case that may require payment from deposit within a single subtask.
+Concent Core performs this operation at the end of any use case that may require payment from deposit within a single subtask.
 Currently those are `ForcedAcceptance` and `AdditionalVerification`.
-`ForcedPayment` use case operates on more than one subtask and for that reason requires a separate endpoint.
+`ForcedPayment` use case operates on more than one subtask and for that reason requires a separate operation.
 
 For each claim, Bankster uses SCI to submit an Ethereum transaction to the Ethereum client which then propagates it to the rest of the network.
 Hopefully the transaction is included in one of the upcoming blocks on the blockchain.
@@ -90,7 +81,7 @@ If there's nothing at all, the claim is discarded without payment.
 ##### Input
 | Parameter                       | Type                  | Optional | Remarks                                                                                                                 |
 |---------------------------------|-----------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
-| `subtask_id`                    | string                | no       | ID of the subtask.
+| `subtask`                       | `Subtask`             | no       | Subtask object.
 | `concent_use_case`              | `ConcentUseCase`      | no       | Use case in which Concent claims the deposit.
 | `requestor_ethereum_public_key` | string                | no       | Address of the Ethereum account belonging to the requestor. Cannot be the same as `provider_ethereum_public_key`. Comes from `TaskToCompute`.
 | `provider_ethereum_public_key`  | string                | no       | Address of the Ethereum account belonging to the provider. Cannot be the same as `requestor_ethereum_public_key`. Comes from `TaskToCompute`.
@@ -138,13 +129,10 @@ If there's nothing at all, the claim is discarded without payment.
             - `payment_ts`: `payment_ts` value from the transaction
             - `amount_paid`: the amount to be paid
             - `amount_pending`: full amount claimed minus the amount paid
-5. **Response**: Bankster returns the created `ClaimPaymentInfo` objects.
+5. **Result**: Bankster returns the created `ClaimPaymentInfo` objects.
 
-#### `POST bankster/settle-overdue-acceptances/` endpoint
-- **Input format**: JSON
-- **Output format**: JSON
-
-The purpose of this endpoint is to calculate the total amount that the requestor owes provider for completed computations and transfer that amount from requestor's deposit.
+#### `settle overdue acceptances` operation
+The purpose of this operation is to calculate the total amount that the requestor owes provider for completed computations and transfer that amount from requestor's deposit.
 Concent Core is responsible for validating provider's claims and Bankster only calculates and executes the payment.
 
 The provider proves to Concent that the computations were performed and accepted and Concent Core asks Bankster to compare the total value with the amount actually paid by the requestor, either directly or from deposit.
@@ -162,7 +150,7 @@ After this operation the provider can no longer claim any other overdue payments
 ###### `SubtaskAcceptance`
 | Field                           | Type                        | Optional | Remarks                                                                                                                 |
 |---------------------------------|-----------------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
-| `subtask_id`                    | string                      | no       | ID of the subtask.
+| `subtask`                       | `Subtask`                   | no       | Subtask object.
 | `payment_ts`                    | timestamp                   | no       | `payment_ts` timestamp from the acceptance message.
 | `amount`                        | decimal                     | no       | Amount to be paid.
 
@@ -197,4 +185,4 @@ After this operation the provider can no longer claim any other overdue payments
             - `payment_ts`: `payment_ts` value from the transaction
             - `amount_paid`: the amount to be paid
             - `amount_pending`: full amount claimed minus the amount paid
-5. **Response**: Bankster returns the created `ClaimPaymentInfo` object.
+5. **Result**: Bankster returns the created `ClaimPaymentInfo` object.

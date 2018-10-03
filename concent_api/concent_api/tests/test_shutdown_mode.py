@@ -106,7 +106,7 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
             )
             config.SOFT_SHUTDOWN_MODE = True
 
-        self.stored_message_counter = 2
+        self.stored_message_counter = 3
 
         serialized_ack_report_computed_task = self._get_serialized_ack_report_computed_task(
             timestamp="2017-12-01 11:00:05",
@@ -136,7 +136,7 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.REPORTED,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'ack_report_computed_task'},
         )
         self._test_last_stored_messages(
             expected_messages=[

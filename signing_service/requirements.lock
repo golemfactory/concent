@@ -10,7 +10,7 @@ coincurve==8.0.2
 construct==2.9.45
 ethereum==1.6.1
 execnet==1.5.0
---editable git://github.com/golemfactory/golem-messages.git@d5c5282f175d7ae0fc482bcf024ccf76eca09021#egg=Golem_Messages
+--editable git://github.com/golemfactory/golem-messages.git@0adf667d82f1d2b5f92c289e484097240399f5c5#egg=Golem_Messages
 mock==2.0.0
 more-itertools==4.3.0
 mypy==0.620

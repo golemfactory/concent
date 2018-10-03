@@ -117,19 +117,20 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
 
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
             subtask_state=Subtask.SubtaskState.FORCING_REPORT,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -192,7 +193,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.REPORTED,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'ack_report_computed_task'},
         )
         self._test_last_stored_messages(
             expected_messages=[
@@ -276,19 +277,20 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
             subtask_state=Subtask.SubtaskState.FORCING_REPORT,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -361,7 +363,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.FAILED,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'reject_report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'reject_report_computed_task'},
         )
         self._test_last_stored_messages(
             expected_messages=[
@@ -448,19 +450,20 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
             subtask_state=Subtask.SubtaskState.FORCING_REPORT,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -533,7 +536,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.REPORTED,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'reject_report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'reject_report_computed_task'},
         )
         self._test_last_stored_messages(
             expected_messages=[
@@ -656,19 +659,20 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
 
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
             subtask_state=Subtask.SubtaskState.FORCING_REPORT,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -740,7 +744,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.REPORTED,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task'},
             next_deadline=None,
         )
 
@@ -816,19 +820,20 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
             subtask_state=Subtask.SubtaskState.FORCING_REPORT,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -992,19 +997,20 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
             subtask_state=Subtask.SubtaskState.FORCING_REPORT,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -1067,7 +1073,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.REPORTED,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'ack_report_computed_task'},
         )
         self._test_last_stored_messages(
             expected_messages=[
@@ -1157,19 +1163,20 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
             subtask_state=Subtask.SubtaskState.FORCING_REPORT,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -1234,7 +1241,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.REPORTED,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'reject_report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'reject_report_computed_task'},
         )
         self._test_last_stored_messages(
             expected_messages=[
@@ -1325,19 +1332,20 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
             subtask_state=Subtask.SubtaskState.FORCING_REPORT,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -1448,19 +1456,20 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
             subtask_state=Subtask.SubtaskState.FORCING_REPORT,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -1630,7 +1639,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             timestamp = "2017-12-01 10:59:00",
             task_to_compute = task_to_compute,
         )
-        del report_computed_task.task_to_compute.provider_public_key
+        del report_computed_task.task_to_compute.want_to_compute_task.provider_public_key
 
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
             timestamp = "2017-12-01 10:59:00",
@@ -2038,19 +2047,20 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
             subtask_state=Subtask.SubtaskState.FORCING_REPORT,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -2113,7 +2123,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.REPORTED,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'ack_report_computed_task'},
         )
         self._test_last_stored_messages(
             expected_messages=[
@@ -2205,19 +2215,20 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by=2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
             subtask_state=Subtask.SubtaskState.FORCING_REPORT,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -2280,7 +2291,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.REPORTED,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'ack_report_computed_task'},
         )
         self._test_last_stored_messages(
             expected_messages=[
@@ -2378,19 +2389,20 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
             subtask_state=Subtask.SubtaskState.FORCING_REPORT,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -2492,19 +2504,20 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self.assertEqual(response_1.status_code, 202)
         self.assertEqual(len(response_1.content), 0)
-        self._assert_stored_message_counter_increased(increased_by=2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
             subtask_state=Subtask.SubtaskState.FORCING_REPORT,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=compute_task_def['task_id'],
@@ -2577,7 +2590,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.FAILED,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'reject_report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'reject_report_computed_task'},
         )
         self._test_last_stored_messages(
             expected_messages=[
@@ -2663,19 +2676,20 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(response_1.status_code,  202)
         self.assertEqual(len(response_1.content), 0)
 
-        self._assert_stored_message_counter_increased(increased_by = 2)
+        self._assert_stored_message_counter_increased(increased_by=3)
         self._test_subtask_state(
             task_id=task_to_compute.task_id,
             subtask_id=task_to_compute.subtask_id,
             subtask_state=Subtask.SubtaskState.FORCING_REPORT,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task'},
             next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
         )
         self._test_last_stored_messages(
             expected_messages=[
                 message.TaskToCompute,
+                message.WantToComputeTask,
                 message.ReportComputedTask,
             ],
             task_id=task_to_compute.task_id,
@@ -2741,7 +2755,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.REPORTED,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'report_computed_task', 'ack_report_computed_task'},
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'ack_report_computed_task'},
         )
         self._test_last_stored_messages(
             expected_messages=[

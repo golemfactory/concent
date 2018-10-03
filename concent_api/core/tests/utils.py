@@ -22,6 +22,7 @@ from golem_messages import message
 from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
+from golem_messages.factories.tasks import WantToComputeTaskFactory
 from golem_messages.message.base import Message
 from golem_messages.message.concents import ForcePayment
 from golem_messages.message.concents import ForceReportComputedTask
@@ -37,6 +38,7 @@ from golem_messages.message.tasks import SubtaskResultsAccepted
 from golem_messages.message.tasks import SubtaskResultsRejected
 from golem_messages.message.tasks import TaskFailure
 from golem_messages.message.tasks import TaskToCompute
+from golem_messages.message.tasks import WantToComputeTask
 from golem_messages.register import library
 from golem_messages.utils import encode_hex
 
@@ -230,6 +232,7 @@ class ConcentIntegrationTestCase(TestCase):
         task_id: Optional[str] = None,
         subtask_id: Optional[str] = None,
         compute_task_def: Optional[ComputeTaskDef] = None,
+        want_to_compute_task: Optional[WantToComputeTask] = None,
         requestor_id: Optional[bytes] = None,
         requestor_public_key: Optional[bytes] = None,
         requestor_ethereum_public_key: Optional[bytes] = None,
@@ -274,11 +277,9 @@ class ConcentIntegrationTestCase(TestCase):
                 provider_id                     = (
                     provider_id if provider_id is not None else self._get_provider_hex_public_key()
                 ),
-                provider_public_key             = (
-                    provider_public_key if provider_public_key is not None else self._get_provider_hex_public_key()
-                ),
-                provider_ethereum_public_key    = (
-                    provider_ethereum_public_key if provider_ethereum_public_key is not None else self._get_provider_ethereum_hex_public_key()
+                want_to_compute_task=want_to_compute_task if want_to_compute_task is not None else self._get_deserialized_want_to_compute_task(
+                    provider_public_key=provider_public_key,
+                    provider_ethereum_public_key=provider_ethereum_public_key,
                 ),
                 price=price,
                 package_hash=package_hash,
@@ -293,6 +294,47 @@ class ConcentIntegrationTestCase(TestCase):
             signer_private_key,
         )
         return task_to_compute
+
+    def _get_deserialized_want_to_compute_task(
+        self,
+        timestamp: Union[str, datetime.datetime, None] = None,
+        node_name: int = None,
+        task_id: Optional[str] = None,
+        perf_index = None,
+        max_resource_size = None,
+        max_memory_size = None,
+        num_cores = None,
+        price = None,
+        concent_enabled = None,
+        extra_data = None,
+        provider_public_key: Optional[str] = None,
+        provider_ethereum_public_key: Optional[str] = None,
+    ) -> WantToComputeTask:
+
+        """ Returns WantToComputeTask deserialized. """
+        with freeze_time(timestamp or get_timestamp_string()):
+            want_to_compute_task = WantToComputeTaskFactory(
+                node_name=node_name,
+                task_id=task_id,
+                perf_index=perf_index,
+                max_resource_size=max_resource_size,
+                max_memory_size=max_memory_size,
+                num_cores=num_cores,
+                price=price,
+                concent_enabled=concent_enabled,
+                extra_data=extra_data,
+                provider_public_key=(
+                    provider_public_key if provider_public_key is not None else self._get_provider_hex_public_key()
+                ),
+                provider_ethereum_public_key=(
+                    provider_ethereum_public_key if provider_ethereum_public_key is not None else self._get_provider_ethereum_hex_public_key()
+                ),
+            )
+        want_to_compute_task = self._sign_message(
+            want_to_compute_task,
+            self.PROVIDER_PRIVATE_KEY,
+        )
+        return want_to_compute_task
 
     def _get_deserialized_ack_report_computed_task(
         self,
@@ -403,9 +445,7 @@ class ConcentIntegrationTestCase(TestCase):
         self._test_subtask_nested_messages(subtask, expected_nested_messages)
 
     def _test_subtask_nested_messages(self, subtask, expected_nested_messages):
-        all_possible_messages = {
-            'task_to_compute', 'report_computed_task', 'ack_report_computed_task', 'reject_report_computed_task', 'subtask_results_accepted', 'subtask_results_rejected'
-        }
+        all_possible_messages = Subtask.MESSAGE_FOR_FIELD.keys()
         required_messages = all_possible_messages & expected_nested_messages
         for nested_message in required_messages:
             self.assertIsNotNone(getattr(subtask, nested_message))

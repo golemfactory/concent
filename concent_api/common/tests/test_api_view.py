@@ -14,12 +14,14 @@ from golem_messages                 import load
 from golem_messages                 import message
 from golem_messages.factories       import tasks
 from golem_messages.factories.tasks import ComputeTaskDefFactory
+from golem_messages.factories.tasks import WantToComputeTaskFactory
 from golem_messages.utils import encode_hex
 
 from common.constants import ErrorCode
 from common.decorators import require_golem_message
 from common.decorators import handle_errors_and_responses
 from common.helpers import get_current_utc_timestamp
+from common.helpers import sign_message
 from common.testing_helpers import generate_ecc_key_pair
 from core.exceptions import Http400
 from core.models import Client
@@ -218,10 +220,14 @@ class ApiViewTransactionTestCase(TransactionTestCase):
         message_timestamp = get_current_utc_timestamp() + deadline_offset
         compute_task_def = ComputeTaskDefFactory()
         compute_task_def['deadline'] = message_timestamp
+        want_to_compute_task = WantToComputeTaskFactory(
+            provider_public_key=encode_hex(PROVIDER_PUBLIC_KEY),
+        )
+        want_to_compute_task = sign_message(want_to_compute_task, PROVIDER_PRIVATE_KEY)
         task_to_compute = tasks.TaskToComputeFactory(
             compute_task_def=compute_task_def,
             requestor_public_key=encode_hex(REQUESTOR_PUBLIC_KEY),
-            provider_public_key=encode_hex(PROVIDER_PUBLIC_KEY),
+            want_to_compute_task=want_to_compute_task,
             price=0,
         )
         task_to_compute = load(

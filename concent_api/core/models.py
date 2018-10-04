@@ -399,6 +399,9 @@ class Subtask(Model):
     subtask_results_rejected = OneToOneField(StoredMessage, blank=True, null=True, related_name='subtasks_for_subtask_results_rejected')
     force_get_task_result = OneToOneField(StoredMessage, blank=True, null=True, related_name='subtasks_for_force_get_task_result')
 
+    # Flag used to notify Concent Core that Storage Cluster has uploaded files related with this Subtask.
+    result_upload_finished = BooleanField(default=False)
+
     def __init__(self, *args: list, **kwargs: Optional[Union[str, int, datetime.datetime]]) -> None:
         super().__init__(*args, **kwargs)
         self._current_state_name = None

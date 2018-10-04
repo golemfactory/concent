@@ -5,6 +5,9 @@
 #### Endpoints and uses cases in general
 - Storage cluster now notifies Concent Core about finished upload (#667).
 
+#### Signing Service and Middleman
+- Bugfix: Signing Service is now aware of broken connection to MiddleMan (#861).
+
 ### 0.9.0
 #### Signing Service and Middleman
 - Signing Service and Middleman are now fully implemented but disabled by default (#673, #633, #616, #629, #618, #625, #632).

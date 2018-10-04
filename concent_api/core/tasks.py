@@ -15,6 +15,7 @@ from common.helpers import parse_datetime_to_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from conductor import tasks
 from core.constants import VerificationResult
+from core.exceptions import SubtaskStatusError
 from core.models import PendingResponse
 from core.models import Subtask
 from core.payments import service as payments_service
@@ -232,3 +233,50 @@ def verification_result(
         )
 
     logger.info(f'verification_result_task ends with: SUBTASK_ID {subtask_id} -- RESULT {result_enum.name}')
+
+
+@shared_task(bind=True)
+@provides_concent_feature('concent-worker')
+@transaction.atomic(using='control')
+@log_task_errors
+def result_upload_finished(self: Task, subtask_id: str) -> None:
+    logger.info(f'result_upload_finished starts with: SUBTASK_ID {subtask_id}')
+
+    assert isinstance(subtask_id, str)
+
+    # Worker locks database row corresponding to the subtask in the subtask table.
+    try:
+        subtask = Subtask.objects.select_for_update(nowait=True).get(subtask_id=subtask_id)
+    except DatabaseError:
+        logging.warning(
+            f'Subtask object with ID {subtask_id} database row is locked, '
+            f'retrying task {self.request.retries}/{self.max_retries}'
+        )
+        # If the row is already locked, task fails so that Celery can retry later.
+        self.retry(
+            countdown=CELERY_LOCKED_SUBTASK_DELAY,
+            max_retries=MAXIMUM_VERIFICATION_RESULT_TASK_RETRIES,
+            throw=False,
+        )
+        return
+
+    if subtask.state_enum in [
+        Subtask.SubtaskState.REPORTED,
+        Subtask.SubtaskState.FORCING_REPORT,
+    ]:
+        logger.error(
+            f'result_upload_finished called for Subtask with ID `{subtask_id}` but it has status {subtask.state} instead of `FORCING_RESULT_TRANSFER`.'
+        )
+        raise SubtaskStatusError(
+            f'result_upload_finished called for Subtask with ID `{subtask_id}` but it has status {subtask.state} instead of `FORCING_RESULT_TRANSFER`.'
+        )
+    elif subtask.state_enum == Subtask.SubtaskState.FAILED:
+        logger.info(f'result_upload_finished called for Subtask with ID `{subtask_id}` but it has status FAILED.')
+    elif subtask.state_enum != Subtask.SubtaskState.FORCING_RESULT_TRANSFER:
+        logger.warning(
+            f'result_upload_finished called for Subtask with ID `{subtask_id}` but it has status {subtask.state} instead of `FORCING_RESULT_TRANSFER`.'
+        )
+
+    subtask.result_upload_finished = True
+    subtask.full_clean()
+    subtask.save()

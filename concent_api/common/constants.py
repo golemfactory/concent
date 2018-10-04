@@ -6,6 +6,7 @@ class ErrorCode(enum.Enum):
     AUTH_CLIENT_AUTH_MESSAGE_INVALID                                    = 'header.client_public_key.invalid'
     CONCENT_APPLICATION_CRASH                                           = 'concent.application_crash'
     CONDUCTOR_VERIFICATION_REQUEST_ALREADY_ACKNOWLEDGED                 = 'conductor.verification_request_already_acknowledged'
+    CONDUCTOR_VERIFICATION_REQUEST_ALREADY_INITIATED                    = 'conductor.verification_request_already_initiated'
     HEADER_AUTHORIZATION_MISSING                                        = 'header.authorization.missing'
     HEADER_AUTHORIZATION_MISSING_TOKEN                                  = 'header.authorization.missing_token'
     HEADER_AUTHORIZATION_TOKEN_INVALID_MESSAGE                          = 'header.authorization.token_not_valid_message'

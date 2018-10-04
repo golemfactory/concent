@@ -1,17 +1,18 @@
 import mock
 
-from django.urls    import reverse
+from django.urls import reverse
 
 from common.helpers import get_current_utc_timestamp
 from common.helpers import get_storage_result_file_path
 from common.helpers import get_storage_source_file_path
+from conductor.models import BlenderSubtaskDefinition
+from conductor.models import ResultTransferRequest
+from conductor.models import UploadReport
+from conductor.models import VerificationRequest
+from conductor.tasks import blender_verification_request
 from core.message_handlers import store_subtask
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
-from ..models       import BlenderSubtaskDefinition
-from ..models       import UploadReport
-from ..models       import VerificationRequest
-from ..tasks        import blender_verification_request
 
 
 class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
@@ -293,6 +294,29 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
 
             verification_request.refresh_from_db()
             self.assertFalse(verification_request.upload_finished)
+
+    def test_that_conductor_should_call_update_upload_report_task_if_related_result_transfer_request_exists(self):
+        result_transfer_request = ResultTransferRequest(
+            subtask_id=self._get_uuid(),
+            result_package_path=self.result_package_path,
+        )
+        result_transfer_request.full_clean()
+        result_transfer_request.save()
+
+        with mock.patch('conductor.views.update_upload_report') as update_upload_report:
+            response = self.client.post(
+                reverse(
+                    'conductor:report-upload',
+                    kwargs={
+                        'file_path': self.result_package_path
+                    }
+                ),
+                content_type='application/octet-stream',
+            )
+
+        self.assertEqual(response.status_code, 200)
+
+        update_upload_report.assert_called_once()
 
     def test_blender_verification_request_task_should_create_verification_request_and_blender_subtask_definition(self):
         blender_verification_request(

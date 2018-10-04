@@ -1,5 +1,3 @@
-
-from base64 import b64encode
 from logging import getLogger
 from typing import Optional
 
@@ -7,18 +5,15 @@ import requests
 
 from django.conf import settings
 from golem_messages import message
-from golem_messages import shortcuts
 from golem_messages.message.concents import FileTransferToken
 
 from common import logging
-from common.helpers import deserialize_message
 from common.helpers import get_current_utc_timestamp
 from common.helpers import get_storage_result_file_path
 from common.helpers import get_storage_source_file_path
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.helpers import sign_message
 from common.validations import validate_file_transfer_token
-from core import exceptions
 from core.models import Client
 from core.models import PaymentInfo
 from core.models import PendingResponse
@@ -26,36 +21,37 @@ from core.models import Subtask
 from core.utils import calculate_additional_verification_call_time
 from core.utils import calculate_maximum_download_time
 from core.utils import calculate_subtask_verification_time
-from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
 
 logger = getLogger(__name__)
 
 
 def verify_file_status(subtask: Subtask, client_public_key: bytes) -> None:
     """
-    Function to verify existence of a file on cluster storage
+    Function to verify existence of a file on cluster storage by checking `result_upload_finished` flag on Subtask.
     """
-    if subtask.state_enum == Subtask.SubtaskState.FORCING_RESULT_TRANSFER and subtask.requestor.public_key_bytes == client_public_key:
-        report_computed_task = deserialize_message(subtask.report_computed_task.data.tobytes())
-        if request_upload_status(report_computed_task):
-            subtask.state = Subtask.SubtaskState.RESULT_UPLOADED.name  # pylint: disable=no-member
-            subtask.next_deadline = None
-            subtask.full_clean()
-            subtask.save()
+    if (
+        subtask.state_enum == Subtask.SubtaskState.FORCING_RESULT_TRANSFER and
+        subtask.requestor.public_key_bytes == client_public_key and
+        subtask.result_upload_finished
+    ):
+        subtask.state = Subtask.SubtaskState.RESULT_UPLOADED.name  # pylint: disable=no-member
+        subtask.next_deadline = None
+        subtask.full_clean()
+        subtask.save()
 
-            store_pending_message(
-                response_type=PendingResponse.ResponseType.ForceGetTaskResultDownload,
-                client_public_key=subtask.requestor.public_key_bytes,
-                queue=PendingResponse.Queue.Receive,
-                subtask=subtask,
-            )
-            logging.log_file_status(
-                logger,
-                subtask.task_id,
-                subtask.subtask_id,
-                subtask.requestor.public_key_bytes,
-                subtask.provider.public_key_bytes,
-            )
+        store_pending_message(
+            response_type=PendingResponse.ResponseType.ForceGetTaskResultDownload,
+            client_public_key=subtask.requestor.public_key_bytes,
+            queue=PendingResponse.Queue.Receive,
+            subtask=subtask,
+        )
+        logging.log_file_status(
+            logger,
+            subtask.task_id,
+            subtask.subtask_id,
+            subtask.requestor.public_key_bytes,
+            subtask.provider.public_key_bytes,
+        )
 
 
 def store_pending_message(
@@ -261,50 +257,6 @@ def create_file_info(
         size=size,
         category=category
     )
-
-
-def request_upload_status(report_computed_task: message.ReportComputedTask) -> bool:
-    slash = '/'
-    assert settings.STORAGE_CLUSTER_ADDRESS.endswith(slash)
-
-    file_transfer_token = create_file_transfer_token_for_concent(
-        subtask_id=report_computed_task.subtask_id,
-        result_package_path=get_storage_result_file_path(
-            subtask_id=report_computed_task.subtask_id,
-            task_id=report_computed_task.task_id,
-        ),
-        result_size=report_computed_task.size,
-        result_package_hash=report_computed_task.package_hash,
-        operation=FileTransferToken.Operation.download
-    )
-
-    assert len(file_transfer_token.files) == 1
-    assert not file_transfer_token.files[0]['path'].startswith(slash)
-
-    file_transfer_token.sig = None
-    dumped_file_transfer_token = shortcuts.dump(file_transfer_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
-    headers = {
-        'Authorization': 'Golem ' + b64encode(dumped_file_transfer_token).decode(),
-        'Concent-Auth':  b64encode(
-            shortcuts.dump(
-                message.concents.ClientAuthorization(
-                    client_public_key=settings.CONCENT_PUBLIC_KEY,
-                ),
-                settings.CONCENT_PRIVATE_KEY,
-                settings.CONCENT_PUBLIC_KEY
-            ),
-        ).decode(),
-    }
-    request_http_address = settings.STORAGE_CLUSTER_ADDRESS + CLUSTER_DOWNLOAD_PATH + file_transfer_token.files[0]['path']
-
-    storage_cluster_response = send_request_to_storage_cluster(headers, request_http_address)
-
-    if storage_cluster_response.status_code == 200:
-        return True
-    elif storage_cluster_response.status_code == 404:
-        return False
-    else:
-        raise exceptions.UnexpectedResponse(f'Cluster storage returned HTTP {storage_cluster_response.status_code}')
 
 
 def send_request_to_storage_cluster(headers: dict, request_http_address: str, method: str='head') -> requests.Response:

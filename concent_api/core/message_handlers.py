@@ -28,11 +28,13 @@ from common.exceptions import ConcentInSoftShutdownMode
 from common.exceptions import ConcentValidationError
 from common.helpers import deserialize_message
 from common.helpers import get_current_utc_timestamp
+from common.helpers import get_storage_result_file_path
 from common.helpers import parse_datetime_to_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.helpers import sign_message
 from common.validations import validate_secure_hash_algorithm
 from common import logging
+from conductor.tasks import result_transfer_request
 from core.exceptions import Http400
 from core.models import Client
 from core.models import PaymentInfo
@@ -472,6 +474,15 @@ def handle_send_force_get_task_result(
         queue               = PendingResponse.Queue.Receive,
         subtask             = subtask,
     )
+
+    result_transfer_request.delay(
+        subtask.subtask_id,
+        get_storage_result_file_path(
+            subtask_id=subtask.subtask_id,
+            task_id=subtask.task_id,
+        ),
+    )
+
     return message.concents.AckForceGetTaskResult(
         force_get_task_result = client_message,
     )

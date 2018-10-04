@@ -2,11 +2,10 @@ import logging
 from typing import List
 
 from celery import shared_task
-from mypy.types import Optional
 from django.db import transaction
+from mypy.types import Optional
 
-from core import tasks
-from core.validation import validate_frames
+
 from common.constants import ErrorCode
 from common.decorators import log_task_errors
 from common.decorators import provides_concent_feature
@@ -14,13 +13,16 @@ from common.helpers import parse_datetime_to_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.logging import log_error_message
 from common.logging import log_string_message
+from conductor.exceptions import VerificationRequestAlreadyAcknowledgedError
+from conductor.models import BlenderSubtaskDefinition
+from conductor.models import Frame
+from conductor.models import ResultTransferRequest
+from conductor.models import UploadReport
+from conductor.models import VerificationRequest
+from conductor.service import update_upload_report
+from core import tasks
+from core.validation import validate_frames
 from verifier.tasks import blender_verification_order
-from .exceptions import VerificationRequestAlreadyAcknowledgedError
-from .models import BlenderSubtaskDefinition
-from .models import Frame
-from .models import UploadReport
-from .models import VerificationRequest
-
 
 logger = logging.getLogger(__name__)
 
@@ -217,3 +219,25 @@ def store_frames(
 
 def filter_frames_by_blender_subtask_definition(blender_subtask_definition: BlenderSubtaskDefinition) -> list:
     return list(Frame.objects.filter(blender_subtask_definition=blender_subtask_definition).values_list('number', flat=True))
+
+
+@shared_task
+@provides_concent_feature('conductor-worker')
+@log_task_errors
+@transaction.atomic(using='storage')
+def result_transfer_request(subtask_id: str, result_package_path: str) -> None:
+    assert isinstance(subtask_id, str)
+    assert isinstance(result_package_path, str)
+
+    result_transfer_request_obj = ResultTransferRequest(
+        subtask_id=subtask_id,
+        result_package_path=result_package_path,
+    )
+    result_transfer_request_obj.full_clean()
+    result_transfer_request_obj.save()
+
+    if UploadReport.objects.filter(path=result_package_path).exists():
+        update_upload_report(
+            file_path=result_package_path,
+            result_transfer_request=result_transfer_request_obj,
+        )

@@ -25,7 +25,9 @@ app.conf.task_queues = (
 app.conf.task_routes = ([
     ('core.tasks.verification_result', {'queue': 'concent'}),
     ('core.tasks.upload_finished', {'queue': 'concent'}),
+    ('core.tasks.result_upload_finished', {'queue': 'concent'}),
     ('conductor.tasks.blender_verification_request', {'queue': 'conductor'}),
+    ('conductor.tasks.result_transfer_request', {'queue': 'conductor'}),
     ('conductor.tasks.upload_acknowledged', {'queue': 'conductor'}),
     ('verifier.tasks.blender_verification_order', {'queue': 'verifier'}),
 ],)

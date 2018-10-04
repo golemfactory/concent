@@ -1,3 +1,7 @@
+### Next
+#### Compatibility
+- golem-messages: 2.15.0
+
 ### 0.9.0
 #### Signing Service and Middleman
 - Signing Service and Middleman are now fully implemented but disabled by default (#673, #633, #616, #629, #618, #625, #632).

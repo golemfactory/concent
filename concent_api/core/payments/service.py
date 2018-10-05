@@ -3,6 +3,7 @@ from typing import Callable
 import importlib
 
 from django.conf import settings
+from ethereum.transactions import Transaction
 
 from core.payments.backends.sci_backend import TransactionType
 
@@ -62,3 +63,33 @@ def get_transaction_count(backend: Any) -> int:
 @_add_backend
 def get_deposit_value(backend: Any, client_eth_address: str) -> int:
     return backend.get_deposit_value(client_eth_address)
+
+
+@_add_backend
+def force_subtask_payment(
+    backend: Any,
+    requestor_eth_address: str,
+    provider_eth_address: str,
+    value: int,
+    subtask_id: str,
+) -> Transaction:
+    return backend.force_subtask_payment(
+        requestor_eth_address=requestor_eth_address,
+        provider_eth_address=provider_eth_address,
+        value=value,
+        subtask_id=subtask_id,
+    )
+
+
+@_add_backend
+def cover_additional_verification_cost(
+    backend: Any,
+    provider_eth_address: str,
+    value: int,
+    subtask_id: str,
+) -> Transaction:
+    return backend.cover_additional_verification_cost(
+        provider_eth_address=provider_eth_address,
+        value=value,
+        subtask_id=subtask_id,
+    )

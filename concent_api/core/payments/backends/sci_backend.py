@@ -1,11 +1,15 @@
+import binascii
+import uuid
 from enum import Enum
 
+from ethereum.transactions import Transaction
 from golem_sci import SmartContractsInterface
 from golem_sci.blockshelper import BlocksHelper
 from web3 import Web3
 
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.payments.payment_interface import PaymentInterface
+from core.validation import validate_uuid
 
 
 class TransactionType(Enum):
@@ -87,3 +91,44 @@ def get_deposit_value(client_eth_address: str) -> int:
     assert isinstance(client_eth_address, str) and len(client_eth_address) == ETHEREUM_ADDRESS_LENGTH
 
     return PaymentInterface().get_deposit_value(Web3.toChecksumAddress(client_eth_address))  # type: ignore  # pylint: disable=no-member
+
+
+def force_subtask_payment(
+    requestor_eth_address: str,
+    provider_eth_address: str,
+    value: int,
+    subtask_id: str,
+) -> Transaction:
+    assert isinstance(requestor_eth_address, str) and len(requestor_eth_address) == ETHEREUM_ADDRESS_LENGTH
+    assert isinstance(provider_eth_address, str) and len(provider_eth_address) == ETHEREUM_ADDRESS_LENGTH
+    assert isinstance(value, int) and value > 0
+    assert isinstance(subtask_id, str)
+
+    return PaymentInterface().force_subtask_payment(  # type: ignore  # pylint: disable=no-member
+        requestor_address=Web3.toChecksumAddress(requestor_eth_address),
+        provider_address=Web3.toChecksumAddress(provider_eth_address),
+        value=value,
+        subtask_id=_hexencode_uuid(subtask_id),
+    )
+
+
+def cover_additional_verification_cost(
+    provider_eth_address: str,
+    value: int,
+    subtask_id: str,
+) -> Transaction:
+    assert isinstance(provider_eth_address, str) and len(provider_eth_address) == ETHEREUM_ADDRESS_LENGTH
+    assert isinstance(value, int) and value > 0
+    assert isinstance(subtask_id, str)
+
+    return PaymentInterface().cover_additional_verification_cost(  # type: ignore  # pylint: disable=no-member
+        address=Web3.toChecksumAddress(provider_eth_address),
+        value=value,
+        subtask_id=_hexencode_uuid(subtask_id),
+    )
+
+
+def _hexencode_uuid(value: str) -> bytes:
+    validate_uuid(value)
+
+    return binascii.hexlify(uuid.UUID(value).bytes)

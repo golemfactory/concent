@@ -402,7 +402,7 @@ class Subtask(Model):
     # Flag used to notify Concent Core that Storage Cluster has uploaded files related with this Subtask.
     result_upload_finished = BooleanField(default=False)
 
-    def __init__(self, *args: list, **kwargs: Optional[Union[str, int, datetime.datetime]]) -> None:
+    def __init__(self, *args: list, **kwargs: Optional[Union[str, int, datetime.datetime, StoredMessage]]) -> None:
         super().__init__(*args, **kwargs)
         self._current_state_name = None
 

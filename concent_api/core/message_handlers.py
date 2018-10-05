@@ -29,6 +29,7 @@ from golem_messages.register import library
 from golem_sci.events import BatchTransferEvent
 from golem_sci.events import ForcedPaymentEvent
 
+from common.constants import ConcentUseCase
 from common.constants import ErrorCode
 from common.exceptions import ConcentInSoftShutdownMode
 from common.helpers import deserialize_message
@@ -46,6 +47,7 @@ from core.models import PaymentInfo
 from core.models import PendingResponse
 from core.models import StoredMessage
 from core.models import Subtask
+from core.payments import bankster
 from core.payments import service as payments_service
 from core.payments.backends.sci_backend import TransactionType
 from core.queue_operations import send_blender_verification_request
@@ -512,10 +514,16 @@ def handle_send_force_subtask_results(
 
     current_time = get_current_utc_timestamp()
 
-    if not payments_service.is_account_status_positive(  # pylint: disable=no-value-for-parameter
-        client_eth_address=task_to_compute.requestor_ethereum_address,
-        pending_value=task_to_compute.price,
-    ):
+    (requestor_has_enough_deposit, provider_has_enough_deposit) = bankster.claim_deposit(
+        concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+        requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+        provider_ethereum_address=task_to_compute.provider_ethereum_address,
+        subtask_cost=task_to_compute.price,
+    )
+
+    assert provider_has_enough_deposit is True
+
+    if not requestor_has_enough_deposit:
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
         )
@@ -1353,13 +1361,22 @@ def handle_send_subtask_results_verify(
             reason=message.concents.ServiceRefused.REASON.InvalidRequest,
         )
 
-    if not payments_service.is_account_status_positive(  # pylint: disable=no-value-for-parameter
-        client_eth_address=task_to_compute.requestor_ethereum_address,
-        pending_value=task_to_compute.price,
-    ):
+    (requestor_has_enough_deposit, provider_has_enough_deposit) = bankster.claim_deposit(
+        concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+        requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+        provider_ethereum_address=task_to_compute.provider_ethereum_address,
+        subtask_cost=task_to_compute.price,
+    )
+
+    if not requestor_has_enough_deposit:
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
         )
+    if not provider_has_enough_deposit:
+        return message.concents.ServiceRefused(
+            reason=message.concents.ServiceRefused.REASON.TooSmallProviderDeposit,
+        )
+
     with transaction.atomic(using='control'):
         subtask = get_one_or_none(
             Subtask.objects.select_for_update(),

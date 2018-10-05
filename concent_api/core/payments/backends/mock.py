@@ -20,12 +20,12 @@ def make_force_payment_to_provider(
     pass
 
 
-def is_account_status_positive(
-    client_eth_address: str,  # pylint: disable=unused-argument
-    pending_value: int = 0
-) -> bool:
-    return pending_value > 0
-
-
 def get_transaction_count() -> int:
     return 0
+
+
+def get_deposit_value(client_eth_address: str) -> int:  # pylint: disable=unused-argument
+    if client_eth_address == '0xAeeb9ea087B73Bdb3A100841Bea1c71f66fA8909':
+        return 0
+    else:
+        return 10000

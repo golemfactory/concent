@@ -55,17 +55,10 @@ def make_force_payment_to_provider(
 
 
 @_add_backend
-def is_account_status_positive(
-    backend: Any,
-    client_eth_address: str = None,
-    pending_value: int = None,
-) -> bool:
-    return backend.is_account_status_positive(
-        client_eth_address      = client_eth_address,
-        pending_value           = pending_value,
-    )
+def get_transaction_count(backend: Any) -> int:
+    return backend.get_transaction_count()
 
 
 @_add_backend
-def get_transaction_count(backend: Any) -> int:
-    return backend.get_transaction_count()
+def get_deposit_value(backend: Any, client_eth_address: str) -> int:
+    return backend.get_deposit_value(client_eth_address)

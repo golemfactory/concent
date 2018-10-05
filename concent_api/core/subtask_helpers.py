@@ -3,7 +3,6 @@ from logging import getLogger
 from typing import Any
 from typing import List
 from typing import Optional
-from typing import Type
 from typing import Union
 
 from django.db.models import Model
@@ -143,7 +142,7 @@ def update_timed_out_subtasks_in_message(client_message: Message, client_public_
 
     for subtask_id in subtask_ids_list:
         subtask = get_one_or_none(
-            query_set_or_model=Subtask.objects.select_for_update(),
+            subtask_or_query_set=Subtask.objects.select_for_update(),
             subtask_id=subtask_id,
             state__in=[state.name for state in Subtask.ACTIVE_STATES],
             next_deadline__lte=parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
@@ -231,14 +230,14 @@ def are_subtask_results_accepted_messages_signed_by_the_same_requestor(
 
 
 def get_one_or_none(
-    query_set_or_model: Union[Type[Model], QuerySet],
+    subtask_or_query_set: Union[Model, QuerySet],
     **conditions: Any
-)-> Optional[Model]:
-    if isinstance(query_set_or_model, ModelBase):
-        instances = query_set_or_model.objects.filter(**conditions)
+)-> Optional[Subtask]:
+    if isinstance(subtask_or_query_set, ModelBase):
+        instances = subtask_or_query_set.objects.filter(**conditions)
         assert len(instances) <= 1
         return None if len(instances) == 0 else instances[0]
     else:
-        instances = query_set_or_model.filter(**conditions)
+        instances = subtask_or_query_set.filter(**conditions)
         assert len(instances) <= 1
         return None if len(instances) == 0 else instances[0]

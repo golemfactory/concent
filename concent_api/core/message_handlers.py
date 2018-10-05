@@ -14,9 +14,14 @@ from django.http import HttpResponse
 from constance import config
 
 from golem_messages import message
+from golem_messages.message.concents import AckForceGetTaskResult
 from golem_messages.message.concents import FileTransferToken
+from golem_messages.message.concents import ForceGetTaskResult
+from golem_messages.message.concents import ForceGetTaskResultRejected
 from golem_messages.message.concents import ForcePaymentCommitted
 from golem_messages.message.concents import ForcePaymentRejected
+from golem_messages.message.concents import ForceReportComputedTask
+from golem_messages.message.concents import ForceReportComputedTaskResponse
 from golem_messages.message.concents import ServiceRefused
 from golem_messages.message.tasks import SubtaskResultsRejected
 from golem_messages.register import library
@@ -67,7 +72,9 @@ from .utils import hex_to_bytes_convert
 logger = getLogger(__name__)
 
 
-def handle_send_force_report_computed_task(client_message: message.ReportComputedTask) -> HttpResponse:
+def handle_send_force_report_computed_task(
+    client_message: ForceReportComputedTask
+) -> Union[HttpResponse, ForceReportComputedTaskResponse]:
     task_to_compute = client_message.report_computed_task.task_to_compute
     provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
@@ -384,8 +391,8 @@ def handle_send_reject_report_computed_task(client_message: message.tasks.Reject
 
 
 def handle_send_force_get_task_result(
-    client_message: message.concents.ForceGetTaskResult
-) -> Union[message.concents.ForceGetTaskResultRejected, message.concents.AckForceGetTaskResult]:
+    client_message: ForceGetTaskResult
+) -> Union[ForceGetTaskResultRejected, AckForceGetTaskResult, ServiceRefused]:
     task_to_compute = client_message.report_computed_task.task_to_compute
     provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
@@ -949,15 +956,15 @@ def store_subtask(
     subtask.save()
 
     logging.log_subtask_stored(
-        logger,
-        task_id,
-        subtask_id,
-        state.name,
-        provider_public_key,
-        requestor_public_key,
-        next_deadline,
-        computation_deadline,
-        result_package_size,
+        logger=logger,
+        task_id=task_id,
+        subtask_id=subtask_id,
+        state=state.name,
+        provider_public_key=provider_public_key,
+        requestor_public_key=requestor_public_key,
+        computation_deadline=computation_deadline,
+        result_package_size=result_package_size,
+        next_deadline=next_deadline,
     )
 
     return subtask
@@ -1146,7 +1153,7 @@ def handle_messages_from_database(client_public_key: bytes) -> Union[message.Mes
         return None
 
 
-def mark_message_as_delivered_and_log(undelivered_message: PendingResponse, log_message: str) -> None:
+def mark_message_as_delivered_and_log(undelivered_message: PendingResponse, log_message: message.Message) -> None:
     undelivered_message.delivered = True
     undelivered_message.full_clean()
     undelivered_message.save()
@@ -1419,7 +1426,7 @@ def handle_send_subtask_results_verify(
     return ack_subtask_results_verify
 
 
-def handle_message(client_message: message.Message) -> Union[message.Message, HttpResponse]:
+def handle_message(client_message: message.Message) -> Union[message.Message, HttpResponse, None]:
     if isinstance(client_message, message.concents.ForceReportComputedTask):
         return handle_send_force_report_computed_task(client_message)
 

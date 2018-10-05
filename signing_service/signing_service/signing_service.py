@@ -37,11 +37,13 @@ from middleman_protocol.message import GolemMessageFrame
 from middleman_protocol.stream import send_over_stream
 from middleman_protocol.stream import unescape_stream
 
+from signing_service.constants import CONNECTION_TIMEOUT
 from signing_service.constants import RECEIVE_AUTHENTICATION_CHALLENGE_TIMEOUT
-from signing_service.constants import SIGNING_SERVICE_DEFAULT_PORT
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY
+from signing_service.constants import SIGNING_SERVICE_DEFAULT_PORT
+from signing_service.constants import SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS
 from signing_service.constants import SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME
-from signing_service.constants import SIGNING_SERVICE_RECOVERABLE_ERRORS
+from signing_service.exceptions import SigningServiceMaximumReconnectionAttemptsExceeded
 from signing_service.exceptions import SigningServiceUnexpectedMessageError
 from signing_service.exceptions import SigningServiceValidationError
 from signing_service.utils import is_private_key_valid
@@ -70,6 +72,8 @@ class SigningService:
         'signing_service_private_key',
         'signing_service_public_key',
         'ethereum_private_key',
+        'reconnection_counter',
+        'maximum_reconnection_attempts',
     )
 
     def __init__(
@@ -80,6 +84,7 @@ class SigningService:
         concent_public_key: bytes,
         signing_service_private_key: bytes,
         ethereum_private_key: str,
+        maximum_reconnect_attempts: int,
     ) -> None:
         assert isinstance(host, str)
         assert isinstance(port, int)
@@ -96,8 +101,17 @@ class SigningService:
         self.ethereum_private_key = ethereum_private_key  # type: str
         self.current_reconnect_delay: Union[int, None] = None
         self.was_sigterm_caught: bool = False
+        self.reconnection_counter = 0
+        self.maximum_reconnection_attempts = maximum_reconnect_attempts
 
         self._validate_arguments()
+
+        def _set_was_sigterm_caught_true(signum: int, frame: Optional[FrameType]) -> None:  # pylint: disable=unused-argument
+            logger.info('Closing connection and exiting on SIGTERM.')
+            self.was_sigterm_caught = True
+
+        # Handle shutdown signal.
+        signal.signal(signal.SIGTERM, _set_was_sigterm_caught_true)
 
     def run(self) -> None:
         """
@@ -108,27 +122,14 @@ class SigningService:
         If a shutdown signal or KeyboardInterrupt is caught, exit gracefully.
         If there was an unrecognized exception, it logs it and report to Sentry, then reraise and crash.
         """
-
-        def _set_was_sigterm_caught_true(signum: int, frame: Optional[FrameType]) -> None:  # pylint: disable=unused-argument
-            logger.info('Closing connection and exiting on SIGTERM.')
-            self.was_sigterm_caught = True
-
-        # Handle shutdown signal.
-        signal.signal(signal.SIGTERM, _set_was_sigterm_caught_true)
-
         while not self._was_sigterm_caught():
             with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as tcp_socket:
                 try:
                     self._connect(tcp_socket)
-                except socket.error as exception:
+                except (socket.error, socket.timeout) as exception:
                     logger.error(f'Socket error occurred: {exception}')
 
-                    # Only predefined list of exceptions should cause reconnect, others should be reraised.
-                    if isinstance(exception.args, tuple) and exception.args[0] not in SIGNING_SERVICE_RECOVERABLE_ERRORS:
-                        raise
-
-                    # Increase delay and reconnect if the connection is interrupted due to a failure.
-                    self._increase_delay()
+                    self._attempt_reconnection()
                 except KeyboardInterrupt:
                     # Handle keyboard interrupt.
                     logger.info('Closing connection and exiting on KeyboardInterrupt.')
@@ -138,6 +139,15 @@ class SigningService:
                     crash_logger.error(f'Unrecognized exception occurred: {exception}')
                     raise
 
+    def _attempt_reconnection(self) -> None:
+        # Increase delay and reconnect if the connection is interrupted due to a failure.
+        self._increase_delay()
+        self.reconnection_counter += 1
+        if self.reconnection_counter > self.maximum_reconnection_attempts:
+            crash_logger.error("Maximum reconnection attempts exceeded.")
+            raise SigningServiceMaximumReconnectionAttemptsExceeded
+        logger.info(f'Reconnecting... (attempt: {self.reconnection_counter}/{self.maximum_reconnection_attempts})')
+
     def _connect(self, tcp_socket: socket.socket) -> None:
         """ Creates socket and connects to given HOST and PORT. """
         if self.current_reconnect_delay is not None:
@@ -145,14 +155,16 @@ class SigningService:
             sleep(self.current_reconnect_delay)
 
         logger.info(f'Connecting to {self.host}:{self.port}.')
+        tcp_socket.settimeout(CONNECTION_TIMEOUT)
         tcp_socket.connect((self.host, self.port))
         logger.info(f'Connection established.')
-        # Frame generator must be created here and passed to _authenticate() and _handle_connection, because upon its
+        # Frame generator must be created here and passed to _authenticate() and _handle_connection(), because upon its
         # destruction it closes the socket.
         receive_frame_generator = unescape_stream(connection=tcp_socket)
 
-        # Reset delay on successful connection and set flag that connection is established.
+        # Reset delay and reconnection counter on successful connection and set flag that connection is established.
         self.current_reconnect_delay = None
+        self.reconnection_counter = 0
         self._authenticate(receive_frame_generator, tcp_socket)
         self._handle_connection(receive_frame_generator, tcp_socket)
 
@@ -180,13 +192,13 @@ class SigningService:
                 logger.info(
                     f'SigningService received {type(authentication_challenge_frame)} instead of AuthenticationChallengeFrame.'
                 )
-                raise socket.error(SIGNING_SERVICE_RECOVERABLE_ERRORS[0])
+                raise socket.error()
         # If received message is invalid or
         # if nothing was received in a predefined time,
         # disconnect, log the incident and treat it as a failure to connect.
         except (MiddlemanProtocolError, socket.timeout) as exception:
             logger.info(f'SigningService failed to receive AuthenticationChallengeFrame with exception: {exception}.')
-            raise socket.error(SIGNING_SERVICE_RECOVERABLE_ERRORS[0])
+            raise socket.error()
 
         # If you receive a valid challenge, sign it with the private key of the service and
         # send AuthenticationResponseFrame with signature as payload.
@@ -208,10 +220,7 @@ class SigningService:
             logger.info(
                 f'MiddleMan server disconnects after receiving AuthenticationResponseFrame with exception: {exception}.'
             )
-            raise socket.error(SIGNING_SERVICE_RECOVERABLE_ERRORS[0])
-
-        # Set socket back to blocking mode.
-        tcp_socket.setblocking(True)
+            raise socket.error()
 
     def _handle_connection(
         self,
@@ -219,6 +228,8 @@ class SigningService:
         tcp_socket: socket.socket
     ) -> None:
         """ Inner loop that handles data exchange over socket. """
+        # Set socket back blocking mode.
+        tcp_socket.setblocking(True)
         for raw_message_received in receive_frame_generator:
             try:
                 middleman_message = AbstractFrame.deserialize(
@@ -392,6 +403,13 @@ def _parse_arguments() -> argparse.Namespace:
         help='Initial delay between reconnections, doubles after each unsuccessful attempt and is reset after success.',
     )
     parser.add_argument(
+        '-m',
+        '--max-reconnect-attempts',
+        default=SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS,
+        type=int,
+        help='Maximum number of reconnect attempts after socket error.',
+    )
+    parser.add_argument(
         '-p',
         '--concent-cluster-port',
         default=SIGNING_SERVICE_DEFAULT_PORT,
@@ -486,18 +504,12 @@ if __name__ == '__main__':
     )
     crash_logger.handlers[0].client = raven_client  # type: ignore
 
-    arg_host = args.concent_cluster_host
-    arg_port = args.concent_cluster_port
-    arg_initial_reconnect_delay = args.initial_reconnect_delay
-    arg_concent_public_key = args.concent_public_key
-    arg_signing_service_private_key = args.signing_service_private_key
-    arg_ethereum_private_key = args.ethereum_private_key
-
     SigningService(
-        arg_host,
-        arg_port,
-        arg_initial_reconnect_delay,
-        arg_concent_public_key,
-        arg_signing_service_private_key,
-        arg_ethereum_private_key,
+        args.concent_cluster_host,
+        args.concent_cluster_port,
+        args.initial_reconnect_delay,
+        args.concent_public_key,
+        args.signing_service_private_key,
+        args.ethereum_private_key,
+        args.max_reconnect_attempts,
     ).run()

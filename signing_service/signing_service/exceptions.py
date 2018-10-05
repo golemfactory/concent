@@ -5,3 +5,7 @@ class SigningServiceValidationError(Exception):
 
 class SigningServiceUnexpectedMessageError(Exception):
     pass
+
+
+class SigningServiceMaximumReconnectionAttemptsExceeded(Exception):
+    pass

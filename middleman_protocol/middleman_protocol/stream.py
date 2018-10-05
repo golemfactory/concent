@@ -70,6 +70,8 @@ def split_stream(connection: socket.socket) -> Iterator[bytes]:
     try:
         while True:
             next_bytes = connection.recv(RECEIVE_BYTES_PER_LOOP)
+            if not next_bytes:
+                raise socket.error()
 
             for next_byte in next_bytes:
                 if bytes([next_byte]) == FRAME_SEPARATOR:

@@ -5,7 +5,8 @@ import assertpy
 import mock
 import pytest
 
-from signing_service.constants import SIGNING_SERVICE_RECOVERABLE_ERRORS
+from signing_service.constants import SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS
+from signing_service.exceptions import SigningServiceMaximumReconnectionAttemptsExceeded
 from signing_service.signing_service import SigningService
 
 
@@ -32,6 +33,7 @@ class TestSigningServiceRun:
             CONCENT_PUBLIC_KEY,
             SIGNING_SERVICE_PRIVATE_KEY,
             TEST_ETHEREUM_PRIVATE_KEY,
+            SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS,
         ]
 
     def test_that_signing_service_should_be_instantiated_correctly_with_all_parameters(self):
@@ -76,23 +78,19 @@ class TestSigningServiceRun:
         mock_socket_close.assert_called_once()
 
     def test_that_signing_service_should_reconnect_when_expected_socket_error_was_caught(self):
-        assert socket.errno.ECONNREFUSED in SIGNING_SERVICE_RECOVERABLE_ERRORS
-
-        with mock.patch('socket.socket.connect', side_effect=socket.error(socket.errno.ECONNREFUSED)) as mock_socket_connect:
+        with mock.patch('socket.socket.connect', side_effect=socket.error()) as mock_socket_connect:
             with mock.patch('signing_service.signing_service.SigningService._was_sigterm_caught', side_effect=[False, False, True]):
                 signing_service = SigningService(*self.parameters)
                 signing_service.run()
 
         assertpy.assert_that(mock_socket_connect.call_count).is_equal_to(2)
 
-    def test_that_signing_service_should_reraise_different_socket_erros(self):
-        assert socket.errno.EBUSY not in SIGNING_SERVICE_RECOVERABLE_ERRORS
-
-        with mock.patch('socket.socket.connect', side_effect=socket.error(socket.errno.EBUSY)) as mock_socket_connect:
+    def test_that_signing_service_will_reconnect_on_socket_errors_and_raise_exception_when_exceeds_maxium_number_of_reconnection_attempts(self):
+        with mock.patch('socket.socket.connect', side_effect=socket.error()) as mock_socket_connect:
             with mock.patch('socket.socket.close') as mock_socket_close:
-                signing_service = SigningService(*self.parameters)
-                with pytest.raises(socket.error):
-                    signing_service.run()
-
-        mock_socket_connect.assert_called_once_with(('127.0.0.1', self.port))
-        mock_socket_close.assert_called_once()
+                with mock.patch('signing_service.signing_service.sleep'):
+                    signing_service = SigningService(*self.parameters)
+                    with pytest.raises(SigningServiceMaximumReconnectionAttemptsExceeded):
+                        signing_service.run()
+        assertpy.assert_that(mock_socket_connect.call_count).is_equal_to(SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS + 1)
+        assertpy.assert_that(mock_socket_close.call_count).is_equal_to(SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS + 1)

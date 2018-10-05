@@ -8,6 +8,7 @@ from freezegun import freeze_time
 from golem_messages import load
 from golem_messages import message
 
+from common.constants import ConcentUseCase
 from common.constants import ErrorCode
 from common.helpers import get_current_utc_timestamp
 from common.helpers import get_storage_result_file_path
@@ -72,10 +73,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_increased(3)
 
         # when
-        with mock.patch(
-            "core.message_handlers.payments_service.is_account_status_positive",
-            return_value=True
-        ):
+        with mock.patch("core.message_handlers.bankster.claim_deposit", side_effect=self.claim_deposit_true_mock):
             with freeze_time(subtask_results_verify_time_str):
                 response = self.client.post(
                     reverse('core:send'),
@@ -119,10 +117,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_increased(increased_by=3)
 
         # when
-        with mock.patch(
-            "core.message_handlers.payments_service.is_account_status_positive",
-            return_value=True
-        ):
+        with mock.patch("core.message_handlers.bankster.claim_deposit", side_effect=self.claim_deposit_true_mock):
             with freeze_time(subtask_results_verify_time_str):
                 response = self.client.post(
                     reverse('core:send'),
@@ -161,10 +156,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_increased(increased_by=3)
 
         # when
-        with mock.patch(
-            "core.message_handlers.payments_service.is_account_status_positive",
-            return_value=True
-        ):
+        with mock.patch("core.message_handlers.bankster.claim_deposit", side_effect=self.claim_deposit_true_mock):
             with freeze_time(subtask_results_verify_time_str):
                 response = self.client.post(
                     reverse('core:send'),
@@ -213,7 +205,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         )
         self._assert_stored_message_counter_not_increased()
 
-    def test_that_concent_reponds_with_too_small_requestor_deposit_when_requestor_doesnt_have_funds(self):
+    def test_that_concent_responds_with_too_small_requestor_deposit_when_requestor_does_not_have_funds(self):
         """
         Provider -> Concent: SubtaskResultsVerify
         Concent -> Provider: ServiceRefused (TooSmallRequestorDeposit)
@@ -223,10 +215,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
          subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify()
 
         # when
-        with mock.patch(
-            "core.message_handlers.payments_service.is_account_status_positive",
-            return_value=False
-        ) as is_account_status_positive_mock:
+        with mock.patch("core.message_handlers.bankster.claim_deposit", side_effect=self.claim_deposit_false_mock) as claim_deposit_mock:
             with freeze_time(subtask_results_verify_time_str):
                 response = self.client.post(
                     reverse('core:send'),
@@ -236,9 +225,11 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
 
-        is_account_status_positive_mock.assert_called_with(
-            client_eth_address=self.report_computed_task.task_to_compute.requestor_ethereum_address,
-            pending_value=0,
+        claim_deposit_mock.assert_called_with(
+            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+            requestor_ethereum_address=self.task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=self.task_to_compute.provider_ethereum_address,
+            subtask_cost=self.task_to_compute.price,
         )
 
         # then
@@ -249,6 +240,48 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             message_type=message.concents.ServiceRefused,
             fields={
                 'reason': message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
+            }
+        )
+        self._assert_stored_message_counter_not_increased()
+
+    def test_that_concent_responds_with_too_small_provider_deposit_when_provider_does_not_have_funds(self):
+        """
+        Provider -> Concent: SubtaskResultsVerify
+        Concent -> Provider: ServiceRefused (TooSmallProviderDeposit)
+        """
+        # given
+        (serialized_subtask_results_verify,
+         subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify()
+
+        # when
+        with mock.patch(
+            "core.message_handlers.bankster.claim_deposit",
+            return_value=(True, False)
+        ) as claim_deposit_mock:
+            with freeze_time(subtask_results_verify_time_str):
+                response = self.client.post(
+                    reverse('core:send'),
+                    data=serialized_subtask_results_verify,
+                    content_type='application/octet-stream',
+                    HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
+                    HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
+                )
+
+        claim_deposit_mock.assert_called_with(
+            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+            requestor_ethereum_address=self.task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=self.task_to_compute.provider_ethereum_address,
+            subtask_cost=self.task_to_compute.price,
+        )
+
+        # then
+        self._test_response(
+            response,
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ServiceRefused,
+            fields={
+                'reason': message.concents.ServiceRefused.REASON.TooSmallProviderDeposit,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -328,7 +361,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
          subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify()
 
         # when
-        with mock.patch("core.message_handlers.payments_service.is_account_status_positive", return_value=True) as is_account_status_positive_mock:
+        with mock.patch("core.message_handlers.bankster.claim_deposit", side_effect=self.claim_deposit_true_mock) as claim_deposit_mock:
             with mock.patch("core.queue_operations.blender_verification_request.delay") as send_verification_request_mock:
                 with freeze_time(subtask_results_verify_time_str):
                     response = self.client.post(
@@ -339,9 +372,11 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                         HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                     )
 
-        is_account_status_positive_mock.assert_called_with(
-            client_eth_address=self.report_computed_task.task_to_compute.requestor_ethereum_address,
-            pending_value=0,
+        claim_deposit_mock.assert_called_with(
+            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+            requestor_ethereum_address=self.task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=self.task_to_compute.provider_ethereum_address,
+            subtask_cost=self.task_to_compute.price,
         )
         send_verification_request_mock.assert_called_once_with(
             frames=[1],
@@ -500,7 +535,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         subtask_results_verify_date_time = self._create_datetime_from_string(subtask_results_verify_time_str)
 
         # when
-        with mock.patch("core.message_handlers.payments_service.is_account_status_positive", autospec=True, return_value=True):
+        with mock.patch("core.message_handlers.bankster.claim_deposit", autospec=True, side_effect=self.claim_deposit_true_mock):
             with mock.patch("core.message_handlers.send_blender_verification_request", autospec=True):
                 with freeze_time(subtask_results_verify_date_time):
                     ack_subtask_results_verify = self.client.post(

@@ -42,7 +42,6 @@ from golem_messages.message.tasks import WantToComputeTask
 from golem_messages.register import library
 from golem_messages.utils import encode_hex
 
-
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_datetime_to_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
@@ -976,8 +975,11 @@ class ConcentIntegrationTestCase(TestCase):
     def _pass_rpc_synchronization(self, _rpc, _address, _tx_sign):  # pylint: disable=no-self-use
         return None
 
-    def is_account_status_positive_true_mock(self, client_eth_address, pending_value):  # pylint: disable=unused-argument, no-self-use
-        return True
+    def claim_deposit_true_mock(self, concent_use_case, requestor_ethereum_address, provider_ethereum_address, subtask_cost):  # pylint: disable=unused-argument, no-self-use
+        return (True, True)
+
+    def claim_deposit_false_mock(self, concent_use_case, requestor_ethereum_address, provider_ethereum_address, subtask_cost):  # pylint: disable=unused-argument, no-self-use
+        return (False, False)
 
     def _test_report_computed_task_in_database(self, report_computed_task):
         subtask = Subtask.objects.get(subtask_id = report_computed_task.subtask_id)

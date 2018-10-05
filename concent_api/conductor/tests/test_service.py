@@ -1,11 +1,11 @@
 import mock
 
+from common.helpers import get_current_utc_timestamp
+from common.helpers import parse_timestamp_to_utc_datetime
 from conductor.exceptions import VerificationRequestAlreadyInitiatedError
 from conductor.models import ResultTransferRequest
 from conductor.models import UploadReport
 from conductor.models import VerificationRequest
-from common.helpers import get_current_utc_timestamp
-from common.helpers import parse_timestamp_to_utc_datetime
 from conductor.service import update_upload_report
 from core.tests.utils import ConcentIntegrationTestCase
 

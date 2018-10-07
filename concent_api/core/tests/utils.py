@@ -280,9 +280,9 @@ class ConcentIntegrationTestCase(TestCase):
                     provider_public_key=provider_public_key,
                     provider_ethereum_public_key=provider_ethereum_public_key,
                 ),
-                price=price,
                 package_hash=package_hash,
                 size=size,
+                price=price,
             )
         self._generate_ethereum_signature(
             task_to_compute,

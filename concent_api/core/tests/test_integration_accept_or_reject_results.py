@@ -260,14 +260,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
         self._assert_stored_message_counter_not_increased()
 
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp   = "2018-03-05 10:00:00",
+            deadline    = "2018-03-05 10:00:10",
+        )
+
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
             timestamp                   = "2018-03-05 10:00:40",
             ack_report_computed_task    = self._get_deserialized_ack_report_computed_task(
                 timestamp       = "2018-03-05 10:00:15",
-                task_to_compute = self._get_deserialized_task_to_compute(
-                    timestamp   = "2018-03-05 10:00:00",
-                    deadline    = "2018-03-05 10:00:10",
-                ),
+                task_to_compute = task_to_compute,
                 signer_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )

@@ -162,10 +162,10 @@ class SigningService:
         # destruction it closes the socket.
         receive_frame_generator = unescape_stream(connection=tcp_socket)
 
-        # Reset delay and reconnection counter on successful connection and set flag that connection is established.
+        self._authenticate(receive_frame_generator, tcp_socket)
+        # Reset delay and reconnection counter on successful authentication and set flag that connection is established.
         self.current_reconnect_delay = None
         self.reconnection_counter = 0
-        self._authenticate(receive_frame_generator, tcp_socket)
         self._handle_connection(receive_frame_generator, tcp_socket)
 
     def _authenticate(

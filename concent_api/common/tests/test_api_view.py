@@ -265,7 +265,7 @@ class ApiViewTransactionTestCase(TransactionTestCase):
 
     def test_that_api_view_should_not_rollback_changes_from_first_transaction_when_second_raises_exception(self):
         with mock.patch(
-            'core.views.update_timed_out_subtasks_in_message',
+            'core.views.update_subtasks_from_incoming_message_if_timed_out',
             side_effect=_update_timed_out_subtask_correct_response_mock
         ) as _update_timed_out_subtask_correct_response_mock_function, \
             mock.patch(
@@ -354,7 +354,7 @@ class ApiViewTransactionTestCase(TransactionTestCase):
 
     def test_api_view_should_not_rollback_changes_on_correct_response(self):
         with mock.patch(
-            'core.views.update_timed_out_subtasks_in_message',
+            'core.views.update_subtasks_from_incoming_message_if_timed_out',
             side_effect=_update_timed_out_subtask_correct_response_mock
         ) as _update_timed_out_subtask_correct_response_mock_function:
             response = self.client.post(

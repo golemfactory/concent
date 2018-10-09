@@ -220,6 +220,7 @@ class SigningService:
                 f'MiddleMan server disconnects after receiving AuthenticationResponseFrame with exception: {exception}.'
             )
             raise socket.error()
+        logger.info('Authentication successful. ')
 
     def _handle_connection(
         self,

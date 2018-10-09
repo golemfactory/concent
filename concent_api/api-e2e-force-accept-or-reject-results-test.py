@@ -18,6 +18,8 @@ from api_testing_common import create_client_auth_message
 from api_testing_common import create_signed_task_to_compute
 from api_testing_common import PROVIDER_PRIVATE_KEY
 from api_testing_common import PROVIDER_PUBLIC_KEY
+from api_testing_common import REQUESTOR_ETHEREUM_PRIVATE_KEY_FOR_EMPTY_ACCOUNT
+from api_testing_common import REQUESTOR_ETHEREUM_PUBLIC_KEY_FOR_EMPTY_ACCOUNT
 from api_testing_common import REQUESTOR_PRIVATE_KEY
 from api_testing_common import REQUESTOR_PUBLIC_KEY
 from api_testing_common import run_tests
@@ -344,10 +346,10 @@ def test_case_2b_not_enough_funds(cluster_consts: ProtocolConstants, cluster_url
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
                         deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
-                        requestor_ethereum_public_key=DIFFERENT_REQUESTOR_ETHEREUM_PUBLIC_KEY,
-                        requestor_ethereum_private_key=DIFFERENT_REQUESTOR_ETHEREUM_PRIVATE_KEY,
+                        requestor_ethereum_public_key=REQUESTOR_ETHEREUM_PUBLIC_KEY_FOR_EMPTY_ACCOUNT,
+                        requestor_ethereum_private_key=REQUESTOR_ETHEREUM_PRIVATE_KEY_FOR_EMPTY_ACCOUNT,
                         provider_ethereum_public_key=DIFFERENT_PROVIDER_ETHEREUM_PUBLIC_KEY,
-                        price=0,
+                        price=10000,
                     )
                 )
             )

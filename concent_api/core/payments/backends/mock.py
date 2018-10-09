@@ -1,3 +1,4 @@
+from core.constants import CLIENT_ETH_ADDRESS_WITH_0_DEPOSIT
 from core.payments.backends.sci_backend import TransactionType
 
 
@@ -25,7 +26,7 @@ def get_transaction_count() -> int:
 
 
 def get_deposit_value(client_eth_address: str) -> int:  # pylint: disable=unused-argument
-    if client_eth_address == '0xAeeb9ea087B73Bdb3A100841Bea1c71f66fA8909':
+    if client_eth_address == CLIENT_ETH_ADDRESS_WITH_0_DEPOSIT:
         return 0
     else:
         return 10000

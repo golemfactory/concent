@@ -19,6 +19,8 @@ from api_testing_common import create_client_auth_message
 from api_testing_common import create_signed_task_to_compute
 from api_testing_common import PROVIDER_PRIVATE_KEY
 from api_testing_common import PROVIDER_PUBLIC_KEY
+from api_testing_common import REQUESTOR_ETHEREUM_PRIVATE_KEY_FOR_EMPTY_ACCOUNT
+from api_testing_common import REQUESTOR_ETHEREUM_PUBLIC_KEY_FOR_EMPTY_ACCOUNT
 from api_testing_common import REQUESTOR_PRIVATE_KEY
 from api_testing_common import REQUESTOR_PUBLIC_KEY
 from api_testing_common import run_tests
@@ -327,10 +329,10 @@ def test_case_5_test_requestor_status_account_negative(cluster_consts: ProtocolC
             report_computed_task_package_hash=result_file_check_sum_1,
             task_to_compute_size=source_file_size_2,
             task_to_compute_package_hash=source_file_check_sum_2,
-            requestor_ethereum_public_key=DIFFERENT_REQUESTOR_ETHEREUM_PUBLIC_KEY,
-            requestor_ethereum_private_key=DIFFERENT_REQUESTOR_ETHEREUM_PRIVATE_KEY,
+            requestor_ethereum_public_key=REQUESTOR_ETHEREUM_PUBLIC_KEY_FOR_EMPTY_ACCOUNT,
+            requestor_ethereum_private_key=REQUESTOR_ETHEREUM_PRIVATE_KEY_FOR_EMPTY_ACCOUNT,
             provider_ethereum_public_key=DIFFERENT_PROVIDER_ETHEREUM_PUBLIC_KEY,
-            price=0
+            price=1000
         ),
         headers = {
             'Content-Type': 'application/octet-stream',

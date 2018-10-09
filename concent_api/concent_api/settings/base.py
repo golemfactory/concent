@@ -345,3 +345,6 @@ BLENDER_THREADS = 1
 
 # Defines if Concent should use SigningService for signing Ethereum transactions.
 USE_SIGNING_SERVICE = False
+
+# Defines GNTDeposit Contract address
+# GNT_DEPOSIT_CONTRACT_ADDRESS = ''

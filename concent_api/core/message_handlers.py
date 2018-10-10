@@ -9,7 +9,6 @@ import copy
 
 from django.conf import settings
 from django.core.mail import mail_admins
-from django.db import transaction
 from django.http import HttpResponse
 
 from constance import config
@@ -154,74 +153,75 @@ def handle_send_ack_report_computed_task(client_message: message.tasks.AckReport
     )
 
     if get_current_utc_timestamp() <= task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
-        with transaction.atomic(using='control'):
-            try:
-                subtask = Subtask.objects.select_for_update().get(
-                    subtask_id=task_to_compute.compute_task_def['subtask_id'],
-                )
-            except Subtask.DoesNotExist:
-                raise Http400(
-                    "'ForceReportComputedTask' for this subtask_id has not been initiated yet. Can't accept your 'AckReportComputedTask'.",
-                    error_code=ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED,
-                )
+        try:
+            subtask = Subtask.objects.select_for_update().get(
+                subtask_id = task_to_compute.compute_task_def['subtask_id'],
+            )
+        except Subtask.DoesNotExist:
+            raise Http400(
+                "'ForceReportComputedTask' for this subtask_id has not been initiated yet. Can't accept your 'AckReportComputedTask'.",
+                error_code=ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED,
+            )
 
-            if subtask.state_enum != Subtask.SubtaskState.FORCING_REPORT:
-                raise Http400(
-                    f"Subtask state is {subtask.state} instead of FORCING_REPORT. Can't accept your 'AckReportComputedTask'.",
-                    error_code=ErrorCode.QUEUE_WRONG_STATE,
-                )
+        if subtask.state_enum != Subtask.SubtaskState.FORCING_REPORT:
+            raise Http400(
+                "Subtask state is {} instead of FORCING_REPORT. Can't accept your 'AckReportComputedTask'.".format(
+                    subtask.state
+                ),
+                error_code=ErrorCode.QUEUE_WRONG_STATE,
+            )
 
-            if subtask.report_computed_task.subtask_id != task_to_compute.compute_task_def['subtask_id']:
-                raise Http400(
-                    "Received subtask_id does not match one in related ReportComputedTask. Can't accept your 'AckReportComputedTask'.",
-                    error_code=ErrorCode.QUEUE_SUBTASK_ID_MISMATCH,
-                )
+        if subtask.report_computed_task.subtask_id != task_to_compute.compute_task_def['subtask_id']:
+            raise Http400(
+                "Received subtask_id does not match one in related ReportComputedTask. Can't accept your 'AckReportComputedTask'.",
+                error_code=ErrorCode.QUEUE_SUBTASK_ID_MISMATCH,
+            )
 
-            if subtask.requestor.public_key_bytes != requestor_public_key:
-                raise Http400(
-                    "Subtask requestor key does not match current client key. Can't accept your 'AckReportComputedTask'.",
-                    error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH,
-                )
+        if subtask.requestor.public_key_bytes != requestor_public_key:
+            raise Http400(
+                "Subtask requestor key does not match current client key. Can't accept your 'AckReportComputedTask'.",
+                error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH,
+            )
 
-            if subtask.ack_report_computed_task_id is not None or subtask.reject_report_computed_task_id is not None:
-                raise Http400(
-                    "Received AckReportComputedTask but RejectReportComputedTask "
-                    "or another AckReportComputedTask for this task has already been submitted.",
-                    error_code=ErrorCode.SUBTASK_DUPLICATE_REQUEST,
-                )
+        if subtask.ack_report_computed_task_id is not None or subtask.reject_report_computed_task_id is not None:
+            raise Http400(
+                "Received AckReportComputedTask but RejectReportComputedTask "
+                "or another AckReportComputedTask for this task has already been submitted.",
+                error_code=ErrorCode.SUBTASK_DUPLICATE_REQUEST,
+            )
+        validate_all_messages_identical([
+            task_to_compute,
+            deserialize_message(subtask.task_to_compute.data.tobytes()),
+        ])
+        new_report_computed_task = None
+        try:
             validate_all_messages_identical([
-                task_to_compute,
-                deserialize_message(subtask.task_to_compute.data.tobytes()),
+                report_computed_task,
+                deserialize_message(subtask.report_computed_task.data.tobytes()),
             ])
-            new_report_computed_task = None
-            try:
-                validate_all_messages_identical([
-                    report_computed_task,
-                    deserialize_message(subtask.report_computed_task.data.tobytes()),
-                ])
-            except ConcentValidationError:
-                new_report_computed_task = report_computed_task
+        except ConcentValidationError:
+            new_report_computed_task = report_computed_task
 
-            subtask = update_and_return_updated_subtask(
-                subtask=subtask,
-                state=Subtask.SubtaskState.REPORTED,
-                next_deadline=None,
-                set_next_deadline=True,
-                ack_report_computed_task=client_message,
-                report_computed_task=new_report_computed_task,
-            )
-            store_pending_message(
-                response_type=PendingResponse.ResponseType.ForceReportComputedTaskResponse,
-                client_public_key=provider_public_key,
-                queue=PendingResponse.Queue.Receive,
-                subtask=subtask,
-            )
-            logging.log_message_added_to_queue(
-                logger,
-                client_message,
-                requestor_public_key,
-            )
-            return HttpResponse("", status=202)
+        subtask = update_and_return_updated_subtask(
+            subtask                     = subtask,
+            state                       = Subtask.SubtaskState.REPORTED,
+            next_deadline               = None,
+            set_next_deadline           = True,
+            ack_report_computed_task    = client_message,
+            report_computed_task        = new_report_computed_task,
+        )
+        store_pending_message(
+            response_type       = PendingResponse.ResponseType.ForceReportComputedTaskResponse,
+            client_public_key   = provider_public_key,
+            queue               = PendingResponse.Queue.Receive,
+            subtask             = subtask,
+        )
+        logging.log_message_added_to_queue(
+            logger,
+            client_message,
+            requestor_public_key,
+        )
+        return HttpResponse("", status = 202)
     else:
         logging.log_timeout(
             logger,
@@ -283,110 +283,111 @@ def handle_send_reject_report_computed_task(client_message: message.tasks.Reject
                 ),
                 error_code=ErrorCode.MESSAGE_INVALID,
             )
-    with transaction.atomic(using='control'):
-        try:
-            subtask = Subtask.objects.select_for_update().get(
-                subtask_id=task_to_compute.compute_task_def['subtask_id'],
-            )
-        except Subtask.DoesNotExist:
-            raise Http400(
-                "'ForceReportComputedTask' for this task and client combination has not been initiated yet. Can't accept your 'RejectReportComputedTask'.",
-                error_code=ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED,
-            )
 
-        if subtask.state_enum != Subtask.SubtaskState.FORCING_REPORT:
-            raise Http400(
-                "Subtask state is {} instead of FORCING_REPORT. Can't accept your 'RejectReportComputedTask'.".format(
-                    subtask.state
-                ),
-                error_code=ErrorCode.QUEUE_WRONG_STATE,
-            )
-
-        if subtask.report_computed_task.subtask_id != task_to_compute.compute_task_def['subtask_id']:
-            raise Http400(
-                "Received subtask_id does not match one in related ReportComputedTask. Can't accept your 'RejectReportComputedTask'.",
-                error_code=ErrorCode.QUEUE_SUBTASK_ID_MISMATCH,
-            )
-
-        if subtask.requestor.public_key_bytes != requestor_public_key:
-            raise Http400(
-                "Subtask requestor key does not match current client key. Can't accept your 'RejectReportComputedTask'.",
-                error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH,
-            )
-
-        validate_all_messages_identical(
-            [
-                task_to_compute,
-                deserialize_message(subtask.task_to_compute.data.tobytes()),
-            ]
+    try:
+        subtask = Subtask.objects.select_for_update().get(
+            subtask_id = task_to_compute.compute_task_def['subtask_id'],
+        )
+    except Subtask.DoesNotExist:
+        raise Http400(
+            "'ForceReportComputedTask' for this task and client combination has not been initiated yet. Can't accept your 'RejectReportComputedTask'.",
+            error_code=ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED,
         )
 
-        if client_message.reason == message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded:
-            subtask = update_and_return_updated_subtask(
-                subtask=subtask,
-                state=Subtask.SubtaskState.REPORTED,
-                next_deadline=None,
-                set_next_deadline=True,
-                reject_report_computed_task=client_message,
-            )
-            store_pending_message(
-                response_type=PendingResponse.ResponseType.ForceReportComputedTaskResponse,
-                client_public_key=provider_public_key,
-                queue=PendingResponse.Queue.Receive,
-                subtask=subtask,
-            )
-            store_pending_message(
-                response_type=PendingResponse.ResponseType.VerdictReportComputedTask,
-                client_public_key=subtask.requestor.public_key_bytes,
-                queue=PendingResponse.Queue.ReceiveOutOfBand,
-                subtask=subtask,
-            )
-            logging.log_message_added_to_queue(
-                logger,
-                client_message,
-                requestor_public_key,
-            )
-            return HttpResponse("", status=202)
+    if subtask.state_enum != Subtask.SubtaskState.FORCING_REPORT:
+        raise Http400(
+            "Subtask state is {} instead of FORCING_REPORT. Can't accept your 'RejectReportComputedTask'.".format(
+                subtask.state
+            ),
+            error_code=ErrorCode.QUEUE_WRONG_STATE,
+        )
 
-        deserialized_message = deserialize_message(subtask.task_to_compute.data.tobytes())
+    if subtask.report_computed_task.subtask_id != task_to_compute.compute_task_def['subtask_id']:
+        raise Http400(
+            "Received subtask_id does not match one in related ReportComputedTask. Can't accept your 'RejectReportComputedTask'.",
+            error_code=ErrorCode.QUEUE_SUBTASK_ID_MISMATCH,
+        )
 
-        if get_current_utc_timestamp() <= deserialized_message.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
-            if subtask.ack_report_computed_task_id is not None or subtask.ack_report_computed_task_id is not None:
-                raise Http400(
-                    "Received RejectReportComputedTask but AckReportComputedTask or another RejectReportComputedTask for this task has already been submitted.",
-                    error_code=ErrorCode.SUBTASK_DUPLICATE_REQUEST,
-                )
+    if subtask.requestor.public_key_bytes != requestor_public_key:
+        raise Http400(
+            "Subtask requestor key does not match current client key. Can't accept your 'RejectReportComputedTask'.",
+            error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH,
+        )
 
-            subtask = update_and_return_updated_subtask(
-                subtask=subtask,
-                state=Subtask.SubtaskState.FAILED,
-                next_deadline=None,
-                set_next_deadline=True,
-                reject_report_computed_task=client_message,
-            )
-            store_pending_message(
-                response_type=PendingResponse.ResponseType.ForceReportComputedTaskResponse,
-                client_public_key=provider_public_key,
-                queue=PendingResponse.Queue.Receive,
-                subtask=subtask,
-            )
-            logging.log_message_added_to_queue(
-                logger,
-                client_message,
-                requestor_public_key,
-            )
-            return HttpResponse("", status=202)
-        else:
-            logging.log_timeout(
-                logger,
-                client_message,
-                requestor_public_key,
-                deserialized_message.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
-            )
+    validate_all_messages_identical(
+        [
+            task_to_compute,
+            deserialize_message(subtask.task_to_compute.data.tobytes()),
+        ]
+    )
+
+    if client_message.reason == message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded:
+
+        subtask = update_and_return_updated_subtask(
+            subtask                     = subtask,
+            state                       = Subtask.SubtaskState.REPORTED,
+            next_deadline               = None,
+            set_next_deadline           = True,
+            reject_report_computed_task = client_message,
+        )
+        store_pending_message(
+            response_type       = PendingResponse.ResponseType.ForceReportComputedTaskResponse,
+            client_public_key   = provider_public_key,
+            queue               = PendingResponse.Queue.Receive,
+            subtask             = subtask,
+        )
+        store_pending_message(
+            response_type       = PendingResponse.ResponseType.VerdictReportComputedTask,
+            client_public_key   = subtask.requestor.public_key_bytes,
+            queue               = PendingResponse.Queue.ReceiveOutOfBand,
+            subtask             = subtask,
+        )
+        logging.log_message_added_to_queue(
+            logger,
+            client_message,
+            requestor_public_key,
+        )
+        return HttpResponse("", status = 202)
+
+    deserialized_message = deserialize_message(subtask.task_to_compute.data.tobytes())
+
+    if get_current_utc_timestamp() <= deserialized_message.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
+        if subtask.ack_report_computed_task_id is not None or subtask.ack_report_computed_task_id is not None:
             raise Http400(
-                "Time to acknowledge this task is already over.",
-                error_code=ErrorCode.QUEUE_TIMEOUT,
+                "Received RejectReportComputedTask but AckReportComputedTask or another RejectReportComputedTask for this task has already been submitted.",
+                error_code=ErrorCode.SUBTASK_DUPLICATE_REQUEST,
             )
+
+        subtask = update_and_return_updated_subtask(
+            subtask                     = subtask,
+            state                       = Subtask.SubtaskState.FAILED,
+            next_deadline               = None,
+            set_next_deadline           = True,
+            reject_report_computed_task = client_message,
+        )
+        store_pending_message(
+            response_type       = PendingResponse.ResponseType.ForceReportComputedTaskResponse,
+            client_public_key   = provider_public_key,
+            queue               = PendingResponse.Queue.Receive,
+            subtask             = subtask,
+        )
+        logging.log_message_added_to_queue(
+            logger,
+            client_message,
+            requestor_public_key,
+        )
+        return HttpResponse("", status = 202)
+    else:
+        logging.log_timeout(
+            logger,
+            client_message,
+            requestor_public_key,
+            deserialized_message.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME,
+        )
+        raise Http400(
+            "Time to acknowledge this task is already over.",
+            error_code=ErrorCode.QUEUE_TIMEOUT,
+        )
 
 
 def handle_send_force_get_task_result(
@@ -428,70 +429,70 @@ def handle_send_force_get_task_result(
             reason=message.concents.ForceGetTaskResultRejected.REASON.AcceptanceTimeLimitExceeded,
             force_get_task_result=client_message,
         )
-    with transaction.atomic(using='control'):
-        subtask = get_one_or_none(
-            Subtask.objects.select_for_update(),
+
+    subtask = get_one_or_none(
+        Subtask.objects.select_for_update(),
+        subtask_id=task_to_compute.compute_task_def['subtask_id'],
+    )
+    if subtask is None:
+        subtask = store_subtask(
+            task_id=task_to_compute.compute_task_def['task_id'],
             subtask_id=task_to_compute.compute_task_def['subtask_id'],
-        )
-        if subtask is None:
-            subtask = store_subtask(
-                task_id=task_to_compute.compute_task_def['task_id'],
-                subtask_id=task_to_compute.compute_task_def['subtask_id'],
-                provider_public_key=provider_public_key,
-                requestor_public_key=requestor_public_key,
-                state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
-                next_deadline=(
-                        int(task_to_compute.compute_task_def['deadline']) +
-                        2 * maximum_download_time +
-                        3 * settings.CONCENT_MESSAGING_TIME
-                ),
-                task_to_compute=task_to_compute,
-                report_computed_task=client_message.report_computed_task,
-                force_get_task_result=client_message,
-            )
-
-        else:
-            if subtask.state_enum == Subtask.SubtaskState.FORCING_RESULT_TRANSFER:
-                return message.concents.ServiceRefused(
-                    reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
-                )
-            if task_to_compute is not None and subtask.task_to_compute is not None:
-                validate_all_messages_identical([
-                    task_to_compute,
-                    deserialize_message(subtask.task_to_compute.data.tobytes()),
-                ])
-            subtask = update_and_return_updated_subtask(
-                subtask=subtask,
-                state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
-                next_deadline=(
-                        int(task_to_compute.compute_task_def['deadline']) +
-                        2 * maximum_download_time +
-                        3 * settings.CONCENT_MESSAGING_TIME
-                ),
-                set_next_deadline=True,
-                task_to_compute=task_to_compute,
-                report_computed_task=client_message.report_computed_task,
-                force_get_task_result=client_message,
-            )
-
-        store_pending_message(
-            response_type=PendingResponse.ResponseType.ForceGetTaskResultUpload,
-            client_public_key=provider_public_key,
-            queue=PendingResponse.Queue.Receive,
-            subtask=subtask,
-        )
-
-        result_transfer_request.delay(
-            subtask.subtask_id,
-            get_storage_result_file_path(
-                subtask_id=subtask.subtask_id,
-                task_id=subtask.task_id,
+            provider_public_key=provider_public_key,
+            requestor_public_key=requestor_public_key,
+            state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
+            next_deadline=(
+                int(task_to_compute.compute_task_def['deadline']) +
+                2 * maximum_download_time +
+                3 * settings.CONCENT_MESSAGING_TIME
             ),
+            task_to_compute=task_to_compute,
+            report_computed_task=client_message.report_computed_task,
+            force_get_task_result=client_message,
         )
 
-        return message.concents.AckForceGetTaskResult(
-            force_get_task_result = client_message,
+    else:
+        if subtask.state_enum == Subtask.SubtaskState.FORCING_RESULT_TRANSFER:
+            return message.concents.ServiceRefused(
+                reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
+            )
+        if task_to_compute is not None and subtask.task_to_compute is not None:
+            validate_all_messages_identical([
+                task_to_compute,
+                deserialize_message(subtask.task_to_compute.data.tobytes()),
+            ])
+        subtask = update_and_return_updated_subtask(
+            subtask=subtask,
+            state=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
+            next_deadline=(
+                int(task_to_compute.compute_task_def['deadline']) +
+                2 * maximum_download_time +
+                3 * settings.CONCENT_MESSAGING_TIME
+            ),
+            set_next_deadline=True,
+            task_to_compute=task_to_compute,
+            report_computed_task=client_message.report_computed_task,
+            force_get_task_result=client_message,
         )
+
+    store_pending_message(
+        response_type       = PendingResponse.ResponseType.ForceGetTaskResultUpload,
+        client_public_key   = provider_public_key,
+        queue               = PendingResponse.Queue.Receive,
+        subtask             = subtask,
+    )
+
+    result_transfer_request.delay(
+        subtask.subtask_id,
+        get_storage_result_file_path(
+            subtask_id=subtask.subtask_id,
+            task_id=subtask.task_id,
+        ),
+    )
+
+    return message.concents.AckForceGetTaskResult(
+        force_get_task_result = client_message,
+    )
 
 
 def handle_send_force_subtask_results(
@@ -560,55 +561,55 @@ def handle_send_force_subtask_results(
             force_subtask_results=client_message,
             reason=message.concents.ForceSubtaskResultsRejected.REASON.RequestPremature,
         )
-    with transaction.atomic(using='control'):
-        subtask = get_one_or_none(
-            Subtask.objects.select_for_update(),
-            subtask_id=task_to_compute.compute_task_def['subtask_id'],
-        )
 
-        if subtask is None:
-            subtask = store_subtask(
-                task_id=task_to_compute.compute_task_def['task_id'],
-                subtask_id=task_to_compute.compute_task_def['subtask_id'],
-                provider_public_key=provider_public_key,
-                requestor_public_key=requestor_public_key,
-                state=Subtask.SubtaskState.FORCING_ACCEPTANCE,
-                next_deadline=forcing_acceptance_deadline + settings.CONCENT_MESSAGING_TIME,
-                task_to_compute=client_message.ack_report_computed_task.report_computed_task.task_to_compute,
-                report_computed_task=client_message.ack_report_computed_task.report_computed_task,
-                ack_report_computed_task=client_message.ack_report_computed_task,
+    subtask = get_one_or_none(
+        Subtask.objects.select_for_update(),
+        subtask_id=task_to_compute.compute_task_def['subtask_id'],
+    )
+
+    if subtask is None:
+        subtask = store_subtask(
+            task_id=task_to_compute.compute_task_def['task_id'],
+            subtask_id=task_to_compute.compute_task_def['subtask_id'],
+            provider_public_key=provider_public_key,
+            requestor_public_key=requestor_public_key,
+            state=Subtask.SubtaskState.FORCING_ACCEPTANCE,
+            next_deadline=forcing_acceptance_deadline + settings.CONCENT_MESSAGING_TIME,
+            task_to_compute=client_message.ack_report_computed_task.report_computed_task.task_to_compute,
+            report_computed_task=client_message.ack_report_computed_task.report_computed_task,
+            ack_report_computed_task=client_message.ack_report_computed_task,
+        )
+    else:
+        if subtask.state_enum == Subtask.SubtaskState.FORCING_ACCEPTANCE:
+            return message.concents.ServiceRefused(
+                reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
             )
-        else:
-            if subtask.state_enum == Subtask.SubtaskState.FORCING_ACCEPTANCE:
-                return message.concents.ServiceRefused(
-                    reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
-                )
-            if task_to_compute is not None and subtask.task_to_compute is not None:
-                validate_all_messages_identical([
-                    task_to_compute,
-                    deserialize_message(subtask.task_to_compute.data.tobytes()),
-                ])
-            subtask = update_and_return_updated_subtask(
-                subtask=subtask,
-                state=Subtask.SubtaskState.FORCING_ACCEPTANCE,
-                next_deadline=forcing_acceptance_deadline + settings.CONCENT_MESSAGING_TIME,
-                set_next_deadline=True,
-                task_to_compute=client_message.ack_report_computed_task.report_computed_task.task_to_compute,
-                report_computed_task=client_message.ack_report_computed_task.report_computed_task,
-                ack_report_computed_task=client_message.ack_report_computed_task,
-            )
-        store_pending_message(
-            response_type=PendingResponse.ResponseType.ForceSubtaskResults,
-            client_public_key=requestor_public_key,
-            queue=PendingResponse.Queue.Receive,
+        if task_to_compute is not None and subtask.task_to_compute is not None:
+            validate_all_messages_identical([
+                task_to_compute,
+                deserialize_message(subtask.task_to_compute.data.tobytes()),
+            ])
+        subtask = update_and_return_updated_subtask(
             subtask=subtask,
+            state=Subtask.SubtaskState.FORCING_ACCEPTANCE,
+            next_deadline=forcing_acceptance_deadline + settings.CONCENT_MESSAGING_TIME,
+            set_next_deadline=True,
+            task_to_compute=client_message.ack_report_computed_task.report_computed_task.task_to_compute,
+            report_computed_task=client_message.ack_report_computed_task.report_computed_task,
+            ack_report_computed_task=client_message.ack_report_computed_task,
         )
-        logging.log_message_added_to_queue(
-            logger,
-            client_message,
-            provider_public_key,
-        )
-        return HttpResponse("", status=202)
+    store_pending_message(
+        response_type       = PendingResponse.ResponseType.ForceSubtaskResults,
+        client_public_key   = requestor_public_key,
+        queue               = PendingResponse.Queue.Receive,
+        subtask             = subtask,
+    )
+    logging.log_message_added_to_queue(
+        logger,
+        client_message,
+        provider_public_key,
+    )
+    return HttpResponse("", status = 202)
 
 
 def handle_send_force_subtask_results_response(
@@ -657,60 +658,60 @@ def handle_send_force_subtask_results_response(
             subtask_results_rejected.report_computed_task,
             task_to_compute.want_to_compute_task
         )
-    with transaction.atomic(using='control'):
-        try:
-            subtask = Subtask.objects.select_for_update().get(
-                subtask_id=task_to_compute.compute_task_def['subtask_id'],
-            )
-        except Subtask.DoesNotExist:
-            raise Http400(
-                f"ForceSubtaskResults for this subtask has not been initiated yet. Can't accept your {type(client_message).__name__}.",
-                error_code=ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED,
-            )
 
-        if subtask.state_enum != Subtask.SubtaskState.FORCING_ACCEPTANCE:
-            raise Http400(
-                f"Subtask state is {subtask.state} instead of FORCING_ACCEPTANCE. Can't accept your '{type(client_message).__name__}'.",
-                error_code=ErrorCode.QUEUE_WRONG_STATE,
-            )
-
-        if subtask.requestor.public_key_bytes != requestor_public_key:
-            raise Http400(
-                f"Subtask requestor key does not match current client key.  Can't accept your '{type(client_message).__name__}'.",
-                error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH,
-            )
-
-        if subtask.subtask_results_accepted_id is not None or subtask.subtask_results_rejected_id is not None:
-            raise Http400(
-                "This subtask has been resolved already.",
-                error_code=ErrorCode.SUBTASK_DUPLICATE_REQUEST,
-            )
-
-        validate_all_messages_identical([
-            task_to_compute,
-            deserialize_message(subtask.task_to_compute.data.tobytes()),
-        ])
-
-        subtask = update_and_return_updated_subtask(
-            subtask=subtask,
-            state=state,
-            next_deadline=None,
-            set_next_deadline=True,
-            subtask_results_accepted=subtask_results_accepted,
-            subtask_results_rejected=subtask_results_rejected,
+    try:
+        subtask = Subtask.objects.select_for_update().get(
+            subtask_id = task_to_compute.compute_task_def['subtask_id'],
         )
-        store_pending_message(
-            response_type=(PendingResponse.ResponseType.ForceSubtaskResultsResponse),
-            client_public_key=provider_public_key,
-            queue=PendingResponse.Queue.Receive,
-            subtask=subtask,
+    except Subtask.DoesNotExist:
+        raise Http400(
+            f"ForceSubtaskResults for this subtask has not been initiated yet. Can't accept your {type(client_message).__name__}.",
+            error_code=ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED,
         )
-        logging.log_message_added_to_queue(
-            logger,
-            client_message,
-            requestor_public_key,
+
+    if subtask.state_enum != Subtask.SubtaskState.FORCING_ACCEPTANCE:
+        raise Http400(
+            f"Subtask state is {subtask.state} instead of FORCING_ACCEPTANCE. Can't accept your '{type(client_message).__name__}'.",
+            error_code=ErrorCode.QUEUE_WRONG_STATE,
         )
-        return HttpResponse("", status=202)
+
+    if subtask.requestor.public_key_bytes != requestor_public_key:
+        raise Http400(
+            f"Subtask requestor key does not match current client key.  Can't accept your '{type(client_message).__name__}'.",
+            error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH,
+        )
+
+    if subtask.subtask_results_accepted_id is not None or subtask.subtask_results_rejected_id is not None:
+        raise Http400(
+            "This subtask has been resolved already.",
+            error_code=ErrorCode.SUBTASK_DUPLICATE_REQUEST,
+        )
+
+    validate_all_messages_identical([
+        task_to_compute,
+        deserialize_message(subtask.task_to_compute.data.tobytes()),
+    ])
+
+    subtask = update_and_return_updated_subtask(
+        subtask                     = subtask,
+        state                       = state,
+        next_deadline               = None,
+        set_next_deadline           = True,
+        subtask_results_accepted    = subtask_results_accepted,
+        subtask_results_rejected    = subtask_results_rejected,
+    )
+    store_pending_message(
+        response_type=(PendingResponse.ResponseType.ForceSubtaskResultsResponse),
+        client_public_key=provider_public_key,
+        queue=PendingResponse.Queue.Receive,
+        subtask=subtask,
+    )
+    logging.log_message_added_to_queue(
+        logger,
+        client_message,
+        requestor_public_key,
+    )
+    return HttpResponse("", status = 202)
 
 
 def sum_payments(payments: List[Union[ForcedPaymentEvent, BatchTransferEvent]]) -> int:
@@ -971,190 +972,185 @@ def store_subtask(
 
 def handle_messages_from_database(client_public_key: bytes) -> Union[message.Message, None]:
     assert client_public_key not in ['', None]
+
     encoded_client_public_key = b64encode(client_public_key)
+    pending_response = PendingResponse.objects.select_for_update().filter(
+        client__public_key=encoded_client_public_key,
+        delivered=False,
+    ).order_by('created_at').first()
 
-    with transaction.atomic(using='control'):
-        pending_response = PendingResponse.objects.select_for_update().filter(
-            client__public_key=encoded_client_public_key,
-            delivered=False,
-        ).order_by('created_at').first()
+    if pending_response is None:
+        return None
 
-        if pending_response is None:
-            return None
+    assert pending_response.response_type_enum in set(PendingResponse.ResponseType)
 
-        assert pending_response.response_type_enum in set(PendingResponse.ResponseType)
+    if pending_response.response_type == PendingResponse.ResponseType.ForceReportComputedTask.name:  # pylint: disable=no-member
+        report_computed_task = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
+        response_to_client = message.concents.ForceReportComputedTask(
+            report_computed_task = report_computed_task
+        )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
 
-        if pending_response.response_type == PendingResponse.ResponseType.ForceReportComputedTask.name:  # pylint: disable=no-member
-            report_computed_task = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
-            response_to_client = message.concents.ForceReportComputedTask(
-                report_computed_task=report_computed_task
+    elif pending_response.response_type == PendingResponse.ResponseType.ForceReportComputedTaskResponse.name:  # pylint: disable=no-member
+        if pending_response.subtask.ack_report_computed_task is not None:
+            ack_report_computed_task = deserialize_message(pending_response.subtask.ack_report_computed_task.data.tobytes())
+            response_to_client = message.concents.ForceReportComputedTaskResponse(
+                ack_report_computed_task=ack_report_computed_task,
+                reason=message.concents.ForceReportComputedTaskResponse.REASON.AckFromRequestor,
             )
             mark_message_as_delivered_and_log(pending_response, response_to_client)
             return response_to_client
 
-        elif pending_response.response_type == PendingResponse.ResponseType.ForceReportComputedTaskResponse.name:  # pylint: disable=no-member
-            if pending_response.subtask.ack_report_computed_task is not None:
-                ack_report_computed_task = deserialize_message(
-                    pending_response.subtask.ack_report_computed_task.data.tobytes())
-                response_to_client = message.concents.ForceReportComputedTaskResponse(
-                    ack_report_computed_task=ack_report_computed_task,
-                    reason=message.concents.ForceReportComputedTaskResponse.REASON.AckFromRequestor,
-                )
-                mark_message_as_delivered_and_log(pending_response, response_to_client)
-                return response_to_client
-
-            elif pending_response.subtask.reject_report_computed_task is not None:
-                reject_report_computed_task = deserialize_message(
-                    pending_response.subtask.reject_report_computed_task.data.tobytes())
-                response_to_client = message.concents.ForceReportComputedTaskResponse(
-                    reject_report_computed_task=reject_report_computed_task,
-                    reason=message.concents.ForceReportComputedTaskResponse.REASON.RejectFromRequestor,
-                )
-                if reject_report_computed_task.reason == message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded:
-                    ack_report_computed_task = message.tasks.AckReportComputedTask(
-                        report_computed_task=deserialize_message(
-                            pending_response.subtask.report_computed_task.data.tobytes()),
-                    )
-                    sign_message(ack_report_computed_task, settings.CONCENT_PRIVATE_KEY)
-                    response_to_client = message.concents.ForceReportComputedTaskResponse(
-                        ack_report_computed_task=ack_report_computed_task,
-                        reason=message.concents.ForceReportComputedTaskResponse.REASON.ConcentAck,
-                    )
-                mark_message_as_delivered_and_log(pending_response, response_to_client)
-                return response_to_client
-            else:
+        elif pending_response.subtask.reject_report_computed_task is not None:
+            reject_report_computed_task = deserialize_message(pending_response.subtask.reject_report_computed_task.data.tobytes())
+            response_to_client = message.concents.ForceReportComputedTaskResponse(
+                reject_report_computed_task=reject_report_computed_task,
+                reason=message.concents.ForceReportComputedTaskResponse.REASON.RejectFromRequestor,
+            )
+            if reject_report_computed_task.reason == message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded:
                 ack_report_computed_task = message.tasks.AckReportComputedTask(
-                    report_computed_task=deserialize_message(
-                        pending_response.subtask.report_computed_task.data.tobytes()),
+                    report_computed_task=deserialize_message(pending_response.subtask.report_computed_task.data.tobytes()),
                 )
                 sign_message(ack_report_computed_task, settings.CONCENT_PRIVATE_KEY)
                 response_to_client = message.concents.ForceReportComputedTaskResponse(
                     ack_report_computed_task=ack_report_computed_task,
                     reason=message.concents.ForceReportComputedTaskResponse.REASON.ConcentAck,
                 )
-                mark_message_as_delivered_and_log(pending_response, response_to_client)
-                return response_to_client
-
-        elif pending_response.response_type == PendingResponse.ResponseType.VerdictReportComputedTask.name:  # pylint: disable=no-member
+            mark_message_as_delivered_and_log(pending_response, response_to_client)
+            return response_to_client
+        else:
             ack_report_computed_task = message.tasks.AckReportComputedTask(
                 report_computed_task=deserialize_message(pending_response.subtask.report_computed_task.data.tobytes()),
             )
             sign_message(ack_report_computed_task, settings.CONCENT_PRIVATE_KEY)
-            report_computed_task     = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
-            response_to_client = message.concents.VerdictReportComputedTask(
-                ack_report_computed_task    = ack_report_computed_task,
-                force_report_computed_task  = message.concents.ForceReportComputedTask(
-                    report_computed_task = report_computed_task,
-                ),
+            response_to_client = message.concents.ForceReportComputedTaskResponse(
+                ack_report_computed_task=ack_report_computed_task,
+                reason=message.concents.ForceReportComputedTaskResponse.REASON.ConcentAck,
             )
             mark_message_as_delivered_and_log(pending_response, response_to_client)
             return response_to_client
 
-        elif pending_response.response_type == PendingResponse.ResponseType.ForceGetTaskResultFailed.name:  # pylint: disable=no-member
-            task_to_compute = deserialize_message(pending_response.subtask.task_to_compute.data.tobytes())
-            response_to_client = message.concents.ForceGetTaskResultFailed(
-                task_to_compute = task_to_compute,
+    elif pending_response.response_type == PendingResponse.ResponseType.VerdictReportComputedTask.name:  # pylint: disable=no-member
+        ack_report_computed_task = message.tasks.AckReportComputedTask(
+            report_computed_task=deserialize_message(pending_response.subtask.report_computed_task.data.tobytes()),
+        )
+        sign_message(ack_report_computed_task, settings.CONCENT_PRIVATE_KEY)
+        report_computed_task     = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
+        response_to_client = message.concents.VerdictReportComputedTask(
+            ack_report_computed_task    = ack_report_computed_task,
+            force_report_computed_task  = message.concents.ForceReportComputedTask(
+                report_computed_task = report_computed_task,
+            ),
+        )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
+
+    elif pending_response.response_type == PendingResponse.ResponseType.ForceGetTaskResultFailed.name:  # pylint: disable=no-member
+        task_to_compute = deserialize_message(pending_response.subtask.task_to_compute.data.tobytes())
+        response_to_client = message.concents.ForceGetTaskResultFailed(
+            task_to_compute = task_to_compute,
+        )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
+
+    elif pending_response.response_type == PendingResponse.ResponseType.ForceGetTaskResultUpload.name:  # pylint: disable=no-member
+        force_get_task_result = deserialize_message(pending_response.subtask.force_get_task_result.data.tobytes())
+        file_transfer_token = create_file_transfer_token_for_golem_client(
+            force_get_task_result.report_computed_task,
+            client_public_key,
+            FileTransferToken.Operation.upload,
+        )
+
+        response_to_client = message.concents.ForceGetTaskResultUpload(
+            file_transfer_token=file_transfer_token,
+            force_get_task_result=force_get_task_result,
+        )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
+
+    elif pending_response.response_type == PendingResponse.ResponseType.ForceGetTaskResultDownload.name:  # pylint: disable=no-member
+        force_get_task_result = deserialize_message(pending_response.subtask.force_get_task_result.data.tobytes())
+        file_transfer_token  = create_file_transfer_token_for_golem_client(
+            force_get_task_result.report_computed_task,
+            client_public_key,
+            FileTransferToken.Operation.download,
+        )
+
+        response_to_client = message.concents.ForceGetTaskResultDownload(
+            file_transfer_token=file_transfer_token,
+            force_get_task_result=force_get_task_result,
+        )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
+
+    elif pending_response.response_type == PendingResponse.ResponseType.ForceSubtaskResults.name:  # pylint: disable=no-member
+        ack_report_computed_task = deserialize_message(pending_response.subtask.ack_report_computed_task.data.tobytes())
+        response_to_client = message.concents.ForceSubtaskResults(
+            ack_report_computed_task = ack_report_computed_task
+        )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
+
+    elif pending_response.response_type == PendingResponse.ResponseType.SubtaskResultsSettled.name:  # pylint: disable=no-member
+        task_to_compute = deserialize_message(pending_response.subtask.task_to_compute.data.tobytes())
+        response_to_client = message.concents.SubtaskResultsSettled(
+            origin=message.concents.SubtaskResultsSettled.Origin.ResultsRejected,
+            task_to_compute=task_to_compute,
+        )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
+
+    elif pending_response.response_type == PendingResponse.ResponseType.ForceSubtaskResultsResponse.name:  # pylint: disable=no-member
+        subtask_results_accepted = pending_response.subtask.subtask_results_accepted
+        subtask_results_rejected = pending_response.subtask.subtask_results_rejected
+
+        assert (subtask_results_rejected is None and subtask_results_accepted is not None) or \
+               (subtask_results_accepted is None and subtask_results_rejected is not None)
+
+        if subtask_results_accepted is not None:
+            response_to_client = message.concents.ForceSubtaskResultsResponse(
+                subtask_results_accepted=deserialize_message(subtask_results_accepted.data.tobytes()),
             )
-            mark_message_as_delivered_and_log(pending_response, response_to_client)
-            return response_to_client
-
-        elif pending_response.response_type == PendingResponse.ResponseType.ForceGetTaskResultUpload.name:  # pylint: disable=no-member
-            force_get_task_result = deserialize_message(pending_response.subtask.force_get_task_result.data.tobytes())
-            file_transfer_token = create_file_transfer_token_for_golem_client(
-                force_get_task_result.report_computed_task,
-                client_public_key,
-                FileTransferToken.Operation.upload,
+        else:
+            response_to_client = message.concents.ForceSubtaskResultsResponse(
+                subtask_results_rejected=deserialize_message(subtask_results_rejected.data.tobytes()),  # type: ignore
             )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
 
-            response_to_client = message.concents.ForceGetTaskResultUpload(
-                file_transfer_token=file_transfer_token,
-                force_get_task_result=force_get_task_result,
-            )
-            mark_message_as_delivered_and_log(pending_response, response_to_client)
-            return response_to_client
+    elif pending_response.response_type == PendingResponse.ResponseType.SubtaskResultsRejected.name:  # pylint: disable=no-member
+        report_computed_task = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
+        response_to_client = message.tasks.SubtaskResultsRejected(
+            reason=message.tasks.SubtaskResultsRejected.REASON.ConcentResourcesFailure,
+            report_computed_task=report_computed_task
+        )
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
 
-        elif pending_response.response_type == PendingResponse.ResponseType.ForceGetTaskResultDownload.name:  # pylint: disable=no-member
-            force_get_task_result = deserialize_message(pending_response.subtask.force_get_task_result.data.tobytes())
-            file_transfer_token  = create_file_transfer_token_for_golem_client(
-                force_get_task_result.report_computed_task,
-                client_public_key,
-                FileTransferToken.Operation.download,
-            )
+    elif pending_response.response_type == PendingResponse.ResponseType.ForcePaymentCommitted.name:  # pylint: disable=no-member
+        payment_message = pending_response.payments.filter(
+            pending_response__pk = pending_response.pk
+        ).order_by('id').last()
 
-            response_to_client = message.concents.ForceGetTaskResultDownload(
-                file_transfer_token=file_transfer_token,
-                force_get_task_result=force_get_task_result,
-            )
-            mark_message_as_delivered_and_log(pending_response, response_to_client)
-            return response_to_client
-
-        elif pending_response.response_type == PendingResponse.ResponseType.ForceSubtaskResults.name:  # pylint: disable=no-member
-            ack_report_computed_task = deserialize_message(pending_response.subtask.ack_report_computed_task.data.tobytes())
-            response_to_client = message.concents.ForceSubtaskResults(
-                ack_report_computed_task = ack_report_computed_task
-            )
-            mark_message_as_delivered_and_log(pending_response, response_to_client)
-            return response_to_client
-
-        elif pending_response.response_type == PendingResponse.ResponseType.SubtaskResultsSettled.name:  # pylint: disable=no-member
-            task_to_compute = deserialize_message(pending_response.subtask.task_to_compute.data.tobytes())
-            response_to_client = message.concents.SubtaskResultsSettled(
-                origin=message.concents.SubtaskResultsSettled.Origin.ResultsRejected,
-                task_to_compute=task_to_compute,
-            )
-            mark_message_as_delivered_and_log(pending_response, response_to_client)
-            return response_to_client
-
-        elif pending_response.response_type == PendingResponse.ResponseType.ForceSubtaskResultsResponse.name:  # pylint: disable=no-member
-            subtask_results_accepted = pending_response.subtask.subtask_results_accepted
-            subtask_results_rejected = pending_response.subtask.subtask_results_rejected
-
-            assert (subtask_results_rejected is None and subtask_results_accepted is not None) or \
-                   (subtask_results_accepted is None and subtask_results_rejected is not None)
-
-            if subtask_results_accepted is not None:
-                response_to_client = message.concents.ForceSubtaskResultsResponse(
-                    subtask_results_accepted=deserialize_message(subtask_results_accepted.data.tobytes()),
-                )
-            else:
-                response_to_client = message.concents.ForceSubtaskResultsResponse(
-                    subtask_results_rejected=deserialize_message(subtask_results_rejected.data.tobytes()),  # type: ignore
-                )
-            mark_message_as_delivered_and_log(pending_response, response_to_client)
-            return response_to_client
-
-        elif pending_response.response_type == PendingResponse.ResponseType.SubtaskResultsRejected.name:  # pylint: disable=no-member
-            report_computed_task = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
-            response_to_client = message.tasks.SubtaskResultsRejected(
-                reason=message.tasks.SubtaskResultsRejected.REASON.ConcentResourcesFailure,
-                report_computed_task=report_computed_task
-            )
-            mark_message_as_delivered_and_log(pending_response, response_to_client)
-            return response_to_client
-
-        elif pending_response.response_type == PendingResponse.ResponseType.ForcePaymentCommitted.name:  # pylint: disable=no-member
-            payment_message = pending_response.payments.filter(
-                pending_response__pk = pending_response.pk
-            ).order_by('id').last()
-
-            response_to_client = message.concents.ForcePaymentCommitted(
-                payment_ts=parse_datetime_to_timestamp(payment_message.payment_ts),
-                task_owner_key=payment_message.task_owner_key.tobytes(),
-                provider_eth_account=payment_message.provider_eth_account,
-                amount_paid=payment_message.amount_paid,
-                amount_pending=payment_message.amount_pending,
-            )
-            if payment_message.recipient_type == PaymentInfo.RecipientType.Requestor.name:  # pylint: disable=no-member
-                response_to_client.recipient_type = message.concents.ForcePaymentCommitted.Actor.Requestor
-            elif payment_message.recipient_type == PaymentInfo.RecipientType.Provider.name:  # pylint: disable=no-member
-                response_to_client.recipient_type = message.concents.ForcePaymentCommitted.Actor.Provider
-            else:
-                return None
-            mark_message_as_delivered_and_log(pending_response, response_to_client)
-            return response_to_client
-
+        response_to_client = message.concents.ForcePaymentCommitted(
+            payment_ts              = parse_datetime_to_timestamp(payment_message.payment_ts),
+            task_owner_key          = payment_message.task_owner_key.tobytes(),
+            provider_eth_account    = payment_message.provider_eth_account,
+            amount_paid             = payment_message.amount_paid,
+            amount_pending          = payment_message.amount_pending,
+        )
+        if payment_message.recipient_type == PaymentInfo.RecipientType.Requestor.name:  # pylint: disable=no-member
+            response_to_client.recipient_type = message.concents.ForcePaymentCommitted.Actor.Requestor
+        elif payment_message.recipient_type == PaymentInfo.RecipientType.Provider.name:  # pylint: disable=no-member
+            response_to_client.recipient_type = message.concents.ForcePaymentCommitted.Actor.Provider
         else:
             return None
+        mark_message_as_delivered_and_log(pending_response, response_to_client)
+        return response_to_client
+
+    else:
+        return None
 
 
 def mark_message_as_delivered_and_log(undelivered_message: PendingResponse, log_message: message.Message) -> None:
@@ -1364,61 +1360,61 @@ def handle_send_subtask_results_verify(
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
         )
-    with transaction.atomic(using='control'):
-        subtask = get_one_or_none(
-            Subtask.objects.select_for_update(),
+
+    subtask = get_one_or_none(
+        Subtask.objects.select_for_update(),
+        subtask_id=compute_task_def['subtask_id'],
+    )
+    if subtask is None:
+        store_subtask(
+            task_id=compute_task_def['task_id'],
             subtask_id=compute_task_def['subtask_id'],
+            provider_public_key=provider_public_key,
+            requestor_public_key=requestor_public_key,
+            state=Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
+            next_deadline=verification_deadline,
+            task_to_compute=task_to_compute,
+            report_computed_task=report_computed_task,
+            subtask_results_rejected=subtask_results_rejected,
         )
-        if subtask is None:
-            store_subtask(
-                task_id=compute_task_def['task_id'],
-                subtask_id=compute_task_def['subtask_id'],
-                provider_public_key=provider_public_key,
-                requestor_public_key=requestor_public_key,
-                state=Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
-                next_deadline=verification_deadline,
-                task_to_compute=task_to_compute,
-                report_computed_task=report_computed_task,
-                subtask_results_rejected=subtask_results_rejected,
+
+    else:
+        if subtask.state_enum in[
+            Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
+            Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
+        ]:
+            return message.concents.ServiceRefused(
+                reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
+            )
+        if subtask.state_enum in [
+            Subtask.SubtaskState.ACCEPTED,
+            Subtask.SubtaskState.FAILED,
+        ]:
+            raise Http400(
+                "SubtaskResultsVerify is not allowed in current state",
+                error_code=ErrorCode.QUEUE_SUBTASK_STATE_TRANSITION_NOT_ALLOWED,
             )
 
-        else:
-            if subtask.state_enum in [
-                Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
-                Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
-            ]:
-                return message.concents.ServiceRefused(
-                    reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
-                )
-            if subtask.state_enum in [
-                Subtask.SubtaskState.ACCEPTED,
-                Subtask.SubtaskState.FAILED,
-            ]:
-                raise Http400(
-                    "SubtaskResultsVerify is not allowed in current state",
-                    error_code=ErrorCode.QUEUE_SUBTASK_STATE_TRANSITION_NOT_ALLOWED,
-                )
+        if task_to_compute is not None and subtask.task_to_compute is not None:
+            validate_all_messages_identical([
+                task_to_compute,
+                deserialize_message(subtask.task_to_compute.data.tobytes()),
+            ])
 
-            if task_to_compute is not None and subtask.task_to_compute is not None:
-                validate_all_messages_identical([
-                    task_to_compute,
-                    deserialize_message(subtask.task_to_compute.data.tobytes()),
-                ])
-
-            update_and_return_updated_subtask(
-                subtask=subtask,
-                state=Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
-                next_deadline=verification_deadline,
-                set_next_deadline=True,
-                task_to_compute=task_to_compute,
-                report_computed_task=report_computed_task,
-                subtask_results_rejected=subtask_results_rejected,
-            )
-
-        send_blender_verification_request(
-            compute_task_def,
-            verification_deadline,
+        update_and_return_updated_subtask(
+            subtask=subtask,
+            state=Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
+            next_deadline=verification_deadline,
+            set_next_deadline=True,
+            task_to_compute=task_to_compute,
+            report_computed_task=report_computed_task,
+            subtask_results_rejected= subtask_results_rejected,
         )
+
+    send_blender_verification_request(
+        compute_task_def,
+        verification_deadline,
+    )
 
     ack_subtask_results_verify = message.concents.AckSubtaskResultsVerify(
         subtask_results_verify=subtask_results_verify,

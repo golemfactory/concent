@@ -1,6 +1,7 @@
 from typing import Any
 from typing import Callable
 from typing import Iterable
+from typing import MutableMapping
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
@@ -203,10 +204,8 @@ def _print_response(private_key: bytes, public_key: bytes, response: requests.Re
         print('RESPONSE: <empty>')
     else:
         print(f'STATUS: {response.status_code} {http.client.responses[response.status_code]}')
-        print('MESSAGE:')
-        print(f'Concent-Golem-Messages-Version = {response.headers["concent-golem-messages-version"]}')
         if response.headers['Content-Type'] == 'application/octet-stream':
-            _print_message_from_stream(private_key, public_key, response.content)
+            _print_message_from_stream(private_key, public_key, response.content, response.headers)
         elif response.headers['Content-Type'] == 'application/json':
             _print_message_from_json(response)
         elif response.headers['Content-Type'] == 'text/html; charset=utf-8':
@@ -222,11 +221,18 @@ def _print_message_from_json(response: requests.Response) -> None:
         print('RAW RESPONSE: Failed to decode response content')
 
 
-def _print_message_from_stream(private_key: bytes, public_key: bytes, content: bytes) -> None:
+def _print_message_from_stream(
+    private_key: bytes,
+    public_key: bytes,
+    content: bytes,
+    headers: MutableMapping[str, str]
+) -> None:
     decoded_response = try_to_decode_golem_message(private_key, public_key, content)
     if decoded_response is None:
         print("ERROR: Decoded Golem Message is 'None'")
     else:
+        print('MESSAGE:')
+        print(f'Concent-Golem-Messages-Version = {headers["concent-golem-messages-version"]}')
         print_golem_message(decoded_response)
 
 

@@ -624,7 +624,7 @@ class PaymentInfo(Model):
                 'provider_eth_account': 'Provider ethereum account address must be diffrent than task owner key'
             })
 
-        if not isinstance(self.amount_pending, int) or self.amount_pending <= 0:
+        if not isinstance(self.amount_pending, int) or self.amount_pending < 0:
             raise ValidationError({
                 'amount_pending': 'Amount pending must be an integer and bigger than 0'
             })

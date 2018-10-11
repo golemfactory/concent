@@ -16,3 +16,8 @@ SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS = 10
 
 # Defines how much time in seconds should SigningService wait for connection before deeming it unsuccessful.
 CONNECTION_TIMEOUT = 10
+
+# Daily limits for transactions sums in GNTB.
+WARNING_DAILY_THRESHOLD = 1000
+
+MAXIMUM_DAILY_THRESHOLD = 10000

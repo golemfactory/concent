@@ -1,3 +1,4 @@
+import datetime
 from base64 import b64encode
 from unittest import TestCase
 import os
@@ -316,3 +317,49 @@ class SigningServiceValidateArgumentsTestCase(TestCase):
 
         with self.assertRaises(SigningServiceValidationError):
             self.signing_service._validate_arguments()
+
+
+class SigningServiceDailyThresholdTestCase(TestCase):
+
+    def setUp(self):
+        self.host = '127.0.0.1'
+        self.port = 8000
+        self.initial_reconnect_delay = 2
+
+        with mock.patch('signing_service.signing_service.SigningService.run'):
+            self.signing_service = SigningService(
+                self.host,
+                self.port,
+                self.initial_reconnect_delay,
+                CONCENT_PUBLIC_KEY,
+                SIGNING_SERVICE_PRIVATE_KEY,
+                TEST_ETHEREUM_PRIVATE_KEY,
+                SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS,
+            )
+
+    def test_that_signing_service_get_daily_transaction_threshold_file_directory_should_return_existing_file(self):
+        threshold_file = self.signing_service._get_daily_transaction_threshold_file_path()
+        self.assertTrue(threshold_file.exists())  # pylint: disable=no-member
+        self.assertTrue(threshold_file.is_file())  # pylint: disable=no-member
+        threshold_file.unlink()  # pylint: disable=no-member
+
+    def test_that_add_payload_value_to_daily_transactions_sum_write_int_and_get_signing_service_daily_transaction_sum_so_far_returns_correct_value(self):
+        threshold_file = self.signing_service._get_daily_transaction_threshold_file_path()
+        self.signing_service._add_payload_value_to_daily_transactions_sum(1337)
+        transaction_sum = self.signing_service._get_signing_service_daily_transaction_sum_so_far()
+        self.assertEqual(transaction_sum, 1337)
+        threshold_file.unlink()  # pylint: disable=no-member
+
+    def test_that_signing_service_get_signing_service_daily_transaction_sum_so_far_returns_zero_in_case_of_value_error(self):
+        threshold_file = self.signing_service._get_daily_transaction_threshold_file_path()
+        threshold_file.write_text('GolemConcent')  # pylint: disable=no-member
+        transaction_sum = self.signing_service._get_signing_service_daily_transaction_sum_so_far()
+        self.assertEqual(transaction_sum, 0)
+        threshold_file.unlink()  # pylint: disable=no-member
+
+    def test_that_signing_service_update_daily_transactions_limit_file_name_overwrite_old_value(self):
+        self.signing_service.daily_transactions_limit_file_name = '1970-01-01'
+        self.signing_service.signing_service_daily_transaction_sum_so_far = 10000
+        self.signing_service._update_daily_transactions_limit_file_name()
+        self.assertEqual(self.signing_service.daily_transactions_limit_file_name, datetime.datetime.now().strftime('%Y-%m-%d'))
+        self.assertEqual(self.signing_service.signing_service_daily_transaction_sum_so_far, 0)

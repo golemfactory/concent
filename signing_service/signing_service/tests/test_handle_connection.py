@@ -9,6 +9,7 @@ import mock
 import pytest
 
 from middleman_protocol.concent_golem_messages.message import SignedTransaction
+from middleman_protocol.concent_golem_messages.message import TransactionRejected
 from middleman_protocol.constants import ErrorCode
 from middleman_protocol.constants import FRAME_PAYLOAD_STARTING_BYTE
 from middleman_protocol.constants import FRAME_PAYLOAD_TYPE_LENGTH
@@ -20,7 +21,9 @@ from middleman_protocol.message import GolemMessageFrame
 from middleman_protocol.message import HeartbeatFrame
 from middleman_protocol.stream import unescape_stream
 
+from signing_service.constants import MAXIMUM_DAILY_THRESHOLD
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS
+from signing_service.constants import WARNING_DAILY_THRESHOLD
 from signing_service.exceptions import SigningServiceValidationError
 from signing_service.signing_service import SigningService
 from .utils import SigningServiceIntegrationTestCase
@@ -49,6 +52,67 @@ class TestSigningServiceHandleConnection(SigningServiceIntegrationTestCase):
             payload=self._get_deserialized_transaction_signing_request(),
             request_id=99,
         )
+        middleman_message.payload.value = WARNING_DAILY_THRESHOLD
+        raw_message = middleman_message.serialize(private_key=CONCENT_PRIVATE_KEY)
+
+        def handle_connection_wrapper(signing_service, connection, receive_frame_generator):
+            with mock.patch(
+                'signing_service.signing_service.SigningService._get_signed_transaction',
+                return_value=self._get_deserialized_signed_transaction(),
+            ):
+                with mock.patch(
+                    'signing_service.signing_service.SigningService._add_payload_value_to_daily_transactions_sum'
+                ):
+                    signing_service._handle_connection(receive_frame_generator, connection)
+
+        raw_message_received = self._prepare_and_execute_handle_connection(
+            raw_message,
+            handle_connection_wrapper,
+        )
+
+        deserialized_message = AbstractFrame.deserialize(
+            raw_message=raw_message_received,
+            public_key=SIGNING_SERVICE_PUBLIC_KEY,
+        )
+
+        assertpy.assert_that(deserialized_message.payload).is_instance_of(SignedTransaction)
+
+    def test_that__handle_connection_should_send_golem_message_signed_transaction_if_warning_daily_threshold_exceeded(self):
+        middleman_message = GolemMessageFrame(
+            payload=self._get_deserialized_transaction_signing_request(),
+            request_id=99,
+        )
+        middleman_message.payload.value = WARNING_DAILY_THRESHOLD + 1
+        raw_message = middleman_message.serialize(private_key=CONCENT_PRIVATE_KEY)
+
+        def handle_connection_wrapper(signing_service, connection, receive_frame_generator):
+            with mock.patch(
+                'signing_service.signing_service.SigningService._get_signed_transaction',
+                return_value=self._get_deserialized_signed_transaction(),
+            ):
+                with mock.patch(
+                    'signing_service.signing_service.SigningService._add_payload_value_to_daily_transactions_sum'
+                ):
+                    signing_service._handle_connection(receive_frame_generator, connection)
+
+        raw_message_received = self._prepare_and_execute_handle_connection(
+            raw_message,
+            handle_connection_wrapper,
+        )
+
+        deserialized_message = AbstractFrame.deserialize(
+            raw_message=raw_message_received,
+            public_key=SIGNING_SERVICE_PUBLIC_KEY,
+        )
+
+        assertpy.assert_that(deserialized_message.payload).is_instance_of(SignedTransaction)
+
+    def test_that__handle_connection_should_send_golem_message_reject_if_max_daily_threshold_exceeded(self):
+        middleman_message = GolemMessageFrame(
+            payload=self._get_deserialized_transaction_signing_request(),
+            request_id=99,
+        )
+        middleman_message.payload.value = MAXIMUM_DAILY_THRESHOLD + 1
         raw_message = middleman_message.serialize(private_key=CONCENT_PRIVATE_KEY)
 
         def handle_connection_wrapper(signing_service, connection, receive_frame_generator):
@@ -68,7 +132,7 @@ class TestSigningServiceHandleConnection(SigningServiceIntegrationTestCase):
             public_key=SIGNING_SERVICE_PUBLIC_KEY,
         )
 
-        assertpy.assert_that(deserialized_message.payload).is_instance_of(SignedTransaction)
+        assertpy.assert_that(deserialized_message.payload).is_instance_of(TransactionRejected)
 
     def test_that__handle_connection_should_send_error_frame_if_frame_signature_is_wrong(self):
         # Prepare message with wrong signature.

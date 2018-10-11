@@ -152,6 +152,8 @@ class TransactionRejected(NonceAbstractMessage):
         # The service is not authorized to transfer funds from the account
         # specified in the transaction.
         UnauthorizedAccount = 'unauthorized_account'
+        # The message itself is valid but daily limit of GNTB that went through Signing Service has been exceeded
+        DailyLimitExceeded = 'daily_limit_exceeded'
 
     ENUM_SLOTS = {
         'reason': REASON,

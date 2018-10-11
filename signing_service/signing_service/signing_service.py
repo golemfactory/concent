@@ -1,9 +1,12 @@
 import argparse
+import datetime
 import logging.config
 import os
 import signal
 import socket
 from contextlib import closing
+from pathlib import Path
+from pathlib import PosixPath
 from time import sleep
 from types import FrameType
 from typing import Iterator
@@ -38,11 +41,13 @@ from middleman_protocol.stream import send_over_stream
 from middleman_protocol.stream import unescape_stream
 
 from signing_service.constants import CONNECTION_TIMEOUT
+from signing_service.constants import MAXIMUM_DAILY_THRESHOLD
 from signing_service.constants import RECEIVE_AUTHENTICATION_CHALLENGE_TIMEOUT
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_PORT
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS
 from signing_service.constants import SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME
+from signing_service.constants import WARNING_DAILY_THRESHOLD
 from signing_service.exceptions import SigningServiceMaximumReconnectionAttemptsExceeded
 from signing_service.exceptions import SigningServiceUnexpectedMessageError
 from signing_service.exceptions import SigningServiceValidationError
@@ -73,6 +78,8 @@ class SigningService:
         'ethereum_private_key',
         'reconnection_counter',
         'maximum_reconnection_attempts',
+        'signing_service_daily_transaction_sum_so_far',
+        'daily_transactions_limit_file_name',
     )
 
     def __init__(
@@ -102,6 +109,8 @@ class SigningService:
         self.was_sigterm_caught: bool = False
         self.reconnection_counter = 0
         self.maximum_reconnection_attempts = maximum_reconnect_attempts
+        self.signing_service_daily_transaction_sum_so_far = 0
+        self.daily_transactions_limit_file_name = datetime.datetime.now().strftime('%Y-%m-%d')
 
         self._validate_arguments()
 
@@ -165,6 +174,7 @@ class SigningService:
         # Reset delay and reconnection counter on successful authentication and set flag that connection is established.
         self.current_reconnect_delay = None
         self.reconnection_counter = 0
+        self.signing_service_daily_transaction_sum_so_far = self._get_signing_service_daily_transaction_sum_so_far()
         self._handle_connection(receive_frame_generator, tcp_socket)
 
     def _authenticate(
@@ -268,7 +278,26 @@ class SigningService:
                 middleman_message_response = self._prepare_error_response(ErrorCode.UnexpectedMessage, exception)
             # If received frame is correct, validate transaction.
             else:
+                self._update_daily_transactions_limit_file_name()
                 golem_message_response = self._get_signed_transaction(middleman_message.payload)
+                if isinstance(golem_message_response, SignedTransaction):
+                    email_notifier = Notifier()
+                    transaction_sum_combined = self.signing_service_daily_transaction_sum_so_far + middleman_message.payload.value
+                    if transaction_sum_combined > MAXIMUM_DAILY_THRESHOLD:
+                        logger.warning(
+                            f'Signing Service is unable to transact more then {MAXIMUM_DAILY_THRESHOLD} GNTB today.'
+                            f'Transaction from {middleman_message.payload.from_address} rejected.'
+                        )
+                        golem_message_response = TransactionRejected(
+                            reason=TransactionRejected.REASON.DailyLimitExceeded,
+                            nonce=middleman_message.payload.nonce,
+                        )
+                    elif transaction_sum_combined > WARNING_DAILY_THRESHOLD:
+                        email_notifier.send()
+                        logger.warning(f'Signing Service has signed transactions worth {transaction_sum_combined} GNTB today.')
+                        self._add_payload_value_to_daily_transactions_sum(transaction_sum_combined)
+                    else:
+                        self._add_payload_value_to_daily_transactions_sum(transaction_sum_combined)
                 golem_message_response.sign_message(private_key=self.signing_service_private_key)
                 middleman_message_response = GolemMessageFrame(
                     payload=golem_message_response,
@@ -347,6 +376,7 @@ class SigningService:
             # If not, rejection reason is InvalidTransaction
             return TransactionRejected(
                 reason=TransactionRejected.REASON.InvalidTransaction,
+                nonce=transaction_signing_request.nonce,
             )
 
         # If transaction is correct, sign it.
@@ -357,6 +387,7 @@ class SigningService:
             # If not, rejection reason is UnauthorizedAccount.
             return TransactionRejected(
                 reason=TransactionRejected.REASON.UnauthorizedAccount,
+                nonce=transaction_signing_request.nonce,
             )
 
         assert transaction.v is not None
@@ -384,6 +415,35 @@ class SigningService:
             self.signing_service_private_key,
             authentication_challenge,
         )
+
+    @staticmethod
+    def _get_daily_transaction_threshold_file_path() -> PosixPath:
+        thresholds_directory = (Path.cwd()).joinpath('daily_tresholds')  # pylint: disable=no-member
+        thresholds_directory.mkdir(exist_ok=True)  # pylint: disable=no-member
+        daily_file = datetime.datetime.now().strftime('%Y-%m-%d')
+        thresholds_directory.joinpath(daily_file).touch(exist_ok=True)  # pylint: disable=no-member
+        tresholds_file_path = thresholds_directory.joinpath(daily_file)
+        return tresholds_file_path
+
+    def _get_signing_service_daily_transaction_sum_so_far(self) -> int:
+        threshold_file = self._get_daily_transaction_threshold_file_path()
+        try:
+            transaction_sum = int(threshold_file.read_text())  # pylint: disable=no-member
+        except ValueError:
+            threshold_file.write_text('0')  # pylint: disable=no-member
+            return 0
+        return transaction_sum
+
+    def _add_payload_value_to_daily_transactions_sum(self, transactions_sum: int) -> None:
+        tresholds_file_path = self._get_daily_transaction_threshold_file_path()
+        tresholds_file_path.write_text(str(transactions_sum))  # pylint: disable=no-member
+
+    def _update_daily_transactions_limit_file_name(self) -> None:
+        """ Create new file with daily transaction sum if last file is outdated. """
+        current_day_string = datetime.datetime.now().strftime('%Y-%m-%d')
+        if self.daily_transactions_limit_file_name != current_day_string:
+            self.daily_transactions_limit_file_name = current_day_string
+            self.signing_service_daily_transaction_sum_so_far = self._get_signing_service_daily_transaction_sum_so_far()
 
 
 def _parse_arguments() -> argparse.Namespace:

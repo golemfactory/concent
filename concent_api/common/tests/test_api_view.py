@@ -1,4 +1,6 @@
 import json
+from contextlib import suppress
+
 import mock
 
 from django.conf                    import settings
@@ -33,6 +35,10 @@ from core.utils import hex_to_bytes_convert
 (CONCENT_PRIVATE_KEY,   CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
 (PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)  = generate_ecc_key_pair()
 (REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
+
+
+class CustomException(Exception):
+    pass
 
 
 @override_settings(
@@ -167,37 +173,20 @@ class ApiViewTestCase(TestCase):
 
 
 def _create_client_and_raise_http400_error_mock(*_args, **_kwargs):
-    Client.objects.get_or_create_full_clean(
-        CONCENT_PUBLIC_KEY
-    )
+    _create_client_mock_and_return_none()
     raise Http400('', error_code=ErrorCode.MESSAGE_UNEXPECTED)
 
 
 def _create_client_and_raise_http500_exception_mock(*_args, **_kwargs):
+    _create_client_mock_and_return_none()
+    raise CustomException
+
+
+def _create_client_mock_and_return_none(*_args, **_kwargs) -> None:
     number_of_clients = Client.objects.count()
     Client.objects.create(public_key_bytes=generate_ecc_key_pair()[1])
-    assert Client.objects.count() == number_of_clients+1
-    raise Exception
-
-
-def _create_client_mock(*_args, **_kwargs):
-    number_of_clients = Client.objects.count()
-    Client.objects.create(public_key_bytes=generate_ecc_key_pair()[1])
-    assert Client.objects.count() == number_of_clients+1
-
-
-def gatekeeper_access_denied_response_500_mock(_message, _path = None, _subtask_id = None, _client_key = None):
-    Client.objects.get_or_create_full_clean(
-        CONCENT_PUBLIC_KEY
-    )
-    raise TypeError
-
-
-def gatekeeper_access_denied_response_400_mock(_message, _path = None, _subtask_id = None, _client_key = None):
-    Client.objects.get_or_create_full_clean(
-        CONCENT_PUBLIC_KEY
-    )
-    raise Http400('', error_code=ErrorCode.MESSAGE_UNEXPECTED)
+    assert Client.objects.count() == number_of_clients + 1
+    return None
 
 
 def gatekeeper_access_denied_response_200_mock(_message, _path = None, _subtask_id = None, _client_key = None):
@@ -264,9 +253,10 @@ class ApiViewTransactionTestCase(TransactionTestCase):
         )
 
     def test_that_api_view_should_not_rollback_changes_from_first_transaction_when_second_raises_exception(self):
+        self.assertEqual(Client.objects.count(), 0)
         with mock.patch(
             'core.subtask_helpers.get_one_or_none',
-            side_effect=_create_client_mock
+            side_effect=_create_client_mock_and_return_none
         ) as _update_timed_out_subtask_correct_response_mock_function, \
             mock.patch(
             'core.message_handlers.get_one_or_none',
@@ -305,7 +295,7 @@ class ApiViewTransactionTestCase(TransactionTestCase):
             'core.subtask_helpers.verify_file_status',
             side_effect=_create_client_and_raise_http500_exception_mock
         ) as _create_client_and_raise_http500_error_mock_function:
-            try:
+            with suppress(CustomException):
                 self.client.post(
                     reverse('core:send'),
                     data=dump(
@@ -315,11 +305,6 @@ class ApiViewTransactionTestCase(TransactionTestCase):
                     ),
                     content_type='application/octet-stream',
                 )
-            # _create_client_and_raise_http500_exception_mock may raise AssertionError, it shouldn't be caught by except Exception
-            except AssertionError:
-                raise AssertionError('Problem with creating client object in database')
-            except Exception:
-                pass
 
         _create_client_and_raise_http500_error_mock_function.assert_called()
         self.assertEqual(Client.objects.count(), 2)
@@ -357,8 +342,8 @@ class ApiViewTransactionTestCase(TransactionTestCase):
 
     def test_api_view_should_not_rollback_changes_on_correct_response(self):
         with mock.patch(
-            'core.views.update_timed_out_subtasks_in_message',
-            side_effect=_create_client_mock
+            'core.subtask_helpers.get_one_or_none',
+            side_effect=_create_client_mock_and_return_none
         ) as _update_timed_out_subtask_correct_response_mock_function:
             response = self.client.post(
                 reverse('core:send'),
@@ -378,16 +363,14 @@ class ApiViewTransactionTestCase(TransactionTestCase):
 
         with mock.patch(
             'gatekeeper.views.gatekeeper_access_denied_response',
-            side_effect=gatekeeper_access_denied_response_500_mock
+            side_effect=_create_client_and_raise_http500_exception_mock
         ) as gatekeeper_access_denied_response_500_mock_function:
-            try:
+            with suppress(CustomException):
                 self.client.post(
                     reverse('gatekeeper:upload'),
                     data                                = '',
                     content_type                        = 'application/octet-stream',
                 )
-            except TypeError:
-                pass
 
         gatekeeper_access_denied_response_500_mock_function.assert_called()
         self.assertEqual(Client.objects.count(), 0)
@@ -396,7 +379,7 @@ class ApiViewTransactionTestCase(TransactionTestCase):
 
         with mock.patch(
             'gatekeeper.views.gatekeeper_access_denied_response',
-            side_effect=gatekeeper_access_denied_response_400_mock
+            side_effect=_create_client_and_raise_http400_error_mock
         ) as gatekeeper_access_denied_response_400_mock_function:
             try:
                 self.client.post(

@@ -30,7 +30,7 @@ from core.utils import hex_to_bytes_convert
 logger = getLogger(__name__)
 
 
-def update_timed_out_subtask(subtask: Subtask) -> None:
+def _update_timed_out_subtask(subtask: Subtask) -> None:
     """
     Function called for timed out subtasks - checks state and changes it from one of actives to one of passives
     """
@@ -132,7 +132,7 @@ def update_timed_out_subtask(subtask: Subtask) -> None:
     )
 
 
-def update_timed_out_subtasks_in_message(client_message: Message, client_public_key: bytes) -> None:
+def update_subtasks_from_incoming_message_if_timed_out(client_message: Message, client_public_key: bytes) -> None:
     """
     Function gets subtask_id (or more subtask id's if message is ForcePayment) from client message, starts transaction,
     checks if state is active and subtask is timed out (in database query, if it is subtask is locked). If so, file
@@ -158,10 +158,10 @@ def update_timed_out_subtasks_in_message(client_message: Message, client_public_
                 return
 
             verify_file_status(subtask=subtask, client_public_key=client_public_key)
-            update_timed_out_subtask(subtask)
+            _update_timed_out_subtask(subtask)
 
 
-def update_all_timed_out_subtasks_of_client(client_public_key: bytes) -> None:
+def update_all_timed_out_subtasks_of_a_client(client_public_key: bytes) -> None:
     """
     Function looks for all subtasks in active state of client. All found subtasks are processed in separate transactions,
     locked in database, file status is verified (check additional conditions in verify_file_status) and subtask's state
@@ -180,12 +180,11 @@ def update_all_timed_out_subtasks_of_client(client_public_key: bytes) -> None:
             Subtask.objects.select_for_update().filter(subtask_id=subtask.subtask_id)
             verify_file_status(subtask=subtask, client_public_key=client_public_key)
 
-            # Subtask may change it's state in verify_file_status, so it is necessary to check the state again. If state
-            # will change to passive, there is no need to call update_timed_out_subtask any more. State has to be checked
-            # first, if is passive second condition is not checked. If it would be it will raise Error because of
-            # comparing datetime and NoneType
-            if subtask.state_enum in Subtask.ACTIVE_STATES and subtask.next_deadline <= parse_timestamp_to_utc_datetime(get_current_utc_timestamp()):
-                update_timed_out_subtask(subtask)
+            # Subtask may change it's state to passive (RESULT UPLOADED) in verify_file_status. In this case there
+            # is no need to call _update_timed_out_subtask any more. Next_deadline will be set to None, so it is
+            # necessary to check it before checking if deadline is exceeded.
+            if subtask.next_deadline is not None and subtask.next_deadline <= parse_timestamp_to_utc_datetime(get_current_utc_timestamp()):
+                _update_timed_out_subtask(subtask)
 
 
 def update_subtask_state(subtask: Subtask, state: str, next_deadline: Union[int, float, None] = None) -> None:

@@ -1,4 +1,4 @@
-# !/usr/bin/env python3
+#!/usr/bin/env python3
 import os
 import sys
 import time
@@ -147,6 +147,36 @@ def test_case_multiple_requests_concerning_one_subtask_will_be_processed_one_by_
         report_computed_task=report_computed_task,
         expected_status=202,
     )  # Subtask state changed to: REPORTED
+
+    clear_responses()
+    # this is test- sending some messages in one time
+    call_function_in_threads(
+        func=send_correct_force_get_task_result,  # Subtask state changed to: FORCING_RESULT_TRANSFER
+        number_of_threads=NUMBER_OF_TESTING_THREADS,
+        cluster_url=cluster_url,
+        report_computed_task=report_computed_task,
+    )
+    # waiting for responses from all threads
+    end_time = time.time() + MAXIMUM_WAITING_TIME_FOR_ALL_RESPONSES
+    while len(responses_global) != NUMBER_OF_TESTING_THREADS:
+        time.sleep(0.1)
+        if time.time() >= end_time:
+            break
+
+    expected_responses = ['AckForceGetTaskResult', 'ServiceRefused', 'ServiceRefused']
+    assert len(expected_responses) == NUMBER_OF_TESTING_THREADS, 'Did you changed number of testing threads and forgot to change expected_responses?'
+
+    print('Responses = ' + str(responses_global))
+    assert_content_equal(actual=responses_global, expected=expected_responses)
+    print('Single test passed successfully')
+
+
+@count_fails
+def test_case_multiple_force_get_task_result_concerning_one_subtask_will_be_processed_one_by_one_if_subtask_does_not_exists_in_database(
+    cluster_consts: str,
+    cluster_url: str,
+) -> None:
+    report_computed_task = create_report_computed_task()
 
     clear_responses()
     # this is test- sending some messages in one time

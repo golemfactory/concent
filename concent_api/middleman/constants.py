@@ -9,6 +9,10 @@ PROCESSING_TIMEOUT = 5
 STANDARD_ERROR_MESSAGE = "This connection has been already added"
 WRONG_TYPE_ERROR_MESSAGE = "QueuePool can only contain mapping between connection ID (int) and response queue (asyncio.Queue)"
 AUTHENTICATION_CHALLENGE_SIZE = 128
+HEARTBEAT_REQUEST_ID = 777
+
+# Interval in seconds, after which MiddleMan should send HeartbeatFrame
+HEARTBEAT_INTERVAL = 15
 
 RequestQueueItem = namedtuple(
     "RequestQueueItem",

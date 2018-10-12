@@ -1,13 +1,15 @@
-from ethereum.transactions import Transaction
+from freezegun import freeze_time
 import mock
 
 from django.conf import settings
 from django.test import override_settings
 
 from common.constants import ConcentUseCase
+from core.constants import MOCK_TRANSACTION
 from core.payments.bankster import ClaimPaymentInfo
 from core.payments.bankster import claim_deposit
 from core.payments.bankster import finalize_payment
+from core.payments.bankster import settle_overdue_acceptances
 from core.tests.utils import ConcentIntegrationTestCase
 
 
@@ -88,26 +90,13 @@ class FinalizePaymentBanksterTest(ConcentIntegrationTestCase):
         self.task_to_compute = self._get_deserialized_task_to_compute()
         self.subtask_cost = 1
 
-    def _create_transaction(self):
-        return Transaction(
-            nonce=1,
-            gasprice=10 ** 6,
-            startgas=80000,
-            value=10,
-            to=b'7917bc33eea648809c28',
-            v=28,
-            r=105276041803796697890139158600495981346175539693000174052040367753737207356915,
-            s=51455402244652678469360859593599492752947853083356495769067973718806366068077,
-            data=b'3078666333323333396130303030303030303030303030303030303030303030303032393662363963383738613734393865663463343531363436353231336564663834666334623330303030303030303030303030303030303030303030303030333431336437363161356332633362656130373531373064333239363566636161386261303533633030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303237313030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303562343336643666',
-        )
-
     @override_settings(
         ADDITIONAL_VERIFICATION_COST=0,
     )
     def test_that_when_additional_verification_cost_is_zero_finalize_payment_should_return_empty_provider_claim_payment_info(self):
         with mock.patch('core.payments.service.get_deposit_value', return_value=1) as get_deposit_value:
-            with mock.patch('core.payments.service.force_subtask_payment', return_value=self._create_transaction()) as force_subtask_payment:
-                with mock.patch('core.payments.service.cover_additional_verification_cost', return_value=self._create_transaction()) as cover_additional_verification_cost:
+            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION) as force_subtask_payment:
+                with mock.patch('core.payments.service.cover_additional_verification_cost', return_value=MOCK_TRANSACTION) as cover_additional_verification_cost:
                     (requestors_claim_payment_info, providers_claim_payment_info) = finalize_payment(
                         subtask_id=self.task_to_compute.subtask_id,
                         concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
@@ -148,8 +137,8 @@ class FinalizePaymentBanksterTest(ConcentIntegrationTestCase):
 
     def test_that_when_both_provider_and_requestor_deposits_are_empty_finalize_payment_should_return_claim_payment_info_objects_with_full_amount_pending(self):
         with mock.patch('core.payments.service.get_deposit_value', return_value=0) as get_deposit_value:
-            with mock.patch('core.payments.service.force_subtask_payment', return_value=self._create_transaction()) as force_subtask_payment:
-                with mock.patch('core.payments.service.cover_additional_verification_cost', return_value=self._create_transaction()) as cover_additional_verification_cost:
+            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION) as force_subtask_payment:
+                with mock.patch('core.payments.service.cover_additional_verification_cost', return_value=MOCK_TRANSACTION) as cover_additional_verification_cost:
                     (requestors_claim_payment_info, providers_claim_payment_info) = finalize_payment(
                         subtask_id=self.task_to_compute.subtask_id,
                         concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
@@ -188,8 +177,8 @@ class FinalizePaymentBanksterTest(ConcentIntegrationTestCase):
     )
     def test_that_when_both_provider_and_requestor_deposits_are_not_empty_finalize_payment_should_create_transactions(self):
         with mock.patch('core.payments.service.get_deposit_value', return_value=2) as get_deposit_value:
-            with mock.patch('core.payments.service.force_subtask_payment', return_value=self._create_transaction()) as force_subtask_payment:
-                with mock.patch('core.payments.service.cover_additional_verification_cost', return_value=self._create_transaction()) as cover_additional_verification_cost:
+            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION) as force_subtask_payment:
+                with mock.patch('core.payments.service.cover_additional_verification_cost', return_value=MOCK_TRANSACTION) as cover_additional_verification_cost:
                     (requestors_claim_payment_info, providers_claim_payment_info) = finalize_payment(
                         subtask_id=self.task_to_compute.subtask_id,
                         concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
@@ -234,8 +223,8 @@ class FinalizePaymentBanksterTest(ConcentIntegrationTestCase):
 
     def test_that_in_not_additional_verification_use_case_provider_claim_payment_info_should_be_empty_even_if_he_has_non_empty_deposit(self):
         with mock.patch('core.payments.service.get_deposit_value', return_value=2) as get_deposit_value:
-            with mock.patch('core.payments.service.force_subtask_payment', return_value=self._create_transaction()) as force_subtask_payment:
-                with mock.patch('core.payments.service.cover_additional_verification_cost', return_value=self._create_transaction()) as cover_additional_verification_cost:
+            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION) as force_subtask_payment:
+                with mock.patch('core.payments.service.cover_additional_verification_cost', return_value=MOCK_TRANSACTION) as cover_additional_verification_cost:
                     (requestors_claim_payment_info, providers_claim_payment_info) = finalize_payment(
                         subtask_id=self.task_to_compute.subtask_id,
                         concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
@@ -269,3 +258,117 @@ class FinalizePaymentBanksterTest(ConcentIntegrationTestCase):
             subtask_id=self.task_to_compute.subtask_id,
         )
         cover_additional_verification_cost.assert_not_called()
+
+
+class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
+
+    def test_that_settle_overdue_acceptances_should_return_empty_claim_deposit_info_if_subtask_costs_where_already_paid(self):
+        task_to_compute = self._get_deserialized_task_to_compute(
+            price=13000,
+        )
+
+        subtask_results_accepted_list = [
+            self._get_deserialized_subtask_results_accepted(
+                task_to_compute=task_to_compute
+            )
+        ]
+
+        with mock.patch(
+            'core.payments.bankster.service.get_list_of_payments',
+            side_effect=[
+                self._get_list_of_batch_transactions(),
+                self._get_list_of_force_transactions(),
+            ]
+        ) as get_list_of_payments_mock:
+            requestors_claim_payment_info = settle_overdue_acceptances(
+                requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+                provider_ethereum_address=task_to_compute.provider_ethereum_address,
+                acceptances=subtask_results_accepted_list,
+            )
+
+        get_list_of_payments_mock.assert_called()
+
+        self.assertIsNone(requestors_claim_payment_info.tx_hash)
+        self.assertIsNone(requestors_claim_payment_info.payment_ts)
+        self.assertEqual(requestors_claim_payment_info.amount_paid, 0)
+        self.assertEqual(requestors_claim_payment_info.amount_pending, 0)
+
+    @override_settings(
+        PAYMENT_DUE_TIME=10
+    )
+    def test_that_settle_overdue_acceptances_should_return_claim_deposit_info_with_amount_pending_if_requestor_deposit_value_is_zero(self):
+        task_to_compute = self._get_deserialized_task_to_compute(
+            price=10000,
+        )
+
+        with freeze_time("2018-02-05 10:00:15"):
+            subtask_results_accepted_list = [
+                self._get_deserialized_subtask_results_accepted(
+                    task_to_compute=task_to_compute
+                )
+            ]
+
+        with freeze_time("2018-02-05 10:00:25"):
+            with mock.patch(
+                'core.payments.bankster.service.get_deposit_value',
+                return_value=0
+            ) as get_deposit_value_mock:
+                requestors_claim_payment_info = settle_overdue_acceptances(
+                    requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+                    provider_ethereum_address=task_to_compute.provider_ethereum_address,
+                    acceptances=subtask_results_accepted_list,
+                )
+
+        get_deposit_value_mock.assert_called()
+
+        self.assertIsNone(requestors_claim_payment_info.tx_hash)
+        self.assertIsNone(requestors_claim_payment_info.payment_ts)
+        self.assertEqual(requestors_claim_payment_info.amount_paid, 0)
+        self.assertEqual(requestors_claim_payment_info.amount_pending, task_to_compute.price)
+
+    @override_settings(
+        PAYMENT_DUE_TIME=10
+    )
+    def test_that_settle_overdue_acceptances_should_return_claim_deposit_info_with_amount_paid(self):
+        task_to_compute = self._get_deserialized_task_to_compute(
+            price=15000,
+        )
+
+        with freeze_time("2018-02-05 10:00:15"):
+            subtask_results_accepted_list = [
+                self._get_deserialized_subtask_results_accepted(
+                    task_to_compute=task_to_compute
+                )
+            ]
+
+        with freeze_time("2018-02-05 10:00:25"):
+            with mock.patch('core.payments.bankster.service.get_deposit_value', return_value=1000) as get_deposit_value_mock:
+                with mock.patch(
+                    'core.payments.bankster.service.get_list_of_payments',
+                    side_effect=[
+                        self._get_list_of_batch_transactions(),
+                        self._get_list_of_force_transactions(),
+                    ]
+                ) as get_list_of_payments_mock:
+                    requestors_claim_payment_info = settle_overdue_acceptances(
+                        requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+                        provider_ethereum_address=task_to_compute.provider_ethereum_address,
+                        acceptances=subtask_results_accepted_list,
+                    )
+
+        get_deposit_value_mock.assert_called_once()
+        get_list_of_payments_mock.assert_called()
+
+        self.assertIsNotNone(requestors_claim_payment_info.tx_hash)
+        self.assertIsNotNone(requestors_claim_payment_info.payment_ts)
+
+        # The results of payments are calculated in the following way:
+        # already_paid_value = 15000 - (
+        #   (1000 + 2000 + 3000 + 4000)(batch_transactions) +
+        #   (1000 + 2000)(force_transactions)
+        # )
+        # already_paid_value == 13000, so 2000 left
+        # get_deposit_value returns 1000, so 1000 paid and 1000 left (pending)
+
+        self.assertEqual(requestors_claim_payment_info.amount_paid, 1000)
+        self.assertEqual(requestors_claim_payment_info.amount_pending, 1000)

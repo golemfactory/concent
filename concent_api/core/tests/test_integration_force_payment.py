@@ -7,7 +7,6 @@ from golem_messages.utils import decode_hex
 
 from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
 from core.models import PendingResponse
-from core.payments.backends.sci_backend import TransactionType
 from core.payments.bankster import ClaimPaymentInfo
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp

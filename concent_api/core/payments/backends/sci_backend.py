@@ -61,7 +61,7 @@ def make_force_payment_to_provider(
     provider_eth_address:   str,
     value:                  int,
     payment_ts:             int,
-) -> None:
+) -> Transaction:
     """
     Concent makes transaction from requestor's deposit to provider's account on amount 'value'.
     If there is less then 'value' on requestor's deposit, Concent transfers as much as possible.
@@ -75,7 +75,7 @@ def make_force_payment_to_provider(
     if requestor_account_balance < value:
         value = requestor_account_balance
 
-    PaymentInterface().force_payment(  # type: ignore  # pylint: disable=no-member
+    return PaymentInterface().force_payment(  # type: ignore  # pylint: disable=no-member
         requestor_address   = Web3.toChecksumAddress(requestor_eth_address),
         provider_address    = Web3.toChecksumAddress(provider_eth_address),
         value               = value,

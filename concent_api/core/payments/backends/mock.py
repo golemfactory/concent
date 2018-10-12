@@ -20,8 +20,8 @@ def make_force_payment_to_provider(
     provider_eth_address: str,  # pylint: disable=unused-argument
     value: int,  # pylint: disable=unused-argument
     payment_ts: int,  # pylint: disable=unused-argument
-) -> None:
-    pass
+) -> Transaction:
+    return MOCK_TRANSACTION
 
 
 def get_transaction_count() -> int:

@@ -56,20 +56,20 @@ def get_current_utc_timestamp() -> int:
     return current_timestamp
 
 
-def parse_datetime_to_timestamp(date_time: datetime.datetime) -> int:
+def parse_datetime_to_timestamp(date_time: datetime.datetime) -> float:
     """
-    Returns timestamp in UTC as int from given datetime.
+    Returns timestamp in UTC as float from given datetime.
     Returned timestamp is relative to UNIX epoch and should works the same on all operating systems.
     It works for both naive and timezone-aware datetime object. Naive datetime is interpreted as if it was in UTC.
 
     """
     if date_time.tzinfo is None:
-        return int(date_time.replace(tzinfo = timezone.utc).timestamp())
+        return date_time.replace(tzinfo=timezone.utc).timestamp()
     else:
-        return int(date_time.astimezone(timezone.utc).timestamp())
+        return date_time.astimezone(timezone.utc).timestamp()
 
 
-def parse_timestamp_to_utc_datetime(timestamp: int) -> datetime.datetime:
+def parse_timestamp_to_utc_datetime(timestamp: Union[int, float]) -> datetime.datetime:
     """
     Returns UTC datetime from given timestamp.
     """

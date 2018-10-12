@@ -655,7 +655,7 @@ class ConcentIntegrationTestCase(TestCase):
         self,
         task_id: Optional[str] = None,
         subtask_id: Optional[str] = None,
-        deadline: Union[str, int, None] = None,
+        deadline: Union[str, int, float, None] = None,
         extra_data: Optional[dict] = None,
         short_description: str = 'path_root: /home/dariusz/Documents/tasks/resources, start_task: 6, end_task: 6...',
         working_directory: str = '.',
@@ -671,7 +671,7 @@ class ConcentIntegrationTestCase(TestCase):
             working_directory=working_directory,
             performance=performance,
         )
-        if isinstance(deadline, int):
+        if isinstance(deadline, (int, float)):
             compute_task_def['deadline'] = deadline
         elif isinstance(deadline, str):
             compute_task_def['deadline'] = parse_iso_date_to_timestamp(deadline)

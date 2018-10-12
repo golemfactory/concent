@@ -1,4 +1,4 @@
-  # noqa  # pylint: disable=too-many-lines
+# noqa  # pylint: disable=too-many-lines
 from base64 import b64encode
 
 from freezegun import freeze_time
@@ -74,6 +74,72 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             }
         )
         self._assert_stored_message_counter_not_increased()
+
+    def test_provider_forces_computed_task_report_with_dealine_as_float_and_it_is_accepted(self):
+        """
+        Expected message exchange:
+        Provider  -> Concent:    MessageForceReportComputedTask
+        """
+
+        compute_task_def = self._get_deserialized_compute_task_def(
+            deadline=float(parse_iso_date_to_timestamp("2017-12-01 11:00:00")) + 0.123
+        )
+
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp="2017-12-01 10:00:00",
+            compute_task_def=compute_task_def,
+        )
+
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp="2017-12-01 10:59:00",
+            task_to_compute=task_to_compute,
+        )
+
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp="2017-12-01 10:59:00",
+            force_report_computed_task=self._get_deserialized_force_report_computed_task(
+                timestamp="2017-12-01 10:59:00",
+                report_computed_task=report_computed_task
+            ),
+            provider_private_key=self.PROVIDER_PRIVATE_KEY
+        )
+
+        with freeze_time("2017-12-01 10:59:00"):
+            response_1 = self.client.post(
+                reverse('core:send'),
+                data=serialized_force_report_computed_task,
+                content_type='application/octet-stream',
+            )
+
+        self.assertEqual(response_1.status_code, 202)
+        self.assertEqual(len(response_1.content), 0)
+
+        self._assert_stored_message_counter_increased(increased_by=3)
+        self._test_subtask_state(
+            task_id=compute_task_def['task_id'],
+            subtask_id=compute_task_def['subtask_id'],
+            subtask_state=Subtask.SubtaskState.FORCING_REPORT,
+            provider_key=self._get_encoded_provider_public_key(),
+            requestor_key=self._get_encoded_requestor_public_key(),
+            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task'},
+            next_deadline=parse_iso_date_to_timestamp("2017-12-01 11:00:10"),
+        )
+        self._test_last_stored_messages(
+            expected_messages=[
+                message.TaskToCompute,
+                message.WantToComputeTask,
+                message.ReportComputedTask,
+            ],
+            task_id=compute_task_def['task_id'],
+            subtask_id=compute_task_def['subtask_id'],
+        )
+        self._test_undelivered_pending_responses(
+            subtask_id=compute_task_def['subtask_id'],
+            client_public_key=self._get_encoded_requestor_public_key(),
+            expected_pending_responses_receive=[
+                PendingResponse.ResponseType.ForceReportComputedTask,
+            ]
+        )
 
     def test_provider_forces_computed_task_report_and_requestor_sends_acknowledgement(self):
         # Expected message exchange:

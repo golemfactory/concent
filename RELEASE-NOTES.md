@@ -4,6 +4,7 @@
 
 #### Endpoints and uses cases in general
 - Storage cluster now notifies Concent Core about finished upload (#667).
+- Bugfix:  Concent doesn't accept a float in the `TaskToCompute.CompTaskDef['deadline']` definition 
 
 #### Signing Service and Middleman
 - Bugfix: Signing Service is now aware of broken connection to MiddleMan (#861).

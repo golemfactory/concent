@@ -4,6 +4,7 @@ from typing import Optional
 import requests
 
 from django.conf import settings
+
 from golem_messages import message
 from golem_messages.message.concents import FileTransferToken
 
@@ -285,14 +286,16 @@ def calculate_token_expiration_deadline(
 ) -> int:
     if operation == FileTransferToken.Operation.upload:
         token_expiration_deadline = (
-            int(report_computed_task.task_to_compute.compute_task_def['deadline']) +
+            float(report_computed_task.task_to_compute.compute_task_def['deadline']) +
             3 * settings.CONCENT_MESSAGING_TIME +
             2 * calculate_maximum_download_time(report_computed_task.size, settings.MINIMUM_UPLOAD_RATE)
         )
 
     elif operation == FileTransferToken.Operation.download:
         token_expiration_deadline = (
-            int(report_computed_task.task_to_compute.compute_task_def['deadline']) +
+            float(report_computed_task.task_to_compute.compute_task_def['deadline']) +
             calculate_subtask_verification_time(report_computed_task)
         )
-    return token_expiration_deadline
+    else:
+        assert False, "Unsupported operation type."
+    return int(token_expiration_deadline)

@@ -67,3 +67,7 @@ class SubtaskStatusError(Exception):
 
 class NonPositivePriceTaskToComputeError(Exception):
     pass
+
+
+class StoreSubtaskIntegrityError(Exception):
+    pass

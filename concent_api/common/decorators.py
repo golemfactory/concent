@@ -35,6 +35,7 @@ from common.logging import log_message_received_in_endpoint
 from common.logging import log_string_message
 from common.shortcuts import load_without_public_key
 from core.exceptions import NonPositivePriceTaskToComputeError
+from core.exceptions import StoreSubtaskIntegrityError
 from core.validation import get_validated_client_public_key_from_client_message
 from core.validation import is_golem_message_signed_with_key
 
@@ -189,6 +190,9 @@ def handle_errors_and_responses(database_name: str) -> Callable:
                 response_from_view = view(request, client_message, client_public_key, *args, **kwargs)
                 if database_name is not None:
                     transaction.savepoint_commit(sid, using=database_name)
+
+            except StoreSubtaskIntegrityError:
+                response_from_view = view(request, client_message, client_public_key, *args, **kwargs)
             except ConcentBaseException as exception:
                 log_400_error(
                     logger,

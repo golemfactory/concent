@@ -9,6 +9,7 @@ import copy
 
 from django.conf import settings
 from django.core.mail import mail_admins
+from django.db import IntegrityError
 from django.db import transaction
 from django.http import HttpResponse
 
@@ -42,6 +43,7 @@ from common.validations import validate_secure_hash_algorithm
 from common import logging
 from conductor.tasks import result_transfer_request
 from core.exceptions import Http400
+from core.exceptions import StoreSubtaskIntegrityError
 from core.models import Client
 from core.models import PaymentInfo
 from core.models import PendingResponse
@@ -60,8 +62,7 @@ from core.transfer_operations import store_pending_message
 from core.utils import calculate_additional_verification_call_time
 from core.utils import calculate_maximum_download_time
 from core.utils import calculate_subtask_verification_time
-from core.validation import is_golem_message_signed_with_key
-from core.validation import substitute_new_report_computed_task_if_needed
+from core.validation import is_golem_message_signed_with_key, substitute_new_report_computed_task_if_needed
 from core.validation import validate_that_golem_messages_are_signed_with_key
 from core.validation import validate_reject_report_computed_task
 from core.validation import validate_all_messages_identical
@@ -113,29 +114,29 @@ def handle_send_force_report_computed_task(
         return message.concents.ForceReportComputedTaskResponse(
             reason=message.concents.ForceReportComputedTaskResponse.REASON.SubtaskTimeout
         )
-
-    subtask = store_subtask(
-        task_id              = task_to_compute.compute_task_def['task_id'],
-        subtask_id           = task_to_compute.compute_task_def['subtask_id'],
-        provider_public_key  = provider_public_key,
-        requestor_public_key = requestor_public_key,
-        state                = Subtask.SubtaskState.FORCING_REPORT,
-        next_deadline        = int(task_to_compute.compute_task_def['deadline']) + settings.CONCENT_MESSAGING_TIME,
-        task_to_compute      = task_to_compute,
-        report_computed_task = client_message.report_computed_task,
-    )
-    store_pending_message(
-        response_type       = PendingResponse.ResponseType.ForceReportComputedTask,
-        client_public_key   = requestor_public_key,
-        queue               = PendingResponse.Queue.Receive,
-        subtask             = subtask,
-    )
+    with transaction.atomic(using='control'):
+        subtask = store_subtask(
+            task_id=task_to_compute.compute_task_def['task_id'],
+            subtask_id=task_to_compute.compute_task_def['subtask_id'],
+            provider_public_key=provider_public_key,
+            requestor_public_key=requestor_public_key,
+            state=Subtask.SubtaskState.FORCING_REPORT,
+            next_deadline=int(task_to_compute.compute_task_def['deadline']) + settings.CONCENT_MESSAGING_TIME,
+            task_to_compute=task_to_compute,
+            report_computed_task=client_message.report_computed_task,
+        )
+        store_pending_message(
+            response_type=PendingResponse.ResponseType.ForceReportComputedTask,
+            client_public_key=requestor_public_key,
+            queue=PendingResponse.Queue.Receive,
+            subtask=subtask,
+        )
     logging.log_message_added_to_queue(
         logger,
         client_message,
         provider_public_key,
     )
-    return HttpResponse("", status = 202)
+    return HttpResponse("", status=202)
 
 
 def handle_send_ack_report_computed_task(client_message: message.tasks.AckReportComputedTask) -> HttpResponse:
@@ -927,51 +928,55 @@ def store_subtask(
     assert state in Subtask.SubtaskState
     assert (state in Subtask.ACTIVE_STATES)  == (isinstance(next_deadline, (int, float)))
     assert (state in Subtask.PASSIVE_STATES) == (next_deadline is None)
+    try:
+        provider = Client.objects.get_or_create_full_clean(provider_public_key)
+        requestor = Client.objects.get_or_create_full_clean(requestor_public_key)
+        computation_deadline = task_to_compute.compute_task_def['deadline']
+        result_package_size = report_computed_task.size
 
-    provider  = Client.objects.get_or_create_full_clean(provider_public_key)
-    requestor = Client.objects.get_or_create_full_clean(requestor_public_key)
-    computation_deadline = task_to_compute.compute_task_def['deadline']
-    result_package_size = report_computed_task.size
+        subtask = Subtask(
+            task_id=task_id,
+            subtask_id=subtask_id,
+            provider=provider,
+            requestor=requestor,
+            result_package_size=result_package_size,
+            state=state.name,
+            next_deadline=parse_timestamp_to_utc_datetime(next_deadline) if next_deadline is not None else None,
+            computation_deadline=parse_timestamp_to_utc_datetime(computation_deadline),
+            task_to_compute=store_message(task_to_compute, task_id, subtask_id),
+            want_to_compute_task=store_message(task_to_compute.want_to_compute_task, task_id, subtask_id),
+            report_computed_task=store_message(report_computed_task, task_id, subtask_id),
+        )
 
-    subtask = Subtask(
-        task_id=task_id,
-        subtask_id=subtask_id,
-        provider=provider,
-        requestor=requestor,
-        result_package_size=result_package_size,
-        state=state.name,
-        next_deadline=parse_timestamp_to_utc_datetime(next_deadline) if next_deadline is not None else None,
-        computation_deadline=parse_timestamp_to_utc_datetime(computation_deadline),
-        task_to_compute=store_message(task_to_compute, task_id, subtask_id),
-        want_to_compute_task=store_message(task_to_compute.want_to_compute_task, task_id, subtask_id),
-        report_computed_task=store_message(report_computed_task, task_id, subtask_id),
-    )
+        set_subtask_messages(
+            subtask,
+            ack_report_computed_task=ack_report_computed_task,
+            reject_report_computed_task=reject_report_computed_task,
+            subtask_results_accepted=subtask_results_accepted,
+            subtask_results_rejected=subtask_results_rejected,
+            force_get_task_result=force_get_task_result,
+        )
 
-    set_subtask_messages(
-        subtask,
-        ack_report_computed_task=ack_report_computed_task,
-        reject_report_computed_task=reject_report_computed_task,
-        subtask_results_accepted=subtask_results_accepted,
-        subtask_results_rejected=subtask_results_rejected,
-        force_get_task_result=force_get_task_result,
-    )
+        subtask.full_clean()
+        subtask.save()
 
-    subtask.full_clean()
-    subtask.save()
+        logging.log_subtask_stored(
+            logger=logger,
+            task_id=task_id,
+            subtask_id=subtask_id,
+            state=state.name,
+            provider_public_key=provider_public_key,
+            requestor_public_key=requestor_public_key,
+            computation_deadline=computation_deadline,
+            result_package_size=result_package_size,
+            next_deadline=next_deadline,
+        )
 
-    logging.log_subtask_stored(
-        logger=logger,
-        task_id=task_id,
-        subtask_id=subtask_id,
-        state=state.name,
-        provider_public_key=provider_public_key,
-        requestor_public_key=requestor_public_key,
-        computation_deadline=computation_deadline,
-        result_package_size=result_package_size,
-        next_deadline=next_deadline,
-    )
-
-    return subtask
+        return subtask
+    except IntegrityError:
+        logger.info(f'IntegrityError when tried to store subtask with id {subtask_id}. Task_id: {task_id}. '
+                    f'Provider public key: {provider_public_key}. Requestor public key: {requestor_public_key}.')
+        raise StoreSubtaskIntegrityError
 
 
 def handle_messages_from_database(client_public_key: bytes) -> Union[message.Message, None]:

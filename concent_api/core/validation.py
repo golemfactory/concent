@@ -15,6 +15,7 @@ from golem_messages.message.tasks import ReportComputedTask
 
 from common.constants import ErrorCode
 from common.exceptions import ConcentValidationError
+from common.helpers import deserialize_message
 from common.logging import log_error_message
 from common.validations import validate_secure_hash_algorithm
 from core.constants import VALID_SCENE_FILE_PREFIXES

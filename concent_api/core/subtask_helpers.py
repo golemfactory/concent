@@ -13,6 +13,11 @@ from golem_messages.message import Message
 from golem_messages.message.concents import ForcePayment
 from golem_messages.message.tasks import SubtaskResultsAccepted
 
+from common.helpers import deserialize_message
+from common.helpers import get_current_utc_timestamp
+from common.helpers import parse_timestamp_to_utc_datetime
+from common.logging import log_change_subtask_state_name
+from common.logging import log_string_message
 from core.models import PendingResponse
 from core.models import Subtask
 from core.payments import service as payments_service
@@ -20,11 +25,6 @@ from core.transfer_operations import store_pending_message
 from core.transfer_operations import verify_file_status
 from core.validation import is_golem_message_signed_with_key
 from core.utils import hex_to_bytes_convert
-from common.helpers import deserialize_message
-from common.helpers import get_current_utc_timestamp
-from common.helpers import parse_timestamp_to_utc_datetime
-from common.logging import log_change_subtask_state_name
-from common.logging import log_string_message
 
 logger = getLogger(__name__)
 
@@ -174,7 +174,7 @@ def update_all_timed_out_subtasks_of_client(client_public_key: bytes) -> None:
             update_timed_out_subtask(subtask)
 
 
-def update_subtask_state(subtask: Subtask, state: str, next_deadline: Optional[int] = None) -> None:
+def update_subtask_state(subtask: Subtask, state: str, next_deadline: Union[int, float, None] = None) -> None:
     log_change_subtask_state_name(
         logger,
         subtask.state,

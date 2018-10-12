@@ -921,7 +921,7 @@ def store_subtask(
     assert isinstance(task_to_compute, message.TaskToCompute)
     assert isinstance(report_computed_task, message.ReportComputedTask)
     assert state in Subtask.SubtaskState
-    assert (state in Subtask.ACTIVE_STATES)  == (isinstance(next_deadline, int))
+    assert (state in Subtask.ACTIVE_STATES)  == (isinstance(next_deadline, (int, float)))
     assert (state in Subtask.PASSIVE_STATES) == (next_deadline is None)
 
     provider  = Client.objects.get_or_create_full_clean(provider_public_key)

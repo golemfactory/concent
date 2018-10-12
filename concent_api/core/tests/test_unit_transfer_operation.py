@@ -7,13 +7,13 @@ from freezegun import freeze_time
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.message.concents import FileTransferToken
 
-from core.transfer_operations import create_file_transfer_token_for_concent
-from core.transfer_operations import create_file_transfer_token_for_golem_client
-from core.utils import calculate_maximum_download_time
 from common.helpers import get_storage_source_file_path
 from common.helpers import get_storage_result_file_path
 from common.helpers import parse_datetime_to_timestamp
 from common.testing_helpers import generate_ecc_key_pair
+from core.transfer_operations import create_file_transfer_token_for_concent
+from core.transfer_operations import create_file_transfer_token_for_golem_client
+from core.utils import calculate_maximum_download_time
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)       = generate_ecc_key_pair()
@@ -96,6 +96,15 @@ class FileTransferTokenCreationTest(TestCase):
                 FileTransferToken.Operation.upload
             )
             self.assertIsInstance(upload_token.token_expiration_deadline, int)
+
+    def test_that_unsupported_operation_type_causes_file_transfer_token_error_(self):
+        with freeze_time(self.time):
+            with self.assertRaises(AssertionError):
+                create_file_transfer_token_for_golem_client(
+                    self.report_computed_task,
+                    self.authorized_client_public_key,
+                    "non existing operation type"
+                )
 
     def _get_deadline_exceeded_time_for_upload_token(self):
         return self.time + datetime.timedelta(

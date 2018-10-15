@@ -11,11 +11,9 @@ import pytest
 from django.test import override_settings
 from golem_messages.message import Ping
 
-from middleman_protocol.message import ErrorFrame
 from middleman_protocol.message import GolemMessageFrame
 from middleman_protocol.stream import append_frame_separator
 from middleman_protocol.stream import escape_encode_raw_message
-from middleman_protocol.stream_async import map_exception_to_error_code
 from middleman_protocol.tests.utils import async_stream_actor_mock
 from middleman_protocol.tests.utils import prepare_mocked_reader
 from middleman_protocol.tests.utils import prepare_mocked_writer
@@ -52,15 +50,6 @@ def schedule_sigterm(delay):
 def get_client_thread(fun, *args):
     client_thread = threading.Thread(target=fun, args=args)
     return client_thread
-
-
-def get_raw_error_frame_bytes(exception):
-    error_code = map_exception_to_error_code(exception)
-    expected_data = ErrorFrame(
-        (error_code, ''),
-        0,
-    ).serialize(CONCENT_PRIVATE_KEY)
-    return append_frame_separator(escape_encode_raw_message(expected_data))
 
 
 class TestMiddleManInitialization:
@@ -174,6 +163,32 @@ class TestMiddleManServer:
             fake_client.close()
             self.crash_logger_mock.error.assert_called_once()
             assert_that(self.crash_logger_mock.error.mock_calls[0][1][0]).contains(error_message)
+
+    def test_that_cancelled_error_is_not_reported_to_sentry(self):
+        with override_settings(
+            CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+            CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+            SIGNING_SERVICE_PUBLIC_KEY=SIGNING_SERVICE_PUBLIC_KEY,
+        ):
+            schedule_sigterm(delay=self.timeout)
+            fake_client = socket.socket()
+            client_thread = get_client_thread(send_data, fake_client,  self.data_to_send, self.external_port, self.short_delay)
+            client_thread.start()
+
+            with mock.patch(
+                "middleman.middleman_server.heartbeat_producer",
+                new=async_stream_actor_mock(side_effect=asyncio.CancelledError)
+            ):
+                with mock.patch.object(
+                    self.middleman,
+                    "_authenticate_signing_service",
+                    new=async_stream_actor_mock(return_value=True)
+                ):
+                    with pytest.raises(SystemExit):
+                        self.middleman.run()
+            client_thread.join(self.timeout)
+            fake_client.close()
+            self.crash_logger_mock.error.assert_not_called()
 
     def test_that_when_signing_service_connection_is_active_subsequent_attempts_will_fail(self, event_loop):
         self.middleman._is_signing_service_connection_active = True

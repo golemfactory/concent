@@ -4,6 +4,7 @@ from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Tuple
+from typing import Union
 import logging
 import os
 import re
@@ -79,7 +80,7 @@ def run_blender(
     scene_file: str,
     output_format: str,
     frame_number: int,
-    verification_deadline: int,
+    verification_deadline: Union[int, float],
     script_file: Optional[str],
 ) -> subprocess.CompletedProcess:
     output_format = adjust_format_name(output_format)
@@ -275,7 +276,14 @@ def delete_source_files(source_archive_name: str) -> None:
         delete_file(file_path)
 
 
-def render_image(frame_number: int, output_format: str, scene_file: str, subtask_id: str, verification_deadline: int, blender_crop_script: Optional[str]=None) -> None:
+def render_image(
+    frame_number: int,
+    output_format: str,
+    scene_file: str,
+    subtask_id: str,
+    verification_deadline: Union[int, float],
+    blender_crop_script: Optional[str]=None
+) -> None:
     # Verifier stores Blender crop script to a file.
     if blender_crop_script is not None:
         blender_script_file_name = store_blender_script_file(subtask_id, blender_crop_script)  # type: Optional[str]
@@ -417,7 +425,7 @@ def render_images_by_frames(
     output_format: str,
     scene_file: str,
     subtask_id: str,
-    verification_deadline: int,
+    verification_deadline: Union[int, float],
     blender_crop_script: Optional[str],
 ) -> Tuple[List[str], FramesToParsedFilePaths]:
     blender_output_file_name_list = []

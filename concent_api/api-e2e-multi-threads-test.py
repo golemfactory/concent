@@ -154,7 +154,7 @@ def test_case_multiple_requests_concerning_one_subtask_will_be_processed_one_by_
         func=send_correct_force_get_task_result,  # Subtask state changed to: FORCING_RESULT_TRANSFER
         number_of_threads=NUMBER_OF_TESTING_THREADS,
         cluster_url=cluster_url,
-        golem_message=report_computed_task,
+        report_computed_task=report_computed_task,
     )
     # waiting for responses from all threads
     end_time = time.time() + MAXIMUM_WAITING_TIME_FOR_ALL_RESPONSES

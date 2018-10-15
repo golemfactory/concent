@@ -17,6 +17,7 @@ from middleman.constants import ERROR_ADDRESS_ALREADY_IN_USE
 from middleman.constants import LOCALHOST_IP
 from middleman.constants import PROCESSING_TIMEOUT
 from middleman.asynchronous_operations import is_authenticated
+from middleman.asynchronous_operations import heartbeat_producer
 from middleman.asynchronous_operations import request_consumer
 from middleman.asynchronous_operations import request_producer
 from middleman.asynchronous_operations import response_consumer
@@ -185,6 +186,7 @@ class MiddleMan:
                 if not successful:
                     writer.close()
                     return
+
                 request_consumer_task = self._loop.create_task(
                     request_consumer(
                         self._request_queue,
@@ -193,6 +195,8 @@ class MiddleMan:
                         writer
                     )
                 )
+                tasks.append(request_consumer_task)
+
                 response_producer_task = self._loop.create_task(
                     response_producer(
                         self._response_queue_pool,
@@ -200,9 +204,16 @@ class MiddleMan:
                         self._message_tracker
                     )
                 )
-                futures = [request_consumer_task, response_producer_task]
-                tasks = futures[:]
-                done_tasks, pending_tasks = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
+                tasks.append(response_producer_task)
+
+                heartbeat_producer_task = self._loop.create_task(
+                    heartbeat_producer(
+                        writer,
+                    )
+                )
+                tasks.append(heartbeat_producer_task)
+
+                done_tasks, pending_tasks = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
                 for future in pending_tasks:
                     future.cancel()
                 for future in done_tasks:

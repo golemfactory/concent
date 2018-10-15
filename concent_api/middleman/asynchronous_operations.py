@@ -105,6 +105,11 @@ async def request_consumer(
             item.message,
             get_current_utc_timestamp()
         )
+        logger.info(
+            f"Sending request to Signing Service with ID: {signing_service_request_id}"
+            f" (Concent request ID:{item.concent_request_id}, "
+            f"connection ID: {item.connection_id})"
+        )
         frame = create_middleman_protocol_message(PayloadType.GOLEM_MESSAGE, item.message, signing_service_request_id)
         await send_over_stream_async(frame, signing_service_writer, settings.CONCENT_PRIVATE_KEY)
         request_queue.task_done()
@@ -125,9 +130,6 @@ async def response_producer(
             logger.info(f"Received invalid message: error code = {map_exception_to_error_code(exception)}")
             continue
 
-        logger.info(
-            f"Received message from Signing Service: request ID = {frame.request_id}"
-        )
         if frame.request_id not in message_tracker:
             logger.info(f"There is no entry in Message Tracker for request ID = {frame.request_id}, skipping...")
             continue
@@ -138,7 +140,10 @@ async def response_producer(
             # there will be no more processing for current_track, it should be removed from message_tracker
             del message_tracker[frame.request_id]
             continue
-
+        logger.info(
+            f"Received response from Signing Service: request ID = {frame.request_id}"
+            f" (Concent request ID: {current_track.concent_request_id}, connection ID: {current_track.connection_id}"
+        )
         discard_entries_for_lost_messages(frame.request_id, message_tracker, logger)
         await response_queue_pool[current_track.connection_id].put(
             ResponseQueueItem(
@@ -181,13 +186,23 @@ async def is_authenticated(reader: StreamReader, writer: StreamWriter) -> bool:
     logger.info(f"Challenge has been sent for request ID: {request_id}.")
     received_frame = await handle_frame_receive_async(reader, settings.SIGNING_SERVICE_PUBLIC_KEY)
     logger.info(f"Response has been received for request ID: {request_id}.")
-    if not isinstance(received_frame, AuthenticationResponseFrame) or received_frame.request_id != request_id:
-        return False
-    try:
-        ecdsa_verify(settings.SIGNING_SERVICE_PUBLIC_KEY, received_frame.payload, challenge)
-    except InvalidSignature:
-        return False
-    return True
+    is_successful = True
+    message_to_log = f'Authentication unsuccessful. Request ID: {request_id}. '
+    if not isinstance(received_frame, AuthenticationResponseFrame):
+        is_successful = False
+        message_to_log += f'Received_frame is not AuthenticationResponseFrame instance. It is {type(received_frame)} instance.'
+    elif received_frame.request_id != request_id:
+        is_successful = False
+        message_to_log += f'Received_frame ID should be {request_id}, but it is {received_frame.request_id}. '
+    else:
+        try:
+            ecdsa_verify(settings.SIGNING_SERVICE_PUBLIC_KEY, received_frame.payload, challenge)
+        except InvalidSignature:
+            is_successful = False
+            message_to_log += 'Invalid ECDSA signature'
+    if not is_successful:
+        logger.debug(message_to_log)
+    return is_successful
 
 
 async def heartbeat_producer(writer: StreamWriter) -> None:

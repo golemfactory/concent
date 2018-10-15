@@ -194,7 +194,7 @@ def test_case_multiple_force_get_task_result_concerning_one_subtask_will_be_proc
             break
 
     expected_responses = ['AckForceGetTaskResult', 'ServiceRefused', 'ServiceRefused']
-    assert len(expected_responses) == NUMBER_OF_TESTING_THREADS, 'Did you changed number of testing threads and forgot to change expected_responses?'
+    assert len(expected_responses) == NUMBER_OF_TESTING_THREADS, 'Did you change number of testing threads and forget to change expected_responses?'
 
     print('Responses = ' + str(responses_global))
     assert_content_equal(actual=responses_global, expected=expected_responses)

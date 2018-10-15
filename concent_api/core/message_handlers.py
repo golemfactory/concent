@@ -43,7 +43,7 @@ from common.validations import validate_secure_hash_algorithm
 from common import logging
 from conductor.tasks import result_transfer_request
 from core.exceptions import Http400
-from core.exceptions import StoreSubtaskIntegrityError
+from core.exceptions import CreateModelIntegrityError
 from core.models import Client
 from core.models import PaymentInfo
 from core.models import PendingResponse
@@ -62,7 +62,8 @@ from core.transfer_operations import store_pending_message
 from core.utils import calculate_additional_verification_call_time
 from core.utils import calculate_maximum_download_time
 from core.utils import calculate_subtask_verification_time
-from core.validation import is_golem_message_signed_with_key, substitute_new_report_computed_task_if_needed
+from core.validation import is_golem_message_signed_with_key
+from core.validation import substitute_new_report_computed_task_if_needed
 from core.validation import validate_that_golem_messages_are_signed_with_key
 from core.validation import validate_reject_report_computed_task
 from core.validation import validate_all_messages_identical
@@ -974,9 +975,11 @@ def store_subtask(
 
         return subtask
     except IntegrityError:
-        logger.info(f'IntegrityError when tried to store subtask with id {subtask_id}. Task_id: {task_id}. '
-                    f'Provider public key: {provider_public_key}. Requestor public key: {requestor_public_key}.')
-        raise StoreSubtaskIntegrityError
+        logger.info(
+            f'IntegrityError when tried to store subtask with id {subtask_id}. Task_id: {task_id}. '
+            f'Provider public key: {provider_public_key}. Requestor public key: {requestor_public_key}.'
+        )
+        raise CreateModelIntegrityError
 
 
 def handle_messages_from_database(client_public_key: bytes) -> Union[message.Message, None]:

@@ -4,6 +4,7 @@ from typing import Optional
 import requests
 
 from django.conf import settings
+from django.db import IntegrityError
 
 from golem_messages import message
 from golem_messages.message.concents import FileTransferToken
@@ -15,6 +16,7 @@ from common.helpers import get_storage_source_file_path
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.helpers import sign_message
 from common.validations import validate_file_transfer_token
+from core.exceptions import CreateModelIntegrityError
 from core.models import Client
 from core.models import PaymentInfo
 from core.models import PendingResponse
@@ -62,27 +64,30 @@ def store_pending_message(
     subtask: Optional[Subtask]=None,
     payment_message: Optional[message.concents.ForcePaymentCommitted]=None,
 ) -> None:
-    client          = Client.objects.get_or_create_full_clean(client_public_key)
-    receive_queue   = PendingResponse(
-        response_type   = response_type.name,
-        client          = client,
-        queue           = queue.name,
-        subtask         = subtask,
-    )
-    receive_queue.full_clean()
-    receive_queue.save()
-    if payment_message is not None:
-        payment_committed_message = PaymentInfo(
-            payment_ts=parse_timestamp_to_utc_datetime(payment_message.payment_ts),
-            task_owner_key=payment_message.task_owner_key,
-            provider_eth_account=payment_message.provider_eth_account,
-            amount_paid=payment_message.amount_paid,
-            recipient_type=payment_message.recipient_type.name,  # pylint: disable=no-member
-            amount_pending=payment_message.amount_pending,
-            pending_response=receive_queue
+    try:
+        client = Client.objects.get_or_create_full_clean(client_public_key)
+        receive_queue = PendingResponse(
+            response_type=response_type.name,
+            client=client,
+            queue=queue.name,
+            subtask=subtask,
         )
-        payment_committed_message.full_clean()
-        payment_committed_message.save()
+        receive_queue.full_clean()
+        receive_queue.save()
+        if payment_message is not None:
+            payment_committed_message = PaymentInfo(
+                payment_ts=parse_timestamp_to_utc_datetime(payment_message.payment_ts),
+                task_owner_key=payment_message.task_owner_key,
+                provider_eth_account=payment_message.provider_eth_account,
+                amount_paid=payment_message.amount_paid,
+                recipient_type=payment_message.recipient_type.name,  # pylint: disable=no-member
+                amount_pending=payment_message.amount_pending,
+                pending_response=receive_queue
+            )
+            payment_committed_message.full_clean()
+            payment_committed_message.save()
+    except IntegrityError:
+        raise CreateModelIntegrityError
 
     logging.log_new_pending_response(
         logger,

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 printf "=================== DJANGO CONFIGURATION CHECKS ====================\n"
 python3 concent_api/manage.py check

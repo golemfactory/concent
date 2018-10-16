@@ -1,7 +1,7 @@
 # .coveragerc to control coverage.py
 [run]
 omit=
-    api-integration-*.py
+    api-e2e-*.py
     api_testing_common.py
     manage.py
     protocol_constants.py

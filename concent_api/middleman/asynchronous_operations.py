@@ -1,5 +1,6 @@
 from asyncio import IncompleteReadError
 from asyncio import Queue
+from asyncio import sleep
 from asyncio import StreamReader
 from asyncio import StreamWriter
 from collections import OrderedDict
@@ -16,6 +17,8 @@ from common.helpers import get_current_utc_timestamp
 from common.helpers import RequestIDGenerator
 from middleman.constants import AUTHENTICATION_CHALLENGE_SIZE
 from middleman.constants import CONNECTION_COUNTER_LIMIT
+from middleman.constants import HEARTBEAT_INTERVAL
+from middleman.constants import HEARTBEAT_REQUEST_ID
 from middleman.constants import MessageTrackerItem
 from middleman.constants import RequestQueueItem
 from middleman.constants import ResponseQueueItem
@@ -31,6 +34,7 @@ from middleman_protocol.message import AuthenticationChallengeFrame
 from middleman_protocol.message import AuthenticationResponseFrame
 from middleman_protocol.message import ErrorFrame
 from middleman_protocol.message import GolemMessageFrame
+from middleman_protocol.message import HeartbeatFrame
 from middleman_protocol.registry import create_middleman_protocol_message
 from middleman_protocol.stream_async import handle_frame_receive_async
 from middleman_protocol.stream_async import map_exception_to_error_code
@@ -184,6 +188,13 @@ async def is_authenticated(reader: StreamReader, writer: StreamWriter) -> bool:
     except InvalidSignature:
         return False
     return True
+
+
+async def heartbeat_producer(writer: StreamWriter) -> None:
+    while True:
+        heartbeat = HeartbeatFrame(None, HEARTBEAT_REQUEST_ID)
+        await send_over_stream_async(heartbeat, writer, settings.CONCENT_PRIVATE_KEY)
+        await sleep(HEARTBEAT_INTERVAL)
 
 
 def create_random_challenge() -> bytes:

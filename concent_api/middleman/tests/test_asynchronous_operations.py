@@ -1,8 +1,11 @@
+from asyncio import CancelledError
 from asyncio import IncompleteReadError
-from asyncio import sleep
 from asyncio import Queue
+from asyncio import sleep
 import datetime
 from collections import OrderedDict
+
+from contextlib import suppress
 from logging import Logger
 
 import pytest
@@ -21,11 +24,14 @@ from common.helpers import parse_datetime_to_timestamp
 from common.helpers import sign_message
 from common.testing_helpers import generate_ecc_key_pair
 from middleman.constants import AUTHENTICATION_CHALLENGE_SIZE
+from middleman.constants import HEARTBEAT_INTERVAL
+from middleman.constants import HEARTBEAT_REQUEST_ID
 from middleman.constants import MessageTrackerItem
 from middleman.constants import RequestQueueItem
 from middleman.constants import ResponseQueueItem
 from middleman.asynchronous_operations import create_error_frame
 from middleman.asynchronous_operations import discard_entries_for_lost_messages
+from middleman.asynchronous_operations import heartbeat_producer
 from middleman.asynchronous_operations import is_authenticated
 from middleman.asynchronous_operations import request_consumer
 from middleman.asynchronous_operations import request_producer
@@ -44,9 +50,11 @@ from middleman_protocol.message import AuthenticationChallengeFrame
 from middleman_protocol.message import AuthenticationResponseFrame
 from middleman_protocol.message import ErrorFrame
 from middleman_protocol.message import GolemMessageFrame
+from middleman_protocol.message import HeartbeatFrame
 from middleman_protocol.registry import create_middleman_protocol_message
 from middleman_protocol.stream import append_frame_separator
 from middleman_protocol.stream import escape_encode_raw_message
+from middleman_protocol.tests.utils import async_stream_actor_mock
 from middleman_protocol.tests.utils import prepare_mocked_reader
 from middleman_protocol.tests.utils import prepare_mocked_writer
 
@@ -609,3 +617,29 @@ class TestIsAuthenticated:
         serialized = frame.serialize(private_key)
         data_to_send = append_frame_separator(escape_encode_raw_message(serialized))
         return prepare_mocked_reader(data_to_send)
+
+
+def test_heartbeat_producer_sends_heartbeat_in_time_intervals(event_loop):
+    with override_settings(
+        CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY
+    ):
+        mocked_writer = prepare_mocked_writer()
+        expected_data = append_frame_separator(
+            escape_encode_raw_message(
+                HeartbeatFrame(None, HEARTBEAT_REQUEST_ID).serialize(CONCENT_PRIVATE_KEY)
+            )
+        )
+        heartbeat_producer_task = event_loop.create_task(
+            heartbeat_producer(
+                mocked_writer,
+            )
+        )
+        with patch(
+            "middleman.asynchronous_operations.sleep",
+            new=async_stream_actor_mock(side_effect=lambda _: heartbeat_producer_task.cancel())
+        ) as sleep_mock:
+            with suppress(CancelledError):
+                event_loop.run_until_complete(heartbeat_producer_task)
+            mocked_writer.write.assert_called_with(expected_data)
+            mocked_writer.drain.mock.assert_called()
+            sleep_mock.mock.assert_called_with(HEARTBEAT_INTERVAL)

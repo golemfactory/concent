@@ -390,6 +390,30 @@ def create_error_55_use_signing_service_is_true_but_middleman_is_missing() -> Er
     )
 
 
+def create_error_56_gntdeposit_not_set() -> Error:
+    return Error(
+        'GNT_DEPOSIT_CONTRACT_ADDRESS setting is not defined',
+        hint='Set GNT_DEPOSIT_CONTRACT_ADDRESS to contract adress that concent should use for payments.',
+        id='concent.E056',
+    )
+
+
+def create_error_57_gntdeposit_has_wrong_type(value: Any) -> Error:
+    return Error(
+        f"Setting GNT_DEPOSIT_CONTRACT_ADDRESS has incorrect type `{type(value)}` instead of `string`.",
+        hint=f"Set setting GNT_DEPOSIT_CONTRACT_ADDRESS to be a string.",
+        id="concent.E057",
+    )
+
+
+def create_error_58_gntdeposit_wrong_value(value: Any) -> Error:
+    return Error(
+        f"Setting GNT_DEPOSIT_CONTRACT_ADDRESS has incorrect value `{value}`.",
+        hint=f"Set setting GNT_DEPOSIT_CONTRACT_ADDRESS to start with `0x` follow up by 40 characters.",
+        id="concent.E058",
+    )
+
+
 @register()
 def check_settings_concent_features(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
 
@@ -717,5 +741,23 @@ def check_use_signing_service(app_configs: None=None, **kwargs: Any) -> list:  #
 
         if settings.USE_SIGNING_SERVICE is True and 'middleman' not in settings.CONCENT_FEATURES:
             return [create_error_55_use_signing_service_is_true_but_middleman_is_missing()]
+
+    return []
+
+
+@register()
+def check_gntdeposit_adress(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
+    if (
+        hasattr(settings, 'PAYMENT_BACKEND') and
+        settings.PAYMENT_BACKEND == 'core.payments.backends.sci_backend'
+    ):
+        if not hasattr(settings, 'GNT_DEPOSIT_CONTRACT_ADDRESS'):
+            return [create_error_56_gntdeposit_not_set()]
+
+        if not isinstance(settings.GNT_DEPOSIT_CONTRACT_ADDRESS, str):
+            return [create_error_57_gntdeposit_has_wrong_type(settings.GNT_DEPOSIT_CONTRACT_ADDRESS)]
+
+        if settings.GNT_DEPOSIT_CONTRACT_ADDRESS[:2] != '0x' or len(settings.GNT_DEPOSIT_CONTRACT_ADDRESS) != 42:
+            return [create_error_58_gntdeposit_wrong_value(settings.GNT_DEPOSIT_CONTRACT_ADDRESS)]
 
     return []

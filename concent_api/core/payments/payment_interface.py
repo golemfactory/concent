@@ -6,6 +6,7 @@ from web3 import Web3
 from golem_sci import chains
 from golem_sci import new_sci_rpc
 from golem_sci import SmartContractsInterface
+from golem_sci.contracts import Contract
 
 from common.helpers import generate_ethereum_address_from_ethereum_public_key
 from core.payments.sci_callback import sci_callback
@@ -30,5 +31,11 @@ class PaymentInterface:
                     sci_callback if settings.USE_SIGNING_SERVICE else
                     lambda tx: tx.sign(settings.CONCENT_ETHEREUM_PRIVATE_KEY)
                 ),
+                contract_addresses={
+                    Contract.GNT: '0x924442A66cFd812308791872C4B242440c108E19',
+                    Contract.GNTB: '0x123438d379BAbD07134d1d4d7dFa0BCbd56ca3F3',
+                    Contract.GNTDeposit: settings.GNT_DEPOSIT_CONTRACT_ADDRESS,
+                    Contract.Faucet: '0x77b6145E853dfA80E8755a4e824c4F510ac6692e',
+                }
             )
         return cls.__instance

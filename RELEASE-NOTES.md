@@ -1,6 +1,7 @@
 ### Next
 #### Compatibility
 - golem-messages: 2.15.0
+- golem-smart-contracts-interface: 1.6.0
 
 #### Endpoints and uses cases in general
 - Storage cluster now notifies Concent Core about finished upload (#667).
@@ -8,6 +9,9 @@
 
 #### Signing Service and Middleman
 - Bugfix: Signing Service is now aware of broken connection to MiddleMan (#861).
+
+##### New settings
+- `GNT_DEPOSIT_CONTRACT_ADDRESS`
 
 ### 0.9.0
 #### Signing Service and Middleman

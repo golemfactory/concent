@@ -26,6 +26,7 @@ from core.constants import SCENE_FILE_EXTENSION
 from core.exceptions import FrameNumberValidationError
 from core.exceptions import Http400
 from core.exceptions import GolemMessageValidationError
+from core.exceptions import NonPositivePriceTaskToComputeError
 from core.utils import hex_to_bytes_convert
 
 
@@ -33,6 +34,23 @@ logger = getLogger(__name__)
 
 
 def validate_value_is_int_convertible_and_positive(value: int) -> None:
+    """
+    Checks if value is an integer. If not, tries to cast it to an integer.
+    Then checks if value is positive.
+
+    """
+    if not isinstance(value, int):
+        try:
+            value = int(value)
+        except (ValueError, TypeError):
+            raise ConcentValidationError(
+                "Wrong type, expected a value that can be converted to an integer.",
+                error_code=ErrorCode.MESSAGE_VALUE_NOT_INTEGER,
+            )
+    validate_positive_integer_value(value)
+
+
+def validate_value_is_int_convertible_and_non_negative(value: int) -> None:
     """
     Checks if value is an integer. If not, tries to cast it to an integer.
     Then checks if value is non-negative.
@@ -46,7 +64,7 @@ def validate_value_is_int_convertible_and_positive(value: int) -> None:
                 "Wrong type, expected a value that can be converted to an integer.",
                 error_code=ErrorCode.MESSAGE_VALUE_NOT_INTEGER,
             )
-    validate_positive_integer_value(value)
+    validate_non_negative_integer_value(value)
 
 
 def validate_hex_public_key(value: str, field_name: str) -> None:
@@ -94,7 +112,10 @@ def validate_task_to_compute(task_to_compute: message.TaskToCompute) -> None:
     validate_hex_public_key(task_to_compute.provider_public_key, 'provider_public_key')
     validate_hex_public_key(task_to_compute.requestor_public_key, 'requestor_public_key')
     validate_secure_hash_algorithm(task_to_compute.package_hash)
-    validate_positive_integer_value(task_to_compute.price)
+    try:
+        validate_positive_integer_value(task_to_compute.price)
+    except ConcentValidationError:
+        raise NonPositivePriceTaskToComputeError()
 
 
 def validate_report_computed_task_time_window(report_computed_task: message.ReportComputedTask) -> None:
@@ -276,9 +297,19 @@ def validate_expected_value_type(
 def validate_positive_integer_value(value: int) -> None:
     validate_expected_value_type(value, 'value', int)
 
+    if value <= 0:
+        raise ConcentValidationError(
+            "Value cannot be a non-positive value",
+            error_code=ErrorCode.MESSAGE_VALUE_NEGATIVE,
+        )
+
+
+def validate_non_negative_integer_value(value: int) -> None:
+    validate_expected_value_type(value, 'value', int)
+
     if value < 0:
         raise ConcentValidationError(
-            "Value cannot be an negative value",
+            "Value cannot be a negative value",
             error_code=ErrorCode.MESSAGE_VALUE_NEGATIVE,
         )
 
@@ -301,7 +332,7 @@ def validate_compute_task_def(compute_task_def: message.tasks.ComputeTaskDef) ->
     string_fields = ["output_format", "scene_file"]
     other_mandatory_fields = ["frames"]
 
-    validate_value_is_int_convertible_and_positive(compute_task_def['deadline'])
+    validate_value_is_int_convertible_and_non_negative(compute_task_def['deadline'])
 
     validate_uuid(compute_task_def['task_id'])
     validate_uuid(compute_task_def['subtask_id'])

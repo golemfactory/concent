@@ -63,3 +63,7 @@ class SCICallbackPayloadSignatureError(SCICallbackError):
 
 class SubtaskStatusError(Exception):
     pass
+
+
+class NonPositivePriceTaskToComputeError(Exception):
+    pass

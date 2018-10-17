@@ -339,7 +339,7 @@ def create_signed_task_to_compute(
     requestor_ethereum_private_key: Optional[bytes]=None,
     provider_ethereum_public_key: Optional[bytes]=None,
     want_to_compute_task: Optional[WantToComputeTask] = None,
-    price: int=0,
+    price: int=1,
     size: int=1,
     package_hash: str='sha1:57786d92d1a6f7eaaba1c984db5e108c68b03f0d',
     script_src: Optional[str]=None,

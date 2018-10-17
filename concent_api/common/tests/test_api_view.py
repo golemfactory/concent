@@ -219,7 +219,7 @@ class ApiViewTransactionTestCase(TransactionTestCase):
             compute_task_def=self.compute_task_def,
             requestor_public_key=encode_hex(REQUESTOR_PUBLIC_KEY),
             want_to_compute_task=want_to_compute_task,
-            price=0,
+            price=1,
         )
         self.task_to_compute = load(
             dump(

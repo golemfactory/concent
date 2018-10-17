@@ -239,7 +239,7 @@ class ConcentIntegrationTestCase(TestCase):
         provider_id: Optional[bytes] = None,
         provider_public_key: Optional[bytes] = None,
         provider_ethereum_public_key: Optional[bytes] = None,
-        price: int = 0,
+        price: int = 1,
         package_hash: str = 'sha1:230fb0cad8c7ed29810a2183f0ec1d39c9df3f4a',
         signer_private_key: Optional[bytes] = None,
         size: int = 1,

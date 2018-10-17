@@ -97,7 +97,7 @@ class ConductorUploadAcknowledgedTaskTestCase(ConcentIntegrationTestCase):
             )
             mock_frames_filtering.assert_called_once()
 
-    @mock.patch("conductor.tasks.log_error_message")
+    @mock.patch("conductor.tasks.log_string_message")
     @mock.patch("conductor.tasks.logger")
     def test_that_upload_acknowledged_task_should_log_error_when_verification_request_with_given_subtask_id_does_not_exist(self, mock_logger, mock_logging_error):
         subtask_id = self._get_uuid('o')
@@ -113,10 +113,10 @@ class ConductorUploadAcknowledgedTaskTestCase(ConcentIntegrationTestCase):
         self.verification_request.refresh_from_db()
 
         self.assertFalse(self.verification_request.upload_acknowledged)
-        mock_logging_error.assert_called_once_with(
-            mock_logger,
-            f'Task `upload_acknowledged` tried to get VerificationRequest object with ID {subtask_id} but it '
-            'does not exist.'
+        mock_logging_error.assert_called()
+        self.assertIn(
+            f'Task `upload_acknowledged` tried to get VerificationRequest object with ID {subtask_id} but it does not exist.',
+            str(mock_logging_error.call_args_list)
         )
 
     def test_that_upload_acknowledged_task_should_raise_exception_when_verification_request_is_already_acknowledged(self):

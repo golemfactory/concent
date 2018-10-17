@@ -52,7 +52,7 @@ VERIFICATION_RESULT_SUBTASK_STATE_FAILED_LOG_MESSAGE = (
 
 
 VERIFICATION_RESULT_SUBTASK_STATE_UNEXPECTED_LOG_MESSAGE = (
-    'Subtask with ID {} is in state {} '
+    'Subtask is in state {} '
     'instead in states ACCEPTED, FAILED or ADDITIONAL_VERIFICATION while handling verification result.'
 )
 

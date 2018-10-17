@@ -1,4 +1,5 @@
 import json
+from enum import Enum
 from logging import Logger
 from typing import Any
 from typing import Callable
@@ -17,6 +18,10 @@ from common.helpers import join_messages
 
 MessageAsDict = Dict[str, Union[str, Dict[str, Any]]]
 
+class LoggingLevel(Enum):
+    INFO = 'info'
+    WARNING = 'warning'
+    ERROR = 'error'
 
 def replace_element_to_unavailable_instead_of_none(log_function: Callable) -> Callable:
     def wrap(*args: Any, **kwargs: Any) -> None:
@@ -235,15 +240,19 @@ def log_string_message(
     *messages_to_log: str,
     subtask_id: Optional[str] = None,
     client_public_key: Union[bytes, str, None] = None,
+    logging_level: Optional[LoggingLevel] = LoggingLevel.INFO
 ) -> None:
     client_key_message = f'CLIENT_PUBLIC_KEY: {_convert_bytes_to_hex(client_public_key)}. ' if client_public_key is not None else ''
     subtask_id_message = f'SUBTASK_ID: {subtask_id}. ' if subtask_id is not None else ''
 
-    logger.info(f'{subtask_id_message}{client_key_message}{join_messages(*messages_to_log)}')
-
-
-def log_error_message(logger: Logger, *messages_to_log: str) -> None:
-    logger.error(join_messages(*messages_to_log))
+    if logging_level == logging_level.INFO:
+        logger.info(f'{subtask_id_message}{client_key_message}{join_messages(*messages_to_log)}')
+    elif logging_level == logging_level.WARNING:
+        logger.warning(f'{subtask_id_message}{client_key_message}{join_messages(*messages_to_log)}')
+    elif logging_level == logging_level.ERROR:
+        logger.error(f'{subtask_id_message}{client_key_message}{join_messages(*messages_to_log)}')
+    else:
+        raise TypeError('Unexpected logging level')
 
 
 def _get_field_value_from_messages_for_logging(field_name: MessageIdField, message: Message) -> Union[str, Dict[str, str]]:

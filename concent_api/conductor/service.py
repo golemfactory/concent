@@ -3,6 +3,7 @@ import logging
 from django.db.models import Q
 
 from common.constants import ErrorCode
+from common.logging import log_string_message, LoggingLevel
 from conductor.exceptions import VerificationRequestAlreadyInitiatedError
 from conductor.models import ResultTransferRequest
 from conductor.models import UploadReport
@@ -36,8 +37,11 @@ def update_upload_report(file_path: str, result_transfer_request: ResultTransfer
             Q(source_package_path=file_path) | Q(result_package_path=file_path),
             upload_finished=False,
         ).exists():
-            logging.error(
-                f'`update_upload_report` called but VerificationRequest with with ID {result_transfer_request.subtask_id} is already initiated.'
+            log_string_message(
+                logger,
+                f'`update_upload_report` called but VerificationRequest with with ID {result_transfer_request.subtask_id} is already initiated.',
+                subtask_id=result_transfer_request.subtask_id,
+                logging_level=LoggingLevel.ERROR,
             )
             raise VerificationRequestAlreadyInitiatedError(
                 f'`update_upload_report` called but VerificationRequest with with ID {result_transfer_request.subtask_id} is already initiated.',

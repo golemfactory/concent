@@ -11,8 +11,8 @@ from common.decorators import log_task_errors
 from common.decorators import provides_concent_feature
 from common.helpers import parse_datetime_to_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
-from common.logging import log_error_message
 from common.logging import log_string_message
+from common.logging import LoggingLevel
 from conductor.exceptions import VerificationRequestAlreadyAcknowledgedError
 from conductor.models import BlenderSubtaskDefinition
 from conductor.models import Frame
@@ -132,15 +132,19 @@ def upload_acknowledged(
     try:
         verification_request = VerificationRequest.objects.select_for_update().get(subtask_id=subtask_id)
     except VerificationRequest.DoesNotExist:
-        log_error_message(
+        log_string_message(
             logger,
-            f'Task `upload_acknowledged` tried to get VerificationRequest object with ID {subtask_id} but it does not exist.'
+            f'Task `upload_acknowledged` tried to get VerificationRequest object with ID {subtask_id} but it does not exist.',
+            subtask_id=subtask_id,
+            logging_level=LoggingLevel.ERROR,
         )
         return
 
     if verification_request.upload_acknowledged is True:
-        logging.error(
-            f'Task `upload_acknowledged` scheduled but VerificationRequest with with ID {subtask_id} is already acknowledged.'
+        log_string_message(
+            logger,
+            f'Task `upload_acknowledged` scheduled but VerificationRequest with with ID {subtask_id} is already acknowledged.',
+            subtask_id=subtask_id,
         )
         raise VerificationRequestAlreadyAcknowledgedError(
             f'Task `upload_acknowledged` scheduled but VerificationRequest with with ID {subtask_id} is already acknowledged.',

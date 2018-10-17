@@ -89,13 +89,8 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
                 self.subtask.subtask_id,
                 VerificationResult.MATCH.name,
             )
-
-        logging_error_mock.assert_called_once_with(
-            VERIFICATION_RESULT_SUBTASK_STATE_UNEXPECTED_LOG_MESSAGE.format(
-                self.subtask.subtask_id,
-                Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
-            )
-        )
+        logging_error_mock.assert_called()
+        self.assertIn('Subtask is in state REPORTED instead in states ACCEPTED', str(logging_error_mock.call_args_list))
 
     def test_that_verification_result_mismatch_should_add_pending_messages_subtask_results_rejected(self):
         with freeze_time(parse_timestamp_to_utc_datetime(get_current_utc_timestamp())):

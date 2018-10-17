@@ -8,6 +8,7 @@ from golem_messages         import message
 from common.testing_helpers import generate_ecc_key_pair
 from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
 from core.models import PendingResponse
+from core.payments.bankster import ClaimPaymentInfo
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
 
@@ -58,26 +59,17 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.payments_service.make_force_payment_to_provider',
-            side_effect=self._make_force_payment_to_provider
-        ) as make_force_payment_to_provider_mock:
+            'core.message_handlers.bankster.settle_overdue_acceptances',
+            return_value=ClaimPaymentInfo(1, 0, b'', 123)
+        ) as settle_overdue_acceptances:
             with freeze_time("2018-02-05 12:00:20"):
-                fake_responses = [
-                    self._get_list_of_batch_transactions(),
-                    self._get_list_of_force_transactions(),
-                ]
-                with mock.patch(
-                    'core.message_handlers.payments_service.get_list_of_payments',
-                    side_effect=fake_responses
-                ) as get_list_of_payments_mock:
-                    response_1 = self.client.post(
-                        reverse('core:send'),
-                        data                                = serialized_force_payment,
-                        content_type                        = 'application/octet-stream',
-                    )
+                response_1 = self.client.post(
+                    reverse('core:send'),
+                    data                                = serialized_force_payment,
+                    content_type                        = 'application/octet-stream',
+                )
 
-        make_force_payment_to_provider_mock.assert_called_once()
-        self.assertEqual(get_list_of_payments_mock.call_count, 2)
+        settle_overdue_acceptances.assert_called_once()
 
         self._test_response(
             response_1,

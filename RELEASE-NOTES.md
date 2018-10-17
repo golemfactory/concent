@@ -5,7 +5,14 @@
 
 #### Endpoints and uses cases in general
 - Storage cluster now notifies Concent Core about finished upload (#667).
-- Bugfix:  Concent doesn't accept a float in the `TaskToCompute.CompTaskDef['deadline']` definition 
+- `send` now returns `ServiceRefused` with reason `TooSmallProviderDeposit` for additional verification use case when Provider's deposit is insufficient(#567).
+- Bugfix:  Concent doesn't accept a float in the `TaskToCompute.CompTaskDef['deadline']` definition
+
+##### New settings
+- `ADDITIONAL_VERIFICATION_COST` (#567).
+
+#### Payments
+- Concent now uses Bankster to claim deposits (#567).
 
 #### Signing Service and Middleman
 - Bugfix: Signing Service is now aware of broken connection to MiddleMan (#861).

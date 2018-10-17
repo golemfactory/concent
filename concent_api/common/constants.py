@@ -1,6 +1,16 @@
 import enum
 
 
+class ConcentUseCase(enum.IntEnum):
+    """ Represents use cases handled by Concent application. """
+
+    FORCED_REPORT           = 1
+    FORCED_TASK_RESULT      = 2
+    FORCED_ACCEPTANCE       = 3
+    ADDITIONAL_VERIFICATION = 4
+    FORCED_PAYMENT          = 5
+
+
 class ErrorCode(enum.Enum):
     AUTH_CLIENT_AUTH_MESSAGE_MISSING                                    = 'header.client_public_key.missing'
     AUTH_CLIENT_AUTH_MESSAGE_INVALID                                    = 'header.client_public_key.invalid'

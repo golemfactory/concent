@@ -39,7 +39,7 @@ def get_force_get_task_result(
 ) -> message.concents.ForceGetTaskResult:
     task_to_compute = create_signed_task_to_compute(
         deadline=current_time,
-        price=0,
+        price=1,
     )
 
     with freeze_time(timestamp_to_isoformat(current_time - 1)):

@@ -6,6 +6,9 @@ from freezegun import freeze_time
 from golem_messages import message
 from golem_messages.shortcuts import dump
 
+from common.constants import ConcentUseCase
+from common.constants import ErrorCode
+from common.testing_helpers import generate_ecc_key_pair
 from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
 from core.exceptions import Http400
 from core.message_handlers import handle_send_force_subtask_results_response
@@ -15,22 +18,8 @@ from core.models import Subtask
 from core.models import PendingResponse
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
-from common.constants import ErrorCode
-from common.testing_helpers import generate_ecc_key_pair
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
-
-
-def _get_provider_account_status_true_mock(client_eth_address, pending_value):  # pylint: disable=unused-argument
-    return True
-
-
-def _get_provider_account_status_false_mock(client_eth_address, pending_value):  # pylint: disable=unused-argument
-    return False
-
-
-def _get_requestor_account_status(_provider, _requestor):
-    pass
 
 
 @override_settings(
@@ -77,9 +66,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.payments_service.is_account_status_positive',
-            side_effect=_get_provider_account_status_true_mock
-        ) as is_account_status_positive_true_mock_function:
+            'core.message_handlers.bankster.claim_deposit',
+            side_effect=self.claim_deposit_true_mock
+        ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -87,9 +76,11 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     content_type                        = 'application/octet-stream',
                 )
 
-        is_account_status_positive_true_mock_function.assert_called_with(
-            client_eth_address=task_to_compute.requestor_ethereum_address,
-            pending_value=task_to_compute.price,
+        claim_deposit_true_mock_function.assert_called_with(
+            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            subtask_cost=task_to_compute.price,
         )
 
         assert len(response_1.content)  == 0
@@ -126,8 +117,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         # STEP 2: Provider again forces subtask results via Concent with message with the same task_id.
         # Request is refused.
         with mock.patch(
-            'core.message_handlers.payments_service.is_account_status_positive',
-            side_effect=self.is_account_status_positive_true_mock
+            'core.message_handlers.bankster.claim_deposit',
+            side_effect=self.claim_deposit_true_mock
         ):
             with freeze_time("2018-02-05 10:00:31"):
                 response_2 = self.client.post(
@@ -175,9 +166,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.payments_service.is_account_status_positive',
-            side_effect=_get_provider_account_status_false_mock
-        ) as is_account_status_positive_false_mock_function:
+            'core.message_handlers.bankster.claim_deposit',
+            return_value=[False, True]
+        ) as claim_deposit_false_mock_function:
             with freeze_time("2018-02-05 10:00:35"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -185,9 +176,11 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     content_type                        = 'application/octet-stream',
                 )
 
-        is_account_status_positive_false_mock_function.assert_called_with(
-            client_eth_address=task_to_compute.requestor_ethereum_address,
-            pending_value=task_to_compute.price,
+        claim_deposit_false_mock_function.assert_called_with(
+            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            subtask_cost=task_to_compute.price,
         )
 
         self.assertEqual(StoredMessage.objects.last(), None)
@@ -236,9 +229,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.payments_service.is_account_status_positive',
-            side_effect=_get_provider_account_status_true_mock
-        ) as is_account_status_positive_true_mock_function:
+            'core.message_handlers.bankster.claim_deposit',
+            side_effect=self.claim_deposit_true_mock
+        ) as claim_deposit_true_mock_function:
             with freeze_time("2018-03-05 10:00:24"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -246,9 +239,11 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     content_type                        = 'application/octet-stream',
                 )
 
-        is_account_status_positive_true_mock_function.assert_called_with(
-            client_eth_address=task_to_compute.requestor_ethereum_address,
-            pending_value=task_to_compute.price,
+        claim_deposit_true_mock_function.assert_called_with(
+            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            subtask_cost=task_to_compute.price,
         )
 
         self._test_response(
@@ -278,9 +273,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.payments_service.is_account_status_positive',
-            side_effect=_get_provider_account_status_true_mock
-        ) as is_account_status_positive_true_mock_function:
+            'core.message_handlers.bankster.claim_deposit',
+            side_effect=self.claim_deposit_true_mock
+        ) as claim_deposit_true_mock_function:
             with freeze_time("2018-03-05 10:00:40"):
                 response_2 = self.client.post(
                     reverse('core:send'),
@@ -288,9 +283,11 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     content_type                        = 'application/octet-stream',
                 )
 
-        is_account_status_positive_true_mock_function.assert_called_with(
-            client_eth_address=task_to_compute.requestor_ethereum_address,
-            pending_value=task_to_compute.price,
+        claim_deposit_true_mock_function.assert_called_with(
+            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            subtask_cost=task_to_compute.price,
         )
 
         self._test_response(
@@ -339,9 +336,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.payments_service.is_account_status_positive',
-            side_effect=_get_provider_account_status_true_mock
-        ) as is_account_status_positive_true_mock_function:
+            'core.message_handlers.bankster.claim_deposit',
+            side_effect=self.claim_deposit_true_mock
+        ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:31"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -349,9 +346,11 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     content_type                        = 'application/octet-stream',
                 )
 
-        is_account_status_positive_true_mock_function.assert_called_with(
-            client_eth_address=task_to_compute.requestor_ethereum_address,
-            pending_value=task_to_compute.price,
+        claim_deposit_true_mock_function.assert_called_with(
+            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            subtask_cost=task_to_compute.price,
         )
 
         assert len(response_1.content) == 0
@@ -439,9 +438,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.payments_service.is_account_status_positive',
-            side_effect=_get_provider_account_status_true_mock
-        ) as is_account_status_positive_true_mock_function:
+            'core.message_handlers.bankster.claim_deposit',
+            side_effect=self.claim_deposit_true_mock
+        ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:31"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -449,9 +448,11 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     content_type                        = 'application/octet-stream',
                 )
 
-        is_account_status_positive_true_mock_function.assert_called_with(
-            client_eth_address=task_to_compute.requestor_ethereum_address,
-            pending_value=task_to_compute.price,
+        claim_deposit_true_mock_function.assert_called_with(
+            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            subtask_cost=task_to_compute.price,
         )
 
         assert len(response_1.content) == 0
@@ -582,9 +583,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.payments_service.is_account_status_positive',
-            side_effect=_get_provider_account_status_true_mock
-        ) as is_account_status_positive_true_mock_function:
+            'core.message_handlers.bankster.claim_deposit',
+            side_effect=self.claim_deposit_true_mock
+        ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -592,9 +593,11 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     content_type                        = 'application/octet-stream',
                 )
 
-        is_account_status_positive_true_mock_function.assert_called_with(
-            client_eth_address=task_to_compute.requestor_ethereum_address,
-            pending_value=task_to_compute.price,
+        claim_deposit_true_mock_function.assert_called_with(
+            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            subtask_cost=task_to_compute.price,
         )
 
         assert len(response_1.content)  == 0
@@ -754,9 +757,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.payments_service.is_account_status_positive',
-            side_effect=_get_provider_account_status_true_mock
-        ) as is_account_status_positive_true_mock_function:
+            'core.message_handlers.bankster.claim_deposit',
+            side_effect=self.claim_deposit_true_mock
+        ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -764,9 +767,11 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     content_type='application/octet-stream',
                 )
 
-        is_account_status_positive_true_mock_function.assert_called_with(
-            client_eth_address=task_to_compute.requestor_ethereum_address,
-            pending_value=task_to_compute.price,
+        claim_deposit_true_mock_function.assert_called_with(
+            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            subtask_cost=task_to_compute.price,
         )
 
         assert len(response_1.content)  == 0
@@ -1066,9 +1071,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.payments_service.is_account_status_positive',
-            side_effect=_get_provider_account_status_true_mock
-        ) as is_account_status_positive_true_mock_function:
+            'core.message_handlers.bankster.claim_deposit',
+            side_effect=self.claim_deposit_true_mock
+        ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -1076,9 +1081,11 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     content_type                        = 'application/octet-stream',
                 )
 
-        is_account_status_positive_true_mock_function.assert_called_with(
-            client_eth_address=task_to_compute.requestor_ethereum_address,
-            pending_value=task_to_compute.price,
+        claim_deposit_true_mock_function.assert_called_with(
+            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            subtask_cost=task_to_compute.price,
         )
 
         assert len(response_1.content)  == 0
@@ -1294,9 +1301,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.payments_service.is_account_status_positive',
-            side_effect=_get_provider_account_status_true_mock
-        ) as is_account_status_positive_true_mock_function:
+            'core.message_handlers.bankster.claim_deposit',
+            side_effect=self.claim_deposit_true_mock
+        ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -1304,9 +1311,11 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     content_type                        = 'application/octet-stream',
                 )
 
-        is_account_status_positive_true_mock_function.assert_called_with(
-            client_eth_address=task_to_compute.requestor_ethereum_address,
-            pending_value=task_to_compute.price,
+        claim_deposit_true_mock_function.assert_called_with(
+            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            subtask_cost=task_to_compute.price,
         )
 
         assert len(response_1.content) == 0
@@ -1366,9 +1375,11 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 content_type='application/octet-stream',
             )
 
-        is_account_status_positive_true_mock_function.assert_called_with(
-            client_eth_address=task_to_compute.requestor_ethereum_address,
-            pending_value=task_to_compute.price,
+        claim_deposit_true_mock_function.assert_called_with(
+            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            subtask_cost=task_to_compute.price,
         )
 
         self._test_response(
@@ -1470,9 +1481,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.payments_service.is_account_status_positive',
-            side_effect=_get_provider_account_status_true_mock
-        ) as is_account_status_positive_true_mock_function:
+            'core.message_handlers.bankster.claim_deposit',
+            side_effect=self.claim_deposit_true_mock
+        ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
                 response_1 = self.client.post(
                     reverse('core:send'),
@@ -1480,9 +1491,11 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     content_type                        = 'application/octet-stream',
                 )
 
-        is_account_status_positive_true_mock_function.assert_called_with(
-            client_eth_address=task_to_compute.requestor_ethereum_address,
-            pending_value=task_to_compute.price,
+        claim_deposit_true_mock_function.assert_called_with(
+            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            subtask_cost=task_to_compute.price,
         )
 
         assert len(response_1.content) == 0

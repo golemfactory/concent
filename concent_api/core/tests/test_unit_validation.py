@@ -16,7 +16,7 @@ from common.constants import ErrorCode
 from common.exceptions import ConcentValidationError
 from common.helpers import sign_message
 from common.testing_helpers import generate_ecc_key_pair
-from common.testing_helpers  import generate_priv_and_pub_eth_account_key
+from common.testing_helpers import generate_priv_and_pub_eth_account_key
 from common.validations import validate_secure_hash_algorithm
 
 from core.constants import ETHEREUM_ADDRESS_LENGTH
@@ -62,7 +62,7 @@ class TestValidateGolemMessageSubtaskResultsRejected(TestCase):
 
 
 class ValidatorsTest(TestCase):
-    def test_that_function_raises_http400_when_ethereum_addres_has_wrong_type(self):
+    def test_that_function_raises_exception_when_ethereum_addres_has_wrong_type(self):
         with self.assertRaises(ConcentValidationError):
             validate_ethereum_addresses(int('1' * ETHEREUM_ADDRESS_LENGTH), 'a' * ETHEREUM_ADDRESS_LENGTH)
 
@@ -72,7 +72,7 @@ class ValidatorsTest(TestCase):
         with self.assertRaises(ConcentValidationError):
             validate_ethereum_addresses(int('1' * ETHEREUM_ADDRESS_LENGTH), int('1' * ETHEREUM_ADDRESS_LENGTH))
 
-    def test_that_function_raises_http400_when_ethereum_addres_has_wrong_length(self):
+    def test_that_function_raises_exception_when_ethereum_addres_has_wrong_length(self):
         with self.assertRaises(ConcentValidationError):
             validate_ethereum_addresses('a' * 5, 'b' * 5)
 
@@ -82,16 +82,17 @@ class ValidatorsTest(TestCase):
         with self.assertRaises(ConcentValidationError):
             validate_ethereum_addresses('a' * ETHEREUM_ADDRESS_LENGTH, 'b' * 5)
 
-    def test_that_function_raise_http400_when_price_is_not_int(self):
+    def test_that_function_raise_exception_when_price_is_not_int(self):
         with self.assertRaises(ConcentValidationError):
             validate_positive_integer_value('5')
 
-    def test_that_function_raise_http400_when_price_is_negative(self):
+    def test_that_function_raise_exception_when_price_is_negative(self):
         with self.assertRaises(ConcentValidationError):
             validate_positive_integer_value(-5)
 
-    def test_that_function_will_not_return_anything_when_price_is_zero(self):  # pylint: disable=no-self-use
-        validate_positive_integer_value(0)
+    def test_that_function_raise_exception_when_price_is_zero(self):  # pylint: disable=no-self-use
+        with self.assertRaises(ConcentValidationError):
+            validate_positive_integer_value(0)
 
 
 class TestValidateAllMessagesIdentical(ConcentIntegrationTestCase):

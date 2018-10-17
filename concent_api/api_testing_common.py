@@ -44,6 +44,9 @@ REQUESTOR_ETHEREUM_PUBLIC_KEY = b'F\xdei\xa1\xc0\x10\xc8M\xce\xaf\xc0p\r\x8e\x8f
 PROVIDER_ETHEREUM_PRIVATE_KEY = b'\x1dJ\xaf_h\xe0Y#;p\xd7s>\xb4fOH\x19\xbc\x9e\xd1\xf4\t\xdf]!\x9c\xfe\x9f\x888x'
 PROVIDER_ETHEREUM_PUBLIC_KEY = b'\x05\xa7w\xc6\x9b\x89<\xf8Rz\xef\xc4AwN}\xa0\x0e{p\xc8\xa7AF\xfc\xd26\xc1)\xdbgp\x8b]9\xfd\xaa]\xd5H@?F\x14\xdbU\x8b\x93\x8d\xf1\xfc/{s3\x8c\xc7\x80-,\x9d\x194u\x8d'
 
+REQUESTOR_ETHEREUM_PRIVATE_KEY_FOR_EMPTY_ACCOUNT = b'\x17\xc0\xd9\xd5}\x82\xa4\xe16\xa0C\xf5f\xda\xc4+\xf5(Y\x1ch\x8c\xf2B\x15\xb3\xb5D!\x18.\x04'
+REQUESTOR_ETHEREUM_PUBLIC_KEY_FOR_EMPTY_ACCOUNT = b'1\xbf\x84\x18*\xa8\x85\xb0\xfap\xbd!)\xf1/{\x1b}Q\x92\xf0o\xa7\x9b\xa7\x0b\xbd\x88\xff\xe2A\xa5b\x94m2!\xd3#E\x07\xe5\xe3\xb4!\xf3\xb9\xbe#\x8bc\xfbM\xe1\xee\x91\x00\x13\x17\xf6>x\xb8\xfc'
+
 
 class TestAssertionException(Exception):
     pass
@@ -336,7 +339,7 @@ def create_signed_task_to_compute(
     requestor_ethereum_private_key: Optional[bytes]=None,
     provider_ethereum_public_key: Optional[bytes]=None,
     want_to_compute_task: Optional[WantToComputeTask] = None,
-    price: int=0,
+    price: int=1,
     size: int=1,
     package_hash: str='sha1:57786d92d1a6f7eaaba1c984db5e108c68b03f0d',
     script_src: Optional[str]=None,

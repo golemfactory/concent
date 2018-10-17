@@ -414,6 +414,22 @@ def create_error_58_gntdeposit_wrong_value(value: Any) -> Error:
     )
 
 
+def create_error_59_additional_verification_cost_is_not_defined() -> Error:
+    return Error(
+        'ADDITIONAL_VERIFICATION_COST setting is not defined',
+        hint='Set ADDITIONAL_VERIFICATION_COST to non-negative integer.',
+        id='concent.E059',
+    )
+
+
+def create_error_60_additional_verification_cost_is_not_non_negative_integer() -> Error:
+    return Error(
+        f"Setting ADDITIONAL_VERIFICATION_COST is not non-negative `int`.",
+        hint=f"Set setting ADDITIONAL_VERIFICATION_COST to be a non-negative integer.",
+        id='concent.E060',
+    )
+
+
 @register()
 def check_settings_concent_features(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
 
@@ -759,5 +775,16 @@ def check_gntdeposit_adress(app_configs: None=None, **kwargs: Any) -> list:  # p
 
         if settings.GNT_DEPOSIT_CONTRACT_ADDRESS[:2] != '0x' or len(settings.GNT_DEPOSIT_CONTRACT_ADDRESS) != 42:
             return [create_error_58_gntdeposit_wrong_value(settings.GNT_DEPOSIT_CONTRACT_ADDRESS)]
+
+    return []
+
+
+@register()
+def check_additional_verification_cost(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
+    if 'concent-api' in settings.CONCENT_FEATURES:
+        if not hasattr(settings, 'ADDITIONAL_VERIFICATION_COST'):
+            return [create_error_59_additional_verification_cost_is_not_defined()]
+        if not isinstance(settings.ADDITIONAL_VERIFICATION_COST, int) or settings.ADDITIONAL_VERIFICATION_COST < 0:
+            return [create_error_60_additional_verification_cost_is_not_non_negative_integer()]
 
     return []

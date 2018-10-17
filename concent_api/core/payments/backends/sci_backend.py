@@ -79,17 +79,11 @@ def make_force_payment_to_provider(
     )
 
 
-def is_account_status_positive(
-    client_eth_address:     str,
-    pending_value: int = 0,
-) -> bool:
-    assert isinstance(client_eth_address,       str) and len(client_eth_address) == ETHEREUM_ADDRESS_LENGTH
-    assert isinstance(pending_value,            int) and pending_value >= 0
-
-    client_acc_balance = PaymentInterface().get_deposit_value(Web3.toChecksumAddress(client_eth_address))  # type: ignore  # pylint: disable=no-member
-
-    return client_acc_balance > pending_value
-
-
 def get_transaction_count() -> int:
     return PaymentInterface().get_transaction_count()  # type: ignore  # pylint: disable=no-member
+
+
+def get_deposit_value(client_eth_address: str) -> int:
+    assert isinstance(client_eth_address, str) and len(client_eth_address) == ETHEREUM_ADDRESS_LENGTH
+
+    return PaymentInterface().get_deposit_value(Web3.toChecksumAddress(client_eth_address))  # type: ignore  # pylint: disable=no-member

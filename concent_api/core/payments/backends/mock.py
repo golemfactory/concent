@@ -1,3 +1,4 @@
+from core.constants import CLIENT_ETH_ADDRESS_WITH_0_DEPOSIT
 from core.payments.backends.sci_backend import TransactionType
 
 
@@ -20,12 +21,12 @@ def make_force_payment_to_provider(
     pass
 
 
-def is_account_status_positive(
-    client_eth_address: str,  # pylint: disable=unused-argument
-    pending_value: int = 0
-) -> bool:
-    return pending_value > 0
-
-
 def get_transaction_count() -> int:
     return 0
+
+
+def get_deposit_value(client_eth_address: str) -> int:  # pylint: disable=unused-argument
+    if client_eth_address == CLIENT_ETH_ADDRESS_WITH_0_DEPOSIT:
+        return 0
+    else:
+        return 10000

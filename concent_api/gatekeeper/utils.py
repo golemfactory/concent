@@ -24,15 +24,11 @@ def gatekeeper_access_denied_response(
         'subtask_id': subtask_id,
         'client_key': client_key,
     }
-
-    logging.log_operation_validation_failed(
+    logging.log_string_message(
         logger,
-        operation.capitalize(),
-        message,
-        error_code.value,
-        path,
-        subtask_id,
-        client_key
+        f"{operation.capitalize()} validation failed. Message: {message} Error code: '{error_code.value}'. File '{path}'",
+        subtask_id=subtask_id,
+        client_public_key=client_key
     )
 
     # The status code here must be always 401 because auth_request module in nginx can only handle HTTP 401.

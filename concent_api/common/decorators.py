@@ -31,7 +31,6 @@ from common import logging
 from common.logging import get_json_from_message_without_redundant_fields_for_logging
 from common.logging import log_400_error
 from common.logging import log_json_message
-from common.logging import log_message_received_in_endpoint
 from common.logging import log_string_message
 from common.shortcuts import load_without_public_key
 from core.exceptions import NonPositivePriceTaskToComputeError
@@ -63,11 +62,11 @@ def require_golem_auth_message(view: Callable) -> Callable:
                         auth_message.client_public_key,
                         auth_message,
                     ):
-                        log_message_received_in_endpoint(
+                        log_string_message(
                             logger,
-                            request.resolver_match.view_name if request.resolver_match is not None else None,
-                            auth_message.__class__.__name__,
-                            auth_message.client_public_key
+                            f'A message has been received in `{request.resolver_match.view_name if request.resolver_match is not None else "-not available"}`.'
+                            f'Message type: {auth_message.__class__.__name__}.',
+                            client_public_key=auth_message.client_public_key
                         )
                     else:
                         log_string_message(
@@ -124,14 +123,14 @@ def require_golem_message(view: Callable) -> Callable:
                 golem_message = load_without_public_key(request.body)
                 assert golem_message is not None
                 client_public_key = get_validated_client_public_key_from_client_message(golem_message)
-                log_message_received_in_endpoint(
+                log_string_message(
                     logger,
-                    request.resolver_match.view_name if request.resolver_match is not None else None,
-                    golem_message.__class__.__name__,
-                    client_public_key,
-                    request.META['CONTENT_TYPE'] if 'CONTENT_TYPE' in request.META.keys() else None,
-                    golem_message.task_id if 'task_id' in dir(golem_message) else None,
-                    golem_message.subtask_id if 'subtask_id' in dir(golem_message) else None
+                    f'A message has been received in `{request.resolver_match.view_name if request.resolver_match is not None else "-not available"}`.'
+                    f'Message type: {golem_message.__class__.__name__}.',
+                    f'Content type: {request.META["CONTENT_TYPE"] if "CONTENT_TYPE" in request.META.keys() else "-not available"}'
+                    f'TASK_ID: {golem_message.task_id if "task_id" in dir(golem_message) else "-not available"}',
+                    subtask_id=golem_message.subtask_id if 'subtask_id' in dir(golem_message) else None,
+                    client_public_key=client_public_key
                 )
             except ConcentValidationError as exception:
                 log_string_message(logger, f"error_code: {exception.error_code.value} error: {exception.error_message} ")
@@ -240,11 +239,10 @@ def handle_errors_and_responses(database_name: str) -> Callable:
                 log_json_message(logger, json_response)
                 return json_response
             elif isinstance(response_from_view, HttpResponseNotAllowed):
-                logging.log_message_not_allowed(
+                log_string_message(
                     logger,
-                    view.__name__,
-                    client_public_key,
-                    request.method,
+                    f"Endpoint {view.__name__} does not allow HTTP method {request.method}",
+                    client_public_key=client_public_key
                 )
                 return response_from_view
             elif isinstance(response_from_view, HttpResponse):
@@ -255,10 +253,11 @@ def handle_errors_and_responses(database_name: str) -> Callable:
                 )
                 return response_from_view
             elif response_from_view is None:
-                logging.log_empty_queue(
+
+                log_string_message(
                     logger,
-                    view.__name__,
-                    client_public_key,
+                    f"A message queue is empty in `{view.__name__}",
+                    client_public_key=client_public_key
                 )
                 return HttpResponse("", status = 204)
             elif isinstance(response_from_view, bytes):

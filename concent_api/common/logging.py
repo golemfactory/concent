@@ -99,16 +99,6 @@ def log_timeout(
 
 
 @replace_element_to_unavailable_instead_of_none
-def log_empty_queue(
-    logger: Logger,
-    endpoint: str,
-    client_public_key: bytes
-) -> None:
-    logger.info(f"A message queue is empty in `{endpoint}()` -- "
-                f"CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)}")
-
-
-@replace_element_to_unavailable_instead_of_none
 def log_400_error(
     logger: Logger,
     endpoint: str,
@@ -128,17 +118,6 @@ def log_400_error(
         f"SUBTASK_ID: '{subtask_id}' -- "
         f"CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)}"
     )
-
-
-@replace_element_to_unavailable_instead_of_none
-def log_message_not_allowed(
-    logger: Logger,
-    endpoint: str,
-    client_public_key: bytes,
-    method: str
-) -> None:
-    logger.info(f"Endpoint {endpoint} does not allow HTTP method {method} -- "
-        f"CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)}")
 
 
 @replace_element_to_unavailable_instead_of_none
@@ -205,18 +184,6 @@ def log_stored_message_added_to_subtask(
     )
 
 
-def log_changes_in_subtask_states(logger: Logger, client_public_key: bytes, count: int) -> None:
-    assert isinstance(count, int)
-    logger.info(
-        f'{count} {"subtask changed its" if count == 1 else "subtasks changed their"} state -- '
-        f'CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)}'
-    )
-
-
-def log_change_subtask_state_name(logger: Logger, old_state: str, new_state: str) -> None:
-    logger.info(f'Subtask changed its state from {old_state} to {new_state}')
-
-
 def log_new_pending_response(
     logger: Logger,
     response_type: str,
@@ -255,94 +222,8 @@ def log_receive_message_from_database(
     )
 
 
-@replace_element_to_unavailable_instead_of_none
-def log_file_status(
-    logger: Logger,
-    task_id: str,
-    subtask_id: str,
-    requestor_public_key: bytes,
-    provider_public_key: bytes
-) -> None:
-    logger.info(
-        f'File assigned to TASK_ID: {task_id} '
-        f'SUBTASK_ID: {subtask_id} is already uploaded. -- '
-        f'REQUESTOR PUBLIC KEY: {_convert_bytes_to_hex(requestor_public_key)} '
-        f'PROVIDER PUBLIC KEY {_convert_bytes_to_hex(provider_public_key)}'
-    )
-
-
 def log_request_received(logger: Logger, path_to_file: str, operation: FileTransferToken.Operation) -> None:
     logger.info(f"{operation.capitalize()} request received. Path to file: '{path_to_file}'")
-
-
-@replace_element_to_unavailable_instead_of_none
-def log_message_under_validation(
-    logger: Logger,
-    operation: FileTransferToken.Operation,
-    message_type: str,
-    file_path: str,
-    subtask_id: str,
-    public_key: bytes
-) -> None:
-
-    assert isinstance(subtask_id, str)
-    logger.info(
-        f"{operation.capitalize()} request will be validated. Message type: '{message_type}'. "
-        f"File: '{file_path}', with subtask_id '{subtask_id}'. "
-        f"Client public key: '{_convert_bytes_to_hex(public_key)}'"
-    )
-
-
-@replace_element_to_unavailable_instead_of_none
-def log_message_successfully_validated(
-    logger: Logger,
-    operation: FileTransferToken.Operation,
-    message_type: str,
-    file_path: str,
-    subtask_id: bytes,
-    public_key: bytes
-) -> None:
-    logger.info(
-        f"{operation.capitalize()} request passed all validations. Message type: '{message_type}'. "
-        f"File: '{file_path}', with subtask_id '{subtask_id}'. "
-        f"Client public key: '{_convert_bytes_to_hex(public_key)}'"
-    )
-
-
-@replace_element_to_unavailable_instead_of_none
-def log_operation_validation_failed(
-    logger: Logger,
-    operation: FileTransferToken.Operation,
-    message: str,
-    error_code: str,
-    path: str,
-    subtask_id: str,
-    client_key: str
-) -> None:
-    logger.info(
-        f"{operation.capitalize()} validation failed. Message: {message} Error code: '{error_code}'. "
-        f"File '{path}', with subtask_id '{subtask_id}'. Client public key: '{client_key}'"
-    )
-
-
-@replace_element_to_unavailable_instead_of_none
-def log_message_received_in_endpoint(
-    logger: Logger,
-    application_and_endpoint: str,
-    message_type: str,
-    client_public_key: bytes,
-    content_type: Optional[str] = None,
-    task_id: Optional[str] = None,
-    subtask_id: Optional[str] = None
-) -> None:
-    logger.info(
-        f'A message has been received in `{application_and_endpoint}/` '
-        f'Message type: {message_type} '
-        f'{"TASK_ID:" + task_id if task_id is not None else ""}'
-        f'{" SUBTASK_ID: "  + subtask_id if subtask_id is not None else ""} '
-        f'CLIENT_PUBLIC_KEY: {_convert_bytes_to_hex(client_public_key)} '
-        f'{"Content type:" + content_type if content_type is not None else ""} '
-    )
 
 
 def log_json_message(logger: Logger, message: JsonResponse) -> None:
@@ -406,7 +287,7 @@ def _get_field_value_and_encode_if_bytes_from_message(field_name: str, golem_mes
     return str(value)
 
 
-def _convert_bytes_to_hex(client_key_bytes: bytes) -> str:
+def _convert_bytes_to_hex(client_key_bytes: Union[bytes, str]) -> str:
     if isinstance(client_key_bytes, bytes):
         return encode_hex(client_key_bytes)
     else:

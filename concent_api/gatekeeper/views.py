@@ -179,15 +179,19 @@ def parse_headers(
             loaded_golem_message.subtask_id
         )
 
-    logging.log_message_under_validation(
-            logger,
-            loaded_golem_message.operation,
-            loaded_golem_message.__class__.__name__,
-            path_to_file,
-            loaded_golem_message.subtask_id,
-            concent_client_public_key
+    logger.info(
+        f"{operation.capitalize()} request will be validated. Message type: '{loaded_golem_message.__class__.__name__}'. "
+        f"File: '{path_to_file}', with subtask_id '{loaded_golem_message.subtask_id}'. "
+        f"Client public key: '{concent_client_public_key}'"
     )
 
+    logging.log_string_message(
+        logger,
+        f"{loaded_golem_message.operation.capitalize()} request will be validated. "
+        f"Message type: '{loaded_golem_message.__class__.__name__}'. File: '{path_to_file}'",
+        subtask_id=loaded_golem_message.subtask_id,
+        client_public_key=concent_client_public_key,
+    )
     current_time = get_current_utc_timestamp()
 
     if current_time > loaded_golem_message.token_expiration_deadline:
@@ -246,13 +250,12 @@ def parse_headers(
     matching_files = [file for file in loaded_golem_message.files if path_to_file == file['path']]
 
     if len(matching_files) == 1:
-        logging.log_message_successfully_validated(
+        logging.log_string_message(
             logger,
-            loaded_golem_message.operation,
-            loaded_golem_message.__class__.__name__,
-            path_to_file,
-            loaded_golem_message.subtask_id,
-            concent_client_public_key
+            f"{loaded_golem_message.operation.capitalize()} request passed all validations. "
+            f"Message type: '{loaded_golem_message.__class__.__name__}'. File: '{path_to_file}'",
+            subtask_id=loaded_golem_message.subtask_id,
+            client_public_key=concent_client_public_key
         )
         return matching_files[0]
     else:

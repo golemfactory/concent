@@ -48,12 +48,13 @@ def verify_file_status(subtask: Subtask, client_public_key: bytes) -> None:
             queue=PendingResponse.Queue.Receive,
             subtask=subtask,
         )
-        logging.log_file_status(
+        logging.log_string_message(
             logger,
-            subtask.task_id,
-            subtask.subtask_id,
-            subtask.requestor.public_key_bytes,
-            subtask.provider.public_key_bytes,
+            f'File assigned to TASK_ID: {subtask.task_id} is already uploaded'
+            f'REQUESTOR PUBLIC KEY: {subtask.requestor.public_key} '
+            f'PROVIDER PUBLIC KEY {subtask.provider.public_key}',
+            subtask_id=subtask.subtask_id
+
         )
 
 

@@ -18,7 +18,6 @@ from common.constants import ConcentUseCase
 from common.helpers import deserialize_message
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
-from common.logging import log_change_subtask_state_name
 from common.logging import log_string_message
 from core.models import PendingResponse
 from core.models import Subtask
@@ -191,15 +190,17 @@ def update_all_timed_out_subtasks_of_a_client(client_public_key: bytes) -> None:
 
 
 def update_subtask_state(subtask: Subtask, state: str, next_deadline: Union[int, float, None] = None) -> None:
-    log_change_subtask_state_name(
-        logger,
-        subtask.state,
-        state,
-    )
+    old_state = subtask.state
     subtask.state = state
     subtask.next_deadline = None if next_deadline is None else parse_timestamp_to_utc_datetime(next_deadline)
     subtask.full_clean()
     subtask.save()
+
+    log_string_message(
+        logger,
+        f'Subtask changed its state from {old_state} to {subtask.state}',
+        subtask_id=subtask.subtask_id
+    )
 
 
 def are_keys_and_addresses_unique_in_message_subtask_results_accepted(

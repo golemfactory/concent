@@ -73,6 +73,7 @@ def require_golem_auth_message(view: Callable) -> Callable:
                         log_string_message(
                             logger,
                             f'ClientAuthorization message is not signed with public key {auth_message.client_public_key}.',
+                            client_public_key=auth_message.client_public_key
                         )
                         return JsonResponse(
                             {
@@ -269,7 +270,8 @@ def handle_errors_and_responses(database_name: str) -> Callable:
 
             logging.log_string_message(
                 logger,
-                'Invalid response from core.views type'
+                'Invalid response from core.views type',
+                client_public_key=client_public_key
             )
             assert False, "Invalid response type"
             raise Exception("Invalid response type")

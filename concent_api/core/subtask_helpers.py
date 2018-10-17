@@ -129,8 +129,9 @@ def _update_timed_out_subtask(subtask: Subtask) -> None:
 
     log_string_message(
         logger,
-        f"Subtask with id: {subtask.subtask_id} changed it's state from: {subtasks_initial_state} to: {subtask.state}. "
-        f"Provider id: {subtask.provider_id}. Requestor id: {subtask.requestor_id}."
+        f"Subtask changed it's state from: {subtasks_initial_state} to: {subtask.state}. "
+        f"Provider id: {subtask.provider_id}. Requestor id: {subtask.requestor_id}.",
+        subtask_id=subtask.subtask_id
     )
 
 

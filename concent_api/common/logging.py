@@ -349,8 +349,16 @@ def log_json_message(logger: Logger, message: JsonResponse) -> None:
     logger.info(message)
 
 
-def log_string_message(logger: Logger, *messages_to_log: str) -> None:
-    logger.info(join_messages(*messages_to_log))
+def log_string_message(
+    logger: Logger,
+    *messages_to_log: str,
+    subtask_id: Optional[str] = None,
+    client_public_key: Union[bytes, str, None] = None,
+) -> None:
+    client_key_message = f'CLIENT_PUBLIC_KEY: {_convert_bytes_to_hex(client_public_key)}. ' if client_public_key is not None else ''
+    subtask_id_message = f'SUBTASK_ID: {subtask_id}. ' if subtask_id is not None else ''
+
+    logger.info(f'{subtask_id_message}{client_key_message}{join_messages(*messages_to_log)}')
 
 
 def log_error_message(logger: Logger, *messages_to_log: str) -> None:

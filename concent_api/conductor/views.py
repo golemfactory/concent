@@ -62,9 +62,9 @@ def report_upload(_request: HttpRequest, file_path: str) -> HttpResponse:
 
         log_string_message(
             logger, 'All expected files have been uploaded',
-            f'Subtask ID: {verification_request.subtask_id}.'
             f'Result package path: {verification_request.result_package_path}.'
-            f'Source package path: {verification_request.source_package_path}.'
+            f'Source package path: {verification_request.source_package_path}.',
+            subtask_id=verification_request.subtask_id
         )
 
     # If ResultTransferRequest matching the file exists, report finished upload.

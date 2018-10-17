@@ -43,7 +43,7 @@ def blender_verification_request(
 ) -> None:
     log_string_message(
         logger,
-        f'Blender verification request starts. SUBTASK_ID: {subtask_id}',
+        f'Blender verification request starts.',
         f'Source_package_path {source_package_path}',
         f'Result_package_path: {result_package_path}',
         f'Output_format: {output_format}',
@@ -51,6 +51,7 @@ def blender_verification_request(
         f'Frames: {frames}',
         f'Verification_deadline: {verification_deadline}',
         f'With blender_crop_script: {bool(blender_crop_script)}',
+        subtask_id=subtask_id
     )
     validate_frames(frames)
     assert isinstance(output_format, str)
@@ -94,9 +95,10 @@ def blender_verification_request(
     ):
         log_string_message(
             logger, 'All expected files have been uploaded',
-            f'Subtask ID: {verification_request.subtask_id}'
             f'Result package path: {verification_request.result_package_path}'
-            f'Source package path: {verification_request.source_package_path}'
+            f'Source package path: {verification_request.source_package_path}',
+            subtask_id=subtask_id
+
         )
         # If all expected files have been uploaded, the app sends upload_finished task to the work queue.
         tasks.upload_finished.delay(verification_request.subtask_id)
@@ -118,11 +120,12 @@ def upload_acknowledged(
 ) -> None:
     log_string_message(
         logger,
-        f'Upload acknowledgment starts. SUBTASK_ID: {subtask_id}',
+        f'Upload acknowledgment starts.',
         f'Source_file_size {source_file_size}',
         f'Source_package_hash: {source_package_hash}',
         f'Result_file_size: {result_file_size}',
-        f'Result_package_hash: {result_package_hash}'
+        f'Result_package_hash: {result_package_hash}',
+        subtask_id=subtask_id
     )
     assert isinstance(subtask_id, str)
 
@@ -166,11 +169,12 @@ def upload_acknowledged(
     )
     log_string_message(
         logger,
-        f'Upload acknowledgment finished. SUBTASK_ID: {subtask_id}',
+        f'Upload acknowledgment finished.',
         f'Source_file_size {source_file_size}',
         f'Source_package_hash: {source_package_hash}',
         f'Result_file_size: {result_file_size}',
-        f'Result_package_hash: {result_package_hash}'
+        f'Result_package_hash: {result_package_hash}',
+        subtask_id=subtask_id
     )
 
 

@@ -1363,7 +1363,7 @@ def handle_send_subtask_results_verify(
         )
 
     (requestor_has_enough_deposit, provider_has_enough_deposit) = bankster.claim_deposit(
-        concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+        concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
         requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
         provider_ethereum_address=task_to_compute.provider_ethereum_address,
         subtask_cost=task_to_compute.price,

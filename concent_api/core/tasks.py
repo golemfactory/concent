@@ -7,6 +7,7 @@ from mypy.types import Optional
 from django.db import DatabaseError
 from django.db import transaction
 
+from common.constants import ConcentUseCase
 from common.decorators import log_task_errors
 from common.decorators import provides_concent_feature
 from common.helpers import deserialize_message
@@ -18,7 +19,7 @@ from core.constants import VerificationResult
 from core.exceptions import SubtaskStatusError
 from core.models import PendingResponse
 from core.models import Subtask
-from core.payments import service as payments_service
+from core.payments import bankster
 from core.subtask_helpers import update_subtask_state
 from core.transfer_operations import store_pending_message
 from core.utils import calculate_subtask_verification_time
@@ -50,11 +51,12 @@ def upload_finished(subtask_id: str) -> None:
         # If subtask is past the deadline, processes the timeout.
         if parse_datetime_to_timestamp(subtask.next_deadline) < get_current_utc_timestamp():
             # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
-            payments_service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
-                requestor_eth_address=report_computed_task.task_to_compute.requestor_ethereum_address,
-                provider_eth_address=report_computed_task.task_to_compute.provider_ethereum_address,
-                value=report_computed_task.task_to_compute.price,
-                payment_ts=get_current_utc_timestamp(),
+            bankster.finalize_payment(
+                subtask_id=subtask_id,
+                concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
+                requestor_ethereum_address=report_computed_task.task_to_compute.requestor_ethereum_address,
+                provider_ethereum_address=report_computed_task.task_to_compute.provider_ethereum_address,
+                subtask_cost=report_computed_task.task_to_compute.price,
             )
 
             update_subtask_state(
@@ -163,11 +165,12 @@ def verification_result(
     if subtask.next_deadline < parse_timestamp_to_utc_datetime(get_current_utc_timestamp()):
         task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
         # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
-        payments_service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
-            requestor_eth_address=task_to_compute.requestor_ethereum_address,
-            provider_eth_address=task_to_compute.provider_ethereum_address,
-            value=task_to_compute.price,
-            payment_ts=get_current_utc_timestamp(),
+        bankster.finalize_payment(
+            subtask_id=subtask_id,
+            concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            subtask_cost=task_to_compute.price,
         )
 
         update_subtask_state(
@@ -210,11 +213,12 @@ def verification_result(
         task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
 
         # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
-        payments_service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
-            requestor_eth_address=task_to_compute.requestor_ethereum_address,
-            provider_eth_address=task_to_compute.provider_ethereum_address,
-            value=task_to_compute.price,
-            payment_ts=get_current_utc_timestamp(),
+        bankster.finalize_payment(
+            subtask_id=subtask_id,
+            concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            subtask_cost=task_to_compute.price,
         )
 
         # Worker adds SubtaskResultsSettled to provider's and requestor's receive queues (both out-of-band)

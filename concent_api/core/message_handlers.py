@@ -528,11 +528,12 @@ def handle_send_force_subtask_results(
             reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
         )
 
-    payments_service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
-        requestor_eth_address=task_to_compute.requestor_ethereum_address,
-        provider_eth_address=task_to_compute.provider_ethereum_address,
-        value=task_to_compute.price,
-        payment_ts=current_time,
+    bankster.finalize_payment(
+        subtask_id=task_to_compute.subtask_id,
+        concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+        requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+        provider_ethereum_address=task_to_compute.provider_ethereum_address,
+        subtask_cost=task_to_compute.price,
     )
 
     task_deadline = int(task_to_compute.compute_task_def['deadline'])

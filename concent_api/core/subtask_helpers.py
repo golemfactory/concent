@@ -14,6 +14,7 @@ from golem_messages.message import Message
 from golem_messages.message.concents import ForcePayment
 from golem_messages.message.tasks import SubtaskResultsAccepted
 
+from common.constants import ConcentUseCase
 from common.helpers import deserialize_message
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
@@ -21,7 +22,7 @@ from common.logging import log_change_subtask_state_name
 from common.logging import log_string_message
 from core.models import PendingResponse
 from core.models import Subtask
-from core.payments import service as payments_service
+from core.payments import bankster
 from core.transfer_operations import store_pending_message
 from core.transfer_operations import verify_file_status
 from core.validation import is_golem_message_signed_with_key
@@ -101,11 +102,12 @@ def _update_timed_out_subtask(subtask: Subtask) -> None:
     elif subtask.state == Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name:  # pylint: disable=no-member
         task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
         # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
-        payments_service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
-            requestor_eth_address=task_to_compute.requestor_ethereum_address,
-            provider_eth_address=task_to_compute.provider_ethereum_address,
-            value=task_to_compute.price,
-            payment_ts=get_current_utc_timestamp(),
+        bankster.finalize_payment(
+            subtask_id=task_to_compute.subtask_id,
+            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            subtask_cost=task_to_compute.price,
         )
 
         update_subtask_state(

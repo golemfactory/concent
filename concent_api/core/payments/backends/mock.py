@@ -1,4 +1,7 @@
+from ethereum.transactions import Transaction
+
 from core.constants import CLIENT_ETH_ADDRESS_WITH_0_DEPOSIT
+from core.constants import MOCK_TRANSACTION
 from core.payments.backends.sci_backend import TransactionType
 
 
@@ -30,3 +33,20 @@ def get_deposit_value(client_eth_address: str) -> int:  # pylint: disable=unused
         return 0
     else:
         return 10000
+
+
+def force_subtask_payment(
+    requestor_eth_address: str,  # pylint: disable=unused-argument
+    provider_eth_address: str,  # pylint: disable=unused-argument
+    value: int,  # pylint: disable=unused-argument
+    subtask_id: str,  # pylint: disable=unused-argument
+) -> Transaction:
+    return MOCK_TRANSACTION
+
+
+def cover_additional_verification_cost(
+    provider_eth_address: str,  # pylint: disable=unused-argument
+    value: int,  # pylint: disable=unused-argument
+    subtask_id: str,  # pylint: disable=unused-argument
+) -> Transaction:
+    return MOCK_TRANSACTION

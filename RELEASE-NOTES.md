@@ -13,6 +13,8 @@
 
 #### Payments
 - Concent now uses Bankster to claim deposits (#567).
+- Concent now uses Bankster to pay for additional verification as provider (#568).
+- Concent now uses Bankster to pay for subtask as requestor (#568).
 
 #### Signing Service and Middleman
 - Bugfix: Signing Service is now aware of broken connection to MiddleMan (#861).

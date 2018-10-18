@@ -7,7 +7,6 @@ from django.db import DatabaseError
 from django.db import transaction
 
 from common import logging
-from logging import getLogger
 from common.constants import ConcentUseCase
 from common.decorators import log_task_errors
 from common.decorators import provides_concent_feature

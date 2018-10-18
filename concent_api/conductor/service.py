@@ -39,12 +39,12 @@ def update_upload_report(file_path: str, result_transfer_request: ResultTransfer
         ).exists():
             log_string_message(
                 logger,
-                f'`update_upload_report` called but VerificationRequest with with ID {result_transfer_request.subtask_id} is already initiated.',
+                f'`update_upload_report` called but VerificationRequest with ID {result_transfer_request.subtask_id} is already initiated.',
                 subtask_id=result_transfer_request.subtask_id,
                 logging_level=LoggingLevel.ERROR,
             )
             raise VerificationRequestAlreadyInitiatedError(
-                f'`update_upload_report` called but VerificationRequest with with ID {result_transfer_request.subtask_id} is already initiated.',
+                f'`update_upload_report` called but VerificationRequest with ID {result_transfer_request.subtask_id} is already initiated.',
                 ErrorCode.CONDUCTOR_VERIFICATION_REQUEST_ALREADY_INITIATED
             )
 

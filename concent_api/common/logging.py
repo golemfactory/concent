@@ -1,4 +1,5 @@
 import json
+from base64 import b64decode
 from enum import Enum
 from logging import Logger
 from typing import Any
@@ -36,12 +37,12 @@ def replace_element_to_unavailable_instead_of_none(log_function: Callable) -> Ca
 @replace_element_to_unavailable_instead_of_none
 def log_message_received(logger: Logger, message: Message, client_public_key: bytes) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
-    subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
-    logger.info(
-        f'A message has been received in `send/` -- MESSAGE_TYPE: {_get_message_type(message)} -- '
-        f'TASK_ID: {task_id} -- '
-        f'SUBTASK_ID: {subtask_id} -- '
-        f'CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)}'
+    subtask_id: str = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)  # type: ignore
+    log_string_message(
+        logger,
+        f'A message has been received in `send/` -- MESSAGE_TYPE: {_get_message_type(message)} -- TASK_ID: {task_id} -- ',
+        subtask_id=subtask_id,
+        client_public_key=client_public_key
     )
 
 
@@ -53,37 +54,36 @@ def log_message_returned(
     endpoint: str
 ) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, response_message)
-    subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, response_message)
-
-    logger.info(
-        f"A message has been returned from `{endpoint}` -- MESSAGE_TYPE: {_get_message_type(response_message)} -- "
-        f"TASK_ID: {task_id} -- "
-        f"SUBTASK_ID: {subtask_id} -- "
-        f"CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)}"
+    subtask_id: str = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, response_message)  # type: ignore
+    log_string_message(
+        logger,
+        f'A message has been returned from `{endpoint}` -- MESSAGE_TYPE: {_get_message_type(response_message)} -- TASK_ID: {task_id} -- ',
+        subtask_id=subtask_id,
+        client_public_key=client_public_key
     )
 
 
 @replace_element_to_unavailable_instead_of_none
 def log_message_accepted(logger: Logger, message: Message, client_public_key: bytes) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
-    subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
-    logger.info(
-        f"Response from views. The message has been accepted for further processing -- MESSAGE_TYPE: {_get_message_type(message)} -- "
-        f"TASK_ID: {task_id} -- "
-        f"SUBTASK_ID: {subtask_id} -- "
-        f"CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)}"
+    subtask_id: str = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)  # type: ignore
+    log_string_message(
+        logger,
+        f'Response from views. The message has been accepted for further processing -- MESSAGE_TYPE: {_get_message_type(message)} -- TASK_ID: {task_id} -- ',
+        subtask_id=subtask_id,
+        client_public_key=client_public_key
     )
 
 
 @replace_element_to_unavailable_instead_of_none
 def log_message_added_to_queue(logger: Logger, message: Message, client_public_key: bytes) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
-    subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
-    logger.info(
-        f"A new message has been added to queue -- MESSAGE_TYPE: {_get_message_type(message)} -- "
-        f"TASK_ID: {task_id} -- "
-        f"SUBTASK_ID: {subtask_id} -- "
-        f"CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)}"
+    subtask_id: str = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)  # type: ignore
+    log_string_message(
+        logger,
+        f'A new message has been added to queue -- MESSAGE_TYPE: {_get_message_type(message)} -- TASK_ID: {task_id} -- ',
+        subtask_id=subtask_id,
+        client_public_key=client_public_key
     )
 
 
@@ -95,13 +95,13 @@ def log_timeout(
     deadline: int
 ) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
-    subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
-    logger.info(
-        f"A deadline has been exceeded -- MESSAGE_TYPE: {_get_message_type(message)} -- "
-        f"TASK_ID: {task_id} -- "
-        f"SUBTASK_ID: {subtask_id} -- "
-        f"CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)} -- "
-        f"TIMEOUT: {deadline}"
+    subtask_id: str = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)  # type: ignore
+
+    log_string_message(
+        logger,
+        f'A deadline has been exceeded -- MESSAGE_TYPE: {_get_message_type(message)} --TASK_ID: {task_id} -- TIMEOUT: {deadline}',
+        subtask_id=subtask_id,
+        client_public_key=client_public_key
     )
 
 
@@ -115,15 +115,13 @@ def log_400_error(
     error_message: str
 ) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
-    subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
-    logger.info(
-        f"Error 400 has been returned from `{endpoint}()` -- "
-        f"MESSAGE_TYPE: {_get_message_type(message)} -- "
-        f"ERROR CODE: {error_code} -- "
-        f"ERROR MESSAGE: {error_message} -- "
-        f"TASK_ID: '{task_id}' -- "
-        f"SUBTASK_ID: '{subtask_id}' -- "
-        f"CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)}"
+    subtask_id: str = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)  # type: ignore
+    log_string_message(
+        logger,
+         f"Error 400 has been returned from `{endpoint}()` -- MESSAGE_TYPE: {_get_message_type(message)} -- "
+        f"ERROR CODE: {error_code} -- ERROR MESSAGE: {error_message} -- TASK_ID: '{task_id}' -- ",
+        subtask_id=subtask_id,
+        client_public_key=client_public_key
     )
 
 
@@ -139,15 +137,16 @@ def log_subtask_stored(
     result_package_size: int,
     next_deadline: Optional[int] = None,
 ) -> None:
-    logger.info(
+    log_string_message(
+        logger,
         f"A subtask has been stored -- STATE: {state} -- "
         f"NEXT_DEADLINE: {next_deadline} -- "
         f"TASK_ID: {task_id} -- "
-        f"SUBTASK_ID: {subtask_id} -- "
-        f"PROVIDER PUBLIC KEY: {_convert_bytes_to_hex(provider_public_key)} "
-        f"REQUESTOR PUBLIC KEY: {_convert_bytes_to_hex(requestor_public_key)}"
+        f"PROVIDER PUBLIC KEY: {convert_public_key_to_hex(provider_public_key)} "
+        f"REQUESTOR PUBLIC KEY: {convert_public_key_to_hex(requestor_public_key)}"
         f"RESULT_PACKAGE_SIZE: {result_package_size} -- "
-        f"COMPUTATION_DEADLINE: {computation_deadline} -- "
+        f"COMPUTATION_DEADLINE: {computation_deadline} -- ",
+        subtask_id=subtask_id,
     )
 
 
@@ -161,13 +160,14 @@ def log_subtask_updated(
     requestor_public_key: bytes,
     next_deadline:  Optional[int] = None,
 ) -> None:
-    logger.info(
+    log_string_message(
+        logger,
         f"A subtask has been updated -- STATE: {state} -- "
         f"NEXT_DEADLINE: {next_deadline} -- "
         f"TASK_ID: {task_id} -- "
-        f"SUBTASK_ID: {subtask_id} -- "
-        f"PROVIDER PUBLIC KEY: {_convert_bytes_to_hex(provider_public_key)} "
-        f"REQUESTOR PUBLIC KEY: {_convert_bytes_to_hex(requestor_public_key)}"
+        f"PROVIDER PUBLIC KEY: {convert_public_key_to_hex(provider_public_key)} "
+        f"REQUESTOR PUBLIC KEY: {convert_public_key_to_hex(requestor_public_key)}",
+        subtask_id=subtask_id,
     )
 
 
@@ -179,15 +179,16 @@ def log_stored_message_added_to_subtask(
     state: str,
     stored_message:  Message,
     provider_id: str,
-    requestor_is: str
+    requestor_id: str
 ) -> None:
-    logger.info(
+    log_string_message(
+        logger,
         f"A stored message has beed added to subtask -- STATE: {state} "
         f"TASK_ID: {task_id} "
-        f"SUBTASK_ID: {subtask_id} "
         f"STORED_MESSAGE_TYPE: {_get_message_type(stored_message)} "
         f"PROVIDER PUBLIC KEY: {provider_id} "
-        f"REQUESTOR PUBLIC KEY: {requestor_is}"
+        f"REQUESTOR PUBLIC KEY: {requestor_id}",
+        subtask_id=subtask_id,
     )
 
 
@@ -199,14 +200,15 @@ def log_new_pending_response(
 ) -> None:
     task_id = subtask.task_id if subtask is not None else '-not available-'
     subtask_id = subtask.subtask_id if subtask is not None else '-not available-'
-    provider_key = subtask.provider.public_key_bytes if subtask is not None else '-not available-'
-    requestor_key = subtask.requestor.public_key_bytes if subtask is not None else '-not available-'
-    logger.info(
+    provider_key = subtask.provider.public_key if subtask is not None else '-not available-'
+    requestor_key = subtask.requestor.public_key if subtask is not None else '-not available-'
+    log_string_message(
+        logger,
         f'New pending response in {queue_name} endpoint RESPONSE_TYPE: {response_type} '
         f'TASK_ID: {task_id} '
-        f'SUBTASK_ID: {subtask_id} '
-        f'PROVIDER PUBLIC KEY: {_convert_bytes_to_hex(provider_key)} '
-        f'REQUESTOR PUBLIC KEY {_convert_bytes_to_hex(requestor_key)}'
+        f'PROVIDER PUBLIC KEY: {convert_public_key_to_hex(provider_key)} '
+        f'REQUESTOR PUBLIC KEY {convert_public_key_to_hex(requestor_key)}',
+        subtask_id=subtask_id,
     )
 
 
@@ -219,22 +221,19 @@ def log_receive_message_from_database(
     queue_name: str
 ) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
-    subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
-    logger.info(
+    subtask_id: str = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)  # type: ignore
+    log_string_message(
+        logger,
         f'Message {_get_message_type(message)}, TYPE: {message.header.type_} has been received by {queue_name} endpoint.'
         f' RESPONSE_TYPE: {response_type} '
-        f'TASK_ID: {task_id} '
-        f'SUBTASK_ID: {subtask_id} '
-        f'CLIENT PUBLIC KEY: {_convert_bytes_to_hex(client_public_key)}'
+        f'TASK_ID: {task_id} ',
+        subtask_id=subtask_id,
+        client_public_key=client_public_key
     )
 
 
 def log_request_received(logger: Logger, path_to_file: str, operation: FileTransferToken.Operation) -> None:
-    logger.info(f"{operation.capitalize()} request received. Path to file: '{path_to_file}'")
-
-
-def log_json_message(logger: Logger, message: JsonResponse) -> None:
-    logger.info(message)
+    log_string_message(logger, f"{operation.capitalize()} request received. Path to file: '{path_to_file}'")
 
 
 def log_string_message(
@@ -244,9 +243,8 @@ def log_string_message(
     client_public_key: Union[bytes, str, None] = None,
     logging_level: Optional[LoggingLevel] = LoggingLevel.INFO
 ) -> None:
-    client_key_message = f'CLIENT_PUBLIC_KEY: {_convert_bytes_to_hex(client_public_key)}. ' if client_public_key is not None else ''
+    client_key_message = f'CLIENT_PUBLIC_KEY: {convert_public_key_to_hex(client_public_key)}. ' if client_public_key is not None else ''
     subtask_id_message = f'SUBTASK_ID: {subtask_id}. ' if subtask_id is not None else ''
-
     if isinstance(logging_level, LoggingLevel) and logging_level == logging_level.INFO:
         logger.info(f'{subtask_id_message}{client_key_message}{join_messages(*messages_to_log)}')
     elif isinstance(logging_level, LoggingLevel) and logging_level == logging_level.WARNING:
@@ -258,12 +256,12 @@ def log_string_message(
 
 
 def _get_field_value_from_messages_for_logging(field_name: MessageIdField, message: Message) -> Union[str, Dict[str, str]]:
-    value = get_field_from_message(message, field_name.value) if isinstance(message, Message) else '-not available- '
-    return value if value is not None else '-not available- '
+    value = get_field_from_message(message, field_name.value) if isinstance(message, Message) else '-not available-'
+    return value if value is not None else '-not available-'
 
 
 def _get_message_type(message: Message) -> str:
-    return type(message).__name__ if isinstance(message, Message) else '-not available- '
+    return type(message).__name__ if isinstance(message, Message) else '-not available-'
 
 
 def get_json_from_message_without_redundant_fields_for_logging(golem_message: Message) -> JsonResponse:
@@ -298,8 +296,22 @@ def _get_field_value_and_encode_if_bytes_from_message(field_name: str, golem_mes
     return str(value)
 
 
-def _convert_bytes_to_hex(client_key_bytes: Union[bytes, str]) -> str:
-    if isinstance(client_key_bytes, bytes):
-        return encode_hex(client_key_bytes)
+def convert_public_key_to_hex(client_key: Union[bytes, str, None]) -> str:
+    if client_key is None:
+        decoded_key = '-not available-'
+    elif isinstance(client_key, bytes):
+        decoded_key = encode_hex(client_key)
+    elif isinstance(client_key, str):
+        if client_key == '-not available-':
+            decoded_key = client_key
+        elif len(client_key) == 88:
+            decoded_key = encode_hex(b64decode(client_key))
+        elif len(client_key) == 128:
+            decoded_key = client_key
+        else:
+            raise TypeError(f'Cannot convert client key given as string to hex. Client key: {client_key}')
     else:
-        return str(client_key_bytes)
+        raise TypeError(f'Unsupported type of client public key.  Client key: {client_key}.  Type of client key: {type(client_key)}')
+
+    assert len(decoded_key) == 128 or decoded_key == '-not available-'
+    return decoded_key

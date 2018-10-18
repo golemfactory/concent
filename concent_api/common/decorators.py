@@ -31,7 +31,6 @@ from common import logging
 from common.logging import get_json_from_message_without_redundant_fields_for_logging
 from common.logging import LoggingLevel
 from common.logging import log_400_error
-from common.logging import log_json_message
 from common.logging import log_string_message
 from common.shortcuts import load_without_public_key
 from core.exceptions import NonPositivePriceTaskToComputeError
@@ -193,7 +192,11 @@ def handle_errors_and_responses(database_name: str) -> Callable:
                     transaction.savepoint_commit(sid, using=database_name)
 
             except CreateModelIntegrityError as exception:
-                logger.info(f'CreateModelIntegrityError occurred. View will be retried. Exception: {exception}.')
+                log_string_message(
+                    logger,
+                    f'CreateModelIntegrityError occurred. View will be retried. Exception: {exception}.',
+                    client_public_key=client_public_key,
+                )
                 response_from_view = view(request, client_message, client_public_key, *args, **kwargs)
             except ConcentBaseException as exception:
                 log_400_error(
@@ -217,7 +220,7 @@ def handle_errors_and_responses(database_name: str) -> Callable:
                 transaction.savepoint_rollback(sid, using=database_name)
 
                 json_response = JsonResponse({'error': 'Concent is in soft shutdown mode.'}, status=503)
-                log_json_message(logger, json_response)
+                log_string_message(logger, str(json_response))
                 return json_response
 
             if isinstance(response_from_view, message.Message):
@@ -237,7 +240,7 @@ def handle_errors_and_responses(database_name: str) -> Callable:
             elif isinstance(response_from_view, dict):
 
                 json_response = JsonResponse(response_from_view, safe = False)
-                log_json_message(logger, json_response)
+                log_string_message(logger, str(json_response))
                 return json_response
             elif isinstance(response_from_view, HttpResponseNotAllowed):
                 log_string_message(
@@ -304,7 +307,7 @@ def log_communication(view: Callable) -> Callable:
     @wraps(view)
     def wrapper(request: HttpRequest, golem_message: message.Message, client_public_key: bytes) -> HttpResponse:
         json_message_to_log = get_json_from_message_without_redundant_fields_for_logging(golem_message)
-        log_json_message(logger, json_message_to_log)
+        log_string_message(logger, str(json_message_to_log))
         response_from_view = view(request,  golem_message, client_public_key)
         return response_from_view
     return wrapper

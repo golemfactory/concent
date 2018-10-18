@@ -129,7 +129,7 @@ def blender_verification_order(
         blender_crop_script=blender_crop_script,
     )
 
-    delete_source_files(package_paths_to_downloaded_archive_names[source_package_path])
+    delete_source_files(package_paths_to_downloaded_archive_names[source_package_path], subtask_id)
 
     upload_blender_output_file(
         frames=frames,

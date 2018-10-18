@@ -50,7 +50,6 @@ class UploadFinishedTaskTest(ConcentIntegrationTestCase):
             logging_warning_mock.assert_called()
             self.assertIn(f'Subtask is expected to be in `VERIFICATION_FILE_TRANSFER` state, but was in {self.subtask.state}.', str(logging_warning_mock.mock_calls))
 
-
     def test_that_scheduling_task_for_subtask_with_unexpected_state_should_log_error_and_finish_task(self):
         Subtask.objects.filter(subtask_id=self.subtask.subtask_id).update(state=Subtask.SubtaskState.REPORTED.name)  # pylint: disable=no-member
         self.subtask.refresh_from_db()
@@ -60,7 +59,6 @@ class UploadFinishedTaskTest(ConcentIntegrationTestCase):
 
         logging_error_mock.assert_called()
         self.assertIn(f'Subtask is expected to be in `VERIFICATION_FILE_TRANSFER` state, but was in {self.subtask.state}.', str(logging_error_mock.mock_calls))
-
 
     def test_that_scheduling_task_for_subtask_before_deadline_should_change_subtask_state_and_schedule_upload_acknowledged_task(self):
         with freeze_time(

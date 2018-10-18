@@ -161,7 +161,7 @@ class VerifierUtilsTest(TestCase):
                 result_files_list=self.result_files_list,
                 subtask_id=self.subtask_id,
             )
-            logging_warning_mock.assert_called_once_with('There is more result files than frames to render')
+            logging_warning_mock.assert_called_once_with(f'SUBTASK_ID: {self.subtask_id}. There is more result files than frames to render')
 
     def test_that_method_should_raise_verification_mismatch_when_frames_and_parsed_files_are_not_the_same(self):
         with self.assertRaises(VerificationMismatch):

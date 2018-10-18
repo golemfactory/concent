@@ -178,13 +178,6 @@ def parse_headers(
             path_to_file,
             loaded_golem_message.subtask_id
         )
-
-    logger.info(
-        f"{operation.capitalize()} request will be validated. Message type: '{loaded_golem_message.__class__.__name__}'. "
-        f"File: '{path_to_file}', with subtask_id '{loaded_golem_message.subtask_id}'. "
-        f"Client public key: '{concent_client_public_key}'"
-    )
-
     logging.log_string_message(
         logger,
         f"{loaded_golem_message.operation.capitalize()} request will be validated. "

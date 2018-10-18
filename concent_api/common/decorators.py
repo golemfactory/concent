@@ -29,6 +29,7 @@ from common.exceptions import ConcentValidationError
 from common.helpers import join_messages
 from common import logging
 from common.logging import get_json_from_message_without_redundant_fields_for_logging
+from common.logging import LoggingLevel
 from common.logging import log_400_error
 from common.logging import log_json_message
 from common.logging import log_string_message
@@ -316,8 +317,10 @@ def log_task_errors(task: Callable) -> Callable:
         try:
             return task(*args, **kwargs)
         except Exception as exception:
-            crash_logger.error(
-                f'Exception occurred while executing task {task.__name__}: {exception}, Traceback: {traceback.format_exc()}'
-            )
+            log_string_message(
+                crash_logger,
+                f'Exception occurred while executing task {task.__name__}: {exception}, Traceback: {traceback.format_exc()}',
+                subtask_id=kwargs['subtask_id'] if 'subtask_id' in kwargs else None,
+                logging_level=LoggingLevel.ERROR)
             raise
     return wrapper

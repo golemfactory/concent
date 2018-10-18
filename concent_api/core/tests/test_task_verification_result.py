@@ -16,9 +16,6 @@ from common.helpers import parse_datetime_to_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.testing_helpers import generate_ecc_key_pair
 from core.constants import VerificationResult
-from core.constants import VERIFICATION_RESULT_SUBTASK_STATE_ACCEPTED_LOG_MESSAGE
-from core.constants import VERIFICATION_RESULT_SUBTASK_STATE_FAILED_LOG_MESSAGE
-from core.constants import VERIFICATION_RESULT_SUBTASK_STATE_UNEXPECTED_LOG_MESSAGE
 from core.message_handlers import store_subtask
 from core.models import PendingResponse
 from core.models import Subtask
@@ -63,10 +60,8 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
                 self.subtask.subtask_id,
                 VerificationResult.MATCH.name,
             )
-
-        logging_warning_mock.assert_called_once_with(
-            VERIFICATION_RESULT_SUBTASK_STATE_ACCEPTED_LOG_MESSAGE.format(self.subtask.subtask_id)
-        )
+        logging_warning_mock.assert_called()
+        self.assertIn(f'SUBTASK_ID: {self.subtask.subtask_id}. Verification has timed out',  str(logging_warning_mock.call_args_list))
 
     def test_that_quering_for_subtask_with_failed_state_should_log_error_and_finish_task(self):
         Subtask.objects.filter(subtask_id=self.subtask.subtask_id).update(state=Subtask.SubtaskState.FAILED.name)  # pylint: disable=no-member
@@ -77,9 +72,8 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
                 VerificationResult.MATCH.name,
             )
 
-        logging_warning_mock.assert_called_once_with(
-            VERIFICATION_RESULT_SUBTASK_STATE_FAILED_LOG_MESSAGE.format(self.subtask.subtask_id)
-        )
+        logging_warning_mock.assert_called()
+        self.assertIn(f'Verification result for subtask with ID {self.subtask.subtask_id} must have been already processed', str(logging_warning_mock.call_args_list))
 
     def test_that_quering_for_subtask_with_other_than_additional_verification_state_should_log_error_and_finish_task(self):
         Subtask.objects.filter(subtask_id=self.subtask.subtask_id).update(state=Subtask.SubtaskState.REPORTED.name)  # pylint: disable=no-member
@@ -89,6 +83,7 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
                 self.subtask.subtask_id,
                 VerificationResult.MATCH.name,
             )
+
         logging_error_mock.assert_called()
         self.assertIn('Subtask is in state REPORTED instead in states ACCEPTED', str(logging_error_mock.call_args_list))
 
@@ -124,11 +119,8 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
         self.assertTrue(PendingResponse.objects.filter(client=self.subtask.requestor).exists())
 
         self.assertEqual(logging_info_mock.call_count, 3)
-        self.assertEqual(
-            logging_info_mock.call_args_list[1][0][0],
-            f'verification_result_task processing error result with: '
-            f'SUBTASK_ID {self.subtask.subtask_id} -- RESULT {VerificationResult.ERROR.name} -- ERROR MESSAGE test -- ERROR CODE {ErrorCode.REQUEST_BODY_NOT_EMPTY.name}'
-        )
+        self.assertIn(f'SUBTASK_ID: {self.subtask.subtask_id}. Verification_result_task starts. Result: ERROR', str(logging_info_mock.call_args_list))
+        self.assertIn(f'SUBTASK_ID: {self.subtask.subtask_id}. Verification_result_task ends. Result: ERROR', str(logging_info_mock.call_args_list))
 
     def test_that_verification_result_match_should_add_pending_messages_subtask_results_settled_and_change_subtask_state_to_accepted(self):
         with freeze_time(parse_timestamp_to_utc_datetime(get_current_utc_timestamp())):

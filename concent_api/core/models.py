@@ -25,6 +25,7 @@ from django.db.models import Value
 from constance import config
 from golem_messages import message
 
+from common.constants import ConcentUseCase
 from common.exceptions import ConcentInSoftShutdownMode
 from common.fields import Base64Field
 from common.fields import ChoiceEnum
@@ -684,3 +685,63 @@ class PendingEthereumTransaction(Model):
     s = DecimalField(max_digits=78, decimal_places=0)
 
     created_at = DateTimeField(auto_now_add=True)
+
+
+class DepositAccount(Model):
+    client = ForeignKey(Client)
+    ethereum_address = CharField(max_length=ETHEREUM_ADDRESS_LENGTH)
+    created_at = DateTimeField(auto_now_add=True)
+
+    def clean(self) -> None:
+        super().clean()
+        if not isinstance(self.ethereum_address, str) or len(self.ethereum_address) != ETHEREUM_ADDRESS_LENGTH:
+            raise ValidationError({
+                'ethereum_address': f'The length of ethereum_address must be exactly {ETHEREUM_ADDRESS_LENGTH} characters.'
+            })
+
+
+class DepositClaim(Model):
+    subtask = ForeignKey(Subtask, blank=True, null=True)
+    payer_deposit_account = ForeignKey(DepositAccount)
+    payee_ethereum_address = CharField(max_length=ETHEREUM_ADDRESS_LENGTH)
+    concent_use_case = IntegerField()
+    amount = IntegerField()
+    tx_hash = CharField(max_length=64, blank=True, null=True, unique=True)
+    created_at = DateTimeField(auto_now_add=True)
+    modified_at = DateTimeField(auto_now=True)
+
+    def clean(self) -> None:
+        super().clean()
+        if self.subtask is None and self.concent_use_case != ConcentUseCase.FORCED_PAYMENT:
+            raise ValidationError({
+                'subtask: Can be NULL if and only if concent_use_case is ForcedPayment'
+            })
+        if self.payer_deposit_account.ethereum_address == self.payee_ethereum_address:
+            raise ValidationError({
+                'payer_deposit_account': 'payer_deposit_account.ethereum_address '
+                                         'cannot be the same as payee_ethereum_address'
+            })
+        if not isinstance(self.payer_deposit_account, DepositAccount):
+            raise ValidationError({
+                'payer_deposit_account': 'payer_deposit_account.ethereum_address must be string'
+            })
+        if self.payee_ethereum_address == self.payer_deposit_account.ethereum_address:
+            raise ValidationError({
+                'payee_ethereum_address': 'Address of the Ethereum account belonging to the entity '
+                                          '(requestor, provider or Concent) who is supposed to receive the claim. '
+                                          'Cannot be the same as payer_deposit_account.ethereum_address'
+            })
+        if not isinstance(self.payee_ethereum_address, str) or len(self.payee_ethereum_address) != ETHEREUM_ADDRESS_LENGTH:
+            raise ValidationError({
+                'payee_ethereum_address': f'Address of the Ethereum account belonging to the entity '
+                                          f'(requestor, provider or Concent) must be string and must be exactly '
+                                          f'{ETHEREUM_ADDRESS_LENGTH} characters.'
+            })
+        if not isinstance(self.amount, int) or self.amount <= 0:
+            raise ValidationError({
+                'amount': 'Amount must be integer and be greater than 0'
+            })
+        if not (self.tx_hash is None or isinstance(self.tx_hash, str)) or len(self.tx_hash) != 64:
+            raise ValidationError({
+                'tx_hash': 'The hash of the Ethereum transaction must be a string and 64 characters long'
+            })

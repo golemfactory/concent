@@ -65,5 +65,9 @@ class SubtaskStatusError(Exception):
     pass
 
 
+class CreateModelIntegrityError(Exception):
+    pass
+
+
 class NonPositivePriceTaskToComputeError(Exception):
     pass

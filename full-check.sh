@@ -1,9 +1,13 @@
-#!/bin/bash -e
+#!/bin/bash
 
 printf "=================== DJANGO CONFIGURATION CHECKS ====================\n"
 python3 concent_api/manage.py check
-printf "\n"
 
+if [ $? != 0 ]; then
+    echo 'Exiting because of System Check error'
+    exit 1
+fi
+printf "\n"
 printf "=============================== LINT ===============================\n"
 ./lint.sh
 printf "\n"

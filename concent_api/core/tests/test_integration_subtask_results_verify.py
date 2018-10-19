@@ -226,7 +226,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         claim_deposit_mock.assert_called_with(
-            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+            concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
             requestor_ethereum_address=self.task_to_compute.requestor_ethereum_address,
             provider_ethereum_address=self.task_to_compute.provider_ethereum_address,
             subtask_cost=self.task_to_compute.price,
@@ -268,7 +268,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         claim_deposit_mock.assert_called_with(
-            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+            concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
             requestor_ethereum_address=self.task_to_compute.requestor_ethereum_address,
             provider_ethereum_address=self.task_to_compute.provider_ethereum_address,
             subtask_cost=self.task_to_compute.price,
@@ -373,7 +373,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                     )
 
         claim_deposit_mock.assert_called_with(
-            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+            concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
             requestor_ethereum_address=self.task_to_compute.requestor_ethereum_address,
             provider_ethereum_address=self.task_to_compute.provider_ethereum_address,
             subtask_cost=self.task_to_compute.price,

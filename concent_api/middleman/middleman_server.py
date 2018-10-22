@@ -156,7 +156,8 @@ class MiddleMan:
             response_consumer_task.cancel()
 
         except asyncio.CancelledError:
-            # CancelledError shall not be treated as crash and logged in Sentry
+            # CancelledError shall not be treated as crash and logged in Sentry. It is only logged as info
+            logger.debug(f"CancelledError in Concent connection handler. Connection ID: {connection_id}.")
             raise
 
         except Exception as exception:  # pylint: disable=broad-except
@@ -166,6 +167,7 @@ class MiddleMan:
             raise
 
         finally:
+            logger.debug(f"Canceling tasks upon exit of Concent connection handler. Number of tasks to cancel: {len(tasks)}.")
             # regardless of exception's occurrence, all unfinished tasks should be cancelled
             # if exceptions occurs, producer task might need cancelling as well
             self._cancel_pending_tasks(tasks)
@@ -222,16 +224,18 @@ class MiddleMan:
                         raise exception_from_task
 
             except asyncio.CancelledError:
-                # CancelledError shall not be treated as crash and logged in Sentry
+                # CancelledError shall not be treated as crash and logged in Sentry. It is only logged as info
+                logger.debug(f"CancelledError in Signing Service connection handler.")
                 pass
 
             except Exception as exception:  # pylint: disable=broad-except
                 crash_logger.error(
-                    f"Exception occurred: {exception}, Traceback: {traceback.format_exc()}"
+                    f"Exception occurred in Signing Service connection handler: {exception}, Traceback: {traceback.format_exc()}"
                 )
                 raise
 
             finally:
+                logger.debug(f"Canceling tasks upon exit of Signing Service connection handler. Number of tasks to cancel: {len(tasks)}.")
                 # cancel all tasks - if task is already done/cancelled it makes no harm
                 self._cancel_pending_tasks(tasks)
                 self._is_signing_service_connection_active = False
@@ -242,6 +246,7 @@ class MiddleMan:
 
     def _cancel_pending_tasks(self, tasks: Iterable[asyncio.Task], await_cancellation: bool = False) -> None:
         for task in tasks:
+            logger.debug(f'Task will be canceled. Task: {task}')
             task.cancel()
             if await_cancellation:
                 # Now we should await task to execute it's cancellation.

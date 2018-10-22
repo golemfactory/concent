@@ -237,7 +237,7 @@ class TestRequestConsumer:
                         FROZEN_TIMESTAMP
                     )
                 )
-                mocked_logger.info.assert_not_called()
+                mocked_logger.debug.assert_not_called()
                 self.mocked_writer.write.assert_called_once_with(expected_data)
                 self.mocked_writer.drain.mock.assert_called_once_with()
 
@@ -395,7 +395,7 @@ class TestResponseProducer:
                 await sleep(0.001)
                 task.cancel()
 
-                assert_that(mocked_logger.info.mock_calls[1][1][0]).contains(
+                assert_that(mocked_logger.info.mock_calls[0][1]).contains(
                     f"There is no entry in Message Tracker for request ID = {invalid_id}, skipping..."
                 )
 
@@ -424,7 +424,7 @@ class TestResponseProducer:
                 producer_task.cancel()
 
                 assert_that(self.message_tracker.keys()).does_not_contain(*(self.ss_request_id_2,))
-                assert_that(mocked_logger.info.mock_calls[1][1][0]).contains(
+                assert_that(mocked_logger.info.mock_calls[0][1]).contains(
                     f"Response queue for {self.connection_id_2} doesn't exist anymore, skipping..."
                 )
 

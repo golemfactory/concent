@@ -4,6 +4,8 @@ from typing import Tuple
 from typing import Union
 
 from django.conf import settings
+from django.db import transaction
+
 from golem_messages.message.tasks import SubtaskResultsAccepted
 from golem_sci.events import BatchTransferEvent
 from golem_sci.events import ForcedPaymentEvent
@@ -11,6 +13,8 @@ from golem_sci.events import ForcedPaymentEvent
 from common.constants import ConcentUseCase
 from common.helpers import get_current_utc_timestamp
 from core.constants import ETHEREUM_ADDRESS_LENGTH
+from core.models import DepositAccount
+from core.models import DepositClaim
 from core.payments import service
 from core.payments.backends.sci_backend import TransactionType
 
@@ -286,3 +290,22 @@ def get_provider_payment_info(
     amount_pending = subtasks_price - amount_paid
 
     return (amount_paid, amount_pending)
+
+
+def discard_claim(deposit_claim: DepositClaim) -> bool:
+    """ This operation tells Bankster to discard the claim. Claim is simply removed, freeing the funds. """
+
+    assert isinstance(deposit_claim, DepositClaim)
+
+    with transaction.atomic(using='control'):
+        DepositAccount.objects.select_for_update().get(
+            pk=deposit_claim.payer_deposit_account_id
+        )
+
+        if deposit_claim.tx_hash is None:
+            claim_removed = False
+        else:
+            deposit_claim.delete()
+            claim_removed = True
+
+    return claim_removed

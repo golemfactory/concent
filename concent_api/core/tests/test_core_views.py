@@ -587,6 +587,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             data=self.force_golem_data.report_computed_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         new_message.full_clean()
         new_message.save()
@@ -609,6 +610,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             data=self.want_to_compute_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         want_to_compute_message.full_clean()
         want_to_compute_message.save()
@@ -619,6 +621,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             data=self.task_to_compute.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         task_to_compute_message.full_clean()
         task_to_compute_message.save()
@@ -682,6 +685,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             data=self.force_golem_data.report_computed_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         new_message.full_clean()
         new_message.save()
@@ -692,6 +696,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             data=self.want_to_compute_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         want_to_compute_message.full_clean()
         want_to_compute_message.save()
@@ -702,6 +707,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             data=self.task_to_compute.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         task_to_compute_message.full_clean()
         task_to_compute_message.save()
@@ -716,6 +722,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             data=ack_report_computed_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         stored_ack_report_computed_task.full_clean()
         stored_ack_report_computed_task.save()
@@ -853,6 +860,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             data=self.force_golem_data.report_computed_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         new_message.full_clean()
         new_message.save()
@@ -863,6 +871,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             data=self.want_to_compute_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         want_to_compute_message.full_clean()
         want_to_compute_message.save()
@@ -873,6 +882,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             data=self.task_to_compute.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         task_to_compute_message.full_clean()
         task_to_compute_message.save()
@@ -887,6 +897,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             data=ack_report_computed_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         stored_ack_report_computed_task.full_clean()
         stored_ack_report_computed_task.save()

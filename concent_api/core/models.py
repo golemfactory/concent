@@ -96,6 +96,7 @@ class StoredMessage(Model):
     task_id = CharField(max_length=MESSAGE_TASK_ID_MAX_LENGTH)
     subtask_id = CharField(max_length=MESSAGE_TASK_ID_MAX_LENGTH)
     created_at = DateTimeField(auto_now_add=True)
+    protocol_version = CharField(max_length=10)
 
     def __str__(self) -> str:
         return 'StoredMessage #{}, type:{}, {}'.format(self.id, self.type, self.timestamp)

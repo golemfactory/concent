@@ -13,6 +13,7 @@ from golem_messages import helpers
 from core.exceptions import SceneFilePathError
 from core.tests.utils import ConcentIntegrationTestCase
 from core.utils import calculate_maximum_download_time
+from core.utils import if_given_version_of_golem_messages_is_compatible_with_version_in_concent
 from core.utils import extract_name_from_scene_file_path
 from core.utils import calculate_subtask_verification_time
 from common.helpers import get_current_utc_timestamp
@@ -147,3 +148,24 @@ class TestExtractNameFromSceneFilePath():
     def test_that_function_should_raise_exception_when_could_not_find_golems_resource_path_to_cut_off(self, scene_file_path):
         with pytest.raises(SceneFilePathError):
             extract_name_from_scene_file_path(scene_file_path)
+
+
+class TestValidateCompatibilityGolemMessages():
+
+    @pytest.mark.parametrize('golem_message_version', [
+        '2.15.0', '2.15.3', '2.15.15'
+    ])
+    def test_that_compatible_version_of_golem_message_should_return_true(self, golem_message_version):
+        with override_settings(
+            GOLEM_MESSAGES_VERSION='2.15.0',
+        ):
+            assert if_given_version_of_golem_messages_is_compatible_with_version_in_concent(golem_message_version)
+
+    @pytest.mark.parametrize('golem_message_version', [
+        '1.15.0', '2.13.3', '2.16.15'
+    ])
+    def test_that_not_compatible_version_of_golem_message_should_return_false(self, golem_message_version):
+        with override_settings(
+            GOLEM_MESSAGES_VERSION='2.15.0',
+        ):
+            assert if_given_version_of_golem_messages_is_compatible_with_version_in_concent(golem_message_version) == False

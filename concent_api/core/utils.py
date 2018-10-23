@@ -118,3 +118,14 @@ def extract_name_from_scene_file_path(absoulte_scene_file_path_in_docker: str) -
             ErrorCode.MESSAGE_INVALID
         )
     return relative_scene_file_path_in_archive
+
+
+def if_given_version_of_golem_messages_is_compatible_with_version_in_concent(golem_message_version: str) -> bool:
+    """
+    Versions are considered compatible if they share the minor and major version number.
+    E.g 2.18.5 is compatible with 2.18.1 but not with 2.17.5 or 3.0.0.
+    """
+    for i in range(0, 2):
+        if not golem_message_version.split('.')[i] == settings.GOLEM_MESSAGES_VERSION.split('.')[i]:
+            return False
+    return True

@@ -152,20 +152,20 @@ class TestExtractNameFromSceneFilePath():
 
 class TestValidateCompatibilityGolemMessages():
 
-    @pytest.mark.parametrize('golem_message_version', [
+    @pytest.mark.parametrize('protocol_version', [
         '2.15.0', '2.15.3', '2.15.15'
     ])
-    def test_that_compatible_version_of_golem_message_should_return_true(self, golem_message_version):
+    def test_that_compatible_version_of_golem_message_should_return_true(self, protocol_version):
         with override_settings(
             GOLEM_MESSAGES_VERSION='2.15.0',
         ):
-            assert if_given_version_of_golem_messages_is_compatible_with_version_in_concent(golem_message_version)
+            assert if_given_version_of_golem_messages_is_compatible_with_version_in_concent(protocol_version)
 
-    @pytest.mark.parametrize('golem_message_version', [
+    @pytest.mark.parametrize('protocol_version', [
         '1.15.0', '2.13.3', '2.16.15'
     ])
-    def test_that_not_compatible_version_of_golem_message_should_return_false(self, golem_message_version):
+    def test_that_not_compatible_version_of_golem_message_should_return_false(self, protocol_version):
         with override_settings(
             GOLEM_MESSAGES_VERSION='2.15.0',
         ):
-            assert if_given_version_of_golem_messages_is_compatible_with_version_in_concent(golem_message_version) == False
+            assert not if_given_version_of_golem_messages_is_compatible_with_version_in_concent(protocol_version)

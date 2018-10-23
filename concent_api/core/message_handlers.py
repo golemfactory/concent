@@ -1231,19 +1231,20 @@ def set_subtask_messages(
 
 
 def store_message(
-    golem_message:          message.base.Message,
-    task_id:                str,
-    subtask_id:             str,
+    golem_message: message.base.Message,
+    task_id: str,
+    subtask_id: str,
 ) -> StoredMessage:
     assert golem_message.header.type_ in library
 
     message_timestamp = parse_timestamp_to_utc_datetime(golem_message.timestamp)
     stored_message = StoredMessage(
-        type        = golem_message.header.type_,
-        timestamp   = message_timestamp,
-        data        = copy.copy(golem_message).serialize(),
-        task_id     = task_id,
-        subtask_id  = subtask_id,
+        type=golem_message.header.type_,
+        timestamp=message_timestamp,
+        data=copy.copy(golem_message).serialize(),
+        task_id=task_id,
+        subtask_id=subtask_id,
+        protocol_version=settings.GOLEM_MESSAGES_VERSION
     )
     stored_message.full_clean()
     stored_message.save()

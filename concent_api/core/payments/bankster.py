@@ -4,9 +4,12 @@ from typing import Tuple
 from typing import Union
 
 from django.conf import settings
+from django.db.models import Sum
+from django.db.models.functions import Coalesce
 from django.db import transaction
 
 from golem_messages.message.tasks import SubtaskResultsAccepted
+from golem_messages.utils import encode_hex
 from golem_sci.events import BatchTransferEvent
 from golem_sci.events import ForcedPaymentEvent
 
@@ -87,13 +90,7 @@ def claim_deposit(
     return (requestor_has_enough_deposit, provider_has_enough_deposit)
 
 
-def finalize_payment(
-    subtask_id: str,
-    concent_use_case: ConcentUseCase,
-    requestor_ethereum_address: str,
-    provider_ethereum_address: str,
-    subtask_cost: int,
-) -> Tuple[ClaimPaymentInfo, ClaimPaymentInfo]:
+def finalize_payment(deposit_claim: DepositClaim) -> str:
     """
     This operation tells Bankster to pay out funds from deposit.
     For each claim, Bankster uses SCI to submit an Ethereum transaction to the Ethereum client which then propagates it
@@ -101,66 +98,61 @@ def finalize_payment(
     Hopefully the transaction is included in one of the upcoming blocks on the blockchain.
     """
 
-    assert isinstance(subtask_id, str)
-    assert isinstance(concent_use_case, ConcentUseCase)
-    assert isinstance(requestor_ethereum_address, str)
-    assert isinstance(provider_ethereum_address, str)
-    assert isinstance(subtask_cost, int) and subtask_cost > 0
+    assert isinstance(deposit_claim, DepositClaim)
 
-    assert concent_use_case in [ConcentUseCase.FORCED_ACCEPTANCE, ConcentUseCase.ADDITIONAL_VERIFICATION]
-    assert len(requestor_ethereum_address) == ETHEREUM_ADDRESS_LENGTH
-    assert len(provider_ethereum_address) == ETHEREUM_ADDRESS_LENGTH
-    assert provider_ethereum_address != requestor_ethereum_address
-
-    # Bankster determines the amount that needs to be claimed from each account.
-    available_requestor_claim = min(service.get_deposit_value(client_eth_address=requestor_ethereum_address), subtask_cost)  # pylint: disable=no-value-for-parameter
-    available_provider_claim = (
-        min(
-            service.get_deposit_value(client_eth_address=provider_ethereum_address),  # pylint: disable=no-value-for-parameter
-            settings.ADDITIONAL_VERIFICATION_COST
-        )
-        if concent_use_case == ConcentUseCase.ADDITIONAL_VERIFICATION
-        else 0
+    # Bankster asks SCI about the amount of funds available on the deposit account listed in the DepositClaim.
+    available_funds = service.get_deposit_value(  # pylint: disable=no-value-for-parameter
+        client_eth_address=deposit_claim.payer_deposit_account.ethereum_address
     )
 
-    current_time = get_current_utc_timestamp()
-
-    # Handle requestor claim payment info
-    if available_requestor_claim == 0:
-        requestors_claim_payment_info = ClaimPaymentInfo(0, subtask_cost)
-    else:
-        transaction_hash = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
-            requestor_eth_address=requestor_ethereum_address,
-            provider_eth_address=provider_ethereum_address,
-            value=available_requestor_claim,
-            subtask_id=subtask_id,
-        )
-        requestors_claim_payment_info = ClaimPaymentInfo(
-            amount_paid=available_requestor_claim,
-            amount_pending=subtask_cost - available_requestor_claim,
-            tx_hash=transaction_hash,
-            payment_ts=current_time,
+    # Bankster begins a database transaction and puts a database lock on the DepositAccount object.
+    with transaction.atomic(using='control'):
+        DepositAccount.objects.select_for_update().get(
+            pk=deposit_claim.payer_deposit_account_id
         )
 
-    # Handle provider claim payment info
-    if settings.ADDITIONAL_VERIFICATION_COST == 0 or concent_use_case != ConcentUseCase.ADDITIONAL_VERIFICATION:
-        providers_claim_payment_info = ClaimPaymentInfo(0, 0)
-    elif available_provider_claim == 0:
-        providers_claim_payment_info = ClaimPaymentInfo(0, settings.ADDITIONAL_VERIFICATION_COST)
-    else:
-        transaction_hash = service.cover_additional_verification_cost(  # pylint: disable=no-value-for-parameter
-            provider_eth_address=provider_ethereum_address,
-            value=available_provider_claim,
-            subtask_id=subtask_id,
-        )
-        providers_claim_payment_info = ClaimPaymentInfo(
-            amount_paid=available_provider_claim,
-            amount_pending=settings.ADDITIONAL_VERIFICATION_COST - available_provider_claim,
-            tx_hash=transaction_hash,
-            payment_ts=current_time,
+        # Bankster sums the amounts of all existing DepositClaims that have the same payer as the one being processed.
+        sum_of_existing_claims = DepositClaim.objects.filter(
+            payer_deposit_account=deposit_claim.payer_deposit_account
+        ).exclude(
+            pk=deposit_claim.pk
+        ).aggregate(
+            sum_of_existing_claims=Coalesce(Sum('amount'), 0)
         )
 
-    return requestors_claim_payment_info, providers_claim_payment_info
+        # Bankster subtracts that value from the amount of funds available in the deposit.
+        available_funds_without_claims = available_funds - sum_of_existing_claims['sum_of_existing_claims']
+
+        # If the result is negative or zero, Bankster removes the DepositClaim object being processed.
+        if available_funds_without_claims <= 0:
+            deposit_claim.delete()
+            return None
+
+        # Otherwise if the result is lower than DepositAccount.amount,
+        # Bankster sets this field to the amount that's actually available.
+        elif available_funds_without_claims < deposit_claim.amount:
+            deposit_claim.amount = available_funds_without_claims
+
+        # If the DepositClaim still exists at this point, Bankster uses SCI to create an Ethereum transaction.
+        if deposit_claim.concent_use_case == ConcentUseCase.FORCED_ACCEPTANCE:
+            ethereum_transaction = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
+                requestor_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
+                provider_eth_address=deposit_claim.payee_ethereum_address,
+                value=deposit_claim.amount,
+                subtask_id=deposit_claim.subtask.subtask_id,
+            )
+        elif deposit_claim.concent_use_case == ConcentUseCase.ADDITIONAL_VERIFICATION:
+            ethereum_transaction = service.cover_additional_verification_cost(  # pylint: disable=no-value-for-parameter
+                provider_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
+                value=deposit_claim.amount,
+                subtask_id=deposit_claim.subtask.subtask_id,
+            )
+
+        # Bankster puts transaction ID in DepositClaim.tx_hash.
+        deposit_claim.tx_hash = encode_hex(ethereum_transaction.hash)
+        deposit_claim.save()
+
+    return deposit_claim.tx_hash
 
 
 def settle_overdue_acceptances(

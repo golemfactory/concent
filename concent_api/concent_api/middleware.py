@@ -13,8 +13,8 @@ from django.views.debug import technical_500_response
 from django.views.defaults import server_error
 from mimeparse import best_match
 
-from golem_messages import __version__
 from concent_api.constants import DEFAULT_ERROR_MESSAGE
+from concent_api.settings import GOLEM_MESSAGES_VERSION
 from common.constants import ErrorCode
 
 
@@ -29,7 +29,7 @@ class GolemMessagesVersionMiddleware(object):
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
         response = self.get_response(request)
-        response['Concent-Golem-Messages-Version'] = __version__
+        response['Concent-Golem-Messages-Version'] = GOLEM_MESSAGES_VERSION
         return response
 
 

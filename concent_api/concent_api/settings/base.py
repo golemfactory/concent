@@ -3,6 +3,7 @@ import os
 from mypy.types import Dict  # noqa # pylint: disable=unused-import
 
 from django.conf.locale.en import formats
+from golem_messages import __version__
 from golem_messages import constants
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -354,3 +355,5 @@ USE_SIGNING_SERVICE = False
 
 # Defines GNTDeposit Contract address
 # GNT_DEPOSIT_CONTRACT_ADDRESS = ''
+
+GOLEM_MESSAGES_VERSION = __version__

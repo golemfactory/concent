@@ -7,7 +7,7 @@ from golem_messages.utils import decode_hex
 
 from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
 from core.models import PendingResponse
-from core.payments.backends.sci_backend import TransactionType
+from core.payments.bankster import ClaimPaymentInfo
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
 from common.testing_helpers import generate_ecc_key_pair
@@ -158,9 +158,9 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.payments_service.get_list_of_payments',
-            side_effect=self._get_list_of_force_transactions
-        ) as get_list_of_payments_mock_function:
+            'core.message_handlers.bankster.settle_overdue_acceptances',
+            return_value=ClaimPaymentInfo(0, 0, timestamp_error=True)
+        ) as settle_overdue_acceptances:
             with freeze_time("2018-02-05 12:00:09"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -168,12 +168,10 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     content_type                        = 'application/octet-stream',
                 )
 
-        get_list_of_payments_mock_function.assert_called_with(
-            requestor_eth_address=task_to_compute.requestor_ethereum_address,
-            provider_eth_address=task_to_compute.provider_ethereum_address,
-            payment_ts=parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
-            current_time=parse_iso_date_to_timestamp("2018-02-05 12:00:09"),
-            transaction_type=TransactionType.BATCH,
+        settle_overdue_acceptances.assert_called_with(
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            acceptances=subtask_results_accepted_list,
         )
 
         self._test_response(
@@ -226,9 +224,9 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with mock.patch(
-            'core.message_handlers.payments_service.get_list_of_payments',
-            side_effect=self._get_list_of_force_transactions
-        ) as get_list_of_payments_mock_function:
+            'core.message_handlers.bankster.settle_overdue_acceptances',
+            return_value=ClaimPaymentInfo(0, 0, timestamp_error=True)
+        ) as settle_overdue_acceptances:
             with freeze_time("2018-02-05 12:00:20"):
                 response = self.client.post(
                     reverse('core:send'),
@@ -236,12 +234,10 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                     content_type                        = 'application/octet-stream',
                 )
 
-        get_list_of_payments_mock_function.assert_called_with(
-            requestor_eth_address=task_to_compute.requestor_ethereum_address,
-            provider_eth_address=task_to_compute.provider_ethereum_address,
-            payment_ts=parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
-            current_time=parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
-            transaction_type=TransactionType.BATCH,
+        settle_overdue_acceptances.assert_called_with(
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            acceptances=subtask_results_accepted_list,
         )
 
         self._test_response(
@@ -294,23 +290,20 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 12:00:20"):
-            fake_responses = [
-                self._get_list_of_batch_transactions(),
-                self._get_list_of_force_transactions()
-            ]
-            with mock.patch('core.message_handlers.payments_service.get_list_of_payments', side_effect=fake_responses) as get_list_of_payments_mock_function:
+            with mock.patch(
+                'core.message_handlers.bankster.settle_overdue_acceptances',
+                return_value=ClaimPaymentInfo(0, 0)
+            ) as settle_overdue_acceptances:
                 response = self.client.post(
                     reverse('core:send'),
                     data                                = serialized_force_payment,
                     content_type                        = 'application/octet-stream',
                 )
 
-        get_list_of_payments_mock_function.assert_called_with(
-            requestor_eth_address=task_to_compute.requestor_ethereum_address,
-            provider_eth_address=task_to_compute.provider_ethereum_address,
-            payment_ts=parse_iso_date_to_timestamp("2018-02-05 11:55:10"),
-            current_time=parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
-            transaction_type=TransactionType.FORCE,
+        settle_overdue_acceptances.assert_called_with(
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            acceptances=subtask_results_accepted_list,
         )
 
         self._test_response(
@@ -364,44 +357,27 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             subtask_results_accepted_list = subtask_results_accepted_list
         )
 
+        # Sum of prices from force and batch lists of transactions which have been paid
+        amount_paid = 10000 + 3000
+        # Sum of price in all TaskToCompute messages minus amount_paid
+        amount_pending = 15000 + 7000 - amount_paid
+
         with freeze_time("2018-02-05 12:00:20"):
-            fake_responses = [
-                self._get_list_of_batch_transactions(),
-                self._get_list_of_force_transactions()
-            ]
             with mock.patch(
-                'core.message_handlers.payments_service.make_force_payment_to_provider',
-                side_effect=self._make_force_payment_to_provider
-            ) as make_force_payment_to_provider_mock_function,\
-                mock.patch(
-                'core.message_handlers.payments_service.get_list_of_payments',
-                side_effect=fake_responses
-            ) as get_list_of_payments_mock_function:
+                'core.message_handlers.bankster.settle_overdue_acceptances',
+                return_value=ClaimPaymentInfo(amount_paid, amount_pending, b'', 123)
+            ) as settle_overdue_acceptances:
                 response_1 = self.client.post(
                     reverse('core:send'),
                     data                                = serialized_force_payment,
                     content_type                        = 'application/octet-stream',
                 )
 
-        make_force_payment_to_provider_mock_function.assert_called_with(
-            requestor_eth_address=task_to_compute.requestor_ethereum_address,
-            provider_eth_address=task_to_compute.provider_ethereum_address,
-            value=9000,
-            payment_ts=parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+        settle_overdue_acceptances.assert_called_with(
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            acceptances=subtask_results_accepted_list,
         )
-
-        get_list_of_payments_mock_function.assert_called_with(
-            requestor_eth_address=task_to_compute.requestor_ethereum_address,
-            provider_eth_address=task_to_compute.provider_ethereum_address,
-            payment_ts=parse_iso_date_to_timestamp("2018-02-05 11:55:10"),
-            current_time=parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
-            transaction_type=TransactionType.FORCE,
-        )
-
-        # Sum of prices from force and batch lists of transactions which have been paid
-        amount_paid = 10000 + 3000
-        # Sum of price in all TaskToCompute messages minus amount_paid
-        amount_pending = 15000 + 7000 - amount_paid
 
         self._test_response(
             response_1,
@@ -584,32 +560,19 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2018-02-05 12:00:20"):
             with mock.patch(
-                'core.message_handlers.payments_service.get_list_of_payments',
-                side_effect=self._get_empty_list_of_transactions
-            ) as get_list_of_payments_mock_function,\
-                mock.patch(
-                'core.message_handlers.payments_service.make_force_payment_to_provider',
-                side_effect=self._make_force_payment_to_provider
-            ) as make_force_payment_to_provider_mock_function:
+                'core.message_handlers.bankster.settle_overdue_acceptances',
+                return_value=ClaimPaymentInfo(0, 25000)
+            ) as settle_overdue_acceptances:
                 response_1 = self.client.post(
                     reverse('core:send'),
                     data                                = serialized_force_payment,
                     content_type                        = 'application/octet-stream',
                 )
 
-        make_force_payment_to_provider_mock_function.assert_called_with(
-            requestor_eth_address=task_to_compute.requestor_ethereum_address,
-            provider_eth_address=task_to_compute.provider_ethereum_address,
-            value=25000,
-            payment_ts=parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
-        )
-
-        get_list_of_payments_mock_function.assert_called_with(
-            requestor_eth_address=task_to_compute.requestor_ethereum_address,
-            provider_eth_address=task_to_compute.provider_ethereum_address,
-            payment_ts=parse_iso_date_to_timestamp("2018-02-05 11:00:10"),
-            current_time=parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
-            transaction_type=TransactionType.FORCE,
+        settle_overdue_acceptances.assert_called_with(
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            acceptances=subtask_results_accepted_list,
         )
 
         self._test_response(

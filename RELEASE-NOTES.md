@@ -1,14 +1,16 @@
 ### Next
+
 #### Endpoints and uses cases in general
 - `send` now returns `ServiceRefused` with reason `TooSmallProviderDeposit` for additional verification use case when Provider's deposit is insufficient(#567).
-
-##### New settings
-- `ADDITIONAL_VERIFICATION_COST` (#567).
 
 #### Payments
 - Concent now uses Bankster to claim deposits (#567).
 - Concent now uses Bankster to pay for additional verification as provider (#568).
 - Concent now uses Bankster to pay for subtask as requestor (#568).
+- Concent now uses Bankster to process `force payment` use case (#565).
+
+##### New settings
+- `ADDITIONAL_VERIFICATION_COST` (#567).
 
 ### 0.10.0
 #### Compatibility
@@ -17,7 +19,7 @@
 
 #### Endpoints and uses cases in general
 - Storage cluster now notifies Concent Core about finished upload (#667).
-- Bugfix:  Concent doesn't accept a float in the `TaskToCompute.CompTaskDef['deadline']` definition 
+- Bugfix:  Concent doesn't accept a float in the `TaskToCompute.CompTaskDef['deadline']` definition
 - Bugfix:  Processing timeouts in separate transaction (#879).
 
 #### Signing Service and Middleman

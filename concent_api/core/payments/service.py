@@ -46,7 +46,7 @@ def make_force_payment_to_provider(
     provider_eth_address: str = None,
     value: int = None,
     payment_ts: int = None,
-) -> None:
+) -> Transaction:
     return backend.make_force_payment_to_provider(
         requestor_eth_address   = requestor_eth_address,
         provider_eth_address    = provider_eth_address,

@@ -1,7 +1,6 @@
 from base64 import b64encode
 from logging import getLogger
 from typing import Any
-from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -27,8 +26,6 @@ from golem_messages.message.concents import ForceReportComputedTaskResponse
 from golem_messages.message.concents import ServiceRefused
 from golem_messages.message.tasks import SubtaskResultsRejected
 from golem_messages.register import library
-from golem_sci.events import BatchTransferEvent
-from golem_sci.events import ForcedPaymentEvent
 
 from common.constants import ConcentUseCase
 from common.constants import ErrorCode
@@ -50,8 +47,6 @@ from core.models import PendingResponse
 from core.models import StoredMessage
 from core.models import Subtask
 from core.payments import bankster
-from core.payments import service as payments_service
-from core.payments.backends.sci_backend import TransactionType
 from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
 from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
@@ -720,37 +715,6 @@ def handle_send_force_subtask_results_response(
         return HttpResponse("", status=202)
 
 
-def sum_payments(payments: List[Union[ForcedPaymentEvent, BatchTransferEvent]]) -> int:
-    assert isinstance(payments, list)
-
-    return sum([item.amount for item in payments])
-
-
-def sum_subtask_price(subtask_results_accepted_list: List[message.tasks.SubtaskResultsAccepted]) -> int:
-    assert isinstance(subtask_results_accepted_list, list)
-
-    return sum([subtask_results_accepted.task_to_compute.price for subtask_results_accepted in subtask_results_accepted_list])
-
-
-def sum_amount_price_for_provider(
-    list_of_forced_payments:        List[ForcedPaymentEvent],
-    list_of_payments:               List[BatchTransferEvent],
-    subtask_results_accepted_list:  List[message.tasks.SubtaskResultsAccepted],
-) -> Tuple[int, int]:
-    assert isinstance(list_of_payments,                 list)
-    assert isinstance(list_of_forced_payments,          list)
-    assert isinstance(subtask_results_accepted_list,    list)
-
-    force_payments_price    = sum_payments(list_of_forced_payments)
-    payments_price          = sum_payments(list_of_payments)
-    subtasks_price          = sum_subtask_price(subtask_results_accepted_list)
-
-    amount_paid     = payments_price + force_payments_price
-    amount_pending  = subtasks_price - amount_paid
-
-    return (amount_paid, amount_pending)
-
-
 def get_clients_eth_accounts(task_to_compute: message.tasks.TaskToCompute) -> Tuple[str, str]:
     assert isinstance(task_to_compute, message.tasks.TaskToCompute)
 
@@ -766,8 +730,6 @@ def handle_send_force_payment(
     # Concent should not accept payment requests in soft shutdown mode.
     if config.SOFT_SHUTDOWN_MODE is True:
         raise ConcentInSoftShutdownMode
-
-    current_time = get_current_utc_timestamp()
 
     if not (
         are_keys_and_addresses_unique_in_message_subtask_results_accepted(client_message.subtask_results_accepted_list) and
@@ -794,77 +756,36 @@ def handle_send_force_payment(
         *[subtask_results_accepted.task_to_compute for subtask_results_accepted in client_message.subtask_results_accepted_list],
     )
 
-    # Concent defines time T0 equal to oldest payment_ts from passed SubtaskResultAccepted messages from subtask_results_accepted_list.
-    oldest_payments_ts = min(
-        subtask_results_accepted.payment_ts for subtask_results_accepted in client_message.subtask_results_accepted_list
+    requestors_claim_payment_info = bankster.settle_overdue_acceptances(
+        requestor_ethereum_address=requestor_eth_address,
+        provider_ethereum_address=provider_eth_address,
+        acceptances=client_message.subtask_results_accepted_list,
     )
 
-    # Concent gets list of transactions from payment API where timestamp >= T0.
-    list_of_transactions = payments_service.get_list_of_payments(  # pylint: disable=no-value-for-parameter
-        requestor_eth_address   = requestor_eth_address,
-        provider_eth_address    = provider_eth_address,
-        payment_ts              = oldest_payments_ts,
-        current_time            = current_time,
-        transaction_type        = TransactionType.BATCH,
-    )
-
-    # Concent defines time T1 equal to youngest timestamp from list of transactions.
-    if not len(list_of_transactions) == 0:
-        youngest_transaction = max(transaction.closure_time for transaction in list_of_transactions)
-
-        # Concent checks if all passed SubtaskResultAccepted messages from subtask_results_accepted_list have payment_ts < T1
-        T1_is_bigger_than_payments_ts = any(youngest_transaction > subtask_results_accepted.payment_ts for subtask_results_accepted in client_message.subtask_results_accepted_list)  # type: Optional[bool]
-    else:
-        T1_is_bigger_than_payments_ts = None
-
-    # Any of the items from list of overdue acceptances matches condition current_time < payment_ts + PAYMENT_DUE_TIME
-    acceptance_time_overdue = any(current_time < subtask_results_accepted.payment_ts + settings.PAYMENT_DUE_TIME for subtask_results_accepted in client_message.subtask_results_accepted_list)
-
-    if T1_is_bigger_than_payments_ts or acceptance_time_overdue:
+    if requestors_claim_payment_info.timestamp_error:
         return message.concents.ForcePaymentRejected(
             force_payment=client_message,
             reason=message.concents.ForcePaymentRejected.REASON.TimestampError,
         )
 
-    # Concent gets list of forced payments from payment API where T0 <= payment_ts + PAYMENT_DUE_TIME.
-    list_of_forced_payments = payments_service.get_list_of_payments(  # pylint: disable=no-value-for-parameter
-        requestor_eth_address   = requestor_eth_address,
-        provider_eth_address    = provider_eth_address,
-        payment_ts              = oldest_payments_ts + settings.PAYMENT_DUE_TIME,  # Im not sure, check it please
-        current_time            = current_time,
-        transaction_type        = TransactionType.FORCE,
-    )
-
-    (amount_paid, amount_pending) = sum_amount_price_for_provider(
-        list_of_forced_payments         = list_of_forced_payments,
-        list_of_payments                = list_of_transactions,
-        subtask_results_accepted_list   = client_message.subtask_results_accepted_list,
-    )
-
-    # Concent defines time T2 (end time) equal to youngest payment_ts from passed SubtaskResultAccepted messages from subtask_results_accepted_list.
+    # Concent defines time T2 (end time) equal to youngest payment_ts from passed SubtaskResultAccepted messages from
+    # subtask_results_accepted_list.
     payment_ts = min(
         subtask_results_accepted.payment_ts for subtask_results_accepted in client_message.subtask_results_accepted_list
     )
 
-    if amount_pending <= 0:
+    if requestors_claim_payment_info.amount_pending == requestors_claim_payment_info.amount_paid == 0:
         return message.concents.ForcePaymentRejected(
             force_payment=client_message,
             reason=message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,
         )
     else:
-        payments_service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
-            requestor_eth_address   = requestor_eth_address,
-            provider_eth_address    = provider_eth_address,
-            value                   = amount_pending,
-            payment_ts              = current_time,
-        )
-
         provider_force_payment_commited = message.concents.ForcePaymentCommitted(
             payment_ts              = payment_ts,
             task_owner_key          = requestor_ethereum_public_key,
             provider_eth_account    = provider_eth_address,
-            amount_paid             = amount_paid,
-            amount_pending          = amount_pending,
+            amount_paid             = requestors_claim_payment_info.amount_paid,
+            amount_pending          = requestors_claim_payment_info.amount_pending,
             recipient_type          = message.concents.ForcePaymentCommitted.Actor.Provider,
         )
 
@@ -872,8 +793,8 @@ def handle_send_force_payment(
             payment_ts              = payment_ts,
             task_owner_key          = requestor_ethereum_public_key,
             provider_eth_account    = provider_eth_address,
-            amount_paid             = amount_paid,
-            amount_pending          = amount_pending,
+            amount_paid             = requestors_claim_payment_info.amount_paid,
+            amount_pending          = requestors_claim_payment_info.amount_pending,
             recipient_type          = message.concents.ForcePaymentCommitted.Actor.Requestor,
         )
 

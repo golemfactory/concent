@@ -1,4 +1,4 @@
-### Next
+### 0.10.0
 #### Compatibility
 - golem-messages: 2.15.0
 - golem-smart-contracts-interface: 1.6.0
@@ -6,9 +6,11 @@
 #### Endpoints and uses cases in general
 - Storage cluster now notifies Concent Core about finished upload (#667).
 - Bugfix:  Concent doesn't accept a float in the `TaskToCompute.CompTaskDef['deadline']` definition 
+- Bugfix:  Processing timeouts in separate transaction (#879).
 
 #### Signing Service and Middleman
 - Bugfix: Signing Service is now aware of broken connection to MiddleMan (#861).
+- Bugfix: Heartbeat workaround for nginx dropping connection (#892).
 
 ##### New settings
 - `GNT_DEPOSIT_CONTRACT_ADDRESS`

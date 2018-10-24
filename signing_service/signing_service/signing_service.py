@@ -54,6 +54,7 @@ from signing_service.exceptions import SigningServiceValidationError
 from signing_service.utils import is_private_key_valid
 from signing_service.utils import is_public_key_valid
 from signing_service.utils import make_secret_provider_factory
+from signing_service.utils import Notifier
 
 logger = logging.getLogger()
 crash_logger = logging.getLogger('crash')
@@ -78,6 +79,7 @@ class SigningService:
         'ethereum_private_key',
         'reconnection_counter',
         'maximum_reconnection_attempts',
+        'notifier',
         'signing_service_daily_transaction_sum_so_far',
         'daily_transactions_limit_file_name',
     )
@@ -91,6 +93,7 @@ class SigningService:
         signing_service_private_key: bytes,
         ethereum_private_key: str,
         maximum_reconnect_attempts: int,
+        notifier=Notifier(),
     ) -> None:
         assert isinstance(host, str)
         assert isinstance(port, int)
@@ -109,6 +112,7 @@ class SigningService:
         self.was_sigterm_caught: bool = False
         self.reconnection_counter = 0
         self.maximum_reconnection_attempts = maximum_reconnect_attempts
+        self.notifier = notifier
         self.signing_service_daily_transaction_sum_so_far = 0
         self.daily_transactions_limit_file_name = datetime.datetime.now().strftime('%Y-%m-%d')
 
@@ -281,20 +285,20 @@ class SigningService:
                 self._update_daily_transactions_limit_file_name()
                 golem_message_response = self._get_signed_transaction(middleman_message.payload)
                 if isinstance(golem_message_response, SignedTransaction):
-                    email_notifier = Notifier()
                     transaction_sum_combined = self.signing_service_daily_transaction_sum_so_far + middleman_message.payload.value
                     if transaction_sum_combined > MAXIMUM_DAILY_THRESHOLD:
                         logger.warning(
                             f'Signing Service is unable to transact more then {MAXIMUM_DAILY_THRESHOLD} GNTB today.'
                             f'Transaction from {middleman_message.payload.from_address} rejected.'
                         )
+                        self.notifier.send()
                         golem_message_response = TransactionRejected(
                             reason=TransactionRejected.REASON.DailyLimitExceeded,
                             nonce=middleman_message.payload.nonce,
                         )
                     elif transaction_sum_combined > WARNING_DAILY_THRESHOLD:
-                        email_notifier.send()
                         logger.warning(f'Signing Service has signed transactions worth {transaction_sum_combined} GNTB today.')
+                        self.notifier.send()
                         self._add_payload_value_to_daily_transactions_sum(transaction_sum_combined)
                     else:
                         self._add_payload_value_to_daily_transactions_sum(transaction_sum_combined)

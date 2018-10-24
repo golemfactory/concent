@@ -4,6 +4,7 @@ import pytest
 from assertpy import assert_that
 
 from django.conf import settings
+from django.http import HttpRequest
 from django.test import override_settings
 from django.test import TestCase
 
@@ -152,20 +153,26 @@ class TestExtractNameFromSceneFilePath():
 
 class TestValidateCompatibilityGolemMessages():
 
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.request = HttpRequest()
+
     @pytest.mark.parametrize('protocol_version', [
         '2.15.0', '2.15.3', '2.15.15'
     ])
     def test_that_compatible_version_of_golem_message_should_return_true(self, protocol_version):
+        self.request.META['HTTP_CONCENT_GOLEM_MESSAGES_VERSION'] = protocol_version
         with override_settings(
             GOLEM_MESSAGES_VERSION='2.15.0',
         ):
-            assert if_given_version_of_golem_messages_is_compatible_with_version_in_concent(protocol_version)
+            assert if_given_version_of_golem_messages_is_compatible_with_version_in_concent(self.request, CONCENT_PUBLIC_KEY)
 
     @pytest.mark.parametrize('protocol_version', [
         '1.15.0', '2.13.3', '2.16.15'
     ])
     def test_that_not_compatible_version_of_golem_message_should_return_false(self, protocol_version):
+        self.request.META['HTTP_CONCENT_GOLEM_MESSAGES_VERSION'] = protocol_version
         with override_settings(
             GOLEM_MESSAGES_VERSION='2.15.0',
         ):
-            assert not if_given_version_of_golem_messages_is_compatible_with_version_in_concent(protocol_version)
+            assert not if_given_version_of_golem_messages_is_compatible_with_version_in_concent(self.request, CONCENT_PUBLIC_KEY)

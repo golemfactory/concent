@@ -35,6 +35,7 @@ from common.logging import log
 from common.shortcuts import load_without_public_key
 from core.exceptions import NonPositivePriceTaskToComputeError
 from core.exceptions import CreateModelIntegrityError
+from core.utils import if_given_version_of_golem_messages_is_compatible_with_version_in_concent
 from core.validation import get_validated_client_public_key_from_client_message
 from core.validation import is_golem_message_signed_with_key
 
@@ -184,6 +185,19 @@ def handle_errors_and_responses(database_name: str) -> Callable:
             **kwargs: dict,
         ) -> Union[HttpRequest, JsonResponse]:
             assert database_name in settings.DATABASES or database_name is None
+
+            if not if_given_version_of_golem_messages_is_compatible_with_version_in_concent(
+                request=request,
+                client_public_key=client_public_key
+            ):
+                serialized_message = dump(
+                    message.concents.ServiceRefused(
+                        reason=message.concents.ServiceRefused.REASON.InvalidRequest,
+                    ),
+                    settings.CONCENT_PRIVATE_KEY,
+                    client_public_key,
+                )
+                return HttpResponse(serialized_message, content_type='application/octet-stream')
             try:
                 if database_name is not None:
                     sid = transaction.savepoint(using=database_name)

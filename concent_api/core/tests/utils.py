@@ -9,6 +9,8 @@ import functools
 import mock
 
 import dateutil.parser
+from django.http import HttpResponse
+from django.http import HttpResponseNotAllowed
 from numpy import ndarray
 
 from django.conf import settings
@@ -1054,3 +1056,19 @@ class ConcentIntegrationTestCase(TestCase):
     def _get_uuid(last_char: Optional[str] = None) -> str:
         assert last_char is None or (isinstance(last_char, str) and len(last_char) == 1)
         return generate_uuid(last_char)
+
+    def send_request(
+        self,
+        url: str,
+        data: bytes,
+        content_type: Optional[str] = 'application/octet-stream',
+        golem_messages_version: Optional[str] = settings.GOLEM_MESSAGES_VERSION,
+        **kwargs,
+    ) -> Union[message.Message, dict, HttpResponseNotAllowed, HttpResponse, bytes, None]:
+        return self.client.post(
+            reverse(url),
+            data=data,
+            content_type=content_type,
+            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=golem_messages_version,
+            **kwargs
+        )

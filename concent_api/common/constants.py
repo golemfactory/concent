@@ -87,3 +87,6 @@ class MessageIdField(enum.Enum):
 
 
 ERROR_IN_GOLEM_MESSAGE = 'Error in Golem Message.'
+
+BLENDER_CROP_TEMPLATE_DIR = 'blender_scripts'
+BLENDER_CROP_TEMPLATE_NAME = 'blender_script_file.template'

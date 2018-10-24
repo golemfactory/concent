@@ -1,3 +1,5 @@
+import os
+
 import calendar
 import base64
 import binascii
@@ -211,3 +213,10 @@ def deserialize_database_message(serialized_message: 'StoredMessage') -> message
         return deserialize_message(serialized_message.data.tobytes())
     else:
         raise ValueError('Given serialized_messages data must be `bytes` or `memoryview` instance')
+
+
+def get_concent_path() -> str:
+    """
+    Return path to main concent directory
+    """
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))

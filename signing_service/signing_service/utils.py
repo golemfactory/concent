@@ -108,3 +108,9 @@ class SecretProvider(Action):
             if self.string_decode:
                 self.const = self.const.decode()
         setattr(namespace, self.dest, self.const)
+
+
+class Notifier(object):
+
+    def send(self):
+        pass

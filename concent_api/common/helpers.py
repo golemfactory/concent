@@ -76,7 +76,10 @@ def parse_timestamp_to_utc_datetime(timestamp: Union[int, float]) -> datetime.da
     return datetime.datetime.fromtimestamp(timestamp, timezone.utc)
 
 
-def get_field_from_message(golem_message: message.base.Message, field_name: str) -> Union[str, dict, message.base.Message]:
+def get_field_from_message(
+    golem_message: message.base.Message,
+    field_name: str
+) -> Union[str, dict, message.base.Message, None]:
     """
     Returns field value with given field name nested inside given Golem Message or FrozenDict
     by checking recursively from top to bottom.

@@ -37,7 +37,7 @@ def replace_element_to_unavailable_instead_of_none(log_function: Callable) -> Ca
 @replace_element_to_unavailable_instead_of_none
 def log_message_received(logger: Logger, message: Message, client_public_key: bytes) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
-    subtask_id: str = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)  # type: ignore
+    subtask_id: str = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
     log_string_message(
         logger,
         f'A message has been received in `send/` -- MESSAGE_TYPE: {_get_message_type(message)} -- TASK_ID: {task_id} -- ',
@@ -54,7 +54,7 @@ def log_message_returned(
     endpoint: str
 ) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, response_message)
-    subtask_id: str = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, response_message)  # type: ignore
+    subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, response_message)
     log_string_message(
         logger,
         f'A message has been returned from `{endpoint}` -- MESSAGE_TYPE: {_get_message_type(response_message)} -- TASK_ID: {task_id} -- ',
@@ -66,7 +66,7 @@ def log_message_returned(
 @replace_element_to_unavailable_instead_of_none
 def log_message_accepted(logger: Logger, message: Message, client_public_key: bytes) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
-    subtask_id: str = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)  # type: ignore
+    subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
     log_string_message(
         logger,
         f'Response from views. The message has been accepted for further processing -- MESSAGE_TYPE: {_get_message_type(message)} -- TASK_ID: {task_id} -- ',
@@ -78,7 +78,7 @@ def log_message_accepted(logger: Logger, message: Message, client_public_key: by
 @replace_element_to_unavailable_instead_of_none
 def log_message_added_to_queue(logger: Logger, message: Message, client_public_key: bytes) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
-    subtask_id: str = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)  # type: ignore
+    subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
     log_string_message(
         logger,
         f'A new message has been added to queue -- MESSAGE_TYPE: {_get_message_type(message)} -- TASK_ID: {task_id} -- ',
@@ -95,7 +95,7 @@ def log_timeout(
     deadline: int
 ) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
-    subtask_id: str = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)  # type: ignore
+    subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
 
     log_string_message(
         logger,
@@ -115,7 +115,7 @@ def log_400_error(
     error_message: str
 ) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
-    subtask_id: str = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)  # type: ignore
+    subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
     log_string_message(
         logger,
          f"Error 400 has been returned from `{endpoint}()` -- MESSAGE_TYPE: {_get_message_type(message)} -- "
@@ -221,7 +221,7 @@ def log_receive_message_from_database(
     queue_name: str
 ) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
-    subtask_id: str = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)  # type: ignore
+    subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
     log_string_message(
         logger,
         f'Message {_get_message_type(message)}, TYPE: {message.header.type_} has been received by {queue_name} endpoint.'
@@ -255,8 +255,8 @@ def log_string_message(
         raise TypeError('Unexpected logging level')
 
 
-def _get_field_value_from_messages_for_logging(field_name: MessageIdField, message: Message) -> Union[str, Dict[str, str]]:
-    value = get_field_from_message(message, field_name.value) if isinstance(message, Message) else '-not available-'
+def _get_field_value_from_messages_for_logging(field_name: MessageIdField, message: Message) -> str:
+    value: str = get_field_from_message(message, field_name.value) if isinstance(message, Message) else '-not available-'  # type: ignore
     return value if value is not None else '-not available-'
 
 

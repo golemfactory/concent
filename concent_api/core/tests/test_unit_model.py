@@ -1,15 +1,22 @@
 import pytest
+from django.test import override_settings
 from django.core.exceptions import ValidationError
 
 from golem_messages import factories
 from golem_messages import message
+from golem_messages.factories import tasks
+from golem_messages.factories.tasks import ComputeTaskDefFactory
+from golem_messages.factories.tasks import WantToComputeTaskFactory
 from golem_messages.utils import encode_hex
 
+from common.helpers import get_current_utc_timestamp
+from common.helpers import parse_timestamp_to_utc_datetime
 from common.constants import ConcentUseCase
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.constants import ETHEREUM_TRANSACTION_HASH_LENGTH
 from core.constants import MOCK_TRANSACTION
 from core.message_handlers import store_subtask
+from core.models import StoredMessage
 from core.models import Client
 from core.models import DepositAccount
 from core.models import DepositClaim
@@ -336,3 +343,91 @@ class TestDepositClaimValidation(ConcentIntegrationTestCase):
     def test_that_no_exception_is_raised_when_deposit_claim_is_valid(self):
         self.deposit_claim.clean()
         self.deposit_claim.save()
+
+
+class CoreViewReceiveTest(ConcentIntegrationTestCase):
+
+    def test_that_incorrect_version_of_golem_messages_in_stored_message_should_raise_validation_error(self):
+        version_of_golem_messages_in_concent = '2.13.0'
+        different_version_of_golem_messages = '1.11.1'
+
+        with override_settings(GOLEM_MESSAGES_VERSION=version_of_golem_messages_in_concent):
+            compute_task_def = ComputeTaskDefFactory()
+            want_to_compute_task = WantToComputeTaskFactory()
+
+            task_to_compute = tasks.TaskToComputeFactory(
+                compute_task_def=compute_task_def,
+                want_to_compute_task=want_to_compute_task,
+                provider_public_key=self._get_provider_hex_public_key(),
+                requestor_public_key=self._get_requestor_hex_public_key(),
+            )
+            size = 58
+            report_computed_task = message.tasks.ReportComputedTask(
+                task_to_compute=task_to_compute,
+                size=size
+            )
+            force_report_computed_task = message.concents.ForceReportComputedTask(
+                report_computed_task=report_computed_task,
+            )
+
+            message_timestamp = parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
+            report_computed_task_message = StoredMessage(
+                type=force_report_computed_task.report_computed_task.header.type_,
+                timestamp=message_timestamp,
+                data=force_report_computed_task.report_computed_task.serialize(),
+                task_id=compute_task_def['task_id'],  # pylint: disable=no-member
+                subtask_id=compute_task_def['subtask_id'],  # pylint: disable=no-member
+                protocol_version=different_version_of_golem_messages,
+            )
+            report_computed_task_message.full_clean()
+            report_computed_task_message.save()
+
+            client_provider = Client(
+                public_key_bytes=self.PROVIDER_PUBLIC_KEY
+            )
+            client_provider.full_clean()
+            client_provider.save()
+
+            client_requestor = Client(
+                public_key_bytes=self.REQUESTOR_PUBLIC_KEY
+            )
+            client_requestor.full_clean()
+            client_requestor.save()
+
+            want_to_compute_message = StoredMessage(
+                type=want_to_compute_task.header.type_,
+                timestamp=message_timestamp,
+                data=want_to_compute_task.serialize(),
+                task_id=compute_task_def['task_id'],  # pylint: disable=no-member
+                subtask_id=compute_task_def['subtask_id'],  # pylint: disable=no-member
+                protocol_version=version_of_golem_messages_in_concent,
+            )
+            want_to_compute_message.full_clean()
+            want_to_compute_message.save()
+
+            task_to_compute_message = StoredMessage(
+                type=task_to_compute.header.type_,
+                timestamp=message_timestamp,
+                data=task_to_compute.serialize(),
+                task_id=compute_task_def['task_id'],  # pylint: disable=no-member
+                subtask_id=compute_task_def['subtask_id'],  # pylint: disable=no-member
+                protocol_version=version_of_golem_messages_in_concent,
+            )
+            task_to_compute_message.full_clean()
+            task_to_compute_message.save()
+
+            subtask = Subtask(
+                task_id=compute_task_def['task_id'],
+                subtask_id=compute_task_def['subtask_id'],
+                task_to_compute=task_to_compute_message,
+                want_to_compute_task=want_to_compute_message,
+                report_computed_task=report_computed_task_message,
+                state=Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
+                provider=client_provider,
+                requestor=client_requestor,
+                result_package_size=size,
+                computation_deadline=parse_timestamp_to_utc_datetime(compute_task_def['deadline'])
+            )
+
+            with self.assertRaises(ValidationError):
+                subtask.full_clean()

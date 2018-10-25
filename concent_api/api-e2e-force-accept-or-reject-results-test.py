@@ -168,6 +168,7 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConst
         ),
         headers={
             'Content-Type': 'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=202,
     )
@@ -179,6 +180,7 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConst
         create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
         headers={
             'Content-Type': 'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=200,
         expected_message_type=message.concents.ForceSubtaskResults,
@@ -201,6 +203,7 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConst
         ),
         headers={
             'Content-Type': 'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=202,
     )
@@ -212,6 +215,7 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConst
         create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
         headers={
             'Content-Type': 'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=200,
         expected_message_type=message.concents.ForceSubtaskResultsResponse,
@@ -245,6 +249,7 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConst
         ),
         headers={
             'Content-Type': 'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=202,
     )
@@ -258,6 +263,7 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConst
         create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
         headers={
             'Content-Type': 'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=200,
         expected_message_type=message.concents.ForceSubtaskResults,
@@ -279,6 +285,7 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConst
         ),
         headers={
             'Content-Type': 'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=202,
     )
@@ -291,6 +298,7 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConst
         create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
         headers={
             'Content-Type': 'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=200,
         expected_message_type=message.concents.ForceSubtaskResultsResponse,
@@ -322,6 +330,7 @@ def test_case_2c_wrong_timestamps(cluster_consts: ProtocolConstants, cluster_url
         ),
         headers={
             'Content-Type': 'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=200,
         expected_message_type=message.concents.ForceSubtaskResultsRejected,
@@ -356,6 +365,7 @@ def test_case_2b_not_enough_funds(cluster_consts: ProtocolConstants, cluster_url
         ),
         headers={
             'Content-Type': 'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=200,
         expected_message_type=message.concents.ServiceRefused,
@@ -389,6 +399,7 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolC
         ),
         headers={
             'Content-Type': 'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=202,
     )
@@ -410,6 +421,7 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolC
         ),
         headers={
             'Content-Type': 'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=200,
         expected_message_type=message.concents.ServiceRefused,
@@ -424,6 +436,7 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolC
         create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
         headers={
             'Content-Type': 'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=200,
         expected_message_type=message.concents.ForceSubtaskResults,
@@ -434,6 +447,7 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolC
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
+        from concent_api.settings import GOLEM_MESSAGES_VERSION
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file = sys.stderr)

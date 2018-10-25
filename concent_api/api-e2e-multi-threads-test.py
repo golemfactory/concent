@@ -81,6 +81,7 @@ def send_correct_force_report_computed_task(
         ),
         headers={
             'Content-Type': 'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=expected_status,
     )
@@ -102,6 +103,7 @@ def send_correct_ack_report_computed_task(
         ),
         headers={
             'Content-Type': 'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=expected_status,
     )
@@ -122,6 +124,7 @@ def send_correct_force_get_task_result(
         ),
         headers={
             'Content-Type': 'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=expected_status,
     )
@@ -204,6 +207,7 @@ def test_case_multiple_force_get_task_result_concerning_one_subtask_will_be_proc
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
+        from concent_api.settings import GOLEM_MESSAGES_VERSION
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file=sys.stderr)

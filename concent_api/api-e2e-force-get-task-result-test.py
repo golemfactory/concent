@@ -86,6 +86,7 @@ def test_case_1_test_for_existing_file(cluster_consts: ProtocolConstants, cluste
         force_get_task_result,
         headers = {
             'Content-Type': 'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=200,
         expected_message_type=message.concents.AckForceGetTaskResult,
@@ -100,6 +101,7 @@ def test_case_1_test_for_existing_file(cluster_consts: ProtocolConstants, cluste
         create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
         headers = {
             'Content-Type': 'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=200,
         expected_message_type=message.concents.ForceGetTaskResultUpload,
@@ -132,6 +134,7 @@ def test_case_1_test_for_existing_file(cluster_consts: ProtocolConstants, cluste
         create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
         headers = {
             'Content-Type': 'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=200,
         expected_message_type=message.concents.ForceGetTaskResultDownload,
@@ -155,6 +158,7 @@ def test_case_2_test_for_non_existing_file(cluster_consts: ProtocolConstants, cl
         ),
         headers = {
             'Content-Type':                     'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=200,
         expected_message_type=message.concents.AckForceGetTaskResult,
@@ -169,6 +173,7 @@ def test_case_2_test_for_non_existing_file(cluster_consts: ProtocolConstants, cl
         create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
         headers = {
             'Content-Type': 'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=200,
         expected_message_type=message.concents.ForceGetTaskResultUpload,
@@ -183,6 +188,7 @@ def test_case_2_test_for_non_existing_file(cluster_consts: ProtocolConstants, cl
         create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
         headers = {
             'Content-Type': 'application/octet-stream',
+            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
         },
         expected_status=204,
     )
@@ -191,6 +197,7 @@ def test_case_2_test_for_non_existing_file(cluster_consts: ProtocolConstants, cl
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
+        from concent_api.settings import GOLEM_MESSAGES_VERSION
         from concent_api.settings import STORAGE_CLUSTER_ADDRESS
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:

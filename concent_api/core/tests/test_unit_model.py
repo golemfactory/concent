@@ -1,14 +1,20 @@
+import mock
 import pytest
+from django.test import override_settings
 from django.core.exceptions import ValidationError
 
 from golem_messages import factories
 from golem_messages import message
+from golem_messages.factories import tasks
+from golem_messages.factories.tasks import ComputeTaskDefFactory
+from golem_messages.factories.tasks import WantToComputeTaskFactory
 from golem_messages.utils import encode_hex
 
 from common.constants import ConcentUseCase
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.constants import ETHEREUM_TRANSACTION_HASH_LENGTH
 from core.constants import MOCK_TRANSACTION
+from core.message_handlers import store_message
 from core.message_handlers import store_subtask
 from core.models import Client
 from core.models import DepositAccount
@@ -336,3 +342,48 @@ class TestDepositClaimValidation(ConcentIntegrationTestCase):
     def test_that_no_exception_is_raised_when_deposit_claim_is_valid(self):
         self.deposit_claim.clean()
         self.deposit_claim.save()
+
+
+class CoreViewReceiveTest(ConcentIntegrationTestCase):
+
+    def setUp(self):
+        self.first_communication_protocol_version = '1.11.1'
+        self.second_communication_protocol_version = '2.13.0'
+
+    def store_message_with_custom_protocol_version(
+        self,
+        golem_message: message.base.Message,
+        task_id: str,
+        subtask_id: str,
+    ):
+        with override_settings(GOLEM_MESSAGES_VERSION=self.first_communication_protocol_version):
+            return store_message(
+                golem_message=golem_message,
+                task_id=task_id,
+                subtask_id=subtask_id
+            )
+
+    def test_that_incorrect_version_of_golem_messages_in_stored_message_should_raise_validation_error(self):
+
+        with override_settings(GOLEM_MESSAGES_VERSION=self.second_communication_protocol_version):
+            task_to_compute = tasks.TaskToComputeFactory()
+
+            report_computed_task=tasks.ReportComputedTaskFactory(task_to_compute=task_to_compute)
+            with self.assertRaises(ValidationError) as error:
+                with mock.patch('core.message_handlers.store_message', side_effect=self.store_message_with_custom_protocol_version):
+                    store_subtask(
+                        task_id=task_to_compute.task_id,
+                        subtask_id=task_to_compute.subtask_id,
+                        task_to_compute=task_to_compute,
+                        provider_public_key=hex_to_bytes_convert(task_to_compute.provider_public_key),
+                        requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+                        report_computed_task=report_computed_task,
+                        state=Subtask.SubtaskState.REPORTED,
+                        next_deadline=None,
+                    )
+
+        self.assertIn(
+            f"Unsupported Golem Message version. Version in: `task_to_compute` is {self.first_communication_protocol_version}, "
+            f"Version in Concent is {self.second_communication_protocol_version}",
+            str(error.exception)
+        )

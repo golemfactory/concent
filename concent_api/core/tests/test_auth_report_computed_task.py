@@ -1,7 +1,6 @@
 from base64 import b64encode
 
 from django.test import override_settings
-from django.urls import reverse
 from freezegun import freeze_time
 from golem_messages import dump
 from golem_messages import load
@@ -70,10 +69,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         with freeze_time("2017-12-01 10:59:00"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data=self.serialized_force_report_computed_task,
-                content_type='application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        202)
@@ -108,20 +106,18 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 2: Concent do not forces computed task report on the requestor with different or mixed key
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_diff_requestor_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_provider_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -130,10 +126,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 3: Concent forces computed task report on the requestor with correct key
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_requestor_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         force_report_computed_task_from_view = load(
@@ -169,10 +164,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         serialized_ack_report_computed_task = dump(ack_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                           = serialized_ack_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
 
         self._test_400_response(
@@ -202,10 +196,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         serialized_ack_report_computed_task = dump(ack_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                           = serialized_ack_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
 
         self._test_400_response(
@@ -238,10 +231,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         serialized_ack_report_computed_task = dump(ack_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                           = serialized_ack_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
 
         self._test_400_response(
@@ -275,10 +267,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         serialized_ack_report_computed_task = dump(ack_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                           = serialized_ack_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        202)
@@ -309,20 +300,18 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 6: Concent do not passes computed task acceptance to the provider with different or mixed key
 
         with freeze_time("2017-12-01 11:00:15"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_diff_provider_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
 
         with freeze_time("2017-12-01 11:00:15"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_requestor_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -331,10 +320,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 7: Concent passes computed task acceptance to the provider with correct key
 
         with freeze_time("2017-12-01 11:00:15"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_provider_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         ack_report_computed_task_from_view = load(
@@ -367,10 +355,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         with freeze_time("2017-12-01 10:59:00"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data=self.serialized_force_report_computed_task,
-                content_type='application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        202)
@@ -405,20 +392,18 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 2: Concent do not forces computed task report on the requestor with different or mixed key
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_diff_requestor_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_provider_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -427,10 +412,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 3: Concent forces computed task report on the requestor with correct key
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_requestor_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         force_report_computed_task_from_view = load(
@@ -466,10 +450,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                           = serialized_reject_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
 
         self._test_400_response(
@@ -498,10 +481,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                           = serialized_reject_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
 
         self._test_400_response(
@@ -528,10 +510,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                           = serialized_reject_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
 
         self._test_400_response(
@@ -581,10 +562,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                           = serialized_reject_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        202)
@@ -616,19 +596,17 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 6: Concent do not passes computed task rejection to the provider with different or mixed key
 
         with freeze_time("2017-12-01 11:00:15"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_diff_provider_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
 
         with freeze_time("2017-12-01 11:00:15"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_requestor_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code, 204)
@@ -636,10 +614,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 7: Concent passes computed task rejection to the provider with correct key
 
         with freeze_time("2017-12-01 11:00:15"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_provider_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         force_report_computed_task_response = load(
@@ -677,10 +654,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         with freeze_time("2017-12-01 10:59:00"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data=self.serialized_force_report_computed_task,
-                content_type='application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        202)
@@ -715,20 +691,18 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 2: Concent do not forces computed task report on the requestor with different or mixed key
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_diff_requestor_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_provider_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -737,10 +711,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 3: Concent forces computed task report on the requestor with correct key
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_requestor_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         force_report_computed_task_from_view = load(
@@ -775,10 +748,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                           = serialized_reject_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
 
         self._test_400_response(
@@ -807,10 +779,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                           = serialized_reject_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
 
         self._test_400_response(
@@ -836,10 +807,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                           = serialized_reject_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
 
         self._test_400_response(
@@ -880,10 +850,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         serialized_reject_report_computed_task = dump(reject_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                           = serialized_reject_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        202)
@@ -919,10 +888,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 6: Concent do not overrides computed task rejection and sends acceptance message to the provider with different or mixed key
 
         with freeze_time("2017-12-01 11:00:15"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_diff_provider_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -931,10 +899,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 7: Concent overrides computed task rejection and sends acceptance message to the provider with correct key
 
         with freeze_time("2017-12-01 11:00:15"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_provider_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        200)
@@ -954,20 +921,18 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 8: Requestor do not receives computed task report verdict out of band due to an overridden decision with different or mixed key
 
         with freeze_time("2017-12-01 11:00:15"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_diff_requestor_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
 
         with freeze_time("2017-12-01 11:00:15"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_provider_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -976,10 +941,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 9: Requestor receives computed task report verdict out of band due to an overridden decision with correct key
 
         with freeze_time("2017-12-01 11:00:15"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_requestor_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        200)
@@ -1021,10 +985,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 1: Provider forces computed task report via Concent
 
         with freeze_time("2017-12-01 10:59:00"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data=self.serialized_force_report_computed_task,
-                content_type='application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        202)
@@ -1059,20 +1022,18 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 2: Concent do not forces computed task report on the requestor with different or mixed key
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_diff_requestor_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
         self.assertEqual(len(response.content),       0)
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_provider_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -1081,10 +1042,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 3: Concent forces computed task report on the requestor with correct key
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_requestor_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         force_report_computed_task_from_view = load(
@@ -1102,19 +1062,17 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 4: Concent do not accepts computed task due to lack of response from the requestor with different or mixed key
 
         with freeze_time("2017-12-01 11:00:09"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data=self._create_requestor_auth_message(),
-                content_type='application/octet-stream',
             )
 
         self.assertEqual(response.status_code, 204)
 
         with freeze_time("2017-12-01 11:00:15"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_diff_requestor_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -1122,10 +1080,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 5: Concent accepts computed task due to lack of response from the requestor with correct key
 
         with freeze_time("2017-12-01 11:00:15"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_provider_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        200)
@@ -1155,19 +1112,17 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 6: Requestor do not receives task computation report verdict out of band due to lack of response with different or mixed key
 
         with freeze_time("2017-12-01 11:00:15"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_diff_requestor_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
 
         with freeze_time("2017-12-01 11:00:15"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_provider_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        204)
@@ -1175,10 +1130,9 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 7: Requestor receives task computation report verdict out of band due to lack of response with correct key
 
         with freeze_time("2017-12-01 11:00:15"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_requestor_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response.status_code,        200)

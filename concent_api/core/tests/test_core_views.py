@@ -3,7 +3,6 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.http import JsonResponse
 from django.test import override_settings
-from django.urls import reverse
 
 from golem_messages import message
 from golem_messages import settings as golem_settings
@@ -74,15 +73,13 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
     def test_send_should_accept_valid_message(self):
         assert StoredMessage.objects.count() == 0
 
-        response = self.client.post(
-            reverse('core:send'),
+        response = self.send_request(
+            url='core:send',
             data=dump(
                 self.correct_golem_data,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY),
-            content_type='application/octet-stream',
         )
-
         self.assertEqual(response.status_code, 202)
         self._assert_stored_message_counter_increased(increased_by=3)
         self._test_last_stored_messages(
@@ -109,14 +106,12 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             report_computed_task=report_computed_task
         )
 
-        response = self.client.post(
-            reverse('core:send'),
+        response = self.send_request(
+            url='core:send',
             data=dump(
                 correct_golem_data,
                 self.PROVIDER_PRIVATE_KEY,
-                CONCENT_PUBLIC_KEY
-            ),
-            content_type='application/octet-stream',
+                CONCENT_PUBLIC_KEY),
         )
 
         self.assertEqual(response.status_code, 200)
@@ -146,13 +141,12 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             report_computed_task=report_computed_task,
         )
 
-        response = self.client.post(
-            reverse('core:send'),
+        response = self.send_request(
+            url='core:send',
             data=dump(
                 correct_golem_data,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY),
-            content_type='application/octet-stream',
         )
 
         self.assertEqual(response.status_code, 202)
@@ -183,14 +177,12 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 report_computed_task=report_computed_task
             )
 
-        response = self.client.post(
-            reverse('core:send'),
+        response = self.send_request(
+            url='core:send',
             data=dump(
                 force_report_computed_task,
                 self.PROVIDER_PRIVATE_KEY,
-                CONCENT_PUBLIC_KEY,
-            ),
-            content_type='application/octet-stream',
+                CONCENT_PUBLIC_KEY),
         )
         self._test_400_response(response)
 
@@ -199,14 +191,12 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         compute_task_def['deadline'] = self.message_timestamp - 3600
         data.report_computed_task.task_to_compute = message.TaskToCompute(compute_task_def=compute_task_def)
 
-        response = self.client.post(
-            reverse('core:send'),
+        response = self.send_request(
+            url='core:send',
             data=dump(
                 data,
                 self.PROVIDER_PRIVATE_KEY,
-                CONCENT_PUBLIC_KEY,
-            ),
-            content_type='application/octet-stream',
+                CONCENT_PUBLIC_KEY),
         )
         self._test_400_response(response)
         self.assertTrue(response.json()['error'].startswith('Error in Golem Message'))
@@ -214,28 +204,26 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_task_id_already_use(self):
 
-        response_202 = self.client.post(
-            reverse('core:send'),
+        response_202 = self.send_request(
+            url='core:send',
             data=dump(
                 self.correct_golem_data,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
-            content_type='application/octet-stream',
         )
 
         self.assertIsInstance(response_202, HttpResponse)
         self.assertEqual(response_202.status_code, 202)
         self.correct_golem_data.encrypted = None
         self.correct_golem_data.sig = None
-        response_400 = self.client.post(
-            reverse('core:send'),
+        response_400 = self.send_request(
+            url='core:send',
             data=dump(
                 self.correct_golem_data,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
-            content_type='application/octet-stream',
         )
 
         self.assertIsInstance(response_400, JsonResponse)
@@ -249,14 +237,13 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
         assert isinstance(self.want_to_compute, message.Message)
 
-        response_400 = self.client.post(
-            reverse('core:send'),
+        response_400 = self.send_request(
+            url='core:send',
             data=dump(
                 self.want_to_compute,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY
             ),
-            content_type='application/octet-stream',
         )
 
         self._test_400_response(
@@ -285,14 +272,13 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             report_computed_task=report_computed_task
         )
 
-        response_400 = self.client.post(
-            reverse('core:send'),
+        response_400 = self.send_request(
+            url='core:send',
             data=dump(
                 ack_report_computed_task,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY
             ),
-            content_type='application/octet-stream',
         )
 
         self._test_400_response(
@@ -308,13 +294,12 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             task_to_compute=self.cannot_compute_task.task_to_compute  # pylint: disable=no-member
         )
 
-        force_response = self.client.post(
-            reverse('core:send'),
+        force_response = self.send_request(
+            url='core:send',
             data=dump(
                 self.correct_golem_data,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY),
-            content_type='application/octet-stream',
         )
 
         self.assertEqual(force_response.status_code, 202)
@@ -328,14 +313,13 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             subtask_id=self.correct_golem_data.report_computed_task.subtask_id,
         )
 
-        reject_response = self.client.post(
-            reverse('core:send'),
+        reject_response = self.send_request(
+            url='core:send',
             data=dump(
                 self.reject_report_computed_task,
                 self.REQUESTOR_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY
             ),
-            content_type='application/octet-stream',
         )
 
         self.assertEqual(reject_response.status_code, 202)
@@ -354,14 +338,13 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         with freeze_time("2017-11-17 10:00:00"):
             timestamp = self._create_datetime_from_string("2017-11-17 09:40:00")
             assert parse_timestamp_to_utc_datetime(get_current_utc_timestamp()) - timestamp > golem_settings.MSG_TTL
-            response = self.client.post(
-                reverse('core:send'),
+            response = self.send_request(
+                url='core:send',
                 data=dump(
                     ping,
                     self.PROVIDER_PRIVATE_KEY,
                     CONCENT_PUBLIC_KEY
                 ),
-                content_type='application/octet-stream',
             )
 
         self._test_400_response(response)
@@ -373,14 +356,13 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         with freeze_time("2017-11-17 10:00:00"):
             timestamp = self._create_datetime_from_string("2017-11-17 10:10:00")
             assert timestamp - parse_timestamp_to_utc_datetime(get_current_utc_timestamp()) > golem_settings.FUTURE_TIME_TOLERANCE
-            response = self.client.post(
-                reverse('core:send'),
+            response = self.send_request(
+                url='core:send',
                 data=dump(
                     ping,
                     self.PROVIDER_PRIVATE_KEY,
                     CONCENT_PUBLIC_KEY
                 ),
-                content_type='application/octet-stream',
             )
 
         self._test_400_response(response)
@@ -426,14 +408,13 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                     )
                 )
 
-                response_400 = self.client.post(
-                    reverse('core:send'),
+                response_400 = self.send_request(
+                    url='core:send',
                     data=dump(
                         force_report_computed_task,
                         self.PROVIDER_PRIVATE_KEY,
                         CONCENT_PUBLIC_KEY
                     ),
-                    content_type='application/octet-stream',
                 )
 
             self._test_400_response(response_400)
@@ -462,14 +443,13 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 )
             )
 
-            response_202 = self.client.post(
-                reverse('core:send'),
+            response_202 = self.send_request(
+                url='core:send',
                 data=dump(
                     force_report_computed_task,
                     self.PROVIDER_PRIVATE_KEY,
                     CONCENT_PUBLIC_KEY
                 ),
-                content_type='application/octet-stream',
             )
 
             self.assertIn(response_202.status_code, [200, 202])
@@ -505,10 +485,9 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         self._assert_client_count_is_equal(0)
 
     def test_send_with_empty_data_should_return_http_400_error(self):
-        response = self.client.post(
-            reverse('core:send'),
+        response = self.send_request(
+            url='core:send',
             data='',
-            content_type='application/octet-stream',
         )
 
         self.assertEqual(response.status_code, 400)
@@ -525,15 +504,13 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                     task_to_compute=deserialized_task_to_compute
                 )
             )
-
-            response = self.client.post(
-                reverse('core:send'),
+            response = self.send_request(
+                url='core:send',
                 data=dump(
                     force_report_computed_task,
                     self.PROVIDER_PRIVATE_KEY,
                     CONCENT_PUBLIC_KEY
                 ),
-                content_type='application/octet-stream',
             )
 
         self._test_400_response(
@@ -650,9 +627,8 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         new_message_inbox.full_clean()
         new_message_inbox.save()
 
-        response = self.client.post(
-            reverse('core:receive'),
-            content_type='application/octet-stream',
+        response = self.send_request(
+            url='core:receive',
             data=self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
         )
         decoded_response = load(
@@ -668,10 +644,9 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def test_receive_return_http_204_if_no_messages_in_database(self):
-        response = self.client.post(
-            reverse('core:receive'),
+        response = self.send_request(
+            url='core:receive',
             data=self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
-            content_type='application/octet-stream',
         )
 
         self.assertEqual(response.status_code, 204)
@@ -774,9 +749,8 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         new_message_inbox_out_of_band.save()
 
         with freeze_time("2017-11-17 12:00:00"):
-            response = self.client.post(
-                reverse('core:receive'),
-                content_type='application/octet-stream',
+            response = self.send_request(
+                url='core:receive',
                 data=self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
             )
 
@@ -795,9 +769,8 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         self.assertEqual(decoded_message.report_computed_task.task_to_compute.sig, self.task_to_compute.sig)
 
         with freeze_time("2017-11-17 12:00:00"):
-            response = self.client.post(
-                reverse('core:receive'),
-                content_type='application/octet-stream',
+            response = self.send_request(
+                url='core:receive',
                 data=self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
             )
 
@@ -941,22 +914,18 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
 
     @freeze_time("2017-11-17 11:40:00")
     def test_view_receive_out_of_band_should_accept_valid_message(self):
-        response = self.client.post(
-            reverse('core:receive'),
+        response = self.send_request(
+            url='core:receive',
             data=self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
-            content_type='application/octet-stream',
         )
-
         self.assertEqual(response.status_code, 200)
 
     @freeze_time("2017-11-17 9:20:00")
     def test_view_receive_out_of_band_return_http_204_if_no_messages_in_database(self):
-        response = self.client.post(
-            reverse('core:receive'),
+        response = self.send_request(
+            url='core:receive',
             data=self._create_client_auth_message(self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
                                                   self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
-            content_type='application/octet-stream',
         )
-
         self.assertEqual(response.status_code, 204)
         self.assertEqual(response.content.decode(), '')

@@ -888,14 +888,13 @@ class ConcentIntegrationTestCase(TestCase):
         force_report_computed_task = message.concents.ForceReportComputedTask(
             report_computed_task = report_computed_task,
         )
-        return self.client.post(
-            reverse('core:send'),
+        return self.send_request(
+            url='core:send',
             data                                = dump(
                 force_report_computed_task,
                 self.PROVIDER_PRIVATE_KEY,
                 settings.CONCENT_PUBLIC_KEY
             ),
-            content_type                        = 'application/octet-stream',
         )
 
     def _assert_stored_message_counter_increased(self, increased_by = 1):

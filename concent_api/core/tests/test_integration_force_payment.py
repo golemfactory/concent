@@ -1,6 +1,5 @@
 import mock
 from django.test            import override_settings
-from django.urls            import reverse
 from freezegun              import freeze_time
 from golem_messages         import message
 from golem_messages.utils import decode_hex
@@ -56,10 +55,9 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 10:00:25"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                                = serialized_force_payment,
-                content_type                        = 'application/octet-stream',
             )
         self._test_response(
             response,
@@ -107,10 +105,9 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 10:00:25"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                                = serialized_force_payment,
-                content_type                        = 'application/octet-stream',
             )
         self._test_response(
             response,
@@ -162,10 +159,9 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             return_value=ClaimPaymentInfo(0, 0, timestamp_error=True)
         ) as settle_overdue_acceptances:
             with freeze_time("2018-02-05 12:00:09"):
-                response = self.client.post(
-                    reverse('core:send'),
+                response =self.send_request(
+                    url='core:send',
                     data                                = serialized_force_payment,
-                    content_type                        = 'application/octet-stream',
                 )
 
         settle_overdue_acceptances.assert_called_with(
@@ -228,10 +224,9 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             return_value=ClaimPaymentInfo(0, 0, timestamp_error=True)
         ) as settle_overdue_acceptances:
             with freeze_time("2018-02-05 12:00:20"):
-                response = self.client.post(
-                    reverse('core:send'),
+                response =self.send_request(
+                    url='core:send',
                     data                                = serialized_force_payment,
-                    content_type                        = 'application/octet-stream',
                 )
 
         settle_overdue_acceptances.assert_called_with(
@@ -294,10 +289,9 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 'core.message_handlers.bankster.settle_overdue_acceptances',
                 return_value=ClaimPaymentInfo(0, 0)
             ) as settle_overdue_acceptances:
-                response = self.client.post(
-                    reverse('core:send'),
+                response = self.send_request(
+                    url='core:send',
                     data                                = serialized_force_payment,
-                    content_type                        = 'application/octet-stream',
                 )
 
         settle_overdue_acceptances.assert_called_with(
@@ -367,10 +361,9 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 'core.message_handlers.bankster.settle_overdue_acceptances',
                 return_value=ClaimPaymentInfo(amount_paid, amount_pending, b'', 123)
             ) as settle_overdue_acceptances:
-                response_1 = self.client.post(
-                    reverse('core:send'),
+                response_1 =self.send_request(
+                    url='core:send',
                     data                                = serialized_force_payment,
-                    content_type                        = 'application/octet-stream',
                 )
 
         settle_overdue_acceptances.assert_called_with(
@@ -398,10 +391,9 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(last_pending_message.client.public_key_bytes,    self.REQUESTOR_PUBLIC_KEY)
 
         with freeze_time("2018-02-05 12:00:21"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
         self._test_response(
             response_2,
@@ -442,10 +434,9 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 12:00:20"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                                = serialized_force_payment,
-                content_type                        = 'application/octet-stream',
             )
 
         self._test_400_response(response)
@@ -465,10 +456,9 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 12:00:20"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                                = serialized_force_payment,
-                content_type                        = 'application/octet-stream',
             )
 
         self._test_400_response(response)
@@ -504,10 +494,9 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 12:00:20"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                                = serialized_force_payment,
-                content_type                        = 'application/octet-stream',
             )
 
         self._test_response(
@@ -563,10 +552,9 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                 'core.message_handlers.bankster.settle_overdue_acceptances',
                 return_value=ClaimPaymentInfo(0, 25000)
             ) as settle_overdue_acceptances:
-                response_1 = self.client.post(
-                    reverse('core:send'),
+                response_1 =self.send_request(
+                    url='core:send',
                     data                                = serialized_force_payment,
-                    content_type                        = 'application/octet-stream',
                 )
 
         settle_overdue_acceptances.assert_called_with(
@@ -590,10 +578,9 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 12:00:21"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
         self._test_response(
             response_2,

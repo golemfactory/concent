@@ -372,9 +372,9 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
 
             message_timestamp = parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
             report_computed_task_message = StoredMessage(
-                type=force_report_computed_task.report_computed_task.header.type_,
+                type=force_report_computed_task.report_computed_task.header.type_,  # pylint: disable=no-member
                 timestamp=message_timestamp,
-                data=force_report_computed_task.report_computed_task.serialize(),
+                data=force_report_computed_task.report_computed_task.serialize(),  # pylint: disable=no-member
                 task_id=compute_task_def['task_id'],  # pylint: disable=no-member
                 subtask_id=compute_task_def['subtask_id'],  # pylint: disable=no-member
                 protocol_version=different_version_of_golem_messages,

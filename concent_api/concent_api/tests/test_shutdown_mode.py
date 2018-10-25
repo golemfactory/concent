@@ -2,7 +2,6 @@ from django.conf import settings
 from django.core import mail
 from django.http.response import JsonResponse
 from django.test import override_settings
-from django.urls import reverse
 
 from constance import config
 from constance.test import override_config
@@ -63,10 +62,9 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response = self.client.post(
-                reverse('core:send'),
+            response = self.send_request(
+                url='core:send',
                 data=serialized_force_report_computed_task,
-                content_type='application/octet-stream',
             )
 
         self.assertIsInstance(response, JsonResponse)
@@ -120,10 +118,9 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:send'),
+            response = self.send_request(
+                url='core:send',
                 data=serialized_ack_report_computed_task,
-                content_type='application/octet-stream',
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
             )
 
@@ -177,10 +174,9 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 10:00:25"):
-            response = self.client.post(
-                reverse('core:send'),
+            response = self.send_request(
+                url='core:send',
                 data=serialized_force_payment,
-                content_type='application/octet-stream',
             )
 
         self.assertIsInstance(response, JsonResponse)

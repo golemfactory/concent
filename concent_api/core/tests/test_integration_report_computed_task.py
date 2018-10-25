@@ -6,7 +6,6 @@ from golem_messages import message
 from golem_messages import factories
 
 from django.test import override_settings
-from django.urls import reverse
 
 from common.constants import ErrorCode
 from common.constants import ERROR_IN_GOLEM_MESSAGE
@@ -57,10 +56,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:01:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_report_computed_task,
-                content_type                        = 'application/octet-stream',
             )
 
         self._test_response(
@@ -105,10 +103,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data=serialized_force_report_computed_task,
-                content_type='application/octet-stream',
             )
 
         self.assertEqual(response_1.status_code, 202)
@@ -174,10 +171,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_report_computed_task,
-                content_type                        = 'application/octet-stream',
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -213,10 +209,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 2: Concent forces computed task report on the requestor
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data         = self._create_requestor_auth_message(),
-                content_type = 'application/octet-stream',
             )
 
         self._test_response(
@@ -244,10 +239,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_3 = self.client.post(
-                reverse('core:send'),
+            response_3 =self.send_request(
+                url='core:send',
                 data                           = serialized_ack_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
         self._test_report_computed_task_in_database(report_computed_task)
         self.assertEqual(response_3.status_code,  202)
@@ -279,10 +273,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 4: Concent passes computed task acceptance to the provider
 
         with freeze_time("2017-12-01 11:00:15"):
-            response_4 = self.client.post(
-                reverse('core:receive'),
+            response_4 =self.send_request(
+                url='core:receive',
                 data         = self._create_provider_auth_message(),
-                content_type = 'application/octet-stream',
             )
 
         self._test_response(
@@ -335,10 +328,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_report_computed_task,
-                content_type                        = 'application/octet-stream',
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -373,10 +365,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 2: Concent forces computed task report on the requestor
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data         = self._create_requestor_auth_message(),
-                content_type = 'application/octet-stream',
             )
 
         self._test_response(
@@ -414,10 +405,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_3 = self.client.post(
-                reverse('core:send'),
+            response_3 =self.send_request(
+                url='core:send',
                 data                            = serialized_reject_report_computed_task,
-                content_type                    = 'application/octet-stream',
             )
 
         self.assertEqual(response_3.status_code,  202)
@@ -449,10 +439,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 4: Concent passes computed task rejection to the provider
 
         with freeze_time("2017-12-01 11:00:15"):
-            response_4 = self.client.post(
-                reverse('core:receive'),
+            response_4 =self.send_request(
+                url='core:receive',
                 data                            = self._create_provider_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_response(
@@ -508,10 +497,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_report_computed_task,
-                content_type                        = 'application/octet-stream',
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -553,10 +541,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 2: Concent forces computed task report on the requestor
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data         = self._create_requestor_auth_message(),
-                content_type = 'application/octet-stream',
             )
 
         self._test_response(
@@ -587,10 +574,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_3 = self.client.post(
-                reverse('core:send'),
+            response_3 =self.send_request(
+                url='core:send',
                 data                           = serialized_reject_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response_3.status_code,                    202)
@@ -626,10 +612,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 4: Concent overrides computed task rejection and sends acceptance message to the provider
 
         with freeze_time("2017-12-01 11:00:15"):
-            response_4 = self.client.post(
-                reverse('core:receive'),
+            response_4 =self.send_request(
+                url='core:receive',
                 data                            = self._create_provider_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_response(
@@ -657,10 +642,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 5: Requestor receives computed task report verdict out of band due to an overridden decision
 
         with freeze_time("2017-12-01 11:00:15"):
-            response_5 = self.client.post(
-                reverse('core:receive'),
+            response_5 =self.send_request(
+                url='core:receive',
                 data         = self._create_requestor_auth_message(),
-                content_type = 'application/octet-stream',
             )
 
         self._test_response(
@@ -716,10 +700,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_report_computed_task,
-                content_type                        = 'application/octet-stream',
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -755,10 +738,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 2: Concent forces computed task report on the requestor
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data         = self._create_requestor_auth_message(),
-                content_type = 'application/octet-stream',
             )
 
         self._test_response(
@@ -777,10 +759,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 3: Concent accepts computed task due to lack of response from the requestor
 
         with freeze_time("2017-12-01 11:00:10"):
-            response_3 = self.client.post(
-                reverse('core:receive'),
+            response_3 =self.send_request(
+                url='core:receive',
                 data                            = self._create_provider_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_response(
@@ -817,10 +798,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 4: Requestor receives task computation report verdict out of band due to lack of response
 
         with freeze_time("2017-12-01 11:00:11"):
-            response_4 = self.client.post(
-                reverse('core:receive'),
+            response_4 =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_response(
@@ -878,10 +858,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_report_computed_task,
-                content_type                        = 'application/octet-stream',
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -915,10 +894,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 2: Provider forces computed task report via Concent again
         with freeze_time("2017-12-01 10:59:00"):
-            response_2 = self.client.post(
-                reverse('core:send'),
+            response_2 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_report_computed_task,
-                content_type                        = 'application/octet-stream',
             )
         self._test_400_response(
             response_2,
@@ -958,10 +936,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                           = serialized_ack_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
         self._test_400_response(
             response,
@@ -1004,10 +981,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                           = serialized_reject_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
         self._test_400_response(
             response,
@@ -1055,10 +1031,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_report_computed_task,
-                content_type                        = 'application/octet-stream',
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -1093,10 +1068,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 2: Concent forces computed task report on the requestor
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data         = self._create_requestor_auth_message(),
-                content_type = 'application/octet-stream',
             )
 
         self._test_response(
@@ -1124,10 +1098,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_3 = self.client.post(
-                reverse('core:send'),
+            response_3 =self.send_request(
+                url='core:send',
                 data                           = serialized_ack_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response_3.status_code,  202)
@@ -1170,10 +1143,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_4 = self.client.post(
-                reverse('core:send'),
+            response_4 =self.send_request(
+                url='core:send',
                 data                           = serialized_reject_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
         self._test_400_response(
             response_4,
@@ -1221,10 +1193,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_report_computed_task,
-                content_type                        = 'application/octet-stream',
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -1259,10 +1230,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 2: Concent forces computed task report on the requestor
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data         = self._create_requestor_auth_message(),
-                content_type = 'application/octet-stream',
             )
 
         self._test_response(
@@ -1293,10 +1263,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_3 = self.client.post(
-                reverse('core:send'),
+            response_3 =self.send_request(
+                url='core:send',
                 data                           = serialized_reject_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response_3.status_code,  202)
@@ -1340,10 +1309,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_4 = self.client.post(
-                reverse('core:send'),
+            response_4 =self.send_request(
+                url='core:send',
                 data                           = serialized_ack_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
         self._test_400_response(
             response_4,
@@ -1390,10 +1358,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_report_computed_task,
-                content_type                        = 'application/octet-stream',
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -1428,10 +1395,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 2: Concent forces computed task report on the requestor
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data         = self._create_requestor_auth_message(),
-                content_type = 'application/octet-stream',
             )
 
         self._test_response(
@@ -1459,10 +1425,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:15"):
-            response_3 = self.client.post(
-                reverse('core:send'),
+            response_3 =self.send_request(
+                url='core:send',
                 data                           = serialized_ack_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
         self._test_400_response(
             response_3,
@@ -1514,10 +1479,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_report_computed_task,
-                content_type                        = 'application/octet-stream',
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -1552,10 +1516,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 2: Concent forces computed task report on the requestor
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data         = self._create_requestor_auth_message(),
-                content_type = 'application/octet-stream',
             )
 
         self._test_response(
@@ -1588,10 +1551,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:09"):
-            response_3 = self.client.post(
-                reverse('core:send'),
+            response_3 =self.send_request(
+                url='core:send',
                 data=serialized_reject_report_computed_task,
-                content_type='application/octet-stream',
             )
         self._test_400_response(
             response_3,
@@ -1616,10 +1578,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:09"):
-            response_4 = self.client.post(
-                reverse('core:send'),
+            response_4 =self.send_request(
+                url='core:send',
                 data=serialized_reject_report_computed_task,
-                content_type='application/octet-stream',
             )
         self._test_400_response(
             response_4,
@@ -1642,10 +1603,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:09"):
-            response_5 = self.client.post(
-                reverse('core:send'),
+            response_5 =self.send_request(
+                url='core:send',
                 data=serialized_reject_report_computed_task,
-                content_type='application/octet-stream',
             )
         self._test_400_response(
             response_5,
@@ -1669,10 +1629,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:09"):
-            response_6 = self.client.post(
-                reverse('core:send'),
+            response_6 =self.send_request(
+                url='core:send',
                 data=serialized_reject_report_computed_task,
-                content_type='application/octet-stream',
             )
         self._test_400_response(
             response_6,
@@ -1717,10 +1676,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data            = serialized_force_report_computed_task,
-                content_type    = 'application/octet-stream',
             )
         self._test_400_response(
             response_1,
@@ -1767,10 +1725,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                           = serialized_force_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
         self._test_400_response(
             response_1,
@@ -1817,10 +1774,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                           = serialized_force_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
         self._test_400_response(
             response_1,
@@ -1867,10 +1823,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                           = serialized_force_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
         self._test_400_response(
             response_1,
@@ -1919,10 +1874,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                           = serialized_ack_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
         self._test_400_response(response)
         self._assert_stored_message_counter_not_increased()
@@ -1962,10 +1916,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                           = serialized_reject_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
         self.assertEqual(response.status_code,  400)
         self.assertIn('error', response.json().keys())
@@ -2009,10 +1962,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_report_computed_task[:50],
-                content_type                        = 'application/octet-stream',
             )
         self._test_400_response(response_1)
         self._assert_stored_message_counter_not_increased()
@@ -2057,10 +2009,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         serialized_force_report_computed_task = serialized_force_report_computed_task[:120] + b'\x00' + serialized_force_report_computed_task[120:]
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_report_computed_task,
-                content_type                        = 'application/octet-stream',
             )
         self._test_400_response(response_1)
         self._assert_stored_message_counter_not_increased()
@@ -2105,10 +2056,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_report_computed_task,
-                content_type                        = 'application/octet-stream',
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -2143,10 +2093,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 2: Concent forces computed task report on the requestor
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data         = self._create_requestor_auth_message(),
-                content_type = 'application/octet-stream',
             )
 
         self._test_response(
@@ -2174,10 +2123,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_3 = self.client.post(
-                reverse('core:send'),
+            response_3 =self.send_request(
+                url='core:send',
                 data                            = serialized_ack_report_computed_task,
-                content_type                    = 'application/octet-stream',
             )
 
         self.assertEqual(response_3.status_code,  202)
@@ -2209,10 +2157,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 4: Concent passes computed task acceptance to the provider
 
         with freeze_time("2017-12-01 11:00:30"):
-            response_4 = self.client.post(
-                reverse('core:receive'),
+            response_4 =self.send_request(
+                url='core:receive',
                 data                            = self._create_provider_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_response(
@@ -2273,10 +2220,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_report_computed_task,
-                content_type                        = 'application/octet-stream',
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -2311,10 +2257,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 2: Concent forces computed task report on the requestor
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data         = self._create_requestor_auth_message(),
-                content_type = 'application/octet-stream',
             )
 
         self._test_response(
@@ -2342,10 +2287,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_3 = self.client.post(
-                reverse('core:send'),
+            response_3 =self.send_request(
+                url='core:send',
                 data                           = serialized_ack_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
 
         self.assertEqual(response_3.status_code,  202)
@@ -2377,10 +2321,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 4: Concent passes computed task acceptance to the provider
 
         with freeze_time("2017-12-01 11:00:15"):
-            response_4 = self.client.post(
-                reverse('core:receive'),
+            response_4 =self.send_request(
+                url='core:receive',
                 data         = self._create_provider_auth_message(),
-                content_type = 'application/octet-stream',
             )
 
         self._test_response(
@@ -2404,10 +2347,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 5: Concent passes computed task acceptance to the provider again
 
         with freeze_time("2017-12-01 12:00:00"):
-            response_5 = self.client.post(
-                reverse('core:receive'),
+            response_5 =self.send_request(
+                url='core:receive',
                 data         = self._create_provider_auth_message(),
-                content_type = 'application/octet-stream',
             )
 
         self._test_204_response(response_5)
@@ -2447,10 +2389,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_report_computed_task,
-                content_type                        = 'application/octet-stream',
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -2485,10 +2426,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 2: Provider tries to get Ack from Concent before compute_task_def.deadline + CONCENT_MESSAGING_TIME
 
         with freeze_time("2017-12-01 11:00:00"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data                            = self._create_provider_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_204_response(response_2)
@@ -2497,10 +2437,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 3: Concent forces computed task report on the requestor
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_3 = self.client.post(
-                reverse('core:receive'),
+            response_3 =self.send_request(
+                url='core:receive',
                 data         = self._create_requestor_auth_message(),
-                content_type = 'application/octet-stream',
             )
 
         self._test_response(
@@ -2519,10 +2458,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 4: Provider tries to get Ack from Concent too soon, again
 
         with freeze_time("2017-12-01 11:00:06"):
-            response_4 = self.client.post(
-                reverse('core:receive'),
+            response_4 =self.send_request(
+                url='core:receive',
                 data                            = self._create_provider_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
         self._test_204_response(response_4)
         self._assert_stored_message_counter_not_increased()
@@ -2562,10 +2500,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data=serialized_force_report_computed_task,
-                content_type='application/octet-stream',
             )
 
         self.assertEqual(response_1.status_code, 202)
@@ -2600,10 +2537,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 2: Concent forces computed task report on the requestor
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data=self._create_requestor_auth_message(),
-                content_type='application/octet-stream',
             )
 
         self._test_response(
@@ -2641,10 +2577,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_3 = self.client.post(
-                reverse('core:send'),
+            response_3 =self.send_request(
+                url='core:send',
                 data=serialized_reject_report_computed_task,
-                content_type='application/octet-stream',
             )
 
         self.assertEqual(response_3.status_code, 202)
@@ -2676,10 +2611,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 4: Concent passes computed task rejection to the provider
 
         with freeze_time("2017-12-01 11:00:15"):
-            response_4 = self.client.post(
-                reverse('core:receive'),
+            response_4 =self.send_request(
+                url='core:receive',
                 data=self._create_provider_auth_message(),
-                content_type='application/octet-stream',
             )
 
         self._test_response(
@@ -2733,10 +2667,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_report_computed_task,
-                content_type                        = 'application/octet-stream',
             )
 
         self.assertEqual(response_1.status_code,  202)
@@ -2772,10 +2705,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 2: Concent forces computed task report on the requestor
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data         = self._create_requestor_auth_message(),
-                content_type = 'application/octet-stream',
             )
 
         self._test_response(
@@ -2805,10 +2737,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2017-12-01 11:00:05"):
-            response_3 = self.client.post(
-                reverse('core:send'),
+            response_3 =self.send_request(
+                url='core:send',
                 data                           = serialized_ack_report_computed_task,
-                content_type                   = 'application/octet-stream',
             )
 
         self._test_report_computed_task_in_database(different_report_computed_task)
@@ -2841,10 +2772,9 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # STEP 4: Concent passes computed task acceptance to the provider
 
         with freeze_time("2017-12-01 11:00:15"):
-            response_4 = self.client.post(
-                reverse('core:receive'),
+            response_4 =self.send_request(
+                url='core:receive',
                 data         = self._create_provider_auth_message(),
-                content_type = 'application/octet-stream',
             )
 
         self._test_response(

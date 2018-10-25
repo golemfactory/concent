@@ -6,8 +6,6 @@ from django.core.exceptions import ValidationError
 from golem_messages import factories
 from golem_messages import message
 from golem_messages.factories import tasks
-from golem_messages.factories.tasks import ComputeTaskDefFactory
-from golem_messages.factories.tasks import WantToComputeTaskFactory
 from golem_messages.utils import encode_hex
 
 from common.constants import ConcentUseCase

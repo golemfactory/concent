@@ -15,7 +15,7 @@ from golem_messages.message.tasks import ReportComputedTask
 
 from common.constants import ErrorCode
 from common.exceptions import ConcentValidationError
-from common.logging import log_string_message
+from common.logging import log
 from common.logging import LoggingLevel
 from common.validations import validate_secure_hash_algorithm
 from core.constants import VALID_SCENE_FILE_PREFIXES
@@ -173,7 +173,7 @@ def is_golem_message_signed_with_key(
         is_valid = golem_message.verify_signature(public_key)
     except MessageError as exception:
         is_valid = False
-        log_string_message(
+        log(
             logger,
             f'There was an exception when validating if golem_message {golem_message.__class__.__name__} is signed '
             f'with public key. Exception: {exception}.',

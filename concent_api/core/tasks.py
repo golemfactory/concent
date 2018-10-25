@@ -40,7 +40,7 @@ def upload_finished(subtask_id: str) -> None:
     try:
         subtask = Subtask.objects.select_for_update().get(subtask_id=subtask_id)
     except Subtask.DoesNotExist:
-        logging.log_string_message(
+        logging.log(
             logger,
             f'Task `upload_finished` tried to get Subtask object, but it does not exist.',
             subtask_id=subtask_id,
@@ -103,7 +103,7 @@ def upload_finished(subtask_id: str) -> None:
         Subtask.SubtaskState.ACCEPTED,
         Subtask.SubtaskState.FAILED
     ]:
-        logging.log_string_message(
+        logging.log(
             logger,
             f'Subtask is expected to be in `VERIFICATION_FILE_TRANSFER` state, but was in {subtask.state}.',
             subtask_id=subtask_id,
@@ -111,7 +111,7 @@ def upload_finished(subtask_id: str) -> None:
         )
     # If it's one of the states that can precede verification, report an error. Processing ends here.
     else:
-        logging.log_string_message(
+        logging.log(
             logger,
             f'Subtask is expected to be in `VERIFICATION_FILE_TRANSFER` state, but was in {subtask.state}.',
             subtask_id=subtask_id,
@@ -130,7 +130,7 @@ def verification_result(
     error_message: Optional[str] = None,
     error_code: Optional[str] = None,
 ) -> None:
-    logging.log_string_message(
+    logging.log(
         logger,
         f'Verification_result_task starts. Result: {result}',
         subtask_id=subtask_id
@@ -150,7 +150,7 @@ def verification_result(
     try:
         subtask = Subtask.objects.select_for_update(nowait=True).get(subtask_id=subtask_id)
     except DatabaseError:
-        logging.log_string_message(
+        logging.log(
             logger,
             f'Row in database corresponding with Subtask object is already locked.'
             f'retrying task {self.request.retries}/{self.max_retries}',
@@ -166,7 +166,7 @@ def verification_result(
         return
 
     if subtask.state_enum == Subtask.SubtaskState.ACCEPTED:
-        logging.log_string_message(
+        logging.log(
             logger,
             VERIFICATION_RESULT_SUBTASK_STATE_ACCEPTED_LOG_MESSAGE.format(subtask_id),
             subtask_id=subtask_id,
@@ -176,7 +176,7 @@ def verification_result(
 
     elif subtask.state_enum == Subtask.SubtaskState.FAILED:
 
-        logging.log_string_message(
+        logging.log(
             logger,
             VERIFICATION_RESULT_SUBTASK_STATE_FAILED_LOG_MESSAGE.format(subtask_id),
             subtask_id=subtask_id,
@@ -185,7 +185,7 @@ def verification_result(
         return
 
     elif subtask.state_enum != Subtask.SubtaskState.ADDITIONAL_VERIFICATION:
-        logging.log_string_message(
+        logging.log(
             logger,
             VERIFICATION_RESULT_SUBTASK_STATE_UNEXPECTED_LOG_MESSAGE.format(subtask.state),
             subtask_id=subtask_id,
@@ -238,7 +238,7 @@ def verification_result(
     elif result_enum in (VerificationResult.MATCH, VerificationResult.ERROR):
         # Worker logs the error code and message
         if result_enum == VerificationResult.ERROR:
-            logging.log_string_message(
+            logging.log(
                 logger,
                 f'Verification_result_task processing error result with: RESULT {result_enum.name}. ERROR MESSAGE {error_message}. ERROR CODE {error_code}',
                 subtask_id=subtask_id,
@@ -268,7 +268,7 @@ def verification_result(
             subtask=subtask,
             state=Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
         )
-    logging.log_string_message(
+    logging.log(
         logger,
         f'Verification_result_task ends. Result: {result_enum.name}',
         subtask_id=subtask_id
@@ -280,7 +280,7 @@ def verification_result(
 @transaction.atomic(using='control')
 @log_task_errors
 def result_upload_finished(self: Task, subtask_id: str) -> None:
-    logging.log_string_message(
+    logging.log(
         logger,
         f'result_upload_finished starts',
         subtask_id=subtask_id
@@ -292,7 +292,7 @@ def result_upload_finished(self: Task, subtask_id: str) -> None:
     try:
         subtask = Subtask.objects.select_for_update(nowait=True).get(subtask_id=subtask_id)
     except DatabaseError:
-        logging.log_string_message(
+        logging.log(
             logger,
             f'Row in database corresponding with Subtask object is already locked.'
             f'retrying task {self.request.retries}/{self.max_retries}',
@@ -311,7 +311,7 @@ def result_upload_finished(self: Task, subtask_id: str) -> None:
         Subtask.SubtaskState.REPORTED,
         Subtask.SubtaskState.FORCING_REPORT,
     ]:
-        logging.log_string_message(
+        logging.log(
             logger,
             f'result_upload_finished called for Subtask but it has status {subtask.state} instead of `FORCING_RESULT_TRANSFER`.',
             subtask_id=subtask_id,
@@ -321,13 +321,13 @@ def result_upload_finished(self: Task, subtask_id: str) -> None:
             f'result_upload_finished called for Subtask with ID `{subtask_id}` but it has status {subtask.state} instead of `FORCING_RESULT_TRANSFER`.'
         )
     elif subtask.state_enum == Subtask.SubtaskState.FAILED:
-        logging.log_string_message(
+        logging.log(
             logger,
             f'result_upload_finished called for Subtask, but it has status FAILED.',
             subtask_id=subtask_id,
         )
     elif subtask.state_enum != Subtask.SubtaskState.FORCING_RESULT_TRANSFER:
-        logging.log_string_message(
+        logging.log(
             logger,
             f'result_upload_finished called for Subtask but it has status {subtask.state} instead of `FORCING_RESULT_TRANSFER`.',
             subtask_id=subtask_id,

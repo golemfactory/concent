@@ -97,7 +97,7 @@ class ConductorUploadAcknowledgedTaskTestCase(ConcentIntegrationTestCase):
             )
             mock_frames_filtering.assert_called_once()
 
-    @mock.patch("conductor.tasks.log_string_message")
+    @mock.patch("conductor.tasks.log")
     def test_that_upload_acknowledged_task_should_log_error_when_verification_request_with_given_subtask_id_does_not_exist(self, mock_logging_error):
         subtask_id = self._get_uuid('o')
 

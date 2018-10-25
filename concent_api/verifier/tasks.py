@@ -11,7 +11,7 @@ from conductor.models import BlenderSubtaskDefinition
 from core.transfer_operations import create_file_transfer_token_for_concent
 from common.decorators import log_task_errors
 from common.decorators import provides_concent_feature
-from common.logging import log_string_message
+from common.logging import log
 from verifier.decorators import handle_verification_results
 from verifier.utils import delete_source_files
 from verifier.utils import download_archives_from_storage
@@ -49,7 +49,7 @@ def blender_verification_order(
     frames: List[int],
     blender_crop_script: Optional[str],
 ) -> None:
-    log_string_message(
+    log(
         logger,
         f'Blender_verification_order_starts. SUBTASK_ID: {subtask_id}.',
         f'Source_package_path: {source_package_path}.',

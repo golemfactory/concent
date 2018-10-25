@@ -178,7 +178,7 @@ def parse_headers(
             path_to_file,
             loaded_golem_message.subtask_id
         )
-    logging.log_string_message(
+    logging.log(
         logger,
         f"{loaded_golem_message.operation.capitalize()} request will be validated. "
         f"Message type: '{loaded_golem_message.__class__.__name__}'. File: '{path_to_file}'",
@@ -243,7 +243,7 @@ def parse_headers(
     matching_files = [file for file in loaded_golem_message.files if path_to_file == file['path']]
 
     if len(matching_files) == 1:
-        logging.log_string_message(
+        logging.log(
             logger,
             f"{loaded_golem_message.operation.capitalize()} request passed all validations. "
             f"Message type: '{loaded_golem_message.__class__.__name__}'. File: '{path_to_file}'",

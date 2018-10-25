@@ -24,7 +24,7 @@ def gatekeeper_access_denied_response(
         'subtask_id': subtask_id,
         'client_key': client_key,
     }
-    logging.log_string_message(
+    logging.log(
         logger,
         f"{operation.capitalize()} validation failed. Message: {message} Error code: '{error_code.value}'. File '{path}'",
         subtask_id=subtask_id,

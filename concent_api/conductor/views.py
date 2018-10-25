@@ -10,7 +10,7 @@ from golem_messages.message.concents import FileTransferToken
 
 from common.decorators import provides_concent_feature
 from common.logging import log_request_received
-from common.logging import log_string_message
+from common.logging import log
 from conductor.models import ResultTransferRequest
 from conductor.models import UploadReport
 from conductor.models import VerificationRequest
@@ -60,7 +60,7 @@ def report_upload(_request: HttpRequest, file_path: str) -> HttpResponse:
         verification_request.full_clean()
         verification_request.save()
 
-        log_string_message(
+        log(
             logger, 'All expected files have been uploaded',
             f'Result package path: {verification_request.result_package_path}.'
             f'Source package path: {verification_request.source_package_path}.',

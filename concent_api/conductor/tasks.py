@@ -11,7 +11,7 @@ from common.decorators import log_task_errors
 from common.decorators import provides_concent_feature
 from common.helpers import parse_datetime_to_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
-from common.logging import log_string_message
+from common.logging import log
 from common.logging import LoggingLevel
 from conductor.exceptions import VerificationRequestAlreadyAcknowledgedError
 from conductor.models import BlenderSubtaskDefinition
@@ -41,7 +41,7 @@ def blender_verification_request(
     frames: List[int],
     blender_crop_script: Optional[str],
 ) -> None:
-    log_string_message(
+    log(
         logger,
         f'Blender verification request starts.',
         f'Source_package_path {source_package_path}',
@@ -93,7 +93,7 @@ def blender_verification_request(
         verification_request.upload_reports.filter(path=verification_request.source_package_path).exists() and
         verification_request.upload_reports.filter(path=verification_request.result_package_path).exists()
     ):
-        log_string_message(
+        log(
             logger, 'All expected files have been uploaded',
             f'Result package path: {verification_request.result_package_path}'
             f'Source package path: {verification_request.source_package_path}',
@@ -118,7 +118,7 @@ def upload_acknowledged(
     result_file_size: str,
     result_package_hash: str,
 ) -> None:
-    log_string_message(
+    log(
         logger,
         f'Upload acknowledgment starts.',
         f'Source_file_size {source_file_size}',
@@ -132,7 +132,7 @@ def upload_acknowledged(
     try:
         verification_request = VerificationRequest.objects.select_for_update().get(subtask_id=subtask_id)
     except VerificationRequest.DoesNotExist:
-        log_string_message(
+        log(
             logger,
             f'Task `upload_acknowledged` tried to get VerificationRequest object with ID {subtask_id} but it does not exist.',
             subtask_id=subtask_id,
@@ -141,7 +141,7 @@ def upload_acknowledged(
         return
 
     if verification_request.upload_acknowledged is True:
-        log_string_message(
+        log(
             logger,
             f'Task `upload_acknowledged` scheduled but VerificationRequest with with ID {subtask_id} is already acknowledged.',
             subtask_id=subtask_id,
@@ -171,7 +171,7 @@ def upload_acknowledged(
         frames=frames,
         blender_crop_script=verification_request.blender_subtask_definition.blender_crop_script,
     )
-    log_string_message(
+    log(
         logger,
         f'Upload acknowledgment finished.',
         f'Source_file_size {source_file_size}',

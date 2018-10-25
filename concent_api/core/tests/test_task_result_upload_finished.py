@@ -77,7 +77,7 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
                 task_to_compute=self.task_to_compute,
             )
         )
-        with mock.patch('core.tasks.logging.log_string_message') as log_info:
+        with mock.patch('core.tasks.logging.log') as log_info:
             result_upload_finished(self.subtask.subtask_id)  # pylint: disable=no-value-for-parameter
         self.assertIn('result_upload_finished called for Subtask, but it has status FAILED', str(log_info.call_args))
 
@@ -85,7 +85,7 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
         self.subtask.state = Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name  # pylint: disable=no-member
         self.subtask.save()
 
-        with mock.patch('core.tasks.logging.log_string_message') as log_warning:
+        with mock.patch('core.tasks.logging.log') as log_warning:
             result_upload_finished(self.subtask.subtask_id)  # pylint: disable=no-value-for-parameter
 
         log_warning.assert_called()

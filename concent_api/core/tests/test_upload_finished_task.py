@@ -44,7 +44,7 @@ class UploadFinishedTaskTest(ConcentIntegrationTestCase):
             Subtask.objects.filter(subtask_id=self.subtask.subtask_id).update(state=state.name)  # pylint: disable=no-member
             self.subtask.refresh_from_db()
 
-            with mock.patch('core.tasks.logging.log_string_message') as logging_warning_mock:
+            with mock.patch('core.tasks.logging.log') as logging_warning_mock:
                 upload_finished(self.subtask.subtask_id)  # pylint: disable=no-value-for-parameter
 
             logging_warning_mock.assert_called()
@@ -54,7 +54,7 @@ class UploadFinishedTaskTest(ConcentIntegrationTestCase):
         Subtask.objects.filter(subtask_id=self.subtask.subtask_id).update(state=Subtask.SubtaskState.REPORTED.name)  # pylint: disable=no-member
         self.subtask.refresh_from_db()
 
-        with mock.patch('core.tasks.logging.log_string_message') as logging_error_mock:
+        with mock.patch('core.tasks.logging.log') as logging_error_mock:
             upload_finished(self.subtask.subtask_id)  # pylint: disable=no-value-for-parameter
 
         logging_error_mock.assert_called()

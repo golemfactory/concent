@@ -38,7 +38,7 @@ def replace_element_to_unavailable_instead_of_none(log_function: Callable) -> Ca
 def log_message_received(logger: Logger, message: Message, client_public_key: bytes) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
     subtask_id: str = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
-    log_string_message(
+    log(
         logger,
         f'A message has been received in `send/` -- MESSAGE_TYPE: {_get_message_type(message)} -- TASK_ID: {task_id} -- ',
         subtask_id=subtask_id,
@@ -55,7 +55,7 @@ def log_message_returned(
 ) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, response_message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, response_message)
-    log_string_message(
+    log(
         logger,
         f'A message has been returned from `{endpoint}` -- MESSAGE_TYPE: {_get_message_type(response_message)} -- TASK_ID: {task_id} -- ',
         subtask_id=subtask_id,
@@ -67,7 +67,7 @@ def log_message_returned(
 def log_message_accepted(logger: Logger, message: Message, client_public_key: bytes) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
-    log_string_message(
+    log(
         logger,
         f'Response from views. The message has been accepted for further processing -- MESSAGE_TYPE: {_get_message_type(message)} -- TASK_ID: {task_id} -- ',
         subtask_id=subtask_id,
@@ -79,7 +79,7 @@ def log_message_accepted(logger: Logger, message: Message, client_public_key: by
 def log_message_added_to_queue(logger: Logger, message: Message, client_public_key: bytes) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
-    log_string_message(
+    log(
         logger,
         f'A new message has been added to queue -- MESSAGE_TYPE: {_get_message_type(message)} -- TASK_ID: {task_id} -- ',
         subtask_id=subtask_id,
@@ -97,7 +97,7 @@ def log_timeout(
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
 
-    log_string_message(
+    log(
         logger,
         f'A deadline has been exceeded -- MESSAGE_TYPE: {_get_message_type(message)} --TASK_ID: {task_id} -- TIMEOUT: {deadline}',
         subtask_id=subtask_id,
@@ -116,7 +116,7 @@ def log_400_error(
 ) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
-    log_string_message(
+    log(
         logger,
          f"Error 400 has been returned from `{endpoint}()` -- MESSAGE_TYPE: {_get_message_type(message)} -- "
         f"ERROR CODE: {error_code} -- ERROR MESSAGE: {error_message} -- TASK_ID: '{task_id}' -- ",
@@ -137,7 +137,7 @@ def log_subtask_stored(
     result_package_size: int,
     next_deadline: Optional[int] = None,
 ) -> None:
-    log_string_message(
+    log(
         logger,
         f"A subtask has been stored -- STATE: {state} -- "
         f"NEXT_DEADLINE: {next_deadline} -- "
@@ -160,7 +160,7 @@ def log_subtask_updated(
     requestor_public_key: bytes,
     next_deadline:  Optional[int] = None,
 ) -> None:
-    log_string_message(
+    log(
         logger,
         f"A subtask has been updated -- STATE: {state} -- "
         f"NEXT_DEADLINE: {next_deadline} -- "
@@ -181,7 +181,7 @@ def log_stored_message_added_to_subtask(
     provider_id: str,
     requestor_id: str
 ) -> None:
-    log_string_message(
+    log(
         logger,
         f"A stored message has beed added to subtask -- STATE: {state} "
         f"TASK_ID: {task_id} "
@@ -202,7 +202,7 @@ def log_new_pending_response(
     subtask_id = subtask.subtask_id if subtask is not None else '-not available-'
     provider_key = subtask.provider.public_key if subtask is not None else '-not available-'
     requestor_key = subtask.requestor.public_key if subtask is not None else '-not available-'
-    log_string_message(
+    log(
         logger,
         f'New pending response in {queue_name} endpoint RESPONSE_TYPE: {response_type} '
         f'TASK_ID: {task_id} '
@@ -222,7 +222,7 @@ def log_receive_message_from_database(
 ) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
-    log_string_message(
+    log(
         logger,
         f'Message {_get_message_type(message)}, TYPE: {message.header.type_} has been received by {queue_name} endpoint.'
         f' RESPONSE_TYPE: {response_type} '
@@ -233,10 +233,10 @@ def log_receive_message_from_database(
 
 
 def log_request_received(logger: Logger, path_to_file: str, operation: FileTransferToken.Operation) -> None:
-    log_string_message(logger, f"{operation.capitalize()} request received. Path to file: '{path_to_file}'")
+    log(logger, f"{operation.capitalize()} request received. Path to file: '{path_to_file}'")
 
 
-def log_string_message(
+def log(
     logger: Logger,
     *messages_to_log: str,
     subtask_id: Optional[str] = None,

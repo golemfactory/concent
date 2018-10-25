@@ -1,9 +1,9 @@
-from django.core.exceptions import ValidationError
-from golem_messages.utils import encode_hex
 import pytest
-
+from django.core.exceptions import ValidationError
 from golem_messages import factories
 from golem_messages import message
+from golem_messages.utils import encode_hex
+
 from core.constants import MOCK_TRANSACTION
 from core.message_handlers import store_subtask
 from core.models import Client

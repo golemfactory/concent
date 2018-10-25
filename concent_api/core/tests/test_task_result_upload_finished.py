@@ -77,20 +77,20 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
                 task_to_compute=self.task_to_compute,
             )
         )
-
-        with mock.patch('logging.Logger.info') as log_info:
+        with mock.patch('core.tasks.logging.log') as log_info:
             result_upload_finished(self.subtask.subtask_id)  # pylint: disable=no-value-for-parameter
-
-        self.assertEqual(log_info.call_count, 2)
+        self.assertIn('result_upload_finished called for Subtask, but it has status FAILED', str(log_info.call_args))
 
     def test_that_result_upload_finished_should_raise_exception_for_subtask_with_other_than_forcing_result_transfer_state(self):
         self.subtask.state = Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name  # pylint: disable=no-member
         self.subtask.save()
 
-        with mock.patch('logging.Logger.warning') as log_warning:
+        with mock.patch('core.tasks.logging.log') as log_warning:
             result_upload_finished(self.subtask.subtask_id)  # pylint: disable=no-value-for-parameter
 
         log_warning.assert_called()
+        self.assertIn('instead of `FORCING_RESULT_TRANSFER', str(log_warning.call_args))
+        self.assertIn('LoggingLevel.WARNING', str(log_warning.call_args))
 
 
 class CoreResultUploadFinishedTaskTransactionTest(TransactionTestCase):

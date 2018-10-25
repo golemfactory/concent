@@ -29,10 +29,9 @@ from common.exceptions import ConcentValidationError
 from common.helpers import join_messages
 from common import logging
 from common.logging import get_json_from_message_without_redundant_fields_for_logging
+from common.logging import LoggingLevel
 from common.logging import log_400_error
-from common.logging import log_json_message
-from common.logging import log_message_received_in_endpoint
-from common.logging import log_string_message
+from common.logging import log
 from common.shortcuts import load_without_public_key
 from core.exceptions import NonPositivePriceTaskToComputeError
 from core.exceptions import CreateModelIntegrityError
@@ -53,7 +52,7 @@ def require_golem_auth_message(view: Callable) -> Callable:
     @wraps(view)
     def wrapper(request: HttpRequest, *args: Any, **kwargs: Any) -> Union[HttpResponse, JsonResponse]:
         if request.content_type == '':
-            log_string_message(logger, 'error: Content-Type is missing')
+            log(logger, 'error: Content-Type is missing')
             return JsonResponse({'error': 'Content-Type is missing.'}, status = 400)
         elif request.content_type == 'application/octet-stream':
             try:
@@ -63,16 +62,17 @@ def require_golem_auth_message(view: Callable) -> Callable:
                         auth_message.client_public_key,
                         auth_message,
                     ):
-                        log_message_received_in_endpoint(
+                        log(
                             logger,
-                            request.resolver_match.view_name if request.resolver_match is not None else None,
-                            auth_message.__class__.__name__,
-                            auth_message.client_public_key
+                            f'A message has been received in `{request.resolver_match.view_name if request.resolver_match is not None else "-not available"}`.'
+                            f'Message type: {auth_message.__class__.__name__}.',
+                            client_public_key=auth_message.client_public_key
                         )
                     else:
-                        log_string_message(
+                        log(
                             logger,
                             f'ClientAuthorization message is not signed with public key {auth_message.client_public_key}.',
+                            client_public_key=auth_message.client_public_key
                         )
                         return JsonResponse(
                             {
@@ -82,25 +82,25 @@ def require_golem_auth_message(view: Callable) -> Callable:
                             status=400
                         )
                 else:
-                    log_string_message(logger, 'error: Client Authentication message not included')
+                    log(logger, 'error: Client Authentication message not included')
                     return JsonResponse({'error': 'Client Authentication message not included'}, status = 400)
             except FieldError as exception:
-                log_string_message(logger, 'Golem Message contains wrong fields.', exception.__class__.__name__)
+                log(logger, 'Golem Message contains wrong fields.', exception.__class__.__name__)
                 return JsonResponse({'error': join_messages('Golem Message contains wrong fields.', str(exception))}, status = 400)
             except MessageFromFutureError as exception:
-                log_string_message(logger, 'Message timestamp too far in the future.', exception.__class__.__name__)
+                log(logger, 'Message timestamp too far in the future.', exception.__class__.__name__)
                 return JsonResponse({'error': join_messages('Message timestamp too far in the future.', str(exception))}, status = 400)
             except MessageTooOldError as exception:
-                log_string_message(logger, 'Message is too old.', exception.__class__.__name__)
+                log(logger, 'Message is too old.', exception.__class__.__name__)
                 return JsonResponse({'error': join_messages('Message is too old.', str(exception))}, status = 400)
             except TimestampError as exception:
-                log_string_message(logger, 'Error:', exception.__class__.__name__)
+                log(logger, 'Error:', exception.__class__.__name__)
                 return JsonResponse({'error': f'{exception}'}, status = 400)
             except MessageError as exception:
-                log_string_message(logger, ERROR_IN_GOLEM_MESSAGE, exception.__class__.__name__)
+                log(logger, ERROR_IN_GOLEM_MESSAGE, exception.__class__.__name__)
                 return JsonResponse({'error': join_messages(ERROR_IN_GOLEM_MESSAGE, str(exception))}, status = 400)
         else:
-            log_string_message(logger, 'error: Concent supports only application/octet-stream.')
+            log(logger, 'error: Concent supports only application/octet-stream.')
             return JsonResponse({'error': "Concent supports only application/octet-stream."}, status = 415)
 
         return view(request, auth_message, auth_message.client_public_key, *args, *kwargs)
@@ -116,24 +116,24 @@ def require_golem_message(view: Callable) -> Callable:
     @wraps(view)
     def wrapper(request: HttpRequest, *args: Any, **kwargs: Any) -> Union[HttpResponse, JsonResponse]:
         if request.content_type == '':
-            log_string_message(logger, 'error: Content-Type is missing')
+            log(logger, 'error: Content-Type is missing')
             return JsonResponse({'error': 'Content-Type is missing.'}, status = 400)
         elif request.content_type == 'application/octet-stream':
             try:
                 golem_message = load_without_public_key(request.body)
                 assert golem_message is not None
                 client_public_key = get_validated_client_public_key_from_client_message(golem_message)
-                log_message_received_in_endpoint(
+                log(
                     logger,
-                    request.resolver_match.view_name if request.resolver_match is not None else None,
-                    golem_message.__class__.__name__,
-                    client_public_key,
-                    request.META['CONTENT_TYPE'] if 'CONTENT_TYPE' in request.META.keys() else None,
-                    golem_message.task_id if 'task_id' in dir(golem_message) else None,
-                    golem_message.subtask_id if 'subtask_id' in dir(golem_message) else None
+                    f'A message has been received in `{request.resolver_match.view_name if request.resolver_match is not None else "-not available"}`.'
+                    f'Message type: {golem_message.__class__.__name__}.',
+                    f'Content type: {request.META["CONTENT_TYPE"] if "CONTENT_TYPE" in request.META.keys() else "-not available"}'
+                    f'TASK_ID: {golem_message.task_id if "task_id" in dir(golem_message) else "-not available"}',
+                    subtask_id=golem_message.subtask_id if 'subtask_id' in dir(golem_message) else None,
+                    client_public_key=client_public_key
                 )
             except ConcentValidationError as exception:
-                log_string_message(logger, f"error_code: {exception.error_code.value} error: {exception.error_message} ")
+                log(logger, f"error_code: {exception.error_code.value} error: {exception.error_message} ")
                 return JsonResponse(
                     {
                         'error': f'{exception.error_message}',
@@ -142,27 +142,27 @@ def require_golem_message(view: Callable) -> Callable:
                     status=400
                 )
             except NonPositivePriceTaskToComputeError as exception:
-                log_string_message(logger, 'TaskToCompute contains non-positive price.', exception.__class__.__name__)
+                log(logger, 'TaskToCompute contains non-positive price.', exception.__class__.__name__)
                 return message.concents.ServiceRefused(
                     reason=message.concents.ServiceRefused.REASON.InvalidRequest
                 )
             except FieldError as exception:
-                log_string_message(logger, 'Golem Message contains wrong fields.', exception.__class__.__name__)
+                log(logger, 'Golem Message contains wrong fields.', exception.__class__.__name__)
                 return JsonResponse({'error': join_messages('Golem Message contains wrong fields.', str(exception))}, status = 400)
             except MessageFromFutureError as exception:
-                log_string_message(logger, 'Message timestamp too far in the future.', exception.__class__.__name__)
+                log(logger, 'Message timestamp too far in the future.', exception.__class__.__name__)
                 return JsonResponse({'error': join_messages('Message timestamp too far in the future.', str(exception))}, status = 400)
             except MessageTooOldError as exception:
-                log_string_message(logger, 'Message is too old.', exception.__class__.__name__)
+                log(logger, 'Message is too old.', exception.__class__.__name__)
                 return JsonResponse({'error': join_messages('Message is too old.', str(exception))}, status = 400)
             except TimestampError as exception:
-                log_string_message(logger, 'Error:', exception.__class__.__name__)
+                log(logger, 'Error:', exception.__class__.__name__)
                 return JsonResponse({'error': f'{exception}'}, status = 400)
             except MessageError as exception:
-                log_string_message(logger, ERROR_IN_GOLEM_MESSAGE, exception.__class__.__name__)
+                log(logger, ERROR_IN_GOLEM_MESSAGE, exception.__class__.__name__)
                 return JsonResponse({'error': join_messages(ERROR_IN_GOLEM_MESSAGE, str(exception))}, status = 400)
         else:
-            log_string_message(logger, 'error: Concent supports only application/octet-stream.')
+            log(logger, 'error: Concent supports only application/octet-stream.')
             return JsonResponse({'error': "Concent supports only application/octet-stream."}, status = 415)
 
         return view(request, golem_message, client_public_key, *args, *kwargs)
@@ -192,7 +192,11 @@ def handle_errors_and_responses(database_name: str) -> Callable:
                     transaction.savepoint_commit(sid, using=database_name)
 
             except CreateModelIntegrityError as exception:
-                logger.info(f'CreateModelIntegrityError occurred. View will be retried. Exception: {exception}.')
+                log(
+                    logger,
+                    f'CreateModelIntegrityError occurred. View will be retried. Exception: {exception}.',
+                    client_public_key=client_public_key,
+                )
                 response_from_view = view(request, client_message, client_public_key, *args, **kwargs)
             except ConcentBaseException as exception:
                 log_400_error(
@@ -216,7 +220,7 @@ def handle_errors_and_responses(database_name: str) -> Callable:
                 transaction.savepoint_rollback(sid, using=database_name)
 
                 json_response = JsonResponse({'error': 'Concent is in soft shutdown mode.'}, status=503)
-                log_json_message(logger, json_response)
+                log(logger, str(json_response))
                 return json_response
 
             if isinstance(response_from_view, message.Message):
@@ -236,14 +240,13 @@ def handle_errors_and_responses(database_name: str) -> Callable:
             elif isinstance(response_from_view, dict):
 
                 json_response = JsonResponse(response_from_view, safe = False)
-                log_json_message(logger, json_response)
+                log(logger, str(json_response))
                 return json_response
             elif isinstance(response_from_view, HttpResponseNotAllowed):
-                logging.log_message_not_allowed(
+                log(
                     logger,
-                    view.__name__,
-                    client_public_key,
-                    request.method,
+                    f"Endpoint {view.__name__} does not allow HTTP method {request.method}",
+                    client_public_key=client_public_key
                 )
                 return response_from_view
             elif isinstance(response_from_view, HttpResponse):
@@ -254,22 +257,24 @@ def handle_errors_and_responses(database_name: str) -> Callable:
                 )
                 return response_from_view
             elif response_from_view is None:
-                logging.log_empty_queue(
+
+                log(
                     logger,
-                    view.__name__,
-                    client_public_key,
+                    f"A message queue is empty in `{view.__name__}",
+                    client_public_key=client_public_key
                 )
                 return HttpResponse("", status = 204)
             elif isinstance(response_from_view, bytes):
-                logging.log_string_message(
+                logging.log(
                     logger,
                     'Response from core.views - Response is bytes instance'
                 )
                 return HttpResponse(response_from_view)
 
-            logging.log_string_message(
+            logging.log(
                 logger,
-                'Invalid response from core.views type'
+                'Invalid response from core.views type',
+                client_public_key=client_public_key
             )
             assert False, "Invalid response type"
             raise Exception("Invalid response type")
@@ -302,7 +307,7 @@ def log_communication(view: Callable) -> Callable:
     @wraps(view)
     def wrapper(request: HttpRequest, golem_message: message.Message, client_public_key: bytes) -> HttpResponse:
         json_message_to_log = get_json_from_message_without_redundant_fields_for_logging(golem_message)
-        log_json_message(logger, json_message_to_log)
+        log(logger, str(json_message_to_log))
         response_from_view = view(request,  golem_message, client_public_key)
         return response_from_view
     return wrapper
@@ -315,8 +320,10 @@ def log_task_errors(task: Callable) -> Callable:
         try:
             return task(*args, **kwargs)
         except Exception as exception:
-            crash_logger.error(
-                f'Exception occurred while executing task {task.__name__}: {exception}, Traceback: {traceback.format_exc()}'
-            )
+            log(
+                crash_logger,
+                f'Exception occurred while executing task {task.__name__}: {exception}, Traceback: {traceback.format_exc()}',
+                subtask_id=kwargs['subtask_id'] if 'subtask_id' in kwargs else None,
+                logging_level=LoggingLevel.ERROR)
             raise
     return wrapper

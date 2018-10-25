@@ -1,5 +1,4 @@
-import logging
-
+from logging import getLogger
 from celery import shared_task
 from celery import Task
 from mypy.types import Optional
@@ -7,6 +6,7 @@ from mypy.types import Optional
 from django.db import DatabaseError
 from django.db import transaction
 
+from common import logging
 from common.constants import ConcentUseCase
 from common.decorators import log_task_errors
 from common.decorators import provides_concent_feature
@@ -30,7 +30,7 @@ from .constants import VERIFICATION_RESULT_SUBTASK_STATE_FAILED_LOG_MESSAGE
 from .constants import VERIFICATION_RESULT_SUBTASK_STATE_UNEXPECTED_LOG_MESSAGE
 
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 @shared_task
@@ -40,7 +40,12 @@ def upload_finished(subtask_id: str) -> None:
     try:
         subtask = Subtask.objects.select_for_update().get(subtask_id=subtask_id)
     except Subtask.DoesNotExist:
-        logging.error(f'Task `upload_finished` tried to get Subtask object with ID {subtask_id} but it does not exist.')
+        logging.log(
+            logger,
+            f'Task `upload_finished` tried to get Subtask object, but it does not exist.',
+            subtask_id=subtask_id,
+            logging_level=logging.LoggingLevel.ERROR,
+        )
         return
 
     report_computed_task = deserialize_message(subtask.report_computed_task.data.tobytes())
@@ -98,14 +103,19 @@ def upload_finished(subtask_id: str) -> None:
         Subtask.SubtaskState.ACCEPTED,
         Subtask.SubtaskState.FAILED
     ]:
-        logging.warning(
-            f'Subtask with ID {subtask_id} is expected to be in `VERIFICATION_FILE_TRANSFER` state, but was in {subtask.state}.'
+        logging.log(
+            logger,
+            f'Subtask is expected to be in `VERIFICATION_FILE_TRANSFER` state, but was in {subtask.state}.',
+            subtask_id=subtask_id,
+            logging_level=logging.LoggingLevel.WARNING,
         )
-
     # If it's one of the states that can precede verification, report an error. Processing ends here.
     else:
-        logging.error(
-            f'Subtask with ID {subtask_id} is expected to be in `VERIFICATION_FILE_TRANSFER` state, but was in {subtask.state}.'
+        logging.log(
+            logger,
+            f'Subtask is expected to be in `VERIFICATION_FILE_TRANSFER` state, but was in {subtask.state}.',
+            subtask_id=subtask_id,
+            logging_level=logging.LoggingLevel.ERROR,
         )
 
 
@@ -120,7 +130,11 @@ def verification_result(
     error_message: Optional[str] = None,
     error_code: Optional[str] = None,
 ) -> None:
-    logger.info(f'verification_result_task starts with: SUBTASK_ID {subtask_id} -- RESULT {result}')
+    logging.log(
+        logger,
+        f'Verification_result_task starts. Result: {result}',
+        subtask_id=subtask_id
+    )
 
     assert isinstance(subtask_id, str)
     assert isinstance(result, str)
@@ -136,9 +150,12 @@ def verification_result(
     try:
         subtask = Subtask.objects.select_for_update(nowait=True).get(subtask_id=subtask_id)
     except DatabaseError:
-        logging.warning(
-            f'Subtask object with ID {subtask_id} database row is locked, '
-            f'retrying task {self.request.retries}/{self.max_retries}'
+        logging.log(
+            logger,
+            f'Row in database corresponding with Subtask object is already locked.'
+            f'retrying task {self.request.retries}/{self.max_retries}',
+            subtask_id=subtask_id,
+            logging_level=logging.LoggingLevel.WARNING,
         )
         # If the row is already locked, task fails so that Celery can retry later.
         self.retry(
@@ -149,15 +166,31 @@ def verification_result(
         return
 
     if subtask.state_enum == Subtask.SubtaskState.ACCEPTED:
-        logger.warning(VERIFICATION_RESULT_SUBTASK_STATE_ACCEPTED_LOG_MESSAGE.format(subtask_id))
+        logging.log(
+            logger,
+            VERIFICATION_RESULT_SUBTASK_STATE_ACCEPTED_LOG_MESSAGE.format(subtask_id),
+            subtask_id=subtask_id,
+            logging_level=logging.LoggingLevel.WARNING
+        )
         return
 
     elif subtask.state_enum == Subtask.SubtaskState.FAILED:
-        logger.warning(VERIFICATION_RESULT_SUBTASK_STATE_FAILED_LOG_MESSAGE.format(subtask_id))
+
+        logging.log(
+            logger,
+            VERIFICATION_RESULT_SUBTASK_STATE_FAILED_LOG_MESSAGE.format(subtask_id),
+            subtask_id=subtask_id,
+            logging_level=logging.LoggingLevel.WARNING
+        )
         return
 
     elif subtask.state_enum != Subtask.SubtaskState.ADDITIONAL_VERIFICATION:
-        logger.error(VERIFICATION_RESULT_SUBTASK_STATE_UNEXPECTED_LOG_MESSAGE.format(subtask_id, subtask.state))
+        logging.log(
+            logger,
+            VERIFICATION_RESULT_SUBTASK_STATE_UNEXPECTED_LOG_MESSAGE.format(subtask.state),
+            subtask_id=subtask_id,
+            logging_level=logging.LoggingLevel.ERROR,
+        )
         return
 
     # If the time is already past next_deadline for the subtask (SubtaskResultsRejected.timestamp + AVCT)
@@ -205,11 +238,11 @@ def verification_result(
     elif result_enum in (VerificationResult.MATCH, VerificationResult.ERROR):
         # Worker logs the error code and message
         if result_enum == VerificationResult.ERROR:
-            logger.info(
-                f'verification_result_task processing error result with: '
-                f'SUBTASK_ID {subtask_id} -- RESULT {result_enum.name} -- ERROR MESSAGE {error_message} -- ERROR CODE {error_code}'
+            logging.log(
+                logger,
+                f'Verification_result_task processing error result with: RESULT {result_enum.name}. ERROR MESSAGE {error_message}. ERROR CODE {error_code}',
+                subtask_id=subtask_id,
             )
-
         task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
 
         # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
@@ -235,8 +268,11 @@ def verification_result(
             subtask=subtask,
             state=Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
         )
-
-    logger.info(f'verification_result_task ends with: SUBTASK_ID {subtask_id} -- RESULT {result_enum.name}')
+    logging.log(
+        logger,
+        f'Verification_result_task ends. Result: {result_enum.name}',
+        subtask_id=subtask_id
+    )
 
 
 @shared_task(bind=True)
@@ -244,7 +280,11 @@ def verification_result(
 @transaction.atomic(using='control')
 @log_task_errors
 def result_upload_finished(self: Task, subtask_id: str) -> None:
-    logger.info(f'result_upload_finished starts with: SUBTASK_ID {subtask_id}')
+    logging.log(
+        logger,
+        f'result_upload_finished starts',
+        subtask_id=subtask_id
+    )
 
     assert isinstance(subtask_id, str)
 
@@ -252,9 +292,12 @@ def result_upload_finished(self: Task, subtask_id: str) -> None:
     try:
         subtask = Subtask.objects.select_for_update(nowait=True).get(subtask_id=subtask_id)
     except DatabaseError:
-        logging.warning(
-            f'Subtask object with ID {subtask_id} database row is locked, '
-            f'retrying task {self.request.retries}/{self.max_retries}'
+        logging.log(
+            logger,
+            f'Row in database corresponding with Subtask object is already locked.'
+            f'retrying task {self.request.retries}/{self.max_retries}',
+            subtask_id=subtask_id,
+            logging_level=logging.LoggingLevel.WARNING
         )
         # If the row is already locked, task fails so that Celery can retry later.
         self.retry(
@@ -268,17 +311,27 @@ def result_upload_finished(self: Task, subtask_id: str) -> None:
         Subtask.SubtaskState.REPORTED,
         Subtask.SubtaskState.FORCING_REPORT,
     ]:
-        logger.error(
-            f'result_upload_finished called for Subtask with ID `{subtask_id}` but it has status {subtask.state} instead of `FORCING_RESULT_TRANSFER`.'
+        logging.log(
+            logger,
+            f'result_upload_finished called for Subtask but it has status {subtask.state} instead of `FORCING_RESULT_TRANSFER`.',
+            subtask_id=subtask_id,
+            logging_level=logging.LoggingLevel.ERROR
         )
         raise SubtaskStatusError(
             f'result_upload_finished called for Subtask with ID `{subtask_id}` but it has status {subtask.state} instead of `FORCING_RESULT_TRANSFER`.'
         )
     elif subtask.state_enum == Subtask.SubtaskState.FAILED:
-        logger.info(f'result_upload_finished called for Subtask with ID `{subtask_id}` but it has status FAILED.')
+        logging.log(
+            logger,
+            f'result_upload_finished called for Subtask, but it has status FAILED.',
+            subtask_id=subtask_id,
+        )
     elif subtask.state_enum != Subtask.SubtaskState.FORCING_RESULT_TRANSFER:
-        logger.warning(
-            f'result_upload_finished called for Subtask with ID `{subtask_id}` but it has status {subtask.state} instead of `FORCING_RESULT_TRANSFER`.'
+        logging.log(
+            logger,
+            f'result_upload_finished called for Subtask but it has status {subtask.state} instead of `FORCING_RESULT_TRANSFER`.',
+            subtask_id=subtask_id,
+            logging_level=logging.LoggingLevel.WARNING
         )
 
     subtask.result_upload_finished = True

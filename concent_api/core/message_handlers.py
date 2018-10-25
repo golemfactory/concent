@@ -36,6 +36,8 @@ from common.helpers import get_storage_result_file_path
 from common.helpers import parse_datetime_to_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.helpers import sign_message
+from common.logging import convert_public_key_to_hex
+from common.logging import log
 from common.validations import validate_secure_hash_algorithm
 from common import logging
 from conductor.tasks import result_transfer_request
@@ -896,9 +898,11 @@ def store_subtask(
 
         return subtask
     except IntegrityError:
-        logger.info(
+        log(
+            logger,
             f'IntegrityError when tried to store subtask with id {subtask_id}. Task_id: {task_id}. '
-            f'Provider public key: {provider_public_key}. Requestor public key: {requestor_public_key}.'
+            f'Provider public key: {convert_public_key_to_hex(provider_public_key)}. '
+            f'Requestor public key: {convert_public_key_to_hex(requestor_public_key)}.'
         )
         raise CreateModelIntegrityError
 

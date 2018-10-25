@@ -22,10 +22,12 @@ import requests
 from common.constants import ErrorCode
 from common.helpers import get_current_utc_timestamp
 from common.helpers import upload_file_to_storage_cluster
-from common.logging import log_string_message
+from common.logging import log
+from common.logging import LoggingLevel
 from core.constants import VerificationResult
 from core.tasks import verification_result
-from core.transfer_operations import create_file_transfer_token_for_concent, send_request_to_storage_cluster
+from core.transfer_operations import create_file_transfer_token_for_concent
+from core.transfer_operations import send_request_to_storage_cluster
 from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
 from verifier.exceptions import VerificationError
 from verifier.exceptions import VerificationMismatch
@@ -37,7 +39,7 @@ crash_logger = logging.getLogger('concent.crash')
 FramesToParsedFilePaths = Dict[int, List[str]]
 
 
-def clean_directory(directory_path: str) -> None:
+def clean_directory(directory_path: str, subtask_id: Optional[str] = None) -> None:
     """ Removes all files from given directory path. """
     for file in os.listdir(directory_path):
         file_path = os.path.join(directory_path, file)
@@ -45,7 +47,12 @@ def clean_directory(directory_path: str) -> None:
             if os.path.isfile(file_path):
                 os.unlink(file_path)
         except OSError as exception:
-            logger.warning(f'File {file} in directory {directory_path} was not deleted, exception: {exception}')
+            log(
+                logger,
+                f'File {file} in directory {directory_path} was not deleted, exception: {exception}',
+                subtask_id=subtask_id,
+                logging_level=LoggingLevel.WARNING,
+            )
 
 
 def prepare_storage_request_headers(file_transfer_token: message.concents.FileTransferToken) -> dict:
@@ -135,13 +142,18 @@ def get_files_list_from_archive(file_path: str) -> List[str]:
     return zipfile.ZipFile(file_path).namelist()
 
 
-def delete_file(file_path: str) -> None:
+def delete_file(file_path: str, subtask_id: str) -> None:
     file_path = os.path.join(settings.VERIFIER_STORAGE_PATH, file_path)
     try:
         if os.path.isfile(file_path):
             os.unlink(file_path)
     except OSError as exception:
-        logger.warning(f'File with path {file_path} was not deleted, exception: {exception}')
+        log(
+            logger,
+            f'File with path {file_path} was not deleted, exception: {exception}',
+            subtask_id=subtask_id,
+            logging_level=LoggingLevel.WARNING,
+        )
 
 
 def generate_full_blender_output_file_name(scene_file: str, frame_number: int, output_format: str) -> str:
@@ -175,7 +187,11 @@ def compare_images(image_1: ndarray, image_2: ndarray, subtask_id: str) -> float
     try:
         ssim = compare_ssim(image_1, image_2, multichannel=True)
     except ValueError as exception:
-        logger.info(f'Computing SSIM fails with: {exception}')
+        log(
+            logger,
+            f'Computing SSIM fails with: {exception}',
+            subtask_id=subtask_id,
+        )
         raise VerificationError(
             str(exception),
             ErrorCode.VERIFIER_COMPUTING_SSIM_FAILED,
@@ -209,7 +225,11 @@ def load_images(blender_output_file_name: str, result_file: str, subtask_id: str
             result_file
         )
     except MemoryError as exception:
-        logger.info(f'Loading result files into memory exceeded available memory and failed with: {exception}')
+        log(
+            logger,
+            f'Loading result files into memory exceeded available memory and failed with: {exception}',
+            subtask_id=subtask_id,
+        )
         raise VerificationError(
             str(exception),
             ErrorCode.VERIFIER_LOADING_FILES_INTO_MEMORY_FAILED,
@@ -217,7 +237,11 @@ def load_images(blender_output_file_name: str, result_file: str, subtask_id: str
         )
     # If loading fails because of wrong path, cv2.imread does not raise any error but returns None.
     if image_1 is None or image_2 is None:
-        logger.info('Loading files using OpenCV fails.')
+        log(
+            logger,
+            f'Loading files using OpenCV fails.',
+            subtask_id=subtask_id,
+        )
         raise VerificationError(
             'Loading files using OpenCV fails.',
             ErrorCode.VERIFIER_LOADING_FILES_WITH_OPENCV_FAILED,
@@ -254,9 +278,9 @@ def try_to_upload_blender_output_file(blender_output_file_name: str, output_form
                 settings.STORAGE_SERVER_INTERNAL_ADDRESS,
             )
     except OSError as exception:
-        crash_logger.error(str(exception))
+        log(crash_logger, str(exception), subtask_id=subtask_id, logging_level=LoggingLevel.ERROR)
     except MemoryError as exception:
-        logger.error(f'Loading result files into memory failed with: {exception}')
+        log(logger, f'Loading result files into memory failed with: {exception}', subtask_id=subtask_id, logging_level=LoggingLevel.ERROR)
         raise VerificationError(
             str(exception),
             ErrorCode.VERIFIER_LOADING_FILES_INTO_MEMORY_FAILED,
@@ -264,7 +288,7 @@ def try_to_upload_blender_output_file(blender_output_file_name: str, output_form
         )
 
 
-def delete_source_files(source_archive_name: str) -> None:
+def delete_source_files(source_archive_name: str, subtask_id: str) -> None:
     # Verifier deletes source files of the Blender project from its storage.
     # At this point there must be source files in VERIFIER_STORAGE_PATH otherwise verification should fail before.
     source_files_list = get_files_list_from_archive(
@@ -273,7 +297,7 @@ def delete_source_files(source_archive_name: str) -> None:
         )
     )
     for file_path in source_files_list + [source_archive_name]:
-        delete_file(file_path)
+        delete_file(file_path, subtask_id)
 
 
 def render_image(
@@ -301,7 +325,7 @@ def render_image(
         # If Blender finishes with errors, verification ends here
         # Verification_result informing about the error is sent to the work queue.
         if completed_process.returncode != 0:
-            log_string_message(
+            log(
                 logger,
                 'Blender finished with errors',
                 f'SUBTASK_ID: {subtask_id}.'
@@ -315,7 +339,7 @@ def render_image(
                 subtask_id,
             )
     except subprocess.SubprocessError as exception:
-        log_string_message(logger, f'Blender finished with errors. Error: {exception} SUBTASK_ID {subtask_id}')
+        log(logger, f'Blender finished with errors. Error: {exception} SUBTASK_ID {subtask_id}')
         raise VerificationError(
             str(exception),
             ErrorCode.VERIFIER_RUNNING_BLENDER_FAILED,
@@ -331,7 +355,7 @@ def unpack_archives(file_paths: Iterable[str], subtask_id: str) -> None:
                 os.path.basename(archive_file_path)
             )
         except zipfile.BadZipFile as exception:
-            log_string_message(
+            log(
                 logger,
                 f'Verifier failed to unpack the archive with project source with error {exception} '
                 f'SUBTASK_ID {subtask_id}. '
@@ -378,7 +402,7 @@ def download_archives_from_storage(
     package_paths_to_downloaded_file_names: Dict[str, str],
 ) -> None:
     # Remove any files from VERIFIER_STORAGE_PATH.
-    clean_directory(settings.VERIFIER_STORAGE_PATH)
+    clean_directory(settings.VERIFIER_STORAGE_PATH, subtask_id)
 
     # Download all the files listed in the message from the storage server to local storage.
     for file_path, download_file_name in package_paths_to_downloaded_file_names.items():
@@ -395,7 +419,7 @@ def download_archives_from_storage(
                 path_to_store
             )
         except Exception as exception:
-            log_string_message(
+            log(
                 logger,
                 f'blender_verification_order for SUBTASK_ID {subtask_id} failed with error {exception}.'
                 f'ErrorCode: {ErrorCode.VERIFIER_FILE_DOWNLOAD_FAILED.name}'
@@ -447,7 +471,12 @@ def ensure_enough_result_files_provided(frames: List[int], result_files_list: Li
         raise VerificationMismatch(subtask_id=subtask_id)
 
     elif len(frames) < len(result_files_list):
-        logger.warning(f'There is more result files than frames to render')
+        log(
+            logger,
+            f'There is more result files than frames to render',
+            subtask_id=subtask_id,
+            logging_level=LoggingLevel.WARNING,
+        )
 
 
 def ensure_frames_have_related_files_to_compare(frames: List[int], parsed_files_to_compare: FramesToParsedFilePaths, subtask_id: str) -> None:
@@ -464,7 +493,7 @@ def compare_all_rendered_images_with_user_results_files(parsed_files_to_compare:
             subtask_id
         )
         if not are_image_sizes_and_color_channels_equal(image_1, image_2):
-            log_string_message(
+            log(
                 logger,
                 f'Blender verification failed. Sizes in pixels of images are not equal. SUBTASK_ID: {subtask_id}.'
                 f'VerificationResult: {VerificationResult.MISMATCH.name}'

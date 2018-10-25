@@ -44,23 +44,21 @@ class UploadFinishedTaskTest(ConcentIntegrationTestCase):
             Subtask.objects.filter(subtask_id=self.subtask.subtask_id).update(state=state.name)  # pylint: disable=no-member
             self.subtask.refresh_from_db()
 
-            with mock.patch('core.tasks.logging.warning') as logging_warning_mock:
+            with mock.patch('core.tasks.logging.log') as logging_warning_mock:
                 upload_finished(self.subtask.subtask_id)  # pylint: disable=no-value-for-parameter
 
-            logging_warning_mock.assert_called_once_with(
-                f'Subtask with ID {self.subtask.subtask_id} is expected to be in `VERIFICATION_FILE_TRANSFER` state, but was in {self.subtask.state}.'
-            )
+            logging_warning_mock.assert_called()
+            self.assertIn(f'Subtask is expected to be in `VERIFICATION_FILE_TRANSFER` state, but was in {self.subtask.state}.', str(logging_warning_mock.mock_calls))
 
     def test_that_scheduling_task_for_subtask_with_unexpected_state_should_log_error_and_finish_task(self):
         Subtask.objects.filter(subtask_id=self.subtask.subtask_id).update(state=Subtask.SubtaskState.REPORTED.name)  # pylint: disable=no-member
         self.subtask.refresh_from_db()
 
-        with mock.patch('core.tasks.logging.error') as logging_error_mock:
+        with mock.patch('core.tasks.logging.log') as logging_error_mock:
             upload_finished(self.subtask.subtask_id)  # pylint: disable=no-value-for-parameter
 
-        logging_error_mock.assert_called_once_with(
-            f'Subtask with ID {self.subtask.subtask_id} is expected to be in `VERIFICATION_FILE_TRANSFER` state, but was in {self.subtask.state}.'
-        )
+        logging_error_mock.assert_called()
+        self.assertIn(f'Subtask is expected to be in `VERIFICATION_FILE_TRANSFER` state, but was in {self.subtask.state}.', str(logging_error_mock.mock_calls))
 
     def test_that_scheduling_task_for_subtask_before_deadline_should_change_subtask_state_and_schedule_upload_acknowledged_task(self):
         with freeze_time(

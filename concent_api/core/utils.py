@@ -11,7 +11,7 @@ from golem_messages.utils import decode_hex
 
 from common.constants import ErrorCode
 from common.helpers import parse_timestamp_to_utc_datetime
-from common.logging import log_string_message
+from common.logging import log
 from core.exceptions import Http400
 from core.exceptions import SceneFilePathError
 from .constants import GOLEM_PUBLIC_KEY_HEX_LENGTH
@@ -118,22 +118,28 @@ def extract_name_from_scene_file_path(absoulte_scene_file_path_in_docker: str) -
     return relative_scene_file_path_in_archive
 
 
+def is_protocol_verison_compatible_with_verison_in_concent(protocol_version: str) -> bool:
+    """
+    Versions are considered compatible if they share the minor and major version number.
+    E.g 2.18.5 is compatible with 2.18.1 but not with 2.17.5 or 3.0.0.
+    """
+    return protocol_version.split('.')[0] == settings.GOLEM_MESSAGES_VERSION.split('.')[0] and \
+        protocol_version.split('.')[1] == settings.GOLEM_MESSAGES_VERSION.split('.')[1]
+
+
 def if_given_version_of_golem_messages_is_compatible_with_version_in_concent(
     request: HttpRequest,
     client_public_key: bytes,
 ) -> bool:
     """
-    Versions are considered compatible if they share the minor and major version number.
-    E.g 2.18.5 is compatible with 2.18.1 but not with 2.17.5 or 3.0.0. If header is missing
-    version is not checked and Concent assumes that client uses compatible version.
+    If header is missing version is not checked and Concent assumes that client uses compatible version.
     """
     if 'HTTP_CONCENT_GOLEM_MESSAGES_VERSION' not in request.META:
         return True
     else:
         golem_message_version = request.META['HTTP_CONCENT_GOLEM_MESSAGES_VERSION']
-        for i in range(0, 2):
-            if not golem_message_version.split('.')[i] == settings.GOLEM_MESSAGES_VERSION.split('.')[i]:
-                log_string_message(logger, f'Wrong version of golem messages. Clients version is {golem_message_version}, '
-                f'Concent version is {settings.GOLEM_MESSAGES_VERSION}. Client key: {client_public_key}')
-                return False
+        if not is_protocol_verison_compatible_with_verison_in_concent(golem_message_version):
+            log(logger, f'Wrong version of golem messages. Clients version is {golem_message_version}, '
+            f'Concent version is {settings.GOLEM_MESSAGES_VERSION}. Client key: {client_public_key}')
+            return False
         return True

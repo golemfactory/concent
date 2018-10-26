@@ -1,8 +1,10 @@
+import mock
 from freezegun import freeze_time
 from django.conf import settings
 from django.http import HttpResponse
 from django.http import JsonResponse
 from django.test import override_settings
+from django.urls import reverse
 
 from golem_messages import message
 from golem_messages import settings as golem_settings
@@ -17,11 +19,13 @@ from common.constants import ERROR_IN_GOLEM_MESSAGE
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.testing_helpers import generate_ecc_key_pair
+from core.message_handlers import store_subtask
 from core.models import Client
 from core.models import StoredMessage
 from core.models import PendingResponse
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
+from core.utils import hex_to_bytes_convert
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
@@ -929,3 +933,108 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
         )
         self.assertEqual(response.status_code, 204)
         self.assertEqual(response.content.decode(), '')
+
+
+@override_settings(
+    CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+    CONCENT_MESSAGING_TIME=3600,
+)
+class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
+
+    def setUp(self):
+        super().setUp()
+
+        self.compute_task_def = self._get_deserialized_compute_task_def(
+            deadline=get_current_utc_timestamp() + 100
+        )
+
+        self.task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp=parse_timestamp_to_utc_datetime(get_current_utc_timestamp()),
+            compute_task_def=self.compute_task_def,
+        )
+
+        self.report_computed_task = self._get_deserialized_report_computed_task(
+            task_to_compute=self.task_to_compute,
+        )
+
+        self.correct_golem_data = self._get_deserialized_force_report_computed_task(
+            report_computed_task=self.report_computed_task
+        )
+
+        self.provider_public_key = hex_to_bytes_convert(self.task_to_compute.provider_public_key)
+        self.requestor_public_key = hex_to_bytes_convert(self.task_to_compute.requestor_public_key)
+
+    @override_settings(GOLEM_MESSAGES_VERSION='2.15.0')
+    def test_that_concent_should_refuse_request_with_incompatible_protocol_version(self):
+        with mock.patch('core.utils.log') as log_mock:
+            response = self.send_request(
+                url='core:send',
+                data=dump(
+                    self.correct_golem_data,
+                    self.PROVIDER_PRIVATE_KEY,
+                    CONCENT_PUBLIC_KEY),
+                golem_messages_version='1.12.0'
+            )
+        self._test_response(
+            response,
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ServiceRefused,
+            fields={
+                'reason': message.concents.ServiceRefused.REASON.InvalidRequest,
+            }
+        )
+        self.assertIn('Wrong version of golem messages. Clients version is 1.12.0, Concent version is 2.15.0', str(log_mock.call_args))
+
+    def test_that_concent_should_accept_request_without_protocol_version(self):
+        response = self.client.post(
+            reverse('core:send'),
+            data=dump(
+                self.correct_golem_data,
+                self.PROVIDER_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY),
+            content_type='application/octet-stream',
+        )
+        self._test_response(
+            response,
+            status=202,
+            key=self.PROVIDER_PRIVATE_KEY,
+
+        )
+
+    def test_that_send_should_refuse_request_if_all_stored_messages_have_incompatible_protocol_version(self):
+        with override_settings(GOLEM_MESSAGES_VERSION='1.11.0'):
+            store_subtask(
+                task_id=self.task_to_compute.compute_task_def['task_id'],
+                subtask_id=self.task_to_compute.compute_task_def['subtask_id'],
+                provider_public_key=self.provider_public_key,
+                requestor_public_key=self.requestor_public_key,
+                state=Subtask.SubtaskState.FORCING_REPORT,
+                next_deadline=int(self.task_to_compute.compute_task_def['deadline']) + settings.CONCENT_MESSAGING_TIME,
+                task_to_compute=self.task_to_compute,
+                report_computed_task=self.report_computed_task,
+            )
+        with mock.patch('core.utils.log') as log_not_called_mock, \
+                mock.patch('core.subtask_helpers.log') as log_called_mock:
+            response = self.send_request(
+                url='core:send',
+                data=dump(
+                    self.correct_golem_data,
+                    self.PROVIDER_PRIVATE_KEY,
+                    CONCENT_PUBLIC_KEY),
+            )
+        self._test_response(
+            response,
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ServiceRefused,
+            fields={
+                'reason': message.concents.ServiceRefused.REASON.InvalidRequest,
+            }
+        )
+
+        log_called_mock.assert_called()
+        log_not_called_mock.assert_not_called()
+
+        self.assertIn(f'Version stored in database is 1.11.0, Concent version is {settings.GOLEM_MESSAGES_VERSION}', str(log_called_mock.call_args))

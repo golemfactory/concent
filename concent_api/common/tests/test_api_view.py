@@ -281,7 +281,7 @@ class ApiViewTransactionTestCase(TransactionTestCase):
         _update_timed_out_subtask_correct_response_mock_function.assert_called()
         _create_client_and_raise_http400_error_mock_function.assert_called()
 
-        self.assertEqual(Client.objects.count(), 1)
+        self.assertEqual(Client.objects.count(), 2)
 
     def test_api_view_should_rollback_changes_on_500_error(self):
 
@@ -367,7 +367,7 @@ class ApiViewTransactionTestCase(TransactionTestCase):
 
         _update_timed_out_subtask_correct_response_mock_function.assert_called()
         self.assertEqual(response.status_code,   202)
-        self.assertEqual(Client.objects.count(), 3)  # 3 because view itself is creating 2 clients.
+        self.assertEqual(Client.objects.count(), 4)  # 3 because view itself is creating 2 clients.
 
     def test_non_api_view_should_rollback_changes_on_500_error(self):
 

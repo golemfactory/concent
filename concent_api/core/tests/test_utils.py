@@ -151,7 +151,7 @@ class TestExtractNameFromSceneFilePath():
             extract_name_from_scene_file_path(scene_file_path)
 
 
-class TestValidateCompatibilityGolemMessages():
+class TestValidateCompatibilityGolemMessages:
 
     @pytest.fixture(autouse=True)
     def setup(self):

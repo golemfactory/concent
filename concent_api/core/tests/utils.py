@@ -9,15 +9,13 @@ import functools
 import mock
 
 import dateutil.parser
+from django.conf import settings
 from django.http import HttpResponse
 from django.http import HttpResponseNotAllowed
-from numpy import ndarray
-
-from django.conf import settings
 from django.shortcuts import reverse
 from django.test import TestCase
 from freezegun import freeze_time
-
+from numpy import ndarray
 from golem_messages import dump
 from golem_messages import load
 from golem_messages import message

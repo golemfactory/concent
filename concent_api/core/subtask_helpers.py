@@ -19,6 +19,7 @@ from common.helpers import deserialize_message
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.logging import log
+from concent_api import settings
 from core.models import PendingResponse
 from core.models import Subtask
 from core.payments import bankster
@@ -26,6 +27,7 @@ from core.transfer_operations import store_pending_message
 from core.transfer_operations import verify_file_status
 from core.validation import is_golem_message_signed_with_key
 from core.utils import hex_to_bytes_convert
+from core.utils import is_protocol_verison_compatible_with_verison_in_concent
 
 logger = getLogger(__name__)
 
@@ -258,3 +260,27 @@ def get_one_or_none(
         instances = subtask_or_query_set.filter(**conditions)
         assert len(instances) <= 1
         return None if len(instances) == 0 else instances[0]
+
+
+def are_all_stored_messages_compatible_with_protocol_version(client_message: Message, client_public_key: bytes) -> bool:
+    subtask_ids_list = []  # type: list
+    if isinstance(client_message, ForcePayment):
+        for subtask_result_accepted in client_message.subtask_results_accepted_list:
+            subtask_ids_list.append(subtask_result_accepted.subtask_id)
+    else:
+        subtask_ids_list = [client_message.subtask_id]
+    for subtask_id in subtask_ids_list:
+        with transaction.atomic(using='control'):
+            subtask = get_one_or_none(
+                Subtask.objects.select_for_update(),
+                subtask_id=subtask_id
+            )
+            for related_messages_name in Subtask.MESSAGE_FOR_FIELD:
+                related_message = getattr(subtask, related_messages_name) if subtask is not None else None
+                if related_message is not None and not is_protocol_verison_compatible_with_verison_in_concent(related_message.protocol_version):
+                    log(logger,
+                        f'Wrong version of golem messages in stored messages. Missmatch for {related_messages_name}. '
+                        f'Version stored in database is {related_message.protocol_version}, '
+                        f'Concent version is {settings.GOLEM_MESSAGES_VERSION}. Client key: {client_public_key}')
+                    return False
+    return True

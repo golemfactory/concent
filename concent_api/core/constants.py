@@ -27,6 +27,9 @@ ETHEREUM_ADDRESS_LENGTH = 42
 # Defines length of Ethereum public key.
 ETHEREUM_PUBLIC_KEY_LENGTH = 128
 
+# Defines the length of Ethereum transaction's hash
+ETHEREUM_TRANSACTION_HASH_LENGTH = 64
+
 # Defines length of Clients ids, public keys or ethereum public keys
 TASK_OWNER_KEY_LENGTH = 64
 

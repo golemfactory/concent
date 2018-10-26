@@ -4,6 +4,7 @@ from golem_messages import factories
 from golem_messages import message
 from golem_messages.utils import encode_hex
 
+from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.constants import MOCK_TRANSACTION
 from core.message_handlers import store_subtask
 from core.models import Client
@@ -196,29 +197,38 @@ def store_report_computed_task_as_subtask():
 class TestDepositAccountValidation(ConcentIntegrationTestCase):
     def setUp(self):
         super().setUp()
-        self.task_to_compute = self._get_deserialized_task_to_compute()
-        self.payer_ethereum_address = self.task_to_compute.requestor_ethereum_address
-        self.payee_ethereum_address = self.task_to_compute.provider_ethereum_address
+        task_to_compute = self._get_deserialized_task_to_compute()
+        self.payer_ethereum_address = task_to_compute.requestor_ethereum_address
 
-        self.client = Client(public_key_bytes=self.PROVIDER_PUBLIC_KEY)
+        self.client = Client(public_key_bytes=self.REQUESTOR_PUBLIC_KEY)
         self.client.clean()
         self.client.save()
 
-        self.deposit_account = DepositAccount()
-        self.deposit_account.client = self.client
-        self.deposit_account.ethereum_address = self.payer_ethereum_address
-
     def test_that_exception_is_raised_when_ethereum_address_has_wrong_length(self):
-        self.deposit_account.ethereum_address = self.payer_ethereum_address + '1'
+        with pytest.raises(ValidationError) as exception_info:
+            deposit_account = DepositAccount(
+                client=self.client,
+                ethereum_address=self.payer_ethereum_address + '1'
+            )
+            deposit_account.clean()
+        self.assertIn('ethereum_address', exception_info.value.error_dict)
 
-        with pytest.raises(ValidationError):
-            self.deposit_account.clean()
-            self.deposit_account.save()
+    def test_that_exception_is_raised_when_ethereum_address_has_wrong_type(self):
+        with pytest.raises(ValidationError) as exception_info:
+            deposit_account = DepositAccount(
+                client=self.client,
+                ethereum_address=b'x' * ETHEREUM_ADDRESS_LENGTH
+            )
+            deposit_account.clean()
+        self.assertIn('ethereum_address', exception_info.value.error_dict)
 
-    def test_that_exception_is_not_raised_when_ethereum_address_has_wrong_length(self):
-        self.deposit_account.ethereum_address = self.payer_ethereum_address
-        self.deposit_account.clean()
-        self.deposit_account.save()
+    def test_that_exception_is_not_raised_when_ethereum_address_has_valid_length(self):
+        deposit_account = DepositAccount(
+            client=self.client,
+            ethereum_address=self.payer_ethereum_address
+        )
+        deposit_account.clean()
+        deposit_account.save()
 
 
 class TestDepositClaimValidation(ConcentIntegrationTestCase):

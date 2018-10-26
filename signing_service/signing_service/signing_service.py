@@ -491,6 +491,20 @@ def _parse_arguments() -> argparse.Namespace:
         help=f'Environment which will be set in Raven client config `environment` parameter.',
     )
 
+    subparsers = parser.add_subparsers(help='options for sending notifications')
+
+    # create optional parser for the email notifier
+    parser_for_cluster_notifier = subparsers.add_parser('smtp-notifier', help='smtp notifier with no harcoded values')
+    parser_for_cluster_notifier.add_argument('-fea', '--from-email-address', type=str, help='gmail login', required=True)
+    parser_for_cluster_notifier.add_argument('-fep', '--from-email-password', type=str, help='gmail password', required=True)
+    parser_for_cluster_notifier.add_argument(
+        '-tea',
+        '--to-email-addresses',
+        nargs='+',
+        help='list of addresses to send notifications to.',
+        required=True,
+    )
+
     ethereum_private_key_parser_group = parser.add_mutually_exclusive_group(required=True)
     ethereum_private_key_parser_group.add_argument(  # type: ignore
         '--ethereum-private-key',

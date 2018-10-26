@@ -6,7 +6,6 @@ import signal
 import socket
 from contextlib import closing
 from pathlib import Path
-from pathlib import PosixPath
 from time import sleep
 from types import FrameType
 from typing import Iterator
@@ -93,7 +92,7 @@ class SigningService:
         signing_service_private_key: bytes,
         ethereum_private_key: str,
         maximum_reconnect_attempts: int,
-        notifier=Notifier(),
+        notifier: Notifier = Notifier(),
     ) -> None:
         assert isinstance(host, str)
         assert isinstance(port, int)
@@ -421,7 +420,7 @@ class SigningService:
         )
 
     @staticmethod
-    def _get_daily_transaction_threshold_file_path() -> PosixPath:
+    def _get_daily_transaction_threshold_file_path() -> Path:
         thresholds_directory = (Path.cwd()).joinpath('daily_tresholds')  # pylint: disable=no-member
         thresholds_directory.mkdir(exist_ok=True)  # pylint: disable=no-member
         daily_file = datetime.datetime.now().strftime('%Y-%m-%d')

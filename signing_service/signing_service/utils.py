@@ -112,5 +112,5 @@ class SecretProvider(Action):
 
 class Notifier(object):
 
-    def send(self):
+    def send(self) -> None:
         pass

@@ -180,7 +180,7 @@ def settle_overdue_acceptances(
     assert provider_ethereum_address != requestor_ethereum_address
 
     # Bankster asks SCI about the amount of funds available in requestor's deposit.
-    requestor_deposit_value = service.get_deposit_value(client_eth_address=requestor_ethereum_address)
+    requestor_deposit_value = service.get_deposit_value(client_eth_address=requestor_ethereum_address)  # pylint: disable=no-value-for-parameter
 
     # Concent defines time T0 equal to oldest payment_ts from passed SubtaskResultAccepted messages from
     # subtask_results_accepted_list.
@@ -227,7 +227,7 @@ def settle_overdue_acceptances(
         transaction_type=TransactionType.FORCE,
     )
 
-    (amount_paid, amount_pending) = get_provider_payment_info(
+    (_amount_paid, amount_pending) = get_provider_payment_info(
         list_of_forced_payments=list_of_forced_payments,
         list_of_payments=list_of_transactions,
         subtask_results_accepted_list=acceptances,

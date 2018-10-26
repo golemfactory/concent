@@ -226,7 +226,6 @@ class MiddleMan:
             except asyncio.CancelledError:
                 # CancelledError shall not be treated as crash and logged in Sentry. It is only logged as info
                 logger.debug(f"CancelledError in Signing Service connection handler.")
-                pass
 
             except Exception as exception:  # pylint: disable=broad-except
                 crash_logger.error(

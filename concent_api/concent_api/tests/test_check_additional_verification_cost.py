@@ -13,8 +13,8 @@ class TestAdditionalVerificationCostCheck:
 
     @override_settings(
         ADDITIONAL_VERIFICATION_COST=1,
-    )
-    def test_that_check_additional_verification_cost_not_produce_error_when_additional_verification_cost_is_set_to_int(self):  # pylint: disable=no-self-use
+    )  # pylint: disable=no-self-use
+    def test_that_check_additional_verification_cost_not_produce_error_when_additional_verification_cost_is_set_to_int(self):
         errors = check_additional_verification_cost()
 
         assertpy.assert_that(errors).is_empty()

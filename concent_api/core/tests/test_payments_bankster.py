@@ -5,7 +5,7 @@ from django.conf import settings
 from django.test import override_settings
 
 from common.constants import ConcentUseCase
-from core.constants import MOCK_TRANSACTION
+from core.constants import MOCK_TRANSACTION_HASH
 from core.payments.bankster import ClaimPaymentInfo
 from core.payments.bankster import claim_deposit
 from core.payments.bankster import finalize_payment
@@ -95,8 +95,8 @@ class FinalizePaymentBanksterTest(ConcentIntegrationTestCase):
     )
     def test_that_when_additional_verification_cost_is_zero_finalize_payment_should_return_empty_provider_claim_payment_info(self):
         with mock.patch('core.payments.service.get_deposit_value', return_value=1) as get_deposit_value:
-            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION) as force_subtask_payment:
-                with mock.patch('core.payments.service.cover_additional_verification_cost', return_value=MOCK_TRANSACTION) as cover_additional_verification_cost:
+            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION_HASH) as force_subtask_payment:
+                with mock.patch('core.payments.service.cover_additional_verification_cost', return_value=MOCK_TRANSACTION_HASH) as cover_additional_verification_cost:
                     (requestors_claim_payment_info, providers_claim_payment_info) = finalize_payment(
                         subtask_id=self.task_to_compute.subtask_id,
                         concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
@@ -137,8 +137,8 @@ class FinalizePaymentBanksterTest(ConcentIntegrationTestCase):
 
     def test_that_when_both_provider_and_requestor_deposits_are_empty_finalize_payment_should_return_claim_payment_info_objects_with_full_amount_pending(self):
         with mock.patch('core.payments.service.get_deposit_value', return_value=0) as get_deposit_value:
-            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION) as force_subtask_payment:
-                with mock.patch('core.payments.service.cover_additional_verification_cost', return_value=MOCK_TRANSACTION) as cover_additional_verification_cost:
+            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION_HASH) as force_subtask_payment:
+                with mock.patch('core.payments.service.cover_additional_verification_cost', return_value=MOCK_TRANSACTION_HASH) as cover_additional_verification_cost:
                     (requestors_claim_payment_info, providers_claim_payment_info) = finalize_payment(
                         subtask_id=self.task_to_compute.subtask_id,
                         concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
@@ -177,8 +177,8 @@ class FinalizePaymentBanksterTest(ConcentIntegrationTestCase):
     )
     def test_that_when_both_provider_and_requestor_deposits_are_not_empty_finalize_payment_should_create_transactions(self):
         with mock.patch('core.payments.service.get_deposit_value', return_value=2) as get_deposit_value:
-            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION) as force_subtask_payment:
-                with mock.patch('core.payments.service.cover_additional_verification_cost', return_value=MOCK_TRANSACTION) as cover_additional_verification_cost:
+            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION_HASH) as force_subtask_payment:
+                with mock.patch('core.payments.service.cover_additional_verification_cost', return_value=MOCK_TRANSACTION_HASH) as cover_additional_verification_cost:
                     (requestors_claim_payment_info, providers_claim_payment_info) = finalize_payment(
                         subtask_id=self.task_to_compute.subtask_id,
                         concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
@@ -223,8 +223,8 @@ class FinalizePaymentBanksterTest(ConcentIntegrationTestCase):
 
     def test_that_in_not_additional_verification_use_case_provider_claim_payment_info_should_be_empty_even_if_he_has_non_empty_deposit(self):
         with mock.patch('core.payments.service.get_deposit_value', return_value=2) as get_deposit_value:
-            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION) as force_subtask_payment:
-                with mock.patch('core.payments.service.cover_additional_verification_cost', return_value=MOCK_TRANSACTION) as cover_additional_verification_cost:
+            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION_HASH) as force_subtask_payment:
+                with mock.patch('core.payments.service.cover_additional_verification_cost', return_value=MOCK_TRANSACTION_HASH) as cover_additional_verification_cost:
                     (requestors_claim_payment_info, providers_claim_payment_info) = finalize_payment(
                         subtask_id=self.task_to_compute.subtask_id,
                         concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,

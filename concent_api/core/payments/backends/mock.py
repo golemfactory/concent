@@ -1,7 +1,5 @@
-from ethereum.transactions import Transaction
-
 from core.constants import CLIENT_ETH_ADDRESS_WITH_0_DEPOSIT
-from core.constants import MOCK_TRANSACTION
+from core.constants import MOCK_TRANSACTION_HASH
 from core.payments.backends.sci_backend import TransactionType
 
 
@@ -20,8 +18,8 @@ def make_force_payment_to_provider(
     provider_eth_address: str,  # pylint: disable=unused-argument
     value: int,  # pylint: disable=unused-argument
     payment_ts: int,  # pylint: disable=unused-argument
-) -> Transaction:
-    return MOCK_TRANSACTION
+) -> str:
+    return MOCK_TRANSACTION_HASH
 
 
 def get_transaction_count() -> int:
@@ -40,13 +38,13 @@ def force_subtask_payment(
     provider_eth_address: str,  # pylint: disable=unused-argument
     value: int,  # pylint: disable=unused-argument
     subtask_id: str,  # pylint: disable=unused-argument
-) -> Transaction:
-    return MOCK_TRANSACTION
+) -> str:
+    return MOCK_TRANSACTION_HASH
 
 
 def cover_additional_verification_cost(
     provider_eth_address: str,  # pylint: disable=unused-argument
     value: int,  # pylint: disable=unused-argument
     subtask_id: str,  # pylint: disable=unused-argument
-) -> Transaction:
-    return MOCK_TRANSACTION
+) -> str:
+    return MOCK_TRANSACTION_HASH

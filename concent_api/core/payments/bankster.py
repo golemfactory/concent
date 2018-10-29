@@ -29,13 +29,13 @@ class ClaimPaymentInfo:
         self,
         amount_paid: int,
         amount_pending: int,
-        tx_hash: Optional[bytes] = None,
+        tx_hash: Optional[str] = None,
         payment_ts: Optional[int] = None,
         timestamp_error: bool = False,
     ) -> None:
         assert isinstance(amount_paid, int) and amount_paid >= 0
         assert isinstance(amount_pending, int) and amount_paid >= 0
-        assert isinstance(tx_hash, bytes) or (tx_hash is None and amount_paid == 0)
+        assert isinstance(tx_hash, str) or (tx_hash is None and amount_paid == 0)
         assert isinstance(payment_ts, int) or (payment_ts is None and tx_hash is None)
         assert timestamp_error is False or (timestamp_error is True and amount_paid == amount_pending == 0)
 
@@ -125,7 +125,7 @@ def finalize_payment(
     if available_requestor_claim == 0:
         requestors_claim_payment_info = ClaimPaymentInfo(0, subtask_cost)
     else:
-        transaction = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
+        transaction_hash = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
             requestor_eth_address=requestor_ethereum_address,
             provider_eth_address=provider_ethereum_address,
             value=available_requestor_claim,
@@ -134,7 +134,7 @@ def finalize_payment(
         requestors_claim_payment_info = ClaimPaymentInfo(
             amount_paid=available_requestor_claim,
             amount_pending=subtask_cost - available_requestor_claim,
-            tx_hash=transaction.hash,
+            tx_hash=transaction_hash,
             payment_ts=current_time,
         )
 
@@ -144,7 +144,7 @@ def finalize_payment(
     elif available_provider_claim == 0:
         providers_claim_payment_info = ClaimPaymentInfo(0, settings.ADDITIONAL_VERIFICATION_COST)
     else:
-        transaction = service.cover_additional_verification_cost(  # pylint: disable=no-value-for-parameter
+        transaction_hash = service.cover_additional_verification_cost(  # pylint: disable=no-value-for-parameter
             provider_eth_address=provider_ethereum_address,
             value=available_provider_claim,
             subtask_id=subtask_id,
@@ -152,7 +152,7 @@ def finalize_payment(
         providers_claim_payment_info = ClaimPaymentInfo(
             amount_paid=available_provider_claim,
             amount_pending=settings.ADDITIONAL_VERIFICATION_COST - available_provider_claim,
-            tx_hash=transaction.hash,
+            tx_hash=transaction_hash,
             payment_ts=current_time,
         )
 
@@ -239,7 +239,7 @@ def settle_overdue_acceptances(
         requestors_claim_payment_info = ClaimPaymentInfo(0, amount_pending)
     else:
         requestor_payable_amount = min(amount_pending, requestor_deposit_value)
-        transaction = service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
+        transaction_hash = service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
             requestor_eth_address=requestor_ethereum_address,
             provider_eth_address=provider_ethereum_address,
             value=requestor_payable_amount,
@@ -248,7 +248,7 @@ def settle_overdue_acceptances(
         requestors_claim_payment_info = ClaimPaymentInfo(
             amount_paid=requestor_payable_amount,
             amount_pending=amount_pending - requestor_payable_amount,
-            tx_hash=transaction.hash,
+            tx_hash=transaction_hash,
             payment_ts=current_time,
         )
 

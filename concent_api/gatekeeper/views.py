@@ -19,6 +19,7 @@ from golem_messages.message         import Message
 from golem_messages.shortcuts       import load
 
 from core.exceptions import FileTransferTokenError
+from core.utils import if_given_version_of_golem_messages_is_compatible_with_version_in_concent
 from gatekeeper.utils               import gatekeeper_access_denied_response
 from common                          import logging
 from common.constants                import ErrorCode
@@ -47,8 +48,15 @@ def upload(request: HttpRequest) -> JsonResponse:
             ErrorCode.HEADER_CONTENT_TYPE_NOT_SUPPORTED,
             request.META['PATH_INFO'] if 'PATH_INFO' in request.META.keys() else 'UNAVAILABLE'
         )
-
     path_to_file = request.get_full_path().partition(reverse('gatekeeper:upload'))[2]
+
+    if not if_given_version_of_golem_messages_is_compatible_with_version_in_concent(request=request):
+        return gatekeeper_access_denied_response(
+            "Protocol version in request does not match protocol version in Concent",
+            FileTransferToken.Operation.upload,
+            ErrorCode.HEADER_PROTOCOL_VERSION_INVALID,
+            path_to_file,
+        )
     response_or_file_info = parse_headers(request, path_to_file, FileTransferToken.Operation.upload)
 
     if not isinstance(response_or_file_info, FileTransferToken.FileInfo):
@@ -75,6 +83,14 @@ def download(request: HttpRequest) -> JsonResponse:
     # FIXME: When running on `manage.py runserver` in development, empty or missing Concent-Type gets replaced
     # with text/plain. gunicorn does not do this. Looks like a bug to me. We'll let it pass for now sice we ignore
     # the body anyway and the check is mostly to inform the client about its mistake.
+
+    if not if_given_version_of_golem_messages_is_compatible_with_version_in_concent(request=request):
+        return gatekeeper_access_denied_response(
+            "Protocol version in request does not match protocol version in Concent",
+            FileTransferToken.Operation.download,
+            ErrorCode.HEADER_PROTOCOL_VERSION_INVALID,
+            request.META['PATH_INFO'] if 'PATH_INFO' in request.META.keys() else '-path to file UNAVAILABLE-',
+        )
     if request.content_type != 'text/plain' and request.content_type != '':
         return gatekeeper_access_denied_response(
             'Download request cannot have data in the body.',

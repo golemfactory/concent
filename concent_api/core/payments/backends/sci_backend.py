@@ -2,7 +2,6 @@ import binascii
 import uuid
 from enum import Enum
 
-from ethereum.transactions import Transaction
 from golem_sci import SmartContractsInterface
 from golem_sci.blockshelper import BlocksHelper
 from web3 import Web3
@@ -61,7 +60,7 @@ def make_force_payment_to_provider(
     provider_eth_address:   str,
     value:                  int,
     payment_ts:             int,
-) -> Transaction:
+) -> str:
     """
     Concent makes transaction from requestor's deposit to provider's account on amount 'value'.
     If there is less then 'value' on requestor's deposit, Concent transfers as much as possible.
@@ -98,7 +97,7 @@ def force_subtask_payment(
     provider_eth_address: str,
     value: int,
     subtask_id: str,
-) -> Transaction:
+) -> str:
     assert isinstance(requestor_eth_address, str) and len(requestor_eth_address) == ETHEREUM_ADDRESS_LENGTH
     assert isinstance(provider_eth_address, str) and len(provider_eth_address) == ETHEREUM_ADDRESS_LENGTH
     assert isinstance(value, int) and value > 0
@@ -116,7 +115,7 @@ def cover_additional_verification_cost(
     provider_eth_address: str,
     value: int,
     subtask_id: str,
-) -> Transaction:
+) -> str:
     assert isinstance(provider_eth_address, str) and len(provider_eth_address) == ETHEREUM_ADDRESS_LENGTH
     assert isinstance(value, int) and value > 0
     assert isinstance(subtask_id, str)

@@ -262,6 +262,22 @@ def get_one_or_none(
         return None if len(instances) == 0 else instances[0]
 
 
+def are_protocol_versions_in_related_messages_compatible(subtask: Subtask, client_public_key: bytes) -> bool:
+    for related_messages_name in Subtask.MESSAGE_FOR_FIELD:
+        related_message = getattr(subtask, related_messages_name) if subtask is not None else None
+        if related_message is not None and not is_protocol_verison_compatible_with_verison_in_concent(
+                related_message.protocol_version):
+            log(logger,
+                f'Wrong version of golem messages in stored messages. Missmatch for {related_messages_name}. '
+                f'Version stored in database is {related_message.protocol_version}, '
+                f'Concent version is {settings.GOLEM_MESSAGES_VERSION}.',
+                subtask_id=subtask.subtask_id,
+                client_public_key=client_public_key,
+                )
+            return False
+    return True
+
+
 def are_all_stored_messages_compatible_with_protocol_version(client_message: Message, client_public_key: bytes) -> bool:
     subtask_ids_list = []  # type: list
     if isinstance(client_message, ForcePayment):
@@ -273,14 +289,8 @@ def are_all_stored_messages_compatible_with_protocol_version(client_message: Mes
         with transaction.atomic(using='control'):
             subtask = get_one_or_none(
                 Subtask.objects.select_for_update(),
-                subtask_id=subtask_id
+                subtask_id=subtask_id,
             )
-            for related_messages_name in Subtask.MESSAGE_FOR_FIELD:
-                related_message = getattr(subtask, related_messages_name) if subtask is not None else None
-                if related_message is not None and not is_protocol_verison_compatible_with_verison_in_concent(related_message.protocol_version):
-                    log(logger,
-                        f'Wrong version of golem messages in stored messages. Missmatch for {related_messages_name}. '
-                        f'Version stored in database is {related_message.protocol_version}, '
-                        f'Concent version is {settings.GOLEM_MESSAGES_VERSION}. Client key: {client_public_key}')
-                    return False
+            if subtask is not None and not are_protocol_versions_in_related_messages_compatible(subtask, client_public_key):
+                return False
     return True

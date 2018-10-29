@@ -958,8 +958,18 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
             task_to_compute=self.task_to_compute,
         )
 
-        self.correct_golem_data = self._get_deserialized_force_report_computed_task(
+        self.force_report_computed_task = self._get_deserialized_force_report_computed_task(
             report_computed_task=self.report_computed_task
+        )
+
+        self.reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
+            reason=message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
+            task_to_compute=self.task_to_compute,
+        )
+
+        self.force_get_task_result = self._get_deserialized_force_subtask_results(
+            timestamp=parse_timestamp_to_utc_datetime(get_current_utc_timestamp()),
+            task_to_compute=self.task_to_compute,
         )
 
         self.provider_public_key = hex_to_bytes_convert(self.task_to_compute.provider_public_key)
@@ -971,7 +981,7 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
             response = self.send_request(
                 url='core:send',
                 data=dump(
-                    self.correct_golem_data,
+                    self.force_report_computed_task,
                     self.PROVIDER_PRIVATE_KEY,
                     CONCENT_PUBLIC_KEY),
                 golem_messages_version='1.12.0'
@@ -991,7 +1001,7 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
         response = self.client.post(
             reverse('core:send'),
             data=dump(
-                self.correct_golem_data,
+                self.force_report_computed_task,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY),
             content_type='application/octet-stream',
@@ -1020,7 +1030,7 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
             response = self.send_request(
                 url='core:send',
                 data=dump(
-                    self.correct_golem_data,
+                    self.force_report_computed_task,
                     self.PROVIDER_PRIVATE_KEY,
                     CONCENT_PUBLIC_KEY),
             )
@@ -1038,3 +1048,51 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
         log_not_called_mock.assert_not_called()
 
         self.assertIn(f'Version stored in database is 1.11.0, Concent version is {settings.GOLEM_MESSAGES_VERSION}', str(log_called_mock.call_args))
+
+    def test_that_receive_should_refuse_request_if_stored_messages_in_database_have_incompatible_protocol_version(self):
+        """
+        This case may happen, if client sends a request to core:send and in next step sends request to core:receive
+        using different protocol version. The client is always required to stay on the same protocol version while
+        communicating about the same subtask.
+        """
+        response = self.send_request(
+            url='core:send',
+            data=dump(
+                self.force_report_computed_task,
+                self.PROVIDER_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY),
+        )
+        self._test_response(
+            response,
+            status=202,
+            key=self.PROVIDER_PRIVATE_KEY,
+        )
+
+        response1 = self.send_request(
+            url='core:send',
+            data=dump(
+                self.reject_report_computed_task,
+                self.REQUESTOR_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY),
+        )
+        self._test_response(
+            response1,
+            status=202,
+            key=self.REQUESTOR_PRIVATE_KEY,
+        )
+
+        with override_settings(GOLEM_MESSAGES_VERSION='1.11.0'):
+            response2 = self.send_request(
+                url='core:receive',
+                data=self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
+                golem_messages_version='1.11.0'
+            )
+            self._test_response(
+                response2,
+                status=200,
+                key=self.PROVIDER_PRIVATE_KEY,
+                message_type=message.concents.ServiceRefused,
+                fields={
+                    'reason': message.concents.ServiceRefused.REASON.InvalidRequest,
+                }
+            )

@@ -53,6 +53,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             content_type='application/octet-stream',
             HTTP_AUTHORIZATION = 'Golem ' + encoded_token,
             HTTP_CONCENT_AUTH=self.header_concent_auth,
+            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
         )
 
         self.assertIsInstance(response, JsonResponse)
@@ -73,6 +74,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             HTTP_AUTHORIZATION = 'Golem ' + encoded_token,
             HTTP_CONCENT_AUTH=self.header_concent_auth,
             content_type = '',
+            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
         )
 
         self.assertIsInstance(response, JsonResponse)
@@ -93,6 +95,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             HTTP_AUTHORIZATION = 'Golem ' + encoded_token,
             HTTP_CONCENT_AUTH=self.header_concent_auth,
             content_type = 'application/x-www-form-urlencoded',
+            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
         )
 
         self.assertIsInstance(response, JsonResponse)
@@ -127,6 +130,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
             HTTP_CONCENT_AUTH=self.header_concent_auth,
             content_type                   = 'application/x-www-form-urlencoded',
+            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
         )
 
         self.assertIsInstance(response, JsonResponse)
@@ -173,6 +177,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
                 HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
                 HTTP_CONCENT_AUTH=self.header_concent_auth,
                 content_type                   = 'application/x-www-form-urlencoded',
+                HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
             )
 
             self.assertIsInstance(response, JsonResponse)
@@ -217,6 +222,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
                 HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
                 HTTP_CONCENT_AUTH=self.header_concent_auth,
                 content_type                   = 'application/x-www-form-urlencoded',
+                HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
             )
 
             self.assertIsInstance(response, JsonResponse)
@@ -253,6 +259,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
                 HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
                 HTTP_CONCENT_AUTH=self.header_concent_auth,
                 content_type                   = 'application/x-www-form-urlencoded',
+                HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
             )
 
             self.assertIsInstance(response, JsonResponse)
@@ -289,6 +296,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
                 HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
                 HTTP_CONCENT_AUTH=self.header_concent_auth,
                 content_type                   = 'application/x-www-form-urlencoded',
+                HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
             )
 
             self.assertIsInstance(response, JsonResponse)
@@ -312,6 +320,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             HTTP_AUTHORIZATION             = 'Golem D6UAAAAAWoG9YgGsJib/zgj2cAHGXunyxI7t2NYnHKPvrdzVkdT/B58TpQHpdfonuWy8sWq9nrpc9+/1nUTm8O9szLOrFrCPKL7hAQRWLO4JCR6cVGILFbqRKX6abR1AKMLqRUa/ucH5t0YrLe/OPEp6+2swgbRgcnu0dlvfaupn9bwRPZhjVc2hJlDlkz+7aRx+NDEFWQeRHt3q7b8vA0xd/UUvPGudSnzGR6DaM1+Ji4PifQ7AUdYkQHmRNP4yZH+xjCq706J8mftrySj2geoP+TLKZFgpqHhng5I9v0xKpjOnZk9MRTWkzPyxIMwl535ZVLte0J5VRIIaZFEyYFRXgZGVyGinnEIfXZKZdUdRpRELUBK086A/w4aG3shpEPXEzfo42hjdrDEfyx5bZTANyrGwj1hTLKPoVaPMN9wb3MdQ1D1B5Os3+5YdfASnQRZfZmaEJqNAHNlZveLHpA2DcPFNvltcwUy3Jj1gTI43IbbuXNsIXhMKgNaZrNgJKKpQpc+qF9D7CwfugtiD6y/g71UrrUgvVIcZ9UXVTu5OJg2agGiaIvRWrGxfhyzv/HyHR530p7fNTt/dJBCDO55Mx3uhxA/XGYxmz2uk/xIQMR8QU7Cc/tOdvzdHJ+WHhNBo2fe5oLk03AXIhpqOOgJb8nnM',
             HTTP_CONCENT_AUTH=self.header_concent_auth,
             content_type                   = 'application/x-www-form-urlencoded',
+            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
         )
 
         self.assertIsInstance(response, JsonResponse)
@@ -344,6 +353,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
             HTTP_CONCENT_AUTH=self.header_concent_auth,
             content_type                   = 'application/x-www-form-urlencoded',
+            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
         )
 
         self.assertIsInstance(response, JsonResponse)
@@ -378,6 +388,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             HTTP_AUTHORIZATION='Golem ' + encoded_token,
             HTTP_CONCENT_AUTH=self.header_concent_auth,
             content_type='application/x-www-form-urlencoded',
+            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
         )
 
         self.assertIsInstance(response, JsonResponse)
@@ -386,6 +397,28 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
         self.assertIn('error_code', response.json().keys())
         self.assertEqual("application/json", response["Content-Type"])
         self.assertEqual(response.json()["error_code"], ErrorCode.MESSAGE_FILES_CATEGORY_NOT_UNIQUE.value)
+
+    @freeze_time("2018-12-30 11:00:00")
+    def test_upload_should_return_401_if_invalid_protocol_version(self):
+        golem_upload_token = dump(self.upload_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+        encoded_token = b64encode(golem_upload_token).decode()
+        response = self.client.post(
+            '{}{}'.format(
+                reverse('gatekeeper:upload'),
+                'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
+            ),
+            HTTP_AUTHORIZATION='Golem ' + encoded_token,
+            HTTP_CONCENT_AUTH=self.header_concent_auth,
+            content_type='application/x-www-form-urlencoded',
+            HTTP_CONCENT_GOLEM_MESSAGES_VERSION='1.11.1',
+        )
+
+        self.assertIsInstance(response, JsonResponse)
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('message', response.json().keys())
+        self.assertIn('error_code', response.json().keys())
+        self.assertEqual("application/json", response["Content-Type"])
+        self.assertEqual(response.json()["error_code"], ErrorCode.HEADER_PROTOCOL_VERSION_INVALID.value)
 
 
 @override_settings(
@@ -753,3 +786,25 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
         self.assertIn('error_code', response.json().keys())
         self.assertEqual("application/json", response["Content-Type"])
         self.assertEqual(response.json()["error_code"], ErrorCode.MESSAGE_FILES_CATEGORY_NOT_UNIQUE.value)
+
+    @freeze_time("2018-12-30 11:00:00")
+    def test_upload_should_return_401_if_invalid_protocol_version(self):
+        golem_download_token = dump(self.download_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
+        encoded_token = b64encode(golem_download_token).decode()
+        response = self.client.get(
+            '{}{}'.format(
+                reverse('gatekeeper:download'),
+                'blender/benchmark/test_task/scene-Helicopter-27-cycles.blend'
+            ),
+            HTTP_AUTHORIZATION='Golem ' + encoded_token,
+            HTTP_CONCENT_AUTH=self.header_concent_auth,
+            content_type='application/x-www-form-urlencoded',
+            HTTP_CONCENT_GOLEM_MESSAGES_VERSION='1.11.1',
+        )
+
+        self.assertIsInstance(response, JsonResponse)
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('message', response.json().keys())
+        self.assertIn('error_code', response.json().keys())
+        self.assertEqual("application/json", response["Content-Type"])
+        self.assertEqual(response.json()["error_code"], ErrorCode.HEADER_PROTOCOL_VERSION_INVALID.value)

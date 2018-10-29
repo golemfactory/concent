@@ -35,6 +35,7 @@ from common.helpers import parse_datetime_to_timestamp
 
 from .constants import TASK_OWNER_KEY_LENGTH
 from .constants import ETHEREUM_ADDRESS_LENGTH
+from .constants import ETHEREUM_TRANSACTION_HASH_LENGTH
 from .constants import GOLEM_PUBLIC_KEY_LENGTH
 from .constants import MESSAGE_TASK_ID_MAX_LENGTH
 from .validation import validate_database_report_computed_task
@@ -714,34 +715,26 @@ class DepositClaim(Model):
         super().clean()
         if self.subtask is None and self.concent_use_case != ConcentUseCase.FORCED_PAYMENT:
             raise ValidationError({
-                'subtask: Can be NULL if and only if concent_use_case is ForcedPayment'
+                'subtask': 'Can be NULL if and only if concent_use_case is ForcedPayment'
             })
         if self.payer_deposit_account.ethereum_address == self.payee_ethereum_address:
             raise ValidationError({
                 'payer_deposit_account': 'payer_deposit_account.ethereum_address '
                                          'cannot be the same as payee_ethereum_address'
             })
-        if not isinstance(self.payer_deposit_account, DepositAccount):
-            raise ValidationError({
-                'payer_deposit_account': 'payer_deposit_account.ethereum_address must be string'
-            })
-        if self.payee_ethereum_address == self.payer_deposit_account.ethereum_address:
-            raise ValidationError({
-                'payee_ethereum_address': 'Address of the Ethereum account belonging to the entity '
-                                          '(requestor, provider or Concent) who is supposed to receive the claim. '
-                                          'Cannot be the same as payer_deposit_account.ethereum_address'
-            })
         if not isinstance(self.payee_ethereum_address, str) or len(self.payee_ethereum_address) != ETHEREUM_ADDRESS_LENGTH:
             raise ValidationError({
                 'payee_ethereum_address': f'Address of the Ethereum account belonging to the entity '
                                           f'(requestor, provider or Concent) must be string and must be exactly '
-                                          f'{ETHEREUM_ADDRESS_LENGTH} characters.'
+                                          f'{ETHEREUM_ADDRESS_LENGTH} characters long.'
             })
         if not isinstance(self.amount, int) or self.amount <= 0:
             raise ValidationError({
                 'amount': 'Amount must be integer and be greater than 0'
             })
-        if not (self.tx_hash is None or isinstance(self.tx_hash, str)) or len(self.tx_hash) != 64:
+        if self.tx_hash is not None \
+                and not (isinstance(self.tx_hash, str) and len(self.tx_hash) == ETHEREUM_TRANSACTION_HASH_LENGTH):
             raise ValidationError({
-                'tx_hash': 'The hash of the Ethereum transaction must be a string and 64 characters long'
+                'tx_hash': f'The hash of the Ethereum transaction must be a string and '
+                           f'{ETHEREUM_TRANSACTION_HASH_LENGTH} characters long'
             })

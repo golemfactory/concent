@@ -1,19 +1,19 @@
 from freezegun import freeze_time
 import mock
 
-from django.conf import settings
 from django.test import override_settings
+from golem_messages.utils import encode_hex
 
 from common.constants import ConcentUseCase
-from core.constants import MOCK_TRANSACTION_HASH
+from core.constants import MOCK_TRANSACTION
 from core.models import Client
 from core.models import DepositAccount
 from core.models import DepositClaim
-from core.payments.bankster import ClaimPaymentInfo
 from core.payments.bankster import claim_deposit
 from core.payments.bankster import discard_claim
 from core.payments.bankster import finalize_payment
 from core.payments.bankster import settle_overdue_acceptances
+from core.tests.test_unit_model import store_report_computed_task_as_subtask
 from core.tests.utils import ConcentIntegrationTestCase
 
 
@@ -92,176 +92,102 @@ class FinalizePaymentBanksterTest(ConcentIntegrationTestCase):
     def setUp(self):
         super().setUp()
         self.task_to_compute = self._get_deserialized_task_to_compute()
-        self.subtask_cost = 1
 
-    @override_settings(
-        ADDITIONAL_VERIFICATION_COST=0,
-    )
-    def test_that_when_additional_verification_cost_is_zero_finalize_payment_should_return_empty_provider_claim_payment_info(self):
-        with mock.patch('core.payments.service.get_deposit_value', return_value=1) as get_deposit_value:
-            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION_HASH) as force_subtask_payment:
-                with mock.patch('core.payments.service.cover_additional_verification_cost', return_value=MOCK_TRANSACTION_HASH) as cover_additional_verification_cost:
-                    (requestors_claim_payment_info, providers_claim_payment_info) = finalize_payment(
-                        subtask_id=self.task_to_compute.subtask_id,
-                        concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
-                        requestor_ethereum_address=self.task_to_compute.requestor_ethereum_address,
-                        provider_ethereum_address=self.task_to_compute.provider_ethereum_address,
-                        subtask_cost=self.subtask_cost,
-                    )
+        self.client = Client(public_key_bytes=self.PROVIDER_PUBLIC_KEY)
+        self.client.clean()
+        self.client.save()
 
-        self.assertIsInstance(requestors_claim_payment_info, ClaimPaymentInfo)
-        self.assertIsInstance(providers_claim_payment_info, ClaimPaymentInfo)
+        self.deposit_account = DepositAccount()
+        self.deposit_account.client = self.client
+        self.deposit_account.ethereum_address = self.task_to_compute.requestor_ethereum_address
+        self.deposit_account.clean()
+        self.deposit_account.save()
 
-        self.assertIsNotNone(requestors_claim_payment_info.tx_hash)
-        self.assertIsNotNone(requestors_claim_payment_info.payment_ts)
-        self.assertEqual(requestors_claim_payment_info.amount_paid, self.subtask_cost)
-        self.assertEqual(requestors_claim_payment_info.amount_pending, 0)
+        self.deposit_claim = DepositClaim()
+        self.deposit_claim.subtask = store_report_computed_task_as_subtask()
+        self.deposit_claim.payer_deposit_account = self.deposit_account
+        self.deposit_claim.payee_ethereum_address = self.task_to_compute.provider_ethereum_address
+        self.deposit_claim.concent_use_case = ConcentUseCase.FORCED_ACCEPTANCE
+        self.deposit_claim.amount = 2
+        self.deposit_claim.clean()
+        self.deposit_claim.save()
 
-        self.assertIsNone(providers_claim_payment_info.tx_hash)
-        self.assertIsNone(providers_claim_payment_info.payment_ts)
-        self.assertEqual(providers_claim_payment_info.amount_paid, 0)
-        self.assertEqual(providers_claim_payment_info.amount_pending, 0)
-
-        self.assertEqual(get_deposit_value.call_count, 2)
-        self.assertEqual(
-            get_deposit_value.call_args_list[0][1],
-            {'client_eth_address': self.task_to_compute.requestor_ethereum_address}
-        )
-        self.assertEqual(
-            get_deposit_value.call_args_list[1][1],
-            {'client_eth_address': self.task_to_compute.provider_ethereum_address}
-        )
-        force_subtask_payment.assert_called_once_with(
-            requestor_eth_address=self.task_to_compute.requestor_ethereum_address,
-            provider_eth_address=self.task_to_compute.provider_ethereum_address,
-            value=self.subtask_cost,
-            subtask_id=self.task_to_compute.subtask_id,
-        )
-        cover_additional_verification_cost.assert_not_called()
-
-    def test_that_when_both_provider_and_requestor_deposits_are_empty_finalize_payment_should_return_claim_payment_info_objects_with_full_amount_pending(self):
+    def test_that_when_available_funds_are_zero_finalize_payment_should_delete_deposit_claim_and_return_none(self):
         with mock.patch('core.payments.service.get_deposit_value', return_value=0) as get_deposit_value:
-            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION_HASH) as force_subtask_payment:
-                with mock.patch('core.payments.service.cover_additional_verification_cost', return_value=MOCK_TRANSACTION_HASH) as cover_additional_verification_cost:
-                    (requestors_claim_payment_info, providers_claim_payment_info) = finalize_payment(
-                        subtask_id=self.task_to_compute.subtask_id,
-                        concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
-                        requestor_ethereum_address=self.task_to_compute.requestor_ethereum_address,
-                        provider_ethereum_address=self.task_to_compute.provider_ethereum_address,
-                        subtask_cost=self.subtask_cost,
-                    )
+            returned_value = finalize_payment(self.deposit_claim)
 
-        self.assertIsInstance(requestors_claim_payment_info, ClaimPaymentInfo)
-        self.assertIsInstance(providers_claim_payment_info, ClaimPaymentInfo)
+        self.assertIsNone(returned_value)
+        self.assertFalse(DepositClaim.objects.filter(pk=self.deposit_claim.pk).exists())
 
-        self.assertIsNone(requestors_claim_payment_info.tx_hash)
-        self.assertIsNone(requestors_claim_payment_info.payment_ts)
-        self.assertEqual(requestors_claim_payment_info.amount_paid, 0)
-        self.assertEqual(requestors_claim_payment_info.amount_pending, self.subtask_cost)
-
-        self.assertIsNone(providers_claim_payment_info.tx_hash)
-        self.assertIsNone(providers_claim_payment_info.payment_ts)
-        self.assertEqual(providers_claim_payment_info.amount_paid, 0)
-        self.assertEqual(providers_claim_payment_info.amount_pending, settings.ADDITIONAL_VERIFICATION_COST)
-
-        self.assertEqual(get_deposit_value.call_count, 2)
-        self.assertEqual(
-            get_deposit_value.call_args_list[0][1],
-            {'client_eth_address': self.task_to_compute.requestor_ethereum_address}
+        get_deposit_value.assert_called_with(
+            client_eth_address=self.deposit_claim.payer_deposit_account.ethereum_address,
         )
-        self.assertEqual(
-            get_deposit_value.call_args_list[1][1],
-            {'client_eth_address': self.task_to_compute.provider_ethereum_address}
-        )
-        force_subtask_payment.assert_not_called()
-        cover_additional_verification_cost.assert_not_called()
 
-    @override_settings(
-        ADDITIONAL_VERIFICATION_COST=2,
-    )
-    def test_that_when_both_provider_and_requestor_deposits_are_not_empty_finalize_payment_should_create_transactions(self):
+    def test_that_when_deposit_claim_is_for_forced_acceptance_use_case_finalize_payment_should_call_force_subtask_payment(self):
         with mock.patch('core.payments.service.get_deposit_value', return_value=2) as get_deposit_value:
-            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION_HASH) as force_subtask_payment:
-                with mock.patch('core.payments.service.cover_additional_verification_cost', return_value=MOCK_TRANSACTION_HASH) as cover_additional_verification_cost:
-                    (requestors_claim_payment_info, providers_claim_payment_info) = finalize_payment(
-                        subtask_id=self.task_to_compute.subtask_id,
-                        concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
-                        requestor_ethereum_address=self.task_to_compute.requestor_ethereum_address,
-                        provider_ethereum_address=self.task_to_compute.provider_ethereum_address,
-                        subtask_cost=self.subtask_cost,
-                    )
+            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION) as force_subtask_payment:
+                returned_value = finalize_payment(self.deposit_claim)
+        self.assertEqual(returned_value, encode_hex(MOCK_TRANSACTION.hash))
 
-        self.assertIsInstance(requestors_claim_payment_info, ClaimPaymentInfo)
-        self.assertIsInstance(providers_claim_payment_info, ClaimPaymentInfo)
-
-        self.assertIsNotNone(requestors_claim_payment_info.tx_hash)
-        self.assertIsNotNone(requestors_claim_payment_info.payment_ts)
-        self.assertEqual(requestors_claim_payment_info.amount_paid, self.subtask_cost)
-        self.assertEqual(requestors_claim_payment_info.amount_pending, 0)
-
-        self.assertIsNotNone(providers_claim_payment_info.tx_hash)
-        self.assertIsNotNone(providers_claim_payment_info.payment_ts)
-        self.assertEqual(providers_claim_payment_info.amount_paid, 2)
-        self.assertEqual(providers_claim_payment_info.amount_pending, 0)
-
-        self.assertEqual(get_deposit_value.call_count, 2)
-        self.assertEqual(
-            get_deposit_value.call_args_list[0][1],
-            {'client_eth_address': self.task_to_compute.requestor_ethereum_address}
-        )
-        self.assertEqual(
-            get_deposit_value.call_args_list[1][1],
-            {'client_eth_address': self.task_to_compute.provider_ethereum_address}
+        get_deposit_value.assert_called_with(
+            client_eth_address=self.deposit_claim.payer_deposit_account.ethereum_address,
         )
         force_subtask_payment.assert_called_once_with(
-            requestor_eth_address=self.task_to_compute.requestor_ethereum_address,
-            provider_eth_address=self.task_to_compute.provider_ethereum_address,
-            value=self.subtask_cost,
-            subtask_id=self.task_to_compute.subtask_id,
+            requestor_eth_address=self.deposit_claim.payer_deposit_account.ethereum_address,
+            provider_eth_address=self.deposit_claim.payee_ethereum_address,
+            value=self.deposit_claim.amount,
+            subtask_id=self.deposit_claim.subtask.subtask_id,
+        )
+
+    def test_that_when_deposit_claim_is_for_additional_verification_use_case_finalize_payment_should_call_cover_additional_verification_cost(self):
+        self.deposit_claim.concent_use_case = ConcentUseCase.ADDITIONAL_VERIFICATION
+        self.deposit_claim.clean()
+        self.deposit_claim.save()
+
+        with mock.patch('core.payments.service.get_deposit_value', return_value=2) as get_deposit_value:
+            with mock.patch('core.payments.service.cover_additional_verification_cost', return_value=MOCK_TRANSACTION) as cover_additional_verification_cost:
+                returned_value = finalize_payment(self.deposit_claim)
+
+        self.assertEqual(returned_value, encode_hex(MOCK_TRANSACTION.hash))
+
+        get_deposit_value.assert_called_with(
+            client_eth_address=self.deposit_claim.payer_deposit_account.ethereum_address,
         )
         cover_additional_verification_cost.assert_called_once_with(
-            provider_eth_address=self.task_to_compute.provider_ethereum_address,
-            value=2,
-            subtask_id=self.task_to_compute.subtask_id,
+            provider_eth_address=self.deposit_claim.payer_deposit_account.ethereum_address,
+            value=self.deposit_claim.amount,
+            subtask_id=self.deposit_claim.subtask.subtask_id,
         )
 
-    def test_that_in_not_additional_verification_use_case_provider_claim_payment_info_should_be_empty_even_if_he_has_non_empty_deposit(self):
-        with mock.patch('core.payments.service.get_deposit_value', return_value=2) as get_deposit_value:
-            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION_HASH) as force_subtask_payment:
-                with mock.patch('core.payments.service.cover_additional_verification_cost', return_value=MOCK_TRANSACTION_HASH) as cover_additional_verification_cost:
-                    (requestors_claim_payment_info, providers_claim_payment_info) = finalize_payment(
-                        subtask_id=self.task_to_compute.subtask_id,
-                        concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
-                        requestor_ethereum_address=self.task_to_compute.requestor_ethereum_address,
-                        provider_ethereum_address=self.task_to_compute.provider_ethereum_address,
-                        subtask_cost=self.subtask_cost,
-                    )
+    def test_that_when_there_are_other_deposit_claims_finalize_payment_substract_them_from_currently_processed_claim(self):
+        self.deposit_claim = DepositClaim()
+        self.deposit_claim.subtask = store_report_computed_task_as_subtask()
+        self.deposit_claim.payer_deposit_account = self.deposit_account
+        self.deposit_claim.payee_ethereum_address = self.task_to_compute.provider_ethereum_address
+        self.deposit_claim.concent_use_case = ConcentUseCase.FORCED_ACCEPTANCE
+        self.deposit_claim.amount = 2
+        self.deposit_claim.clean()
+        # Save twice because we want two same claims.
+        self.deposit_claim.save()
+        self.deposit_claim.pk = None
+        self.deposit_claim.save()
 
-        self.assertIsInstance(requestors_claim_payment_info, ClaimPaymentInfo)
-        self.assertIsInstance(providers_claim_payment_info, ClaimPaymentInfo)
+        with mock.patch('core.payments.service.get_deposit_value', return_value=5) as get_deposit_value:
+            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION) as force_subtask_payment:
+                returned_value = finalize_payment(self.deposit_claim)
 
-        self.assertIsNotNone(requestors_claim_payment_info.tx_hash)
-        self.assertIsNotNone(requestors_claim_payment_info.payment_ts)
-        self.assertEqual(requestors_claim_payment_info.amount_paid, self.subtask_cost)
-        self.assertEqual(requestors_claim_payment_info.amount_pending, 0)
+        self.assertEqual(returned_value, encode_hex(MOCK_TRANSACTION.hash))
 
-        self.assertIsNone(providers_claim_payment_info.tx_hash)
-        self.assertIsNone(providers_claim_payment_info.payment_ts)
-        self.assertEqual(providers_claim_payment_info.amount_paid, 0)
-        self.assertEqual(providers_claim_payment_info.amount_pending, 0)
-
-        self.assertEqual(get_deposit_value.call_count, 1)
-        self.assertEqual(
-            get_deposit_value.call_args_list[0][1],
-            {'client_eth_address': self.task_to_compute.requestor_ethereum_address}
+        get_deposit_value.assert_called_with(
+            client_eth_address=self.deposit_claim.payer_deposit_account.ethereum_address,
         )
         force_subtask_payment.assert_called_once_with(
-            requestor_eth_address=self.task_to_compute.requestor_ethereum_address,
-            provider_eth_address=self.task_to_compute.provider_ethereum_address,
-            value=self.subtask_cost,
-            subtask_id=self.task_to_compute.subtask_id,
+            requestor_eth_address=self.deposit_claim.payer_deposit_account.ethereum_address,
+            provider_eth_address=self.deposit_claim.payee_ethereum_address,
+            # 5 - (2 + 2) | deposit_value - sum_of_other_claims
+            value=1,
+            subtask_id=self.deposit_claim.subtask.subtask_id,
         )
-        cover_additional_verification_cost.assert_not_called()
 
 
 class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):

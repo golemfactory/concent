@@ -51,6 +51,7 @@ from core.models import Subtask
 from core.payments import bankster
 from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
+from core.subtask_helpers import are_protocol_versions_in_related_messages_compatible
 from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
 from core.subtask_helpers import get_one_or_none
 from core.transfer_operations import create_file_transfer_token_for_golem_client
@@ -921,6 +922,9 @@ def handle_messages_from_database(client_public_key: bytes) -> Union[message.Mes
             return None
 
         assert pending_response.response_type_enum in set(PendingResponse.ResponseType)
+
+        if not are_protocol_versions_in_related_messages_compatible(pending_response.subtask, client_public_key):
+            return message.concents.ServiceRefused(reason=message.concents.ServiceRefused.REASON.InvalidRequest)
 
         if pending_response.response_type == PendingResponse.ResponseType.ForceReportComputedTask.name:  # pylint: disable=no-member
             report_computed_task = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())

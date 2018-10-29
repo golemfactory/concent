@@ -1,6 +1,7 @@
 import datetime
 import math
 from logging import getLogger
+from typing import Optional
 
 from django.conf import settings
 from django.http import HttpRequest
@@ -135,7 +136,7 @@ def is_protocol_verison_compatible_with_verison_in_concent(protocol_version: str
 
 def if_given_version_of_golem_messages_is_compatible_with_version_in_concent(
     request: HttpRequest,
-    client_public_key: bytes,
+    client_public_key: Optional[bytes] = None,
 ) -> bool:
     """
     If header is missing version is not checked and Concent assumes that client uses compatible version.
@@ -145,7 +146,11 @@ def if_given_version_of_golem_messages_is_compatible_with_version_in_concent(
     else:
         golem_message_version = request.META['HTTP_CONCENT_GOLEM_MESSAGES_VERSION']
         if not is_protocol_verison_compatible_with_verison_in_concent(golem_message_version):
-            log(logger, f'Wrong version of golem messages. Clients version is {golem_message_version}, '
-            f'Concent version is {settings.GOLEM_MESSAGES_VERSION}. Client key: {client_public_key}')
+            log(
+                logger,
+                f'Wrong version of golem messages. Clients version is {golem_message_version}, '
+                f'Concent version is {settings.GOLEM_MESSAGES_VERSION}.',
+                client_public_key=client_public_key,
+            )
             return False
         return True

@@ -1,32 +1,30 @@
 import binascii
-from base64                         import b64decode
-from base64                         import b64encode
+from base64 import b64decode
+from base64 import b64encode
 from logging import getLogger
-from typing                         import Union
+from typing import Union
 
 from django.conf import settings
-from django.http import JsonResponse
-from django.http import HttpRequest
 from django.core.handlers.wsgi import WSGIRequest
+from django.http import HttpRequest
+from django.http import JsonResponse
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_safe
-
-from golem_messages.exceptions      import MessageError
+from golem_messages.exceptions import MessageError
+from golem_messages.message import Message
 from golem_messages.message.concents import FileTransferToken
-from golem_messages.message         import Message
-from golem_messages.shortcuts       import load
+from golem_messages.shortcuts import load
 
-from core.exceptions import FileTransferTokenError
-from core.utils import if_given_version_of_golem_messages_is_compatible_with_version_in_concent
-from gatekeeper.utils               import gatekeeper_access_denied_response
-from common                          import logging
-from common.constants                import ErrorCode
+from common import logging
+from common.constants import ErrorCode
 from common.decorators import provides_concent_feature
 from common.helpers import get_current_utc_timestamp
 from common.validations import validate_file_transfer_token
-
+from core.exceptions import FileTransferTokenError
+from core.utils import if_given_version_of_golem_messages_is_compatible_with_version_in_concent
+from gatekeeper.utils import gatekeeper_access_denied_response
 
 logger = getLogger(__name__)
 

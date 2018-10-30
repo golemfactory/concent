@@ -23,7 +23,7 @@ class ErrorCode(enum.Enum):
     HEADER_AUTHORIZATION_UNRECOGNIZED_SCHEME                            = 'header.authorization.unrecognized_scheme'
     HEADER_AUTHORIZATION_NOT_BASE64_ENCODED_VALUE                       = 'header.authorization.not_base64_encoded_value'
     HEADER_CONTENT_TYPE_NOT_SUPPORTED                                   = 'header.content_type.not_supported'
-    HEADER_PROTOCOL_VERSION_INVALID                                     = 'header.protocol_version.invalid'
+    HEADER_PROTOCOL_VERSION_UNSUPPORTED                                 = 'header.protocol_version.unsupported'
     MESSAGE_AUTHORIZED_CLIENT_PUBLIC_KEY_UNAUTHORIZED_CLIENT            = 'message.authorized_client_public_key_unauthorized_client'
     MESSAGE_AUTHORIZED_CLIENT_PUBLIC_KEY_WRONG_TYPE                     = 'message.authorized_client_public_key_wrong_type'
     MESSAGE_FILES_CATEGORY_MISSING                                      = 'message.files.category.empty'

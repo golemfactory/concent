@@ -1039,7 +1039,7 @@ class ConcentIntegrationTestCase(TestCase):
     def send_request(
         self,
         url: str,
-        data: bytes,
+        data: Optional[bytes] = None,
         content_type: Optional[str] = 'application/octet-stream',
         golem_messages_version: Optional[str] = settings.GOLEM_MESSAGES_VERSION,
         **kwargs,

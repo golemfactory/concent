@@ -4,7 +4,7 @@ from typing import Any
 from typing import Optional
 from typing import Tuple
 from typing import Union
-import copy
+from copy import copy
 
 from django.conf import settings
 from django.core.mail import mail_admins
@@ -51,7 +51,6 @@ from core.models import Subtask
 from core.payments import bankster
 from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
-from core.subtask_helpers import are_protocol_versions_in_related_messages_compatible
 from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
 from core.subtask_helpers import get_one_or_none
 from core.transfer_operations import create_file_transfer_token_for_golem_client
@@ -60,6 +59,7 @@ from core.transfer_operations import store_pending_message
 from core.utils import calculate_additional_verification_call_time
 from core.utils import calculate_maximum_download_time
 from core.utils import calculate_subtask_verification_time
+from core.utils import is_protocol_version_compatible
 from core.validation import is_golem_message_signed_with_key
 from core.validation import substitute_new_report_computed_task_if_needed
 from core.validation import validate_that_golem_messages_are_signed_with_key
@@ -672,6 +672,11 @@ def handle_send_force_subtask_results_response(
                 f"ForceSubtaskResults for this subtask has not been initiated yet. Can't accept your {type(client_message).__name__}.",
                 error_code=ErrorCode.QUEUE_COMMUNICATION_NOT_STARTED,
             )
+        if subtask.subtask_results_accepted_id is not None or subtask.subtask_results_rejected_id is not None:
+            raise Http400(
+                "This subtask has been resolved already.",
+                error_code=ErrorCode.SUBTASK_DUPLICATE_REQUEST,
+            )
 
         if subtask.state_enum != Subtask.SubtaskState.FORCING_ACCEPTANCE:
             raise Http400(
@@ -683,12 +688,6 @@ def handle_send_force_subtask_results_response(
             raise Http400(
                 f"Subtask requestor key does not match current client key.  Can't accept your '{type(client_message).__name__}'.",
                 error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH,
-            )
-
-        if subtask.subtask_results_accepted_id is not None or subtask.subtask_results_rejected_id is not None:
-            raise Http400(
-                "This subtask has been resolved already.",
-                error_code=ErrorCode.SUBTASK_DUPLICATE_REQUEST,
             )
 
         validate_all_messages_identical([
@@ -923,7 +922,17 @@ def handle_messages_from_database(client_public_key: bytes) -> Union[message.Mes
 
         assert pending_response.response_type_enum in set(PendingResponse.ResponseType)
 
-        if not are_protocol_versions_in_related_messages_compatible(pending_response.subtask, client_public_key):
+        if pending_response.response_type != PendingResponse.ResponseType.ForcePaymentCommitted.name and not\
+                is_protocol_version_compatible(
+                    pending_response.subtask.task_to_compute.protocol_version
+                ):
+            log(logger,
+                f'Wrong version of golem messages in stored messages.'
+                f'Version stored in database is { pending_response.subtask.task_to_compute.protocol_version},'
+                f'Concent version is {settings.GOLEM_MESSAGES_VERSION}.',
+                subtask_id= pending_response.subtask.subtask_id,
+                client_public_key=client_public_key,
+                )
             return message.concents.ServiceRefused(reason=message.concents.ServiceRefused.REASON.InvalidRequest)
 
         if pending_response.response_type == PendingResponse.ResponseType.ForceReportComputedTask.name:  # pylint: disable=no-member
@@ -1245,7 +1254,7 @@ def store_message(
     stored_message = StoredMessage(
         type=golem_message.header.type_,
         timestamp=message_timestamp,
-        data=copy.copy(golem_message).serialize(),
+        data=copy(golem_message).serialize(),
         task_id=task_id,
         subtask_id=subtask_id,
         protocol_version=settings.GOLEM_MESSAGES_VERSION

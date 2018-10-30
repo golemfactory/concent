@@ -10,7 +10,7 @@ from golem_messages                 import dump
 from golem_messages                 import load
 from golem_messages                 import message
 
-from concent_api import settings
+from django.conf import settings
 from core.exceptions                import Http400
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp

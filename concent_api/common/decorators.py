@@ -35,7 +35,7 @@ from common.logging import log
 from common.shortcuts import load_without_public_key
 from core.exceptions import NonPositivePriceTaskToComputeError
 from core.exceptions import CreateModelIntegrityError
-from core.utils import if_given_version_of_golem_messages_is_compatible_with_version_in_concent
+from core.utils import is_given_golem_messages_version_supported_by_concent
 from core.validation import get_validated_client_public_key_from_client_message
 from core.validation import is_golem_message_signed_with_key
 
@@ -186,7 +186,7 @@ def handle_errors_and_responses(database_name: str) -> Callable:
         ) -> Union[HttpRequest, JsonResponse]:
             assert database_name in settings.DATABASES or database_name is None
 
-            if not if_given_version_of_golem_messages_is_compatible_with_version_in_concent(
+            if not is_given_golem_messages_version_supported_by_concent(
                 request=request,
                 client_public_key=client_public_key
             ):

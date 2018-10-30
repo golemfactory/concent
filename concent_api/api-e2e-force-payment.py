@@ -96,11 +96,6 @@ def test_case_2d_send_correct_force_payment(cluster_consts: ProtocolConstants, c
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         correct_force_payment,
-
-        headers={
-            'Content-Type': 'application/octet-stream',
-            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
-        },
         expected_status=200,
         expected_message_type=message.concents.ForcePaymentCommitted,
         expected_content_type='application/octet-stream',
@@ -112,10 +107,6 @@ def test_case_2d_send_correct_force_payment(cluster_consts: ProtocolConstants, c
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
-        headers={
-            'Content-Type': 'application/octet-stream',
-            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
-        },
         expected_status=200,
         expected_message_type=message.concents.ForcePaymentCommitted,
         expected_content_type='application/octet-stream',
@@ -154,11 +145,6 @@ def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts: Pro
                 )
             ]
         ),
-
-        headers={
-            'Content-Type': 'application/octet-stream',
-            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
-        },
         expected_status=200,
         expected_message_type=message.concents.ForcePaymentRejected,
         expected_content_type='application/octet-stream',
@@ -197,11 +183,6 @@ def test_case_2b_send_force_payment_beyond_payment_time(cluster_consts: Protocol
                 )
             ]
         ),
-
-        headers={
-            'Content-Type': 'application/octet-stream',
-            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
-        },
         expected_status=200,
         expected_message_type=message.concents.ForcePaymentRejected,
         expected_content_type='application/octet-stream',
@@ -245,11 +226,6 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
                 )
             ]
         ),
-
-        headers={
-            'Content-Type': 'application/octet-stream',
-            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
-        },
         expected_status=200,
         expected_message_type=message.concents.ServiceRefused,
         expected_content_type='application/octet-stream',
@@ -259,7 +235,6 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
-        from concent_api.settings import GOLEM_MESSAGES_VERSION
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file = sys.stderr)

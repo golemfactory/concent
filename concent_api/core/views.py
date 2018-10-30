@@ -9,14 +9,13 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_GET
-from golem_messages.message import concents
+from golem_messages import message
 from golem_messages.message import Message
 
 from core.message_handlers import handle_message
 from core.message_handlers import handle_messages_from_database
-from core.subtask_helpers import are_all_stored_messages_compatible_with_protocol_version
 from core.subtask_helpers import update_all_timed_out_subtasks_of_a_client
-from core.subtask_helpers import update_subtasks_from_incoming_message_if_timed_out
+from core.subtask_helpers import check_protocol_versions_and_update_subtasks_from_incoming_message_if_timed_out
 from common import logging
 from common.decorators import handle_errors_and_responses
 from common.decorators import log_communication
@@ -36,10 +35,10 @@ logger = getLogger(__name__)
 @transaction.non_atomic_requests(using='control')
 def send(_request: HttpRequest, client_message: Message, client_public_key: bytes) -> Union[Message, HttpResponse]:
     assert isinstance(client_public_key, bytes) or client_public_key is None
-    if not are_all_stored_messages_compatible_with_protocol_version(client_message, client_public_key):
-        return concents.ServiceRefused(reason=concents.ServiceRefused.REASON.InvalidRequest)
     if client_public_key is not None:
-        update_subtasks_from_incoming_message_if_timed_out(client_message, client_public_key)
+        response = check_protocol_versions_and_update_subtasks_from_incoming_message_if_timed_out(client_message, client_public_key)
+        if isinstance(response, message.concents.ServiceRefused):
+            return response
     logging.log_message_received(
         logger,
         client_message,

@@ -64,10 +64,6 @@ def test_case_1_provider_forces_report_computed_task_and_gets_accepted(
         force_report_computed_task(
             task_to_compute=task_to_compute
         ),
-        headers={
-            'Content-Type': 'application/octet-stream',
-            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
-        },
         expected_status=202,
     )
     api_request(
@@ -76,10 +72,6 @@ def test_case_1_provider_forces_report_computed_task_and_gets_accepted(
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
-        headers={
-            'Content-Type': 'application/octet-stream',
-            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
-        },
         expected_status=200,
         expected_message_type=ForceReportComputedTask,
         expected_content_type='application/octet-stream',
@@ -92,10 +84,6 @@ def test_case_1_provider_forces_report_computed_task_and_gets_accepted(
         ack_report_computed_task(
             task_to_compute=task_to_compute
         ),
-        headers={
-            'Content-Type': 'application/octet-stream',
-            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
-        },
         expected_status=202,
     )
     api_request(
@@ -104,10 +92,6 @@ def test_case_1_provider_forces_report_computed_task_and_gets_accepted(
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
-        headers={
-            'Content-Type': 'application/octet-stream',
-            'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION,
-        },
         expected_status=200,
         expected_message_type=ForceReportComputedTaskResponse,
         expected_content_type='application/octet-stream',
@@ -117,7 +101,6 @@ def test_case_1_provider_forces_report_computed_task_and_gets_accepted(
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
-        from concent_api.settings import GOLEM_MESSAGES_VERSION
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file = sys.stderr)

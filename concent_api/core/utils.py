@@ -125,16 +125,16 @@ def extract_name_from_scene_file_path(absoulte_scene_file_path_in_docker: str) -
     return relative_scene_file_path_in_archive
 
 
-def is_protocol_verison_compatible_with_verison_in_concent(protocol_version: str) -> bool:
+def is_protocol_version_compatible(protocol_version: str) -> bool:
     """
-    Versions are considered compatible if they share the minor and major version number.
-    E.g 2.18.5 is compatible with 2.18.1 but not with 2.17.5 or 3.0.0.
+    Versions are considered compatible if they share the minor and major version number. E.g 2.18.5 is compatible with
+    2.18.1 but not with 2.17.5 or 3.0.0. This supports semver version style https://semver.org/
     """
     return protocol_version.split('.')[0] == settings.GOLEM_MESSAGES_VERSION.split('.')[0] and \
         protocol_version.split('.')[1] == settings.GOLEM_MESSAGES_VERSION.split('.')[1]
 
 
-def if_given_version_of_golem_messages_is_compatible_with_version_in_concent(
+def is_given_golem_messages_version_supported_by_concent(
     request: HttpRequest,
     client_public_key: Optional[bytes] = None,
 ) -> bool:
@@ -145,7 +145,7 @@ def if_given_version_of_golem_messages_is_compatible_with_version_in_concent(
         return True
     else:
         golem_message_version = request.META['HTTP_CONCENT_GOLEM_MESSAGES_VERSION']
-        if not is_protocol_verison_compatible_with_verison_in_concent(golem_message_version):
+        if not is_protocol_version_compatible(golem_message_version):
             log(
                 logger,
                 f'Wrong version of golem messages. Clients version is {golem_message_version}, '

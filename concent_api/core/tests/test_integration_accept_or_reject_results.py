@@ -1613,8 +1613,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 task_to_compute=task_to_compute,
             ),
         )
-        subtask.state = Subtask.SubtaskState.FORCING_ACCEPTANCE.name  # pylint: disable=no-member,
-        subtask.save()  # full_clean() is omitted here on purpose
+        subtask.full_clean()
+        subtask.save()
 
         self._assert_stored_message_counter_increased(increased_by=4)
 
@@ -1707,8 +1707,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 report_computed_task=deserialized_force_subtask_results.ack_report_computed_task.report_computed_task,  # pylint: disable=no-member,,
             ),
         )
-        subtask.state = Subtask.SubtaskState.FORCING_ACCEPTANCE.name  # pylint: disable=no-member,
-        subtask.save()  # full_clean() is omitted here on purpose
+        subtask.full_clean()
+        subtask.save()
 
         self._assert_stored_message_counter_increased(increased_by=4)
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(

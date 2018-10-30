@@ -5,8 +5,6 @@ from django.core.exceptions import ValidationError
 from golem_messages import factories
 from golem_messages import message
 from golem_messages.factories import tasks
-from golem_messages.factories.tasks import ComputeTaskDefFactory
-from golem_messages.factories.tasks import WantToComputeTaskFactory
 from golem_messages.utils import encode_hex
 
 from common.helpers import get_current_utc_timestamp
@@ -345,15 +343,15 @@ class TestDepositClaimValidation(ConcentIntegrationTestCase):
         self.deposit_claim.save()
 
 
-class CoreViewReceiveTest(ConcentIntegrationTestCase):
+class ProtocolVersionValidationTest(ConcentIntegrationTestCase):
 
     def test_that_incorrect_version_of_golem_messages_in_stored_message_should_raise_validation_error(self):
         version_of_golem_messages_in_concent = '2.13.0'
         different_version_of_golem_messages = '1.11.1'
 
         with override_settings(GOLEM_MESSAGES_VERSION=version_of_golem_messages_in_concent):
-            compute_task_def = ComputeTaskDefFactory()
-            want_to_compute_task = WantToComputeTaskFactory()
+            compute_task_def = factories.tasks.ComputeTaskDefFactory()
+            want_to_compute_task = factories.tasks.WantToComputeTaskFactory()
 
             task_to_compute = tasks.TaskToComputeFactory(
                 compute_task_def=compute_task_def,

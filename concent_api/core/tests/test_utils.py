@@ -14,9 +14,9 @@ from golem_messages import helpers
 from core.exceptions import SceneFilePathError
 from core.tests.utils import ConcentIntegrationTestCase
 from core.utils import calculate_maximum_download_time
-from core.utils import if_given_version_of_golem_messages_is_compatible_with_version_in_concent
-from core.utils import extract_name_from_scene_file_path
 from core.utils import calculate_subtask_verification_time
+from core.utils import extract_name_from_scene_file_path
+from core.utils import is_given_golem_messages_version_supported_by_concent
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.testing_helpers import generate_ecc_key_pair
@@ -165,7 +165,7 @@ class TestValidateCompatibilityGolemMessages:
         with override_settings(
             GOLEM_MESSAGES_VERSION='2.15.0',
         ):
-            assert if_given_version_of_golem_messages_is_compatible_with_version_in_concent(self.request, CONCENT_PUBLIC_KEY)
+            assert is_given_golem_messages_version_supported_by_concent(self.request, CONCENT_PUBLIC_KEY)
 
     @pytest.mark.parametrize('protocol_version', [
         '1.15.0', '2.13.3', '2.16.15'
@@ -175,4 +175,4 @@ class TestValidateCompatibilityGolemMessages:
         with override_settings(
             GOLEM_MESSAGES_VERSION='2.15.0',
         ):
-            assert not if_given_version_of_golem_messages_is_compatible_with_version_in_concent(self.request, CONCENT_PUBLIC_KEY)
+            assert not is_given_golem_messages_version_supported_by_concent(self.request, CONCENT_PUBLIC_KEY)

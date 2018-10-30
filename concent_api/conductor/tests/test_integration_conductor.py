@@ -2,6 +2,7 @@ import mock
 
 from django.urls import reverse
 
+from blender_scripts.script_generator import generate_blender_script_src
 from common.helpers import get_current_utc_timestamp
 from common.helpers import get_storage_result_file_path
 from common.helpers import get_storage_source_file_path
@@ -59,9 +60,9 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
 
         blender_subtask_definition = BlenderSubtaskDefinition(
             verification_request=verification_request,
-            output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
+            output_format=self.compute_task_def['meta_parameters']['output_format'],
             scene_file=self.compute_task_def['extra_data']['scene_file'],
-            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+            blender_crop_script=generate_blender_script_src(self.compute_task_def['meta_parameters'])
         )
         blender_subtask_definition.full_clean()
         blender_subtask_definition.save()
@@ -320,17 +321,17 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
 
     def test_blender_verification_request_task_should_create_verification_request_and_blender_subtask_definition(self):
         blender_verification_request(
-            frames=self.compute_task_def['extra_data']['frames'],
+            frames=self.compute_task_def['meta_parameters']['frames'],
             subtask_id=self.compute_task_def['subtask_id'],
             source_package_path=self.source_package_path,
             result_package_path=self.result_package_path,
-            output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
+            output_format=self.compute_task_def['meta_parameters']['output_format'],  # pylint: disable=no-member
             scene_file = self.compute_task_def['extra_data']['scene_file'],
             verification_deadline=self._get_verification_deadline_as_timestamp(
                 get_current_utc_timestamp(),
                 self.report_computed_task.task_to_compute,
             ),
-            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+            blender_crop_script=generate_blender_script_src(self.compute_task_def['meta_parameters'])
         )
 
         self.assertEqual(VerificationRequest.objects.count(), 1)
@@ -339,7 +340,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(verification_request.subtask_id,  self.compute_task_def['subtask_id'])
         self.assertEqual(verification_request.source_package_path, self.source_package_path)
         self.assertEqual(verification_request.result_package_path, self.result_package_path)
-        self.assertEqual(verification_request.blender_subtask_definition.output_format, BlenderSubtaskDefinition.OutputFormat.JPG.name)  # pylint: disable=no-member
+        self.assertEqual(verification_request.blender_subtask_definition.output_format, self.compute_task_def['meta_parameters']['output_format'])
         self.assertEqual(verification_request.blender_subtask_definition.scene_file, self.compute_task_def['extra_data']['scene_file'])
 
     def test_blender_verification_request_task_should_not_link_upload_requests_to_unrelated_upload_reports(self):
@@ -350,17 +351,17 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         upload_report.save()
 
         blender_verification_request(
-            frames=self.compute_task_def['extra_data']['frames'],
+            frames=self.compute_task_def['meta_parameters']['frames'],
             subtask_id=self.compute_task_def['subtask_id'],
             source_package_path=self.source_package_path,
             result_package_path=self.result_package_path,
-            output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
+            output_format=self.compute_task_def['meta_parameters']['output_format'],
             scene_file = self.compute_task_def['extra_data']['scene_file'],
             verification_deadline=self._get_verification_deadline_as_timestamp(
                 get_current_utc_timestamp(),
                 self.report_computed_task.task_to_compute,
             ),
-            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+            blender_crop_script=generate_blender_script_src(self.compute_task_def['meta_parameters'])
         )
 
         self.assertEqual(VerificationRequest.objects.count(), 1)
@@ -384,17 +385,17 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
 
         with mock.patch('conductor.tasks.tasks.upload_finished.delay') as mock_task:
             blender_verification_request(
-                frames=self.compute_task_def['extra_data']['frames'],
+                frames=self.compute_task_def['meta_parameters']['frames'],
                 subtask_id=self.compute_task_def['subtask_id'],
                 source_package_path=self.source_package_path,
                 result_package_path=self.result_package_path,
-                output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
+                output_format=self.compute_task_def['meta_parameters']['output_format'],
                 scene_file = self.compute_task_def['extra_data']['scene_file'],
                 verification_deadline=self._get_verification_deadline_as_timestamp(
                     get_current_utc_timestamp(),
                     self.report_computed_task.task_to_compute,
                 ),
-                blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+                blender_crop_script=generate_blender_script_src(self.compute_task_def['meta_parameters'])
             )
 
         mock_task.assert_called_with(self.compute_task_def['subtask_id'])

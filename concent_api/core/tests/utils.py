@@ -19,6 +19,7 @@ from freezegun import freeze_time
 from golem_messages import dump
 from golem_messages import load
 from golem_messages import message
+from golem_messages.factories.tasks import BlenderScriptPackageFactory
 from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
@@ -202,7 +203,6 @@ class ConcentIntegrationTestCase(TestCase):
         package_hash: str = 'sha1:4452d71687b6bc2c9389c3349fdc17fbd73b833b',
         timestamp: Optional[str] = None,
         signer_private_key: Optional[bytes] = None,
-        frames: Optional[List[int]] = None,
     ) -> ReportComputedTask:
 
         """ Returns ReportComputedTask deserialized. """
@@ -212,7 +212,6 @@ class ConcentIntegrationTestCase(TestCase):
                     task_to_compute or self._get_deserialized_task_to_compute(
                         subtask_id=subtask_id if subtask_id is not None else self._get_uuid(),
                         task_id=task_id if task_id is not None else self._get_uuid(),
-                        frames=frames if frames is not None else [1]
                     )
                 ),
                 package_hash=package_hash,
@@ -243,7 +242,6 @@ class ConcentIntegrationTestCase(TestCase):
         package_hash: str = 'sha1:230fb0cad8c7ed29810a2183f0ec1d39c9df3f4a',
         signer_private_key: Optional[bytes] = None,
         size: int = 1,
-        frames: Optional[List[int]] = None,
     ) -> TaskToCompute:
 
         """ Returns TaskToCompute deserialized. """
@@ -252,7 +250,6 @@ class ConcentIntegrationTestCase(TestCase):
                 task_id=task_id if task_id is not None else self._get_uuid(),
                 subtask_id=subtask_id if subtask_id is not None else self._get_uuid(),
                 deadline=deadline,
-                frames=frames if frames is not None else [1],
             )
         )
         assert isinstance(requestor_id, str) or requestor_id is None
@@ -660,7 +657,8 @@ class ConcentIntegrationTestCase(TestCase):
         working_directory: str = '.',
         performance: float = 829.7531773625524,
         docker_images: Optional[List[set]] = None,
-        frames: Optional[List[int]] = None
+        meta_parameters: Optional[message.tasks.BlenderScriptPackage] = None,
+        task_type: Optional[message.tasks.TaskType.Blender.name] = message.tasks.TaskType.Blender.name  # pylint: disable=no-member
     ) -> ComputeTaskDef:
         compute_task_def = ComputeTaskDefFactory(
             task_id=task_id if task_id is not None else self._get_uuid(),
@@ -669,6 +667,8 @@ class ConcentIntegrationTestCase(TestCase):
             short_description=short_description,
             working_directory=working_directory,
             performance=performance,
+            meta_parameters=meta_parameters if meta_parameters is not None else BlenderScriptPackageFactory(),
+            task_type=task_type,
         )
         if isinstance(deadline, (int, float)):
             compute_task_def['deadline'] = deadline
@@ -680,12 +680,9 @@ class ConcentIntegrationTestCase(TestCase):
         if extra_data is None:
             compute_task_def['extra_data'] = {
                 'end_task': 6,
-                'frames': frames if frames is not None else [1],
                 'outfilebasename': 'Heli-cycles(3)',
-                'output_format': 'PNG',
                 'path_root': '/home/dariusz/Documents/tasks/resources',
                 'scene_file': '/golem/resources/scene-Helicopter-27-internal.blend',
-                'script_src': '# This template is rendered by',
                 'start_task': 6,
                 'total_tasks': 8
             }

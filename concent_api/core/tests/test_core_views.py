@@ -169,7 +169,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_data_is_incorrect(self):
-        compute_task_def = message.ComputeTaskDef()
+        compute_task_def = tasks.ComputeTaskDefFactory()
         task_to_compute = message.TaskToCompute(
             compute_task_def=compute_task_def,
             requestor_public_key=self._get_encoded_requestor_public_key(),

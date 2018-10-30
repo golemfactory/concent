@@ -3,6 +3,7 @@ import mock
 from django.test import override_settings
 from numpy.core.multiarray import ndarray
 
+from blender_scripts.script_generator import generate_blender_script_src
 from common.constants import ErrorCode
 from common.helpers import get_current_utc_timestamp
 from common.helpers import get_storage_result_file_path
@@ -57,12 +58,12 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             self.task_to_compute.subtask_id,
             self.task_to_compute.task_id,
         )
-        self.frames = [1]
+        self.frames = self.compute_task_def['meta_parameters']['frames']
         self.report_computed_task = self._get_deserialized_report_computed_task(task_to_compute=self.task_to_compute)
 
         self.subtask_id = self.compute_task_def['subtask_id']
         self.scene_file = self.compute_task_def['extra_data']['scene_file']
-        self.output_format = self.compute_task_def['extra_data']['output_format']
+        self.output_format = self.compute_task_def['meta_parameters']['output_format']
 
         self.mock_image1 = mock.create_autospec(spec=ndarray, spec_set=True)
         self.mock_image2 = mock.create_autospec(spec=ndarray, spec_set=True)
@@ -128,7 +129,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 current_time,
                 self.report_computed_task.task_to_compute,
             ),
-            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+            blender_crop_script=generate_blender_script_src(self.compute_task_def['meta_parameters']),
         )
         self.assertEqual(mock_delete_source_files.call_count, 1)
         self.assertEqual(mock_get_files_list_from_archive.call_count, 1)
@@ -168,7 +169,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 current_time,
                 self.report_computed_task.task_to_compute,
             ),
-            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+            blender_crop_script=generate_blender_script_src(self.compute_task_def['meta_parameters']),
         )
         self.assertEqual(mock_delete_source_files.call_count, 1)
         self.assertEqual(mock_parse_result_files_with_frames.call_count, 1)
@@ -312,7 +313,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 current_time,
                 self.report_computed_task.task_to_compute,
             ),
-            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+            blender_crop_script=generate_blender_script_src(self.compute_task_def['meta_parameters']),
         )
         self.assertEqual(mock_delete_source_files.call_count, 1)
         self.assertEqual(mock_try_to_upload_file.call_count, 1)
@@ -361,7 +362,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 current_time,
                 self.report_computed_task.task_to_compute,
             ),
-            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+            blender_crop_script=generate_blender_script_src(self.compute_task_def['meta_parameters']),
         )
         self.assertEqual(mock_delete_source_files.call_count, 1)
         self.assertEqual(mock_try_to_upload_file.call_count, 1)
@@ -404,7 +405,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 current_time,
                 self.report_computed_task.task_to_compute,
             ),
-            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+            blender_crop_script=generate_blender_script_src(self.compute_task_def['meta_parameters']),
         )
         self.assertEqual(mock_delete_source_files.call_count, 1)
         self.assertEqual(mock_get_files_list_from_archive.call_count, 1)
@@ -459,5 +460,5 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 self.report_computed_task.task_to_compute,
             ),
             frames=frames if frames is not None else self.frames,
-            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+            blender_crop_script=generate_blender_script_src(self.compute_task_def['meta_parameters']),
         )

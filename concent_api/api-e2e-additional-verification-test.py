@@ -51,7 +51,7 @@ def get_subtask_results_verify(
     requestor_ethereum_private_key: Optional[bytes]=None,
     provider_ethereum_public_key: Optional[bytes]=None,
     price: int=1,
-    script_src: Optional[str]=None,
+    meta_parameters: Optional[str]=None,
 ) -> message.concents.SubtaskResultsVerify:
     task_to_compute = create_signed_task_to_compute(
         deadline=current_time + CALCULATED_VERIFICATION_TIME,
@@ -61,7 +61,7 @@ def get_subtask_results_verify(
         requestor_ethereum_public_key=requestor_ethereum_public_key,
         requestor_ethereum_private_key=requestor_ethereum_private_key,
         provider_ethereum_public_key=provider_ethereum_public_key,
-        script_src=script_src,
+        meta_parameters=meta_parameters,
     )
 
     report_computed_task = message.ReportComputedTask(
@@ -113,7 +113,6 @@ def test_case_1_test_for_positive_case(cluster_consts: ProtocolConstants, cluste
         report_computed_task_package_hash=result_file_checksum,
         task_to_compute_size=source_file_size,
         task_to_compute_package_hash=source_file_checksum,
-        script_src='# This template is rendered by\n# apps.blender.resources.scenefileeditor.generate_blender_crop_file(),\n# written to tempfile and passed as arg to blender.\nimport bpy\n\nclass EngineWarning(bpy.types.Operator):\n    bl_idname = "wm.engine_warning"\n    bl_label = "Inform about not supported rendering engine"\n\n    def execute(self, context):\n        self.report({"ERROR"}, "Engine " + bpy.context.scene.render.engine + \\\n                               " not supported by Golem")\n        return {"FINISHED"}\n\nclass ShowInformation(bpy.types.Operator):\n    bl_idname = "wm.scene_information"\n    bl_label = "Inform user about scene settings"\n\n\n    def execute(self, context):\n        self.report({"INFO"}, "Resolution: " +\n                              str(bpy.context.scene.render.resolution_x) +\n                               " x " +\n                               str(bpy.context.scene.render.resolution_y))\n        self.report({"INFO"}, "File format: " +\n                               str(bpy.context.scene.render.file_extension))\n        self.report({"INFO"}, "Filepath: " +\n                              str(bpy.context.scene.render.filepath))\n        self.report({"INFO"}, "Frames: " +\n                              str(bpy.context.scene.frame_start) + "-" +\n                              str(bpy.context.scene.frame_end) + ";" +\n                              str(bpy.context.scene.frame_step))\n\n        return {"FINISHED"}\n\n\nbpy.utils.register_class(EngineWarning)\nengine = bpy.context.scene.render.engine\nif engine not in ("BLENDER_RENDER", "CYCLES"):\n    bpy.ops.wm.engine_warning()\n\nbpy.utils.register_class(ShowInformation)\nbpy.ops.wm.scene_information()\n\n\nfor scene in bpy.data.scenes:\n\n    scene.render.tile_x = 0\n    scene.render.tile_y = 0\n    scene.render.resolution_x = 1024\n    scene.render.resolution_y = 768\n    scene.render.resolution_percentage = 100\n    scene.render.use_border = True\n    scene.render.use_crop_to_border = True\n    scene.render.border_max_x = 1.0\n    scene.render.border_min_x = 0.0\n    scene.render.border_min_y = 0.0\n    scene.render.border_max_y = 1.0\n    scene.render.use_compositing = bool(False)\n\n#and check if additional files aren\'t missing\nbpy.ops.file.report_missing_files()\n',
     )
 
     ack_subtask_results_verify = api_request(

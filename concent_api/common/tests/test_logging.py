@@ -51,7 +51,7 @@ class SerializeMessageToDictionaryTestCase(TestCase):
     def setUp(self):
         super().setUp()
 
-        compute_task_def = message.ComputeTaskDef()
+        compute_task_def = tasks.ComputeTaskDefFactory()
         task_to_compute = tasks.TaskToComputeFactory(
             compute_task_def=compute_task_def
         )

@@ -3,6 +3,7 @@ import mock
 from freezegun import freeze_time
 from django.conf import settings
 
+from blender_scripts.script_generator import generate_blender_script_src
 from common.helpers import get_current_utc_timestamp
 from common.helpers import get_storage_result_file_path
 from common.helpers import get_storage_source_file_path
@@ -48,9 +49,9 @@ class ConductorUploadAcknowledgedTaskTestCase(ConcentIntegrationTestCase):
 
         blender_subtask_definition = BlenderSubtaskDefinition(
             verification_request=self.verification_request,
-            output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
+            output_format=self.compute_task_def['meta_parameters']['output_format'],
             scene_file=self.compute_task_def['extra_data']['scene_file'],
-            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+            blender_crop_script=generate_blender_script_src(self.compute_task_def['meta_parameters'])
         )
         blender_subtask_definition.full_clean()
         blender_subtask_definition.save()
@@ -69,7 +70,10 @@ class ConductorUploadAcknowledgedTaskTestCase(ConcentIntegrationTestCase):
             )
 
             with mock.patch('conductor.tasks.blender_verification_order.delay') as mock_blender_verification_order, \
-                mock.patch('conductor.tasks.filter_frames_by_blender_subtask_definition', return_value=[1]) as mock_frames_filtering:  # noqa: E125
+                mock.patch(
+                    'conductor.tasks.filter_frames_by_blender_subtask_definition',
+                    return_value=self.compute_task_def['meta_parameters']['frames']
+                ) as mock_frames_filtering:  # noqa: E125
                 upload_acknowledged(
                     subtask_id=self.report_computed_task.subtask_id,
                     source_file_size=self.report_computed_task.task_to_compute.size,
@@ -82,7 +86,7 @@ class ConductorUploadAcknowledgedTaskTestCase(ConcentIntegrationTestCase):
 
             self.assertTrue(self.verification_request.upload_acknowledged)
             mock_blender_verification_order.assert_called_once_with(
-                frames=[1],
+                frames=self.compute_task_def['meta_parameters']['frames'],
                 subtask_id=self.verification_request.subtask_id,
                 source_package_path=self.verification_request.source_package_path,
                 source_size=self.report_computed_task.task_to_compute.size,

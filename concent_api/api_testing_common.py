@@ -36,16 +36,16 @@ from core.exceptions import UnexpectedResponse
 from protocol_constants import get_protocol_constants
 from protocol_constants import print_protocol_constants
 
-(PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
-(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
+# (PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
+# (REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
-REQUESTOR_ETHEREUM_PRIVATE_KEY = b'}\xf3\xfc\x16ZUoM{h\xa9\xee\xfe_8\xbd\x02\x95\xc3\x8am\xd7\xff\x91R"\x1d\xb71\xed\x08\t'
-REQUESTOR_ETHEREUM_PUBLIC_KEY = b'F\xdei\xa1\xc0\x10\xc8M\xce\xaf\xc0p\r\x8e\x8f\xb1` \x8d\xf7=\xa6\xb6\xbazL\xbbY\xd6:\xd5\x06\x8dP\xe7#\xb9\xbb\xf8T\xc73\xebH\x7f2\xcav\xb1\xd8w\xde\xdb\x89\xf0\xddD\xa5\xbf\x030\xf3\x96;'
-PROVIDER_ETHEREUM_PRIVATE_KEY = b'\x1dJ\xaf_h\xe0Y#;p\xd7s>\xb4fOH\x19\xbc\x9e\xd1\xf4\t\xdf]!\x9c\xfe\x9f\x888x'
-PROVIDER_ETHEREUM_PUBLIC_KEY = b'\x05\xa7w\xc6\x9b\x89<\xf8Rz\xef\xc4AwN}\xa0\x0e{p\xc8\xa7AF\xfc\xd26\xc1)\xdbgp\x8b]9\xfd\xaa]\xd5H@?F\x14\xdbU\x8b\x93\x8d\xf1\xfc/{s3\x8c\xc7\x80-,\x9d\x194u\x8d'
-
-REQUESTOR_ETHEREUM_PRIVATE_KEY_FOR_EMPTY_ACCOUNT = b'\x17\xc0\xd9\xd5}\x82\xa4\xe16\xa0C\xf5f\xda\xc4+\xf5(Y\x1ch\x8c\xf2B\x15\xb3\xb5D!\x18.\x04'
-REQUESTOR_ETHEREUM_PUBLIC_KEY_FOR_EMPTY_ACCOUNT = b'1\xbf\x84\x18*\xa8\x85\xb0\xfap\xbd!)\xf1/{\x1b}Q\x92\xf0o\xa7\x9b\xa7\x0b\xbd\x88\xff\xe2A\xa5b\x94m2!\xd3#E\x07\xe5\xe3\xb4!\xf3\xb9\xbe#\x8bc\xfbM\xe1\xee\x91\x00\x13\x17\xf6>x\xb8\xfc'
+# REQUESTOR_ETHEREUM_PRIVATE_KEY = b'}\xf3\xfc\x16ZUoM{h\xa9\xee\xfe_8\xbd\x02\x95\xc3\x8am\xd7\xff\x91R"\x1d\xb71\xed\x08\t'
+# REQUESTOR_ETHEREUM_PUBLIC_KEY = b'F\xdei\xa1\xc0\x10\xc8M\xce\xaf\xc0p\r\x8e\x8f\xb1` \x8d\xf7=\xa6\xb6\xbazL\xbbY\xd6:\xd5\x06\x8dP\xe7#\xb9\xbb\xf8T\xc73\xebH\x7f2\xcav\xb1\xd8w\xde\xdb\x89\xf0\xddD\xa5\xbf\x030\xf3\x96;'
+# PROVIDER_ETHEREUM_PRIVATE_KEY = b'\x1dJ\xaf_h\xe0Y#;p\xd7s>\xb4fOH\x19\xbc\x9e\xd1\xf4\t\xdf]!\x9c\xfe\x9f\x888x'
+# PROVIDER_ETHEREUM_PUBLIC_KEY = b'\x05\xa7w\xc6\x9b\x89<\xf8Rz\xef\xc4AwN}\xa0\x0e{p\xc8\xa7AF\xfc\xd26\xc1)\xdbgp\x8b]9\xfd\xaa]\xd5H@?F\x14\xdbU\x8b\x93\x8d\xf1\xfc/{s3\x8c\xc7\x80-,\x9d\x194u\x8d'
+#
+# REQUESTOR_ETHEREUM_PRIVATE_KEY_FOR_EMPTY_ACCOUNT = b'\x17\xc0\xd9\xd5}\x82\xa4\xe16\xa0C\xf5f\xda\xc4+\xf5(Y\x1ch\x8c\xf2B\x15\xb3\xb5D!\x18.\x04'
+# REQUESTOR_ETHEREUM_PUBLIC_KEY_FOR_EMPTY_ACCOUNT = b'1\xbf\x84\x18*\xa8\x85\xb0\xfap\xbd!)\xf1/{\x1b}Q\x92\xf0o\xa7\x9b\xa7\x0b\xbd\x88\xff\xe2A\xa5b\x94m2!\xd3#E\x07\xe5\xe3\xb4!\xf3\xb9\xbe#\x8bc\xfbM\xe1\xee\x91\x00\x13\x17\xf6>x\xb8\xfc'
 
 
 class TestAssertionException(Exception):
@@ -334,10 +334,9 @@ def create_signed_task_to_compute(
     deadline: int,
     timestamp: Optional[Union[datetime.datetime, str]]=None,
     provider_public_key: Optional[bytes]=None,
+    provider_private_key: Optional[bytes]=None,
     requestor_public_key: Optional[bytes]=None,
-    requestor_ethereum_public_key: Optional[bytes]=None,
-    requestor_ethereum_private_key: Optional[bytes]=None,
-    provider_ethereum_public_key: Optional[bytes]=None,
+    requestor_private_key: Optional[bytes]=None,
     want_to_compute_task: Optional[WantToComputeTask] = None,
     price: int=1,
     size: int=1,
@@ -357,23 +356,23 @@ def create_signed_task_to_compute(
         if script_src is not None:
             compute_task_def['extra_data']['script_src'] = script_src
         want_to_compute_task = want_to_compute_task if want_to_compute_task is not None else WantToComputeTaskFactory(
-            provider_public_key=provider_public_key if provider_public_key is not None else _get_provider_hex_public_key(),
-            provider_ethereum_public_key=encode_hex(provider_ethereum_public_key) if provider_ethereum_public_key is not None else encode_hex(PROVIDER_ETHEREUM_PUBLIC_KEY),
+            provider_public_key=encode_hex(provider_public_key),
+            provider_ethereum_public_key=encode_hex(provider_public_key),
         )
-        want_to_compute_task = sign_message(want_to_compute_task, PROVIDER_PRIVATE_KEY)
+        want_to_compute_task = sign_message(want_to_compute_task, provider_private_key)
         task_to_compute = TaskToComputeFactory(
-            requestor_public_key=requestor_public_key if requestor_public_key is not None else _get_requestor_hex_public_key(),
+            requestor_public_key=encode_hex(requestor_public_key),
             compute_task_def=compute_task_def,
             want_to_compute_task=want_to_compute_task,
-            requestor_ethereum_public_key=encode_hex(requestor_ethereum_public_key) if requestor_ethereum_public_key is not None else encode_hex(REQUESTOR_ETHEREUM_PUBLIC_KEY),
+            requestor_ethereum_public_key=encode_hex(requestor_public_key),
             price=price,
             size=size,
             package_hash=package_hash,
         )
         task_to_compute.generate_ethsig(
-            requestor_ethereum_private_key if requestor_ethereum_private_key is not None else REQUESTOR_ETHEREUM_PRIVATE_KEY
+            requestor_private_key
         )
-        task_to_compute = sign_message(task_to_compute, REQUESTOR_PRIVATE_KEY)
+        task_to_compute = sign_message(task_to_compute, requestor_private_key)
         return task_to_compute
 
 

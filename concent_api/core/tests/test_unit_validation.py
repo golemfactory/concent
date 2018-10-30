@@ -305,9 +305,7 @@ class TestValidateComputeTaskDef(object):
     def setup(self):
         self.compute_task_def = ComputeTaskDefFactory()
         self.compute_task_def["extra_data"] = {
-            "output_format": "PNG",
             "scene_file": "/golem/resources/nice_photo.blend",
-            "frames": [1, 2, 3],
         }
 
     def test_that_valid_compute_task_def_doesnt_raise_any_exception(self):
@@ -323,31 +321,18 @@ class TestValidateComputeTaskDef(object):
         assert_that(exception_wrapper.value.error_message).contains(f"extra_data")
         assert_that(exception_wrapper.value.error_code).is_equal_to(ErrorCode.MESSAGE_INVALID)
 
-    @pytest.mark.parametrize(
-        "missing_data", [
-            "output_format",
-            "scene_file",
-            "frames",
-        ]
-    )
-    def test_that_missing_entries_in_extra_data_causes_message_validation_error(self, missing_data):
-        del self.compute_task_def["extra_data"][missing_data]
+    def test_that_missing_entries_in_extra_data_causes_message_validation_error(self):
+        del self.compute_task_def["extra_data"]["scene_file"]
         with pytest.raises(ConcentValidationError) as exception_wrapper:
             validate_compute_task_def(self.compute_task_def)
-        assert_that(exception_wrapper.value.error_message).contains(f"{missing_data}")
+        assert_that(exception_wrapper.value.error_message).contains("scene_file")
         assert_that(exception_wrapper.value.error_code).is_equal_to(ErrorCode.MESSAGE_INVALID)
 
-    @pytest.mark.parametrize(
-        "value_with_wrong_type", [
-            "output_format",
-            "scene_file",
-        ]
-    )
-    def test_that_wrong_field_types_causes_message_validation_error(self, value_with_wrong_type):
-        self.compute_task_def["extra_data"][value_with_wrong_type] = mock.sentinel.wrongtype
+    def test_that_wrong_field_types_causes_message_validation_error(self):
+        self.compute_task_def["extra_data"]["scene_file"] = mock.sentinel.wrongtype
         with pytest.raises(ConcentValidationError) as exception_wrapper:
             validate_compute_task_def(self.compute_task_def)
-        assert_that(exception_wrapper.value.error_message).contains(f"{value_with_wrong_type}")
+        assert_that(exception_wrapper.value.error_message).contains("scene_file")
         assert_that(exception_wrapper.value.error_code).is_equal_to(ErrorCode.MESSAGE_VALUE_NOT_STRING)
 
 

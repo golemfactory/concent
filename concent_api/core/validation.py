@@ -332,8 +332,7 @@ def validate_scene_file(scene_file: str) -> None:
 
 
 def validate_compute_task_def(compute_task_def: message.tasks.ComputeTaskDef) -> None:
-    string_fields = ["output_format", "scene_file"]
-    other_mandatory_fields = ["frames"]
+    string_fields = ["scene_file"]
 
     validate_value_is_int_convertible_and_non_negative(compute_task_def['deadline'])
 
@@ -347,14 +346,12 @@ def validate_compute_task_def(compute_task_def: message.tasks.ComputeTaskDef) ->
             ErrorCode.MESSAGE_INVALID
         )
 
-    for mandatory_data in string_fields + other_mandatory_fields:
+    for mandatory_data in string_fields:
         if mandatory_data not in extra_data:
             raise ConcentValidationError(
                 f"{mandatory_data} is missing in ComputeTaskDef",
                 ErrorCode.MESSAGE_INVALID
             )
-
-    validate_frames(extra_data["frames"])
 
     for string_field in string_fields:
         if not isinstance(extra_data[string_field], str):

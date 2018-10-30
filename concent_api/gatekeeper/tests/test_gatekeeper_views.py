@@ -418,7 +418,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
         self.assertIn('message', response.json().keys())
         self.assertIn('error_code', response.json().keys())
         self.assertEqual("application/json", response["Content-Type"])
-        self.assertEqual(response.json()["error_code"], ErrorCode.HEADER_PROTOCOL_VERSION_INVALID.value)
+        self.assertEqual(response.json()["error_code"], ErrorCode.HEADER_PROTOCOL_VERSION_UNSUPPORTED.value)
 
 
 @override_settings(
@@ -788,7 +788,7 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
         self.assertEqual(response.json()["error_code"], ErrorCode.MESSAGE_FILES_CATEGORY_NOT_UNIQUE.value)
 
     @freeze_time("2018-12-30 11:00:00")
-    def test_upload_should_return_401_if_invalid_protocol_version(self):
+    def test_download_should_return_401_if_invalid_protocol_version(self):
         golem_download_token = dump(self.download_token, settings.CONCENT_PRIVATE_KEY, settings.CONCENT_PUBLIC_KEY)
         encoded_token = b64encode(golem_download_token).decode()
         response = self.client.get(
@@ -807,4 +807,4 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
         self.assertIn('message', response.json().keys())
         self.assertIn('error_code', response.json().keys())
         self.assertEqual("application/json", response["Content-Type"])
-        self.assertEqual(response.json()["error_code"], ErrorCode.HEADER_PROTOCOL_VERSION_INVALID.value)
+        self.assertEqual(response.json()["error_code"], ErrorCode.HEADER_PROTOCOL_VERSION_UNSUPPORTED.value)

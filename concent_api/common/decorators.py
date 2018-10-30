@@ -33,12 +33,11 @@ from common.logging import LoggingLevel
 from common.logging import log_400_error
 from common.logging import log
 from common.shortcuts import load_without_public_key
-from core.exceptions import NonPositivePriceTaskToComputeError
 from core.exceptions import CreateModelIntegrityError
-from core.utils import if_given_version_of_golem_messages_is_compatible_with_version_in_concent
+from core.exceptions import NonPositivePriceTaskToComputeError
+from core.exceptions import UnsupportedProtocolVersion
 from core.validation import get_validated_client_public_key_from_client_message
 from core.validation import is_golem_message_signed_with_key
-
 
 logger = getLogger(__name__)
 crash_logger = getLogger('concent.crash')
@@ -185,19 +184,6 @@ def handle_errors_and_responses(database_name: str) -> Callable:
             **kwargs: dict,
         ) -> Union[HttpRequest, JsonResponse]:
             assert database_name in settings.DATABASES or database_name is None
-
-            if not if_given_version_of_golem_messages_is_compatible_with_version_in_concent(
-                request=request,
-                client_public_key=client_public_key
-            ):
-                serialized_message = dump(
-                    message.concents.ServiceRefused(
-                        reason=message.concents.ServiceRefused.REASON.InvalidRequest,
-                    ),
-                    settings.CONCENT_PRIVATE_KEY,
-                    client_public_key,
-                )
-                return HttpResponse(serialized_message, content_type='application/octet-stream')
             try:
                 if database_name is not None:
                     sid = transaction.savepoint(using=database_name)
@@ -229,6 +215,15 @@ def handle_errors_and_responses(database_name: str) -> Callable:
                         'error_code': exception.error_code.value,
                     },
                     status=400
+                )
+            except UnsupportedProtocolVersion:
+                return HttpResponse(
+                    dump(
+                        message.concents.ServiceRefused(reason=message.concents.ServiceRefused.REASON.InvalidRequest),
+                        settings.CONCENT_PRIVATE_KEY,
+                        client_public_key,
+                    ),
+                    content_type='application/octet-stream'
                 )
             except ConcentInSoftShutdownMode:
                 transaction.savepoint_rollback(sid, using=database_name)

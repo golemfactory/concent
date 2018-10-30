@@ -342,7 +342,7 @@ class TestDepositClaimValidation(ConcentIntegrationTestCase):
         self.deposit_claim.save()
 
 
-class CoreViewReceiveTest(ConcentIntegrationTestCase):
+class ProtocolVersionValidationTest(ConcentIntegrationTestCase):
 
     def setUp(self):
         self.first_communication_protocol_version = '1.11.1'

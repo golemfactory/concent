@@ -32,6 +32,7 @@ from golem_messages.utils import encode_hex
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.helpers import sign_message
 from common.testing_helpers import generate_ecc_key_pair
+from concent_api.settings import GOLEM_MESSAGES_VERSION
 from core.exceptions import UnexpectedResponse
 from protocol_constants import get_protocol_constants
 from protocol_constants import print_protocol_constants
@@ -46,6 +47,11 @@ PROVIDER_ETHEREUM_PUBLIC_KEY = b'\x05\xa7w\xc6\x9b\x89<\xf8Rz\xef\xc4AwN}\xa0\x0
 
 REQUESTOR_ETHEREUM_PRIVATE_KEY_FOR_EMPTY_ACCOUNT = b'\x17\xc0\xd9\xd5}\x82\xa4\xe16\xa0C\xf5f\xda\xc4+\xf5(Y\x1ch\x8c\xf2B\x15\xb3\xb5D!\x18.\x04'
 REQUESTOR_ETHEREUM_PUBLIC_KEY_FOR_EMPTY_ACCOUNT = b'1\xbf\x84\x18*\xa8\x85\xb0\xfap\xbd!)\xf1/{\x1b}Q\x92\xf0o\xa7\x9b\xa7\x0b\xbd\x88\xff\xe2A\xa5b\x94m2!\xd3#E\x07\xe5\xe3\xb4!\xf3\xb9\xbe#\x8bc\xfbM\xe1\xee\x91\x00\x13\x17\xf6>x\xb8\xfc'
+
+REQUEST_HEADERS = {
+    'Content-Type': 'application/octet-stream',
+    'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION
+}
 
 
 class TestAssertionException(Exception):
@@ -153,7 +159,6 @@ def api_request(
     private_key: bytes,
     public_key: bytes,
     data: Optional[Message]=None,
-    headers: Optional[dict]=None,
     expected_status: Optional[int]=None,
     expected_message_type: Optional[Message]=None,
     expected_content_type: Optional[str]=None
@@ -181,11 +186,11 @@ def api_request(
             print('MESSAGE:')
             print_golem_message(data)
 
-    assert all(value not in ['', None] for value in [endpoint, host, headers])
+    assert all(value not in ['', None] for value in [endpoint, host, REQUEST_HEADERS])
     url = "{}/api/v1/{}/".format(host, endpoint)
 
     _print_data(data, url)
-    response = requests.post("{}".format(url), headers=headers, data=_prepare_data(data), verify=False)
+    response = requests.post("{}".format(url), headers=REQUEST_HEADERS, data=_prepare_data(data), verify=False)
     _print_response(private_key, public_key, response)
     validate_response_status(response.status_code, expected_status)
     validate_content_type(response.headers['Content-Type'], expected_content_type)

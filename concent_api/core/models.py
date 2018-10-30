@@ -548,7 +548,7 @@ class Subtask(Model):
             assert isinstance(related_message, StoredMessage) or related_message is None
             if related_message is not None and related_message.protocol_version != settings.GOLEM_MESSAGES_VERSION:
                 raise ValidationError(
-                    f'Incorrect Golem Message version. Version in: `{related_message_name}` is {related_message.protocol_version}, '
+                    f'Unsupported Golem Message version. Version in: `{related_message_name}` is {related_message.protocol_version}, '
                     f'Version in Concent is {settings.GOLEM_MESSAGES_VERSION}'
                 )
 

@@ -14,12 +14,15 @@ from golem_sci.events import BatchTransferEvent
 from golem_sci.events import ForcedPaymentEvent
 
 from common.constants import ConcentUseCase
+from common.helpers import generate_ethereum_address_from_ethereum_public_key_bytes
 from common.helpers import get_current_utc_timestamp
 from core.constants import ETHEREUM_ADDRESS_LENGTH
+from core.models import Client
 from core.models import DepositAccount
 from core.models import DepositClaim
 from core.payments import service
 from core.payments.backends.sci_backend import TransactionType
+from core.validation import validate_bytes_public_key
 
 
 class ClaimPaymentInfo:
@@ -58,7 +61,9 @@ def claim_deposit(
     requestor_ethereum_address: str,
     provider_ethereum_address: str,
     subtask_cost: int,
-) -> Tuple[bool, bool]:
+    requestor_public_key: str,
+    provider_public_key: str,
+) -> Tuple[DepositClaim, DepositClaim]:
     """
     The purpose of this operation is to check whether the clients participating in a use case have enough funds in their
     deposits to cover all the costs associated with the use case in the pessimistic scenario.
@@ -74,20 +79,97 @@ def claim_deposit(
     assert len(provider_ethereum_address) == ETHEREUM_ADDRESS_LENGTH
     assert provider_ethereum_address != requestor_ethereum_address
 
-    # Claims against requestor's deposit can be paid partially because the service has already been performed
-    # by the provider and giving him something is better than giving nothing.
-    # If the requestor's deposit is zero, we can't add a new claim.
-    requestor_has_enough_deposit: bool = service.get_deposit_value(client_eth_address=requestor_ethereum_address) > 0  # pylint: disable=no-value-for-parameter
+    validate_bytes_public_key(requestor_public_key, 'requestor_public_key')
+    validate_bytes_public_key(provider_public_key, 'provider_public_key')
 
-    # Claims against provider's deposit must be paid in full because they're payments for using Concent for
-    # additional verification and we did not perform the service yet so we can just refuse.
-    # If the provider's claim is greater than his current deposit, we can't add a new claim.
-    provider_has_enough_deposit: bool = (
-        concent_use_case != ConcentUseCase.ADDITIONAL_VERIFICATION or
-        service.get_deposit_value(client_eth_address=provider_ethereum_address) >= settings.ADDITIONAL_VERIFICATION_COST  # pylint: disable=no-value-for-parameter
+    is_claim_against_provider: bool = (
+        concent_use_case == ConcentUseCase.ADDITIONAL_VERIFICATION and
+        0 <= settings.ADDITIONAL_VERIFICATION_COST
     )
 
-    return (requestor_has_enough_deposit, provider_has_enough_deposit)
+    # Bankster creates Client and DepositAccount objects (if they don't exist yet) for the requestor
+    # and also for the provider if there's a non-zero claim against his account.
+    # This is done in single database transaction.
+    with transaction.atomic(using='control'):
+        requestor_client = Client.objects.get_or_create_full_clean(
+            public_key=requestor_public_key,
+        )
+        requestor_deposit_account = DepositAccount.objects.get_or_create_full_clean(
+            client=requestor_client,
+            ethereum_address=requestor_ethereum_address,
+        )
+
+        if is_claim_against_provider:
+            provider_client = Client.objects.get_or_create_full_clean(
+                public_key=provider_public_key,
+            )
+            provider_deposit_account = DepositAccount.objects.get_or_create_full_clean(
+                client=provider_client,
+                ethereum_address=provider_ethereum_address,
+            )
+
+    # Bankster asks SCI about the amount of funds available in requestor's deposit.
+    requestor_deposit = service.get_deposit_value(client_eth_address=requestor_ethereum_address)  # pylint: disable=no-value-for-parameter
+
+    # If the amount claimed from provider's deposit is non-zero,
+    # Bankster asks SCI about the amount of funds available in his deposit.
+    if is_claim_against_provider:
+        provider_deposit = service.get_deposit_value(client_eth_address=provider_ethereum_address)  # pylint: disable=no-value-for-parameter
+
+    # Bankster puts database locks on DepositAccount objects
+    # that will be used as payers in newly created DatabaseClaims.
+    with transaction.atomic(using='control'):
+        # Bankster sums the amounts of all existing DepositClaims that have the same payer as the one being processed.
+        sum_of_existing_requestor_claims = DepositClaim.objects.filter(
+            payer_deposit_account=requestor_deposit_account
+        ).aggregate(
+            sum_of_existing_claims=Coalesce(Sum('amount'), 0)
+        )
+
+        # If the existing claims against requestor's deposit are greater or equal to his current deposit,
+        # we can't add a new claim.
+        if requestor_deposit <= sum_of_existing_requestor_claims:
+            return (None, None)
+
+        if is_claim_against_provider:
+            # Bankster sums the amounts of all existing DepositClaims where the provider is the payer.
+            sum_of_existing_provider_claims = DepositClaim.objects.filter(
+                payer_deposit_account=provider_deposit_account
+            ).aggregate(
+                sum_of_existing_claims=Coalesce(Sum('amount'), 0)
+            )
+
+            # If the total of existing claims and the current claim is greater or equal to the current deposit,
+            # we can't add a new claim.
+            if provider_deposit <= sum_of_existing_provider_claims + settings.ADDITIONAL_VERIFICATION_COST:
+                return (None, None)
+
+        # Deposit lock for requestor.
+        claim_against_requestor = DepositClaim(
+            payee_ethereum_address=provider_ethereum_address,
+            amount=subtask_cost,
+            concent_use_case=concent_use_case,
+            payer_deposit_account=requestor_deposit_account,
+        )
+        claim_against_requestor.full_clean()
+        claim_against_requestor.save()
+
+        # Deposit lock for provider.
+        if is_claim_against_provider:
+            claim_against_provider = DepositClaim(
+                payee_ethereum_address=generate_ethereum_address_from_ethereum_public_key_bytes(
+                    settings.CONCENT_ETHEREUM_PUBLIC_KEY
+                ),
+                amount=subtask_cost,
+                concent_use_case=concent_use_case,
+                payer_deposit_account=provider_deposit_account,
+            )
+            claim_against_provider.full_clean()
+            claim_against_provider.save()
+        else:
+            claim_against_provider = None
+
+    return (claim_against_requestor, claim_against_provider)
 
 
 def finalize_payment(deposit_claim: DepositClaim) -> str:

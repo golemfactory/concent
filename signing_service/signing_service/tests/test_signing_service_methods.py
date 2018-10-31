@@ -21,6 +21,7 @@ from signing_service.constants import SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME
 from signing_service.exceptions import SigningServiceValidationError
 from signing_service.signing_service import _parse_arguments
 from signing_service.signing_service import SigningService
+from signing_service.utils import ConsoleNotifier
 from .utils import SigningServiceIntegrationTestCase
 
 
@@ -49,6 +50,7 @@ class SigningServiceGetSignedTransactionTestCase(SigningServiceIntegrationTestCa
                 SIGNING_SERVICE_PRIVATE_KEY,
                 TEST_ETHEREUM_PRIVATE_KEY,
                 SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS,
+                ConsoleNotifier(),
             )
 
     def test_that_get_signed_transaction_should_return_transaction_signed_if_transaction_was_signed_correctly(self):
@@ -102,6 +104,7 @@ class SigningServiceGetAuthenticationChallengeSignatureTestCase(SigningServiceIn
                 SIGNING_SERVICE_PRIVATE_KEY,
                 TEST_ETHEREUM_PRIVATE_KEY,
                 SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS,
+                ConsoleNotifier(),
             )
 
     def test_that_get_authentication_challenge_signature_should_return_signature_of_passed_bytes(self):
@@ -131,6 +134,7 @@ class TestSigningServiceIncreaseDelay:
             SIGNING_SERVICE_PRIVATE_KEY,
             TEST_ETHEREUM_PRIVATE_KEY,
             SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS,
+            ConsoleNotifier(),
         )
 
     def test_that_initial_reconnect_delay_should_be_set_to_passed_value(self):
@@ -285,6 +289,7 @@ class SigningServiceValidateArgumentsTestCase(TestCase):
             SIGNING_SERVICE_PRIVATE_KEY,
             TEST_ETHEREUM_PRIVATE_KEY,
             SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS,
+            ConsoleNotifier(),
         )
 
     def test_that_signing_service__validate_arguments_should_raise_exception_on_port_number_below_or_above_range(self):
@@ -335,6 +340,7 @@ class SigningServiceDailyThresholdTestCase(TestCase):
                 SIGNING_SERVICE_PRIVATE_KEY,
                 TEST_ETHEREUM_PRIVATE_KEY,
                 SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS,
+                ConsoleNotifier(),
             )
 
     def test_that_signing_service_get_daily_transaction_threshold_file_directory_should_return_existing_file(self):

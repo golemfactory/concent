@@ -698,7 +698,29 @@ class PendingEthereumTransaction(Model):
     created_at = DateTimeField(auto_now_add=True)
 
 
+class DepositAccountManager(Manager):
+
+    def get_or_create_full_clean(self, client: bytes, ethereum_address: str) -> 'DepositAccount':
+        """
+        Returns Model instance.
+        Does the same as get_or_create method, but also performs full_clean() on newly created instance.
+        """
+        try:
+            instance = self.get(client=client, ethereum_address=ethereum_address)
+        except self.model.DoesNotExist:
+            instance = self.model(
+                client=client,
+                ethereum_address=ethereum_address,
+            )
+            instance.full_clean()
+            instance.save()
+        return instance
+
+
 class DepositAccount(Model):
+
+    objects = DepositAccountManager()
+
     client = ForeignKey(Client)
     ethereum_address = CharField(max_length=ETHEREUM_ADDRESS_LENGTH)
     created_at = DateTimeField(auto_now_add=True)

@@ -1,7 +1,6 @@
 import datetime
 import math
 from logging import getLogger
-from typing import Optional
 
 from django.conf import settings
 from django.http import HttpRequest
@@ -12,7 +11,6 @@ from golem_messages.utils import decode_hex
 
 from common.constants import ErrorCode
 from common.helpers import parse_timestamp_to_utc_datetime
-from common.logging import log
 from core.exceptions import Http400
 from core.exceptions import SceneFilePathError
 from .constants import GOLEM_PUBLIC_KEY_HEX_LENGTH
@@ -136,7 +134,6 @@ def is_protocol_version_compatible(protocol_version: str) -> bool:
 
 def is_given_golem_messages_version_supported_by_concent(
     request: HttpRequest,
-    client_public_key: Optional[bytes] = None,
 ) -> bool:
     """
     If header is missing version is not checked and Concent assumes that client uses compatible version.
@@ -146,11 +143,5 @@ def is_given_golem_messages_version_supported_by_concent(
     else:
         golem_message_version = request.META['HTTP_CONCENT_GOLEM_MESSAGES_VERSION']
         if not is_protocol_version_compatible(golem_message_version):
-            log(
-                logger,
-                f'Wrong version of golem messages. Clients version is {golem_message_version}, '
-                f'Concent version is {settings.GOLEM_MESSAGES_VERSION}.',
-                client_public_key=client_public_key,
-            )
             return False
         return True

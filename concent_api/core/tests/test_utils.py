@@ -152,9 +152,8 @@ class TestExtractNameFromSceneFilePath():
 
 
 class TestValidateCompatibilityGolemMessages:
-
     @pytest.fixture(autouse=True)
-    def setup(self):
+    def setUp(self):
         self.request = HttpRequest()
 
     @pytest.mark.parametrize('protocol_version', [
@@ -165,7 +164,7 @@ class TestValidateCompatibilityGolemMessages:
         with override_settings(
             GOLEM_MESSAGES_VERSION='2.15.0',
         ):
-            assert is_given_golem_messages_version_supported_by_concent(self.request, CONCENT_PUBLIC_KEY)
+            assert is_given_golem_messages_version_supported_by_concent(self.request)
 
     @pytest.mark.parametrize('protocol_version', [
         '1.15.0', '2.13.3', '2.16.15'
@@ -175,4 +174,4 @@ class TestValidateCompatibilityGolemMessages:
         with override_settings(
             GOLEM_MESSAGES_VERSION='2.15.0',
         ):
-            assert not is_given_golem_messages_version_supported_by_concent(self.request, CONCENT_PUBLIC_KEY)
+            assert not is_given_golem_messages_version_supported_by_concent(self.request)

@@ -1,25 +1,24 @@
 import json
 import mock
-from freezegun                      import freeze_time
-from django.http                    import JsonResponse
-from django.http                    import HttpResponse
-from django.http                    import HttpResponseNotAllowed
-from django.test                    import override_settings
-from django.test                    import RequestFactory
-from golem_messages                 import dump
-from golem_messages                 import load
-from golem_messages                 import message
-
 from django.conf import settings
-from core.exceptions                import Http400
+from django.http import HttpResponse
+from django.http import HttpResponseNotAllowed
+from django.http import JsonResponse
+from django.test import RequestFactory
+from django.test import override_settings
+from freezegun import freeze_time
+from golem_messages import dump
+from golem_messages import load
+from golem_messages import message
+
+from common.constants import ErrorCode
+from common.decorators import handle_errors_and_responses
+from common.decorators import log_task_errors
+from common.decorators import require_golem_auth_message
+from common.testing_helpers import generate_ecc_key_pair
+from core.exceptions import Http400
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
-from common.constants                import ErrorCode
-from common.decorators               import handle_errors_and_responses
-from common.decorators import log_task_errors
-from common.decorators               import require_golem_auth_message
-from common.testing_helpers          import generate_ecc_key_pair
-
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
 

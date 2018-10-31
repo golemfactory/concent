@@ -5,12 +5,12 @@ from typing import List
 from typing import Optional
 from typing import Union
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Model
 from django.db.models import Q
 from django.db.models import QuerySet
 from django.db.models.base import ModelBase
-from golem_messages import message
 from golem_messages.message import Message
 from golem_messages.message.concents import ForcePayment
 from golem_messages.message.tasks import SubtaskResultsAccepted
@@ -20,15 +20,15 @@ from common.helpers import deserialize_message
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.logging import log
-from django.conf import settings
+from core.exceptions import UnsupportedProtocolVersion
 from core.models import PendingResponse
 from core.models import Subtask
 from core.payments import bankster
 from core.transfer_operations import store_pending_message
 from core.transfer_operations import verify_file_status
-from core.validation import is_golem_message_signed_with_key
 from core.utils import hex_to_bytes_convert
 from core.utils import is_protocol_version_compatible
+from core.validation import is_golem_message_signed_with_key
 
 logger = getLogger(__name__)
 
@@ -140,7 +140,7 @@ def _update_timed_out_subtask(subtask: Subtask) -> None:
 def check_protocol_versions_and_update_subtasks_from_incoming_message_if_timed_out(
         client_message: Message,
         client_public_key: bytes
-) -> Union[None, message.concents.ServiceRefused]:
+) -> None:
     """
     Function gets subtask_id (or more subtask id's if message is ForcePayment) from client message, starts transaction,
     checks if state is active and subtask is timed out (in database query, if it is subtask is locked). If so, file
@@ -162,10 +162,16 @@ def check_protocol_versions_and_update_subtasks_from_incoming_message_if_timed_o
             )
             if subtask is None:
                 return None
-            elif not are_protocol_versions_in_related_messages_compatible(subtask, client_public_key):
-                return message.concents.ServiceRefused(
-                    reason=message.concents.ServiceRefused.REASON.InvalidRequest
+            elif not is_protocol_version_compatible(subtask.task_to_compute.protocol_version):
+                log(
+                    logger,
+                    f'Unsupported version of golem messages in stored messages. '
+                    f'Version stored in database is {subtask.task_to_compute.protocol_version}, '
+                    f'Concent version is {settings.GOLEM_MESSAGES_VERSION}.',
+                    subtask_id=subtask.subtask_id,
+                    client_public_key=client_public_key,
                 )
+                raise UnsupportedProtocolVersion
 
             elif subtask.state in [state.name for state in Subtask.ACTIVE_STATES] and \
                     subtask.next_deadline <= parse_timestamp_to_utc_datetime(get_current_utc_timestamp()):
@@ -269,40 +275,3 @@ def get_one_or_none(
         instances = subtask_or_query_set.filter(**conditions)
         assert len(instances) <= 1
         return None if len(instances) == 0 else instances[0]
-
-
-def are_protocol_versions_in_related_messages_compatible(subtask: Subtask, client_public_key: bytes) -> bool:
-    if subtask is None:
-        return True
-
-    for related_messages_name in Subtask.MESSAGE_FOR_FIELD:
-        related_message = getattr(subtask, related_messages_name)
-        if related_message is not None and not is_protocol_version_compatible(related_message.protocol_version):
-            log(
-                logger,
-                f'Unsupported version of golem messages in stored messages. Missmatch for {related_messages_name}. '
-                f'Version stored in database is {related_message.protocol_version}, '
-                f'Concent version is {settings.GOLEM_MESSAGES_VERSION}.',
-                subtask_id=subtask.subtask_id,
-                client_public_key=client_public_key,
-            )
-            return False
-    return True
-
-
-def are_all_stored_messages_compatible_with_protocol_version(client_message: Message, client_public_key: bytes) -> bool:
-    subtask_ids_list = []  # type: list
-    if isinstance(client_message, ForcePayment):
-        for subtask_result_accepted in client_message.subtask_results_accepted_list:
-            subtask_ids_list.append(subtask_result_accepted.subtask_id)
-    else:
-        subtask_ids_list = [client_message.subtask_id]
-    for subtask_id in subtask_ids_list:
-        with transaction.atomic(using='control'):
-            subtask = get_one_or_none(
-                Subtask.objects.select_for_update(),
-                subtask_id=subtask_id,
-            )
-            if subtask is not None and not are_protocol_versions_in_related_messages_compatible(subtask, client_public_key):
-                return False
-    return True

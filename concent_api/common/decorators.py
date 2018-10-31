@@ -19,6 +19,7 @@ from golem_messages.exceptions      import MessageError
 from golem_messages.exceptions      import MessageFromFutureError
 from golem_messages.exceptions      import MessageTooOldError
 from golem_messages.exceptions      import TimestampError
+from golem_messages.message.concents import FileTransferToken
 
 from common.constants import ErrorCode
 from common.constants import ERROR_IN_GOLEM_MESSAGE
@@ -33,12 +34,13 @@ from common.logging import LoggingLevel
 from common.logging import log_400_error
 from common.logging import log
 from common.shortcuts import load_without_public_key
-from core.exceptions import NonPositivePriceTaskToComputeError
 from core.exceptions import CreateModelIntegrityError
+from core.exceptions import NonPositivePriceTaskToComputeError
+from core.exceptions import UnsupportedProtocolVersion
 from core.utils import is_given_golem_messages_version_supported_by_concent
 from core.validation import get_validated_client_public_key_from_client_message
 from core.validation import is_golem_message_signed_with_key
-
+from gatekeeper.utils import gatekeeper_access_denied_response
 
 logger = getLogger(__name__)
 crash_logger = getLogger('concent.crash')
@@ -185,19 +187,6 @@ def handle_errors_and_responses(database_name: str) -> Callable:
             **kwargs: dict,
         ) -> Union[HttpRequest, JsonResponse]:
             assert database_name in settings.DATABASES or database_name is None
-
-            if not is_given_golem_messages_version_supported_by_concent(
-                request=request,
-                client_public_key=client_public_key
-            ):
-                serialized_message = dump(
-                    message.concents.ServiceRefused(
-                        reason=message.concents.ServiceRefused.REASON.InvalidRequest,
-                    ),
-                    settings.CONCENT_PRIVATE_KEY,
-                    client_public_key,
-                )
-                return HttpResponse(serialized_message, content_type='application/octet-stream')
             try:
                 if database_name is not None:
                     sid = transaction.savepoint(using=database_name)
@@ -229,6 +218,15 @@ def handle_errors_and_responses(database_name: str) -> Callable:
                         'error_code': exception.error_code.value,
                     },
                     status=400
+                )
+            except UnsupportedProtocolVersion:
+                return HttpResponse(
+                    dump(
+                        message.concents.ServiceRefused(reason=message.concents.ServiceRefused.REASON.InvalidRequest),
+                        settings.CONCENT_PRIVATE_KEY,
+                        client_public_key,
+                    ),
+                    content_type='application/octet-stream'
                 )
             except ConcentInSoftShutdownMode:
                 transaction.savepoint_rollback(sid, using=database_name)
@@ -295,6 +293,59 @@ def handle_errors_and_responses(database_name: str) -> Callable:
 
         return wrapper
     return decorator
+
+
+def validate_protocol_version_in_core(view: Callable) -> Callable:
+    @wraps(view)
+    def wrapper(
+            request: HttpRequest,
+            client_message: message.Message,
+            client_public_key: bytes,
+            *args: list,
+            **kwargs: dict,
+    ) -> Union[HttpRequest, JsonResponse]:
+
+        if not is_given_golem_messages_version_supported_by_concent(request=request):
+            log(
+                logger,
+                f'Wrong version of golem messages. Clients version is {request.META["HTTP_CONCENT_GOLEM_MESSAGES_VERSION"]}, '
+                f'Concent version is {settings.GOLEM_MESSAGES_VERSION}.',
+                client_public_key=client_public_key,
+            )
+            serialized_message = dump(
+                message.concents.ServiceRefused(
+                    reason=message.concents.ServiceRefused.REASON.InvalidRequest,
+                ),
+                settings.CONCENT_PRIVATE_KEY,
+                client_public_key,
+            )
+            return HttpResponse(serialized_message, content_type='application/octet-stream')
+        return view(request, client_message, client_public_key, *args, *kwargs)
+    return wrapper
+
+
+def validate_protocol_version_in_gatekeeper(view: Callable) -> Callable:
+    @wraps(view)
+    def wrapper(
+            request: HttpRequest,
+            *args: list,
+            **kwargs: dict,
+    ) -> Union[HttpRequest, JsonResponse]:
+
+        if not is_given_golem_messages_version_supported_by_concent(request=request):
+            log(
+                logger,
+                f'Wrong version of golem messages. Clients version is {request.META["HTTP_CONCENT_GOLEM_MESSAGES_VERSION"]}, '
+                f'Concent version is {settings.GOLEM_MESSAGES_VERSION}.',
+            )
+            return gatekeeper_access_denied_response(
+                "Protocol version in request does not match protocol version in Concent",
+                FileTransferToken.Operation.download,
+                ErrorCode.HEADER_PROTOCOL_VERSION_UNSUPPORTED,
+                request.META['PATH_INFO'] if 'PATH_INFO' in request.META.keys() else '-path to file UNAVAILABLE-',
+            )
+        return view(request, *args, *kwargs)
+    return wrapper
 
 
 def provides_concent_feature(concent_feature: str) -> Callable:

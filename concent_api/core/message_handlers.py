@@ -922,7 +922,7 @@ def handle_messages_from_database(client_public_key: bytes) -> Union[message.Mes
 
         assert pending_response.response_type_enum in set(PendingResponse.ResponseType)
 
-        if pending_response.response_type != PendingResponse.ResponseType.ForcePaymentCommitted.name and not\
+        if pending_response.response_type_enum != PendingResponse.ResponseType.ForcePaymentCommitted and not \
                 is_protocol_version_compatible(
                     pending_response.subtask.task_to_compute.protocol_version
                 ):
@@ -930,7 +930,7 @@ def handle_messages_from_database(client_public_key: bytes) -> Union[message.Mes
                 f'Wrong version of golem messages in stored messages.'
                 f'Version stored in database is { pending_response.subtask.task_to_compute.protocol_version},'
                 f'Concent version is {settings.GOLEM_MESSAGES_VERSION}.',
-                subtask_id= pending_response.subtask.subtask_id,
+                subtask_id=pending_response.subtask.subtask_id,
                 client_public_key=client_public_key,
                 )
             return message.concents.ServiceRefused(reason=message.concents.ServiceRefused.REASON.InvalidRequest)

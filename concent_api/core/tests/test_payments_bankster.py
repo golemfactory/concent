@@ -6,8 +6,12 @@ from django.test import override_settings
 
 from common.constants import ConcentUseCase
 from core.constants import MOCK_TRANSACTION_HASH
+from core.models import Client
+from core.models import DepositAccount
+from core.models import DepositClaim
 from core.payments.bankster import ClaimPaymentInfo
 from core.payments.bankster import claim_deposit
+from core.payments.bankster import discard_claim
 from core.payments.bankster import finalize_payment
 from core.payments.bankster import settle_overdue_acceptances
 from core.tests.utils import ConcentIntegrationTestCase
@@ -372,3 +376,44 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
 
         self.assertEqual(requestors_claim_payment_info.amount_paid, 1000)
         self.assertEqual(requestors_claim_payment_info.amount_pending, 1000)
+
+
+class DiscardClaimBanksterTest(ConcentIntegrationTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.task_to_compute = self._get_deserialized_task_to_compute()
+
+        self.client = Client(public_key_bytes=self.PROVIDER_PUBLIC_KEY)
+        self.client.clean()
+        self.client.save()
+
+        self.deposit_account = DepositAccount()
+        self.deposit_account.client = self.client
+        self.deposit_account.ethereum_address = self.task_to_compute.requestor_ethereum_address
+        self.deposit_account.clean()
+        self.deposit_account.save()
+
+        self.deposit_claim = DepositClaim()
+        self.deposit_claim.payer_deposit_account = self.deposit_account
+        self.deposit_claim.payee_ethereum_address = self.task_to_compute.provider_ethereum_address
+        self.deposit_claim.concent_use_case = ConcentUseCase.FORCED_PAYMENT
+        self.deposit_claim.amount = 1
+        self.deposit_claim.clean()
+        self.deposit_claim.save()
+
+    def test_that_discard_claim_should_return_false_and_not_remove_deposit_claim_if_tx_hash_is_none(self):
+        claim_removed = discard_claim(self.deposit_claim)
+
+        self.assertFalse(claim_removed)
+        self.assertTrue(DepositClaim.objects.filter(pk=self.deposit_claim.pk).exists())
+
+    def test_that_discard_claim_should_return_true_and_remove_deposit_claim_if_tx_hash_is_set(self):
+        self.deposit_claim.tx_hash = 64 * '0'
+        self.deposit_claim.clean()
+        self.deposit_claim.save()
+
+        claim_removed = discard_claim(self.deposit_claim)
+
+        self.assertTrue(claim_removed)
+        self.assertFalse(DepositClaim.objects.filter(pk=self.deposit_claim.pk).exists())

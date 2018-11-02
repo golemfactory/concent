@@ -7,6 +7,7 @@ import time
 from django.conf import settings
 from django.utils import timezone
 from ethereum.utils import sha3
+from eth_utils import to_checksum_address
 from mypy.types import Optional
 from mypy.types import Union
 import requests
@@ -202,6 +203,12 @@ def generate_ethereum_address_from_ethereum_public_key(ethereum_public_key: str)
     assert len(ethereum_public_key) == ETHEREUM_PUBLIC_KEY_LENGTH
 
     return generate_ethereum_address_from_ethereum_public_key_bytes(ethereum_public_key).hex()
+
+
+def ethereum_public_key_to_address(ethereum_public_key: str) -> str:
+    return to_checksum_address(
+        sha3(decode_hex(ethereum_public_key))[12:].hex()
+    )
 
 
 def deserialize_database_message(serialized_message: 'StoredMessage') -> message.Message:  # type: ignore # noqa

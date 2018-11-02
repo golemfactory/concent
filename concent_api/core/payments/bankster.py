@@ -6,23 +6,28 @@ from typing import Union
 from django.conf import settings
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
+from django.db import IntegrityError
 from django.db import transaction
 
 from golem_messages.message.tasks import SubtaskResultsAccepted
 from golem_messages.utils import encode_hex
 from golem_sci.events import BatchTransferEvent
 from golem_sci.events import ForcedPaymentEvent
+from psycopg2 import errorcodes as pg_errorcodes
 
 from common.constants import ConcentUseCase
-from common.helpers import generate_ethereum_address_from_ethereum_public_key_bytes
+from common.helpers import ethereum_public_key_to_address
 from common.helpers import get_current_utc_timestamp
 from core.constants import ETHEREUM_ADDRESS_LENGTH
+from core.exceptions import TooSmallProviderDeposit
 from core.models import Client
 from core.models import DepositAccount
 from core.models import DepositClaim
+from core.models import Subtask
 from core.payments import service
 from core.payments.backends.sci_backend import TransactionType
 from core.validation import validate_bytes_public_key
+from core.validation import validate_uuid
 
 
 class ClaimPaymentInfo:
@@ -57,13 +62,14 @@ class ClaimPaymentInfo:
 
 
 def claim_deposit(
+    subtask_id: str,
     concent_use_case: ConcentUseCase,
     requestor_ethereum_address: str,
     provider_ethereum_address: str,
     subtask_cost: int,
-    requestor_public_key: str,
-    provider_public_key: str,
-) -> Tuple[DepositClaim, DepositClaim]:
+    requestor_public_key: bytes,
+    provider_public_key: bytes,
+) -> Tuple[Optional[DepositClaim], Optional[DepositClaim]]:
     """
     The purpose of this operation is to check whether the clients participating in a use case have enough funds in their
     deposits to cover all the costs associated with the use case in the pessimistic scenario.
@@ -81,32 +87,69 @@ def claim_deposit(
 
     validate_bytes_public_key(requestor_public_key, 'requestor_public_key')
     validate_bytes_public_key(provider_public_key, 'provider_public_key')
+    validate_uuid(subtask_id)
 
     is_claim_against_provider: bool = (
         concent_use_case == ConcentUseCase.ADDITIONAL_VERIFICATION and
-        0 <= settings.ADDITIONAL_VERIFICATION_COST
+        0 < settings.ADDITIONAL_VERIFICATION_COST  # pylint: disable=misplaced-comparison-constant
     )
 
     # Bankster creates Client and DepositAccount objects (if they don't exist yet) for the requestor
     # and also for the provider if there's a non-zero claim against his account.
     # This is done in single database transaction.
     with transaction.atomic(using='control'):
-        requestor_client = Client.objects.get_or_create_full_clean(
-            public_key=requestor_public_key,
-        )
-        requestor_deposit_account = DepositAccount.objects.get_or_create_full_clean(
-            client=requestor_client,
-            ethereum_address=requestor_ethereum_address,
-        )
+        try:
+            requestor_client = Client.objects.get_or_create_full_clean(
+                public_key=requestor_public_key,
+            )
+        except IntegrityError as exception:
+            if exception.pgcode == pg_errorcodes.UNIQUE_VIOLATION:
+                requestor_client = Client.objects.get_or_create_full_clean(
+                    public_key=requestor_public_key,
+                )
+            else:
+                raise
+
+        try:
+            requestor_deposit_account = DepositAccount.objects.get_or_create_full_clean(
+                client=requestor_client,
+                ethereum_address=requestor_ethereum_address,
+            )
+        except IntegrityError as exception:
+            if exception.pgcode == pg_errorcodes.UNIQUE_VIOLATION:
+                requestor_deposit_account = DepositAccount.objects.get_or_create_full_clean(
+                    client=requestor_client,
+                    ethereum_address=requestor_ethereum_address,
+                )
+            else:
+                raise
 
         if is_claim_against_provider:
-            provider_client = Client.objects.get_or_create_full_clean(
-                public_key=provider_public_key,
-            )
-            provider_deposit_account = DepositAccount.objects.get_or_create_full_clean(
-                client=provider_client,
-                ethereum_address=provider_ethereum_address,
-            )
+            try:
+                provider_client = Client.objects.get_or_create_full_clean(
+                    public_key=provider_public_key,
+                )
+            except IntegrityError as exception:
+                if exception.pgcode == pg_errorcodes.UNIQUE_VIOLATION:
+                    provider_client = Client.objects.get_or_create_full_clean(
+                        public_key=provider_public_key,
+                    )
+                else:
+                    raise
+
+            try:
+                provider_deposit_account = DepositAccount.objects.get_or_create_full_clean(
+                    client=provider_client,
+                    ethereum_address=provider_ethereum_address,
+                )
+            except IntegrityError as exception:
+                if exception.pgcode == pg_errorcodes.UNIQUE_VIOLATION:
+                    provider_deposit_account = DepositAccount.objects.get_or_create_full_clean(
+                        client=provider_client,
+                        ethereum_address=provider_ethereum_address,
+                    )
+                else:
+                    raise
 
     # Bankster asks SCI about the amount of funds available in requestor's deposit.
     requestor_deposit = service.get_deposit_value(client_eth_address=requestor_ethereum_address)  # pylint: disable=no-value-for-parameter
@@ -117,10 +160,10 @@ def claim_deposit(
         provider_deposit = service.get_deposit_value(client_eth_address=provider_ethereum_address)  # pylint: disable=no-value-for-parameter
 
     # Bankster puts database locks on DepositAccount objects
-    # that will be used as payers in newly created DatabaseClaims.
+    # that will be used as payers in newly created DepositClaims.
     with transaction.atomic(using='control'):
         # Bankster sums the amounts of all existing DepositClaims that have the same payer as the one being processed.
-        sum_of_existing_requestor_claims = DepositClaim.objects.filter(
+        aggregated_claims_against_requestor = DepositClaim.objects.filter(
             payer_deposit_account=requestor_deposit_account
         ).aggregate(
             sum_of_existing_claims=Coalesce(Sum('amount'), 0)
@@ -128,24 +171,12 @@ def claim_deposit(
 
         # If the existing claims against requestor's deposit are greater or equal to his current deposit,
         # we can't add a new claim.
-        if requestor_deposit <= sum_of_existing_requestor_claims:
+        if requestor_deposit <= aggregated_claims_against_requestor['sum_of_existing_claims']:
             return (None, None)
-
-        if is_claim_against_provider:
-            # Bankster sums the amounts of all existing DepositClaims where the provider is the payer.
-            sum_of_existing_provider_claims = DepositClaim.objects.filter(
-                payer_deposit_account=provider_deposit_account
-            ).aggregate(
-                sum_of_existing_claims=Coalesce(Sum('amount'), 0)
-            )
-
-            # If the total of existing claims and the current claim is greater or equal to the current deposit,
-            # we can't add a new claim.
-            if provider_deposit <= sum_of_existing_provider_claims + settings.ADDITIONAL_VERIFICATION_COST:
-                return (None, None)
 
         # Deposit lock for requestor.
         claim_against_requestor = DepositClaim(
+            subtask_id=subtask_id,
             payee_ethereum_address=provider_ethereum_address,
             amount=subtask_cost,
             concent_use_case=concent_use_case,
@@ -154,25 +185,40 @@ def claim_deposit(
         claim_against_requestor.full_clean()
         claim_against_requestor.save()
 
+        if is_claim_against_provider:
+            # Bankster sums the amounts of all existing DepositClaims where the provider is the payer.
+            aggregated_claims_against_provider = DepositClaim.objects.filter(
+                payer_deposit_account=provider_deposit_account
+            ).aggregate(
+                sum_of_existing_claims=Coalesce(Sum('amount'), 0)
+            )
+
+            # If the total of existing claims and the current claim is greater or equal to the current deposit,
+            # we can't add a new claim.
+            if provider_deposit <= aggregated_claims_against_provider['sum_of_existing_claims'] + settings.ADDITIONAL_VERIFICATION_COST:
+                claim_against_requestor.delete()
+                raise TooSmallProviderDeposit
+
         # Deposit lock for provider.
         if is_claim_against_provider:
             claim_against_provider = DepositClaim(
-                payee_ethereum_address=generate_ethereum_address_from_ethereum_public_key_bytes(
+                subtask_id=subtask_id,
+                payee_ethereum_address=ethereum_public_key_to_address(
                     settings.CONCENT_ETHEREUM_PUBLIC_KEY
                 ),
-                amount=subtask_cost,
+                amount=settings.ADDITIONAL_VERIFICATION_COST,
                 concent_use_case=concent_use_case,
                 payer_deposit_account=provider_deposit_account,
             )
             claim_against_provider.full_clean()
             claim_against_provider.save()
         else:
-            claim_against_provider = None
+            claim_against_provider = None  # type: ignore
 
     return (claim_against_requestor, claim_against_provider)
 
 
-def finalize_payment(deposit_claim: DepositClaim) -> str:
+def finalize_payment(deposit_claim: DepositClaim) -> Optional[str]:
     """
     This operation tells Bankster to pay out funds from deposit.
     For each claim, Bankster uses SCI to submit an Ethereum transaction to the Ethereum client which then propagates it
@@ -194,7 +240,7 @@ def finalize_payment(deposit_claim: DepositClaim) -> str:
         )
 
         # Bankster sums the amounts of all existing DepositClaims that have the same payer as the one being processed.
-        sum_of_existing_claims = DepositClaim.objects.filter(
+        aggregated_client_claims = DepositClaim.objects.filter(
             payer_deposit_account=deposit_claim.payer_deposit_account
         ).exclude(
             pk=deposit_claim.pk
@@ -203,7 +249,7 @@ def finalize_payment(deposit_claim: DepositClaim) -> str:
         )
 
         # Bankster subtracts that value from the amount of funds available in the deposit.
-        available_funds_without_claims = available_funds - sum_of_existing_claims['sum_of_existing_claims']
+        available_funds_without_claims = available_funds - aggregated_client_claims['sum_of_existing_claims']
 
         # If the result is negative or zero, Bankster removes the DepositClaim object being processed.
         if available_funds_without_claims <= 0:
@@ -221,17 +267,30 @@ def finalize_payment(deposit_claim: DepositClaim) -> str:
                 requestor_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
                 provider_eth_address=deposit_claim.payee_ethereum_address,
                 value=deposit_claim.amount,
-                subtask_id=deposit_claim.subtask.subtask_id,
+                subtask_id=deposit_claim.subtask_id,
             )
         elif deposit_claim.concent_use_case == ConcentUseCase.ADDITIONAL_VERIFICATION:
-            ethereum_transaction = service.cover_additional_verification_cost(  # pylint: disable=no-value-for-parameter
-                provider_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
-                value=deposit_claim.amount,
-                subtask_id=deposit_claim.subtask.subtask_id,
-            )
+            subtask = Subtask.objects.filter(subtask_id=deposit_claim.subtask_id).first()  # pylint: disable=no-member
+            if subtask is not None:
+                if subtask.requestor.public_key == deposit_claim.payer_deposit_account.client.public_key:
+                    ethereum_transaction = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
+                        requestor_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
+                        provider_eth_address=deposit_claim.payee_ethereum_address,
+                        value=deposit_claim.amount,
+                        subtask_id=deposit_claim.subtask_id,
+                    )
+                elif subtask.provider.public_key == deposit_claim.payer_deposit_account.client.public_key:
+                    ethereum_transaction = service.cover_additional_verification_cost(  # pylint: disable=no-value-for-parameter
+                        provider_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
+                        value=deposit_claim.amount,
+                        subtask_id=deposit_claim.subtask_id,
+                    )
+        else:
+            assert False
 
         # Bankster puts transaction ID in DepositClaim.tx_hash.
         deposit_claim.tx_hash = encode_hex(ethereum_transaction.hash)
+        deposit_claim.full_clean()
         deposit_claim.save()
 
     return deposit_claim.tx_hash

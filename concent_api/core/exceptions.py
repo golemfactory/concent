@@ -75,3 +75,7 @@ class NonPositivePriceTaskToComputeError(Exception):
 
 class UnsupportedProtocolVersion(Exception):
     pass
+
+
+class TooSmallProviderDeposit(Exception):
+    pass

@@ -8,7 +8,6 @@ from golem_messages.shortcuts import dump
 from common.constants import ConcentUseCase
 from common.constants import ErrorCode
 from common.testing_helpers import generate_ecc_key_pair
-from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
 from core.exceptions import Http400
 from core.message_handlers import handle_send_force_subtask_results_response
 from core.message_handlers import store_subtask
@@ -17,6 +16,7 @@ from core.models import Subtask
 from core.models import PendingResponse
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
+from core.utils import hex_to_bytes_convert
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
@@ -26,7 +26,7 @@ from core.tests.utils import parse_iso_date_to_timestamp
     CONCENT_PUBLIC_KEY        = CONCENT_PUBLIC_KEY,
     CONCENT_MESSAGING_TIME    = 10,  # seconds
     FORCE_ACCEPTANCE_TIME     = 10,  # seconds
-    CONCENT_ETHEREUM_PUBLIC_KEY='x' * ETHEREUM_PUBLIC_KEY_LENGTH,
+    CONCENT_ETHEREUM_PUBLIC_KEY='b51e9af1ae9303315ca0d6f08d15d8fbcaecf6958f037cc68f9ec18a77c6f63eae46daaba5c637e06a3e4a52a2452725aafba3d4fda4e15baf48798170eb7412',
 )
 class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
@@ -75,10 +75,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
+            subtask_id=task_to_compute.subtask_id,
             concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
             requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
             provider_ethereum_address=task_to_compute.provider_ethereum_address,
             subtask_cost=task_to_compute.price,
+            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+            provider_public_key=hex_to_bytes_convert(task_to_compute.provider_public_key),
         )
 
         assert len(response_1.content)  == 0
@@ -149,14 +152,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         """
 
         task_to_compute = self._get_deserialized_task_to_compute(
-            timestamp="2018-02-05 10:00:30"
+            timestamp="2018-02-05 10:00:00",
+            deadline="2018-02-05 10:00:15",
         )
 
         # STEP 1: Provider forces subtask results via Concent.
         # Concent returns ServiceRefused.
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-            timestamp = "2018-02-05 10:00:30",
+            timestamp="2018-02-05 10:00:30",
             ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
+                timestamp="2018-02-05 10:00:20",
                 task_to_compute=task_to_compute,
                 signer_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
@@ -164,19 +169,22 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         with mock.patch(
             'core.message_handlers.bankster.claim_deposit',
-            return_value=[False, True]
+            side_effect=self.claim_deposit_false_mock
         ) as claim_deposit_false_mock_function:
-            with freeze_time("2018-02-05 10:00:35"):
-                response_1 =self.send_request(
+            with freeze_time("2018-02-05 10:00:30"):
+                response_1 = self.send_request(
                     url='core:send',
                     data                                = serialized_force_subtask_results,
                 )
 
         claim_deposit_false_mock_function.assert_called_with(
+            subtask_id=task_to_compute.subtask_id,
             concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
             requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
             provider_ethereum_address=task_to_compute.provider_ethereum_address,
             subtask_cost=task_to_compute.price,
+            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+            provider_public_key=hex_to_bytes_convert(task_to_compute.provider_public_key),
         )
 
         self.assertEqual(StoredMessage.objects.last(), None)
@@ -188,7 +196,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             message_type = message.concents.ServiceRefused,
             fields       = {
                 'reason':       message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
-                'timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:35")
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:30")
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -234,12 +242,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     data                                = serialized_force_subtask_results,
                 )
 
-        claim_deposit_true_mock_function.assert_called_with(
-            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
-            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
-            provider_ethereum_address=task_to_compute.provider_ethereum_address,
-            subtask_cost=task_to_compute.price,
-        )
+        claim_deposit_true_mock_function.assert_not_called()
 
         self._test_response(
             response_1,
@@ -279,12 +282,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                     data                                = serialized_force_subtask_results,
                 )
 
-        claim_deposit_true_mock_function.assert_called_with(
-            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
-            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
-            provider_ethereum_address=task_to_compute.provider_ethereum_address,
-            subtask_cost=task_to_compute.price,
-        )
+        claim_deposit_true_mock_function.assert_not_called()
 
         self._test_response(
             response_2,
@@ -342,10 +340,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
+            subtask_id=task_to_compute.subtask_id,
             concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
             requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
             provider_ethereum_address=task_to_compute.provider_ethereum_address,
             subtask_cost=task_to_compute.price,
+            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+            provider_public_key=hex_to_bytes_convert(task_to_compute.provider_public_key),
         )
 
         assert len(response_1.content) == 0
@@ -442,10 +443,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
+            subtask_id=task_to_compute.subtask_id,
             concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
             requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
             provider_ethereum_address=task_to_compute.provider_ethereum_address,
             subtask_cost=task_to_compute.price,
+            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+            provider_public_key=hex_to_bytes_convert(task_to_compute.provider_public_key),
         )
 
         assert len(response_1.content) == 0
@@ -583,10 +587,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
+            subtask_id=task_to_compute.subtask_id,
             concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
             requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
             provider_ethereum_address=task_to_compute.provider_ethereum_address,
             subtask_cost=task_to_compute.price,
+            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+            provider_public_key=hex_to_bytes_convert(task_to_compute.provider_public_key),
         )
 
         assert len(response_1.content)  == 0
@@ -753,10 +760,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
+            subtask_id=task_to_compute.subtask_id,
             concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
             requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
             provider_ethereum_address=task_to_compute.provider_ethereum_address,
             subtask_cost=task_to_compute.price,
+            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+            provider_public_key=hex_to_bytes_convert(task_to_compute.provider_public_key),
         )
 
         assert len(response_1.content)  == 0
@@ -1059,10 +1069,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
+            subtask_id=task_to_compute.subtask_id,
             concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
             requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
             provider_ethereum_address=task_to_compute.provider_ethereum_address,
             subtask_cost=task_to_compute.price,
+            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+            provider_public_key=hex_to_bytes_convert(task_to_compute.provider_public_key),
         )
 
         assert len(response_1.content)  == 0
@@ -1283,10 +1296,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
+            subtask_id=task_to_compute.subtask_id,
             concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
             requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
             provider_ethereum_address=task_to_compute.provider_ethereum_address,
             subtask_cost=task_to_compute.price,
+            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+            provider_public_key=hex_to_bytes_convert(task_to_compute.provider_public_key),
         )
 
         assert len(response_1.content) == 0
@@ -1345,10 +1361,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
 
         claim_deposit_true_mock_function.assert_called_with(
+            subtask_id=task_to_compute.subtask_id,
             concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
             requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
             provider_ethereum_address=task_to_compute.provider_ethereum_address,
             subtask_cost=task_to_compute.price,
+            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+            provider_public_key=hex_to_bytes_convert(task_to_compute.provider_public_key),
         )
 
         self._test_response(
@@ -1457,10 +1476,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
+            subtask_id=task_to_compute.subtask_id,
             concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
             requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
             provider_ethereum_address=task_to_compute.provider_ethereum_address,
             subtask_cost=task_to_compute.price,
+            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+            provider_public_key=hex_to_bytes_convert(task_to_compute.provider_public_key),
         )
 
         assert len(response_1.content) == 0

@@ -40,6 +40,8 @@ from golem_messages.message.tasks import WantToComputeTask
 from golem_messages.register import library
 from golem_messages.utils import encode_hex
 
+from common.constants import ConcentUseCase
+from common.helpers import ethereum_public_key_to_address
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_datetime_to_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
@@ -48,6 +50,8 @@ from common.testing_helpers import generate_ecc_key_pair
 from common.testing_helpers import generate_priv_and_pub_eth_account_key
 
 from core.models import Client
+from core.models import DepositClaim
+from core.models import DepositAccount
 from core.models import PendingResponse
 from core.models import StoredMessage
 from core.models import Subtask
@@ -962,11 +966,106 @@ class ConcentIntegrationTestCase(TestCase):
     def _pass_rpc_synchronization(self, _rpc, _address, _tx_sign):  # pylint: disable=no-self-use
         return None
 
-    def claim_deposit_true_mock(self, concent_use_case, requestor_ethereum_address, provider_ethereum_address, subtask_cost):  # pylint: disable=unused-argument, no-self-use
-        return (True, True)
+    def claim_deposit_true_mock(
+        self,
+        subtask_id,
+        concent_use_case,
+        requestor_ethereum_address,
+        provider_ethereum_address,
+        subtask_cost,
+        requestor_public_key,
+        provider_public_key
+    ):  # pylint: disable=unused-argument, no-self-use
+        requestor_client = Client.objects.get_or_create_full_clean(
+            public_key=requestor_public_key,
+        )
+        requestor_deposit_account = DepositAccount(
+            ethereum_address=requestor_ethereum_address,
+            client=requestor_client,
+        )
+        requestor_deposit_account.full_clean()
+        requestor_deposit_account.save()
 
-    def claim_deposit_false_mock(self, concent_use_case, requestor_ethereum_address, provider_ethereum_address, subtask_cost):  # pylint: disable=unused-argument, no-self-use
-        return (False, False)
+        claim_against_requestor = DepositClaim(
+            subtask_id=subtask_id,
+            payee_ethereum_address=provider_ethereum_address,
+            amount=subtask_cost,
+            concent_use_case=concent_use_case,
+            payer_deposit_account=requestor_deposit_account,
+        )
+        claim_against_requestor.full_clean()
+        claim_against_requestor.save()
+
+        if concent_use_case == ConcentUseCase.FORCED_ACCEPTANCE:
+            return (claim_against_requestor, None)
+
+        provider_client = Client.objects.get_or_create_full_clean(
+            public_key=provider_public_key,
+        )
+        provider_deposit_account = DepositAccount(
+            ethereum_address=provider_ethereum_address,
+            client=provider_client,
+        )
+        provider_deposit_account.full_clean()
+        provider_deposit_account.save()
+
+        claim_against_provider = DepositClaim(
+            subtask_id=subtask_id,
+            payee_ethereum_address=ethereum_public_key_to_address(
+                settings.CONCENT_ETHEREUM_PUBLIC_KEY
+            ),
+            amount=subtask_cost,
+            concent_use_case=concent_use_case,
+            payer_deposit_account=provider_deposit_account,
+        )
+        claim_against_provider.full_clean()
+        claim_against_provider.save()
+
+        return (claim_against_requestor, claim_against_provider)
+
+    def claim_deposit_requestor_ok_provider_none_mock(
+        self,
+        subtask_id,
+        concent_use_case,
+        requestor_ethereum_address,
+        provider_ethereum_address,
+        subtask_cost,
+        requestor_public_key,
+        provider_public_key
+    ):  # pylint: disable=unused-argument, no-self-use
+        requestor_client = Client.objects.get_or_create_full_clean(
+            public_key=requestor_public_key,
+        )
+        requestor_deposit_account = DepositAccount(
+            ethereum_address=requestor_ethereum_address,
+            client=requestor_client,
+        )
+        requestor_deposit_account.full_clean()
+        requestor_deposit_account.save()
+
+        claim_against_requestor = DepositClaim(
+            subtask_id=subtask_id,
+            payee_ethereum_address=provider_ethereum_address,
+            amount=subtask_cost,
+            concent_use_case=concent_use_case,
+            payer_deposit_account=requestor_deposit_account,
+        )
+        claim_against_requestor.full_clean()
+        claim_against_requestor.save()
+
+        return (claim_against_requestor, None)
+
+    def claim_deposit_false_mock(
+        self,
+        subtask_id,
+        concent_use_case,
+        requestor_ethereum_address,
+        provider_ethereum_address,
+        subtask_cost,
+        requestor_public_key,
+        provider_public_key
+    ):  # pylint: disable=unused-argument, no-self-use
+        return (None, None)
 
     def _test_report_computed_task_in_database(self, report_computed_task):
         subtask = Subtask.objects.get(subtask_id = report_computed_task.subtask_id)

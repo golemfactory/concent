@@ -91,7 +91,7 @@ def claim_deposit(
 
     is_claim_against_provider: bool = (
         concent_use_case == ConcentUseCase.ADDITIONAL_VERIFICATION and
-        0 < settings.ADDITIONAL_VERIFICATION_COST  # pylint: disable=misplaced-comparison-constant
+        settings.ADDITIONAL_VERIFICATION_COST > 0
     )
 
     # Bankster creates Client and DepositAccount objects (if they don't exist yet) for the requestor

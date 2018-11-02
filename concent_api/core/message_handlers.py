@@ -41,8 +41,9 @@ from common.logging import log
 from common.validations import validate_secure_hash_algorithm
 from common import logging
 from conductor.tasks import result_transfer_request
-from core.exceptions import Http400
 from core.exceptions import CreateModelIntegrityError
+from core.exceptions import Http400
+from core.exceptions import TooSmallProviderDeposit
 from core.models import Client
 from core.models import PaymentInfo
 from core.models import PendingResponse
@@ -52,6 +53,7 @@ from core.payments import bankster
 from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
 from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
+from core.subtask_helpers import delete_deposit_claim
 from core.subtask_helpers import get_one_or_none
 from core.transfer_operations import create_file_transfer_token_for_golem_client
 from core.transfer_operations import create_file_transfer_token_for_verification_use_case
@@ -514,28 +516,6 @@ def handle_send_force_subtask_results(
 
     current_time = get_current_utc_timestamp()
 
-    (requestor_has_enough_deposit, provider_has_enough_deposit) = bankster.claim_deposit(
-        concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
-        requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
-        provider_ethereum_address=task_to_compute.provider_ethereum_address,
-        subtask_cost=task_to_compute.price,
-    )
-
-    assert provider_has_enough_deposit is True
-
-    if not requestor_has_enough_deposit:
-        return message.concents.ServiceRefused(
-            reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
-        )
-
-    bankster.finalize_payment(
-        subtask_id=task_to_compute.subtask_id,
-        concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
-        requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
-        provider_ethereum_address=task_to_compute.provider_ethereum_address,
-        subtask_cost=task_to_compute.price,
-    )
-
     task_deadline = int(task_to_compute.compute_task_def['deadline'])
     subtask_verification_time = calculate_subtask_verification_time(report_computed_task)
 
@@ -565,6 +545,34 @@ def handle_send_force_subtask_results(
             force_subtask_results=client_message,
             reason=message.concents.ForceSubtaskResultsRejected.REASON.RequestPremature,
         )
+
+    subtask = get_one_or_none(
+        Subtask,
+        subtask_id=task_to_compute.compute_task_def['subtask_id'],
+    )
+
+    if subtask is not None and subtask.state_enum == Subtask.SubtaskState.FORCING_ACCEPTANCE:
+        return message.concents.ServiceRefused(
+            reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
+        )
+
+    (claim_against_requestor, claim_against_provider) = bankster.claim_deposit(
+        subtask_id=task_to_compute.subtask_id,
+        concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+        requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+        provider_ethereum_address=task_to_compute.provider_ethereum_address,
+        subtask_cost=task_to_compute.price,
+        requestor_public_key=requestor_public_key,
+        provider_public_key=provider_public_key,
+    )
+
+    assert claim_against_provider is None
+
+    if claim_against_requestor is None:
+        return message.concents.ServiceRefused(
+            reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
+        )
+
     with transaction.atomic(using='control'):
         subtask = get_one_or_none(
             Subtask.objects.select_for_update(),
@@ -584,10 +592,6 @@ def handle_send_force_subtask_results(
                 ack_report_computed_task=client_message.ack_report_computed_task,
             )
         else:
-            if subtask.state_enum == Subtask.SubtaskState.FORCING_ACCEPTANCE:
-                return message.concents.ServiceRefused(
-                    reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
-                )
             if task_to_compute is not None and subtask.task_to_compute is not None:
                 validate_all_messages_identical([
                     task_to_compute,
@@ -613,6 +617,7 @@ def handle_send_force_subtask_results(
             client_message,
             provider_public_key,
         )
+
         return HttpResponse("", status=202)
 
 
@@ -694,6 +699,13 @@ def handle_send_force_subtask_results_response(
             task_to_compute,
             deserialize_message(subtask.task_to_compute.data.tobytes()),
         ])
+
+        delete_deposit_claim(
+            subtask_id=task_to_compute.subtask_id,
+            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+            ethereum_address=task_to_compute.provider_ethereum_address,
+            public_key=task_to_compute.provider_ethereum_address,
+        )
 
         subtask = update_and_return_updated_subtask(
             subtask=subtask,
@@ -1312,20 +1324,46 @@ def handle_send_subtask_results_verify(
             reason=message.concents.ServiceRefused.REASON.InvalidRequest,
         )
 
-    (requestor_has_enough_deposit, provider_has_enough_deposit) = bankster.claim_deposit(
-        concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
-        requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
-        provider_ethereum_address=task_to_compute.provider_ethereum_address,
-        subtask_cost=task_to_compute.price,
+    subtask = get_one_or_none(
+        Subtask,
+        subtask_id=compute_task_def['subtask_id'],
     )
 
-    if not requestor_has_enough_deposit:
+    if subtask is not None and subtask.state_enum in [
+        Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
+        Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
+    ]:
         return message.concents.ServiceRefused(
-            reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
+            reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
         )
-    if not provider_has_enough_deposit:
+
+    if subtask is not None and subtask.state_enum in [
+        Subtask.SubtaskState.ACCEPTED,
+        Subtask.SubtaskState.FAILED,
+    ]:
+        raise Http400(
+            "SubtaskResultsVerify is not allowed in current state",
+            error_code=ErrorCode.QUEUE_SUBTASK_STATE_TRANSITION_NOT_ALLOWED,
+        )
+
+    try:
+        (claim_against_requestor, _) = bankster.claim_deposit(
+            subtask_id=task_to_compute.subtask_id,
+            concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            subtask_cost=task_to_compute.price,
+            requestor_public_key=requestor_public_key,
+            provider_public_key=provider_public_key,
+        )
+    except TooSmallProviderDeposit:
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.TooSmallProviderDeposit,
+        )
+
+    if claim_against_requestor is None:
+        return message.concents.ServiceRefused(
+            reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
         )
 
     with transaction.atomic(using='control'):
@@ -1333,6 +1371,7 @@ def handle_send_subtask_results_verify(
             Subtask.objects.select_for_update(),
             subtask_id=compute_task_def['subtask_id'],
         )
+
         if subtask is None:
             store_subtask(
                 task_id=compute_task_def['task_id'],
@@ -1345,24 +1384,7 @@ def handle_send_subtask_results_verify(
                 report_computed_task=report_computed_task,
                 subtask_results_rejected=subtask_results_rejected,
             )
-
         else:
-            if subtask.state_enum in [
-                Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
-                Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
-            ]:
-                return message.concents.ServiceRefused(
-                    reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
-                )
-            if subtask.state_enum in [
-                Subtask.SubtaskState.ACCEPTED,
-                Subtask.SubtaskState.FAILED,
-            ]:
-                raise Http400(
-                    "SubtaskResultsVerify is not allowed in current state",
-                    error_code=ErrorCode.QUEUE_SUBTASK_STATE_TRANSITION_NOT_ALLOWED,
-                )
-
             if task_to_compute is not None and subtask.task_to_compute is not None:
                 validate_all_messages_identical([
                     task_to_compute,

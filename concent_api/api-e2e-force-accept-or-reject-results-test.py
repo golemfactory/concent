@@ -150,7 +150,7 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConst
     signed_task_to_compute = create_signed_task_to_compute(
         timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
         deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
-        price=10000,
+        price=1000,
     )
     api_request(
         cluster_url,
@@ -215,7 +215,7 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConst
     signed_task_to_compute = create_signed_task_to_compute(
         timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
         deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
-        price=10000,
+        price=1000,
     )
     api_request(
         cluster_url,
@@ -291,7 +291,7 @@ def test_case_2c_wrong_timestamps(cluster_consts: ProtocolConstants, cluster_url
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
                         deadline=calculate_deadline_too_far_in_the_future(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
-                        price=10000,
+                        price=1000,
                     )
                 )
             )
@@ -341,7 +341,7 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolC
     signed_task_to_compute = create_signed_task_to_compute(
         timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
         deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
-        price=10000,
+        price=1000,
     )
     api_request(
         cluster_url,

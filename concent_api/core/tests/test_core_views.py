@@ -977,7 +977,7 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
 
     @override_settings(GOLEM_MESSAGES_VERSION='2.15.0')
     def test_that_concent_should_refuse_request_with_incompatible_protocol_version(self):
-        with mock.patch('common.decorators.log') as log_mock:
+        with mock.patch('core.decorators.log') as log_mock:
             response = self.send_request(
                 url='core:send',
                 data=dump(

@@ -137,9 +137,29 @@ def _update_timed_out_subtask(subtask: Subtask) -> None:
     )
 
 
-def check_protocol_versions_and_update_subtasks_from_incoming_message_if_timed_out(
-        client_message: Message,
-        client_public_key: bytes
+def check_compatibility(subtask: Subtask, client_public_key: bytes) -> None:
+    if not is_protocol_version_compatible(subtask.task_to_compute.protocol_version):
+        log(
+            logger,
+            f'Unsupported version of golem messages in stored messages. '
+            f'Version stored in database is {subtask.task_to_compute.protocol_version}, '
+            f'Concent version is {settings.GOLEM_MESSAGES_VERSION}.',
+            subtask_id=subtask.subtask_id,
+            client_public_key=client_public_key,
+        )
+        raise UnsupportedProtocolVersion
+
+
+def update_subtasks_states(subtask: Subtask, client_public_key: bytes) -> None:
+    if subtask.state in [state.name for state in Subtask.ACTIVE_STATES] and \
+                subtask.next_deadline <= parse_timestamp_to_utc_datetime(get_current_utc_timestamp()):
+        verify_file_status(subtask=subtask, client_public_key=client_public_key)
+        _update_timed_out_subtask(subtask)
+
+
+def pre_process_message_related_subtasks(
+    client_message: Message,
+    client_public_key: bytes
 ) -> None:
     """
     Function gets subtask_id (or more subtask id's if message is ForcePayment) from client message, starts transaction,
@@ -161,23 +181,9 @@ def check_protocol_versions_and_update_subtasks_from_incoming_message_if_timed_o
                 subtask_id=subtask_id,
             )
             if subtask is None:
-                return None
-            elif not is_protocol_version_compatible(subtask.task_to_compute.protocol_version):
-                log(
-                    logger,
-                    f'Unsupported version of golem messages in stored messages. '
-                    f'Version stored in database is {subtask.task_to_compute.protocol_version}, '
-                    f'Concent version is {settings.GOLEM_MESSAGES_VERSION}.',
-                    subtask_id=subtask.subtask_id,
-                    client_public_key=client_public_key,
-                )
-                raise UnsupportedProtocolVersion
-
-            elif subtask.state in [state.name for state in Subtask.ACTIVE_STATES] and \
-                    subtask.next_deadline <= parse_timestamp_to_utc_datetime(get_current_utc_timestamp()):
-                verify_file_status(subtask=subtask, client_public_key=client_public_key)
-                _update_timed_out_subtask(subtask)
-    return None
+                return
+            check_compatibility(subtask, client_public_key)
+            update_subtasks_states(subtask, client_public_key)
 
 
 def update_all_timed_out_subtasks_of_a_client(client_public_key: bytes) -> None:

@@ -159,7 +159,6 @@ def api_request(
     private_key: bytes,
     public_key: bytes,
     data: Optional[Message]=None,
-    headers: Optional[dict]=REQUEST_HEADERS,
     expected_status: Optional[int]=None,
     expected_message_type: Optional[Message]=None,
     expected_content_type: Optional[str]=None
@@ -187,11 +186,11 @@ def api_request(
             print('MESSAGE:')
             print_golem_message(data)
 
-    assert all(value not in ['', None] for value in [endpoint, host, headers])
+    assert all(value not in ['', None] for value in [endpoint, host, REQUEST_HEADERS])
     url = "{}/api/v1/{}/".format(host, endpoint)
 
     _print_data(data, url)
-    response = requests.post("{}".format(url), headers=headers, data=_prepare_data(data), verify=False)
+    response = requests.post("{}".format(url), headers=REQUEST_HEADERS, data=_prepare_data(data), verify=False)
     _print_response(private_key, public_key, response)
     validate_response_status(response.status_code, expected_status)
     validate_content_type(response.headers['Content-Type'], expected_content_type)

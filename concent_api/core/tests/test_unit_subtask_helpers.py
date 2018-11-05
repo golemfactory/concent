@@ -100,10 +100,10 @@ class TestAreAllStoredMessagesCompatibleWithProtocolVersion(ConcentIntegrationTe
         self.requestor = Client.objects.get_or_create_full_clean(self.requestor_public_key)
         self.size = self.report_computed_task.size
 
-        self.task_id = self.task_to_compute.compute_task_def['task_id']
-        self.subtask_id = self.task_to_compute.compute_task_def['subtask_id']
+        self.task_id = self.task_to_compute.task_id
+        self.subtask_id = self.task_to_compute.subtask_id
 
-    def test_that_if_stored_messages_compatible_with_protocol_version_function_should_return_true(self):
+    def test_that_if_stored_messages_are_compatible_with_protocol_version_function_should_return_true(self):
         subtask = Subtask(
             task_id=self.task_to_compute.compute_task_def['task_id'],
             subtask_id=self.task_to_compute.compute_task_def['subtask_id'],

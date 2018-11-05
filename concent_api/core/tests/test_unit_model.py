@@ -353,19 +353,10 @@ class ProtocolVersionValidationTest(ConcentIntegrationTestCase):
             compute_task_def = factories.tasks.ComputeTaskDefFactory()
             want_to_compute_task = factories.tasks.WantToComputeTaskFactory()
 
-            task_to_compute = tasks.TaskToComputeFactory(
-                compute_task_def=compute_task_def,
-                want_to_compute_task=want_to_compute_task,
-                provider_public_key=self._get_provider_hex_public_key(),
-                requestor_public_key=self._get_requestor_hex_public_key(),
-            )
-            size = 58
-            report_computed_task = message.tasks.ReportComputedTask(
-                task_to_compute=task_to_compute,
-                size=size
-            )
+            task_to_compute = tasks.TaskToComputeFactory()
+
             force_report_computed_task = message.concents.ForceReportComputedTask(
-                report_computed_task=report_computed_task,
+                report_computed_task=tasks.ReportComputedTaskFactory()
             )
 
             message_timestamp = parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
@@ -423,7 +414,7 @@ class ProtocolVersionValidationTest(ConcentIntegrationTestCase):
                 state=Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
                 provider=client_provider,
                 requestor=client_requestor,
-                result_package_size=size,
+                result_package_size=force_report_computed_task.report_computed_task.size,  # pylint: disable=no-member
                 computation_deadline=parse_timestamp_to_utc_datetime(compute_task_def['deadline'])
             )
 

@@ -21,7 +21,6 @@ from core.models import Client
 from core.models import PaymentInfo
 from core.models import PendingResponse
 from core.models import Subtask
-from core.utils import calculate_additional_verification_call_time
 from core.utils import calculate_maximum_download_time
 from core.utils import calculate_subtask_verification_time
 
@@ -185,11 +184,7 @@ def calculate_token_expiration_deadline_for_verification_case(
     subtask_results_rejected = subtask_results_verify.subtask_results_rejected
     return int(
         subtask_results_rejected.timestamp +
-        calculate_additional_verification_call_time(
-            subtask_results_rejected.timestamp,
-            subtask_results_verify.task_to_compute.compute_task_def['deadline'],
-            subtask_results_verify.task_to_compute.timestamp
-        ) +
+        settings.ADDITIONAL_VERIFICATION_CALL_TIME +
         calculate_maximum_download_time(
             subtask_results_rejected.report_computed_task.size,
             settings.MINIMUM_UPLOAD_RATE

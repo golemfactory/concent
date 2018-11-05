@@ -35,6 +35,7 @@ from core.utils import extract_name_from_scene_file_path
     MINIMUM_UPLOAD_RATE=1,  # bits per second
     DOWNLOAD_LEADIN_TIME=10,  # seconds
     ADDITIONAL_VERIFICATION_TIME_MULTIPLIER=1,
+    ADDITIONAL_VERIFICATION_CALL_TIME=3600,
     BLENDER_THREADS=1,
 )
 class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
@@ -387,9 +388,10 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             scene_file=extract_name_from_scene_file_path(
                 self.report_computed_task.task_to_compute.compute_task_def['extra_data']['scene_file']
             ),
-            verification_deadline=self._get_verification_deadline_as_timestamp(
+            verification_deadline=self._get_blender_rendering_deadline_as_timestamp(
                 parse_iso_date_to_timestamp(self.subtask_result_rejected_time_str),
-                self.task_to_compute,
+                self.report_computed_task.size,
+                self.report_computed_task.task_to_compute,
             ),
             blender_crop_script=self.report_computed_task.task_to_compute.compute_task_def['extra_data']['script_src'],
         )
@@ -639,7 +641,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
     def _create_report_computed_task(self):
         time_str = "2018-04-01 10:00:00"
         self.compute_task_def = self._get_deserialized_compute_task_def(
-            deadline=add_time_offset_to_date(time_str, 3600),
+            deadline=add_time_offset_to_date(time_str, 3611),
             extra_data={
                 'end_task': 6,
                 'frames': [1],

@@ -371,18 +371,6 @@ class ProtocolVersionValidationTest(ConcentIntegrationTestCase):
             report_computed_task_message.full_clean()
             report_computed_task_message.save()
 
-            client_provider = Client(
-                public_key_bytes=self.PROVIDER_PUBLIC_KEY
-            )
-            client_provider.full_clean()
-            client_provider.save()
-
-            client_requestor = Client(
-                public_key_bytes=self.REQUESTOR_PUBLIC_KEY
-            )
-            client_requestor.full_clean()
-            client_requestor.save()
-
             want_to_compute_message = StoredMessage(
                 type=want_to_compute_task.header.type_,
                 timestamp=message_timestamp,
@@ -412,8 +400,6 @@ class ProtocolVersionValidationTest(ConcentIntegrationTestCase):
                 want_to_compute_task=want_to_compute_message,
                 report_computed_task=report_computed_task_message,
                 state=Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
-                provider=client_provider,
-                requestor=client_requestor,
                 result_package_size=force_report_computed_task.report_computed_task.size,  # pylint: disable=no-member
                 computation_deadline=parse_timestamp_to_utc_datetime(compute_task_def['deadline'])
             )

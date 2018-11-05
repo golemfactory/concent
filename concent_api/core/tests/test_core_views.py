@@ -939,6 +939,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
     CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
     CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
     CONCENT_MESSAGING_TIME=3600,
+    GOLEM_MESSAGES_VERSION='2.15.0'
 )
 class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
 
@@ -975,7 +976,6 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
         self.provider_public_key = hex_to_bytes_convert(self.task_to_compute.provider_public_key)
         self.requestor_public_key = hex_to_bytes_convert(self.task_to_compute.requestor_public_key)
 
-    @override_settings(GOLEM_MESSAGES_VERSION='2.15.0')
     def test_that_concent_should_refuse_request_with_incompatible_protocol_version(self):
         with mock.patch('core.decorators.log') as log_mock:
             response = self.send_request(
@@ -1013,7 +1013,7 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
 
         )
 
-    def test_that_send_should_refuse_request_if_all_stored_messages_have_incompatible_protocol_version(self):
+    def test_that_send_should_refuse_request_if_client_uses_different_protocol_version_than_stored_messages(self):
         with override_settings(GOLEM_MESSAGES_VERSION='1.11.0'):
             store_subtask(
                 task_id=self.task_to_compute.compute_task_def['task_id'],
@@ -1025,8 +1025,8 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
                 task_to_compute=self.task_to_compute,
                 report_computed_task=self.report_computed_task,
             )
-        with mock.patch('core.views.logging.log_message_received') as log_not_called_mock, \
-                mock.patch('core.subtask_helpers.log') as log_called_mock:
+        with mock.patch('core.views.logging.log_message_received') as log_message_received, \
+                mock.patch('core.subtask_helpers.log') as subtask_helpers_log:
             response = self.send_request(
                 url='core:send',
                 data=dump(
@@ -1044,12 +1044,12 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
             }
         )
 
-        log_called_mock.assert_called()
-        log_not_called_mock.assert_not_called()
+        subtask_helpers_log.assert_called()
+        log_message_received.assert_not_called()
 
-        self.assertIn(f'Version stored in database is 1.11.0, Concent version is {settings.GOLEM_MESSAGES_VERSION}', str(log_called_mock.call_args))
+        self.assertIn(f'Version stored in database is 1.11.0, Concent version is {settings.GOLEM_MESSAGES_VERSION}', str(subtask_helpers_log.call_args))
 
-    def test_that_receive_should_refuse_request_if_stored_messages_in_database_have_incompatible_protocol_version(self):
+    def test_that_receive_should_refuse_request_if_stored_messages_in_database_have_different_protocol_version(self):
         """
         This case may happen, if client sends a request to core:send and in next step sends request to core:receive
         using different protocol version. The client is always required to stay on the same protocol version while

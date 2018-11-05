@@ -20,11 +20,11 @@ from golem_messages.factories.tasks import WantToComputeTaskFactory
 from golem_messages.utils import encode_hex
 
 from common.constants import ErrorCode
-from common.decorators import require_golem_message
-from common.decorators import handle_errors_and_responses
 from common.helpers import get_current_utc_timestamp
 from common.helpers import sign_message
 from common.testing_helpers import generate_ecc_key_pair
+from core.decorators import handle_errors_and_responses
+from core.decorators import require_golem_message
 from core.exceptions import Http400
 from core.message_handlers import store_subtask
 from core.models import Client

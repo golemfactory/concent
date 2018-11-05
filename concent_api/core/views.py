@@ -7,21 +7,21 @@ from django.http import HttpRequest
 from django.http import HttpResponse
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_POST
 from golem_messages.message import Message
 
+from common import logging
+from common.decorators import provides_concent_feature
+from core.decorators import handle_errors_and_responses
+from core.decorators import log_communication
+from core.decorators import require_golem_auth_message
+from core.decorators import require_golem_message
 from core.decorators import validate_protocol_version_in_core
 from core.message_handlers import handle_message
 from core.message_handlers import handle_messages_from_database
-from core.subtask_helpers import update_all_timed_out_subtasks_of_a_client
 from core.subtask_helpers import pre_process_message_related_subtasks
-from common import logging
-from common.decorators import handle_errors_and_responses
-from common.decorators import log_communication
-from common.decorators import provides_concent_feature
-from common.decorators import require_golem_auth_message
-from common.decorators import require_golem_message
+from core.subtask_helpers import update_all_timed_out_subtasks_of_a_client
 
 logger = getLogger(__name__)
 

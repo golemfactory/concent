@@ -12,10 +12,10 @@ from golem_messages import load
 from golem_messages import message
 
 from common.constants import ErrorCode
-from common.decorators import handle_errors_and_responses
 from common.decorators import log_task_errors
-from common.decorators import require_golem_auth_message
 from common.testing_helpers import generate_ecc_key_pair
+from core.decorators import handle_errors_and_responses
+from core.decorators import require_golem_auth_message
 from core.exceptions import Http400
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp

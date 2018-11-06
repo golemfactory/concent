@@ -426,7 +426,7 @@ class SigningService:
 
     @staticmethod
     def _get_daily_transaction_threshold_file_path() -> Path:
-        thresholds_directory = (Path.cwd()).joinpath('daily_tresholds')  # pylint: disable=no-member
+        thresholds_directory = (Path.cwd()).joinpath('daily_thresholds')  # pylint: disable=no-member
         thresholds_directory.mkdir(exist_ok=True)  # pylint: disable=no-member
         daily_file = datetime.datetime.now().strftime('%Y-%m-%d')
         thresholds_directory.joinpath(daily_file).touch(exist_ok=True)  # pylint: disable=no-member

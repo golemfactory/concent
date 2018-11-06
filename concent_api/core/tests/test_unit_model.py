@@ -1,3 +1,4 @@
+import mock
 import pytest
 from django.test import override_settings
 from django.core.exceptions import ValidationError
@@ -7,14 +8,12 @@ from golem_messages import message
 from golem_messages.factories import tasks
 from golem_messages.utils import encode_hex
 
-from common.helpers import get_current_utc_timestamp
-from common.helpers import parse_timestamp_to_utc_datetime
 from common.constants import ConcentUseCase
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.constants import ETHEREUM_TRANSACTION_HASH_LENGTH
 from core.constants import MOCK_TRANSACTION
+from core.message_handlers import store_message
 from core.message_handlers import store_subtask
-from core.models import StoredMessage
 from core.models import Client
 from core.models import DepositAccount
 from core.models import DepositClaim
@@ -345,64 +344,44 @@ class TestDepositClaimValidation(ConcentIntegrationTestCase):
 
 class ProtocolVersionValidationTest(ConcentIntegrationTestCase):
 
+    def setUp(self):
+        self.first_communication_protocol_version = '1.11.1'
+        self.second_communication_protocol_version = '2.13.0'
+
+    def store_message_with_custom_protocol_version(
+        self,
+        golem_message: message.base.Message,
+        task_id: str,
+        subtask_id: str,
+    ):
+        with override_settings(GOLEM_MESSAGES_VERSION=self.first_communication_protocol_version):
+            return store_message(
+                golem_message=golem_message,
+                task_id=task_id,
+                subtask_id=subtask_id
+            )
+
     def test_that_incorrect_version_of_golem_messages_in_stored_message_should_raise_validation_error(self):
-        version_of_golem_messages_in_concent = '2.13.0'
-        different_version_of_golem_messages = '1.11.1'
 
-        with override_settings(GOLEM_MESSAGES_VERSION=version_of_golem_messages_in_concent):
-            compute_task_def = factories.tasks.ComputeTaskDefFactory()
-            want_to_compute_task = factories.tasks.WantToComputeTaskFactory()
-
+        with override_settings(GOLEM_MESSAGES_VERSION=self.second_communication_protocol_version):
             task_to_compute = tasks.TaskToComputeFactory()
 
-            force_report_computed_task = message.concents.ForceReportComputedTask(
-                report_computed_task=tasks.ReportComputedTaskFactory()
-            )
+            report_computed_task=tasks.ReportComputedTaskFactory(task_to_compute=task_to_compute)
+            with self.assertRaises(ValidationError) as error:
+                with mock.patch('core.message_handlers.store_message', side_effect=self.store_message_with_custom_protocol_version):
+                    store_subtask(
+                        task_id=task_to_compute.task_id,
+                        subtask_id=task_to_compute.subtask_id,
+                        task_to_compute=task_to_compute,
+                        provider_public_key=hex_to_bytes_convert(task_to_compute.provider_public_key),
+                        requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+                        report_computed_task=report_computed_task,
+                        state=Subtask.SubtaskState.REPORTED,
+                        next_deadline=None,
+                    )
 
-            message_timestamp = parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
-            report_computed_task_message = StoredMessage(
-                type=force_report_computed_task.report_computed_task.header.type_,  # pylint: disable=no-member
-                timestamp=message_timestamp,
-                data=force_report_computed_task.report_computed_task.serialize(),  # pylint: disable=no-member
-                task_id=compute_task_def['task_id'],  # pylint: disable=no-member
-                subtask_id=compute_task_def['subtask_id'],  # pylint: disable=no-member
-                protocol_version=different_version_of_golem_messages,
-            )
-            report_computed_task_message.full_clean()
-            report_computed_task_message.save()
-
-            want_to_compute_message = StoredMessage(
-                type=want_to_compute_task.header.type_,
-                timestamp=message_timestamp,
-                data=want_to_compute_task.serialize(),
-                task_id=compute_task_def['task_id'],  # pylint: disable=no-member
-                subtask_id=compute_task_def['subtask_id'],  # pylint: disable=no-member
-                protocol_version=version_of_golem_messages_in_concent,
-            )
-            want_to_compute_message.full_clean()
-            want_to_compute_message.save()
-
-            task_to_compute_message = StoredMessage(
-                type=task_to_compute.header.type_,
-                timestamp=message_timestamp,
-                data=task_to_compute.serialize(),
-                task_id=compute_task_def['task_id'],  # pylint: disable=no-member
-                subtask_id=compute_task_def['subtask_id'],  # pylint: disable=no-member
-                protocol_version=version_of_golem_messages_in_concent,
-            )
-            task_to_compute_message.full_clean()
-            task_to_compute_message.save()
-
-            subtask = Subtask(
-                task_id=compute_task_def['task_id'],
-                subtask_id=compute_task_def['subtask_id'],
-                task_to_compute=task_to_compute_message,
-                want_to_compute_task=want_to_compute_message,
-                report_computed_task=report_computed_task_message,
-                state=Subtask.SubtaskState.REPORTED.name,  # pylint: disable=no-member
-                result_package_size=force_report_computed_task.report_computed_task.size,  # pylint: disable=no-member
-                computation_deadline=parse_timestamp_to_utc_datetime(compute_task_def['deadline'])
-            )
-
-            with self.assertRaises(ValidationError):
-                subtask.full_clean()
+        self.assertIn(
+            f"Unsupported Golem Message version. Version in: `task_to_compute` is {self.first_communication_protocol_version}, "
+            f"Version in Concent is {self.second_communication_protocol_version}",
+            str(error.exception)
+        )

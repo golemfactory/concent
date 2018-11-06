@@ -8,7 +8,7 @@ import pytest
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS
 from signing_service.exceptions import SigningServiceMaximumReconnectionAttemptsExceeded
 from signing_service.signing_service import SigningService
-
+from signing_service.utils import ConsoleNotifier
 
 TEST_ETHEREUM_PRIVATE_KEY = '47a286230c8b3a1c3fa0282f6a65d1d57ffe5147dafaef7cd110d24ed51b462e'
 
@@ -34,6 +34,7 @@ class TestSigningServiceRun:
             SIGNING_SERVICE_PRIVATE_KEY,
             TEST_ETHEREUM_PRIVATE_KEY,
             SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS,
+            ConsoleNotifier(),
         ]
 
     def test_that_signing_service_should_be_instantiated_correctly_with_all_parameters(self):

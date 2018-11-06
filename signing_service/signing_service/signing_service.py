@@ -50,10 +50,11 @@ from signing_service.constants import WARNING_DAILY_THRESHOLD
 from signing_service.exceptions import SigningServiceMaximumReconnectionAttemptsExceeded
 from signing_service.exceptions import SigningServiceUnexpectedMessageError
 from signing_service.exceptions import SigningServiceValidationError
+from signing_service.utils import ConsoleNotifier
+from signing_service.utils import EmailNotifier
 from signing_service.utils import is_private_key_valid
 from signing_service.utils import is_public_key_valid
 from signing_service.utils import make_secret_provider_factory
-from signing_service.utils import Notifier
 
 logger = logging.getLogger()
 crash_logger = logging.getLogger('crash')
@@ -92,7 +93,7 @@ class SigningService:
         signing_service_private_key: bytes,
         ethereum_private_key: str,
         maximum_reconnect_attempts: int,
-        notifier: Notifier = Notifier(),
+        notifier: Union[ConsoleNotifier, EmailNotifier],
     ) -> None:
         assert isinstance(host, str)
         assert isinstance(port, int)
@@ -290,14 +291,18 @@ class SigningService:
                             f'Signing Service is unable to transact more then {MAXIMUM_DAILY_THRESHOLD} GNTB today.'
                             f'Transaction from {middleman_message.payload.from_address} rejected.'
                         )
-                        self.notifier.send()
+                        self.notifier.send(
+                            f'Signing Service is unable to transact more then {MAXIMUM_DAILY_THRESHOLD} GNTB today.'
+                        )
                         golem_message_response = TransactionRejected(
                             reason=TransactionRejected.REASON.DailyLimitExceeded,
                             nonce=middleman_message.payload.nonce,
                         )
                     elif transaction_sum_combined > WARNING_DAILY_THRESHOLD:
                         logger.warning(f'Signing Service has signed transactions worth {transaction_sum_combined} GNTB today.')
-                        self.notifier.send()
+                        self.notifier.send(
+                            f'Signing Service has signed transactions worth {transaction_sum_combined} GNTB today.'
+                        )
                         self._add_payload_value_to_daily_transactions_sum(transaction_sum_combined)
                     else:
                         self._add_payload_value_to_daily_transactions_sum(transaction_sum_combined)
@@ -421,7 +426,7 @@ class SigningService:
 
     @staticmethod
     def _get_daily_transaction_threshold_file_path() -> Path:
-        thresholds_directory = (Path.cwd()).joinpath('daily_tresholds')  # pylint: disable=no-member
+        thresholds_directory = (Path.cwd()).joinpath('daily_thresholds')  # pylint: disable=no-member
         thresholds_directory.mkdir(exist_ok=True)  # pylint: disable=no-member
         daily_file = datetime.datetime.now().strftime('%Y-%m-%d')
         thresholds_directory.joinpath(daily_file).touch(exist_ok=True)  # pylint: disable=no-member
@@ -491,6 +496,20 @@ def _parse_arguments() -> argparse.Namespace:
         help=f'Environment which will be set in Raven client config `environment` parameter.',
     )
 
+    subparsers = parser.add_subparsers(help='options for sending notifications')
+
+    # create optional parser for the email notifier
+    parser_for_cluster_notifier = subparsers.add_parser('smtp-notifier', help='smtp notifier with no harcoded values')
+    parser_for_cluster_notifier.add_argument('-fea', '--from-email-address', type=str, help='gmail login', required=True)
+    parser_for_cluster_notifier.add_argument('-fep', '--from-email-password', type=str, help='gmail password', required=True)
+    parser_for_cluster_notifier.add_argument(
+        '-tea',
+        '--to-email-addresses',
+        nargs='+',
+        help='list of addresses to send notifications to.',
+        required=True,
+    )
+
     ethereum_private_key_parser_group = parser.add_mutually_exclusive_group(required=True)
     ethereum_private_key_parser_group.add_argument(  # type: ignore
         '--ethereum-private-key',
@@ -555,7 +574,7 @@ def _parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-if __name__ == '__main__':
+def main() -> None:
     logging.config.fileConfig(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'logging.ini'))
 
     # Parse required arguments.
@@ -570,6 +589,15 @@ if __name__ == '__main__':
     )
     crash_logger.handlers[0].client = raven_client  # type: ignore
 
+    if hasattr(args, "from_email_address"):
+        notifier = EmailNotifier(
+            args.from_email_address,
+            args.from_email_password,
+            args.to_email_addresses,
+        )
+    else:
+        notifier = ConsoleNotifier()  # type: ignore
+
     SigningService(
         args.concent_cluster_host,
         args.concent_cluster_port,
@@ -578,4 +606,9 @@ if __name__ == '__main__':
         args.signing_service_private_key,
         args.ethereum_private_key,
         args.max_reconnect_attempts,
+        notifier,
     ).run()
+
+
+if __name__ == '__main__':
+    main()

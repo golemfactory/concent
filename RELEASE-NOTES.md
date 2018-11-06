@@ -12,6 +12,9 @@
 ##### New settings
 - `ADDITIONAL_VERIFICATION_COST` (#567).
 
+#### Signing Service
+- Add "Extension #5". Check daily limit for transactions and send email notifications(#872).
+
 ### 0.10.0
 #### Compatibility
 - golem-messages: 2.15.0

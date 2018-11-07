@@ -479,7 +479,9 @@ def discard_claim(deposit_claim: DepositClaim) -> bool:
         if deposit_claim.tx_hash is None:
             claim_removed = False
         else:
-            deposit_claim.delete()
-            claim_removed = True
-
+            try:
+                deposit_claim.delete()
+                claim_removed = True
+            except DepositAccount.DoesNotExist:
+                claim_removed = False
     return claim_removed

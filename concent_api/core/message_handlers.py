@@ -41,6 +41,7 @@ from common.logging import log
 from common.validations import validate_secure_hash_algorithm
 from common import logging
 from conductor.tasks import result_transfer_request
+from core.exceptions import BanksterTimestampError
 from core.exceptions import CreateModelIntegrityError
 from core.exceptions import Http400
 from core.exceptions import TooSmallProviderDeposit
@@ -757,6 +758,16 @@ def handle_send_force_payment(
             reason = message.concents.ServiceRefused.REASON.DuplicateRequest
         )
 
+    for subtask_results_accepted in client_message.subtask_results_accepted_list:
+        validate_task_to_compute(subtask_results_accepted.task_to_compute)
+
+    if sum([subtask_results_accepted.task_to_compute.price
+            for subtask_results_accepted in client_message.subtask_results_accepted_list]) == 0:
+        return message.concents.ForcePaymentRejected(
+            force_payment=client_message,
+            reason=message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,
+        )
+
     task_to_compute = client_message.subtask_results_accepted_list[0].task_to_compute
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
     (requestor_eth_address, provider_eth_address) = get_clients_eth_accounts(task_to_compute)
@@ -769,13 +780,14 @@ def handle_send_force_payment(
         *[subtask_results_accepted.task_to_compute for subtask_results_accepted in client_message.subtask_results_accepted_list],
     )
 
-    requestors_claim_payment_info = bankster.settle_overdue_acceptances(
-        requestor_ethereum_address=requestor_eth_address,
-        provider_ethereum_address=provider_eth_address,
-        acceptances=client_message.subtask_results_accepted_list,
-    )
-
-    if requestors_claim_payment_info.timestamp_error:
+    try:
+        claim_against_requestor = bankster.settle_overdue_acceptances(
+            requestor_ethereum_address=requestor_eth_address,
+            provider_ethereum_address=provider_eth_address,
+            acceptances=client_message.subtask_results_accepted_list,
+            requestor_public_key=requestor_public_key,
+        )
+    except BanksterTimestampError:
         return message.concents.ForcePaymentRejected(
             force_payment=client_message,
             reason=message.concents.ForcePaymentRejected.REASON.TimestampError,
@@ -787,7 +799,7 @@ def handle_send_force_payment(
         subtask_results_accepted.payment_ts for subtask_results_accepted in client_message.subtask_results_accepted_list
     )
 
-    if requestors_claim_payment_info.amount_pending == requestors_claim_payment_info.amount_paid == 0:
+    if claim_against_requestor is None:
         return message.concents.ForcePaymentRejected(
             force_payment=client_message,
             reason=message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,
@@ -797,8 +809,8 @@ def handle_send_force_payment(
             payment_ts              = payment_ts,
             task_owner_key          = requestor_ethereum_public_key,
             provider_eth_account    = provider_eth_address,
-            amount_paid             = requestors_claim_payment_info.amount_paid,
-            amount_pending          = requestors_claim_payment_info.amount_pending,
+            amount_paid             = claim_against_requestor.amount,
+            amount_pending          = 0,
             recipient_type          = message.concents.ForcePaymentCommitted.Actor.Provider,
         )
 
@@ -806,17 +818,18 @@ def handle_send_force_payment(
             payment_ts              = payment_ts,
             task_owner_key          = requestor_ethereum_public_key,
             provider_eth_account    = provider_eth_address,
-            amount_paid             = requestors_claim_payment_info.amount_paid,
-            amount_pending          = requestors_claim_payment_info.amount_pending,
+            amount_paid             = claim_against_requestor.amount,
+            amount_pending          = 0,
             recipient_type          = message.concents.ForcePaymentCommitted.Actor.Requestor,
         )
 
-        store_pending_message(
-            response_type=PendingResponse.ResponseType.ForcePaymentCommitted,
-            client_public_key=requestor_public_key,
-            queue=PendingResponse.Queue.ReceiveOutOfBand,
-            payment_message=requestor_force_payment_commited
-        )
+        with transaction.atomic(using='control'):
+            store_pending_message(
+                response_type=PendingResponse.ResponseType.ForcePaymentCommitted,
+                client_public_key=requestor_public_key,
+                queue=PendingResponse.Queue.ReceiveOutOfBand,
+                payment_message=requestor_force_payment_commited
+            )
 
         provider_force_payment_commited.sig = None
         return provider_force_payment_commited

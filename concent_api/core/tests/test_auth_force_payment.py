@@ -6,9 +6,7 @@ from golem_messages         import message
 
 from common.testing_helpers import generate_ecc_key_pair
 from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
-from core.constants import MOCK_TRANSACTION_HASH
 from core.models import PendingResponse
-from core.payments.bankster import ClaimPaymentInfo
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
 
@@ -60,7 +58,7 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
 
         with mock.patch(
             'core.message_handlers.bankster.settle_overdue_acceptances',
-            return_value=ClaimPaymentInfo(1, 0, MOCK_TRANSACTION_HASH, 123)
+            side_effect=self.settle_overdue_acceptances_mock
         ) as settle_overdue_acceptances:
             with freeze_time("2018-02-05 12:00:20"):
                 response_1 = self.send_request(

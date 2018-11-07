@@ -49,6 +49,7 @@ from common.helpers import sign_message
 from common.testing_helpers import generate_ecc_key_pair
 from common.testing_helpers import generate_priv_and_pub_eth_account_key
 
+from core.constants import MOCK_TRANSACTION_HASH
 from core.models import Client
 from core.models import DepositClaim
 from core.models import DepositAccount
@@ -1049,6 +1050,7 @@ class ConcentIntegrationTestCase(TestCase):
             amount=subtask_cost,
             concent_use_case=concent_use_case,
             payer_deposit_account=requestor_deposit_account,
+            tx_hash=MOCK_TRANSACTION_HASH,
         )
         claim_against_requestor.full_clean()
         claim_against_requestor.save()
@@ -1066,6 +1068,28 @@ class ConcentIntegrationTestCase(TestCase):
         provider_public_key
     ):  # pylint: disable=unused-argument, no-self-use
         return (None, None)
+
+    def settle_overdue_acceptances_mock(self, requestor_ethereum_address, provider_ethereum_address, acceptances, requestor_public_key):  # pylint: disable=unused-argument, no-self-use
+        requestor_client = Client.objects.get_or_create_full_clean(
+            public_key=requestor_public_key,
+        )
+        requestor_deposit_account = DepositAccount(
+            ethereum_address=requestor_ethereum_address,
+            client=requestor_client,
+        )
+        requestor_deposit_account.full_clean()
+        requestor_deposit_account.save()
+
+        claim_against_requestor = DepositClaim(
+            payee_ethereum_address=provider_ethereum_address,
+            amount=10,
+            concent_use_case=ConcentUseCase.FORCED_PAYMENT,
+            payer_deposit_account=requestor_deposit_account,
+        )
+        claim_against_requestor.full_clean()
+        claim_against_requestor.save()
+
+        return claim_against_requestor
 
     def _test_report_computed_task_in_database(self, report_computed_task):
         subtask = Subtask.objects.get(subtask_id = report_computed_task.subtask_id)

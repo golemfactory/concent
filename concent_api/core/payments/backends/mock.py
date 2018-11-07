@@ -1,3 +1,5 @@
+import uuid
+
 from core.constants import CLIENT_ETH_ADDRESS_WITH_0_DEPOSIT
 from core.constants import MOCK_TRANSACTION_HASH
 from core.payments.backends.sci_backend import TransactionType
@@ -19,7 +21,7 @@ def make_force_payment_to_provider(
     value: int,  # pylint: disable=unused-argument
     payment_ts: int,  # pylint: disable=unused-argument
 ) -> str:
-    return MOCK_TRANSACTION_HASH
+    return f'{uuid.uuid4()}{uuid.uuid4()}'[:64]
 
 
 def get_transaction_count() -> int:

@@ -83,3 +83,7 @@ class VerificationResult(IntEnum):
     MATCH       = 0
     MISMATCH    = 1
     ERROR       = 2
+
+
+# Defines a string that is returned from Bankster to Core views to indicate timestamp error case.
+BANKSTER_TIMESTAMP_ERROR = 'timestamp_error'

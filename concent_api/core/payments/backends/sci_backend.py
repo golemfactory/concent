@@ -20,7 +20,6 @@ def get_list_of_payments(
     requestor_eth_address:  str,
     provider_eth_address:   str,
     payment_ts:             int,
-    current_time:           int,
     transaction_type:       TransactionType,
 ) -> list:
     """
@@ -30,7 +29,6 @@ def get_list_of_payments(
     assert isinstance(requestor_eth_address,    str) and len(requestor_eth_address) == ETHEREUM_ADDRESS_LENGTH
     assert isinstance(provider_eth_address,     str) and len(provider_eth_address)  == ETHEREUM_ADDRESS_LENGTH
     assert isinstance(payment_ts,               int) and payment_ts     >= 0
-    assert isinstance(current_time,             int) and current_time   > 0
     assert isinstance(transaction_type,         Enum) and transaction_type in TransactionType
 
     payment_interface: SmartContractsInterface = PaymentInterface()

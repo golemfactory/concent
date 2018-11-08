@@ -4,12 +4,12 @@ from freezegun import freeze_time
 from golem_messages.message.concents import ForceGetTaskResult
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 from common.helpers import get_current_utc_timestamp
+from common.helpers import parse_timestamp_to_utc_datetime
 from core.message_handlers import store_subtask
 from core.models import Subtask
 from core.templatetags.admin_tags import get_longest_lasting_subtask_timestamp, get_time_until_concent_can_be_shut_down
 from core.tests.utils import ConcentIntegrationTestCase
 from core.utils import hex_to_bytes_convert
-from api_testing_common import timestamp_to_isoformat
 
 
 class TestAdminTagsQuerySet(ConcentIntegrationTestCase):
@@ -23,7 +23,7 @@ class TestAdminTagsQuerySet(ConcentIntegrationTestCase):
             subtask_id=subtask_id,
             deadline=deadline,
             price=0,
-            timestamp=timestamp_to_isoformat(current_time),
+            timestamp=parse_timestamp_to_utc_datetime(current_time),
         )
         report_computed_task = ReportComputedTaskFactory(
             task_to_compute=task_to_compute,

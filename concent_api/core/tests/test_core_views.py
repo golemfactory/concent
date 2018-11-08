@@ -992,7 +992,7 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
             key=self.PROVIDER_PRIVATE_KEY,
             message_type=message.concents.ServiceRefused,
             fields={
-                'reason': message.concents.ServiceRefused.REASON.InvalidRequest,
+                'reason': message.concents.ServiceRefused.REASON.UnsupportedProtocolVersion,
             }
         )
         self.assertIn('Wrong version of golem messages. Clients version is 1.12.0, Concent version is 2.15.0', str(log_mock.call_args))
@@ -1040,7 +1040,7 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
             key=self.PROVIDER_PRIVATE_KEY,
             message_type=message.concents.ServiceRefused,
             fields={
-                'reason': message.concents.ServiceRefused.REASON.InvalidRequest,
+                'reason': message.concents.ServiceRefused.REASON.UnsupportedProtocolVersion,
             }
         )
 
@@ -1093,6 +1093,6 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
                 key=self.PROVIDER_PRIVATE_KEY,
                 message_type=message.concents.ServiceRefused,
                 fields={
-                    'reason': message.concents.ServiceRefused.REASON.InvalidRequest,
+                    'reason': message.concents.ServiceRefused.REASON.UnsupportedProtocolVersion,
                 }
             )

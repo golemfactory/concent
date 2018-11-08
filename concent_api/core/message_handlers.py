@@ -933,7 +933,7 @@ def handle_messages_from_database(client_public_key: bytes) -> Union[message.Mes
                 subtask_id=pending_response.subtask.subtask_id,
                 client_public_key=client_public_key,
                 )
-            return message.concents.ServiceRefused(reason=message.concents.ServiceRefused.REASON.InvalidRequest)
+            return message.concents.ServiceRefused(reason=message.concents.ServiceRefused.REASON.UnsupportedProtocolVersion)
 
         if pending_response.response_type == PendingResponse.ResponseType.ForceReportComputedTask.name:  # pylint: disable=no-member
             report_computed_task = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())

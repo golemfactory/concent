@@ -58,7 +58,7 @@ def validate_protocol_version_in_core(view: Callable) -> Callable:
             )
             serialized_message = dump(
                 message.concents.ServiceRefused(
-                    reason=message.concents.ServiceRefused.REASON.InvalidRequest,
+                    reason=message.concents.ServiceRefused.REASON.UnsupportedProtocolVersion,
                 ),
                 settings.CONCENT_PRIVATE_KEY,
                 client_public_key,
@@ -244,7 +244,7 @@ def handle_errors_and_responses(database_name: str) -> Callable:
             except UnsupportedProtocolVersion:
                 return HttpResponse(
                     dump(
-                        message.concents.ServiceRefused(reason=message.concents.ServiceRefused.REASON.InvalidRequest),
+                        message.concents.ServiceRefused(reason=message.concents.ServiceRefused.REASON.UnsupportedProtocolVersion),
                         settings.CONCENT_PRIVATE_KEY,
                         client_public_key,
                     ),

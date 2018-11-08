@@ -50,7 +50,7 @@ REQUESTOR_ETHEREUM_PUBLIC_KEY_FOR_EMPTY_ACCOUNT = b'1\xbf\x84\x18*\xa8\x85\xb0\x
 
 REQUEST_HEADERS = {
     'Content-Type': 'application/octet-stream',
-    'Concent-Golem-Messages-Version': GOLEM_MESSAGES_VERSION
+    'X-Golem-Messages': GOLEM_MESSAGES_VERSION
 }
 
 

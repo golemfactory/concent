@@ -1058,14 +1058,13 @@ class ConcentIntegrationTestCase(TestCase):
         self,
         url: str,
         data: Optional[bytes] = None,
-        content_type: Optional[str] = 'application/octet-stream',
         golem_messages_version: Optional[str] = settings.GOLEM_MESSAGES_VERSION,
         **kwargs,
     ) -> Union[message.Message, dict, HttpResponseNotAllowed, HttpResponse, bytes, None]:
         return self.client.post(
             reverse(url),
             data=data,
-            content_type=content_type,
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=golem_messages_version,
+            content_type='application/octet-stream',
+            HTTP_X_Golem_Messages=golem_messages_version,
             **kwargs
         )

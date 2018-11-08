@@ -50,7 +50,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
             "/dummy-url/",
             content_type='application/octet-stream',
             data=dumped_message,
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
         response = dummy_view_require_golem_auth_message(request)  # pylint: disable=no-value-for-parameter
 
@@ -63,7 +63,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
                 "/dummy-url/",
                 content_type='application/octet-stream',
                 data=self._create_provider_auth_message(),
-                HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+                HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
             )
         with freeze_time("2017-12-31 00:00:10"):
             response = dummy_view_require_golem_auth_message(request)  # pylint: disable=no-value-for-parameter
@@ -79,7 +79,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
                 "/dummy-url/",
                 content_type='application/octet-stream',
                 data=self._create_provider_auth_message(),
-                HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+                HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
             )
         with freeze_time("2017-12-31 00:00:00"):
             response = dummy_view_require_golem_auth_message(request)  # pylint: disable=no-value-for-parameter
@@ -93,7 +93,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
                 "/dummy-url/",
                 content_type='application/octet-stream',
                 data=self._create_provider_auth_message(),
-                HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+                HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
             )
 
         with freeze_time("2017-12-31 01:00:00"):
@@ -103,7 +103,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         self.assertIn('error', json.loads(response.content))
 
     def test_require_golem_auth_message_should_return_http_415_when_content_type_missing(self):
-        request = self.request_factory.post("/dummy-url/", HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,)
+        request = self.request_factory.post("/dummy-url/", HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,)
         response = dummy_view_require_golem_auth_message(request)  # pylint: disable=no-value-for-parameter
 
         self.assertEqual(response.status_code, 415)
@@ -117,7 +117,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
             "/dummy-url/",
             content_type='application/octet-stream',
             data=dumped_auth_message,
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
         response = dummy_view_require_golem_auth_message(request)  # pylint: disable=no-value-for-parameter
 
@@ -128,7 +128,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         request = self.request_factory.post(
             "/dummy-url/",
             content_type='',
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
         response = dummy_view_require_golem_auth_message(request)  # pylint: disable=no-value-for-parameter
 
@@ -143,7 +143,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
                 self.PROVIDER_PRIVATE_KEY,
                 self.REQUESTOR_PUBLIC_KEY,
             ),
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
         response = dummy_view_require_golem_auth_message(request)  # pylint: disable=no-value-for-parameter
         self.assertEqual(response.status_code, 400)
@@ -158,7 +158,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
             "/dummy-url/",
             content_type='application/octet-stream',
             data=dumped_message,
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
         response = dummy_view_handle_errors_and_responses(request, dumped_message, self.PROVIDER_PUBLIC_KEY)
         loaded_response = load(response.content, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -174,7 +174,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         request = self.request_factory.post(
             "/dummy-url/",
             content_type = 'application/octet-stream',
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
         with freeze_time("2017-12-31 00:00:10"):
             response = dummy_view_handle_errors_and_responses(request, client_auth, self.PROVIDER_PUBLIC_KEY)
@@ -188,7 +188,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         request = self.request_factory.post(
             "/dummy-url/",
             content_type = 'application/octet-stream',
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
 
         @handle_errors_and_responses(database_name='default')
@@ -205,7 +205,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         request = self.request_factory.post(
             "/dummy-url/",
             content_type = 'application/octet-stream',
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
 
         @handle_errors_and_responses(database_name='default')
@@ -221,7 +221,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         request = self.request_factory.post(
             "/dummy-url/",
             content_type = 'application/octet-stream',
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
 
         @handle_errors_and_responses(database_name='default')
@@ -238,7 +238,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         request = self.request_factory.post(
             "/dummy-url/",
             content_type = 'application/octet-stream',
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
 
         @handle_errors_and_responses(database_name='default')
@@ -254,7 +254,7 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         request = self.request_factory.post(
             "/dummy-url/",
             content_type = 'application/octet-stream',
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
 
         @handle_errors_and_responses(database_name='default')

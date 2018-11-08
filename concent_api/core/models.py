@@ -734,7 +734,7 @@ class DepositAccount(Model):
 
 
 class DepositClaim(Model):
-    subtask = ForeignKey(Subtask, blank=True, null=True)
+    subtask_id = CharField(max_length=MESSAGE_TASK_ID_MAX_LENGTH, blank=True, null=True)
     payer_deposit_account = ForeignKey(DepositAccount)
     payee_ethereum_address = CharField(max_length=ETHEREUM_ADDRESS_LENGTH)
     concent_use_case = IntegerField()
@@ -743,11 +743,14 @@ class DepositClaim(Model):
     created_at = DateTimeField(auto_now_add=True)
     modified_at = DateTimeField(auto_now=True)
 
+    class Meta:
+        unique_together = ('subtask_id', 'concent_use_case', 'payee_ethereum_address')
+
     def clean(self) -> None:
         super().clean()
-        if self.subtask is None and self.concent_use_case != ConcentUseCase.FORCED_PAYMENT:
+        if self.subtask_id is None and self.concent_use_case != ConcentUseCase.FORCED_PAYMENT:
             raise ValidationError({
-                'subtask': 'Can be NULL if and only if concent_use_case is ForcedPayment'
+                'subtask_id': 'Can be NULL if and only if concent_use_case is ForcedPayment'
             })
         if self.payer_deposit_account.ethereum_address == self.payee_ethereum_address:
             raise ValidationError({

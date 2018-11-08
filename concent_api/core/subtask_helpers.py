@@ -151,8 +151,10 @@ def check_compatibility(subtask: Subtask, client_public_key: bytes) -> None:
 
 
 def update_subtasks_states(subtask: Subtask, client_public_key: bytes) -> None:
-    if subtask.state in [state.name for state in Subtask.ACTIVE_STATES] and \
-                subtask.next_deadline <= parse_timestamp_to_utc_datetime(get_current_utc_timestamp()):
+    if (
+        subtask.state in [state.name for state in Subtask.ACTIVE_STATES] and
+        subtask.next_deadline <= parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
+    ):
         verify_file_status(subtask=subtask, client_public_key=client_public_key)
         _update_timed_out_subtask(subtask)
 

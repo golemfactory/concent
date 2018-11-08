@@ -79,9 +79,6 @@ def send_correct_force_report_computed_task(
         get_force_report_computed_task(
             report_computed_task=report_computed_task,
         ),
-        headers={
-            'Content-Type': 'application/octet-stream',
-        },
         expected_status=expected_status,
     )
     responses_global.append(response['error_code'] if isinstance(response, dict) else response)
@@ -100,9 +97,6 @@ def send_correct_ack_report_computed_task(
         get_ack_report_computed_task(
             report_computed_task=report_computed_task
         ),
-        headers={
-            'Content-Type': 'application/octet-stream',
-        },
         expected_status=expected_status,
     )
 
@@ -120,9 +114,6 @@ def send_correct_force_get_task_result(
         get_force_get_task_result(
             report_computed_task=report_computed_task,
         ),
-        headers={
-            'Content-Type': 'application/octet-stream',
-        },
         expected_status=expected_status,
     )
     responses_global.append(response.__class__.__name__)

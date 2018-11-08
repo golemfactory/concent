@@ -5,6 +5,7 @@ from typing import List
 from typing import Optional
 from typing import Union
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Model
 from django.db.models import Q
@@ -19,13 +20,15 @@ from common.helpers import deserialize_message
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.logging import log
+from core.exceptions import UnsupportedProtocolVersion
 from core.models import PendingResponse
 from core.models import Subtask
 from core.payments import bankster
 from core.transfer_operations import store_pending_message
 from core.transfer_operations import verify_file_status
-from core.validation import is_golem_message_signed_with_key
 from core.utils import hex_to_bytes_convert
+from core.utils import is_protocol_version_compatible
+from core.validation import is_golem_message_signed_with_key
 
 logger = getLogger(__name__)
 
@@ -134,7 +137,32 @@ def _update_timed_out_subtask(subtask: Subtask) -> None:
     )
 
 
-def update_subtasks_from_incoming_message_if_timed_out(client_message: Message, client_public_key: bytes) -> None:
+def check_compatibility(subtask: Subtask, client_public_key: bytes) -> None:
+    if not is_protocol_version_compatible(subtask.task_to_compute.protocol_version):
+        log(
+            logger,
+            f'Unsupported version of golem messages in stored messages. '
+            f'Version stored in database is {subtask.task_to_compute.protocol_version}, '
+            f'Concent version is {settings.GOLEM_MESSAGES_VERSION}.',
+            subtask_id=subtask.subtask_id,
+            client_public_key=client_public_key,
+        )
+        raise UnsupportedProtocolVersion
+
+
+def update_subtasks_states(subtask: Subtask, client_public_key: bytes) -> None:
+    if (
+        subtask.state in [state.name for state in Subtask.ACTIVE_STATES] and
+        subtask.next_deadline <= parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
+    ):
+        verify_file_status(subtask=subtask, client_public_key=client_public_key)
+        _update_timed_out_subtask(subtask)
+
+
+def pre_process_message_related_subtasks(
+    client_message: Message,
+    client_public_key: bytes
+) -> None:
     """
     Function gets subtask_id (or more subtask id's if message is ForcePayment) from client message, starts transaction,
     checks if state is active and subtask is timed out (in database query, if it is subtask is locked). If so, file
@@ -153,14 +181,11 @@ def update_subtasks_from_incoming_message_if_timed_out(client_message: Message, 
             subtask = get_one_or_none(
                 subtask_or_query_set=Subtask.objects.select_for_update(),
                 subtask_id=subtask_id,
-                state__in=[state.name for state in Subtask.ACTIVE_STATES],
-                next_deadline__lte=parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
             )
             if subtask is None:
                 return
-
-            verify_file_status(subtask=subtask, client_public_key=client_public_key)
-            _update_timed_out_subtask(subtask)
+            check_compatibility(subtask, client_public_key)
+            update_subtasks_states(subtask, client_public_key)
 
 
 def update_all_timed_out_subtasks_of_a_client(client_public_key: bytes) -> None:

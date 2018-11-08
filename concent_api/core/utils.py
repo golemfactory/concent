@@ -1,20 +1,23 @@
 import datetime
 import math
+from logging import getLogger
 
-from django.conf                    import settings
-
-from golem_messages                 import message
-from golem_messages.helpers         import maximum_download_time
-from golem_messages.helpers         import subtask_verification_time
+from django.conf import settings
+from django.http import HttpRequest
+from golem_messages import message
+from golem_messages.helpers import maximum_download_time
+from golem_messages.helpers import subtask_verification_time
 from golem_messages.utils import decode_hex
 
-from core.exceptions import Http400
-from core.exceptions import SceneFilePathError
 from common.constants import ErrorCode
 from common.helpers import parse_timestamp_to_utc_datetime
-from .constants import VALID_SCENE_FILE_PREFIXES
-from .constants import GOLEM_PUBLIC_KEY_LENGTH
+from core.exceptions import Http400
+from core.exceptions import SceneFilePathError
 from .constants import GOLEM_PUBLIC_KEY_HEX_LENGTH
+from .constants import GOLEM_PUBLIC_KEY_LENGTH
+from .constants import VALID_SCENE_FILE_PREFIXES
+
+logger = getLogger(__name__)
 
 
 def calculate_maximum_download_time(size: int, rate: int) -> int:
@@ -112,3 +115,28 @@ def extract_name_from_scene_file_path(absoulte_scene_file_path_in_docker: str) -
             ErrorCode.MESSAGE_INVALID
         )
     return relative_scene_file_path_in_archive
+
+
+def is_protocol_version_compatible(protocol_version: str) -> bool:
+    """
+    Versions are considered compatible if they share the minor and major version number. E.g 2.18.5 is compatible with
+    2.18.1 but not with 2.17.5 or 3.0.0. This supports semver version style https://semver.org/
+    """
+    major, minor, _ = protocol_version.split('.')
+    concent_major, concent_minor, _ = settings.GOLEM_MESSAGES_VERSION.split('.')
+    return major == concent_major and minor == concent_minor
+
+
+def is_given_golem_messages_version_supported_by_concent(
+    request: HttpRequest,
+) -> bool:
+    """
+    If header is missing version is not checked and Concent assumes that client uses compatible version.
+    """
+    if 'HTTP_X_Golem_Messages' not in request.META:
+        return True
+    else:
+        golem_message_version = request.META['HTTP_X_Golem_Messages']
+        if not is_protocol_version_compatible(golem_message_version):
+            return False
+        return True

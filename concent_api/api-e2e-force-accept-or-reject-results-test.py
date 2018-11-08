@@ -166,9 +166,6 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConst
                 )
             )
         ),
-        headers={
-            'Content-Type': 'application/octet-stream',
-        },
         expected_status=202,
     )
     api_request(
@@ -177,9 +174,6 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConst
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
-        headers={
-            'Content-Type': 'application/octet-stream',
-        },
         expected_status=200,
         expected_message_type=message.concents.ForceSubtaskResults,
         expected_content_type='application/octet-stream',
@@ -199,9 +193,6 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConst
                 )
             )
         ),
-        headers={
-            'Content-Type': 'application/octet-stream',
-        },
         expected_status=202,
     )
     api_request(
@@ -210,9 +201,6 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConst
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
-        headers={
-            'Content-Type': 'application/octet-stream',
-        },
         expected_status=200,
         expected_message_type=message.concents.ForceSubtaskResultsResponse,
         expected_content_type='application/octet-stream',
@@ -243,9 +231,6 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConst
                 )
             )
         ),
-        headers={
-            'Content-Type': 'application/octet-stream',
-        },
         expected_status=202,
     )
     time.sleep(1)
@@ -256,9 +241,6 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConst
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
-        headers={
-            'Content-Type': 'application/octet-stream',
-        },
         expected_status=200,
         expected_message_type=message.concents.ForceSubtaskResults,
         expected_content_type='application/octet-stream',
@@ -277,9 +259,6 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConst
                 task_to_compute=signed_task_to_compute
             )
         ),
-        headers={
-            'Content-Type': 'application/octet-stream',
-        },
         expected_status=202,
     )
     #  Step 4. Provider receives ForceSubtaskResultsResponse
@@ -289,9 +268,6 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConst
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
-        headers={
-            'Content-Type': 'application/octet-stream',
-        },
         expected_status=200,
         expected_message_type=message.concents.ForceSubtaskResultsResponse,
         expected_content_type='application/octet-stream',
@@ -320,9 +296,6 @@ def test_case_2c_wrong_timestamps(cluster_consts: ProtocolConstants, cluster_url
                 )
             )
         ),
-        headers={
-            'Content-Type': 'application/octet-stream',
-        },
         expected_status=200,
         expected_message_type=message.concents.ForceSubtaskResultsRejected,
         expected_content_type='application/octet-stream',
@@ -354,9 +327,6 @@ def test_case_2b_not_enough_funds(cluster_consts: ProtocolConstants, cluster_url
                 )
             )
         ),
-        headers={
-            'Content-Type': 'application/octet-stream',
-        },
         expected_status=200,
         expected_message_type=message.concents.ServiceRefused,
         expected_content_type='application/octet-stream',
@@ -387,9 +357,6 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolC
                 )
             )
         ),
-        headers={
-            'Content-Type': 'application/octet-stream',
-        },
         expected_status=202,
     )
     time.sleep(1)
@@ -408,9 +375,6 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolC
                 )
             )
         ),
-        headers={
-            'Content-Type': 'application/octet-stream',
-        },
         expected_status=200,
         expected_message_type=message.concents.ServiceRefused,
         expected_content_type='application/octet-stream',
@@ -422,9 +386,6 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolC
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
-        headers={
-            'Content-Type': 'application/octet-stream',
-        },
         expected_status=200,
         expected_message_type=message.concents.ForceSubtaskResults,
         expected_content_type='application/octet-stream',

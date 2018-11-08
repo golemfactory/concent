@@ -1,7 +1,6 @@
 import mock
 
 from django.test            import override_settings
-from django.urls            import reverse
 from freezegun              import freeze_time
 from golem_messages         import message
 
@@ -64,10 +63,9 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             return_value=ClaimPaymentInfo(1, 0, MOCK_TRANSACTION_HASH, 123)
         ) as settle_overdue_acceptances:
             with freeze_time("2018-02-05 12:00:20"):
-                response_1 = self.client.post(
-                    reverse('core:send'),
-                    data                                = serialized_force_payment,
-                    content_type                        = 'application/octet-stream',
+                response_1 = self.send_request(
+                    url='core:send',
+                    data= serialized_force_payment,
                 )
 
         settle_overdue_acceptances.assert_called_once()
@@ -89,30 +87,27 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(last_pending_message.client.public_key,    self._get_encoded_requestor_public_key())
 
         with freeze_time("2018-02-05 12:00:21"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data                            = self._create_provider_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_204_response(response_2)
         self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 12:00:22"):
-            response_3 = self.client.post(
-                reverse('core:receive'),
+            response_3 =self.send_request(
+                url='core:receive',
                 data                            = self._create_diff_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_204_response(response_3)
         self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 12:00:23"):
-            response_4 = self.client.post(
-                reverse('core:receive'),
+            response_4 =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
         self._test_response(
             response_4,

@@ -84,9 +84,6 @@ def test_case_1_test_for_existing_file(cluster_consts: ProtocolConstants, cluste
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         force_get_task_result,
-        headers = {
-            'Content-Type': 'application/octet-stream',
-        },
         expected_status=200,
         expected_message_type=message.concents.AckForceGetTaskResult,
         expected_content_type='application/octet-stream',
@@ -98,9 +95,6 @@ def test_case_1_test_for_existing_file(cluster_consts: ProtocolConstants, cluste
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
-        headers = {
-            'Content-Type': 'application/octet-stream',
-        },
         expected_status=200,
         expected_message_type=message.concents.ForceGetTaskResultUpload,
         expected_content_type='application/octet-stream',
@@ -130,9 +124,6 @@ def test_case_1_test_for_existing_file(cluster_consts: ProtocolConstants, cluste
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
-        headers = {
-            'Content-Type': 'application/octet-stream',
-        },
         expected_status=200,
         expected_message_type=message.concents.ForceGetTaskResultDownload,
         expected_content_type='application/octet-stream',
@@ -153,9 +144,6 @@ def test_case_2_test_for_non_existing_file(cluster_consts: ProtocolConstants, cl
             size    = 1024,
             package_hash = 'sha1:b3ff7013c4644cdcbb6c7e4f1e5fdb10b9ceda5d'
         ),
-        headers = {
-            'Content-Type':                     'application/octet-stream',
-        },
         expected_status=200,
         expected_message_type=message.concents.AckForceGetTaskResult,
         expected_content_type='application/octet-stream',
@@ -167,9 +155,6 @@ def test_case_2_test_for_non_existing_file(cluster_consts: ProtocolConstants, cl
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
-        headers = {
-            'Content-Type': 'application/octet-stream',
-        },
         expected_status=200,
         expected_message_type=message.concents.ForceGetTaskResultUpload,
         expected_content_type='application/octet-stream',
@@ -181,9 +166,6 @@ def test_case_2_test_for_non_existing_file(cluster_consts: ProtocolConstants, cl
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
-        headers = {
-            'Content-Type': 'application/octet-stream',
-        },
         expected_status=204,
     )
 

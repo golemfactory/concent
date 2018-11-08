@@ -1,24 +1,24 @@
 import json
 import mock
-from freezegun                      import freeze_time
-from django.http                    import JsonResponse
-from django.http                    import HttpResponse
-from django.http                    import HttpResponseNotAllowed
-from django.test                    import override_settings
-from django.test                    import RequestFactory
-from golem_messages                 import dump
-from golem_messages                 import load
-from golem_messages                 import message
+from django.conf import settings
+from django.http import HttpResponse
+from django.http import HttpResponseNotAllowed
+from django.http import JsonResponse
+from django.test import RequestFactory
+from django.test import override_settings
+from freezegun import freeze_time
+from golem_messages import dump
+from golem_messages import load
+from golem_messages import message
 
-from core.exceptions                import Http400
+from common.constants import ErrorCode
+from common.decorators import log_task_errors
+from common.testing_helpers import generate_ecc_key_pair
+from core.decorators import handle_errors_and_responses
+from core.decorators import require_golem_auth_message
+from core.exceptions import Http400
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
-from common.constants                import ErrorCode
-from common.decorators               import handle_errors_and_responses
-from common.decorators import log_task_errors
-from common.decorators               import require_golem_auth_message
-from common.testing_helpers          import generate_ecc_key_pair
-
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
 
@@ -46,8 +46,12 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
 
     def test_require_golem_auth_message_decorator_should_return_http_400_when_auth_message_not_send(self):
         dumped_message = dump(self._create_test_ping_message(), CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
-
-        request  = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream', data = dumped_message)
+        request = self.request_factory.post(
+            "/dummy-url/",
+            content_type='application/octet-stream',
+            data=dumped_message,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
+        )
         response = dummy_view_require_golem_auth_message(request)  # pylint: disable=no-value-for-parameter
 
         self.assertEqual(response.status_code, 400)
@@ -55,8 +59,12 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
 
     def test_require_golem_auth_message_should_return_http_200_when_message_included(self):
         with freeze_time("2017-12-31 00:00:00"):
-            request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream', data = self._create_provider_auth_message())
-
+            request = self.request_factory.post(
+                "/dummy-url/",
+                content_type='application/octet-stream',
+                data=self._create_provider_auth_message(),
+                HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
+            )
         with freeze_time("2017-12-31 00:00:10"):
             response = dummy_view_require_golem_auth_message(request)  # pylint: disable=no-value-for-parameter
 
@@ -67,8 +75,12 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
 
     def test_require_golem_auth_message_should_return_http_400_when_message_created_too_far_in_the_future(self):
         with freeze_time("2017-12-31 01:00:00"):
-            request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream', data = self._create_provider_auth_message())
-
+            request = self.request_factory.post(
+                "/dummy-url/",
+                content_type='application/octet-stream',
+                data=self._create_provider_auth_message(),
+                HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
+            )
         with freeze_time("2017-12-31 00:00:00"):
             response = dummy_view_require_golem_auth_message(request)  # pylint: disable=no-value-for-parameter
 
@@ -77,7 +89,12 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
 
     def test_require_golem_auth_message_should_return_http_400_when_message_is_too_old(self):
         with freeze_time("2017-12-31 00:00:00"):
-            request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream', data = self._create_provider_auth_message())
+            request = self.request_factory.post(
+                "/dummy-url/",
+                content_type='application/octet-stream',
+                data=self._create_provider_auth_message(),
+                HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
+            )
 
         with freeze_time("2017-12-31 01:00:00"):
             response = dummy_view_require_golem_auth_message(request)  # pylint: disable=no-value-for-parameter
@@ -86,75 +103,79 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         self.assertIn('error', json.loads(response.content))
 
     def test_require_golem_auth_message_should_return_http_415_when_content_type_missing(self):
-
-        request = self.request_factory.post("/dummy-url/")
-
+        request = self.request_factory.post("/dummy-url/", HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,)
         response = dummy_view_require_golem_auth_message(request)  # pylint: disable=no-value-for-parameter
 
         self.assertEqual(response.status_code, 415)
         self.assertIn('error', json.loads(response.content))
 
     def test_require_golem_auth_message_should_return_http_400_when_client_public_key_is_empty(self):
-
         client_auth = message.concents.ClientAuthorization()
         dumped_auth_message = dump(client_auth, self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY)
 
-        request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream', data = dumped_auth_message)
-
+        request = self.request_factory.post(
+            "/dummy-url/",
+            content_type='application/octet-stream',
+            data=dumped_auth_message,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
+        )
         response = dummy_view_require_golem_auth_message(request)  # pylint: disable=no-value-for-parameter
 
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', json.loads(response.content))
 
     def test_require_golem_auth_message_should_return_http_400_if_content_type_is_empty(self):
-
-        request = self.request_factory.post("/dummy-url/", content_type = '')
-
+        request = self.request_factory.post(
+            "/dummy-url/",
+            content_type='',
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
+        )
         response = dummy_view_require_golem_auth_message(request)  # pylint: disable=no-value-for-parameter
 
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', json.loads(response.content))
 
     def test_require_golem_auth_message_should_return_json_response_http_400_when_auth_message_is_signed_with_wrong_key(self):
-
         request = self.request_factory.post(
             "/dummy-url/",
             content_type='application/octet-stream',
             data=self._create_client_auth_message(
                 self.PROVIDER_PRIVATE_KEY,
                 self.REQUESTOR_PUBLIC_KEY,
-            )
+            ),
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
-
         response = dummy_view_require_golem_auth_message(request)  # pylint: disable=no-value-for-parameter
-
         self.assertEqual(response.status_code, 400)
-
         content = json.loads(response.content)
         self.assertIn('error', content)
         self.assertIn('error_code', content)
         self.assertEqual(content['error_code'], ErrorCode.MESSAGE_SIGNATURE_WRONG.value)
 
     def test_handle_errors_and_responses_should_return_http_response_with_serialized_message(self):
-
         dumped_message = dump(self._create_test_ping_message(), CONCENT_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY)
-        request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream', data = dumped_message)
-
+        request = self.request_factory.post(
+            "/dummy-url/",
+            content_type='application/octet-stream',
+            data=dumped_message,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
+        )
         response = dummy_view_handle_errors_and_responses(request, dumped_message, self.PROVIDER_PUBLIC_KEY)
-
         loaded_response = load(response.content, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
 
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(loaded_response, message.Ping)
 
     def test_handle_errors_and_responses_should_return_serialized_message_if_gets_deserialized(self):
-
         with freeze_time("2017-12-31 00:00:00"):
             client_auth = message.concents.ClientAuthorization()
             client_auth.client_public_key = self.PROVIDER_PUBLIC_KEY
 
-        request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream')
-
+        request = self.request_factory.post(
+            "/dummy-url/",
+            content_type = 'application/octet-stream',
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
+        )
         with freeze_time("2017-12-31 00:00:10"):
             response = dummy_view_handle_errors_and_responses(request, client_auth, self.PROVIDER_PUBLIC_KEY)
             loaded_response = load(response.content, self.PROVIDER_PRIVATE_KEY, CONCENT_PUBLIC_KEY)  # pylint: disable=no-member
@@ -164,8 +185,11 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         self.assertEqual(loaded_response.timestamp, parse_iso_date_to_timestamp("2017-12-31 00:00:00"))
 
     def test_handle_errors_and_responses_should_return_http_response_if_it_has_been_passed_to_decorator(self):
-
-        request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream')
+        request = self.request_factory.post(
+            "/dummy-url/",
+            content_type = 'application/octet-stream',
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
+        )
 
         @handle_errors_and_responses(database_name='default')
         def dummy_view_handle_http_response(_request, _message, _client_public_key):
@@ -178,8 +202,11 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_handle_errors_and_responses_should_return_empty_http_response_if_view_passed_none(self):
-
-        request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream')
+        request = self.request_factory.post(
+            "/dummy-url/",
+            content_type = 'application/octet-stream',
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
+        )
 
         @handle_errors_and_responses(database_name='default')
         def dummy_view_handle_none_response(_request, _message, _client_public_key):
@@ -191,8 +218,11 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         self.assertEqual(len(response.content), 0)
 
     def test_handle_errors_and_responses_should_return_json_response_if_view_passed_dict(self):
-
-        request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream')
+        request = self.request_factory.post(
+            "/dummy-url/",
+            content_type = 'application/octet-stream',
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
+        )
 
         @handle_errors_and_responses(database_name='default')
         def dummy_view_handle_dict(_request, _message, _client_public_key):
@@ -205,8 +235,11 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         self.assertEqual(json.loads(response.content), {'dummy': 'data'})  # pylint: disable=no-member
 
     def test_handle_errors_and_responses_should_return_http_response_if_view_raised_http_400_exception(self):
-
-        request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream')
+        request = self.request_factory.post(
+            "/dummy-url/",
+            content_type = 'application/octet-stream',
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
+        )
 
         @handle_errors_and_responses(database_name='default')
         def dummy_view_handle_http_400_exception(_request, _message, _client_public_key):
@@ -218,8 +251,11 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
         self.assertIn('error', json.loads(response.content))  # pylint: disable=no-member
 
     def test_handle_errors_and_responses_should_return_http_response_not_allowed_if_view_passed_it(self):
-
-        request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream')
+        request = self.request_factory.post(
+            "/dummy-url/",
+            content_type = 'application/octet-stream',
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
+        )
 
         @handle_errors_and_responses(database_name='default')
         def dummy_view_handle_http_response_not_allowed(_request, _message, _client_public_key):

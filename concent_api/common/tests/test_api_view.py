@@ -20,11 +20,11 @@ from golem_messages.factories.tasks import WantToComputeTaskFactory
 from golem_messages.utils import encode_hex
 
 from common.constants import ErrorCode
-from common.decorators import require_golem_message
-from common.decorators import handle_errors_and_responses
 from common.helpers import get_current_utc_timestamp
 from common.helpers import sign_message
 from common.testing_helpers import generate_ecc_key_pair
+from core.decorators import handle_errors_and_responses
+from core.decorators import require_golem_message
 from core.exceptions import Http400
 from core.message_handlers import store_subtask
 from core.models import Client
@@ -107,7 +107,12 @@ class ApiViewTestCase(TestCase):
             nonlocal decoded_message
             decoded_message = _message
             return None
-        request = self.request_factory.post("/dummy-url/", content_type = 'application/octet-stream', data = raw_message)
+        request = self.request_factory.post(
+            "/dummy-url/",
+            content_type='application/octet-stream',
+            data=raw_message,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
+        )
 
         dummy_view(request)                                                     # pylint: disable=no-value-for-parameter
 
@@ -164,7 +169,8 @@ class ApiViewTestCase(TestCase):
         request = self.request_factory.put(
             "/dummy-url/",
             content_type='application/octet-stream',
-            data=raw_message
+            data=raw_message,
+            HTTP_X_Golem_Messages = settings.GOLEM_MESSAGES_VERSION,
         )
 
         response = dummy_view(request)  # pylint: disable=no-value-for-parameter,assignment-from-no-return
@@ -270,6 +276,7 @@ class ApiViewTransactionTestCase(TransactionTestCase):
                     CONCENT_PUBLIC_KEY
                 ),
                 content_type='application/octet-stream',
+                HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
             )
         _update_timed_out_subtask_correct_response_mock_function.assert_called()
         _create_client_and_raise_http400_error_mock_function.assert_called()
@@ -304,6 +311,7 @@ class ApiViewTransactionTestCase(TransactionTestCase):
                         CONCENT_PUBLIC_KEY
                     ),
                     content_type='application/octet-stream',
+                    HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
                 )
 
         _create_client_and_raise_http500_error_mock_function.assert_called()
@@ -335,6 +343,7 @@ class ApiViewTransactionTestCase(TransactionTestCase):
                     CONCENT_PUBLIC_KEY
                 ),
                 content_type='application/octet-stream',
+                HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
             )
 
         _create_client_and_raise_error_mock_function.assert_called()
@@ -353,6 +362,7 @@ class ApiViewTransactionTestCase(TransactionTestCase):
                     CONCENT_PUBLIC_KEY
                 ),
                 content_type='application/octet-stream',
+                HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
             )
 
         _update_timed_out_subtask_correct_response_mock_function.assert_called()

@@ -96,6 +96,7 @@ class StoredMessage(Model):
     task_id = CharField(max_length=MESSAGE_TASK_ID_MAX_LENGTH)
     subtask_id = CharField(max_length=MESSAGE_TASK_ID_MAX_LENGTH)
     created_at = DateTimeField(auto_now_add=True)
+    protocol_version = CharField(max_length=10)
 
     def __str__(self) -> str:
         return 'StoredMessage #{}, type:{}, {}'.format(self.id, self.type, self.timestamp)
@@ -540,6 +541,15 @@ class Subtask(Model):
                 validate_database_report_computed_task(
                     report_computed_task=deserialized_report_computed_task,
                     message_to_compare=deserialize_database_message(report_computed_task_to_validate),
+                )
+
+        for related_message_name in Subtask.MESSAGE_FOR_FIELD:
+            related_message = getattr(self, related_message_name)
+            assert isinstance(related_message, StoredMessage) or related_message is None
+            if related_message is not None and related_message.protocol_version != settings.GOLEM_MESSAGES_VERSION:
+                raise ValidationError(
+                    f'Unsupported Golem Message version. Version in: `{related_message_name}` is {related_message.protocol_version}, '
+                    f'Version in Concent is {settings.GOLEM_MESSAGES_VERSION}'
                 )
 
     @property

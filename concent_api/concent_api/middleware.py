@@ -13,14 +13,13 @@ from django.views.debug import technical_500_response
 from django.views.defaults import server_error
 from mimeparse import best_match
 
-from golem_messages import __version__
 from concent_api.constants import DEFAULT_ERROR_MESSAGE
 from common.constants import ErrorCode
 
 
-class GolemMessagesVersionMiddleware(object):
+class GolemMessagesVersionMiddleware():
     """
-    Used to attach version of the golem_messages package currently used to HTTP response header.
+    Used to attach version of the golem messages package supported by this Concent instance to HTTP response header.
 
     """
 
@@ -29,7 +28,7 @@ class GolemMessagesVersionMiddleware(object):
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
         response = self.get_response(request)
-        response['Concent-Golem-Messages-Version'] = __version__
+        response['Concent-Golem-Messages-Version'] = settings.GOLEM_MESSAGES_VERSION
         return response
 
 

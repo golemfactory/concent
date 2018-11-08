@@ -1,31 +1,30 @@
 import binascii
-from base64                         import b64decode
-from base64                         import b64encode
+from base64 import b64decode
+from base64 import b64encode
 from logging import getLogger
-from typing                         import Union
+from typing import Union
 
 from django.conf import settings
-from django.http import JsonResponse
-from django.http import HttpRequest
 from django.core.handlers.wsgi import WSGIRequest
+from django.http import HttpRequest
+from django.http import JsonResponse
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_safe
-
-from golem_messages.exceptions      import MessageError
+from golem_messages.exceptions import MessageError
+from golem_messages.message import Message
 from golem_messages.message.concents import FileTransferToken
-from golem_messages.message         import Message
-from golem_messages.shortcuts       import load
+from golem_messages.shortcuts import load
 
-from core.exceptions import FileTransferTokenError
-from gatekeeper.utils               import gatekeeper_access_denied_response
-from common                          import logging
-from common.constants                import ErrorCode
+from common import logging
+from common.constants import ErrorCode
 from common.decorators import provides_concent_feature
 from common.helpers import get_current_utc_timestamp
 from common.validations import validate_file_transfer_token
-
+from core.exceptions import FileTransferTokenError
+from gatekeeper.decorators import validate_protocol_version_in_gatekeeper
+from gatekeeper.utils import gatekeeper_access_denied_response
 
 logger = getLogger(__name__)
 
@@ -33,6 +32,7 @@ logger = getLogger(__name__)
 @provides_concent_feature('gatekeeper')
 @csrf_exempt
 @require_POST
+@validate_protocol_version_in_gatekeeper
 def upload(request: HttpRequest) -> JsonResponse:
     logging.log_request_received(
         logger,
@@ -47,8 +47,8 @@ def upload(request: HttpRequest) -> JsonResponse:
             ErrorCode.HEADER_CONTENT_TYPE_NOT_SUPPORTED,
             request.META['PATH_INFO'] if 'PATH_INFO' in request.META.keys() else 'UNAVAILABLE'
         )
-
     path_to_file = request.get_full_path().partition(reverse('gatekeeper:upload'))[2]
+
     response_or_file_info = parse_headers(request, path_to_file, FileTransferToken.Operation.upload)
 
     if not isinstance(response_or_file_info, FileTransferToken.FileInfo):
@@ -65,6 +65,7 @@ def upload(request: HttpRequest) -> JsonResponse:
 @provides_concent_feature('gatekeeper')
 @csrf_exempt
 @require_safe
+@validate_protocol_version_in_gatekeeper
 def download(request: HttpRequest) -> JsonResponse:
     logging.log_request_received(
         logger,
@@ -75,6 +76,7 @@ def download(request: HttpRequest) -> JsonResponse:
     # FIXME: When running on `manage.py runserver` in development, empty or missing Concent-Type gets replaced
     # with text/plain. gunicorn does not do this. Looks like a bug to me. We'll let it pass for now sice we ignore
     # the body anyway and the check is mostly to inform the client about its mistake.
+
     if request.content_type != 'text/plain' and request.content_type != '':
         return gatekeeper_access_denied_response(
             'Download request cannot have data in the body.',

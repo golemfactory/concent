@@ -1,3 +1,4 @@
+import mock
 from freezegun import freeze_time
 from django.conf import settings
 from django.http import HttpResponse
@@ -18,11 +19,13 @@ from common.constants import ERROR_IN_GOLEM_MESSAGE
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.testing_helpers import generate_ecc_key_pair
+from core.message_handlers import store_subtask
 from core.models import Client
 from core.models import StoredMessage
 from core.models import PendingResponse
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
+from core.utils import hex_to_bytes_convert
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
@@ -74,15 +77,13 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
     def test_send_should_accept_valid_message(self):
         assert StoredMessage.objects.count() == 0
 
-        response = self.client.post(
-            reverse('core:send'),
+        response = self.send_request(
+            url='core:send',
             data=dump(
                 self.correct_golem_data,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY),
-            content_type='application/octet-stream',
         )
-
         self.assertEqual(response.status_code, 202)
         self._assert_stored_message_counter_increased(increased_by=3)
         self._test_last_stored_messages(
@@ -109,14 +110,12 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             report_computed_task=report_computed_task
         )
 
-        response = self.client.post(
-            reverse('core:send'),
+        response = self.send_request(
+            url='core:send',
             data=dump(
                 correct_golem_data,
                 self.PROVIDER_PRIVATE_KEY,
-                CONCENT_PUBLIC_KEY
-            ),
-            content_type='application/octet-stream',
+                CONCENT_PUBLIC_KEY),
         )
 
         self.assertEqual(response.status_code, 200)
@@ -146,13 +145,12 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             report_computed_task=report_computed_task,
         )
 
-        response = self.client.post(
-            reverse('core:send'),
+        response = self.send_request(
+            url='core:send',
             data=dump(
                 correct_golem_data,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY),
-            content_type='application/octet-stream',
         )
 
         self.assertEqual(response.status_code, 202)
@@ -183,14 +181,12 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 report_computed_task=report_computed_task
             )
 
-        response = self.client.post(
-            reverse('core:send'),
+        response = self.send_request(
+            url='core:send',
             data=dump(
                 force_report_computed_task,
                 self.PROVIDER_PRIVATE_KEY,
-                CONCENT_PUBLIC_KEY,
-            ),
-            content_type='application/octet-stream',
+                CONCENT_PUBLIC_KEY),
         )
         self._test_400_response(response)
 
@@ -199,14 +195,12 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         compute_task_def['deadline'] = self.message_timestamp - 3600
         data.report_computed_task.task_to_compute = message.TaskToCompute(compute_task_def=compute_task_def)
 
-        response = self.client.post(
-            reverse('core:send'),
+        response = self.send_request(
+            url='core:send',
             data=dump(
                 data,
                 self.PROVIDER_PRIVATE_KEY,
-                CONCENT_PUBLIC_KEY,
-            ),
-            content_type='application/octet-stream',
+                CONCENT_PUBLIC_KEY),
         )
         self._test_400_response(response)
         self.assertTrue(response.json()['error'].startswith('Error in Golem Message'))
@@ -214,28 +208,26 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_task_id_already_use(self):
 
-        response_202 = self.client.post(
-            reverse('core:send'),
+        response_202 = self.send_request(
+            url='core:send',
             data=dump(
                 self.correct_golem_data,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
-            content_type='application/octet-stream',
         )
 
         self.assertIsInstance(response_202, HttpResponse)
         self.assertEqual(response_202.status_code, 202)
         self.correct_golem_data.encrypted = None
         self.correct_golem_data.sig = None
-        response_400 = self.client.post(
-            reverse('core:send'),
+        response_400 = self.send_request(
+            url='core:send',
             data=dump(
                 self.correct_golem_data,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY,
             ),
-            content_type='application/octet-stream',
         )
 
         self.assertIsInstance(response_400, JsonResponse)
@@ -249,14 +241,13 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
         assert isinstance(self.want_to_compute, message.Message)
 
-        response_400 = self.client.post(
-            reverse('core:send'),
+        response_400 = self.send_request(
+            url='core:send',
             data=dump(
                 self.want_to_compute,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY
             ),
-            content_type='application/octet-stream',
         )
 
         self._test_400_response(
@@ -285,14 +276,13 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             report_computed_task=report_computed_task
         )
 
-        response_400 = self.client.post(
-            reverse('core:send'),
+        response_400 = self.send_request(
+            url='core:send',
             data=dump(
                 ack_report_computed_task,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY
             ),
-            content_type='application/octet-stream',
         )
 
         self._test_400_response(
@@ -308,13 +298,12 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             task_to_compute=self.cannot_compute_task.task_to_compute  # pylint: disable=no-member
         )
 
-        force_response = self.client.post(
-            reverse('core:send'),
+        force_response = self.send_request(
+            url='core:send',
             data=dump(
                 self.correct_golem_data,
                 self.PROVIDER_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY),
-            content_type='application/octet-stream',
         )
 
         self.assertEqual(force_response.status_code, 202)
@@ -328,14 +317,13 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             subtask_id=self.correct_golem_data.report_computed_task.subtask_id,
         )
 
-        reject_response = self.client.post(
-            reverse('core:send'),
+        reject_response = self.send_request(
+            url='core:send',
             data=dump(
                 self.reject_report_computed_task,
                 self.REQUESTOR_PRIVATE_KEY,
                 CONCENT_PUBLIC_KEY
             ),
-            content_type='application/octet-stream',
         )
 
         self.assertEqual(reject_response.status_code, 202)
@@ -354,14 +342,13 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         with freeze_time("2017-11-17 10:00:00"):
             timestamp = self._create_datetime_from_string("2017-11-17 09:40:00")
             assert parse_timestamp_to_utc_datetime(get_current_utc_timestamp()) - timestamp > golem_settings.MSG_TTL
-            response = self.client.post(
-                reverse('core:send'),
+            response = self.send_request(
+                url='core:send',
                 data=dump(
                     ping,
                     self.PROVIDER_PRIVATE_KEY,
                     CONCENT_PUBLIC_KEY
                 ),
-                content_type='application/octet-stream',
             )
 
         self._test_400_response(response)
@@ -373,14 +360,13 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         with freeze_time("2017-11-17 10:00:00"):
             timestamp = self._create_datetime_from_string("2017-11-17 10:10:00")
             assert timestamp - parse_timestamp_to_utc_datetime(get_current_utc_timestamp()) > golem_settings.FUTURE_TIME_TOLERANCE
-            response = self.client.post(
-                reverse('core:send'),
+            response = self.send_request(
+                url='core:send',
                 data=dump(
                     ping,
                     self.PROVIDER_PRIVATE_KEY,
                     CONCENT_PUBLIC_KEY
                 ),
-                content_type='application/octet-stream',
             )
 
         self._test_400_response(response)
@@ -426,14 +412,13 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                     )
                 )
 
-                response_400 = self.client.post(
-                    reverse('core:send'),
+                response_400 = self.send_request(
+                    url='core:send',
                     data=dump(
                         force_report_computed_task,
                         self.PROVIDER_PRIVATE_KEY,
                         CONCENT_PUBLIC_KEY
                     ),
-                    content_type='application/octet-stream',
                 )
 
             self._test_400_response(response_400)
@@ -462,14 +447,13 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 )
             )
 
-            response_202 = self.client.post(
-                reverse('core:send'),
+            response_202 = self.send_request(
+                url='core:send',
                 data=dump(
                     force_report_computed_task,
                     self.PROVIDER_PRIVATE_KEY,
                     CONCENT_PUBLIC_KEY
                 ),
-                content_type='application/octet-stream',
             )
 
             self.assertIn(response_202.status_code, [200, 202])
@@ -505,10 +489,9 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         self._assert_client_count_is_equal(0)
 
     def test_send_with_empty_data_should_return_http_400_error(self):
-        response = self.client.post(
-            reverse('core:send'),
+        response = self.send_request(
+            url='core:send',
             data='',
-            content_type='application/octet-stream',
         )
 
         self.assertEqual(response.status_code, 400)
@@ -525,15 +508,13 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                     task_to_compute=deserialized_task_to_compute
                 )
             )
-
-            response = self.client.post(
-                reverse('core:send'),
+            response = self.send_request(
+                url='core:send',
                 data=dump(
                     force_report_computed_task,
                     self.PROVIDER_PRIVATE_KEY,
                     CONCENT_PUBLIC_KEY
                 ),
-                content_type='application/octet-stream',
             )
 
         self._test_400_response(
@@ -587,6 +568,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             data=self.force_golem_data.report_computed_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         new_message.full_clean()
         new_message.save()
@@ -609,6 +591,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             data=self.want_to_compute_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         want_to_compute_message.full_clean()
         want_to_compute_message.save()
@@ -619,6 +602,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             data=self.task_to_compute.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         task_to_compute_message.full_clean()
         task_to_compute_message.save()
@@ -647,9 +631,8 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         new_message_inbox.full_clean()
         new_message_inbox.save()
 
-        response = self.client.post(
-            reverse('core:receive'),
-            content_type='application/octet-stream',
+        response = self.send_request(
+            url='core:receive',
             data=self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
         )
         decoded_response = load(
@@ -665,10 +648,9 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def test_receive_return_http_204_if_no_messages_in_database(self):
-        response = self.client.post(
-            reverse('core:receive'),
+        response = self.send_request(
+            url='core:receive',
             data=self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
-            content_type='application/octet-stream',
         )
 
         self.assertEqual(response.status_code, 204)
@@ -682,6 +664,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             data=self.force_golem_data.report_computed_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         new_message.full_clean()
         new_message.save()
@@ -692,6 +675,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             data=self.want_to_compute_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         want_to_compute_message.full_clean()
         want_to_compute_message.save()
@@ -702,6 +686,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             data=self.task_to_compute.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         task_to_compute_message.full_clean()
         task_to_compute_message.save()
@@ -716,6 +701,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             data=ack_report_computed_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         stored_ack_report_computed_task.full_clean()
         stored_ack_report_computed_task.save()
@@ -767,9 +753,8 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         new_message_inbox_out_of_band.save()
 
         with freeze_time("2017-11-17 12:00:00"):
-            response = self.client.post(
-                reverse('core:receive'),
-                content_type='application/octet-stream',
+            response = self.send_request(
+                url='core:receive',
                 data=self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
             )
 
@@ -788,9 +773,8 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
         self.assertEqual(decoded_message.report_computed_task.task_to_compute.sig, self.task_to_compute.sig)
 
         with freeze_time("2017-11-17 12:00:00"):
-            response = self.client.post(
-                reverse('core:receive'),
-                content_type='application/octet-stream',
+            response = self.send_request(
+                url='core:receive',
                 data=self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
             )
 
@@ -853,6 +837,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             data=self.force_golem_data.report_computed_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         new_message.full_clean()
         new_message.save()
@@ -863,6 +848,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             data=self.want_to_compute_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         want_to_compute_message.full_clean()
         want_to_compute_message.save()
@@ -873,6 +859,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             data=self.task_to_compute.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         task_to_compute_message.full_clean()
         task_to_compute_message.save()
@@ -887,6 +874,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             data=ack_report_computed_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
+            protocol_version=settings.GOLEM_MESSAGES_VERSION,
         )
         stored_ack_report_computed_task.full_clean()
         stored_ack_report_computed_task.save()
@@ -930,22 +918,181 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
 
     @freeze_time("2017-11-17 11:40:00")
     def test_view_receive_out_of_band_should_accept_valid_message(self):
-        response = self.client.post(
-            reverse('core:receive'),
+        response = self.send_request(
+            url='core:receive',
             data=self._create_client_auth_message(self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY),
-            content_type='application/octet-stream',
         )
-
         self.assertEqual(response.status_code, 200)
 
     @freeze_time("2017-11-17 9:20:00")
     def test_view_receive_out_of_band_return_http_204_if_no_messages_in_database(self):
-        response = self.client.post(
-            reverse('core:receive'),
+        response = self.send_request(
+            url='core:receive',
             data=self._create_client_auth_message(self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
                                                   self.DIFFERENT_REQUESTOR_PUBLIC_KEY),
-            content_type='application/octet-stream',
         )
-
         self.assertEqual(response.status_code, 204)
         self.assertEqual(response.content.decode(), '')
+
+
+@override_settings(
+    CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+    CONCENT_MESSAGING_TIME=3600,
+)
+class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
+
+    def setUp(self):
+        super().setUp()
+
+        self.compute_task_def = self._get_deserialized_compute_task_def(
+            deadline=get_current_utc_timestamp() + 100
+        )
+
+        self.task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp=parse_timestamp_to_utc_datetime(get_current_utc_timestamp()),
+            compute_task_def=self.compute_task_def,
+        )
+
+        self.report_computed_task = self._get_deserialized_report_computed_task(
+            task_to_compute=self.task_to_compute,
+        )
+
+        self.force_report_computed_task = self._get_deserialized_force_report_computed_task(
+            report_computed_task=self.report_computed_task
+        )
+
+        self.reject_report_computed_task = self._get_deserialized_reject_report_computed_task(
+            reason=message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
+            task_to_compute=self.task_to_compute,
+        )
+
+        self.force_get_task_result = self._get_deserialized_force_subtask_results(
+            timestamp=parse_timestamp_to_utc_datetime(get_current_utc_timestamp()),
+            task_to_compute=self.task_to_compute,
+        )
+
+        self.provider_public_key = hex_to_bytes_convert(self.task_to_compute.provider_public_key)
+        self.requestor_public_key = hex_to_bytes_convert(self.task_to_compute.requestor_public_key)
+
+    @override_settings(GOLEM_MESSAGES_VERSION='2.15.0')
+    def test_that_concent_should_refuse_request_with_incompatible_protocol_version(self):
+        with mock.patch('core.decorators.log') as log_mock:
+            response = self.send_request(
+                url='core:send',
+                data=dump(
+                    self.force_report_computed_task,
+                    self.PROVIDER_PRIVATE_KEY,
+                    CONCENT_PUBLIC_KEY),
+                golem_messages_version='1.12.0'
+            )
+        self._test_response(
+            response,
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ServiceRefused,
+            fields={
+                'reason': message.concents.ServiceRefused.REASON.UnsupportedProtocolVersion,
+            }
+        )
+        self.assertIn('Wrong version of golem messages. Clients version is 1.12.0, Concent version is 2.15.0', str(log_mock.call_args))
+
+    def test_that_concent_should_accept_request_without_protocol_version(self):
+        response = self.client.post(
+            reverse('core:send'),
+            data=dump(
+                self.force_report_computed_task,
+                self.PROVIDER_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY),
+            content_type='application/octet-stream',
+        )
+        self._test_response(
+            response,
+            status=202,
+            key=self.PROVIDER_PRIVATE_KEY,
+
+        )
+
+    def test_that_send_should_refuse_request_if_all_stored_messages_have_incompatible_protocol_version(self):
+        with override_settings(GOLEM_MESSAGES_VERSION='1.11.0'):
+            store_subtask(
+                task_id=self.task_to_compute.compute_task_def['task_id'],
+                subtask_id=self.task_to_compute.compute_task_def['subtask_id'],
+                provider_public_key=self.provider_public_key,
+                requestor_public_key=self.requestor_public_key,
+                state=Subtask.SubtaskState.FORCING_REPORT,
+                next_deadline=int(self.task_to_compute.compute_task_def['deadline']) + settings.CONCENT_MESSAGING_TIME,
+                task_to_compute=self.task_to_compute,
+                report_computed_task=self.report_computed_task,
+            )
+        with mock.patch('core.views.logging.log_message_received') as log_not_called_mock, \
+                mock.patch('core.subtask_helpers.log') as log_called_mock:
+            response = self.send_request(
+                url='core:send',
+                data=dump(
+                    self.force_report_computed_task,
+                    self.PROVIDER_PRIVATE_KEY,
+                    CONCENT_PUBLIC_KEY),
+            )
+        self._test_response(
+            response,
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ServiceRefused,
+            fields={
+                'reason': message.concents.ServiceRefused.REASON.UnsupportedProtocolVersion,
+            }
+        )
+
+        log_called_mock.assert_called()
+        log_not_called_mock.assert_not_called()
+
+        self.assertIn(f'Version stored in database is 1.11.0, Concent version is {settings.GOLEM_MESSAGES_VERSION}', str(log_called_mock.call_args))
+
+    def test_that_receive_should_refuse_request_if_stored_messages_in_database_have_incompatible_protocol_version(self):
+        """
+        This case may happen, if client sends a request to core:send and in next step sends request to core:receive
+        using different protocol version. The client is always required to stay on the same protocol version while
+        communicating about the same subtask.
+        """
+        response = self.send_request(
+            url='core:send',
+            data=dump(
+                self.force_report_computed_task,
+                self.PROVIDER_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY),
+        )
+        self._test_response(
+            response,
+            status=202,
+            key=self.PROVIDER_PRIVATE_KEY,
+        )
+
+        response1 = self.send_request(
+            url='core:send',
+            data=dump(
+                self.reject_report_computed_task,
+                self.REQUESTOR_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY),
+        )
+        self._test_response(
+            response1,
+            status=202,
+            key=self.REQUESTOR_PRIVATE_KEY,
+        )
+
+        with override_settings(GOLEM_MESSAGES_VERSION='1.11.0'):
+            response2 = self.send_request(
+                url='core:receive',
+                data=self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),
+                golem_messages_version='1.11.0'
+            )
+            self._test_response(
+                response2,
+                status=200,
+                key=self.PROVIDER_PRIVATE_KEY,
+                message_type=message.concents.ServiceRefused,
+                fields={
+                    'reason': message.concents.ServiceRefused.REASON.UnsupportedProtocolVersion,
+                }
+            )

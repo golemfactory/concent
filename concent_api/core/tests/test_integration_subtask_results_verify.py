@@ -2,7 +2,6 @@ from datetime import timedelta
 
 import mock
 from django.test import override_settings
-from django.urls import reverse
 from freezegun import freeze_time
 
 from golem_messages import load
@@ -76,10 +75,9 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         # when
         with mock.patch("core.message_handlers.bankster.claim_deposit", side_effect=self.claim_deposit_true_mock):
             with freeze_time(subtask_results_verify_time_str):
-                response = self.client.post(
-                    reverse('core:send'),
+                response =self.send_request(
+                    url='core:send',
                     data=serialized_subtask_results_verify,
-                    content_type='application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
                     HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
@@ -120,10 +118,9 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         # when
         with mock.patch("core.message_handlers.bankster.claim_deposit", side_effect=self.claim_deposit_true_mock):
             with freeze_time(subtask_results_verify_time_str):
-                response = self.client.post(
-                    reverse('core:send'),
+                response =self.send_request(
+                    url='core:send',
                     data=serialized_subtask_results_verify,
-                    content_type='application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
                     HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
@@ -159,10 +156,9 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         # when
         with mock.patch("core.message_handlers.bankster.claim_deposit", side_effect=self.claim_deposit_true_mock):
             with freeze_time(subtask_results_verify_time_str):
-                response = self.client.post(
-                    reverse('core:send'),
+                response =self.send_request(
+                    url='core:send',
                     data=serialized_subtask_results_verify,
-                    content_type='application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
                     HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
@@ -186,10 +182,9 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
 
         # when
         with freeze_time(subtask_results_verify_time_str):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data=serialized_subtask_results_verify,
-                content_type='application/octet-stream',
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
                 HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
             )
@@ -218,10 +213,9 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         # when
         with mock.patch("core.message_handlers.bankster.claim_deposit", side_effect=self.claim_deposit_false_mock) as claim_deposit_mock:
             with freeze_time(subtask_results_verify_time_str):
-                response = self.client.post(
-                    reverse('core:send'),
+                response =self.send_request(
+                    url='core:send',
                     data=serialized_subtask_results_verify,
-                    content_type='application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
                     HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
@@ -260,10 +254,9 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             return_value=(True, False)
         ) as claim_deposit_mock:
             with freeze_time(subtask_results_verify_time_str):
-                response = self.client.post(
-                    reverse('core:send'),
+                response =self.send_request(
+                    url='core:send',
                     data=serialized_subtask_results_verify,
-                    content_type='application/octet-stream',
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
                     HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
@@ -299,10 +292,9 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
 
         # when
         with freeze_time(subtask_results_verify_time_str):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data=serialized_subtask_results_verify,
-                content_type='application/octet-stream',
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
                 HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
             )
@@ -332,10 +324,9 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
 
         # when
         with freeze_time(subtask_results_verify_time_str):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data=serialized_subtask_results_verify,
-                content_type='application/octet-stream',
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
                 HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
             )
@@ -365,10 +356,9 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         with mock.patch("core.message_handlers.bankster.claim_deposit", side_effect=self.claim_deposit_true_mock) as claim_deposit_mock:
             with mock.patch("core.queue_operations.blender_verification_request.delay") as send_verification_request_mock:
                 with freeze_time(subtask_results_verify_time_str):
-                    response = self.client.post(
-                        reverse('core:send'),
+                    response =self.send_request(
+                        url='core:send',
                         data=serialized_subtask_results_verify,
-                        content_type='application/octet-stream',
                         HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
                         HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                     )
@@ -462,10 +452,9 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                     subtask_results_rejected=subtask_results_rejected
                 )
             )
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data=serialized_subtask_results_verify,
-                content_type='application/octet-stream',
             )
 
         assert response.status_code == 200
@@ -490,10 +479,9 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             ]
         )
 
-        response_2 = self.client.post(
-            reverse('core:receive'),
+        response_2 =self.send_request(
+            url='core:receive',
             data         = self._create_requestor_auth_message(),
-            content_type = 'application/octet-stream',
         )
 
         self._test_response(
@@ -507,10 +495,9 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             }
         )
 
-        response_3 = self.client.post(
-            reverse('core:receive'),
+        response_3 =self.send_request(
+            url='core:receive',
             data=self._create_provider_auth_message(),
-            content_type='application/octet-stream',
         )
 
         self._test_response(
@@ -540,10 +527,9 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         with mock.patch("core.message_handlers.bankster.claim_deposit", autospec=True, side_effect=self.claim_deposit_true_mock):
             with mock.patch("core.message_handlers.send_blender_verification_request", autospec=True):
                 with freeze_time(subtask_results_verify_date_time):
-                    ack_subtask_results_verify = self.client.post(
-                        reverse('core:send'),
+                    ack_subtask_results_verify =self.send_request(
+                        url='core:send',
                         data=serialized_subtask_results_verify,
-                        content_type='application/octet-stream',
                     )
 
                     self._test_response(
@@ -555,16 +541,14 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
 
         too_late = subtask_results_verify_date_time + timedelta((self.compute_task_def['deadline'] - self.task_to_compute.timestamp))
         with freeze_time(too_late):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data=self._create_requestor_auth_message(),
-                content_type='application/octet-stream',
             )
 
-            response_3 = self.client.post(
-                reverse('core:receive'),
+            response_3 =self.send_request(
+                url='core:receive',
                 data=self._create_provider_auth_message(),
-                content_type='application/octet-stream',
             )
 
             # then

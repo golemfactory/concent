@@ -4,6 +4,7 @@ import pytest
 from assertpy import assert_that
 
 from django.conf import settings
+from django.http import HttpRequest
 from django.test import override_settings
 from django.test import TestCase
 
@@ -13,8 +14,9 @@ from golem_messages import helpers
 from core.exceptions import SceneFilePathError
 from core.tests.utils import ConcentIntegrationTestCase
 from core.utils import calculate_maximum_download_time
-from core.utils import extract_name_from_scene_file_path
 from core.utils import calculate_subtask_verification_time
+from core.utils import extract_name_from_scene_file_path
+from core.utils import is_given_golem_messages_version_supported_by_concent
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.testing_helpers import generate_ecc_key_pair
@@ -147,3 +149,29 @@ class TestExtractNameFromSceneFilePath():
     def test_that_function_should_raise_exception_when_could_not_find_golems_resource_path_to_cut_off(self, scene_file_path):
         with pytest.raises(SceneFilePathError):
             extract_name_from_scene_file_path(scene_file_path)
+
+
+class TestValidateCompatibilityGolemMessages:
+    @pytest.fixture(autouse=True)
+    def setUp(self):
+        self.request = HttpRequest()
+
+    @pytest.mark.parametrize('protocol_version', [
+        '2.15.0', '2.15.3', '2.15.15'
+    ])
+    def test_that_compatible_version_of_golem_message_should_return_true(self, protocol_version):
+        self.request.META['HTTP_X_Golem_Messages'] = protocol_version
+        with override_settings(
+            GOLEM_MESSAGES_VERSION='2.15.0',
+        ):
+            assert is_given_golem_messages_version_supported_by_concent(self.request)
+
+    @pytest.mark.parametrize('protocol_version', [
+        '1.15.0', '2.13.3', '2.16.15'
+    ])
+    def test_that_not_compatible_version_of_golem_message_should_return_false(self, protocol_version):
+        self.request.META['HTTP_X_Golem_Messages'] = protocol_version
+        with override_settings(
+            GOLEM_MESSAGES_VERSION='2.15.0',
+        ):
+            assert not is_given_golem_messages_version_supported_by_concent(self.request)

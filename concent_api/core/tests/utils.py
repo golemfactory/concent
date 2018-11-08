@@ -9,13 +9,13 @@ import functools
 import mock
 
 import dateutil.parser
-from numpy import ndarray
-
 from django.conf import settings
+from django.http import HttpResponse
+from django.http import HttpResponseNotAllowed
 from django.shortcuts import reverse
 from django.test import TestCase
 from freezegun import freeze_time
-
+from numpy import ndarray
 from golem_messages import dump
 from golem_messages import load
 from golem_messages import message
@@ -887,14 +887,13 @@ class ConcentIntegrationTestCase(TestCase):
         force_report_computed_task = message.concents.ForceReportComputedTask(
             report_computed_task = report_computed_task,
         )
-        return self.client.post(
-            reverse('core:send'),
+        return self.send_request(
+            url='core:send',
             data                                = dump(
                 force_report_computed_task,
                 self.PROVIDER_PRIVATE_KEY,
                 settings.CONCENT_PUBLIC_KEY
             ),
-            content_type                        = 'application/octet-stream',
         )
 
     def _assert_stored_message_counter_increased(self, increased_by = 1):
@@ -1054,3 +1053,18 @@ class ConcentIntegrationTestCase(TestCase):
     def _get_uuid(last_char: Optional[str] = None) -> str:
         assert last_char is None or (isinstance(last_char, str) and len(last_char) == 1)
         return generate_uuid(last_char)
+
+    def send_request(
+        self,
+        url: str,
+        data: Optional[bytes] = None,
+        golem_messages_version: Optional[str] = settings.GOLEM_MESSAGES_VERSION,
+        **kwargs,
+    ) -> Union[message.Message, dict, HttpResponseNotAllowed, HttpResponse, bytes, None]:
+        return self.client.post(
+            reverse(url),
+            data=data,
+            content_type='application/octet-stream',
+            HTTP_X_Golem_Messages=golem_messages_version,
+            **kwargs
+        )

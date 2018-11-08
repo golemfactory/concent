@@ -1,7 +1,6 @@
 import mock
 
 from django.test            import override_settings
-from django.urls            import reverse
 from freezegun              import freeze_time
 from golem_messages         import message
 
@@ -68,10 +67,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             side_effect=self.claim_deposit_true_mock
         ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
-                response = self.client.post(
-                    reverse('core:send'),
+                response =self.send_request(
+                    url='core:send',
                     data                                = serialized_force_subtask_results,
-                    content_type                        = 'application/octet-stream',
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
@@ -132,10 +130,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             side_effect=self.claim_deposit_true_mock
         ):
             with freeze_time("2018-02-05 10:00:31"):
-                response = self.client.post(
-                    reverse('core:send'),
+                response =self.send_request(
+                    url='core:send',
                     data=different_serialized_force_subtask_results,
-                    content_type='application/octet-stream',
                 )
 
         self._test_400_response(
@@ -155,10 +152,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             side_effect=self.claim_deposit_true_mock
         ):
             with freeze_time("2018-02-05 10:00:31"):
-                response = self.client.post(
-                    reverse('core:send'),
+                response =self.send_request(
+                    url='core:send',
                     data=serialized_force_subtask_results,
-                    content_type='application/octet-stream',
                 )
 
         self._test_response(
@@ -213,10 +209,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             side_effect=self.claim_deposit_true_mock
         ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:31"):
-                response = self.client.post(
-                    reverse('core:send'),
+                response =self.send_request(
+                    url='core:send',
                     data                                = serialized_force_subtask_results,
-                    content_type                        = 'application/octet-stream',
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
@@ -259,20 +254,18 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 2: Different requestor or provider does not receive forces subtask results via Concent with different or mixed key.
         with freeze_time("2018-02-05 10:00:29"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_diff_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_204_response(response)
         self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 10:00:29"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_provider_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_204_response(response)
@@ -280,10 +273,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 3: Requestor receives forces subtask results via Concent with correct key.
         with freeze_time("2018-02-05 10:00:29"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_response(
@@ -340,10 +332,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             side_effect=self.claim_deposit_true_mock
         ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
-                response = self.client.post(
-                    reverse('core:send'),
+                response =self.send_request(
+                    url='core:send',
                     data                                = serialized_force_subtask_results,
-                    content_type                        = 'application/octet-stream',
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
@@ -386,20 +377,18 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 2: Different requestor or provider does not receive forces subtask results via Concent with different or mixed key.
         with freeze_time("2018-02-05 10:00:24"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_diff_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_204_response(response)
         self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 10:00:24"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_provider_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_204_response(response)
@@ -407,10 +396,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 3: Requestor receives forces subtask results via Concent with correct key.
         with freeze_time("2018-02-05 10:00:24"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_response(
@@ -449,10 +437,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 10:00:44"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                                = serialized_force_subtask_results_response,
-                content_type                        = 'application/octet-stream',
             )
 
         self._test_400_response(
@@ -485,10 +472,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 10:00:44"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                                = serialized_force_subtask_results_response,
-                content_type                        = 'application/octet-stream',
             )
 
         self._test_400_response(
@@ -520,10 +506,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 10:00:44"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                                = serialized_force_subtask_results_response,
-                content_type                        = 'application/octet-stream',
             )
 
         self._test_400_response(
@@ -559,10 +544,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 10:00:44"):
-            self.client.post(
-                reverse('core:send'),
+            self.send_request(
+                url='core:send',
                 data                                = serialized_force_subtask_results_response,
-                content_type                        = 'application/octet-stream',
             )
 
         self._assert_stored_message_counter_increased()
@@ -597,20 +581,18 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 6: Different provider or requestor does not receive forces subtask results via Concent with different or mixed key.
         with freeze_time("2018-02-05 11:00:02"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_diff_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_204_response(response)
         self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 11:00:02"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_204_response(response)
@@ -618,10 +600,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 7: Provider does receives forces subtask results via Concent with correct key.
         with freeze_time("2018-02-05 11:00:02"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_provider_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_response(
@@ -683,10 +664,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             side_effect=self.claim_deposit_true_mock
         ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
-                response = self.client.post(
-                    reverse('core:send'),
+                response =self.send_request(
+                    url='core:send',
                     data                                = serialized_force_subtask_results,
-                    content_type                        = 'application/octet-stream',
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
@@ -729,20 +709,18 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 2: Different requestor or provider does not receive forces subtask results via Concent with different or mixed key.
         with freeze_time("2018-02-05 10:00:24"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data = self._create_diff_requestor_auth_message(),
-                content_type='application/octet-stream',
             )
 
         self._test_204_response(response)
         self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 10:00:24"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                           = self._create_provider_auth_message(),
-                content_type                   = 'application/octet-stream',
             )
 
         self._test_204_response(response)
@@ -750,10 +728,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 3: Requestor receives forces subtask results via Concent with correct key.
         with freeze_time("2018-02-05 10:00:24"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_response(
@@ -792,10 +769,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 10:00:44"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                                = serialized_force_subtask_results_response,
-                content_type                        = 'application/octet-stream',
             )
 
         self._test_400_response(
@@ -828,10 +804,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 10:00:44"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                                = serialized_force_subtask_results_response,
-                content_type                        = 'application/octet-stream',
             )
 
         self._test_400_response(
@@ -863,10 +838,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 10:00:44"):
-            response = self.client.post(
-                reverse('core:send'),
+            response =self.send_request(
+                url='core:send',
                 data                                = serialized_force_subtask_results_response,
-                content_type                        = 'application/octet-stream',
             )
 
         self._test_400_response(
@@ -902,10 +876,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 10:00:44"):
-            self.client.post(
-                reverse('core:send'),
+            self.send_request(
+                url='core:send',
                 data                                = serialized_force_subtask_results_response,
-                content_type                        = 'application/octet-stream',
             )
 
         self._assert_stored_message_counter_increased(increased_by=1)
@@ -940,20 +913,18 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 6: Different provider or requestor does not receive forces subtask results via Concent with different or mixed key.
         with freeze_time("2018-02-05 11:00:02"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_diff_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_204_response(response)
         self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 11:00:02"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_204_response(response)
@@ -961,10 +932,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 7: Provider does receives forces subtask results via Concent with correct key.
         with freeze_time("2018-02-05 11:00:02"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_provider_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_response(
@@ -1023,10 +993,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             side_effect=self.claim_deposit_true_mock
         ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
-                response = self.client.post(
-                    reverse('core:send'),
+                response =self.send_request(
+                    url='core:send',
                     data                                = serialized_force_subtask_results,
-                    content_type                        = 'application/octet-stream',
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
@@ -1069,20 +1038,18 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 2: Different requestor or provider does not receive forces subtask results via Concent with different or mixed key.
         with freeze_time("2018-02-05 10:00:24"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_diff_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_204_response(response)
         self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 10:00:24"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_provider_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_204_response(response)
@@ -1090,10 +1057,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 3: Requestor receives forces subtask results via Concent with correct key.
         with freeze_time("2018-02-05 10:00:24"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
         self._test_response(
             response,
@@ -1110,10 +1076,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 4: Different provider does not receive subtask result settled via Concent with different key.
         with freeze_time("2018-02-05 10:00:48"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data=self._create_diff_provider_auth_message(),
-                content_type='application/octet-stream',
             )
 
         self._test_204_response(response)
@@ -1121,10 +1086,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 5: Provider receives subtask result settled via Concent with correct key.
         with freeze_time("2018-02-05 10:00:50"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data=self._create_provider_auth_message(),
-                content_type='application/octet-stream',
             )
 
         self._test_response(
@@ -1157,20 +1121,18 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 6: Different requestor does not receive subtask result settled via Concent with different key.
         with freeze_time("2018-02-05 10:00:51"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_diff_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
         self._test_204_response(response)
         self._assert_stored_message_counter_not_increased()
 
         # STEP 7: Requestor receives subtask result settled via Concent with correct key.
         with freeze_time("2018-02-05 10:00:51"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
         self._test_response(
             response,
@@ -1225,10 +1187,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             side_effect=self.claim_deposit_true_mock
         ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
-                response = self.client.post(
-                    reverse('core:send'),
+                response =self.send_request(
+                    url='core:send',
                     data=serialized_force_subtask_results,
-                    content_type='application/octet-stream',
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
@@ -1271,19 +1232,17 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 2: Different requestor or provider does not receive forces subtask results via Concent with different or mixed key.
         with freeze_time("2018-02-05 10:00:24"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_diff_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_204_response(response)
 
         with freeze_time("2018-02-05 10:00:24"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_provider_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_204_response(response)
@@ -1291,10 +1250,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 3: Requestor receives forces subtask results via Concent with correct key.
         with freeze_time("2018-02-05 10:00:24"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
         self._test_response(
             response,
@@ -1311,20 +1269,18 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 4: Different provider does not receive subtask result settled via Concent with different key.
         with freeze_time("2018-02-05 10:00:51"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_diff_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
         self._test_204_response(response)
         self._assert_stored_message_counter_not_increased()
 
         # STEP 5: Provider receives subtask result settled via Concent with correct key.
         with freeze_time("2018-02-05 10:00:51"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
         self._test_response(
             response,
@@ -1355,10 +1311,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 6: Different requestor does not receive subtask result settled via Concent with different key.
         with freeze_time("2018-02-05 10:00:51"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data=self._create_diff_requestor_auth_message(),
-                content_type='application/octet-stream',
             )
 
         claim_deposit_true_mock_function.assert_called_with(
@@ -1373,10 +1328,9 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 7: Requestor receives subtask result settled via Concent with correct key.
         with freeze_time("2018-02-05 10:00:51"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data=self._create_provider_auth_message(),
-                content_type='application/octet-stream',
             )
 
         self._test_response(

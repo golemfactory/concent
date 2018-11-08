@@ -58,8 +58,9 @@ class GolemMessagesVersionMiddlewareTest(TestCase):
 
         response = self.client.post(
             reverse('core:send'),
-            data                           = serialized_ping_message,
-            content_type                   = 'application/octet-stream',
+            data=serialized_ping_message,
+            content_type='application/octet-stream',
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
 
         self.assertFalse(500 <= response.status_code < 600)
@@ -93,8 +94,9 @@ class ConcentVersionMiddlewareTest(TestCase):
         with mock.patch('concent_api.middleware.ConcentVersionMiddleware._concent_version', '1.0'):
             response = self.client.post(
                 reverse('core:send'),
-                data                           = serialized_ping_message,
-                content_type                   = 'application/octet-stream',
+                data=serialized_ping_message,
+                content_type='application/octet-stream',
+                HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
             )
 
         self.assertFalse(500 <= response.status_code < 600)
@@ -133,6 +135,7 @@ class HandleServerErrorMiddlewareTest(ConcentIntegrationTestCase):
             reverse('core:receive'),
             data=self._create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY),
             content_type='application/octet-stream',
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
         self.assertEqual(response.status_code, 204)
 
@@ -143,6 +146,7 @@ class HandleServerErrorMiddlewareTest(ConcentIntegrationTestCase):
             reverse('core:receive'),
             data=serialized_ping_message,
             content_type='application/octet-stream',
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
         self.assertEqual(response.status_code, 400)
 
@@ -152,6 +156,7 @@ class HandleServerErrorMiddlewareTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data=self._create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY),
                 content_type='application/octet-stream',
+                HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
             )
             loaded_json = json.loads(response.content)
             self._assert_proper_internal_server_error_received(
@@ -172,6 +177,7 @@ class HandleServerErrorMiddlewareTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data=self._create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY),
                 content_type='application/octet-stream',
+                HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
             )
             loaded_json = json.loads(response.content)
             self._assert_proper_internal_server_error_received(
@@ -193,6 +199,7 @@ class HandleServerErrorMiddlewareTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data=self._create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY),
                 content_type='application/octet-stream',
+                HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
             )
             loaded_json = json.loads(response.content)
             self._assert_proper_internal_server_error_received(
@@ -213,6 +220,7 @@ class HandleServerErrorMiddlewareTest(ConcentIntegrationTestCase):
                 reverse('core:receive'),
                 data=self._create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY),
                 content_type='application/octet-stream',
+                HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
             )
             loaded_json = json.loads(response.content)
             self._assert_proper_internal_server_error_received(
@@ -231,6 +239,7 @@ class HandleServerErrorMiddlewareTest(ConcentIntegrationTestCase):
                 data=self._create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY),
                 content_type='application/octet-stream',
                 HTTP_ACCEPT="text/html",
+                HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
             )
 
             self.assertEqual(response.status_code, 500)
@@ -244,6 +253,7 @@ class HandleServerErrorMiddlewareTest(ConcentIntegrationTestCase):
                 data=self._create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY),
                 content_type='application/octet-stream',
                 HTTP_ACCEPT="applicati;q=-7on/json",
+                HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
             )
 
             self.assertEqual(response.status_code, 406)
@@ -260,6 +270,7 @@ class HandleServerErrorMiddlewareTest(ConcentIntegrationTestCase):
                 data=self._create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY),
                 content_type='application/octet-stream',
                 HTTP_ACCEPT="text/html",
+                HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
             )
 
             self.assertEqual(response.status_code, 500)

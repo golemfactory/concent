@@ -1,7 +1,6 @@
 import mock
 
 from django.test import override_settings
-from django.urls import reverse
 from freezegun import freeze_time
 from golem_messages import message
 from golem_messages.shortcuts import dump
@@ -70,10 +69,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             side_effect=self.claim_deposit_true_mock
         ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
-                response_1 = self.client.post(
-                    reverse('core:send'),
+                response_1 =self.send_request(
+                    url='core:send',
                     data                                = serialized_force_subtask_results,
-                    content_type                        = 'application/octet-stream',
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
@@ -121,10 +119,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             side_effect=self.claim_deposit_true_mock
         ):
             with freeze_time("2018-02-05 10:00:31"):
-                response_2 = self.client.post(
-                    reverse('core:send'),
+                response_2 =self.send_request(
+                    url='core:send',
                     data                                = serialized_force_subtask_results,
-                    content_type                        = 'application/octet-stream',
                 )
 
         self._test_response(
@@ -170,10 +167,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             return_value=[False, True]
         ) as claim_deposit_false_mock_function:
             with freeze_time("2018-02-05 10:00:35"):
-                response_1 = self.client.post(
-                    reverse('core:send'),
+                response_1 =self.send_request(
+                    url='core:send',
                     data                                = serialized_force_subtask_results,
-                    content_type                        = 'application/octet-stream',
                 )
 
         claim_deposit_false_mock_function.assert_called_with(
@@ -233,10 +229,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             side_effect=self.claim_deposit_true_mock
         ) as claim_deposit_true_mock_function:
             with freeze_time("2018-03-05 10:00:24"):
-                response_1 = self.client.post(
-                    reverse('core:send'),
+                response_1 =self.send_request(
+                    url='core:send',
                     data                                = serialized_force_subtask_results,
-                    content_type                        = 'application/octet-stream',
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
@@ -279,10 +274,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             side_effect=self.claim_deposit_true_mock
         ) as claim_deposit_true_mock_function:
             with freeze_time("2018-03-05 10:00:40"):
-                response_2 = self.client.post(
-                    reverse('core:send'),
+                response_2 =self.send_request(
+                    url='core:send',
                     data                                = serialized_force_subtask_results,
-                    content_type                        = 'application/octet-stream',
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
@@ -342,10 +336,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             side_effect=self.claim_deposit_true_mock
         ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:31"):
-                response_1 = self.client.post(
-                    reverse('core:send'),
+                response_1 =self.send_request(
+                    url='core:send',
                     data                                = serialized_force_subtask_results,
-                    content_type                        = 'application/octet-stream',
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
@@ -387,10 +380,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 10:00:29"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
         self._test_response(
             response_2,
@@ -444,10 +436,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             side_effect=self.claim_deposit_true_mock
         ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:31"):
-                response_1 = self.client.post(
-                    reverse('core:send'),
+                response_1 =self.send_request(
+                    url='core:send',
                     data                                = serialized_force_subtask_results,
-                    content_type                        = 'application/octet-stream',
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
@@ -489,10 +480,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 11:00:00"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
         self._test_response(
             response_2,
@@ -520,10 +510,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 11:00:01"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_provider_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
         self._test_response(
             response,
@@ -538,10 +527,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 11:00:01"):
-            response = self.client.post(
-                reverse('core:receive'),
+            response =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
         self._test_response(
             response,
@@ -589,10 +577,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             side_effect=self.claim_deposit_true_mock
         ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
-                response_1 = self.client.post(
-                    reverse('core:send'),
+                response_1 =self.send_request(
+                    url='core:send',
                     data                                = serialized_force_subtask_results,
-                    content_type                        = 'application/octet-stream',
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
@@ -634,10 +621,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 10:00:44"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_response(
@@ -664,10 +650,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 10:00:44"):
-            self.client.post(
-                reverse('core:send'),
+            self.send_request(
+                url='core:send',
                 data                                = serialized_force_subtask_results_response,
-                content_type                        = 'application/octet-stream',
             )
 
         self._assert_stored_message_counter_increased(increased_by = 1)
@@ -701,10 +686,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 11:00:02"):
-            response_3 = self.client.post(
-                reverse('core:receive'),
+            response_3 =self.send_request(
+                url='core:receive',
                 data                            = self._create_provider_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_response(
@@ -763,10 +747,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             side_effect=self.claim_deposit_true_mock
         ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
-                response_1 = self.client.post(
-                    reverse('core:send'),
+                response_1 =self.send_request(
+                    url='core:send',
                     data=serialized_force_subtask_results,
-                    content_type='application/octet-stream',
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
@@ -807,10 +790,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 10:00:44"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_response(
@@ -837,10 +819,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 10:00:44"):
-            self.client.post(
-                reverse('core:send'),
+            self.send_request(
+                url='core:send',
                 data                                = serialized_force_subtask_results_response,
-                content_type                        = 'application/octet-stream',
             )
 
         self._assert_stored_message_counter_increased(increased_by=1)
@@ -874,10 +855,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 11:00:02"):
-            response_3 = self.client.post(
-                reverse('core:receive'),
+            response_3 =self.send_request(
+                url='core:receive',
                 data                            = self._create_provider_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_response(
@@ -925,10 +905,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 11:00:01"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_subtask_results_response,
-                content_type                        = 'application/octet-stream',
             )
 
         self._test_400_response(
@@ -966,10 +945,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 11:00:01"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                            = serialized_force_subtask_results_response,
-                content_type                    = 'application/octet-stream',
             )
 
         self._test_400_response(
@@ -1004,10 +982,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-03-05 10:00:30"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_subtask_results,
-                content_type                        = 'application/octet-stream',
             )
 
         self._test_400_response(response_1)
@@ -1025,10 +1002,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-03-05 10:00:40"):
-            response_2 = self.client.post(
-                reverse('core:send'),
+            response_2 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_subtask_results,
-                content_type                        = 'application/octet-stream',
             )
 
         self._test_400_response(response_2)
@@ -1077,10 +1053,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             side_effect=self.claim_deposit_true_mock
         ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
-                response_1 = self.client.post(
-                    reverse('core:send'),
+                response_1 =self.send_request(
+                    url='core:send',
                     data                                = serialized_force_subtask_results,
-                    content_type                        = 'application/octet-stream',
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
@@ -1140,10 +1115,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 11:00:00"):
-            response_2 = self.client.post(
-                reverse('core:send'),
+            response_2 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_subtask_results_response,
-                content_type                        = 'application/octet-stream',
             )
 
         self._test_400_response(response_2)
@@ -1169,10 +1143,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 11:00:00"):
-            response_3 = self.client.post(
-                reverse('core:send'),
+            response_3 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_subtask_results_response,
-                content_type                        = 'application/octet-stream',
             )
 
         self._test_400_response(response_3)
@@ -1197,10 +1170,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 11:00:00"):
-            response_4 = self.client.post(
-                reverse('core:send'),
+            response_4 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_subtask_results_response,
-                content_type                        = 'application/octet-stream',
             )
 
         self._test_400_response(response_4)
@@ -1225,10 +1197,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 11:00:00"):
-            response_5 = self.client.post(
-                reverse('core:send'),
+            response_5 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_subtask_results_response,
-                content_type                        = 'application/octet-stream',
             )
 
         self._test_400_response(response_5)
@@ -1260,10 +1231,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             )
 
         with freeze_time("2018-02-05 10:00:30"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                                = serialized_force_subtask_results,
-                content_type                        = 'application/octet-stream',
             )
 
         self._test_400_response(response_1)
@@ -1307,10 +1277,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             side_effect=self.claim_deposit_true_mock
         ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
-                response_1 = self.client.post(
-                    reverse('core:send'),
+                response_1 =self.send_request(
+                    url='core:send',
                     data                                = serialized_force_subtask_results,
-                    content_type                        = 'application/octet-stream',
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
@@ -1352,10 +1321,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 10:00:31"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
         self._test_response(
             response_2,
@@ -1371,10 +1339,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 10:00:51"):
-            response_3a = self.client.post(
-                reverse('core:receive'),
+            response_3a =self.send_request(
+                url='core:receive',
                 data=self._create_provider_auth_message(),
-                content_type='application/octet-stream',
             )
 
         claim_deposit_true_mock_function.assert_called_with(
@@ -1414,20 +1381,18 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 10:00:52"):
-            response_3b = self.client.post(
-                reverse('core:receive'),
+            response_3b =self.send_request(
+                url='core:receive',
                 data=self._create_provider_auth_message(),
-                content_type='application/octet-stream',
             )
 
         self._test_204_response(response_3b)
         self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 10:00:51"):
-            response_4a = self.client.post(
-                reverse('core:receive'),
+            response_4a =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
         self._test_response(
             response_4a,
@@ -1442,10 +1407,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 10:00:52"):
-            response_4b = self.client.post(
-                reverse('core:receive'),
+            response_4b =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
         self._test_204_response(response_4b)
         self._assert_stored_message_counter_not_increased()
@@ -1487,10 +1451,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             side_effect=self.claim_deposit_true_mock
         ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
-                response_1 = self.client.post(
-                    reverse('core:send'),
+                response_1 =self.send_request(
+                    url='core:send',
                     data                                = serialized_force_subtask_results,
-                    content_type                        = 'application/octet-stream',
                 )
 
         claim_deposit_true_mock_function.assert_called_with(
@@ -1532,10 +1495,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 10:00:31"):
-            response_2 = self.client.post(
-                reverse('core:receive'),
+            response_2 =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
         self._test_response(
             response_2,
@@ -1551,10 +1513,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 10:00:51"):
-            response_3 = self.client.post(
-                reverse('core:receive'),
+            response_3 =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
         self._test_response(
             response_3,
@@ -1585,10 +1546,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 10:00:51"):
-            response_4 = self.client.post(
-                reverse('core:receive'),
+            response_4 =self.send_request(
+                url='core:receive',
                 data=self._create_provider_auth_message(),
-                content_type='application/octet-stream',
             )
 
         self._test_response(
@@ -1604,10 +1564,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 10:00:52"):
-            response_5 = self.client.post(
-                reverse('core:receive'),
+            response_5 =self.send_request(
+                url='core:receive',
                 data                            = self._create_requestor_auth_message(),
-                content_type                    = 'application/octet-stream',
             )
         self._test_204_response(response_5)
         self._assert_stored_message_counter_not_increased()
@@ -1654,8 +1613,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 task_to_compute=task_to_compute,
             ),
         )
-        subtask.state = Subtask.SubtaskState.FORCING_ACCEPTANCE.name  # pylint: disable=no-member,
-        subtask.save()  # full_clean() is omitted here on purpose
+        subtask.full_clean()
+        subtask.save()
 
         self._assert_stored_message_counter_increased(increased_by=4)
 
@@ -1670,10 +1629,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 11:00:02"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data=serialized_force_subtask_results_response,
-                content_type='application/octet-stream',
             )
 
         self._test_400_response(
@@ -1696,10 +1654,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 11:00:02"):
-            response_2 = self.client.post(
-                reverse('core:send'),
+            response_2 =self.send_request(
+                url='core:send',
                 data=serialized_force_subtask_results_response,
-                content_type='application/octet-stream',
             )
 
         self._test_400_response(
@@ -1750,8 +1707,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 report_computed_task=deserialized_force_subtask_results.ack_report_computed_task.report_computed_task,  # pylint: disable=no-member,,
             ),
         )
-        subtask.state = Subtask.SubtaskState.FORCING_ACCEPTANCE.name  # pylint: disable=no-member,
-        subtask.save()  # full_clean() is omitted here on purpose
+        subtask.full_clean()
+        subtask.save()
 
         self._assert_stored_message_counter_increased(increased_by=4)
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
@@ -1765,10 +1722,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 11:00:02"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data=serialized_force_subtask_results_response,
-                content_type='application/octet-stream',
             )
         self._test_400_response(
             response_1,
@@ -1790,10 +1746,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 11:00:02"):
-            response_2 = self.client.post(
-                reverse('core:send'),
+            response_2 =self.send_request(
+                url='core:send',
                 data=serialized_force_subtask_results_response,
-                content_type='application/octet-stream',
             )
 
         self._test_400_response(
@@ -1819,10 +1774,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 11:00:02"):
-            response_1 = self.client.post(
-                reverse('core:send'),
+            response_1 =self.send_request(
+                url='core:send',
                 data                           = serialized_force_subtask_results_response,
-                content_type                   = 'application/octet-stream',
             )
 
         self._test_400_response(

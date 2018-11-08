@@ -1047,6 +1047,6 @@ class ConcentIntegrationTestCase(TestCase):
             reverse(url),
             data=data,
             content_type='application/octet-stream',
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=golem_messages_version,
+            HTTP_X_Golem_Messages=golem_messages_version,
             **kwargs
         )

@@ -53,7 +53,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             content_type='application/octet-stream',
             HTTP_AUTHORIZATION = 'Golem ' + encoded_token,
             HTTP_CONCENT_AUTH=self.header_concent_auth,
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
 
         self.assertIsInstance(response, JsonResponse)
@@ -74,7 +74,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             HTTP_AUTHORIZATION = 'Golem ' + encoded_token,
             HTTP_CONCENT_AUTH=self.header_concent_auth,
             content_type = '',
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
 
         self.assertIsInstance(response, JsonResponse)
@@ -95,7 +95,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             HTTP_AUTHORIZATION = 'Golem ' + encoded_token,
             HTTP_CONCENT_AUTH=self.header_concent_auth,
             content_type = 'application/x-www-form-urlencoded',
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
 
         self.assertIsInstance(response, JsonResponse)
@@ -130,7 +130,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
             HTTP_CONCENT_AUTH=self.header_concent_auth,
             content_type                   = 'application/x-www-form-urlencoded',
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
 
         self.assertIsInstance(response, JsonResponse)
@@ -177,7 +177,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
                 HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
                 HTTP_CONCENT_AUTH=self.header_concent_auth,
                 content_type                   = 'application/x-www-form-urlencoded',
-                HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+                HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
             )
 
             self.assertIsInstance(response, JsonResponse)
@@ -222,7 +222,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
                 HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
                 HTTP_CONCENT_AUTH=self.header_concent_auth,
                 content_type                   = 'application/x-www-form-urlencoded',
-                HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+                HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
             )
 
             self.assertIsInstance(response, JsonResponse)
@@ -259,7 +259,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
                 HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
                 HTTP_CONCENT_AUTH=self.header_concent_auth,
                 content_type                   = 'application/x-www-form-urlencoded',
-                HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+                HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
             )
 
             self.assertIsInstance(response, JsonResponse)
@@ -296,7 +296,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
                 HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
                 HTTP_CONCENT_AUTH=self.header_concent_auth,
                 content_type                   = 'application/x-www-form-urlencoded',
-                HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+                HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
             )
 
             self.assertIsInstance(response, JsonResponse)
@@ -320,7 +320,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             HTTP_AUTHORIZATION             = 'Golem D6UAAAAAWoG9YgGsJib/zgj2cAHGXunyxI7t2NYnHKPvrdzVkdT/B58TpQHpdfonuWy8sWq9nrpc9+/1nUTm8O9szLOrFrCPKL7hAQRWLO4JCR6cVGILFbqRKX6abR1AKMLqRUa/ucH5t0YrLe/OPEp6+2swgbRgcnu0dlvfaupn9bwRPZhjVc2hJlDlkz+7aRx+NDEFWQeRHt3q7b8vA0xd/UUvPGudSnzGR6DaM1+Ji4PifQ7AUdYkQHmRNP4yZH+xjCq706J8mftrySj2geoP+TLKZFgpqHhng5I9v0xKpjOnZk9MRTWkzPyxIMwl535ZVLte0J5VRIIaZFEyYFRXgZGVyGinnEIfXZKZdUdRpRELUBK086A/w4aG3shpEPXEzfo42hjdrDEfyx5bZTANyrGwj1hTLKPoVaPMN9wb3MdQ1D1B5Os3+5YdfASnQRZfZmaEJqNAHNlZveLHpA2DcPFNvltcwUy3Jj1gTI43IbbuXNsIXhMKgNaZrNgJKKpQpc+qF9D7CwfugtiD6y/g71UrrUgvVIcZ9UXVTu5OJg2agGiaIvRWrGxfhyzv/HyHR530p7fNTt/dJBCDO55Mx3uhxA/XGYxmz2uk/xIQMR8QU7Cc/tOdvzdHJ+WHhNBo2fe5oLk03AXIhpqOOgJb8nnM',
             HTTP_CONCENT_AUTH=self.header_concent_auth,
             content_type                   = 'application/x-www-form-urlencoded',
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
 
         self.assertIsInstance(response, JsonResponse)
@@ -353,7 +353,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             HTTP_AUTHORIZATION             = 'Golem ' + encoded_token,
             HTTP_CONCENT_AUTH=self.header_concent_auth,
             content_type                   = 'application/x-www-form-urlencoded',
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
 
         self.assertIsInstance(response, JsonResponse)
@@ -388,7 +388,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             HTTP_AUTHORIZATION='Golem ' + encoded_token,
             HTTP_CONCENT_AUTH=self.header_concent_auth,
             content_type='application/x-www-form-urlencoded',
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION=settings.GOLEM_MESSAGES_VERSION,
+            HTTP_X_Golem_Messages=settings.GOLEM_MESSAGES_VERSION,
         )
 
         self.assertIsInstance(response, JsonResponse)
@@ -410,7 +410,7 @@ class GatekeeperViewUploadTest(ConcentIntegrationTestCase):
             HTTP_AUTHORIZATION='Golem ' + encoded_token,
             HTTP_CONCENT_AUTH=self.header_concent_auth,
             content_type='application/x-www-form-urlencoded',
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION='1.11.1',
+            HTTP_X_Golem_Messages='1.11.1',
         )
 
         self.assertIsInstance(response, JsonResponse)
@@ -799,7 +799,7 @@ class GatekeeperViewDownloadTest(ConcentIntegrationTestCase):
             HTTP_AUTHORIZATION='Golem ' + encoded_token,
             HTTP_CONCENT_AUTH=self.header_concent_auth,
             content_type='application/x-www-form-urlencoded',
-            HTTP_CONCENT_GOLEM_MESSAGES_VERSION='1.11.1',
+            HTTP_X_Golem_Messages='1.11.1',
         )
 
         self.assertIsInstance(response, JsonResponse)

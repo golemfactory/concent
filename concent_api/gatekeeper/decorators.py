@@ -24,7 +24,7 @@ def validate_protocol_version_in_gatekeeper(view: Callable) -> Callable:
         if not is_given_golem_messages_version_supported_by_concent(request=request):
             log(
                 logger,
-                f'Wrong version of golem messages. Clients version is {request.META["HTTP_CONCENT_GOLEM_MESSAGES_VERSION"]}, '
+                f'Wrong version of golem messages. Clients version is {request.META["HTTP_X_Golem_Messages"]}, '
                 f'Concent version is {settings.GOLEM_MESSAGES_VERSION}.',
             )
             return gatekeeper_access_denied_response(

@@ -13,7 +13,6 @@ import datetime
 import http.client
 import json
 import requests
-import sys
 
 from freezegun import freeze_time
 
@@ -266,17 +265,6 @@ def create_client_auth_message(client_priv_key: bytes, client_public_key: bytes,
     client_auth = ClientAuthorization()
     client_auth.client_public_key = client_public_key
     return dump(client_auth, client_priv_key, concent_public_key)
-
-
-def parse_command_line(command_line: list) -> str:
-    if len(command_line) <= 1:
-        sys.exit('Not enough arguments')
-
-    if len(command_line) >= 3:
-        sys.exit('Too many arguments')
-
-    cluster_url = command_line[1]
-    return cluster_url
 
 
 def parse_arguments() -> Tuple:

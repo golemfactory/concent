@@ -1,7 +1,7 @@
 from assertpy import assert_that
 
 from core.constants import REGEX_FOR_VALID_UUID
-from core.tests.utils import generate_uuid
+from core.utils import generate_uuid
 
 
 class TestRegexForValidUUID:

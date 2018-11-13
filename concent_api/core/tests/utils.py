@@ -1,5 +1,3 @@
-import random
-import uuid
 from base64 import b64encode
 from typing import List
 from typing import Optional
@@ -55,6 +53,7 @@ from core.models import StoredMessage
 from core.models import Subtask
 from core.utils import calculate_concent_verification_time
 from core.utils import calculate_maximum_download_time
+from core.utils import generate_uuid
 
 
 def get_timestamp_string() -> str:
@@ -69,18 +68,6 @@ def add_time_offset_to_date(base_time: str, offset: int) -> str:
     return parse_timestamp_to_utc_datetime(parse_iso_date_to_timestamp(base_time) + offset).strftime(
         '%Y-%m-%d %H:%M:%S'
     )
-
-
-def generate_uuid(last_char: Optional[str] = None) -> str:
-    random.seed(0)
-    random_bits = "%32x" % random.getrandbits(128)
-    # for UUID4 not all bits are random, see: en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_.28random.29
-    string_for_uuid = random_bits[:12] + '4' + random_bits[13:16] + 'a' + random_bits[17:]
-    generated = str(uuid.UUID(string_for_uuid))
-    if last_char is not None:
-        assert len(last_char) == 1
-        return generated[:-1] + last_char
-    return generated
 
 
 class ConcentIntegrationTestCase(TestCase):

@@ -11,7 +11,7 @@ from common.shortcuts import load_without_public_key
 from common.testing_helpers import generate_ecc_key_pair
 
 from core.exceptions import Http400
-from core.tests.utils import generate_uuid
+from core.utils import generate_uuid
 from core.validation import validate_that_golem_messages_are_signed_with_key
 from core.validation import validate_all_messages_identical
 

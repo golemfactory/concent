@@ -13,7 +13,7 @@ import pytest
 
 from common.constants import ErrorCode
 from core.constants import VerificationResult
-from core.tests.utils import generate_uuid
+from core.utils import generate_uuid
 from verifier.exceptions import VerificationError
 from verifier.exceptions import VerificationMismatch
 from verifier.utils import adjust_format_name

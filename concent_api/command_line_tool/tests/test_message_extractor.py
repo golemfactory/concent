@@ -9,7 +9,7 @@ from assertpy import assert_that
 from command_line_tool.message_extractor import convert_message_name
 from command_line_tool.message_extractor import MessageExtractor
 from command_line_tool.message_extractor import split_uppercase
-from core.tests.utils import generate_uuid
+from core.utils import generate_uuid
 
 
 class TestSplitUppercase(TestCase):

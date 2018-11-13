@@ -1,6 +1,9 @@
 import datetime
 import math
+import random
+import uuid
 from logging import getLogger
+from typing import Optional
 
 from django.conf import settings
 from django.http import HttpRequest
@@ -140,3 +143,15 @@ def is_given_golem_messages_version_supported_by_concent(
         if not is_protocol_version_compatible(golem_message_version):
             return False
         return True
+
+
+def generate_uuid(last_char: Optional[str] = None) -> str:
+    random.seed(0)
+    random_bits = "%32x" % random.getrandbits(128)
+    # for UUID4 not all bits are random, see: en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_.28random.29
+    string_for_uuid = random_bits[:12] + '4' + random_bits[13:16] + 'a' + random_bits[17:]
+    generated = str(uuid.UUID(string_for_uuid))
+    if last_char is not None:
+        assert len(last_char) == 1
+        return generated[:-1] + last_char
+    return generated

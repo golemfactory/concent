@@ -29,7 +29,7 @@ from core.exceptions import Http400
 from core.message_handlers import store_subtask
 from core.models import Client
 from core.models import Subtask
-from core.tests.utils import generate_uuid
+from core.utils import generate_uuid
 from core.utils import hex_to_bytes_convert
 
 (CONCENT_PRIVATE_KEY,   CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()

@@ -27,7 +27,7 @@ from core.exceptions import NonPositivePriceTaskToComputeError
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
 from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
 from core.tests.utils import ConcentIntegrationTestCase
-from core.tests.utils import generate_uuid
+from core.utils import generate_uuid
 from core.validation import validate_all_messages_identical
 from core.validation import validate_compute_task_def
 from core.validation import validate_ethereum_addresses

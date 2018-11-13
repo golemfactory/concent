@@ -1039,7 +1039,7 @@ class ConcentIntegrationTestCase(TestCase):
     @staticmethod
     def _get_uuid(last_char: Optional[str] = None) -> str:
         assert last_char is None or (isinstance(last_char, str) and len(last_char) == 1)
-        return generate_uuid(last_char)
+        return generate_uuid_for_tests()
 
     def send_request(
         self,
@@ -1055,3 +1055,11 @@ class ConcentIntegrationTestCase(TestCase):
             HTTP_X_Golem_Messages=golem_messages_version,
             **kwargs
         )
+
+
+def generate_uuid_for_tests(last_char: Optional[str] = None):
+    generated = generate_uuid(seed=0)
+    if last_char is not None:
+        assert len(last_char) == 1
+        return generated[:-1] + last_char
+    return generated

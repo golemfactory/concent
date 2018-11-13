@@ -13,6 +13,7 @@ from golem_messages.helpers import subtask_verification_time
 from golem_messages.utils import decode_hex
 
 from common.constants import ErrorCode
+from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from core.exceptions import Http400
 from core.exceptions import SceneFilePathError
@@ -145,13 +146,12 @@ def is_given_golem_messages_version_supported_by_concent(
         return True
 
 
-def generate_uuid(last_char: Optional[str] = None) -> str:
-    random.seed(0)
+def generate_uuid(seed: Optional[int] = None) -> str:
+    if seed is None:
+        seed = get_current_utc_timestamp()
+    random.seed(seed)
     random_bits = "%32x" % random.getrandbits(128)
     # for UUID4 not all bits are random, see: en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_.28random.29
     string_for_uuid = random_bits[:12] + '4' + random_bits[13:16] + 'a' + random_bits[17:]
     generated = str(uuid.UUID(string_for_uuid))
-    if last_char is not None:
-        assert len(last_char) == 1
-        return generated[:-1] + last_char
     return generated

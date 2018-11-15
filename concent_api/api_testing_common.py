@@ -13,7 +13,6 @@ import datetime
 import http.client
 import json
 import requests
-import sys
 
 from freezegun import freeze_time
 
@@ -153,15 +152,35 @@ def validate_content_type(actual_content_type: str, expected_content_type: Optio
         )
 
 
+def validate_golem_version(actual_golem_version: str, expected_golem_version: str) -> None:
+    assert_condition(
+        '.'.join(actual_golem_version.split('.')[:-1]),
+        '.'.join(expected_golem_version.split('.')[:-1]),
+        f"Expected Golem Message version: {'.'.join(expected_golem_version.split('.')[:-1])}.X, "
+        f"actual version: {actual_golem_version}"
+    )
+
+
+def validate_error_code(actual_error_code: str, expected_error_code: str) -> None:
+    assert_condition(
+        actual_error_code,
+        expected_error_code,
+        f"Expected error code: {expected_error_code}, actual error: {actual_error_code}"
+    )
+
+
 def api_request(
     host: str,
     endpoint: str,
     private_key: bytes,
     public_key: bytes,
     data: Optional[Message]=None,
+    headers: Optional[dict]=None,
     expected_status: Optional[int]=None,
     expected_message_type: Optional[Message]=None,
-    expected_content_type: Optional[str]=None
+    expected_content_type: Optional[str]=None,
+    expected_golem_version: Optional[str]=None,
+    expected_error_code: Optional[str]=None,
 ) -> Union[None, Message]:
     def _prepare_data(data: Optional[Union[bytes, str]]=None) -> Union[str, bytes]:
         if data is None:
@@ -185,21 +204,26 @@ def api_request(
             print('SEND ({})'.format(url))
             print('MESSAGE:')
             print_golem_message(data)
-
+    if headers is None:
+        headers = REQUEST_HEADERS
+        if expected_golem_version is not None:
+            headers['X-Golem-Messages'] = expected_golem_version
     assert all(value not in ['', None] for value in [endpoint, host, REQUEST_HEADERS])
     url = "{}/api/v1/{}/".format(host, endpoint)
-
     _print_data(data, url)
-    response = requests.post("{}".format(url), headers=REQUEST_HEADERS, data=_prepare_data(data), verify=False)
+    response = requests.post("{}".format(url), headers=headers, data=_prepare_data(data), verify=False)
     _print_response(private_key, public_key, response)
     validate_response_status(response.status_code, expected_status)
     validate_content_type(response.headers['Content-Type'], expected_content_type)
     validate_response_message(response.content, expected_message_type, private_key, public_key)
+    if expected_golem_version is not None and 'Concent-Golem-Messages-Version' in response.headers:
+        validate_golem_version(response.headers['Concent-Golem-Messages-Version'], expected_golem_version)
     print()
     content_type = response.headers['Content-Type']
     if 'text/html' in content_type:
         return None
-    elif content_type == 'json':
+    elif content_type == 'application/json' and expected_error_code is not None:
+        validate_error_code((json.loads(response.content))['error_code'], expected_error_code)
         return json.loads(response.content)
     elif content_type == 'application/octet-stream':
         return try_to_decode_golem_message(private_key, public_key, response.content)
@@ -268,23 +292,29 @@ def create_client_auth_message(client_priv_key: bytes, client_public_key: bytes,
     return dump(client_auth, client_priv_key, concent_public_key)
 
 
-def parse_command_line(command_line: list) -> str:
-    if len(command_line) <= 1:
-        sys.exit('Not enough arguments')
-
-    if len(command_line) >= 3:
-        sys.exit('Too many arguments')
-
-    cluster_url = command_line[1]
-    return cluster_url
-
-
 def parse_arguments() -> Tuple:
     parser = argparse.ArgumentParser()
     parser.add_argument("cluster_url")
     parser.add_argument("tc_patterns", nargs='*')
+    parser.add_argument(
+        '-v1',
+        '--concent-1-golem-messages-version',
+        type=str,
+        help=f'First version of golem messages to check.',
+    )
+    parser.add_argument(
+        '-v2',
+        '--concent-2-golem-messages-version',
+        type=str,
+        help=f'Second version of golem messages to check.',
+    )
     args = parser.parse_args()
-    return (args.cluster_url, args.tc_patterns)
+    return (
+        args.cluster_url,
+        args.tc_patterns,
+        args.concent_1_golem_messages_version,
+        args.concent_2_golem_messages_version
+    )
 
 
 def get_tests_list(patterns: Sequence, all_objects: list) -> list:
@@ -308,7 +338,12 @@ def execute_tests(tests_to_execute: list, objects: dict, **kwargs: Any) -> None:
 def run_tests(objects: dict, additional_arguments: Optional[dict]=None) -> None:
     if additional_arguments is None:
         additional_arguments = {}
-    (cluster_url, patterns) = parse_arguments()
+    (cluster_url, patterns, concent_1_golem_messages_version, concent_2_golem_messages_version) = parse_arguments()
+    if concent_1_golem_messages_version is not None and concent_2_golem_messages_version is not None:
+        if concent_1_golem_messages_version == concent_2_golem_messages_version:
+            raise TestAssertionException("Use different versions of golem messages to check supportability")
+        additional_arguments['concent_1_golem_messages_version'] = concent_1_golem_messages_version
+        additional_arguments['concent_2_golem_messages_version'] = concent_1_golem_messages_version
     cluster_consts = get_protocol_constants(cluster_url)
     print_protocol_constants(cluster_consts)
     tests_to_execute = get_tests_list(patterns, list(objects.keys()))

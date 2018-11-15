@@ -22,6 +22,7 @@ MessageAsDict = Dict[str, Union[str, Dict[str, Any]]]
 
 class LoggingLevel(Enum):
     INFO = 'info'
+    EXCEPTION = 'exception'
     WARNING = 'warning'
     ERROR = 'error'
 
@@ -247,6 +248,8 @@ def log(
     subtask_id_message = f'SUBTASK_ID: {subtask_id}. ' if subtask_id is not None else ''
     if isinstance(logging_level, LoggingLevel) and logging_level == logging_level.INFO:
         logger.info(f'{subtask_id_message}{client_key_message}{join_messages(*messages_to_log)}')
+    elif isinstance(logging_level, LoggingLevel) and logging_level == logging_level.EXCEPTION:
+        logger.exception(f'{subtask_id_message}{client_key_message}{join_messages(*messages_to_log)}')
     elif isinstance(logging_level, LoggingLevel) and logging_level == logging_level.WARNING:
         logger.warning(f'{subtask_id_message}{client_key_message}{join_messages(*messages_to_log)}')
     elif isinstance(logging_level, LoggingLevel) and logging_level == logging_level.ERROR:

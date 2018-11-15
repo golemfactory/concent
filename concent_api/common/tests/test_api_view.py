@@ -29,7 +29,7 @@ from core.exceptions import Http400
 from core.message_handlers import store_subtask
 from core.models import Client
 from core.models import Subtask
-from core.tests.utils import generate_uuid
+from core.tests.utils import generate_uuid_for_tests
 from core.utils import hex_to_bytes_convert
 
 (CONCENT_PRIVATE_KEY,   CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
@@ -50,7 +50,7 @@ class ApiViewTestCase(TestCase):
         self.request_factory = RequestFactory()
         self.want_to_compute = message.WantToComputeTask(
             node_name=1,
-            task_id=generate_uuid(),
+            task_id=generate_uuid_for_tests(),
             perf_index=3,
             price=4,
             max_resource_size=5,

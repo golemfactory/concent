@@ -203,7 +203,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
                 CONCENT_PUBLIC_KEY),
         )
         self._test_400_response(response)
-        self.assertTrue(response.json()['error'].startswith('Error in Golem Message'))
+        self.assertIn('Error in Golem Message', response.json()['error'])
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_task_id_already_use(self):
@@ -487,6 +487,16 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         )
         self._assert_stored_message_counter_not_increased()
         self._assert_client_count_is_equal(0)
+
+    @freeze_time("2017-11-17 10:00:00")
+    def test_error_in_golem_messages_should_be_logged_and_return_http_400_with_the_same_uuid(self):
+        self.task_to_compute.requestor_public_key = self.task_to_compute.requestor_public_key[:-1]
+        with mock.patch('core.decorators.log') as log:
+            response = self._send_force_report_computed_task()
+
+        uuid_entry = log.call_args[0][1]
+        self.assertIn('uuid:', uuid_entry)  # check if variable uuid contains field with id from response
+        self._test_400_response(response=response, error_message=uuid_entry)
 
     def test_send_with_empty_data_should_return_http_400_error(self):
         response = self.send_request(

@@ -32,6 +32,7 @@ from common.shortcuts import load_without_public_key
 from core.exceptions import CreateModelIntegrityError
 from core.exceptions import UnsupportedProtocolVersion
 from core.exceptions import NonPositivePriceTaskToComputeError
+from core.utils import generate_uuid
 from core.utils import is_given_golem_messages_version_supported_by_concent
 from core.validation import get_validated_client_public_key_from_client_message
 from core.validation import is_golem_message_signed_with_key
@@ -122,8 +123,9 @@ def require_golem_auth_message(view: Callable) -> Callable:
                 log(logger, 'Error:', exception.__class__.__name__)
                 return JsonResponse({'error': f'{exception}'}, status = 400)
             except MessageError as exception:
-                log(logger, ERROR_IN_GOLEM_MESSAGE, exception.__class__.__name__)
-                return JsonResponse({'error': join_messages(ERROR_IN_GOLEM_MESSAGE, str(exception))}, status = 400)
+                request_id = generate_uuid()
+                log(logger, f'uuid: {request_id}', ERROR_IN_GOLEM_MESSAGE, exception.__class__.__name__, logging_level=logging.LoggingLevel.EXCEPTION)
+                return JsonResponse({'error': join_messages(f'uuid: {request_id}', ERROR_IN_GOLEM_MESSAGE, exception.__class__.__name__)}, status=400)
         else:
             log(logger, 'error: Concent supports only application/octet-stream.')
             return JsonResponse({'error': "Concent supports only application/octet-stream."}, status = 415)
@@ -184,8 +186,9 @@ def require_golem_message(view: Callable) -> Callable:
                 log(logger, 'Error:', exception.__class__.__name__)
                 return JsonResponse({'error': f'{exception}'}, status = 400)
             except MessageError as exception:
-                log(logger, ERROR_IN_GOLEM_MESSAGE, exception.__class__.__name__)
-                return JsonResponse({'error': join_messages(ERROR_IN_GOLEM_MESSAGE, str(exception))}, status = 400)
+                request_id = generate_uuid()
+                log(logger, f'uuid: {request_id}', ERROR_IN_GOLEM_MESSAGE, exception.__class__.__name__, logging_level=logging.LoggingLevel.EXCEPTION)
+                return JsonResponse({'error': join_messages(f'uuid: {request_id}', ERROR_IN_GOLEM_MESSAGE, exception.__class__.__name__)}, status=400)
         else:
             log(logger, 'error: Concent supports only application/octet-stream.')
             return JsonResponse({'error': "Concent supports only application/octet-stream."}, status = 415)

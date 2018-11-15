@@ -169,7 +169,7 @@ def require_golem_message(view: Callable) -> Callable:
             except NonPositivePriceTaskToComputeError as exception:
                 log(logger, 'TaskToCompute contains non-positive price.', exception.__class__.__name__)
                 return message.concents.ServiceRefused(
-                    reason=message.concents.ServiceRefused.REASON.InvalidRequest
+                    reason=message.concents.ServiceRefused.REASON.PriceNotPositive
                 )
             except FieldError as exception:
                 log(logger, 'Golem Message contains wrong fields.', exception.__class__.__name__)

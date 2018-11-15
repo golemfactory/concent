@@ -7,7 +7,8 @@ pipdeptree
 flake8
 
 # Force the latest version of pylint pyflakes and pep8. There are numerous issues with older versions.
-pylint        >= 1.9.2
-pylint-django >= 0.11.1
-pyflakes      >= 2.0.0
-pep8          >= 1.7.1
+pylint              == 1.9.2
+pylint-django       == 0.11.1
+pylint-plugin-utils == 0.2.6
+pyflakes            == 2.0.0
+pep8                == 1.7.1

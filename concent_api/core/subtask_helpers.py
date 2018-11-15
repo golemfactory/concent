@@ -76,7 +76,6 @@ def _update_timed_out_subtask(subtask: Subtask) -> None:
                 subtask_id=subtask.subtask_id,
                 concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
                 ethereum_address=task_to_compute.requestor_ethereum_address,
-                public_key=task_to_compute.requestor_public_key,
             )
 
         transaction.on_commit(
@@ -125,13 +124,11 @@ def _update_timed_out_subtask(subtask: Subtask) -> None:
                 subtask_id=subtask.subtask_id,
                 concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
                 ethereum_address=task_to_compute.requestor_ethereum_address,
-                public_key=task_to_compute.requestor_public_key,
             )
             finalize_deposit_claim(
                 subtask_id=subtask.subtask_id,
                 concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
                 ethereum_address=task_to_compute.provider_ethereum_address,
-                public_key=task_to_compute.provider_public_key,
             )
 
         transaction.on_commit(
@@ -316,14 +313,12 @@ def finalize_deposit_claim(
     subtask_id: str,
     concent_use_case: ConcentUseCase,
     ethereum_address: str,
-    public_key: str,
 ) -> None:
     deposit_claim = get_one_or_none(
         DepositClaim,
         subtask_id=subtask_id,
         concent_use_case=concent_use_case,
         payer_deposit_account__ethereum_address=ethereum_address,
-        payer_deposit_account__client__public_key=public_key,
     )
 
     if deposit_claim is not None:
@@ -334,14 +329,12 @@ def delete_deposit_claim(
     subtask_id: str,
     concent_use_case: ConcentUseCase,
     ethereum_address: str,
-    public_key: str,
 ) -> None:
     deposit_claim = get_one_or_none(
         DepositClaim,
         subtask_id=subtask_id,
         concent_use_case=concent_use_case,
         payer_deposit_account__ethereum_address=ethereum_address,
-        payer_deposit_account__client__public_key=public_key,
     )
 
     if deposit_claim is not None:

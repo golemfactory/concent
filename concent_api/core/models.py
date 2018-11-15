@@ -706,7 +706,7 @@ class DepositAccountManager(Manager):
         Does the same as get_or_create method, but also performs full_clean() on newly created instance.
         """
         try:
-            instance = self.get(client=client, ethereum_address=ethereum_address)
+            instance = self.get(ethereum_address=ethereum_address)
         except self.model.DoesNotExist:
             instance = self.model(
                 client=client,
@@ -722,7 +722,7 @@ class DepositAccount(Model):
     objects = DepositAccountManager()
 
     client = ForeignKey(Client)
-    ethereum_address = CharField(max_length=ETHEREUM_ADDRESS_LENGTH)
+    ethereum_address = CharField(max_length=ETHEREUM_ADDRESS_LENGTH, unique=True)
     created_at = DateTimeField(auto_now_add=True)
 
     def clean(self) -> None:

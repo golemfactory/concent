@@ -704,7 +704,6 @@ def handle_send_force_subtask_results_response(
             subtask_id=task_to_compute.subtask_id,
             concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
             ethereum_address=task_to_compute.provider_ethereum_address,
-            public_key=task_to_compute.provider_ethereum_address,
         )
 
         subtask = update_and_return_updated_subtask(

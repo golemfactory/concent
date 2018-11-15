@@ -23,6 +23,7 @@ from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
 from core.exceptions import FrameNumberValidationError
 from core.exceptions import HashingAlgorithmError
+from core.exceptions import NonPositivePriceTaskToComputeError
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
 from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
 from core.tests.utils import ConcentIntegrationTestCase
@@ -30,11 +31,12 @@ from core.tests.utils import generate_uuid
 from core.validation import validate_all_messages_identical
 from core.validation import validate_compute_task_def
 from core.validation import validate_ethereum_addresses
-from core.validation import validate_golem_message_subtask_results_rejected
-from core.validation import validate_uuid
 from core.validation import validate_frames
+from core.validation import validate_golem_message_subtask_results_rejected
 from core.validation import validate_positive_integer_value
 from core.validation import validate_scene_file
+from core.validation import validate_task_to_compute
+from core.validation import validate_uuid
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
@@ -379,3 +381,27 @@ class TestValidateSceneFile:
             validate_scene_file(scene_file)
         except Exception as exception:  # pylint: disable=broad-except
             assert False, f"Unexpected exception has been raised: {str(exception)}"
+
+
+class TestValidateTaskToCompute(object):
+
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.task_to_compute = TaskToComputeFactory()
+
+    def test_that_valid_task_to_compute_doesnt_raise_any_exception(self):
+        try:
+            validate_task_to_compute(self.task_to_compute)
+        except Exception as exception:  # pylint: disable=broad-except
+            assert False, f"Unexpected exception has been raised: {str(exception)}"
+
+    def test_that_other_messages_than_task_to_compute_causes_message_validation_error(self):
+        wrong_message = ComputeTaskDefFactory()
+        with pytest.raises(ConcentValidationError) as exception_wrapper:
+            validate_task_to_compute(wrong_message)
+        assert_that(exception_wrapper.value.error_code).is_equal_to(ErrorCode.MESSAGE_INVALID)
+
+    def test_that_non_positive_price_value_in_task_to_compute_causes_concent_validation_error(self):
+        self.task_to_compute.price = 0
+        with pytest.raises(NonPositivePriceTaskToComputeError):
+            validate_task_to_compute(self.task_to_compute)

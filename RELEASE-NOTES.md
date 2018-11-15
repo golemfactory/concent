@@ -1,4 +1,6 @@
 ### Next
+#### Compatibility
+- golem-messages: 2.16.0
 
 #### Endpoints and uses cases in general
 - `send` now returns `ServiceRefused` with reason `TooSmallProviderDeposit` for additional verification use case when Provider's deposit is insufficient(#567).

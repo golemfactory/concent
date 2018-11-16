@@ -21,6 +21,7 @@ from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.logging import log
 from core.exceptions import UnsupportedProtocolVersion
+from core.models import DepositClaim
 from core.models import PendingResponse
 from core.models import Subtask
 from core.payments import bankster
@@ -68,6 +69,20 @@ def _update_timed_out_subtask(subtask: Subtask) -> None:
             subtask=subtask,
         )
     elif subtask.state == Subtask.SubtaskState.FORCING_ACCEPTANCE.name:  # pylint: disable=no-member
+        task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
+
+        def finalize_claim_for_acceptance_case() -> None:
+            finalize_deposit_claim(
+                subtask_id=subtask.subtask_id,
+                concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+                ethereum_address=task_to_compute.requestor_ethereum_address,
+            )
+
+        transaction.on_commit(
+            finalize_claim_for_acceptance_case,
+            using='control',
+        )
+
         update_subtask_state(
             subtask=subtask,
             state=Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
@@ -103,13 +118,22 @@ def _update_timed_out_subtask(subtask: Subtask) -> None:
         )
     elif subtask.state == Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name:  # pylint: disable=no-member
         task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
-        # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
-        bankster.finalize_payment(
-            subtask_id=task_to_compute.subtask_id,
-            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
-            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
-            provider_ethereum_address=task_to_compute.provider_ethereum_address,
-            subtask_cost=task_to_compute.price,
+
+        def finalize_claim_for_additional_verification_case() -> None:
+            finalize_deposit_claim(
+                subtask_id=subtask.subtask_id,
+                concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
+                ethereum_address=task_to_compute.requestor_ethereum_address,
+            )
+            finalize_deposit_claim(
+                subtask_id=subtask.subtask_id,
+                concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
+                ethereum_address=task_to_compute.provider_ethereum_address,
+            )
+
+        transaction.on_commit(
+            finalize_claim_for_additional_verification_case,
+            using='control',
         )
 
         update_subtask_state(
@@ -274,7 +298,7 @@ def are_subtask_results_accepted_messages_signed_by_the_same_requestor(
 def get_one_or_none(
     subtask_or_query_set: Union[Model, QuerySet],
     **conditions: Any
-)-> Optional[Subtask]:
+)-> Optional[Model]:
     if isinstance(subtask_or_query_set, ModelBase):
         instances = subtask_or_query_set.objects.filter(**conditions)
         assert len(instances) <= 1
@@ -283,3 +307,35 @@ def get_one_or_none(
         instances = subtask_or_query_set.filter(**conditions)
         assert len(instances) <= 1
         return None if len(instances) == 0 else instances[0]
+
+
+def finalize_deposit_claim(
+    subtask_id: str,
+    concent_use_case: ConcentUseCase,
+    ethereum_address: str,
+) -> None:
+    deposit_claim = get_one_or_none(
+        DepositClaim,
+        subtask_id=subtask_id,
+        concent_use_case=concent_use_case,
+        payer_deposit_account__ethereum_address=ethereum_address,
+    )
+
+    if deposit_claim is not None:
+        bankster.finalize_payment(deposit_claim)
+
+
+def delete_deposit_claim(
+    subtask_id: str,
+    concent_use_case: ConcentUseCase,
+    ethereum_address: str,
+) -> None:
+    deposit_claim = get_one_or_none(
+        DepositClaim,
+        subtask_id=subtask_id,
+        concent_use_case=concent_use_case,
+        payer_deposit_account__ethereum_address=ethereum_address,
+    )
+
+    if deposit_claim is not None:
+        bankster.discard_claim(deposit_claim)

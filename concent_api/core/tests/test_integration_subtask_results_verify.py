@@ -16,6 +16,7 @@ from common.helpers import parse_datetime_to_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.testing_helpers import generate_ecc_key_pair
 from conductor.models import BlenderSubtaskDefinition
+from core.exceptions import TooSmallProviderDeposit
 from core.message_handlers import store_subtask
 from core.models import PendingResponse
 from core.models import Subtask
@@ -24,6 +25,7 @@ from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
 from core.transfer_operations import create_file_transfer_token_for_verification_use_case
 from core.utils import extract_name_from_scene_file_path
+from core.utils import hex_to_bytes_convert
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
@@ -36,6 +38,7 @@ from core.utils import extract_name_from_scene_file_path
     ADDITIONAL_VERIFICATION_TIME_MULTIPLIER=1,
     ADDITIONAL_VERIFICATION_CALL_TIME=3600,
     BLENDER_THREADS=1,
+    CONCENT_ETHEREUM_PUBLIC_KEY='b51e9af1ae9303315ca0d6f08d15d8fbcaecf6958f037cc68f9ec18a77c6f63eae46daaba5c637e06a3e4a52a2452725aafba3d4fda4e15baf48798170eb7412',
 )
 class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
     def setUp(self):
@@ -221,10 +224,13 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         claim_deposit_mock.assert_called_with(
+            subtask_id=self.task_to_compute.subtask_id,
             concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
             requestor_ethereum_address=self.task_to_compute.requestor_ethereum_address,
             provider_ethereum_address=self.task_to_compute.provider_ethereum_address,
             subtask_cost=self.task_to_compute.price,
+            requestor_public_key=hex_to_bytes_convert(self.task_to_compute.requestor_public_key),
+            provider_public_key=hex_to_bytes_convert(self.task_to_compute.provider_public_key),
         )
 
         # then
@@ -251,7 +257,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         # when
         with mock.patch(
             "core.message_handlers.bankster.claim_deposit",
-            return_value=(True, False)
+            side_effect=TooSmallProviderDeposit
         ) as claim_deposit_mock:
             with freeze_time(subtask_results_verify_time_str):
                 response =self.send_request(
@@ -262,10 +268,13 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         claim_deposit_mock.assert_called_with(
+            subtask_id=self.task_to_compute.subtask_id,
             concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
             requestor_ethereum_address=self.task_to_compute.requestor_ethereum_address,
             provider_ethereum_address=self.task_to_compute.provider_ethereum_address,
             subtask_cost=self.task_to_compute.price,
+            requestor_public_key=hex_to_bytes_convert(self.task_to_compute.requestor_public_key),
+            provider_public_key=hex_to_bytes_convert(self.task_to_compute.provider_public_key),
         )
 
         # then
@@ -364,10 +373,13 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                     )
 
         claim_deposit_mock.assert_called_with(
+            subtask_id=self.task_to_compute.subtask_id,
             concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
             requestor_ethereum_address=self.task_to_compute.requestor_ethereum_address,
             provider_ethereum_address=self.task_to_compute.provider_ethereum_address,
             subtask_cost=self.task_to_compute.price,
+            requestor_public_key=hex_to_bytes_convert(self.task_to_compute.requestor_public_key),
+            provider_public_key=hex_to_bytes_convert(self.task_to_compute.provider_public_key),
         )
         send_verification_request_mock.assert_called_once_with(
             frames=[1],

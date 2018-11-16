@@ -257,17 +257,17 @@ class TestDepositClaimValidation(ConcentIntegrationTestCase):
 
         self.deposit_claim = DepositClaim()
         self.deposit_claim.payer_deposit_account = self.payer_deposit_account
-        self.deposit_claim.subtask = store_report_computed_task_as_subtask()
+        self.deposit_claim.subtask_id = task_to_compute.subtask_id
         self.deposit_claim.payee_ethereum_address = self.payee_ethereum_address
         self.deposit_claim.concent_use_case = ConcentUseCase.FORCED_TASK_RESULT.value
         self.deposit_claim.amount = 1
         self.deposit_claim.tx_hash = encode_hex(MOCK_TRANSACTION.hash)
 
     def test_that_exception_is_raised_when_subtask_is_null_and_concent_use_case_is_not_forced_payment(self):
-        self.deposit_claim.subtask = None
+        self.deposit_claim.subtask_id = None
         with pytest.raises(ValidationError) as exception_info:
             self.deposit_claim.clean()
-        self.assertIn('subtask', exception_info.value.error_dict)
+        self.assertIn('subtask_id', exception_info.value.error_dict)
 
     def test_that_exception_is_not_raised_when_subtask_is_null_and_concent_use_case_is_forced_payment(self):
         self.deposit_claim.subtask = None
@@ -334,7 +334,7 @@ class TestDepositClaimValidation(ConcentIntegrationTestCase):
         DepositClaim.objects.filter(pk=self.deposit_claim.pk).delete()
 
         self.assertTrue(
-            DepositAccount.objects.filter(pk=self.payer_deposit_account.pk).exists()
+            DepositAccount.objects.filter(pk=self.payer_deposit_account.pk).exists()  # pylint: disable=no-member
         )
 
     def test_that_no_exception_is_raised_when_deposit_claim_is_valid(self):

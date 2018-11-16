@@ -3,7 +3,6 @@ import mock
 from django.conf import settings
 from freezegun import freeze_time
 
-from common.constants import ConcentUseCase
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_datetime_to_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
@@ -82,8 +81,7 @@ class UploadFinishedTaskTest(ConcentIntegrationTestCase):
     def test_that_scheduling_task_for_subtask_after_deadline_should_process_timeout(self):
         datetime = parse_timestamp_to_utc_datetime(get_current_utc_timestamp() + settings.CONCENT_MESSAGING_TIME + 1)
         with freeze_time(datetime):
-            with mock.patch('core.payments.bankster.finalize_payment', autospec=True) as finalize_payment:
-                upload_finished(self.subtask.subtask_id)  # pylint: disable=no-value-for-parameter
+            upload_finished(self.subtask.subtask_id)  # pylint: disable=no-value-for-parameter
 
         self.subtask.refresh_from_db()
         self.assertEqual(self.subtask.state_enum, Subtask.SubtaskState.FAILED)
@@ -91,10 +89,3 @@ class UploadFinishedTaskTest(ConcentIntegrationTestCase):
         self.assertEqual(PendingResponse.objects.count(), 2)
         self.assertTrue(PendingResponse.objects.filter(client=self.subtask.provider).exists())
         self.assertTrue(PendingResponse.objects.filter(client=self.subtask.requestor).exists())
-        finalize_payment.assert_called_once_with(
-            subtask_id=self.subtask.subtask_id,
-            concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
-            requestor_ethereum_address=self.task_to_compute.requestor_ethereum_address,
-            provider_ethereum_address=self.task_to_compute.provider_ethereum_address,
-            subtask_cost=self.task_to_compute.price,
-        )

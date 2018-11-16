@@ -19,7 +19,8 @@ from core.constants import VerificationResult
 from core.exceptions import SubtaskStatusError
 from core.models import PendingResponse
 from core.models import Subtask
-from core.payments import bankster
+from core.subtask_helpers import delete_deposit_claim
+from core.subtask_helpers import finalize_deposit_claim
 from core.subtask_helpers import update_subtask_state
 from core.transfer_operations import store_pending_message
 from core.utils import calculate_concent_verification_time
@@ -56,12 +57,22 @@ def upload_finished(subtask_id: str) -> None:
         # If subtask is past the deadline, processes the timeout.
         if parse_datetime_to_timestamp(subtask.next_deadline) < get_current_utc_timestamp():
             # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
-            bankster.finalize_payment(
-                subtask_id=subtask_id,
-                concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
-                requestor_ethereum_address=report_computed_task.task_to_compute.requestor_ethereum_address,
-                provider_ethereum_address=report_computed_task.task_to_compute.provider_ethereum_address,
-                subtask_cost=report_computed_task.task_to_compute.price,
+
+            def finalize_claims() -> None:
+                finalize_deposit_claim(
+                    subtask_id=subtask_id,
+                    concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
+                    ethereum_address=report_computed_task.task_to_compute.requestor_ethereum_address,
+                )
+                finalize_deposit_claim(
+                    subtask_id=subtask_id,
+                    concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
+                    ethereum_address=report_computed_task.task_to_compute.provider_ethereum_address,
+                )
+
+            transaction.on_commit(
+                finalize_claims,
+                using='control',
             )
 
             update_subtask_state(
@@ -201,14 +212,23 @@ def verification_result(
     if subtask.next_deadline < parse_timestamp_to_utc_datetime(get_current_utc_timestamp()):
         task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
         # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
-        bankster.finalize_payment(
-            subtask_id=subtask_id,
-            concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
-            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
-            provider_ethereum_address=task_to_compute.provider_ethereum_address,
-            subtask_cost=task_to_compute.price,
-        )
 
+        def finalize_claims() -> None:
+            finalize_deposit_claim(
+                subtask_id=subtask_id,
+                concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
+                ethereum_address=task_to_compute.requestor_ethereum_address,
+            )
+            finalize_deposit_claim(
+                subtask_id=subtask_id,
+                concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
+                ethereum_address=task_to_compute.provider_ethereum_address,
+            )
+
+        transaction.on_commit(
+            finalize_claims,
+            using='control',
+        )
         update_subtask_state(
             subtask=subtask,
             state=Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
@@ -232,6 +252,25 @@ def verification_result(
                 subtask=subtask,
             )
 
+        task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
+
+        def finalize_claims() -> None:  # pylint: disable=function-redefined
+            delete_deposit_claim(
+                subtask_id=subtask_id,
+                concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
+                ethereum_address=task_to_compute.requestor_ethereum_address,
+            )
+            finalize_deposit_claim(
+                subtask_id=subtask_id,
+                concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
+                ethereum_address=task_to_compute.provider_ethereum_address,
+            )
+
+        transaction.on_commit(
+            finalize_claims,
+            using='control',
+        )
+
         # Worker changes subtask state to FAILED
         subtask.state = Subtask.SubtaskState.FAILED.name  # pylint: disable=no-member
         subtask.next_deadline = None
@@ -249,12 +288,22 @@ def verification_result(
         task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
 
         # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
-        bankster.finalize_payment(
-            subtask_id=subtask_id,
-            concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
-            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
-            provider_ethereum_address=task_to_compute.provider_ethereum_address,
-            subtask_cost=task_to_compute.price,
+
+        def finalize_claims() -> None:  # pylint: disable=function-redefined
+            finalize_deposit_claim(
+                subtask_id=subtask_id,
+                concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
+                ethereum_address=task_to_compute.requestor_ethereum_address,
+            )
+            finalize_deposit_claim(
+                subtask_id=subtask_id,
+                concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
+                ethereum_address=task_to_compute.provider_ethereum_address,
+            )
+
+        transaction.on_commit(
+            finalize_claims,
+            using='control',
         )
 
         # Worker adds SubtaskResultsSettled to provider's and requestor's receive queues (both out-of-band)

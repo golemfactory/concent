@@ -4,13 +4,13 @@ from freezegun              import freeze_time
 from golem_messages         import message
 from golem_messages.utils import decode_hex
 
+from common.testing_helpers import generate_ecc_key_pair
 from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
-from core.constants import MOCK_TRANSACTION_HASH
+from core.exceptions import BanksterTimestampError
 from core.models import PendingResponse
-from core.payments.bankster import ClaimPaymentInfo
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
-from common.testing_helpers import generate_ecc_key_pair
+from core.utils import hex_to_bytes_convert
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
@@ -23,6 +23,12 @@ from common.testing_helpers import generate_ecc_key_pair
     CONCENT_ETHEREUM_PUBLIC_KEY='x' * ETHEREUM_PUBLIC_KEY_LENGTH,
 )
 class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.amount_pending = 0
+        self.amount_paid = 10
+
     def test_provider_send_force_payment_with_subtask_results_accepted_signed_by_different_requestors_concent_should_refuse(self):
         """
         Expected message exchange:
@@ -157,7 +163,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
 
         with mock.patch(
             'core.message_handlers.bankster.settle_overdue_acceptances',
-            return_value=ClaimPaymentInfo(0, 0, timestamp_error=True)
+            side_effect=BanksterTimestampError
         ) as settle_overdue_acceptances:
             with freeze_time("2018-02-05 12:00:09"):
                 response =self.send_request(
@@ -169,6 +175,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
             provider_ethereum_address=task_to_compute.provider_ethereum_address,
             acceptances=subtask_results_accepted_list,
+            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
         )
 
         self._test_response(
@@ -222,7 +229,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
 
         with mock.patch(
             'core.message_handlers.bankster.settle_overdue_acceptances',
-            return_value=ClaimPaymentInfo(0, 0, timestamp_error=True)
+            side_effect=BanksterTimestampError
         ) as settle_overdue_acceptances:
             with freeze_time("2018-02-05 12:00:20"):
                 response =self.send_request(
@@ -234,6 +241,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
             provider_ethereum_address=task_to_compute.provider_ethereum_address,
             acceptances=subtask_results_accepted_list,
+            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
         )
 
         self._test_response(
@@ -288,7 +296,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 12:00:20"):
             with mock.patch(
                 'core.message_handlers.bankster.settle_overdue_acceptances',
-                return_value=ClaimPaymentInfo(0, 0)
+                return_value=None
             ) as settle_overdue_acceptances:
                 response = self.send_request(
                     url='core:send',
@@ -299,6 +307,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
             provider_ethereum_address=task_to_compute.provider_ethereum_address,
             acceptances=subtask_results_accepted_list,
+            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
         )
 
         self._test_response(
@@ -352,15 +361,10 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             subtask_results_accepted_list = subtask_results_accepted_list
         )
 
-        # Sum of prices from force and batch lists of transactions which have been paid
-        amount_paid = 10000 + 3000
-        # Sum of price in all TaskToCompute messages minus amount_paid
-        amount_pending = 15000 + 7000 - amount_paid
-
         with freeze_time("2018-02-05 12:00:20"):
             with mock.patch(
                 'core.message_handlers.bankster.settle_overdue_acceptances',
-                return_value=ClaimPaymentInfo(amount_paid, amount_pending, MOCK_TRANSACTION_HASH, 123)
+                side_effect=self.settle_overdue_acceptances_mock
             ) as settle_overdue_acceptances:
                 response_1 =self.send_request(
                     url='core:send',
@@ -371,6 +375,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
             provider_ethereum_address=task_to_compute.provider_ethereum_address,
             acceptances=subtask_results_accepted_list,
+            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
         )
 
         self._test_response(
@@ -381,8 +386,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             fields       = {
                 'recipient_type': message.concents.ForcePaymentCommitted.Actor.Provider,
                 'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
-                'amount_pending': amount_pending,
-                'amount_paid':    amount_paid,
+                'amount_pending': self.amount_pending,
+                'amount_paid': self.amount_paid,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -404,8 +409,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             fields       = {
                 'recipient_type': message.concents.ForcePaymentCommitted.Actor.Requestor,
                 'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:21"),
-                'amount_pending': amount_pending,
-                'amount_paid':    amount_paid,
+                'amount_pending': self.amount_pending,
+                'amount_paid': self.amount_paid,
                 'task_owner_key': decode_hex(task_to_compute.requestor_ethereum_public_key),
             }
         )
@@ -551,7 +556,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 12:00:20"):
             with mock.patch(
                 'core.message_handlers.bankster.settle_overdue_acceptances',
-                return_value=ClaimPaymentInfo(0, 25000)
+                side_effect=self.settle_overdue_acceptances_mock
             ) as settle_overdue_acceptances:
                 response_1 =self.send_request(
                     url='core:send',
@@ -562,6 +567,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
             provider_ethereum_address=task_to_compute.provider_ethereum_address,
             acceptances=subtask_results_accepted_list,
+            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
         )
 
         self._test_response(
@@ -572,8 +578,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             fields       = {
                 'recipient_type': message.concents.ForcePaymentCommitted.Actor.Provider,
                 'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
-                'amount_pending': 25000,
-                'amount_paid':    0,
+                'amount_pending': self.amount_pending,
+                'amount_paid': self.amount_paid,
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -591,8 +597,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             fields       = {
                 'recipient_type': message.concents.ForcePaymentCommitted.Actor.Requestor,
                 'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:21"),
-                'amount_pending': 25000,
-                'amount_paid':    0,
+                'amount_pending': self.amount_pending,
+                'amount_paid': self.amount_paid,
                 'task_owner_key': decode_hex(task_to_compute.requestor_ethereum_public_key),
             }
         )

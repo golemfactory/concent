@@ -69,10 +69,6 @@ class CreateModelIntegrityError(Exception):
     pass
 
 
-class NonPositivePriceTaskToComputeError(Exception):
-    pass
-
-
 class UnsupportedProtocolVersion(Exception):
     pass
 

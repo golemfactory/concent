@@ -23,7 +23,6 @@ from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
 from core.exceptions import FrameNumberValidationError
 from core.exceptions import HashingAlgorithmError
-from core.exceptions import NonPositivePriceTaskToComputeError
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
 from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
 from core.tests.utils import ConcentIntegrationTestCase
@@ -400,8 +399,3 @@ class TestValidateTaskToCompute(object):
         with pytest.raises(ConcentValidationError) as exception_wrapper:
             validate_task_to_compute(wrong_message)
         assert_that(exception_wrapper.value.error_code).is_equal_to(ErrorCode.MESSAGE_INVALID)
-
-    def test_that_non_positive_price_value_in_task_to_compute_causes_concent_validation_error(self):
-        self.task_to_compute.price = 0
-        with pytest.raises(NonPositivePriceTaskToComputeError):
-            validate_task_to_compute(self.task_to_compute)

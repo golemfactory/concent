@@ -31,7 +31,6 @@ from common.logging import log_400_error
 from common.shortcuts import load_without_public_key
 from core.exceptions import CreateModelIntegrityError
 from core.exceptions import UnsupportedProtocolVersion
-from core.exceptions import NonPositivePriceTaskToComputeError
 from core.utils import generate_uuid
 from core.utils import is_given_golem_messages_version_supported_by_concent
 from core.validation import get_validated_client_public_key_from_client_message
@@ -167,11 +166,6 @@ def require_golem_message(view: Callable) -> Callable:
                         'error_code': exception.error_code.value,
                     },
                     status=400
-                )
-            except NonPositivePriceTaskToComputeError as exception:
-                log(logger, 'TaskToCompute contains non-positive price.', exception.__class__.__name__)
-                return message.concents.ServiceRefused(
-                    reason=message.concents.ServiceRefused.REASON.PriceNotPositive
                 )
             except FieldError as exception:
                 log(logger, 'Golem Message contains wrong fields.', exception.__class__.__name__)

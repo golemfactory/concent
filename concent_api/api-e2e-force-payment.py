@@ -145,9 +145,8 @@ def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts: Pro
                 )
             ]
         ),
-        expected_status=200,
-        expected_message_type=message.concents.ForcePaymentRejected,
-        expected_content_type='application/octet-stream',
+        expected_status=400,
+        expected_error_code='message.value_negative',
     )
 
 

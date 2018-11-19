@@ -11,7 +11,6 @@ from django.db.models import Sum
 from django.db.models.functions import Coalesce
 
 from golem_messages.message.tasks import SubtaskResultsAccepted
-from golem_messages.utils import encode_hex
 from golem_sci.events import BatchTransferEvent
 from golem_sci.events import ForcedPaymentEvent
 from psycopg2 import errorcodes as pg_errorcodes
@@ -238,7 +237,7 @@ def finalize_payment(deposit_claim: DepositClaim) -> Optional[str]:
 
         # If the DepositClaim still exists at this point, Bankster uses SCI to create an Ethereum transaction.
         if deposit_claim.concent_use_case == ConcentUseCase.FORCED_ACCEPTANCE:
-            ethereum_transaction = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
+            ethereum_transaction_hash = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
                 requestor_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
                 provider_eth_address=deposit_claim.payee_ethereum_address,
                 value=deposit_claim.amount,
@@ -249,14 +248,14 @@ def finalize_payment(deposit_claim: DepositClaim) -> Optional[str]:
             if subtask is not None:
                 task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
                 if task_to_compute.requestor_ethereum_address == deposit_claim.payer_deposit_account.ethereum_address:
-                    ethereum_transaction = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
+                    ethereum_transaction_hash = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
                         requestor_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
                         provider_eth_address=deposit_claim.payee_ethereum_address,
                         value=deposit_claim.amount,
                         subtask_id=deposit_claim.subtask_id,
                     )
                 elif task_to_compute.provider_ethereum_address == deposit_claim.payer_deposit_account.ethereum_address:
-                    ethereum_transaction = service.cover_additional_verification_cost(  # pylint: disable=no-value-for-parameter
+                    ethereum_transaction_hash = service.cover_additional_verification_cost(  # pylint: disable=no-value-for-parameter
                         provider_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
                         value=deposit_claim.amount,
                         subtask_id=deposit_claim.subtask_id,
@@ -267,7 +266,7 @@ def finalize_payment(deposit_claim: DepositClaim) -> Optional[str]:
             assert False
 
         # Bankster puts transaction ID in DepositClaim.tx_hash.
-        deposit_claim.tx_hash = encode_hex(ethereum_transaction.hash)
+        deposit_claim.tx_hash = ethereum_transaction_hash
         deposit_claim.full_clean()
         deposit_claim.save()
 

@@ -4,7 +4,6 @@ import mock
 from django.conf import settings
 from django.test import override_settings
 from golem_messages import factories
-from golem_messages.utils import encode_hex
 
 from common.constants import ConcentUseCase
 from common.helpers import ethereum_public_key_to_address

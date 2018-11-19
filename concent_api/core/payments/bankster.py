@@ -17,6 +17,7 @@ from golem_sci.events import ForcedPaymentEvent
 from psycopg2 import errorcodes as pg_errorcodes
 
 from common.constants import ConcentUseCase
+from common.helpers import deserialize_message
 from common.helpers import ethereum_public_key_to_address
 from common.helpers import get_current_utc_timestamp
 from core.constants import ETHEREUM_ADDRESS_LENGTH
@@ -246,19 +247,22 @@ def finalize_payment(deposit_claim: DepositClaim) -> Optional[str]:
         elif deposit_claim.concent_use_case == ConcentUseCase.ADDITIONAL_VERIFICATION:
             subtask = Subtask.objects.filter(subtask_id=deposit_claim.subtask_id).first()  # pylint: disable=no-member
             if subtask is not None:
-                if subtask.requestor.public_key == deposit_claim.payer_deposit_account.client.public_key:
+                task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
+                if task_to_compute.requestor_ethereum_address == deposit_claim.payer_deposit_account.ethereum_address:
                     ethereum_transaction = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
                         requestor_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
                         provider_eth_address=deposit_claim.payee_ethereum_address,
                         value=deposit_claim.amount,
                         subtask_id=deposit_claim.subtask_id,
                     )
-                elif subtask.provider.public_key == deposit_claim.payer_deposit_account.client.public_key:
+                elif task_to_compute.provider_ethereum_address == deposit_claim.payer_deposit_account.ethereum_address:
                     ethereum_transaction = service.cover_additional_verification_cost(  # pylint: disable=no-value-for-parameter
                         provider_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
                         value=deposit_claim.amount,
                         subtask_id=deposit_claim.subtask_id,
                     )
+                else:
+                    assert False
         else:
             assert False
 

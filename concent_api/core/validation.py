@@ -27,7 +27,6 @@ from core.constants import SCENE_FILE_EXTENSION
 from core.exceptions import FrameNumberValidationError
 from core.exceptions import Http400
 from core.exceptions import GolemMessageValidationError
-from core.exceptions import NonPositivePriceTaskToComputeError
 from core.utils import hex_to_bytes_convert
 
 
@@ -113,10 +112,7 @@ def validate_task_to_compute(task_to_compute: message.TaskToCompute) -> None:
     validate_hex_public_key(task_to_compute.provider_public_key, 'provider_public_key')
     validate_hex_public_key(task_to_compute.requestor_public_key, 'requestor_public_key')
     validate_secure_hash_algorithm(task_to_compute.package_hash)
-    try:
-        validate_positive_integer_value(task_to_compute.price)
-    except ConcentValidationError:
-        raise NonPositivePriceTaskToComputeError()
+    validate_positive_integer_value(task_to_compute.price)
 
 
 def validate_report_computed_task_time_window(report_computed_task: message.ReportComputedTask) -> None:

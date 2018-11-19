@@ -8,7 +8,7 @@ from golem_messages.utils import encode_hex
 
 from common.constants import ConcentUseCase
 from common.helpers import ethereum_public_key_to_address
-from core.constants import MOCK_TRANSACTION
+from core.constants import MOCK_TRANSACTION_HASH
 from core.exceptions import BanksterTimestampError
 from core.exceptions import TooSmallProviderDeposit
 from core.message_handlers import store_subtask
@@ -187,9 +187,9 @@ class FinalizePaymentBanksterTest(ConcentIntegrationTestCase):
 
     def test_that_when_deposit_claim_is_for_forced_acceptance_use_case_finalize_payment_should_call_force_subtask_payment(self):
         with mock.patch('core.payments.service.get_deposit_value', return_value=2) as get_deposit_value:
-            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION) as force_subtask_payment:
+            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION_HASH) as force_subtask_payment:
                 returned_value = finalize_payment(self.deposit_claim)
-        self.assertEqual(returned_value, encode_hex(MOCK_TRANSACTION.hash))
+        self.assertEqual(returned_value, MOCK_TRANSACTION_HASH)
 
         get_deposit_value.assert_called_with(
             client_eth_address=self.deposit_claim.payer_deposit_account.ethereum_address,
@@ -207,10 +207,10 @@ class FinalizePaymentBanksterTest(ConcentIntegrationTestCase):
         self.deposit_claim.save()
 
         with mock.patch('core.payments.service.get_deposit_value', return_value=2) as get_deposit_value:
-            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION) as force_subtask_payment:
+            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION_HASH) as force_subtask_payment:
                 returned_value = finalize_payment(self.deposit_claim)
 
-        self.assertEqual(returned_value, encode_hex(MOCK_TRANSACTION.hash))
+        self.assertEqual(returned_value, MOCK_TRANSACTION_HASH)
 
         get_deposit_value.assert_called_with(
             client_eth_address=self.deposit_claim.payer_deposit_account.ethereum_address,
@@ -237,10 +237,10 @@ class FinalizePaymentBanksterTest(ConcentIntegrationTestCase):
         self.deposit_claim.save()
 
         with mock.patch('core.payments.service.get_deposit_value', return_value=5) as get_deposit_value:
-            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION) as force_subtask_payment:
+            with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION_HASH) as force_subtask_payment:
                 returned_value = finalize_payment(self.deposit_claim)
 
-        self.assertEqual(returned_value, encode_hex(MOCK_TRANSACTION.hash))
+        self.assertEqual(returned_value, MOCK_TRANSACTION_HASH)
 
         get_deposit_value.assert_called_with(
             client_eth_address=self.deposit_claim.payer_deposit_account.ethereum_address,

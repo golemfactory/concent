@@ -1,4 +1,3 @@
-
 from freezegun import freeze_time
 import mock
 
@@ -402,15 +401,3 @@ class DiscardClaimBanksterTest(ConcentIntegrationTestCase):
 
         self.assertTrue(claim_removed)
         self.assertFalse(DepositClaim.objects.filter(pk=self.deposit_claim.pk).exists())
-
-    def test_that_discard_claim_should_work_correctly_in_parallel(self):
-        self.deposit_claim.tx_hash = 64 * '0'
-        self.deposit_claim.clean()
-        self.deposit_claim.save()
-
-        from api_testing_common import call_function_in_threads
-        call_function_in_threads(
-            func=discard_claim,
-            number_of_threads=2,
-            deposit_claim=self.deposit_claim
-        )

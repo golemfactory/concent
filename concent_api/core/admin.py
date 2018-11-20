@@ -1,11 +1,16 @@
 import datetime
+from decimal import Decimal
 from django.contrib import admin
 from django.db.models import Q
 from django.db.models import QuerySet
+from django.db.models import Sum
+from django.db.models.functions import Coalesce
 from django.http.request import HttpRequest
 from common.admin import ModelAdminReadOnlyMixin
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
+from .models import DepositAccount
+from .models import DepositClaim
 from .models import PendingResponse
 from .models import StoredMessage
 from .models import Subtask
@@ -140,6 +145,63 @@ class StoredMessageAdmin(ModelAdminReadOnlyMixin, admin.ModelAdmin):
     ]
 
 
+class DepositAccountAdmin(ModelAdminReadOnlyMixin, admin.ModelAdmin):
+
+    list_display = [
+        'client_public_key',
+        'ethereum_address',
+        'created_at',
+        'get_sum_of_claims',
+    ]
+    search_fields = [
+        'client__public_key',
+        'ethereum_address',
+    ]
+
+    @classmethod
+    def client_public_key(cls, deposit_account: DepositAccount) -> str:
+        return deposit_account.client.public_key
+    client_public_key.short_description = 'Client'  # type: ignore
+
+    def get_sum_of_claims(self, deposit_account: DepositAccount) -> Decimal:  # pylint: disable=no-self-use
+        return deposit_account.sum_of_claims
+    get_sum_of_claims.short_description = 'Sum of related DepositClaims'  # type: ignore
+    get_sum_of_claims.admin_order_field = 'sum_of_claims'  # type: ignore
+
+    def get_queryset(self, request: HttpRequest) -> QuerySet:
+        return super().get_queryset(request).annotate(sum_of_claims=Coalesce(Sum('depositclaim__amount'), 0))
+
+
+class DepositClaimAdmin(admin.ModelAdmin):
+
+    list_display = [
+        'subtask_id',
+        'payer_deposit_account_ethereum_address',
+        'payee_ethereum_address',
+        'concent_use_case',
+        'amount',
+        'tx_hash',
+        'created_at',
+        'modified_at',
+    ]
+    list_filter = [
+        'concent_use_case',
+    ]
+    search_fields = [
+        'subtask_id',
+        'payer_deposit_account__ethereum_address',
+        'payee_ethereum_address',
+        'tx_hash',
+    ]
+
+    @classmethod
+    def payer_deposit_account_ethereum_address(cls, deposit_claim: DepositClaim) -> str:
+        return deposit_claim.payer_deposit_account.ethereum_address
+    payer_deposit_account_ethereum_address.short_description = 'Payer ethereum address'  # type: ignore
+
+
+admin.site.register(DepositAccount, DepositAccountAdmin)
+admin.site.register(DepositClaim, DepositClaimAdmin)
 admin.site.register(PendingResponse, PendingResponseAdmin)
 admin.site.register(StoredMessage, StoredMessageAdmin)
 admin.site.register(Subtask, SubtaskAdmin)

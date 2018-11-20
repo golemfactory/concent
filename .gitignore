@@ -117,4 +117,4 @@ ENV/
 /.idea
 
 # Signing service daily tresholds
-daily_tresholds/
+daily_thresholds/

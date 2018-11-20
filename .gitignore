@@ -116,5 +116,5 @@ ENV/
 # PyCharm
 /.idea
 
-# Signing service daily thresholds
-daily_thresholds/
+# Signing service daily tresholds
+daily_tresholds/

@@ -33,7 +33,7 @@ You can put the output of the script above directly in your `local_settings.py`
 
 ### Preparing your environment for development
 
-1. Install [Python](https://www.python.org/) >= 3.5 using your package manager.
+1. Install [Python](https://www.python.org/) >= 3.6 using your package manager.
 
 2. Install [PostgreSQL](https://www.postgresql.org) >= 10 using your package manager.
 
@@ -130,6 +130,13 @@ You can put the output of the script above directly in your `local_settings.py`
 
     ```
     concent_api/manage.py createsuperuser
+    ```
+    
+9. Enable time synchronization:
+
+    Concent is highly time dependent service. Thus time synchronization should be enabled:
+    ```bash
+    timedatectl set-ntp true
     ```
 
 ### Running concent in development

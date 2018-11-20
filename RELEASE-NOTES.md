@@ -2,18 +2,29 @@
 
 #### Endpoints and uses cases in general
 - `send` now returns `ServiceRefused` with reason `TooSmallProviderDeposit` for additional verification use case when Provider's deposit is insufficient(#567).
+- Add single retry attempt for storing (creating) subtask (#759).
+- Add support for multiple protocol version (#916).
+- Bugfix: Extend descriptions of errors from golem-messages (#932).
 
 #### Payments
 - Concent now uses Bankster to claim deposits (#567).
 - Concent now uses Bankster to pay for additional verification as provider (#568).
 - Concent now uses Bankster to pay for subtask as requestor (#568).
 - Concent now uses Bankster to process `force payment` use case (#565).
+- Concent now uses Bankster to `settle overdue acceptances` operation (#898).
+- Concent now uses Bankster to `discard claim` operation (#907).
+- Concent now uses Bankster to finalize payment (#922).
 
 ##### New settings
 - `ADDITIONAL_VERIFICATION_COST` (#567).
+- `ADDITIONAL_VERIFICATION_CALL_TIME` (#840).
 
-#### Signing Service
+#### Signing Service and Middleman
 - Add "Extension #5". Check daily limit for transactions and send email notifications(#872).
+- Improve logging (#874).
+
+#### Admin panel
+- Lists deposit claims and accounts with all the relevant columns (#944).
 
 ### 0.10.0
 #### Compatibility

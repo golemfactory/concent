@@ -131,6 +131,13 @@ You can put the output of the script above directly in your `local_settings.py`
     ```
     concent_api/manage.py createsuperuser
     ```
+    
+9. Enable time synchronization:
+
+    Concent is highly time dependent service. Thus time synchronization should be enabled:
+    ```bash
+    timedatectl set-ntp true
+    ```
 
 ### Running concent in development
 

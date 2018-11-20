@@ -385,7 +385,7 @@ class TestValidateSceneFile:
 class TestValidateTaskToCompute(object):
 
     @pytest.fixture(autouse=True)
-    def setup(self):
+    def setUp(self):
         self.task_to_compute = TaskToComputeFactory()
 
     def test_that_valid_task_to_compute_doesnt_raise_any_exception(self):
@@ -394,7 +394,7 @@ class TestValidateTaskToCompute(object):
         except Exception as exception:  # pylint: disable=broad-except
             assert False, f"Unexpected exception has been raised: {str(exception)}"
 
-    def test_that_other_messages_than_task_to_compute_causes_message_validation_error(self):
+    def test_that_other_messages_than_task_to_compute_causes_message_validation_error(self):  # pylint: disable=no-self-use
         wrong_message = ComputeTaskDefFactory()
         with pytest.raises(ConcentValidationError) as exception_wrapper:
             validate_task_to_compute(wrong_message)

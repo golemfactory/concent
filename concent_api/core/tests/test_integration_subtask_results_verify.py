@@ -8,7 +8,6 @@ from golem_messages import load
 from golem_messages import message
 
 from common.constants import ConcentUseCase
-from common.constants import ErrorCode
 from common.helpers import get_current_utc_timestamp
 from common.helpers import get_storage_result_file_path
 from common.helpers import get_storage_source_file_path
@@ -97,10 +96,10 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         )
         self._assert_stored_message_counter_not_increased()
 
-    def test_that_concent_responds_with_http_400_when_verification_received_in_accepted_state(self):
+    def test_that_concent_responds_with_service_refused_when_verification_received_in_accepted_state(self):
         """
         Provider -> Concent: SubtaskResultsVerify
-        Concent -> Provider: HTTP400
+        Concent -> Provider: ServiceRefused
         """
         # given
         (serialized_subtask_results_verify,
@@ -127,18 +126,22 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                     HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
                     HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
                 )
-
         # then
-        self._test_400_response(
-            response,
-            error_code=ErrorCode.QUEUE_SUBTASK_STATE_TRANSITION_NOT_ALLOWED
+        self._test_response(
+            response=response,
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ServiceRefused,
+            fields={
+                'reason': message.concents.ServiceRefused.REASON.DuplicateRequest,
+            }
         )
         self._assert_stored_message_counter_not_increased()
 
-    def test_that_concent_responds_with_http_400_when_verification_received_in_failed_state(self):
+    def test_that_concent_responds_with_service_refused_when_verification_received_in_failed_state(self):
         """
         Provider -> Concent: SubtaskResultsVerify
-        Concent -> Provider: HTTP400
+        Concent -> Provider: ServiceRefused
         """
         # given
         (serialized_subtask_results_verify,
@@ -167,9 +170,14 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 )
 
         # then
-        self._test_400_response(
-            response,
-            error_code=ErrorCode.QUEUE_SUBTASK_STATE_TRANSITION_NOT_ALLOWED
+        self._test_response(
+            response=response,
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ServiceRefused,
+            fields={
+                'reason': message.concents.ServiceRefused.REASON.DuplicateRequest,
+            }
         )
         self._assert_stored_message_counter_not_increased()
 

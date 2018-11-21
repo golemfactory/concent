@@ -56,6 +56,7 @@ from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtas
 from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
 from core.subtask_helpers import delete_deposit_claim
 from core.subtask_helpers import get_one_or_none
+from core.subtask_helpers import is_state_transition_possible
 from core.transfer_operations import create_file_transfer_token_for_golem_client
 from core.transfer_operations import create_file_transfer_token_for_verification_use_case
 from core.transfer_operations import store_pending_message
@@ -450,9 +451,11 @@ def handle_send_force_get_task_result(
                 report_computed_task=client_message.report_computed_task,
                 force_get_task_result=client_message,
             )
-
         else:
-            if subtask.state_enum == Subtask.SubtaskState.FORCING_RESULT_TRANSFER:
+            if not is_state_transition_possible(
+                    to_=Subtask.SubtaskState.FORCING_RESULT_TRANSFER,
+                    from_=subtask.state_enum,
+            ):
                 return message.concents.ServiceRefused(
                     reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
                 )
@@ -552,7 +555,10 @@ def handle_send_force_subtask_results(
         subtask_id=task_to_compute.compute_task_def['subtask_id'],
     )
 
-    if subtask is not None and subtask.state_enum == Subtask.SubtaskState.FORCING_ACCEPTANCE:
+    if subtask is not None and not is_state_transition_possible(
+        to_=Subtask.SubtaskState.FORCING_ACCEPTANCE,
+        from_=subtask.state_enum,
+    ):
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
         )
@@ -1341,21 +1347,12 @@ def handle_send_subtask_results_verify(
         subtask_id=compute_task_def['subtask_id'],
     )
 
-    if subtask is not None and subtask.state_enum in [
-        Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
-        Subtask.SubtaskState.ADDITIONAL_VERIFICATION,
-    ]:
+    if subtask is not None and not is_state_transition_possible(
+        to_=Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
+        from_=subtask.state_enum
+    ):
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.DuplicateRequest,
-        )
-
-    if subtask is not None and subtask.state_enum in [
-        Subtask.SubtaskState.ACCEPTED,
-        Subtask.SubtaskState.FAILED,
-    ]:
-        raise Http400(
-            "SubtaskResultsVerify is not allowed in current state",
-            error_code=ErrorCode.QUEUE_SUBTASK_STATE_TRANSITION_NOT_ALLOWED,
         )
 
     try:

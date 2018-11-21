@@ -346,3 +346,10 @@ def delete_deposit_claim(
 
     if deposit_claim is not None:
         bankster.discard_claim(deposit_claim)
+
+
+def is_state_transition_possible(
+    to_: Subtask.SubtaskState,
+    from_: Subtask.SubtaskState,
+) -> bool:
+    return from_ in Subtask.POSSIBLE_TRANSITIONS_TO[to_]  # type: ignore

@@ -356,7 +356,6 @@ def settle_overdue_acceptances(
             requestor_eth_address=requestor_ethereum_address,
             provider_eth_address=provider_ethereum_address,
             payment_ts=oldest_payments_ts,
-            current_time=cut_off_time,
             transaction_type=TransactionType.BATCH,
         )
 

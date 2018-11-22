@@ -7,6 +7,9 @@
 - golem-messages: 2.15.0
 - golem-smart-contracts-interface: 1.6.0
 
+#### Payments
+- Bugfix: Add method to remove '0x' prefix from ethereum_transaction_hash (PR #964).
+
 ### 0.10.1
 
 #### Endpoints and uses cases in general

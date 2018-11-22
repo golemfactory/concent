@@ -458,11 +458,14 @@ def _parse_arguments() -> argparse.Namespace:
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        'concent_cluster_host',
+        '-host',
+        '--concent_cluster_host',
+        default='127.0.0.1',
         help='Host or IP address of a service on Concent cluster, to which SigningService connects over TCP.',
     )
     parser.add_argument(  # type: ignore
-        'concent_public_key',
+        '-pubk',
+        '--concent_public_key',
         action=make_secret_provider_factory(read_command_line=True, base64_convert=True),
         help="Concent's public key.",
     )

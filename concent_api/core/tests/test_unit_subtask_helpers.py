@@ -1,5 +1,7 @@
 import uuid
 
+import pytest
+from assertpy import assert_that
 from django.conf import settings
 from django.test import override_settings
 
@@ -9,6 +11,7 @@ from core.message_handlers import store_subtask
 from core.models import Client
 from core.models import Subtask
 from core.subtask_helpers import get_one_or_none
+from core.subtask_helpers import is_state_transition_possible
 from core.tests.utils import ConcentIntegrationTestCase
 from core.utils import hex_to_bytes_convert
 from core.utils import is_protocol_version_compatible
@@ -149,3 +152,23 @@ class TestAreAllStoredMessagesCompatibleWithProtocolVersion(ConcentIntegrationTe
                 subtask.task_to_compute.protocol_version,
             )
         )
+
+
+class TestSubtaskStatesTransition:
+
+    @pytest.mark.parametrize(('from_', 'to_', 'expected'), [
+        (Subtask.SubtaskState.FORCING_REPORT, Subtask.SubtaskState.FORCING_REPORT, False),
+        (Subtask.SubtaskState.FORCING_RESULT_TRANSFER, Subtask.SubtaskState.FORCING_RESULT_TRANSFER, False),
+        (Subtask.SubtaskState.FORCING_RESULT_TRANSFER, Subtask.SubtaskState.RESULT_UPLOADED, False),
+        (Subtask.SubtaskState.FORCING_ACCEPTANCE, Subtask.SubtaskState.ACCEPTED, False),
+        (Subtask.SubtaskState.FORCING_ACCEPTANCE, None, True),
+        (Subtask.SubtaskState.FORCING_RESULT_TRANSFER, Subtask.SubtaskState.REPORTED, True),
+        (Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER, Subtask.SubtaskState.REPORTED, True),
+    ])  # pylint: disable=no-self-use
+    def test_that_is_state_transition_possible_return_correct_values(
+        self,
+        from_: Subtask.SubtaskState,
+        to_: Subtask.SubtaskState,
+        expected,
+    ):
+        assert_that(is_state_transition_possible(from_, to_)).is_equal_to(expected)

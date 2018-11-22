@@ -408,6 +408,11 @@ def settle_overdue_acceptances(
             requestor_deposit_value - sum_of_existing_requestor_claims['sum_of_existing_claims'],
         )
 
+
+        logger.info(f"amount_pending = {amount_pending}"
+                    f"requestor_deposit_value = {requestor_deposit_value}"
+                    f"sum_of_existing_requestor_claims = {sum_of_existing_requestor_claims['sum_of_existing_claims']}")
+
         logger.info(
             f'requestor_payable_amount is {requestor_payable_amount} for ethereum address {requestor_ethereum_address}.'
         )

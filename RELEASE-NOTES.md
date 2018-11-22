@@ -1,14 +1,14 @@
 ### 0.10.2
 
 #### Endpoints and uses cases in general
-- Bugfix: Superfluous keyword arguments in `get_list_of_payments()` cal (PR: #963)
-
-#### Compatibility
-- golem-messages: 2.15.0
-- golem-smart-contracts-interface: 1.6.0
+- Bugfix: Superfluous keyword arguments in `get_list_of_payments()` cal (PR: #963).
 
 #### Payments
 - Bugfix: Add method to remove '0x' prefix from ethereum_transaction_hash (PR #964).
+
+#### Compatibility
+- golem-messages: 2.15.2
+- golem-smart-contracts-interface: 1.6.0
 
 ### 0.10.1
 

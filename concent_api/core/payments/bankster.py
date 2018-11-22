@@ -266,6 +266,7 @@ def finalize_payment(deposit_claim: DepositClaim) -> Optional[str]:
             assert False
 
         # Bankster puts transaction ID in DepositClaim.tx_hash.
+        ethereum_transaction_hash = adjust_transaction_hash(ethereum_transaction_hash)
         deposit_claim.tx_hash = ethereum_transaction_hash
         deposit_claim.full_clean()
         deposit_claim.save()
@@ -420,6 +421,7 @@ def settle_overdue_acceptances(
             value=requestor_payable_amount,
             payment_ts=cut_off_time,
         )
+        transaction_hash = adjust_transaction_hash(transaction_hash)
 
         # Deposit lock for requestor.
         claim_against_requestor = DepositClaim(
@@ -487,3 +489,9 @@ def discard_claim(deposit_claim: DepositClaim) -> bool:
             except DepositAccount.DoesNotExist:
                 claim_removed = False
     return claim_removed
+
+
+def adjust_transaction_hash(tx_hash):
+    if tx_hash.startswith('0x'):
+        return tx_hash.split('0x')[1]
+    return tx_hash

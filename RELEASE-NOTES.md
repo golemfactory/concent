@@ -1,3 +1,12 @@
+### 0.10.2
+
+#### Endpoints and uses cases in general
+- Bugfix: Superfluous keyword arguments in `get_list_of_payments()` cal (PR: #963)
+
+#### Compatibility
+- golem-messages: 2.15.0
+- golem-smart-contracts-interface: 1.6.0
+
 ### 0.10.1
 
 #### Endpoints and uses cases in general

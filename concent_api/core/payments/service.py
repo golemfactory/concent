@@ -27,14 +27,12 @@ def get_list_of_payments(
     requestor_eth_address: str = None,
     provider_eth_address: str = None,
     payment_ts: int = None,
-    current_time: int = None,
     transaction_type: TransactionType = None,
 ) -> list:
     return backend.get_list_of_payments(
         requestor_eth_address   = requestor_eth_address,
         provider_eth_address    = provider_eth_address,
         payment_ts              = payment_ts,
-        current_time            = current_time,
         transaction_type        = transaction_type,
     )
 

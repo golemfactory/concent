@@ -195,7 +195,8 @@ def test_case_multiple_force_get_task_result_concerning_one_subtask_will_be_proc
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
-        run_tests(globals())
+        status = run_tests(globals())
+        exit(status)
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file=sys.stderr)
         sys.exit(exception)

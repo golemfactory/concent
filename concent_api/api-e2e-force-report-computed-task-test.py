@@ -101,7 +101,8 @@ def test_case_1_provider_forces_report_computed_task_and_gets_accepted(
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
-        run_tests(globals())
+        status = run_tests(globals())
+        exit(status)
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file = sys.stderr)
         sys.exit(str(exception))

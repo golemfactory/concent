@@ -426,7 +426,8 @@ if __name__ == '__main__':
         from concent_api.settings import STORAGE_CLUSTER_ADDRESS
         from concent_api.settings import ADDITIONAL_VERIFICATION_TIME_MULTIPLIER
         from concent_api.settings import BLENDER_THREADS
-        run_tests(globals())
+        status = run_tests(globals())
+        exit(status)
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file=sys.stderr)
         sys.exit(str(exception))

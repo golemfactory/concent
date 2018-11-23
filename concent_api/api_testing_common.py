@@ -330,7 +330,7 @@ def execute_tests(tests_to_execute: list, objects: dict, **kwargs: Any) -> None:
         print("-" * 80)
 
 
-def run_tests(objects: dict, additional_arguments: Optional[dict]=None) -> None:
+def run_tests(objects: dict, additional_arguments: Optional[dict]=None) -> int:
     if additional_arguments is None:
         additional_arguments = {}
     (cluster_url, patterns, concent_1_golem_messages_version, concent_2_golem_messages_version) = parse_arguments()
@@ -351,9 +351,12 @@ def run_tests(objects: dict, additional_arguments: Optional[dict]=None) -> None:
         cluster_consts=cluster_consts,
         **additional_arguments
     )
-    if count_fails.get_fails() > 0:
+    number_of_failed_tests = count_fails.get_fails()
+    if number_of_failed_tests > 0:
         count_fails.print_fails()
     print("END")
+    status_code = int(number_of_failed_tests > 0)
+    return status_code
 
 
 def _get_provider_hex_public_key() -> str:

@@ -51,15 +51,16 @@ def force_subtask_results(
 
 def ack_report_computed_task(
     timestamp: Optional[str]=None,
-    report_computed_task: Optional[message.tasks.AckReportComputedTask]=None,
+    report_computed_task: Optional[message.tasks.ReportComputedTask]=None,
 ) -> message.tasks.AckReportComputedTask:
     with freeze_time(timestamp):
-        return sign_message(
+        signed_message: message.tasks.AckReportComputedTask = sign_message(
             message.tasks.AckReportComputedTask(
                 report_computed_task=report_computed_task,
             ),
             REQUESTOR_PRIVATE_KEY,
         )
+        return signed_message
 
 
 def force_subtask_results_response(
@@ -80,13 +81,14 @@ def subtask_results_accepted(
     task_to_compute: Optional[message.tasks.TaskToCompute]=None,
 ) -> message.tasks.SubtaskResultsAccepted:
     with freeze_time(timestamp):
-        return sign_message(
+        signed_message: message.tasks.SubtaskResultsAccepted = sign_message(
             message.tasks.SubtaskResultsAccepted(
-                payment_ts = payment_ts,
-                task_to_compute = task_to_compute,
+                payment_ts=payment_ts,
+                task_to_compute=task_to_compute,
             ),
             REQUESTOR_PRIVATE_KEY,
         )
+        return signed_message
 
 
 def subtask_results_rejected(
@@ -95,13 +97,14 @@ def subtask_results_rejected(
     report_computed_task: Optional[message.tasks.ReportComputedTask]=None,
 ) -> message.tasks.SubtaskResultsRejected:
     with freeze_time(timestamp):
-        return sign_message(
+        signed_message: message.tasks.SubtaskResultsRejected = sign_message(
             message.tasks.SubtaskResultsRejected(
-                reason                  = reason,
-                report_computed_task    = report_computed_task,
+                reason=reason,
+                report_computed_task=report_computed_task,
             ),
             REQUESTOR_PRIVATE_KEY,
         )
+        return signed_message
 
 
 def report_computed_task(
@@ -109,13 +112,14 @@ def report_computed_task(
     task_to_compute: Optional[message.tasks.TaskToCompute]=None
 ) -> message.tasks.ReportComputedTask:
     with freeze_time(timestamp):
-        return sign_message(
+        signed_message: message.tasks.ReportComputedTask = sign_message(
             message.tasks.ReportComputedTask(
                 task_to_compute=task_to_compute,
                 size=REPORT_COMPUTED_TASK_SIZE,
             ),
             PROVIDER_PRIVATE_KEY,
         )
+        return signed_message
 
 
 def calculate_timestamp(current_time: int, concent_messaging_time: int, minimum_upload_rate: int) -> str:

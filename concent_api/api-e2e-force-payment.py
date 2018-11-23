@@ -56,13 +56,14 @@ def subtask_results_accepted(
     task_to_compute: Optional[message.TaskToCompute]=None
 ) -> message.tasks.SubtaskResultsAccepted:
     with freeze_time(timestamp):
-        return sign_message(
+        signed_message: message.tasks.SubtaskResultsAccepted = sign_message(
             message.tasks.SubtaskResultsAccepted(
                 payment_ts=payment_ts,
                 task_to_compute=task_to_compute
             ),
             REQUESTOR_PRIVATE_KEY,
         )
+        return signed_message
 
 
 @count_fails

@@ -328,7 +328,7 @@ def finalize_deposit_claim(
         payment_interface = PaymentInterface()  # new object is NOT created, it is singleton and its instance is returned
         payment_interface.on_transaction_confirmed(   # type: ignore  # pylint: disable=no-member
             tx_hash=tx_hash,
-            cb=lambda: discard_claim(deposit_claim)
+            cb=lambda _: discard_claim(deposit_claim),
         )
 
 

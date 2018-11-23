@@ -19,6 +19,7 @@ from common.constants import ConcentUseCase
 from common.helpers import deserialize_message
 from common.helpers import ethereum_public_key_to_address
 from common.helpers import get_current_utc_timestamp
+from common.logging import log
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.exceptions import BanksterTimestampError
 from core.exceptions import TooSmallProviderDeposit
@@ -488,6 +489,11 @@ def discard_claim(deposit_claim: DepositClaim) -> bool:
                 claim_removed = True
             except DepositAccount.DoesNotExist:
                 claim_removed = False
+    log(
+        logger,
+        f'After removing DepositClaim. Was DepositClaim removed: {claim_removed}. Tx_hash: {deposit_claim.tx_hash}',
+        subtask_id=deposit_claim.subtask_id,
+    )
     return claim_removed
 
 

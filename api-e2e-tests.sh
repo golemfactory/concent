@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 printf "=================== RUNNING API INTEGRATION TESTS ====================\n"
 python3 concent_api/api-e2e-force-accept-or-reject-results-test.py $1

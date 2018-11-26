@@ -170,8 +170,8 @@ class SigningServiceParseArgumentsTestCase(TestCase):
 
     def test_that_argument_parser_should_parse_correct_input(self):
         sys.argv += [
-            '--concent_cluster_host', '127.0.0.1',
-            '--concent_public_key', self.concent_public_key_encoded,
+            '--concent-cluster-host', '127.0.0.1',
+            '--concent-public-key', self.concent_public_key_encoded,
             '--initial_reconnect_delay', '2',
             '--concent-cluster-port', '8000',
             '--sentry-dsn', self.sentry_dsn,
@@ -192,7 +192,7 @@ class SigningServiceParseArgumentsTestCase(TestCase):
 
     def test_that_argument_parser_should_parse_correct_input_and_use_default_values(self):
         sys.argv += [
-            '--concent_public_key', self.concent_public_key_encoded,
+            '--concent-public-key', self.concent_public_key_encoded,
             '--ethereum-private-key', self.ethereum_private_key_encoded,
             '--signing-service-private-key', self.signing_service_private_key_encoded,
         ]
@@ -206,7 +206,7 @@ class SigningServiceParseArgumentsTestCase(TestCase):
     def test_that_argument_parser_should_fail_if_port_cannot_be_casted_to_int(self):
         sys.argv += [
             '--concent_cluster_host', '127.0.0.1',
-            '--concent_public_key', self.concent_public_key_encoded,
+            '--concent-public-key', self.concent_public_key_encoded,
             '--concent-cluster-port', 'abc',
             '--ethereum-private-key', self.ethereum_private_key_encoded,
             '--signing-service-private-key', self.signing_service_private_key_encoded,
@@ -217,8 +217,8 @@ class SigningServiceParseArgumentsTestCase(TestCase):
 
     def test_that_argument_parser_should_parse_correct_secrets_from_env_variables(self):
         sys.argv += [
-            '--concent_cluster_host', '127.0.0.1',
-            '--concent_public_key', self.concent_public_key_encoded,
+            '--concent-cluster-host', '127.0.0.1',
+            '--concent-public-key', self.concent_public_key_encoded,
             '--sentry-dsn-from-env',
             '--ethereum-private-key-from-env',
             '--signing-service-private-key-from-env',
@@ -237,8 +237,8 @@ class SigningServiceParseArgumentsTestCase(TestCase):
 
     def test_that_argument_parses_should_fail_if_file_with_secrets_is_missing(self):
         sys.argv += [
-            '--concent_cluster_host', '127.0.0.1',
-            '--concent_public_key', self.concent_public_key_encoded,
+            '--concent-cluster-host', '127.0.0.1',
+            '--concent-public-key', self.concent_public_key_encoded,
             '--sentry-dsn-path', '/not_existing_path/file.txt'
         ]
         with self.assertRaises(FileNotFoundError):
@@ -250,8 +250,8 @@ class SigningServiceParseArgumentsTestCase(TestCase):
         signing_service_private_key_tmp_file = os.path.join(tempfile.gettempdir(), "signing_service_private_key_tmp_file.txt")
 
         sys.argv += [
-            '--concent_cluster_host', '127.0.0.1',
-            '--concent_public_key', self.concent_public_key_encoded,
+            '--concent-cluster-host', '127.0.0.1',
+            '--concent-public-key', self.concent_public_key_encoded,
             '--ethereum-private-key-path', ethereum_private_key_tmp_file,
             '--sentry-dsn-path', sentry_tmp_file,
             '--signing-service-private-key-path', signing_service_private_key_tmp_file,

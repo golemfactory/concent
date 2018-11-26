@@ -458,7 +458,7 @@ def _parse_arguments() -> argparse.Namespace:
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '-host',
+        '-c',
         '--concent-cluster-host',
         default='127.0.0.1',
         help='Host or IP address of a service on Concent cluster, to which SigningService connects over TCP.',

@@ -774,6 +774,19 @@ def handle_send_force_payment(
             reason=message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,
         )
 
+    cut_off_time = get_current_utc_timestamp()
+
+    # Any of the items from list of overdue acceptances
+    # matches condition cut_off_time < payment_ts + PAYMENT_DUE_TIME
+    if any(
+        cut_off_time < subtask_results_accepted.payment_ts + settings.PAYMENT_DUE_TIME
+        for subtask_results_accepted in client_message.subtask_results_accepted_list
+    ):
+        return message.concents.ForcePaymentRejected(
+            force_payment=client_message,
+            reason=message.concents.ForcePaymentRejected.REASON.TimestampError,
+        )
+
     task_to_compute = client_message.subtask_results_accepted_list[0].task_to_compute
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
     (requestor_eth_address, provider_eth_address) = get_clients_eth_accounts(task_to_compute)

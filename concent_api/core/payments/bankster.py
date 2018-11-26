@@ -367,9 +367,7 @@ def settle_overdue_acceptances(
         )
 
         # Concent defines time T1 equal to youngest timestamp from list of transactions.
-        if len(list_of_transactions) == 0:
-            t1_is_bigger_than_payments_ts = False
-        else:
+        if len(list_of_transactions) > 0:
             youngest_transaction_timestamp = max(
                 ethereum_transaction.closure_time for ethereum_transaction in list_of_transactions
             )
@@ -378,19 +376,12 @@ def settle_overdue_acceptances(
 
             # Concent checks if all passed SubtaskResultAccepted messages from subtask_results_accepted_list
             # have payment_ts < T1
-            t1_is_bigger_than_payments_ts = any(
+            if any(
                 youngest_transaction_timestamp > subtask_results_accepted.payment_ts
                 for subtask_results_accepted in acceptances
-            )
-
-        # Any of the items from list of overdue acceptances
-        # matches condition current_time < payment_ts + PAYMENT_DUE_TIME
-        acceptance_time_overdue = any(
-            cut_off_time < subtask_results_accepted.payment_ts + settings.PAYMENT_DUE_TIME
-            for subtask_results_accepted in acceptances
-        )
-
-        if t1_is_bigger_than_payments_ts or acceptance_time_overdue:
+            ):
+                raise BanksterTimestampError
+        else:
             raise BanksterTimestampError
 
         # Concent gets list of forced payments from payment API where T0 <= payment_ts + PAYMENT_DUE_TIME.

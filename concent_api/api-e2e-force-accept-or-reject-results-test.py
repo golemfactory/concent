@@ -39,7 +39,7 @@ REPORT_COMPUTED_TASK_SIZE = 10
 (DIFFERENT_PROVIDER_ETHEREUM_PRIVATE_KEY, DIFFERENT_PROVIDER_ETHEREUM_PUBLIC_KEY) = generate_priv_and_pub_eth_account_key()
 
 
-def force_subtask_results(
+def create_force_subtask_results(
     timestamp: Optional[str]=None,
     ack_report_computed_task: Optional[message.tasks.AckReportComputedTask]=None,
 ) -> message.concents.ForceSubtaskResults:
@@ -49,20 +49,21 @@ def force_subtask_results(
         )
 
 
-def ack_report_computed_task(
+def create_ack_report_computed_task(
     timestamp: Optional[str]=None,
-    report_computed_task: Optional[message.tasks.AckReportComputedTask]=None,
+    report_computed_task: Optional[message.tasks.ReportComputedTask]=None,
 ) -> message.tasks.AckReportComputedTask:
     with freeze_time(timestamp):
-        return sign_message(
+        signed_message: message.tasks.AckReportComputedTask = sign_message(
             message.tasks.AckReportComputedTask(
                 report_computed_task=report_computed_task,
             ),
             REQUESTOR_PRIVATE_KEY,
         )
+        return signed_message
 
 
-def force_subtask_results_response(
+def create_force_subtask_results_response(
     timestamp: Optional[str]=None,
     subtask_results_accepted: Optional[message.tasks.SubtaskResultsAccepted]=None,
     subtask_results_rejected: Optional[message.tasks.SubtaskResultsRejected]=None,
@@ -74,48 +75,51 @@ def force_subtask_results_response(
         )
 
 
-def subtask_results_accepted(
+def create_subtask_results_accepted(
     timestamp: Optional[str]=None,
     payment_ts: Optional[str]=None,
     task_to_compute: Optional[message.tasks.TaskToCompute]=None,
 ) -> message.tasks.SubtaskResultsAccepted:
     with freeze_time(timestamp):
-        return sign_message(
+        signed_message: message.tasks.SubtaskResultsAccepted = sign_message(
             message.tasks.SubtaskResultsAccepted(
-                payment_ts = payment_ts,
-                task_to_compute = task_to_compute,
+                payment_ts=payment_ts,
+                task_to_compute=task_to_compute,
             ),
             REQUESTOR_PRIVATE_KEY,
         )
+        return signed_message
 
 
-def subtask_results_rejected(
+def create_subtask_results_rejected(
     timestamp: Optional[str]=None,
     reason: Optional[message.tasks.SubtaskResultsRejected.REASON]=None,
     report_computed_task: Optional[message.tasks.ReportComputedTask]=None,
 ) -> message.tasks.SubtaskResultsRejected:
     with freeze_time(timestamp):
-        return sign_message(
+        signed_message: message.tasks.SubtaskResultsRejected = sign_message(
             message.tasks.SubtaskResultsRejected(
-                reason                  = reason,
-                report_computed_task    = report_computed_task,
+                reason=reason,
+                report_computed_task=report_computed_task,
             ),
             REQUESTOR_PRIVATE_KEY,
         )
+        return signed_message
 
 
-def report_computed_task(
+def create_report_computed_task(
     timestamp: Optional[str]=None,
     task_to_compute: Optional[message.tasks.TaskToCompute]=None
 ) -> message.tasks.ReportComputedTask:
     with freeze_time(timestamp):
-        return sign_message(
+        signed_message: message.tasks.ReportComputedTask = sign_message(
             message.tasks.ReportComputedTask(
                 task_to_compute=task_to_compute,
                 size=REPORT_COMPUTED_TASK_SIZE,
             ),
             PROVIDER_PRIVATE_KEY,
         )
+        return signed_message
 
 
 def calculate_timestamp(current_time: int, concent_messaging_time: int, minimum_upload_rate: int) -> str:
@@ -157,11 +161,11 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConst
         'send',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        force_subtask_results(
+        create_force_subtask_results(
             timestamp=timestamp_to_isoformat(current_time),
-            ack_report_computed_task=ack_report_computed_task(
+            ack_report_computed_task=create_ack_report_computed_task(
                 timestamp=timestamp_to_isoformat(current_time),
-                report_computed_task=report_computed_task(
+                report_computed_task=create_report_computed_task(
                     task_to_compute=signed_task_to_compute,
                 )
             )
@@ -183,11 +187,11 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConst
         'send',
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        force_subtask_results_response(
+        create_force_subtask_results_response(
             timestamp=timestamp_to_isoformat(current_time),
-            subtask_results_rejected=subtask_results_rejected(
+            subtask_results_rejected=create_subtask_results_rejected(
                 timestamp=timestamp_to_isoformat(current_time),
-                report_computed_task=report_computed_task(
+                report_computed_task=create_report_computed_task(
                     timestamp=timestamp_to_isoformat(current_time),
                     task_to_compute=signed_task_to_compute,
                 )
@@ -222,11 +226,11 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConst
         'send',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        force_subtask_results(
+        create_force_subtask_results(
             timestamp=timestamp_to_isoformat(current_time),
-            ack_report_computed_task=ack_report_computed_task(
+            ack_report_computed_task=create_ack_report_computed_task(
                 timestamp=timestamp_to_isoformat(current_time),
-                report_computed_task=report_computed_task(
+                report_computed_task=create_report_computed_task(
                     task_to_compute=signed_task_to_compute
                 )
             )
@@ -251,9 +255,9 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConst
         'send',
         REQUESTOR_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        force_subtask_results_response(
+        create_force_subtask_results_response(
             timestamp=timestamp_to_isoformat(current_time),
-            subtask_results_accepted=subtask_results_accepted(
+            subtask_results_accepted=create_subtask_results_accepted(
                 timestamp=timestamp_to_isoformat(current_time),
                 payment_ts=timestamp_to_isoformat(current_time + 1),
                 task_to_compute=signed_task_to_compute
@@ -283,11 +287,11 @@ def test_case_2c_wrong_timestamps(cluster_consts: ProtocolConstants, cluster_url
         'send',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        force_subtask_results(
+        create_force_subtask_results(
             timestamp=timestamp_to_isoformat(current_time),
-            ack_report_computed_task=ack_report_computed_task(
+            ack_report_computed_task=create_ack_report_computed_task(
                 timestamp=timestamp_to_isoformat(current_time),
-                report_computed_task=report_computed_task(
+                report_computed_task=create_report_computed_task(
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
                         deadline=calculate_deadline_too_far_in_the_future(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
@@ -311,11 +315,11 @@ def test_case_2b_not_enough_funds(cluster_consts: ProtocolConstants, cluster_url
         'send',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        force_subtask_results(
+        create_force_subtask_results(
             timestamp=timestamp_to_isoformat(current_time),
-            ack_report_computed_task=ack_report_computed_task(
+            ack_report_computed_task=create_ack_report_computed_task(
                 timestamp=timestamp_to_isoformat(current_time),
-                report_computed_task=report_computed_task(
+                report_computed_task=create_report_computed_task(
                     task_to_compute=create_signed_task_to_compute(
                         timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
                         deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
@@ -343,38 +347,33 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolC
         deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
         price=1000,
     )
+    force_subtask_results = create_force_subtask_results(
+        timestamp=timestamp_to_isoformat(current_time),
+        ack_report_computed_task=create_ack_report_computed_task(
+            timestamp=timestamp_to_isoformat(current_time),
+            report_computed_task=create_report_computed_task(
+                task_to_compute=signed_task_to_compute
+            )
+        )
+    )
     api_request(
         cluster_url,
         'send',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        force_subtask_results(
-            timestamp=timestamp_to_isoformat(current_time),
-            ack_report_computed_task=ack_report_computed_task(
-                timestamp=timestamp_to_isoformat(current_time),
-                report_computed_task=report_computed_task(
-                    task_to_compute=signed_task_to_compute
-                )
-            )
-        ),
+        force_subtask_results,
         expected_status=202,
     )
     time.sleep(1)
     #  Step 2. Send ForceSubtaskResults second time with same task_id
+    # Signature must be set to None, because msg will be signed again in api_request()
+    force_subtask_results.sig = None
     api_request(
         cluster_url,
         'send',
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
-        force_subtask_results(
-            timestamp=timestamp_to_isoformat(current_time),
-            ack_report_computed_task=ack_report_computed_task(
-                timestamp=timestamp_to_isoformat(current_time),
-                report_computed_task=report_computed_task(
-                    task_to_compute=signed_task_to_compute
-                )
-            )
-        ),
+        force_subtask_results,
         expected_status=200,
         expected_message_type=message.concents.ServiceRefused,
         expected_content_type='application/octet-stream',

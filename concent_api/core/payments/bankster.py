@@ -491,7 +491,7 @@ def discard_claim(deposit_claim: DepositClaim) -> bool:
     return claim_removed
 
 
-def adjust_transaction_hash(tx_hash):
+def adjust_transaction_hash(tx_hash: str) -> str:
     if tx_hash.startswith('0x'):
         return tx_hash.split('0x')[1]
     return tx_hash

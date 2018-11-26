@@ -5,6 +5,7 @@ from typing import MutableMapping
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
+from typing import Type
 from typing import Union
 
 from threading import Thread
@@ -129,7 +130,7 @@ def validate_response_status(actual_status_code: int, expected_status: Optional[
 
 def validate_response_message(
     encoded_message: bytes,
-    expected_message_type: Message,
+    expected_message_type: Optional[Type[Message]],
     private_key: bytes,
     public_key: bytes,
 ) -> None:
@@ -173,17 +174,15 @@ def api_request(
     endpoint: str,
     private_key: bytes,
     public_key: bytes,
-    data: Optional[Message]=None,
+    data: Union[Message, bytes],
     headers: Optional[dict]=None,
     expected_status: Optional[int]=None,
-    expected_message_type: Optional[Message]=None,
+    expected_message_type: Optional[Type[Message]]=None,
     expected_content_type: Optional[str]=None,
     expected_golem_version: Optional[str]=None,
     expected_error_code: Optional[str]=None,
 ) -> Union[None, Message]:
-    def _prepare_data(data: Optional[Union[bytes, str]]=None) -> Union[str, bytes]:
-        if data is None:
-            return ''
+    def _prepare_data(data: Union[Message, bytes]) -> bytes:
         if isinstance(data, bytes):
             return data
         return dump(
@@ -192,11 +191,8 @@ def api_request(
             public_key,
         )
 
-    def _print_data(data: Optional[Union[bytes, str]], url: str) -> None:
-        if data is None:
-            print('RECEIVE ({})'.format(url))
-
-        elif isinstance(data, bytes):
+    def _print_data(data: Union[Message, bytes], url: str) -> None:
+        if isinstance(data, bytes):
             print('RECEIVE ({})'.format(url))
 
         else:
@@ -334,7 +330,7 @@ def execute_tests(tests_to_execute: list, objects: dict, **kwargs: Any) -> None:
         print("-" * 80)
 
 
-def run_tests(objects: dict, additional_arguments: Optional[dict]=None) -> None:
+def run_tests(objects: dict, additional_arguments: Optional[dict]=None) -> int:
     if additional_arguments is None:
         additional_arguments = {}
     (cluster_url, patterns, concent_1_golem_messages_version, concent_2_golem_messages_version) = parse_arguments()
@@ -355,9 +351,12 @@ def run_tests(objects: dict, additional_arguments: Optional[dict]=None) -> None:
         cluster_consts=cluster_consts,
         **additional_arguments
     )
-    if count_fails.get_fails() > 0:
+    number_of_failed_tests = count_fails.get_fails()
+    if number_of_failed_tests > 0:
         count_fails.print_fails()
     print("END")
+    status_code = int(number_of_failed_tests > 0)
+    return status_code
 
 
 def _get_provider_hex_public_key() -> str:
@@ -412,8 +411,8 @@ def create_signed_task_to_compute(
         task_to_compute.generate_ethsig(
             requestor_ethereum_private_key if requestor_ethereum_private_key is not None else REQUESTOR_ETHEREUM_PRIVATE_KEY
         )
-        task_to_compute = sign_message(task_to_compute, REQUESTOR_PRIVATE_KEY)
-        return task_to_compute
+        signed_task_to_compute: TaskToCompute = sign_message(task_to_compute, REQUESTOR_PRIVATE_KEY)
+        return signed_task_to_compute
 
 
 def call_function_in_threads(

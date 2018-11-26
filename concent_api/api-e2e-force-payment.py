@@ -56,13 +56,14 @@ def subtask_results_accepted(
     task_to_compute: Optional[message.TaskToCompute]=None
 ) -> message.tasks.SubtaskResultsAccepted:
     with freeze_time(timestamp):
-        return sign_message(
+        signed_message: message.tasks.SubtaskResultsAccepted = sign_message(
             message.tasks.SubtaskResultsAccepted(
                 payment_ts=payment_ts,
                 task_to_compute=task_to_compute
             ),
             REQUESTOR_PRIVATE_KEY,
         )
+        return signed_message
 
 
 @count_fails
@@ -234,7 +235,8 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
-        run_tests(globals())
+        status = run_tests(globals())
+        exit(status)
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file = sys.stderr)
         sys.exit(str(exception))

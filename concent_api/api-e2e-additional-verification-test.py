@@ -25,6 +25,7 @@ from api_testing_common import REQUESTOR_PRIVATE_KEY
 from api_testing_common import REQUESTOR_PUBLIC_KEY
 from api_testing_common import run_tests
 from api_testing_common import timestamp_to_isoformat
+from golem_messages.factories.helpers import override_timestamp
 from protocol_constants import ProtocolConstants
 
 import requests
@@ -47,11 +48,12 @@ def get_subtask_results_verify(
     report_computed_task_package_hash: str,
     task_to_compute_size: int,
     task_to_compute_package_hash: str,
-    requestor_ethereum_public_key: Optional[bytes]=None,
-    requestor_ethereum_private_key: Optional[bytes]=None,
-    provider_ethereum_public_key: Optional[bytes]=None,
-    price: int=1,
-    script_src: Optional[str]=None,
+    requestor_ethereum_public_key: Optional[bytes] = None,
+    requestor_ethereum_private_key: Optional[bytes] = None,
+    provider_ethereum_public_key: Optional[bytes] = None,
+    price: int = 1,
+    script_src: Optional[str] = None,
+    time_offset: Optional[int] = None,
 ) -> message.concents.SubtaskResultsVerify:
     task_to_compute = create_signed_task_to_compute(
         deadline=current_time + CALCULATED_VERIFICATION_TIME,
@@ -79,6 +81,11 @@ def get_subtask_results_verify(
             reason=reason,
             report_computed_task=report_computed_task,
         )
+        if time_offset is not None:
+            override_timestamp(
+                subtask_results_rejected,
+                subtask_results_rejected.timestamp - time_offset
+            )
         subtask_results_rejected.sign_message(
             REQUESTOR_PRIVATE_KEY,
             subtask_results_rejected.get_short_hash(),
@@ -232,6 +239,7 @@ def test_case_3_test_for_invalid_time(cluster_consts: ProtocolConstants, cluster
             report_computed_task_package_hash=file_check_sum,
             task_to_compute_size=file_size,
             task_to_compute_package_hash=file_check_sum,
+            time_offset=3600
         ),
         expected_status=200,
         expected_message_type=message.concents.ServiceRefused,
@@ -418,7 +426,8 @@ if __name__ == '__main__':
         from concent_api.settings import STORAGE_CLUSTER_ADDRESS
         from concent_api.settings import ADDITIONAL_VERIFICATION_TIME_MULTIPLIER
         from concent_api.settings import BLENDER_THREADS
-        run_tests(globals())
+        status = run_tests(globals())
+        exit(status)
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file=sys.stderr)
         sys.exit(str(exception))

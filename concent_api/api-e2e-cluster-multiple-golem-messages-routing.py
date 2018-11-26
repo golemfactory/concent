@@ -99,7 +99,8 @@ def test_case_ping_message_send_to_concent_with_malformed_golem_messages_should_
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
-        run_tests(globals())
+        status = run_tests(globals())
+        exit(status)
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file=sys.stderr)
         sys.exit(str(exception))

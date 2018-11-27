@@ -25,8 +25,6 @@ from core.models import DepositClaim
 from core.models import PendingResponse
 from core.models import Subtask
 from core.payments import bankster
-from core.payments.bankster import discard_claim
-from core.payments.payment_interface import PaymentInterface
 from core.transfer_operations import store_pending_message
 from core.transfer_operations import verify_file_status
 from core.utils import hex_to_bytes_convert
@@ -324,12 +322,7 @@ def finalize_deposit_claim(
     )
 
     if deposit_claim is not None:
-        tx_hash = bankster.finalize_payment(deposit_claim)
-        payment_interface = PaymentInterface()  # new object is NOT created, it is singleton and its instance is returned
-        payment_interface.on_transaction_confirmed(   # type: ignore  # pylint: disable=no-member
-            tx_hash=tx_hash,
-            cb=lambda _: discard_claim(deposit_claim),
-        )
+        bankster.finalize_payment(deposit_claim)
 
 
 def delete_deposit_claim(

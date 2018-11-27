@@ -9,3 +9,7 @@ class SigningServiceUnexpectedMessageError(Exception):
 
 class SigningServiceMaximumReconnectionAttemptsExceeded(Exception):
     pass
+
+
+class Base64DecodeError(Exception):
+    pass

@@ -1,3 +1,4 @@
+import binascii
 import logging.config
 import os
 import smtplib
@@ -16,6 +17,7 @@ from golem_messages.cryptography import verify_pubkey
 from golem_messages.exceptions import InvalidKeys
 
 from signing_service.constants import ETHEREUM_PRIVATE_KEY_REGEXP
+from signing_service.exceptions import Base64DecodeError
 
 logger = logging.getLogger()
 
@@ -96,21 +98,25 @@ class SecretProvider(Action):
         self,
         parser: ArgumentParser,
         namespace: Namespace,
-        values: str,
+        value: str,
         option_string: Optional[str]=None
     ) -> None:
-        if values is not None and self.use_file:
-            with open(values) as file:
+        assert value is not None
+        if self.use_file:
+            with open(value) as file:
                 self.const = file.read()
-        elif values is not None and self.read_command_line:
-            self.const = values
-        elif self.env_variable_name is not None:
-            self.const = os.environ.get(self.env_variable_name)
+        elif self.read_command_line:
+            self.const = value
         else:
-            assert False
+            assert self.env_variable_name is not None
+            self.const = os.environ.get(self.env_variable_name)
         if self.base64_convert:
             assert isinstance(self.const, str)
-            self.const = b64decode(self.const)
+            try:
+                self.const = b64decode(self.const)
+            except binascii.Error as exception:
+                logger.error(f'Unable to decode "{self.const}", {exception}')
+                raise Base64DecodeError(f'Unable to decode "{self.const}", {exception}')
             if self.string_decode:
                 self.const = self.const.decode()
         setattr(namespace, self.dest, self.const)

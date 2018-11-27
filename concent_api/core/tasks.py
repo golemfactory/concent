@@ -9,6 +9,7 @@ from django.db import transaction
 from common import logging
 from common.constants import ConcentUseCase
 from common.decorators import log_task_errors
+from common.decorators import non_nesting_atomic
 from common.decorators import provides_concent_feature
 from common.helpers import deserialize_message
 from common.helpers import get_current_utc_timestamp
@@ -36,7 +37,7 @@ logger = getLogger(__name__)
 
 @shared_task
 @log_task_errors
-@transaction.atomic(using='control')
+@non_nesting_atomic(using='control')
 def upload_finished(subtask_id: str) -> None:
     try:
         subtask = Subtask.objects.select_for_update().get(subtask_id=subtask_id)
@@ -141,7 +142,7 @@ def upload_finished(subtask_id: str) -> None:
 
 @shared_task(bind=True)
 @provides_concent_feature('concent-worker')
-@transaction.atomic(using='control')
+@non_nesting_atomic(using='control')
 @log_task_errors
 def verification_result(
     self: Task,
@@ -335,7 +336,7 @@ def verification_result(
 
 @shared_task(bind=True)
 @provides_concent_feature('concent-worker')
-@transaction.atomic(using='control')
+@non_nesting_atomic(using='control')
 @log_task_errors
 def result_upload_finished(self: Task, subtask_id: str) -> None:
     logging.log(

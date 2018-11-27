@@ -12,6 +12,7 @@ from golem_messages.message.concents import ForcePayment
 from golem_messages.message.tasks import SubtaskResultsAccepted
 
 from common.constants import ConcentUseCase
+from common.decorators import non_nesting_atomic
 from common.helpers import deserialize_message
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
@@ -196,7 +197,7 @@ def pre_process_message_related_subtasks(
         subtask_ids_list = [client_message.subtask_id]
 
     for subtask_id in subtask_ids_list:
-        with transaction.atomic(using='control'):
+        with non_nesting_atomic(using='control'):
             subtask = get_one_or_none(
                 model_or_query_set=Subtask.objects.select_for_update(),
                 subtask_id=subtask_id,
@@ -222,7 +223,7 @@ def update_all_timed_out_subtasks_of_a_client(client_public_key: bytes) -> None:
     )
     # Check if files are uploaded for all clients subtasks. It is checked for all clients subtasks, not only timeouted.
     for subtask in clients_subtask_list:
-        with transaction.atomic(using='control'):
+        with non_nesting_atomic(using='control'):
             Subtask.objects.select_for_update().filter(subtask_id=subtask.subtask_id)
             verify_file_status(subtask=subtask, client_public_key=client_public_key)
 

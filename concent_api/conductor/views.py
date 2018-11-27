@@ -8,6 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from golem_messages.message.concents import FileTransferToken
 
+from common.decorators import non_nesting_atomic
 from common.decorators import provides_concent_feature
 from common.logging import log_request_received
 from common.logging import log
@@ -23,7 +24,7 @@ logger = getLogger(__name__)
 @provides_concent_feature('conductor-urls')
 @require_POST
 @csrf_exempt
-@transaction.atomic(using='storage')
+@non_nesting_atomic(using='storage')
 def report_upload(_request: HttpRequest, file_path: str) -> HttpResponse:
 
     log_request_received(logger,  file_path, FileTransferToken.Operation.upload)

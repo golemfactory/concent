@@ -1,4 +1,5 @@
 import uuid
+from typing import Callable
 
 from core.constants import CLIENT_ETH_ADDRESS_WITH_0_DEPOSIT
 from core.payments.backends.sci_backend import TransactionType
@@ -49,3 +50,10 @@ def cover_additional_verification_cost(
     subtask_id: str,  # pylint: disable=unused-argument
 ) -> str:
     return f'{uuid.uuid4()}{uuid.uuid4()}'[:64].replace('-', '1')
+
+
+def call_on_confirmed_transaction(
+    _tx_hash: str,
+    _callback: Callable,
+) -> None:
+    pass

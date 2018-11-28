@@ -161,22 +161,11 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             subtask_results_accepted_list = subtask_results_accepted_list
         )
 
-        with mock.patch(
-            'core.message_handlers.bankster.settle_overdue_acceptances',
-            side_effect=BanksterTimestampError
-        ) as settle_overdue_acceptances:
-            with freeze_time("2018-02-05 12:00:09"):
-                response =self.send_request(
-                    url='core:send',
-                    data                                = serialized_force_payment,
-                )
-
-        settle_overdue_acceptances.assert_called_with(
-            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
-            provider_ethereum_address=task_to_compute.provider_ethereum_address,
-            acceptances=subtask_results_accepted_list,
-            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
-        )
+        with freeze_time("2018-02-05 12:00:09"):
+            response =self.send_request(
+                url='core:send',
+                data                                = serialized_force_payment,
+            )
 
         self._test_response(
             response,

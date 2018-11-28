@@ -29,6 +29,7 @@ from core.models import DepositClaim
 from core.models import Subtask
 from core.payments import service
 from core.payments.backends.sci_backend import TransactionType
+from core.utils import adjust_transaction_hash
 from core.validation import validate_bytes_public_key
 from core.validation import validate_uuid
 
@@ -492,9 +493,3 @@ def discard_claim(deposit_claim: DepositClaim) -> bool:
         subtask_id=deposit_claim.subtask_id,
     )
     return claim_removed
-
-
-def adjust_transaction_hash(tx_hash: str) -> str:
-    if tx_hash.startswith('0x'):
-        return tx_hash.split('0x')[1]
-    return tx_hash

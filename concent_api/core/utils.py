@@ -155,3 +155,9 @@ def generate_uuid(seed: Optional[int] = None) -> str:
     string_for_uuid = random_bits[:12] + '4' + random_bits[13:16] + 'a' + random_bits[17:]
     generated = str(uuid.UUID(string_for_uuid))
     return generated
+
+
+def adjust_transaction_hash(tx_hash: str) -> str:
+    if tx_hash.startswith('0x'):
+        return tx_hash[2:]
+    return tx_hash

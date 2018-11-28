@@ -13,6 +13,7 @@ from golem_messages import helpers
 
 from core.exceptions import SceneFilePathError
 from core.tests.utils import ConcentIntegrationTestCase
+from core.utils import adjust_transaction_hash
 from core.utils import calculate_maximum_download_time
 from core.utils import calculate_subtask_verification_time
 from core.utils import extract_name_from_scene_file_path
@@ -175,3 +176,16 @@ class TestValidateCompatibilityGolemMessages:
             GOLEM_MESSAGES_VERSION='2.15.0',
         ):
             assert not is_given_golem_messages_version_supported_by_concent(self.request)
+
+
+class TestTransactionHashMethods:
+
+    @pytest.mark.parametrize(('transaction_hash', 'expected_result'), [
+            ('0xf86c258502540be40083035b609482e041e84074fc5f', 'f86c258502540be40083035b609482e041e84074fc5f'),
+            ('f86c258502540be40083035b609482e041e84074fc5f', 'f86c258502540be40083035b609482e041e84074fc5f'),
+            ('0x0a0b', '0a0b'),
+    ])  # pylint:disable=no-self-use
+    def test_that_adjust_transaction_hash_cut_0x_prefix_correctly(self, transaction_hash, expected_result):
+        result = adjust_transaction_hash(transaction_hash)
+
+        assert_that(expected_result).is_equal_to(result)

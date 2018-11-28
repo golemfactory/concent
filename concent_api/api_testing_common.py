@@ -395,12 +395,12 @@ def create_signed_task_to_compute(
         if script_src is not None:
             compute_task_def['extra_data']['script_src'] = script_src
         want_to_compute_task = want_to_compute_task if want_to_compute_task is not None else WantToComputeTaskFactory(
-            provider_public_key=provider_public_key if provider_public_key is not None else _get_provider_hex_public_key(),
+            provider_public_key=encode_hex(provider_public_key) if provider_public_key is not None else _get_provider_hex_public_key(),
             provider_ethereum_public_key=encode_hex(provider_ethereum_public_key) if provider_ethereum_public_key is not None else encode_hex(PROVIDER_ETHEREUM_PUBLIC_KEY),
         )
         want_to_compute_task = sign_message(want_to_compute_task, PROVIDER_PRIVATE_KEY)
         task_to_compute = TaskToComputeFactory(
-            requestor_public_key=requestor_public_key if requestor_public_key is not None else _get_requestor_hex_public_key(),
+            requestor_public_key=encode_hex(requestor_public_key) if requestor_public_key is not None else _get_requestor_hex_public_key(),
             compute_task_def=compute_task_def,
             want_to_compute_task=want_to_compute_task,
             requestor_ethereum_public_key=encode_hex(requestor_ethereum_public_key) if requestor_ethereum_public_key is not None else encode_hex(REQUESTOR_ETHEREUM_PUBLIC_KEY),

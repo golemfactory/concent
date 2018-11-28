@@ -91,3 +91,12 @@ def cover_additional_verification_cost(
         value=value,
         subtask_id=subtask_id,
     )
+
+
+@_add_backend
+def call_on_confirmed_transaction(
+    backend: Any,
+    tx_hash: str,
+    callback: Callable
+) -> None:
+    backend.call_on_confirmed_transaction(tx_hash, callback)

@@ -272,6 +272,11 @@ def finalize_payment(deposit_claim: DepositClaim) -> Optional[str]:
         deposit_claim.full_clean()
         deposit_claim.save()
 
+        service.call_on_confirmed_transaction(  # pylint: disable=no-value-for-parameter
+            tx_hash=deposit_claim.tx_hash,
+            callback=lambda _: discard_claim(deposit_claim),
+        )
+
     return deposit_claim.tx_hash
 
 

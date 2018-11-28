@@ -2,6 +2,8 @@ import binascii
 import uuid
 from enum import Enum
 
+from typing import Callable
+
 from golem_sci import SmartContractsInterface
 from golem_sci.blockshelper import BlocksHelper
 from web3 import Web3
@@ -122,6 +124,16 @@ def cover_additional_verification_cost(
         address=Web3.toChecksumAddress(provider_eth_address),
         value=value,
         subtask_id=_hexencode_uuid(subtask_id),
+    )
+
+
+def call_on_confirmed_transaction(
+    tx_hash: str,
+    callback: Callable
+) -> None:
+    PaymentInterface().on_transaction_confirmed(  # type: ignore  # pylint: disable=no-member
+        tx_hash=tx_hash,
+        cb=callback,
     )
 
 

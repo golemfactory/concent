@@ -311,7 +311,7 @@ VERIFIER_MIN_SSIM = 0.94
 ADDITIONAL_VERIFICATION_TIME_MULTIPLIER = 2.0
 
 # A global constant defining the cost of additional verification if provider requested it.
-ADDITIONAL_VERIFICATION_COST = 0
+# ADDITIONAL_VERIFICATION_COST = 0
 
 # A global constant defining deadline for submitting SubtaskResultsVerify.
 ADDITIONAL_VERIFICATION_CALL_TIME = int(constants.AVCT.total_seconds())

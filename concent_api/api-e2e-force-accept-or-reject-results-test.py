@@ -159,8 +159,8 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConst
             subtask_results_rejected=create_subtask_results_rejected(
                 timestamp=timestamp_to_isoformat(current_time),
                 report_computed_task=create_signed_report_computed_task(
-                    timestamp=timestamp_to_isoformat(current_time),
                     task_to_compute=signed_task_to_compute,
+                    timestamp=timestamp_to_isoformat(current_time)
                 )
             )
         ),
@@ -224,9 +224,9 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConst
         create_force_subtask_results_response(
             timestamp=timestamp_to_isoformat(current_time),
             subtask_results_accepted=create_signed_subtask_results_accepted(
-                timestamp=timestamp_to_isoformat(current_time),
                 payment_ts=current_time + 1,
-                report_computed_task=signed_report_computed_task
+                report_computed_task=signed_report_computed_task,
+                timestamp=timestamp_to_isoformat(current_time)
             )
         ),
         expected_status=202,
@@ -259,8 +259,16 @@ def test_case_2c_wrong_timestamps(cluster_consts: ProtocolConstants, cluster_url
                 timestamp=timestamp_to_isoformat(current_time),
                 report_computed_task=create_signed_report_computed_task(
                     task_to_compute=create_signed_task_to_compute(
-                        timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
-                        deadline=calculate_deadline_too_far_in_the_future(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
+                        timestamp=calculate_timestamp(
+                            current_time,
+                            cluster_consts.concent_messaging_time,
+                            cluster_consts.minimum_upload_rate
+                        ),
+                        deadline=calculate_deadline_too_far_in_the_future(
+                            current_time,
+                            cluster_consts.concent_messaging_time,
+                            cluster_consts.minimum_upload_rate
+                        ),
                         price=1000,
                     )
                 )
@@ -287,8 +295,10 @@ def test_case_2b_not_enough_funds(cluster_consts: ProtocolConstants, cluster_url
                 timestamp=timestamp_to_isoformat(current_time),
                 report_computed_task=create_signed_report_computed_task(
                     task_to_compute=create_signed_task_to_compute(
-                        timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
-                        deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
+                        timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time,
+                                                      cluster_consts.minimum_upload_rate),
+                        deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time,
+                                                    cluster_consts.minimum_upload_rate),
                         requestor_ethereum_public_key=REQUESTOR_ETHEREUM_PUBLIC_KEY_FOR_EMPTY_ACCOUNT,
                         requestor_ethereum_private_key=REQUESTOR_ETHEREUM_PRIVATE_KEY_FOR_EMPTY_ACCOUNT,
                         provider_ethereum_public_key=DIFFERENT_PROVIDER_ETHEREUM_PUBLIC_KEY,
@@ -317,9 +327,7 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolC
         timestamp=timestamp_to_isoformat(current_time),
         ack_report_computed_task=create_ack_report_computed_task(
             timestamp=timestamp_to_isoformat(current_time),
-            report_computed_task=create_signed_report_computed_task(
-                task_to_compute=signed_task_to_compute
-            )
+            report_computed_task=create_signed_report_computed_task(task_to_compute=signed_task_to_compute)
         )
     )
     api_request(

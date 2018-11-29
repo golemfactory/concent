@@ -430,9 +430,9 @@ def call_function_in_threads(
 
 
 def create_signed_subtask_results_accepted(
-    timestamp: str,
-    payment_ts: str,
+    payment_ts: int,
     report_computed_task: message.tasks.ReportComputedTask,
+    timestamp: Optional[str] = None,
 ) -> message.tasks.SubtaskResultsAccepted:
     with freeze_time(timestamp):
         signed_message: message.tasks.SubtaskResultsAccepted = sign_message(
@@ -446,8 +446,8 @@ def create_signed_subtask_results_accepted(
 
 
 def create_signed_report_computed_task(
-    timestamp: Optional[str]=None,
-    task_to_compute: Optional[message.tasks.TaskToCompute]=None
+    task_to_compute: message.tasks.TaskToCompute,
+    timestamp: Optional[str] = None
 ) -> message.tasks.ReportComputedTask:
     with freeze_time(timestamp):
         signed_message: message.tasks.ReportComputedTask = sign_message(

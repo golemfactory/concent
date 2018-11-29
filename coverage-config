@@ -7,6 +7,7 @@ omit=
     protocol_constants.py
     signing_service_integration_test_concent_api.py
     signing_service_integration_test_middleman.py
+    signing_service_integration_test_recovery.py
     signing_service_testing_common.py
     command_line_tool/message_handler.py
     command_line_tool/concent_request.py

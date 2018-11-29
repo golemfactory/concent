@@ -562,11 +562,14 @@ class ConcentIntegrationTestCase(TestCase):
 
         """ Return SubtaskResultsAccepted deserialized """
         with freeze_time(timestamp or get_timestamp_string()):
+            report_computed_task = ReportComputedTaskFactory(
+                task_to_compute=task_to_compute
+            )
             subtask_results_accepted = SubtaskResultsAccepted(
-                task_to_compute = task_to_compute,
-                payment_ts     = (
-                        parse_iso_date_to_timestamp(payment_ts) if payment_ts is not None else
-                        parse_iso_date_to_timestamp(get_timestamp_string())
+                report_computed_task=report_computed_task,
+                payment_ts=(
+                    parse_iso_date_to_timestamp(payment_ts) if payment_ts is not None else
+                    parse_iso_date_to_timestamp(get_timestamp_string())
                 )
             )
         subtask_results_accepted = self._sign_message(

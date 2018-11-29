@@ -18,6 +18,7 @@ from signing_service.constants import SIGNING_SERVICE_DEFAULT_PORT
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_DELAY
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS
 from signing_service.constants import SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME
+from signing_service.exceptions import Base64DecodeError
 from signing_service.exceptions import SigningServiceValidationError
 from signing_service.signing_service import _parse_arguments
 from signing_service.signing_service import SigningService
@@ -274,6 +275,19 @@ class SigningServiceParseArgumentsTestCase(TestCase):
         os.remove(sentry_tmp_file)
         os.remove(ethereum_private_key_tmp_file)
         os.remove(signing_service_private_key_tmp_file)
+
+    def test_that_argument_parses_should_fail_gracefully_when_unable_to_decode_base64_value(self):
+        sys.argv += [
+            '--concent-cluster-host', '127.0.0.1',
+            '--concent-public-key', self.concent_public_key_encoded[:-1],
+        ]
+        with self.assertRaises(Base64DecodeError) as error:
+            _parse_arguments()
+
+        self.assertIn(
+            f'Unable to decode "{self.concent_public_key_encoded[:-1]}"',
+            str(error.exception)
+        )
 
 
 class SigningServiceValidateArgumentsTestCase(TestCase):

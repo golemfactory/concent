@@ -76,15 +76,15 @@ def create_force_subtask_results_response(
 
 
 def create_subtask_results_accepted(
-    timestamp: Optional[str]=None,
-    payment_ts: Optional[str]=None,
-    task_to_compute: Optional[message.tasks.TaskToCompute]=None,
+    timestamp: str,
+    payment_ts: str,
+    report_computed_task: message.tasks.ReportComputedTask,
 ) -> message.tasks.SubtaskResultsAccepted:
     with freeze_time(timestamp):
         signed_message: message.tasks.SubtaskResultsAccepted = sign_message(
             message.tasks.SubtaskResultsAccepted(
                 payment_ts=payment_ts,
-                task_to_compute=task_to_compute,
+                report_computed_task=report_computed_task,
             ),
             REQUESTOR_PRIVATE_KEY,
         )
@@ -221,6 +221,7 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConst
         deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
         price=1000,
     )
+    signed_report_computed_task = create_report_computed_task(task_to_compute=signed_task_to_compute)
     api_request(
         cluster_url,
         'send',
@@ -230,9 +231,7 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConst
             timestamp=timestamp_to_isoformat(current_time),
             ack_report_computed_task=create_ack_report_computed_task(
                 timestamp=timestamp_to_isoformat(current_time),
-                report_computed_task=create_report_computed_task(
-                    task_to_compute=signed_task_to_compute
-                )
+                report_computed_task=signed_report_computed_task
             )
         ),
         expected_status=202,
@@ -260,7 +259,7 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConst
             subtask_results_accepted=create_subtask_results_accepted(
                 timestamp=timestamp_to_isoformat(current_time),
                 payment_ts=timestamp_to_isoformat(current_time + 1),
-                task_to_compute=signed_task_to_compute
+                report_computed_task=signed_report_computed_task
             )
         ),
         expected_status=202,

@@ -375,7 +375,7 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
         with mock.patch(
             'core.payments.bankster.service.get_list_of_payments',
             side_effect=[
-                [self._create_payment_object(amount=1000, closure_time=subtask_results_accepted_list[0].payment_ts + 1)],
+                [self._create_batch_payment_object(amount=1000, closure_time=subtask_results_accepted_list[0].payment_ts + 1)],
                 self._get_list_of_force_transactions(),
             ]
         ) as get_list_of_payments_mock:

@@ -38,7 +38,7 @@ def get_list_of_payments(
     last_block_before_payment = BlocksHelper(payment_interface).get_first_block_after(payment_ts).number
 
     if transaction_type == TransactionType.FORCE:
-        payments_list = payment_interface.get_forced_payments(  # pylint: disable=no-member
+        payments_list = payment_interface.get_forced_subtask_payments(  # pylint: disable=no-member
             requestor_address   = Web3.toChecksumAddress(requestor_eth_address),
             provider_address    = Web3.toChecksumAddress(provider_eth_address),
             from_block          = last_block_before_payment,

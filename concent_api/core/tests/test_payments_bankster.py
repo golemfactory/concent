@@ -360,6 +360,45 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
 
         self.assertEqual(claim_against_requestor.amount, 1000)
 
+    @override_settings(
+        PAYMENT_DUE_TIME=10
+    )
+    def test_that_settle_overdue_acceptances_should_return_claim_deposit_with_amount_paid_if_there_was_no_previous_transactions(self):
+        subtask_cost = 15000
+        task_to_compute = self._get_deserialized_task_to_compute(
+            price=subtask_cost,
+        )
+
+        with freeze_time("2018-02-05 10:00:15"):
+            subtask_results_accepted_list = [
+                self._get_deserialized_subtask_results_accepted(
+                    task_to_compute=task_to_compute
+                )
+            ]
+
+        with freeze_time("2018-02-05 10:00:25"):
+            with mock.patch('core.payments.bankster.service.get_deposit_value', return_value=100000) as get_deposit_value_mock:
+                with mock.patch(
+                    'core.payments.bankster.service.get_list_of_payments',
+                    side_effect=[
+                        self._get_empty_list_of_transactions(),
+                        self._get_empty_list_of_transactions(),
+                    ]
+                ) as get_list_of_payments_mock:
+                    claim_against_requestor = settle_overdue_acceptances(
+                        requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+                        provider_ethereum_address=task_to_compute.provider_ethereum_address,
+                        acceptances=subtask_results_accepted_list,
+                        requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+                    )
+
+        get_deposit_value_mock.assert_called_once()
+        get_list_of_payments_mock.assert_called()
+
+        self.assertIsNotNone(claim_against_requestor.tx_hash)
+
+        self.assertEqual(claim_against_requestor.amount, subtask_cost)
+
     def test_that_settle_overdue_acceptances_should_raise_exception_if_any_transaction_from_acceptances_list_is_before_youngest_transaction_timestamp(self):
         task_to_compute = self._get_deserialized_task_to_compute(
             price=13000,

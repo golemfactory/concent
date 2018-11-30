@@ -2,17 +2,15 @@
 
 import os
 import sys
-import requests
 import time
 from freezegun import freeze_time
 from typing import Optional
+from mock import Mock
 
 from golem_messages import message
 
 from common.helpers import get_current_utc_timestamp
 from common.helpers import sign_message
-from common.testing_helpers import generate_priv_and_pub_eth_account_key
-from core.utils import calculate_maximum_download_time
 
 from api_testing_common import api_request
 from api_testing_common import count_fails
@@ -20,21 +18,16 @@ from api_testing_common import create_client_auth_message
 from api_testing_common import create_signed_report_computed_task
 from api_testing_common import create_signed_subtask_results_accepted
 from api_testing_common import create_signed_task_to_compute
-from api_testing_common import PROVIDER_PRIVATE_KEY
-from api_testing_common import PROVIDER_PUBLIC_KEY
 from api_testing_common import REPORT_COMPUTED_TASK_SIZE
-from api_testing_common import REQUESTOR_ETHEREUM_PRIVATE_KEY_FOR_EMPTY_ACCOUNT
-from api_testing_common import REQUESTOR_ETHEREUM_PUBLIC_KEY_FOR_EMPTY_ACCOUNT
-from api_testing_common import REQUESTOR_PRIVATE_KEY
-from api_testing_common import REQUESTOR_PUBLIC_KEY
 from api_testing_common import run_tests
 from api_testing_common import timestamp_to_isoformat
 from protocol_constants import ProtocolConstants
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
+import requests
 
-(DIFFERENT_REQUESTOR_ETHEREUM_PRIVATE_KEY, DIFFERENT_REQUESTOR_ETHEREUM_PUBLIC_KEY) = generate_priv_and_pub_eth_account_key()
-(DIFFERENT_PROVIDER_ETHEREUM_PRIVATE_KEY, DIFFERENT_PROVIDER_ETHEREUM_PUBLIC_KEY) = generate_priv_and_pub_eth_account_key()
+from core.utils import calculate_maximum_download_time
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
 
 def create_force_subtask_results(
@@ -48,6 +41,7 @@ def create_force_subtask_results(
 
 
 def create_ack_report_computed_task(
+    requestor_private_key: bytes,
     timestamp: Optional[str]=None,
     report_computed_task: Optional[message.tasks.ReportComputedTask]=None,
 ) -> message.tasks.AckReportComputedTask:
@@ -56,7 +50,7 @@ def create_ack_report_computed_task(
             message.tasks.AckReportComputedTask(
                 report_computed_task=report_computed_task,
             ),
-            REQUESTOR_PRIVATE_KEY,
+            requestor_private_key,
         )
         return signed_message
 
@@ -74,6 +68,7 @@ def create_force_subtask_results_response(
 
 
 def create_subtask_results_rejected(
+    requestor_private_key: bytes,
     timestamp: Optional[str]=None,
     reason: Optional[message.tasks.SubtaskResultsRejected.REASON]=None,
     report_computed_task: Optional[message.tasks.ReportComputedTask]=None,
@@ -84,7 +79,7 @@ def create_subtask_results_rejected(
                 reason=reason,
                 report_computed_task=report_computed_task,
             ),
-            REQUESTOR_PRIVATE_KEY,
+            requestor_private_key,
         )
         return signed_message
 
@@ -122,11 +117,15 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConst
         timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
         deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
         price=1000,
+        provider_public_key=sci_base.provider_public_key,
+        provider_private_key=sci_base.provider_private_key,
+        requestor_public_key=sci_base.requestor_public_key,
+        requestor_private_key=sci_base.requestor_private_key
     )
     api_request(
         cluster_url,
         'send',
-        PROVIDER_PRIVATE_KEY,
+        sci_base.provider_private_key,
         CONCENT_PUBLIC_KEY,
         create_force_subtask_results(
             timestamp=timestamp_to_isoformat(current_time),
@@ -134,7 +133,9 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConst
                 timestamp=timestamp_to_isoformat(current_time),
                 report_computed_task=create_signed_report_computed_task(
                     task_to_compute=signed_task_to_compute,
-                )
+                    provider_private_key=sci_base.provider_private_key,
+                ),
+                requestor_private_key=sci_base.requestor_private_key
             )
         ),
         expected_status=202,
@@ -142,9 +143,9 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConst
     api_request(
         cluster_url,
         'receive',
-        REQUESTOR_PRIVATE_KEY,
+        sci_base.requestor_private_key,
         CONCENT_PUBLIC_KEY,
-        create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
+        create_client_auth_message(sci_base.requestor_private_key, sci_base.requestor_public_key, CONCENT_PUBLIC_KEY),
         expected_status=200,
         expected_message_type=message.concents.ForceSubtaskResults,
         expected_content_type='application/octet-stream',
@@ -152,7 +153,7 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConst
     api_request(
         cluster_url,
         'send',
-        REQUESTOR_PRIVATE_KEY,
+        sci_base.requestor_private_key,
         CONCENT_PUBLIC_KEY,
         create_force_subtask_results_response(
             timestamp=timestamp_to_isoformat(current_time),
@@ -160,8 +161,10 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConst
                 timestamp=timestamp_to_isoformat(current_time),
                 report_computed_task=create_signed_report_computed_task(
                     task_to_compute=signed_task_to_compute,
-                    timestamp=timestamp_to_isoformat(current_time)
-                )
+                    timestamp=timestamp_to_isoformat(current_time),
+                    provider_private_key=sci_base.provider_private_key,
+                ),
+                requestor_private_key=sci_base.requestor_private_key
             )
         ),
         expected_status=202,
@@ -169,9 +172,9 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConst
     api_request(
         cluster_url,
         'receive',
-        PROVIDER_PRIVATE_KEY,
+        sci_base.provider_private_key,
         CONCENT_PUBLIC_KEY,
-        create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
+        create_client_auth_message(sci_base.provider_private_key, sci_base.provider_public_key, CONCENT_PUBLIC_KEY),
         expected_status=200,
         expected_message_type=message.concents.ForceSubtaskResultsResponse,
         expected_content_type='application/octet-stream',
@@ -187,18 +190,26 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConst
         timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
         deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
         price=1000,
+        provider_public_key=sci_base.provider_public_key,
+        provider_private_key=sci_base.provider_private_key,
+        requestor_public_key=sci_base.requestor_public_key,
+        requestor_private_key=sci_base.requestor_private_key
     )
-    signed_report_computed_task = create_signed_report_computed_task(task_to_compute=signed_task_to_compute)
+    signed_report_computed_task = create_signed_report_computed_task(
+        task_to_compute=signed_task_to_compute,
+        provider_private_key=sci_base.provider_private_key,
+    )
     api_request(
         cluster_url,
         'send',
-        PROVIDER_PRIVATE_KEY,
+        sci_base.provider_private_key,
         CONCENT_PUBLIC_KEY,
         create_force_subtask_results(
             timestamp=timestamp_to_isoformat(current_time),
             ack_report_computed_task=create_ack_report_computed_task(
                 timestamp=timestamp_to_isoformat(current_time),
-                report_computed_task=signed_report_computed_task
+                report_computed_task=signed_report_computed_task,
+                requestor_private_key=sci_base.requestor_private_key
             )
         ),
         expected_status=202,
@@ -208,9 +219,9 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConst
     api_request(
         cluster_url,
         'receive',
-        REQUESTOR_PRIVATE_KEY,
+        sci_base.requestor_private_key,
         CONCENT_PUBLIC_KEY,
-        create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
+        create_client_auth_message(sci_base.requestor_private_key, sci_base.requestor_public_key, CONCENT_PUBLIC_KEY),
         expected_status=200,
         expected_message_type=message.concents.ForceSubtaskResults,
         expected_content_type='application/octet-stream',
@@ -219,14 +230,14 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConst
     api_request(
         cluster_url,
         'send',
-        REQUESTOR_PRIVATE_KEY,
+        sci_base.requestor_private_key,
         CONCENT_PUBLIC_KEY,
         create_force_subtask_results_response(
             timestamp=timestamp_to_isoformat(current_time),
             subtask_results_accepted=create_signed_subtask_results_accepted(
                 payment_ts=current_time + 1,
                 report_computed_task=signed_report_computed_task,
-                timestamp=timestamp_to_isoformat(current_time)
+                requestor_private_key=sci_base.requestor_private_key,
             )
         ),
         expected_status=202,
@@ -235,9 +246,9 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConst
     api_request(
         cluster_url,
         'receive',
-        PROVIDER_PRIVATE_KEY,
+        sci_base.provider_private_key,
         CONCENT_PUBLIC_KEY,
-        create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
+        create_client_auth_message(sci_base.provider_private_key, sci_base.provider_public_key, CONCENT_PUBLIC_KEY),
         expected_status=200,
         expected_message_type=message.concents.ForceSubtaskResultsResponse,
         expected_content_type='application/octet-stream',
@@ -251,7 +262,7 @@ def test_case_2c_wrong_timestamps(cluster_consts: ProtocolConstants, cluster_url
     api_request(
         cluster_url,
         'send',
-        PROVIDER_PRIVATE_KEY,
+        sci_base.provider_private_key,
         CONCENT_PUBLIC_KEY,
         create_force_subtask_results(
             timestamp=timestamp_to_isoformat(current_time),
@@ -270,8 +281,14 @@ def test_case_2c_wrong_timestamps(cluster_consts: ProtocolConstants, cluster_url
                             cluster_consts.minimum_upload_rate
                         ),
                         price=1000,
-                    )
-                )
+                        provider_public_key=sci_base.provider_public_key,
+                        provider_private_key=sci_base.provider_private_key,
+                        requestor_public_key=sci_base.requestor_public_key,
+                        requestor_private_key=sci_base.requestor_private_key
+                    ),
+                    provider_private_key=sci_base.provider_private_key,
+                ),
+                requestor_private_key=sci_base.requestor_private_key
             )
         ),
         expected_status=200,
@@ -287,7 +304,7 @@ def test_case_2b_not_enough_funds(cluster_consts: ProtocolConstants, cluster_url
     api_request(
         cluster_url,
         'send',
-        PROVIDER_PRIVATE_KEY,
+        sci_base.provider_empty_account_private_key,
         CONCENT_PUBLIC_KEY,
         create_force_subtask_results(
             timestamp=timestamp_to_isoformat(current_time),
@@ -299,12 +316,15 @@ def test_case_2b_not_enough_funds(cluster_consts: ProtocolConstants, cluster_url
                                                       cluster_consts.minimum_upload_rate),
                         deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time,
                                                     cluster_consts.minimum_upload_rate),
-                        requestor_ethereum_public_key=REQUESTOR_ETHEREUM_PUBLIC_KEY_FOR_EMPTY_ACCOUNT,
-                        requestor_ethereum_private_key=REQUESTOR_ETHEREUM_PRIVATE_KEY_FOR_EMPTY_ACCOUNT,
-                        provider_ethereum_public_key=DIFFERENT_PROVIDER_ETHEREUM_PUBLIC_KEY,
                         price=10000,
-                    )
-                )
+                        provider_public_key=sci_base.provider_empty_account_public_key,
+                        provider_private_key=sci_base.provider_empty_account_private_key,
+                        requestor_public_key=sci_base.requestor_empty_account_public_key,
+                        requestor_private_key=sci_base.requestor_empty_account_private_key
+                    ),
+                    provider_private_key=sci_base.provider_empty_account_private_key,
+                ),
+                requestor_private_key=sci_base.requestor_empty_account_private_key,
             )
         ),
         expected_status=200,
@@ -322,18 +342,26 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolC
         timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
         deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
         price=1000,
+        provider_public_key=sci_base.provider_public_key,
+        provider_private_key=sci_base.provider_private_key,
+        requestor_public_key=sci_base.requestor_public_key,
+        requestor_private_key=sci_base.requestor_private_key
     )
     force_subtask_results = create_force_subtask_results(
         timestamp=timestamp_to_isoformat(current_time),
         ack_report_computed_task=create_ack_report_computed_task(
             timestamp=timestamp_to_isoformat(current_time),
-            report_computed_task=create_signed_report_computed_task(task_to_compute=signed_task_to_compute)
+            report_computed_task=create_signed_report_computed_task(
+                task_to_compute=signed_task_to_compute,
+                provider_private_key=sci_base.provider_private_key,
+            ),
+            requestor_private_key=sci_base.requestor_private_key,
         )
     )
     api_request(
         cluster_url,
         'send',
-        PROVIDER_PRIVATE_KEY,
+        sci_base.provider_private_key,
         CONCENT_PUBLIC_KEY,
         force_subtask_results,
         expected_status=202,
@@ -345,7 +373,7 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolC
     api_request(
         cluster_url,
         'send',
-        PROVIDER_PRIVATE_KEY,
+        sci_base.provider_private_key,
         CONCENT_PUBLIC_KEY,
         force_subtask_results,
         expected_status=200,
@@ -356,9 +384,9 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolC
     api_request(
         cluster_url,
         'receive',
-        REQUESTOR_PRIVATE_KEY,
+        sci_base.requestor_private_key,
         CONCENT_PUBLIC_KEY,
-        create_client_auth_message(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY, CONCENT_PUBLIC_KEY),
+        create_client_auth_message(sci_base.requestor_private_key, sci_base.requestor_public_key, CONCENT_PUBLIC_KEY),
         expected_status=200,
         expected_message_type=message.concents.ForceSubtaskResults,
         expected_content_type='application/octet-stream',
@@ -368,6 +396,9 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolC
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
+        # Dirty workaround for init `sci_base` variable to hide errors in IDE.
+        # sci_base is initiated in `run_tests` function
+        sci_base = Mock()
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file = sys.stderr)

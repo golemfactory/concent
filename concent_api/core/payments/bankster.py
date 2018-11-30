@@ -367,23 +367,7 @@ def settle_overdue_acceptances(
             transaction_type=TransactionType.BATCH,
         )
 
-        # Concent defines time T1 equal to youngest timestamp from list of transactions.
-        if len(list_of_transactions) > 0:
-            youngest_transaction_timestamp = max(
-                ethereum_transaction.closure_time for ethereum_transaction in list_of_transactions
-            )
-
-            assert youngest_transaction_timestamp <= cut_off_time
-
-            # Concent checks if all passed SubtaskResultAccepted messages from subtask_results_accepted_list
-            # have payment_ts < T1
-            if any(
-                youngest_transaction_timestamp > subtask_results_accepted.payment_ts
-                for subtask_results_accepted in acceptances
-            ):
-                raise BanksterTimestampError
-        else:
-            raise BanksterTimestampError
+        validate_list_of_transactions_timestamps(list_of_transactions, cut_off_time, acceptances)
 
         # Concent gets list of forced payments from payment API where T0 <= payment_ts + PAYMENT_DUE_TIME.
         list_of_forced_payments = service.get_list_of_payments(  # pylint: disable=no-value-for-parameter
@@ -493,3 +477,25 @@ def discard_claim(deposit_claim: DepositClaim) -> bool:
         subtask_id=deposit_claim.subtask_id,
     )
     return claim_removed
+
+
+def validate_list_of_transactions_timestamps(
+    list_of_transactions: List[BatchTransferEvent],
+    cut_off_time: int,
+    acceptances: List[SubtaskResultsAccepted],
+) -> None:
+    # Concent defines time T1 equal to youngest timestamp from list of transactions.
+    if len(list_of_transactions) > 0:
+        youngest_transaction_timestamp = max(
+            ethereum_transaction.closure_time for ethereum_transaction in list_of_transactions
+        )
+
+        assert youngest_transaction_timestamp <= cut_off_time
+
+        # Concent checks if all passed SubtaskResultAccepted messages from subtask_results_accepted_list
+        # have payment_ts < T1
+        if any(
+            youngest_transaction_timestamp > subtask_results_accepted.payment_ts
+            for subtask_results_accepted in acceptances
+        ):
+            raise BanksterTimestampError

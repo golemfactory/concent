@@ -53,12 +53,15 @@ def report_upload(_request: HttpRequest, file_path: str) -> HttpResponse:
     ):
         assert file_path in [verification_request.source_package_path, verification_request.result_package_path]
 
-        # If all expected files have been uploaded, the app sends upload_finished task to the work queue.
-        upload_finished.delay(verification_request.subtask_id)
-
         verification_request.upload_finished = True
         verification_request.full_clean()
         verification_request.save()
+
+        # If all expected files have been uploaded, the app sends upload_finished task to the work queue.
+        def call_upload_finished() -> None:
+            upload_finished.delay(verification_request.subtask_id)
+
+        transaction.on_commit(call_upload_finished)
 
         log(
             logger, 'All expected files have been uploaded',

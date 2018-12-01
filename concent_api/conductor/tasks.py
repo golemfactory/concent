@@ -101,12 +101,16 @@ def blender_verification_request(
             subtask_id=subtask_id
 
         )
-        # If all expected files have been uploaded, the app sends upload_finished task to the work queue.
-        tasks.upload_finished.delay(verification_request.subtask_id)
 
         verification_request.upload_finished = True
         verification_request.full_clean()
         verification_request.save()
+
+        # If all expected files have been uploaded, the app sends upload_finished task to the work queue.
+        def call_upload_finished() -> None:
+            tasks.upload_finished.delay(verification_request.subtask_id)
+
+        transaction.on_commit(call_upload_finished)
 
 
 @shared_task
@@ -158,20 +162,24 @@ def upload_acknowledged(
 
     frames = filter_frames_by_blender_subtask_definition(verification_request.blender_subtask_definition)
 
-    blender_verification_order.delay(
-        subtask_id=verification_request.subtask_id,
-        source_package_path=verification_request.source_package_path,
-        source_size=source_file_size,
-        source_package_hash=source_package_hash,
-        result_package_path=verification_request.result_package_path,
-        result_size=result_file_size,
-        result_package_hash=result_package_hash,
-        output_format=verification_request.blender_subtask_definition.output_format,
-        scene_file=verification_request.blender_subtask_definition.scene_file,
-        verification_deadline=parse_datetime_to_timestamp(verification_request.verification_deadline),
-        frames=frames,
-        blender_crop_script=verification_request.blender_subtask_definition.blender_crop_script,
-    )
+    def call_blender_verification_order() -> None:
+        blender_verification_order.delay(
+            subtask_id=verification_request.subtask_id,
+            source_package_path=verification_request.source_package_path,
+            source_size=source_file_size,
+            source_package_hash=source_package_hash,
+            result_package_path=verification_request.result_package_path,
+            result_size=result_file_size,
+            result_package_hash=result_package_hash,
+            output_format=verification_request.blender_subtask_definition.output_format,
+            scene_file=verification_request.blender_subtask_definition.scene_file,
+            verification_deadline=parse_datetime_to_timestamp(verification_request.verification_deadline),
+            frames=frames,
+            blender_crop_script=verification_request.blender_subtask_definition.blender_crop_script,
+        )
+
+    transaction.on_commit(call_blender_verification_order)
+
     log(
         logger,
         f'Upload acknowledgment finished.',

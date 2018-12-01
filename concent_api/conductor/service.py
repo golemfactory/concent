@@ -2,6 +2,7 @@ import logging
 from typing import List
 from typing import Optional
 
+from django.db import transaction
 from django.db.models import Q
 
 from common.constants import ErrorCode
@@ -58,7 +59,10 @@ def update_upload_report(file_path: str, result_transfer_request: ResultTransfer
         result_transfer_request.full_clean()
         result_transfer_request.save()
 
-        result_upload_finished.delay(result_transfer_request.subtask_id)
+        def call_result_upload_finished() -> None:
+            result_upload_finished.delay(result_transfer_request.subtask_id)
+
+        transaction.on_commit(call_result_upload_finished)
 
 
 def store_verification_request_and_blender_subtask_definition(

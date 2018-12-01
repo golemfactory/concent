@@ -6,7 +6,6 @@ from django.conf import settings
 from common.helpers import get_current_utc_timestamp
 from common.helpers import get_storage_result_file_path
 from common.helpers import get_storage_source_file_path
-from common.helpers import parse_datetime_to_timestamp
 from conductor.exceptions import VerificationRequestAlreadyAcknowledgedError
 from conductor.models import BlenderSubtaskDefinition
 from conductor.models import VerificationRequest
@@ -68,7 +67,7 @@ class ConductorUploadAcknowledgedTaskTestCase(ConcentIntegrationTestCase):
                 report_computed_task=self.report_computed_task,
             )
 
-            with mock.patch('conductor.tasks.blender_verification_order.delay') as mock_blender_verification_order, \
+            with mock.patch('conductor.tasks.transaction.on_commit') as transaction_on_commit, \
                 mock.patch('conductor.tasks.filter_frames_by_blender_subtask_definition', return_value=[1]) as mock_frames_filtering:  # noqa: E125
                 upload_acknowledged(
                     subtask_id=self.report_computed_task.subtask_id,
@@ -81,20 +80,7 @@ class ConductorUploadAcknowledgedTaskTestCase(ConcentIntegrationTestCase):
             self.verification_request.refresh_from_db()
 
             self.assertTrue(self.verification_request.upload_acknowledged)
-            mock_blender_verification_order.assert_called_once_with(
-                frames=[1],
-                subtask_id=self.verification_request.subtask_id,
-                source_package_path=self.verification_request.source_package_path,
-                source_size=self.report_computed_task.task_to_compute.size,
-                source_package_hash=self.report_computed_task.task_to_compute.package_hash,
-                result_package_path=self.verification_request.result_package_path,
-                result_size=self.report_computed_task.size,
-                result_package_hash=self.report_computed_task.package_hash,
-                output_format=self.verification_request.blender_subtask_definition.output_format,
-                scene_file=self.verification_request.blender_subtask_definition.scene_file,
-                verification_deadline=parse_datetime_to_timestamp(self.verification_request.verification_deadline),
-                blender_crop_script=self.verification_request.blender_subtask_definition.blender_crop_script,
-            )
+            transaction_on_commit.assert_called_once()
             mock_frames_filtering.assert_called_once()
 
     @mock.patch("conductor.tasks.log")

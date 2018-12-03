@@ -322,6 +322,11 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             deadline="2018-02-05 10:00:15",
         )
 
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp="2018-02-05 10:00:05",
+            task_to_compute=task_to_compute
+        )
+
         # STEP 1: Provider forces subtask results via Concent.
         # Request is processed correctly.
         serialized_force_subtask_results = self._get_serialized_force_subtask_results(
@@ -329,7 +334,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ack_report_computed_task=self._get_deserialized_ack_report_computed_task(
                 timestamp="2018-02-05 10:00:20",
                 subtask_id=task_to_compute.subtask_id,
-                task_to_compute=task_to_compute,
+                report_computed_task=report_computed_task,
                 signer_private_key=self.REQUESTOR_PRIVATE_KEY,
             )
         )
@@ -425,24 +430,21 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         # STEP 4:
-        # 4.1. TaskToCompute is send signed with different key, request is rejected with proper error message.
-        # 4.2. TaskToCompute is send with different requestor public key, request is rejected with proper error message.
-        # 4.3. TaskToCompute is send with different data, request is rejected with proper error message.
+        # ReportComputedTask is send signed with different key, request is rejected with proper error message.
 
-        # 4.1.
-        task_to_compute.sig = None
-        task_to_compute = self._sign_message(
-            task_to_compute,
-            self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
+        report_computed_task.sig = None
+        report_computed_task = self._sign_message(
+            report_computed_task,
+            self.DIFFERENT_PROVIDER_PRIVATE_KEY
         )
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
-            requestor_private_key   = self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
-            timestamp               = "2018-02-05 10:00:43",
-            subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
-                timestamp               = "2018-02-05 10:00:43",
-                payment_ts              = "2018-02-05 10:00:44",
-                task_to_compute         = task_to_compute,
+            requestor_private_key=self.REQUESTOR_PRIVATE_KEY,
+            timestamp="2018-02-05 10:00:43",
+            subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
+                timestamp="2018-02-05 10:00:43",
+                payment_ts="2018-02-05 10:00:44",
+                report_computed_task=report_computed_task,
             )
         )
 
@@ -455,101 +457,28 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(
             response,
             error_message = 'There was an exception when validating if golem_message {} is signed with public key {}'.format(
-                message.TaskToCompute.__name__,
-                self.REQUESTOR_PUBLIC_KEY,
+                message.ReportComputedTask.__name__,
+                self.PROVIDER_PUBLIC_KEY,
             ),
             error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG
         )
         self._assert_stored_message_counter_not_increased()
 
-        # 4.2.
-        task_to_compute.sig = None
-        task_to_compute.requestor_public_key = self._get_diffrent_requestor_hex_public_key()
-        self._generate_ethereum_signature(task_to_compute)
-        task_to_compute = self._sign_message(
-            task_to_compute,
-            self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
-        )
-        serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
-            requestor_private_key   = self.PROVIDER_PRIVATE_KEY,
-            timestamp               = "2018-02-05 10:00:43",
-            subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
-                timestamp       = "2018-02-05 10:00:43",
-                payment_ts      = "2018-02-05 10:00:44",
-                task_to_compute = task_to_compute,
-                signer_private_key=self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
-            )
-        )
-
-        with freeze_time("2018-02-05 10:00:44"):
-            response =self.send_request(
-                url='core:send',
-                data                                = serialized_force_subtask_results_response,
-            )
-
-        self._test_400_response(
-            response,
-            error_message = "Subtask requestor key does not match current client key.  Can't accept your '{}'.".format(
-                message.concents.ForceSubtaskResultsResponse.__name__,
-            ),
-            error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH
-        )
-        self._assert_stored_message_counter_not_increased()
-
-        # 4.3.
-        task_to_compute.sig = None
-        task_to_compute.requestor_public_key = self._get_requestor_hex_public_key()
-        task_to_compute.provider_id = 'different_id'
-        self._generate_ethereum_signature(task_to_compute)
-        task_to_compute = self._sign_message(
-            task_to_compute,
-            self.REQUESTOR_PRIVATE_KEY,
-        )
-        serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
-            requestor_private_key   = self.PROVIDER_PRIVATE_KEY,
-            timestamp               = "2018-02-05 10:00:43",
-            subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
-                timestamp       = "2018-02-05 10:00:43",
-                payment_ts      = "2018-02-05 10:00:44",
-                task_to_compute = task_to_compute,
-            )
-        )
-
-        with freeze_time("2018-02-05 10:00:44"):
-            response =self.send_request(
-                url='core:send',
-                data                                = serialized_force_subtask_results_response,
-            )
-
-        self._test_400_response(
-            response,
-            error_message = 'TaskToCompute messages are not identical. '
-                'There is a difference between messages with index 0 on passed list and with index {}'
-                'The difference is on field {}'.format(
-                    1,
-                    'provider_id',
-                ),
-            error_code=ErrorCode.MESSAGES_NOT_IDENTICAL
-        )
-        self._assert_stored_message_counter_not_increased()
-
         # STEP 5: Requestor sends forces subtask results response via Concent with correct keys.
         # Request is processed correctly.
-        task_to_compute.sig = None
-        task_to_compute.provider_id = self._get_provider_hex_public_key()
-        self._generate_ethereum_signature(task_to_compute)
-        task_to_compute = self._sign_message(
-            task_to_compute,
-            self.REQUESTOR_PRIVATE_KEY,
+        report_computed_task.sig = None
+        report_computed_task = self._sign_message(
+            report_computed_task,
+            self.PROVIDER_PRIVATE_KEY
         )
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
-            requestor_private_key = self.REQUESTOR_PRIVATE_KEY,
-            timestamp             = "2018-02-05 10:00:43",
-            subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
-                timestamp       = "2018-02-05 10:00:43",
-                payment_ts      = "2018-02-05 10:00:44",
-                task_to_compute = task_to_compute,
+            requestor_private_key=self.REQUESTOR_PRIVATE_KEY,
+            timestamp="2018-02-05 10:00:43",
+            subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
+                timestamp="2018-02-05 10:00:43",
+                payment_ts="2018-02-05 10:00:44",
+                report_computed_task=report_computed_task,
             )
         )
 
@@ -760,24 +689,21 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         # STEP 4:
-        # 4.1. TaskToCompute is send signed with different key, request is rejected with proper error message.
-        # 4.2. TaskToCompute is send with different requestor public key, request is rejected with proper error message.
-        # 4.3. TaskToCompute is send with different data, request is rejected with proper error message.
+        # ReportComputedTask is send signed with different key, request is rejected with proper error message.
 
-        # 4.1.
-        task_to_compute.sig = None
-        task_to_compute = self._sign_message(
-            task_to_compute,
-            self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
+        report_computed_task.sig = None
+        report_computed_task = self._sign_message(
+            report_computed_task,
+            self.DIFFERENT_PROVIDER_PRIVATE_KEY,
         )
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
-            requestor_private_key   = self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
-            timestamp               = "2018-02-05 10:00:43",
-            subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
-                timestamp               = "2018-02-05 10:00:43",
-                payment_ts              = "2018-02-05 10:00:44",
-                task_to_compute         = task_to_compute,
+            requestor_private_key=self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
+            timestamp="2018-02-05 10:00:43",
+            subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
+                timestamp="2018-02-05 10:00:43",
+                payment_ts="2018-02-05 10:00:44",
+                report_computed_task=report_computed_task,
             )
         )
 
@@ -790,92 +716,19 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(
             response,
             error_message = 'There was an exception when validating if golem_message {} is signed with public key {}'.format(
-                message.TaskToCompute.__name__,
-                self.REQUESTOR_PUBLIC_KEY,
+                message.ReportComputedTask.__name__,
+                self.PROVIDER_PUBLIC_KEY,
             ),
             error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG
         )
         self._assert_stored_message_counter_not_increased()
 
-        # 4.2.
-        task_to_compute.sig = None
-        task_to_compute.requestor_public_key = self._get_diffrent_requestor_hex_public_key()
-        self._generate_ethereum_signature(task_to_compute)
-        task_to_compute = self._sign_message(
-            task_to_compute,
-            self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
-        )
-        serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
-            requestor_private_key   = self.PROVIDER_PRIVATE_KEY,
-            timestamp               = "2018-02-05 10:00:43",
-            subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
-                timestamp       = "2018-02-05 10:00:43",
-                payment_ts      = "2018-02-05 10:00:44",
-                task_to_compute = task_to_compute,
-                signer_private_key=self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
-            )
-        )
-
-        with freeze_time("2018-02-05 10:00:44"):
-            response =self.send_request(
-                url='core:send',
-                data                                = serialized_force_subtask_results_response,
-            )
-
-        self._test_400_response(
-            response,
-            error_message = "Subtask requestor key does not match current client key.  Can't accept your '{}'.".format(
-                message.concents.ForceSubtaskResultsResponse.__name__,
-            ),
-            error_code=ErrorCode.QUEUE_REQUESTOR_PUBLIC_KEY_MISMATCH
-        )
-        self._assert_stored_message_counter_not_increased()
-
-        # 4.3.
-        task_to_compute.sig = None
-        task_to_compute.requestor_public_key = self._get_requestor_hex_public_key()
-        task_to_compute.provider_id = 'different_id'
-        self._generate_ethereum_signature(task_to_compute)
-        task_to_compute = self._sign_message(
-            task_to_compute,
-            self.REQUESTOR_PRIVATE_KEY,
-        )
-        serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
-            requestor_private_key   = self.PROVIDER_PRIVATE_KEY,
-            timestamp               = "2018-02-05 10:00:43",
-            subtask_results_accepted = self._get_deserialized_subtask_results_accepted(
-                timestamp       = "2018-02-05 10:00:43",
-                payment_ts      = "2018-02-05 10:00:44",
-                task_to_compute = task_to_compute,
-            )
-        )
-
-        with freeze_time("2018-02-05 10:00:44"):
-            response =self.send_request(
-                url='core:send',
-                data                                = serialized_force_subtask_results_response,
-            )
-
-        self._test_400_response(
-            response,
-            error_message = 'TaskToCompute messages are not identical. '
-                'There is a difference between messages with index 0 on passed list and with index {}'
-                'The difference is on field {}'.format(
-                    1,
-                    'provider_id',
-                ),
-            error_code=ErrorCode.MESSAGES_NOT_IDENTICAL
-        )
-        self._assert_stored_message_counter_not_increased()
-
         # STEP 5: Requestor sends forces subtask results response via Concent with correct keys.
         # Request is processed correctly.
-        task_to_compute.sig = None
-        task_to_compute.provider_id = self._get_provider_hex_public_key()
-        self._generate_ethereum_signature(task_to_compute)
-        task_to_compute = self._sign_message(
-            task_to_compute,
-            self.REQUESTOR_PRIVATE_KEY,
+        report_computed_task.sig = None
+        report_computed_task = self._sign_message(
+            report_computed_task,
+            self.PROVIDER_PRIVATE_KEY,
         )
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(

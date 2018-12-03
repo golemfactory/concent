@@ -7,7 +7,6 @@ from common.testing_helpers import generate_ecc_key_pair
 from common.helpers import get_current_utc_timestamp
 from core.constants import MOCK_TRANSACTION_HASH
 from core.payments.backends import sci_backend
-from core.payments.payment_interface import PaymentInterface
 from core.tests.utils import ConcentIntegrationTestCase
 
 

@@ -13,3 +13,4 @@ Contents:
 
     api
     communication-examples
+    settlement-algorithm

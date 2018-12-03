@@ -8,7 +8,6 @@ from golem_messages import factories
 from common.constants import ConcentUseCase
 from common.helpers import ethereum_public_key_to_address
 from core.constants import MOCK_TRANSACTION_HASH
-from core.exceptions import BanksterTimestampError
 from core.exceptions import TooSmallProviderDeposit
 from core.message_handlers import store_subtask
 from core.models import Client

@@ -21,7 +21,6 @@ from common.helpers import ethereum_public_key_to_address
 from common.helpers import get_current_utc_timestamp
 from common.logging import log
 from core.constants import ETHEREUM_ADDRESS_LENGTH
-from core.exceptions import BanksterTimestampError
 from core.exceptions import TooSmallProviderDeposit
 from core.models import Client
 from core.models import DepositAccount

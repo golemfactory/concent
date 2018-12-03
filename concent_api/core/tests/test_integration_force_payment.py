@@ -6,7 +6,6 @@ from golem_messages.utils import decode_hex
 
 from common.testing_helpers import generate_ecc_key_pair
 from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
-from core.exceptions import BanksterTimestampError
 from core.models import PendingResponse
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp

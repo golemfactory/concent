@@ -411,38 +411,6 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
 
         self.assertEqual(claim_against_requestor.amount, subtask_cost)
 
-    def test_that_settle_overdue_acceptances_should_raise_exception_if_any_transaction_from_acceptances_list_is_before_youngest_transaction_timestamp(self):
-        task_to_compute = self._get_deserialized_task_to_compute(
-            price=13000,
-        )
-
-        subtask_results_accepted_list = [
-            self._get_deserialized_subtask_results_accepted(
-                report_computed_task=self._get_deserialized_report_computed_task(
-                    timestamp="2018-02-05 10:00:05",
-                    task_to_compute=task_to_compute
-                ),
-                payment_ts="2018-02-05 12:00:00",
-            )
-        ]
-
-        with mock.patch(
-            'core.payments.bankster.service.get_list_of_payments',
-            side_effect=[
-                [self._create_batch_payment_object(amount=1000, closure_time=subtask_results_accepted_list[0].payment_ts + 1)],
-                self._get_list_of_force_transactions(),
-            ]
-        ) as get_list_of_payments_mock:
-            with self.assertRaises(BanksterTimestampError):
-                settle_overdue_acceptances(
-                    requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
-                    provider_ethereum_address=task_to_compute.provider_ethereum_address,
-                    acceptances=subtask_results_accepted_list,
-                    requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
-                )
-
-        get_list_of_payments_mock.assert_called()
-
 
 class DiscardClaimBanksterTest(ConcentIntegrationTestCase):
 

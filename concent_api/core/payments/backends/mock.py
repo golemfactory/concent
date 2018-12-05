@@ -6,7 +6,6 @@ from core.payments.backends.sci_backend import TransactionType
 
 
 def get_list_of_payments(
-    current_time: int,  # pylint: disable=unused-argument
     requestor_eth_address: str,  # pylint: disable=unused-argument
     provider_eth_address: str,  # pylint: disable=unused-argument
     payment_ts: int,  # pylint: disable=unused-argument

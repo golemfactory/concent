@@ -3,7 +3,7 @@ from assertpy import assert_that
 import mock
 import pytest
 
-from golem_messages.factories.tasks import ComputeTaskDefFactory
+from golem_messages.factories.tasks import ComputeTaskDefFactory, ReportComputedTaskFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.factories.tasks import SubtaskResultsAcceptedFactory
 from golem_messages.factories.tasks import WantToComputeTaskFactory
@@ -209,12 +209,16 @@ class TestAreEthereumAddressesAndKeysUnique(TestCase):
     ) -> list:
         subtask_results_accepted_1 = SubtaskResultsAcceptedFactory(
             payment_ts="2018-02-05 12:00:16",
-            task_to_compute=task_to_compute_1
+            report_computed_task=ReportComputedTaskFactory(
+                task_to_compute=task_to_compute_1
+            )
         )
         sign_message(subtask_results_accepted_1, subtask_1_signed_by)
         subtask_results_accepted_2 = SubtaskResultsAcceptedFactory(
             payment_ts="2018-02-05 12:00:16",
-            task_to_compute=task_to_compute_2
+            report_computed_task=ReportComputedTaskFactory(
+                task_to_compute=task_to_compute_2
+            )
         )
         sign_message(subtask_results_accepted_2, subtask_2_signed_by)
         subtask_results_accepted_list = [

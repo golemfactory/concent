@@ -17,6 +17,7 @@ import requests
 
 from freezegun import freeze_time
 
+from golem_messages import message
 from golem_messages.exceptions import MessageError
 from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
@@ -51,6 +52,8 @@ REQUEST_HEADERS = {
     'Content-Type': 'application/octet-stream',
     'X-Golem-Messages': GOLEM_MESSAGES_VERSION
 }
+
+REPORT_COMPUTED_TASK_SIZE = 10
 
 
 class TestAssertionException(Exception):
@@ -424,3 +427,34 @@ def call_function_in_threads(
     for _ in range(number_of_threads):
         thread = Thread(target=func, args=args, kwargs=kwargs)
         thread.start()
+
+
+def create_signed_subtask_results_accepted(
+    payment_ts: int,
+    report_computed_task: message.tasks.ReportComputedTask,
+    timestamp: Optional[str] = None,
+) -> message.tasks.SubtaskResultsAccepted:
+    with freeze_time(timestamp):
+        signed_message: message.tasks.SubtaskResultsAccepted = sign_message(
+            message.tasks.SubtaskResultsAccepted(
+                payment_ts=payment_ts,
+                report_computed_task=report_computed_task,
+            ),
+            REQUESTOR_PRIVATE_KEY,
+        )
+        return signed_message
+
+
+def create_signed_report_computed_task(
+    task_to_compute: message.tasks.TaskToCompute,
+    timestamp: Optional[str] = None
+) -> message.tasks.ReportComputedTask:
+    with freeze_time(timestamp):
+        signed_message: message.tasks.ReportComputedTask = sign_message(
+            message.tasks.ReportComputedTask(
+                task_to_compute=task_to_compute,
+                size=REPORT_COMPUTED_TASK_SIZE,
+            ),
+            PROVIDER_PRIVATE_KEY,
+        )
+        return signed_message

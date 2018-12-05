@@ -262,7 +262,10 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
 
         subtask_results_accepted_list = [
             self._get_deserialized_subtask_results_accepted(
-                task_to_compute=task_to_compute
+                report_computed_task=self._get_deserialized_report_computed_task(
+                    timestamp="2018-02-05 10:00:05",
+                    task_to_compute=task_to_compute
+                )
             )
         ]
 
@@ -294,7 +297,10 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 10:00:15"):
             subtask_results_accepted_list = [
                 self._get_deserialized_subtask_results_accepted(
-                    task_to_compute=task_to_compute
+                    report_computed_task=self._get_deserialized_report_computed_task(
+                        timestamp="2018-02-05 10:00:05",
+                        task_to_compute=task_to_compute
+                    )
                 )
             ]
 
@@ -325,7 +331,10 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 10:00:15"):
             subtask_results_accepted_list = [
                 self._get_deserialized_subtask_results_accepted(
-                    task_to_compute=task_to_compute
+                    report_computed_task=self._get_deserialized_report_computed_task(
+                        timestamp="2018-02-05 10:00:05",
+                        task_to_compute=task_to_compute
+                    )
                 )
             ]
 
@@ -372,7 +381,10 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 10:00:15"):
             subtask_results_accepted_list = [
                 self._get_deserialized_subtask_results_accepted(
-                    task_to_compute=task_to_compute
+                    report_computed_task=self._get_deserialized_report_computed_task(
+                        timestamp="2018-02-05 10:00:05",
+                        task_to_compute=task_to_compute
+                    )
                 )
             ]
 
@@ -406,7 +418,10 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
 
         subtask_results_accepted_list = [
             self._get_deserialized_subtask_results_accepted(
-                task_to_compute=task_to_compute,
+                report_computed_task=self._get_deserialized_report_computed_task(
+                    timestamp="2018-02-05 10:00:05",
+                    task_to_compute=task_to_compute
+                ),
                 payment_ts="2018-02-05 12:00:00",
             )
         ]

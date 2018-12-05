@@ -660,6 +660,10 @@ def handle_send_force_subtask_results_response(
             requestor_public_key,
             subtask_results_accepted,
         )
+        validate_that_golem_messages_are_signed_with_key(
+            provider_public_key,
+            subtask_results_accepted.report_computed_task,
+        )
     else:
         task_to_compute = client_message.subtask_results_rejected.report_computed_task.task_to_compute
         subtask_results_accepted = None

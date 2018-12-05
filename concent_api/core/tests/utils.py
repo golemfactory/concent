@@ -554,7 +554,7 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_subtask_results_accepted(
         self,
-        task_to_compute: TaskToCompute,
+        report_computed_task: ReportComputedTask,
         payment_ts: Optional[str] = None,
         timestamp: Union[str, datetime.datetime, None] = None,
         signer_private_key: Optional[bytes] = None,
@@ -563,41 +563,17 @@ class ConcentIntegrationTestCase(TestCase):
         """ Return SubtaskResultsAccepted deserialized """
         with freeze_time(timestamp or get_timestamp_string()):
             subtask_results_accepted = SubtaskResultsAccepted(
-                task_to_compute = task_to_compute,
-                payment_ts     = (
-                        parse_iso_date_to_timestamp(payment_ts) if payment_ts is not None else
-                        parse_iso_date_to_timestamp(get_timestamp_string())
+                report_computed_task=report_computed_task,
+                payment_ts=(
+                    parse_iso_date_to_timestamp(payment_ts) if payment_ts is not None else
+                    parse_iso_date_to_timestamp(get_timestamp_string())
                 )
             )
-        subtask_results_accepted = self._sign_message(
+        subtask_results_accepted: SubtaskResultsAccepted = self._sign_message(
             subtask_results_accepted,
             signer_private_key if signer_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
         )
         return subtask_results_accepted
-
-    def _get_serialized_subtask_results_accepted(
-        self,
-        timestamp                   = None,
-        payment_ts                  = None,
-        requestor_private_key       = None,
-        task_to_compute             = None,
-        subtask_results_accepted    = None
-    ) -> bytes:
-        """ Return SubtaskResultsAccepted serialized """
-        subtask_results_accepted = (
-            subtask_results_accepted or
-            self._get_deserialized_subtask_results_accepted(
-                timestamp       = timestamp,
-                payment_ts      = payment_ts,
-                task_to_compute = task_to_compute
-            )
-        )
-
-        return dump(
-            subtask_results_accepted,
-            requestor_private_key if requestor_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
-            settings.CONCENT_PUBLIC_KEY,
-        )
 
     def _get_deserialized_subtask_results_rejected(
         self,

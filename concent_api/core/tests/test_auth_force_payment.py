@@ -33,21 +33,27 @@ class AuthForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 10:00:15",
                 payment_ts="2018-02-05 11:55:00",
-                task_to_compute=self._get_deserialized_task_to_compute(
-                    timestamp="2018-02-05 10:00:00",
-                    deadline="2018-02-05 10:00:10",
-                    subtask_id=self._get_uuid('1'),
-                    price=15000,
+                report_computed_task=self._get_deserialized_report_computed_task(
+                    timestamp="2018-02-05 10:00:05",
+                    task_to_compute=self._get_deserialized_task_to_compute(
+                        timestamp="2018-02-05 10:00:00",
+                        deadline="2018-02-05 10:00:10",
+                        subtask_id=self._get_uuid('1'),
+                        price=15000,
+                    )
                 )
             ),
             self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 9:00:15",
                 payment_ts="2018-02-05 11:55:00",
-                task_to_compute=self._get_deserialized_task_to_compute(
-                    timestamp="2018-02-05 9:00:00",
-                    deadline="2018-02-05 9:00:10",
-                    subtask_id=self._get_uuid('2'),
-                    price=7000,
+                report_computed_task=self._get_deserialized_report_computed_task(
+                    timestamp="2018-02-05 10:00:05",
+                    task_to_compute=self._get_deserialized_task_to_compute(
+                        timestamp="2018-02-05 9:00:00",
+                        deadline="2018-02-05 9:00:10",
+                        subtask_id=self._get_uuid('2'),
+                        price=7000,
+                    )
                 )
             )
         ]

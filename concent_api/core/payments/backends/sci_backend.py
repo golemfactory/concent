@@ -3,7 +3,9 @@ import uuid
 from enum import Enum
 
 from typing import Callable
+from typing import List
 
+from golem_sci import ForcedPaymentEvent
 from golem_sci import SmartContractsInterface
 from golem_sci.blockshelper import BlocksHelper
 from web3 import Web3
@@ -53,6 +55,46 @@ def get_list_of_payments(
         )
 
     return payments_list
+
+
+def are_all_payment_ts_younger_than_last_payment_closure_time_if_payment_exists(
+    requestor_eth_address: str,
+    provider_eth_address: str,
+    subtask_results_accepted_list: List[ForcedPaymentEvent],
+) -> bool:
+
+    oldest_payments_ts = _get_oldest_payment_timestamp_from_subtask_results_accepted_list(subtask_results_accepted_list)
+
+    forced_payment_event_list = _get_list_of_forced_payment_events(
+        requestor_eth_address=requestor_eth_address,
+        provider_eth_address=provider_eth_address,
+        search_payments_since_ts=oldest_payments_ts,
+    )
+
+    for forced_payment_event in forced_payment_event_list:
+        if oldest_payments_ts < forced_payment_event.closure_time:
+            return False
+    return True
+
+
+def _get_oldest_payment_timestamp_from_subtask_results_accepted_list(subtask_results_accepted_list: list) -> int:
+    return min(subtask_results_accepted.payment_ts for subtask_results_accepted in subtask_results_accepted_list)
+
+
+def _get_list_of_forced_payment_events(
+    requestor_eth_address: str,
+    provider_eth_address: str,
+    search_payments_since_ts: int,
+) -> List[ForcedPaymentEvent]:
+    payment_interface: SmartContractsInterface = PaymentInterface()
+    first_block_after_given_ts = BlocksHelper(payment_interface).get_first_block_after(search_payments_since_ts).number
+
+    return payment_interface.get_forced_payments(  # pylint: disable=no-member
+        requestor_address=Web3.toChecksumAddress(requestor_eth_address),
+        provider_address=Web3.toChecksumAddress(provider_eth_address),
+        from_block=first_block_after_given_ts,
+        to_block=payment_interface.get_block_number(),  # pylint: disable=no-member
+    )
 
 
 def make_force_payment_to_provider(

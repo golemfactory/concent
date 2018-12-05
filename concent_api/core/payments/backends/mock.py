@@ -56,3 +56,11 @@ def call_on_confirmed_transaction(
     _callback: Callable,
 ) -> None:
     pass
+
+
+def are_all_payment_ts_younger_than_last_payment_closure_time_if_payment_exists(
+    _requestor_eth_address: str,
+    _provider_eth_address: str,
+    _subtask_results_accepted_list: list,
+) -> bool:
+    return True

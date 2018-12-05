@@ -1,11 +1,10 @@
 from typing import Any
 from typing import Callable
-from typing import List
+from typing import Optional
 import importlib
 
 from django.conf import settings
 from ethereum.transactions import Transaction
-from golem_messages.message.tasks import SubtaskResultsAccepted
 
 from core.payments.backends.sci_backend import TransactionType
 
@@ -105,12 +104,12 @@ def call_on_confirmed_transaction(
 
 
 @_add_backend
-def are_all_payment_ts_younger_than_last_payment_closure_time_if_payment_exists(
+def validate_that_all_payment_ts_are_younger_than_last_payment_closure_time_if_payment_exists(
     backend: Any,
     requestor_eth_address: str,
     provider_eth_address: str,
-    subtask_results_accepted_list: List[SubtaskResultsAccepted],
+    search_payments_since_ts: Optional[int],
 ) -> bool:
-    return backend.are_all_payment_ts_younger_than_last_payment_closure_time_if_payment_exists(
-        requestor_eth_address, provider_eth_address, subtask_results_accepted_list
+    return backend.validate_that_all_payment_ts_are_younger_than_last_payment_closure_time_if_payment_exists(
+        requestor_eth_address, provider_eth_address, search_payments_since_ts
     )

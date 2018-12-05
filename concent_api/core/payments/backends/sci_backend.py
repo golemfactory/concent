@@ -4,6 +4,7 @@ from enum import Enum
 
 from typing import Callable
 from typing import List
+from typing import Optional
 
 from golem_sci import ForcedPaymentEvent
 from golem_sci import SmartContractsInterface
@@ -11,6 +12,7 @@ from golem_sci.blockshelper import BlocksHelper
 from web3 import Web3
 
 from core.constants import ETHEREUM_ADDRESS_LENGTH
+from core.exceptions import BanksterTimestampError
 from core.payments.payment_interface import PaymentInterface
 from core.validation import validate_uuid
 
@@ -53,31 +55,27 @@ def get_list_of_payments(
             from_block      = last_block_before_payment,
             to_block        = payment_interface.get_block_number(),  # pylint: disable=no-member
         )
-
     return payments_list
 
 
-def are_all_payment_ts_younger_than_last_payment_closure_time_if_payment_exists(
+def validate_that_all_payment_ts_are_younger_than_last_payment_closure_time_if_payment_exists(
     requestor_eth_address: str,
     provider_eth_address: str,
-    subtask_results_accepted_list: List[ForcedPaymentEvent],
-) -> bool:
-
-    oldest_payments_ts = _get_oldest_payment_timestamp_from_subtask_results_accepted_list(subtask_results_accepted_list)
-
+    oldest_payment_ts: Optional[int],
+) -> None:
+    if oldest_payment_ts is None:
+        return
     forced_payment_event_list = _get_list_of_forced_payment_events(
         requestor_eth_address=requestor_eth_address,
         provider_eth_address=provider_eth_address,
-        search_payments_since_ts=oldest_payments_ts,
+        search_payments_since_ts=oldest_payment_ts,
     )
-
     for forced_payment_event in forced_payment_event_list:
-        if oldest_payments_ts < forced_payment_event.closure_time:
-            return False
-    return True
+        if oldest_payment_ts < forced_payment_event.closure_time:
+            raise BanksterTimestampError
 
 
-def _get_oldest_payment_timestamp_from_subtask_results_accepted_list(subtask_results_accepted_list: list) -> int:
+def get_oldest_payment_timestamp_from_subtask_results_accepted_list(subtask_results_accepted_list: list) -> Optional[int]:
     return min(subtask_results_accepted.payment_ts for subtask_results_accepted in subtask_results_accepted_list)
 
 

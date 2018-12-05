@@ -1,5 +1,6 @@
 import uuid
 from typing import Callable
+from typing import Optional
 
 from core.constants import CLIENT_ETH_ADDRESS_WITH_0_DEPOSIT
 from core.payments.backends.sci_backend import TransactionType
@@ -58,9 +59,9 @@ def call_on_confirmed_transaction(
     pass
 
 
-def are_all_payment_ts_younger_than_last_payment_closure_time_if_payment_exists(
+def validate_that_all_payment_ts_are_younger_than_last_payment_closure_time_if_payment_exists(
     _requestor_eth_address: str,
     _provider_eth_address: str,
-    _subtask_results_accepted_list: list,
-) -> bool:
-    return True
+    _oldest_payments_ts: Optional[int],
+) -> None:
+    pass

@@ -51,7 +51,6 @@ from core.models import PendingResponse
 from core.models import StoredMessage
 from core.models import Subtask
 from core.payments import bankster
-from core.payments.service import are_all_payment_ts_younger_than_last_payment_closure_time_if_payment_exists
 from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
 from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
@@ -803,16 +802,6 @@ def handle_send_force_payment(
         *client_message.subtask_results_accepted_list,
         *[subtask_results_accepted.task_to_compute for subtask_results_accepted in client_message.subtask_results_accepted_list],
     )
-
-    if not are_all_payment_ts_younger_than_last_payment_closure_time_if_payment_exists(  # pylint: disable=no-value-for-parameter
-        requestor_eth_address=requestor_eth_address,
-        provider_eth_address=provider_eth_address,
-        subtask_results_accepted_list=client_message.subtask_results_accepted_list
-    ):
-        return message.concents.ForcePaymentRejected(
-            force_payment=client_message,
-            reason=message.concents.ForcePaymentRejected.REASON.TimestampError,
-        )
 
     try:
         claim_against_requestor = bankster.settle_overdue_acceptances(

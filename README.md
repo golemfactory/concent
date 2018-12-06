@@ -200,3 +200,62 @@ You can run Celery workers for Concent with:
 ``` bash
 concent_api/celery worker --app concent_api --loglevel info --queues concent,conductor,verifier
 ```
+
+### Deploying GNTDeposit contract
+
+To be able to run end-to-end (E2E) tests locally without interfering with other Concent instances, you need a separate instance of the `GNTDeposit` contract on the blockchain and a separate Ethereum account Concent will use to issue transactions and transfer deposits.
+Concent assumes that it's the only entity with access to the deposits and you'll get false positives and random failures if that's not true.
+
+1. Get [GNTDeposit.sol](https://github.com/golemfactory/golem-contracts/blob/master/contracts/GNTDeposit.sol)
+from [golem-contracts](https://github.com/golemfactory/golem-contracts) repository.
+
+2. Fallow this tutorial to deploy GNTDeposit.sol on `rinkeby` ethereum testnet:
+[Deploy Smart Contracts on Ropsten Testnet through Ethereum Remix](https://medium.com/swlh/deploy-smart-contracts-on-ropsten-testnet-through-ethereum-remix-233cd1494b4b)
+
+    It involves installing `MetaMask` in your browser, importing ethereum account that you generate before using
+    hex-encoded value and getting some testnet ETH. Then copy `GNTDeposit.sol` with all dependencies to single file in
+    solidity IDE - `remix`. You can use [solidity-flattener](https://github.com/BlockCatIO/solidity-flattener) to do so.
+
+3. There are four variables needed to deploy new GNTDeposit contract:
+
+    - `_token` - GNTB contract address.
+    For all testnet environments, it should be hardcoded to `0x123438d379BAbD07134d1d4d7dFa0BCbd56ca3F3`.
+
+    - `_concent` - Concent ethereum address, compatible with keys pair generated before.
+
+    - `_coldwallet` - Another or the same concent ethereum address. It's used as an account to store communication and
+    verification fees.
+
+    - `_withdrawal_delay` - This is the time(in seconds) after which a Golem client is allowed to withdraw its deposit.
+    We used mainnet value so far, which is 48h (172800 seconds).
+
+4. After successfully deploying your own copy of `GNTDeposit` contract, you need to put the new values in your `local_settings.py`:
+
+    - `GNT_DEPOSIT_CONTRACT_ADDRESS`: the Ethereum address of the newly deployed contract
+    - `CONCENT_ETHEREUM_PRIVATE_KEY`: the private key matching contract's address (binary value as Python's `bytes`)
+    - `CONCENT_ETHEREUM_PUBLIC_KEY`: the public key matching contract's address (hex-encoded value as Python's `str`)
+    - `CONCENT_PRIVATE_KEY`: the same as `CONCENT_ETHEREUM_PRIVATE_KEY`
+    - `CONCENT_PUBLIC_KEY`: the same as `CONCENT_ETHEREUM_PUBLIC_KEY`, but in binary value
+
+5. For the tests to work there must be some test GNT on deposit accounts belonging to the provider and requestor that interact with Concent in E2E tests.
+You need to manually request some GNT from the faucet and transfer it to the accounts.
+Before doing this, remember to clear Concent's databases if there were any previous transaction being made with different `GNT_DEPOSIT_CONTRACT_ADDRESS`.
+Then adjust the code below to your need and type it in the Django shell (`manage.py shell`):
+
+    ``` python
+    from core.payments.payment_interface import PaymentInterface
+
+    p = PaymentInterface()  # eth address for "p" depends on `CONCENT_ETHEREUM_PRIVATE_KEY` and `CONCENT_ETHEREUM_PUBLIC_KEY`
+    p.request_gnt_from_faucet()
+    # check if You have GNT with `p.get_gnt_balance(p.get_eth_address())`
+
+    p.open_gate()
+    # check if the command above worked with `p.get_gate_address()` (should return eth address)
+
+    p.transfer_gnt(p.get_gate_address(), value)  # `value` is amount of GNT You want to convert to GNTB
+    p.transfer_from_gate()
+    # check if You have GNTB with `p.get_gntb_balance(p.get_eth_address())`
+
+    p.deposit_payment(value)  # value is amount of GNTB You want to use as deposit
+    # check if You have deposit with `p.get_deposit_value(p.get_eth_address())`
+    ```

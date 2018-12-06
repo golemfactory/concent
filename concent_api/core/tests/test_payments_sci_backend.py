@@ -1,6 +1,7 @@
 from django.test import override_settings
 
 import mock
+from golem_sci import ForcedPaymentEvent
 from web3 import Web3
 
 from common.testing_helpers import generate_ecc_key_pair
@@ -13,6 +14,18 @@ from core.tests.utils import ConcentIntegrationTestCase
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 (DIFFERENT_CONCENT_PRIVATE_KEY, DIFFERENT_CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 (SIGNING_SERVICE_PRIVATE_KEY, SIGNING_SERVICE_PUBLIC_KEY) = generate_ecc_key_pair()
+
+
+def _prepare_forced_payment_event_list_without_younger_payments(timestamp_to_compare: int) -> list:
+    mock_message = mock.create_autospec(spec=ForcedPaymentEvent)
+    mock_message.closure_time = timestamp_to_compare - 100
+    return [mock_message]
+
+
+def _prepare_forced_payment_event_list_with_younger_payments(timestamp_to_compare: int) -> list:
+    mock_message = mock.create_autospec(spec=ForcedPaymentEvent)
+    mock_message.closure_time = timestamp_to_compare + 100
+    return [mock_message]
 
 
 @override_settings(
@@ -254,3 +267,34 @@ class SCIBackendTest(ConcentIntegrationTestCase):
             value=self.transaction_value,
             subtask_id=sci_backend._hexencode_uuid(self.task_to_compute.subtask_id),
         )
+
+    def test_that_if_there_is_no_previous_transactions_function_should_return_true(self):
+        last_payment_closure_time_timestamp = get_current_utc_timestamp() - 3600 * 24 * 10  # 10 days ago
+        with mock.patch('core.payments.backends.sci_backend._get_oldest_payment_timestamp_from_subtask_results_accepted_list',
+                        return_value=last_payment_closure_time_timestamp), \
+                mock.patch('core.payments.backends.sci_backend._get_list_of_forced_payment_events', return_value=[]):
+
+            self.assertTrue(
+                sci_backend.are_all_payment_ts_younger_than_last_payment_closure_time_if_payment_exists('any_key', 'any_key', [])
+            )
+
+    def test_that_if_there_is_no_payment_younger_then_oldest_payment_timestamp_in_subtask_results_accepted_function_should_return_true(self):
+        last_payment_closure_time_timestamp = get_current_utc_timestamp() - 3600 * 24 * 10  # 10 days ago
+        with mock.patch('core.payments.backends.sci_backend._get_oldest_payment_timestamp_from_subtask_results_accepted_list',
+                        return_value=last_payment_closure_time_timestamp), \
+                mock.patch('core.payments.backends.sci_backend._get_list_of_forced_payment_events',
+                           return_value=_prepare_forced_payment_event_list_without_younger_payments(last_payment_closure_time_timestamp)):
+
+            self.assertTrue(
+                sci_backend.are_all_payment_ts_younger_than_last_payment_closure_time_if_payment_exists('any_key', 'any_key', [])
+            )
+
+    def test_that_if_there_is_payment_younger_then_oldest_payment_timestamp_in_subtask_results_accepted_function_should_return_false(self):
+        last_payment_closure_time_timestamp = get_current_utc_timestamp() - 3600 * 24 * 10  # 10 days ago
+        with mock.patch('core.payments.backends.sci_backend._get_oldest_payment_timestamp_from_subtask_results_accepted_list',
+                        return_value=last_payment_closure_time_timestamp), \
+            mock.patch('core.payments.backends.sci_backend._get_list_of_forced_payment_events',
+                       return_value=_prepare_forced_payment_event_list_with_younger_payments(last_payment_closure_time_timestamp)):
+            self.assertFalse(
+                sci_backend.are_all_payment_ts_younger_than_last_payment_closure_time_if_payment_exists('any_key', 'any_key', [])
+            )

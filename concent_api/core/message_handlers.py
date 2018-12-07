@@ -15,6 +15,7 @@ from django.http import HttpResponse
 from constance import config
 
 from golem_messages import message
+from golem_messages.exceptions import InvalidSignature
 from golem_messages.message.concents import AckForceGetTaskResult
 from golem_messages.message.concents import FileTransferToken
 from golem_messages.message.concents import ForceGetTaskResult
@@ -750,6 +751,14 @@ def get_clients_eth_accounts(task_to_compute: message.tasks.TaskToCompute) -> Tu
 def handle_send_force_payment(
     client_message: message.concents.ForcePayment
 ) -> Union[ServiceRefused, ForcePaymentRejected, ForcePaymentCommitted]:
+
+    try:
+        for subtask_results_accepted in client_message.subtask_results_accepted_list:
+            subtask_results_accepted.validate_ownership_chain(settings.CONCENT_PUBLIC_KEY)
+    except InvalidSignature:
+        return ServiceRefused(
+            reason=ServiceRefused.REASON.InvalidRequest
+        )
 
     # Concent should not accept payment requests in soft shutdown mode.
     if config.SOFT_SHUTDOWN_MODE is True:

@@ -164,7 +164,7 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
                     task_to_compute=self._get_deserialized_task_to_compute(
                         timestamp="2018-02-05 10:00:00",
                         deadline="2018-02-05 10:00:10",
-                        requestor_public_key=self._get_encoded_requestor_public_key(),
+                        requestor_public_key=self._get_requestor_hex_public_key(),
                         requestor_ethereum_public_key=self._get_requestor_ethereum_hex_public_key(),
                     )
                 )

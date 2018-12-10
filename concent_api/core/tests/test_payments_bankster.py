@@ -285,9 +285,6 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
         self.assertIsNone(claim_against_requestor)
         get_list_of_payments_mock.assert_called()
 
-    @override_settings(
-        PAYMENT_DUE_TIME=10
-    )
     def test_that_settle_overdue_acceptances_should_return_none_if_requestor_deposit_value_is_zero(self):
         task_to_compute = self._get_deserialized_task_to_compute(
             price=10000,
@@ -319,9 +316,6 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
 
         self.assertIsNone(claim_against_requestor)
 
-    @override_settings(
-        PAYMENT_DUE_TIME=10
-    )
     def test_that_settle_overdue_acceptances_should_return_claim_deposit_with_amount_paid(self):
         task_to_compute = self._get_deserialized_task_to_compute(
             price=15000,
@@ -368,9 +362,6 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
 
         self.assertEqual(claim_against_requestor.amount, 1000)
 
-    @override_settings(
-        PAYMENT_DUE_TIME=10
-    )
     def test_that_settle_overdue_acceptances_should_return_claim_deposit_with_amount_paid_if_there_was_no_previous_transactions(self):
         subtask_cost = 15000
         task_to_compute = self._get_deserialized_task_to_compute(

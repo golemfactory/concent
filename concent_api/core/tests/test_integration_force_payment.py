@@ -1,8 +1,10 @@
 import mock
-from django.test            import override_settings
-from freezegun              import freeze_time
-from golem_messages         import message
+from django.test import override_settings
+from freezegun import freeze_time
+from golem_messages import cryptography
+from golem_messages import message
 from golem_messages.utils import decode_hex
+from golem_messages.utils import encode_hex
 
 from common.testing_helpers import generate_ecc_key_pair
 from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
@@ -179,6 +181,57 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             }
         )
         self._assert_stored_message_counter_not_increased()
+
+    def test_that_if_provider_sends_force_payment_with_two_different_provider_ethereum_accounts_concent_should_refuse(self):
+        """
+        Expected message exchange:
+        Provider  -> Concent:    ForcePayment
+        Concent   -> Provider:   ServiceRefused
+        """
+        report_computed_task_1 = self._get_deserialized_report_computed_task(
+            task_to_compute=self._get_deserialized_task_to_compute(
+                subtask_id=self._get_uuid('1'),
+            )
+        )
+
+        provider_ethereum_public_key = self._get_provider_ethereum_hex_public_key_different()
+
+        report_computed_task_2 = self._get_deserialized_report_computed_task(
+            task_to_compute=self._get_deserialized_task_to_compute(
+                subtask_id=self._get_uuid('2'),
+                provider_ethereum_public_key=provider_ethereum_public_key,
+            )
+        )
+
+        subtask_results_accepted_list = [
+            self._get_deserialized_subtask_results_accepted(
+                report_computed_task=report_computed_task_1
+            ),
+            self._get_deserialized_subtask_results_accepted(
+                report_computed_task=report_computed_task_2
+            ),
+        ]
+
+        serialized_force_payment = self._get_serialized_force_payment(
+            timestamp="2018-02-05 12:00:20",
+            subtask_results_accepted_list=subtask_results_accepted_list
+        )
+
+        with freeze_time("2018-02-05 12:00:20"):
+            response = self.send_request(
+                url='core:send',
+                data=serialized_force_payment,
+            )
+
+        self._test_response(
+            response,
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ServiceRefused,
+            fields={
+                'reason': message.concents.ServiceRefused.REASON.InvalidRequest,
+            }
+        )
 
     def test_provider_send_force_payment_beyond_payment_time_concent_should_reject(self):
         """

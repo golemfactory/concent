@@ -28,9 +28,9 @@ from core.models import DepositAccount
 from core.models import DepositClaim
 from core.models import Subtask
 from core.payments import service
-from core.payments.backends.sci_backend import get_oldest_payment_timestamp_from_subtask_results_accepted_list
+from core.payments.backends.sci_backend import get_youngest_payment_timestamp_from_subtask_results_accepted_list
 from core.payments.backends.sci_backend import TransactionType
-from core.payments.service import validate_that_all_payment_ts_are_younger_than_last_payment_closure_time_if_payment_exists
+from core.payments.service import validate_that_last_closure_time_is_older_than_oldest_payment
 from core.utils import adjust_transaction_hash
 from core.validation import validate_bytes_public_key
 from core.validation import validate_uuid
@@ -304,10 +304,10 @@ def settle_overdue_acceptances(
     assert len(provider_ethereum_address) == ETHEREUM_ADDRESS_LENGTH
     assert provider_ethereum_address != requestor_ethereum_address
 
-    validate_that_all_payment_ts_are_younger_than_last_payment_closure_time_if_payment_exists(  # pylint: disable=no-value-for-parameter
+    validate_that_last_closure_time_is_older_than_oldest_payment(  # pylint: disable=no-value-for-parameter
         requestor_eth_address=requestor_ethereum_address,
         provider_eth_address=provider_ethereum_address,
-        search_payments_since_ts=get_oldest_payment_timestamp_from_subtask_results_accepted_list(acceptances),
+        search_payments_since_ts=get_youngest_payment_timestamp_from_subtask_results_accepted_list(acceptances),
     )
 
     with transaction.atomic(using='control'):

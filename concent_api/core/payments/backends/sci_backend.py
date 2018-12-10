@@ -58,25 +58,25 @@ def get_list_of_payments(
     return payments_list
 
 
-def validate_that_all_payment_ts_are_younger_than_last_payment_closure_time_if_payment_exists(
+def validate_that_last_closure_time_is_older_than_last_payment(
     requestor_eth_address: str,
     provider_eth_address: str,
-    oldest_payment_ts: Optional[int],
+    youngest_payment_ts: Optional[int],
 ) -> None:
-    if oldest_payment_ts is None:
+    if youngest_payment_ts is None:
         return
     forced_payment_event_list = _get_list_of_forced_payment_events(
         requestor_eth_address=requestor_eth_address,
         provider_eth_address=provider_eth_address,
-        search_payments_since_ts=oldest_payment_ts,
+        search_payments_since_ts=youngest_payment_ts,
     )
     for forced_payment_event in forced_payment_event_list:
-        if oldest_payment_ts < forced_payment_event.closure_time:
+        if youngest_payment_ts < forced_payment_event.closure_time:
             raise BanksterTimestampError
 
 
-def get_oldest_payment_timestamp_from_subtask_results_accepted_list(subtask_results_accepted_list: list) -> Optional[int]:
-    return min(subtask_results_accepted.payment_ts for subtask_results_accepted in subtask_results_accepted_list)
+def get_youngest_payment_timestamp_from_subtask_results_accepted_list(subtask_results_accepted_list: list) -> Optional[int]:
+    return max(subtask_results_accepted.payment_ts for subtask_results_accepted in subtask_results_accepted_list)
 
 
 def _get_list_of_forced_payment_events(

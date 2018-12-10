@@ -59,7 +59,7 @@ def call_on_confirmed_transaction(
     pass
 
 
-def validate_that_all_payment_ts_are_younger_than_last_payment_closure_time_if_payment_exists(
+def validate_that_last_closure_time_is_older_than_oldest_payment(
     _requestor_eth_address: str,
     _provider_eth_address: str,
     _oldest_payments_ts: Optional[int],

@@ -1,4 +1,5 @@
 import mock
+from django.conf import settings
 from django.test            import override_settings
 from freezegun              import freeze_time
 from golem_messages         import message
@@ -334,6 +335,76 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 9:00:15",
                 payment_ts="2018-02-05 11:55:00",
+                report_computed_task=self._get_deserialized_report_computed_task(
+                    timestamp="2018-02-05 9:00:05",
+                    task_to_compute=self._get_deserialized_task_to_compute(
+                        timestamp="2018-02-05 9:00:00",
+                        deadline="2018-02-05 9:00:10",
+                        subtask_id=self._get_uuid('2'),
+                        price=7000,
+                    )
+                )
+            )
+        ]
+
+        self._conduct_successful_payment_scenario(subtask_results_accepted_list)
+
+    def test_that_if_provider_sends_correct_force_payment_with_all_subtask_results_accepted_signed_by_concent_concent_should_accept(self):
+        """
+        Expected message exchange:
+        Provider  -> Concent:    ForcePayment (with all SubtaskResultsAccepted messages signed by Concent)
+        Concent   -> Provider:   ForcePaymentCommitted
+        Concent   -> Requestor:  ForcePaymentCommitted
+        """
+        subtask_results_accepted_list = [
+            self._get_deserialized_subtask_results_accepted(
+                timestamp="2018-02-05 10:00:15",
+                payment_ts="2018-02-05 11:55:00",
+                signer_private_key=settings.CONCENT_PRIVATE_KEY,
+                report_computed_task=self._get_deserialized_report_computed_task(
+                    timestamp="2018-02-05 10:00:05",
+                    task_to_compute=self.task_to_compute,
+                )
+            ),
+            self._get_deserialized_subtask_results_accepted(
+                timestamp="2018-02-05 9:00:15",
+                payment_ts="2018-02-05 11:55:00",
+                signer_private_key=settings.CONCENT_PRIVATE_KEY,
+                report_computed_task=self._get_deserialized_report_computed_task(
+                    timestamp="2018-02-05 9:00:05",
+                    task_to_compute=self._get_deserialized_task_to_compute(
+                        timestamp="2018-02-05 9:00:00",
+                        deadline="2018-02-05 9:00:10",
+                        subtask_id=self._get_uuid('2'),
+                        price=7000,
+                    )
+                )
+            )
+        ]
+
+        self._conduct_successful_payment_scenario(subtask_results_accepted_list)
+
+    def test_that_if_provider_sends_correct_force_payment_with_one_subtask_results_accepted_signed_by_concent_and_one_by_requestor_concent_should_accept(self):
+        """
+        Expected message exchange:
+        Provider  -> Concent:    ForcePayment (with one SubtaskResultsAccepted message signed by Concent and one by requestor)
+        Concent   -> Provider:   ForcePaymentCommitted
+        Concent   -> Requestor:  ForcePaymentCommitted
+        """
+        subtask_results_accepted_list = [
+            self._get_deserialized_subtask_results_accepted(
+                timestamp="2018-02-05 10:00:15",
+                payment_ts="2018-02-05 11:55:00",
+                signer_private_key=self.REQUESTOR_PRIVATE_KEY,
+                report_computed_task=self._get_deserialized_report_computed_task(
+                    timestamp="2018-02-05 10:00:05",
+                    task_to_compute=self.task_to_compute,
+                )
+            ),
+            self._get_deserialized_subtask_results_accepted(
+                timestamp="2018-02-05 9:00:15",
+                payment_ts="2018-02-05 11:55:00",
+                signer_private_key=settings.CONCENT_PRIVATE_KEY,
                 report_computed_task=self._get_deserialized_report_computed_task(
                     timestamp="2018-02-05 9:00:05",
                     task_to_compute=self._get_deserialized_task_to_compute(

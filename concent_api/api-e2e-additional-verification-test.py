@@ -34,7 +34,6 @@ from core.utils import calculate_maximum_download_time
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
-CALCULATED_VERIFICATION_TIME = 50  # seconds
 
 (DIFFERENT_REQUESTOR_ETHEREUM_PRIVATE_KEY, DIFFERENT_REQUESTOR_ETHEREUM_PUBLIC_KEY) = generate_priv_and_pub_eth_account_key()
 (DIFFERENT_PROVIDER_ETHEREUM_PRIVATE_KEY, DIFFERENT_PROVIDER_ETHEREUM_PUBLIC_KEY) = generate_priv_and_pub_eth_account_key()
@@ -60,7 +59,7 @@ def get_subtask_results_verify(
     minimum_upload_rate: int=0
 ) -> message.concents.SubtaskResultsVerify:
     task_to_compute = create_signed_task_to_compute(
-        deadline=current_time + CALCULATED_VERIFICATION_TIME,
+        deadline=current_time,
         price=price if price is not None else 1,
         size=task_to_compute_size,
         package_hash=task_to_compute_package_hash,
@@ -106,6 +105,22 @@ def get_subtask_results_verify(
         )
 
     return subtask_results_verify
+
+
+def calculate_verification_deadline(
+    subtask_results_rejected_timestamp: int,
+    additional_verification_call_time: int,
+    report_computed_task_size: int,
+    minimum_upload_rate: int,
+) -> int:
+    return (
+        subtask_results_rejected_timestamp +
+        additional_verification_call_time +
+        calculate_maximum_download_time(
+            report_computed_task_size,
+            minimum_upload_rate,
+        )
+    )
 
 
 @count_fails
@@ -176,8 +191,15 @@ def test_case_1_test_for_positive_case(cluster_consts: ProtocolConstants, cluste
         source_file_size
     ))
 
-    # Adding 10 seconds to time sleep makes us sure that subtask is after deadline.
-    time.sleep(CALCULATED_VERIFICATION_TIME)
+    # Adding calculated number of seconds to time sleep makes us sure that subtask is after deadline.
+    time.sleep(
+        calculate_verification_deadline(
+            subtask_results_verify.subtask_results_rejected.timestamp,
+            cluster_consts.additional_verification_call_time,
+            subtask_results_verify.subtask_results_rejected.report_computed_task.size,
+            cluster_consts.minimum_upload_rate,
+        ) - current_time
+    )
 
     api_request(
         cluster_url,
@@ -406,8 +428,15 @@ def test_case_6_test_without_script_src_in(cluster_consts: ProtocolConstants, cl
         source_file_size
     ))
 
-    # Adding 10 seconds to time sleep makes us sure that subtask is after deadline.
-    time.sleep(CALCULATED_VERIFICATION_TIME)
+    # Adding calculated number of seconds to time sleep makes us sure that subtask is after deadline.
+    time.sleep(
+        calculate_verification_deadline(
+            subtask_results_verify.subtask_results_rejected.timestamp,
+            cluster_consts.additional_verification_call_time,
+            subtask_results_verify.subtask_results_rejected.report_computed_task.size,
+            cluster_consts.minimum_upload_rate,
+        ) - current_time
+    )
 
     api_request(
         cluster_url,

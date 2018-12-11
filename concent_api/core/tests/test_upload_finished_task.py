@@ -65,18 +65,12 @@ class UploadFinishedTaskTest(ConcentIntegrationTestCase):
                 parse_datetime_to_timestamp(self.subtask.next_deadline) - 1
             )
         ):
-            with mock.patch('core.tasks.tasks.upload_acknowledged.delay') as upload_acknowledged_delay_mock:
+            with mock.patch('core.tasks.tasks.transaction.on_commit') as transaction_on_commit:
                 upload_finished(self.subtask.subtask_id)  # pylint: disable=no-value-for-parameter
 
         self.subtask.refresh_from_db()
         self.assertEqual(self.subtask.state_enum, Subtask.SubtaskState.ADDITIONAL_VERIFICATION)
-        upload_acknowledged_delay_mock.assert_called_once_with(
-            subtask_id=self.subtask.subtask_id,
-            source_file_size=self.report_computed_task.task_to_compute.size,
-            source_package_hash=self.report_computed_task.task_to_compute.package_hash,
-            result_file_size=self.report_computed_task.size,
-            result_package_hash=self.report_computed_task.package_hash,
-        )
+        transaction_on_commit.assert_called_once()
 
     def test_that_scheduling_task_for_subtask_after_deadline_should_process_timeout(self):
         datetime = parse_timestamp_to_utc_datetime(get_current_utc_timestamp() + settings.CONCENT_MESSAGING_TIME + 1)

@@ -486,17 +486,17 @@ def handle_send_force_get_task_result(
             subtask=subtask,
         )
 
-        result_transfer_request.delay(
-            subtask.subtask_id,
-            get_storage_result_file_path(
-                subtask_id=subtask.subtask_id,
-                task_id=subtask.task_id,
-            ),
-        )
+    result_transfer_request.delay(
+        subtask.subtask_id,
+        get_storage_result_file_path(
+            subtask_id=subtask.subtask_id,
+            task_id=subtask.task_id,
+        ),
+    )
 
-        return message.concents.AckForceGetTaskResult(
-            force_get_task_result = client_message,
-        )
+    return message.concents.AckForceGetTaskResult(
+        force_get_task_result=client_message,
+    )
 
 
 def handle_send_force_subtask_results(
@@ -978,10 +978,10 @@ def handle_messages_from_database(client_public_key: bytes) -> Union[message.Mes
 
         assert pending_response.response_type_enum in set(PendingResponse.ResponseType)
 
-        if pending_response.response_type_enum != PendingResponse.ResponseType.ForcePaymentCommitted and not \
-                is_protocol_version_compatible(
-                    pending_response.subtask.task_to_compute.protocol_version
-                ):
+        if (
+            pending_response.response_type_enum != PendingResponse.ResponseType.ForcePaymentCommitted and not
+            is_protocol_version_compatible(pending_response.subtask.task_to_compute.protocol_version)
+        ):
             log(logger,
                 f'Wrong version of golem messages in stored messages.'
                 f'Version stored in database is { pending_response.subtask.task_to_compute.protocol_version},'
@@ -1002,7 +1002,8 @@ def handle_messages_from_database(client_public_key: bytes) -> Union[message.Mes
         elif pending_response.response_type == PendingResponse.ResponseType.ForceReportComputedTaskResponse.name:  # pylint: disable=no-member
             if pending_response.subtask.ack_report_computed_task is not None:
                 ack_report_computed_task = deserialize_message(
-                    pending_response.subtask.ack_report_computed_task.data.tobytes())
+                    pending_response.subtask.ack_report_computed_task.data.tobytes()
+                )
                 response_to_client = message.concents.ForceReportComputedTaskResponse(
                     ack_report_computed_task=ack_report_computed_task,
                     reason=message.concents.ForceReportComputedTaskResponse.REASON.AckFromRequestor,
@@ -1012,7 +1013,8 @@ def handle_messages_from_database(client_public_key: bytes) -> Union[message.Mes
 
             elif pending_response.subtask.reject_report_computed_task is not None:
                 reject_report_computed_task = deserialize_message(
-                    pending_response.subtask.reject_report_computed_task.data.tobytes())
+                    pending_response.subtask.reject_report_computed_task.data.tobytes()
+                )
                 response_to_client = message.concents.ForceReportComputedTaskResponse(
                     reject_report_computed_task=reject_report_computed_task,
                     reason=message.concents.ForceReportComputedTaskResponse.REASON.RejectFromRequestor,
@@ -1020,7 +1022,8 @@ def handle_messages_from_database(client_public_key: bytes) -> Union[message.Mes
                 if reject_report_computed_task.reason == message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded:
                     ack_report_computed_task = message.tasks.AckReportComputedTask(
                         report_computed_task=deserialize_message(
-                            pending_response.subtask.report_computed_task.data.tobytes()),
+                            pending_response.subtask.report_computed_task.data.tobytes()
+                        ),
                     )
                     sign_message(ack_report_computed_task, settings.CONCENT_PRIVATE_KEY)
                     response_to_client = message.concents.ForceReportComputedTaskResponse(

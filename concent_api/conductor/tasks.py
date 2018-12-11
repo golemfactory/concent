@@ -10,15 +10,16 @@ from common.constants import ErrorCode
 from common.decorators import log_task_errors
 from common.decorators import provides_concent_feature
 from common.helpers import parse_datetime_to_timestamp
-from common.helpers import parse_timestamp_to_utc_datetime
 from common.logging import log
 from common.logging import LoggingLevel
 from conductor.exceptions import VerificationRequestAlreadyAcknowledgedError
 from conductor.models import BlenderSubtaskDefinition
-from conductor.models import Frame
 from conductor.models import ResultTransferRequest
 from conductor.models import UploadReport
 from conductor.models import VerificationRequest
+from conductor.service import filter_frames_by_blender_subtask_definition
+from conductor.service import store_frames
+from conductor.service import store_verification_request_and_blender_subtask_definition
 from conductor.service import update_upload_report
 from core import tasks
 from core.validation import validate_frames
@@ -100,12 +101,16 @@ def blender_verification_request(
             subtask_id=subtask_id
 
         )
-        # If all expected files have been uploaded, the app sends upload_finished task to the work queue.
-        tasks.upload_finished.delay(verification_request.subtask_id)
 
         verification_request.upload_finished = True
         verification_request.full_clean()
         verification_request.save()
+
+        # If all expected files have been uploaded, the app sends upload_finished task to the work queue.
+        def call_upload_finished() -> None:
+            tasks.upload_finished.delay(verification_request.subtask_id)
+
+        transaction.on_commit(call_upload_finished)
 
 
 @shared_task
@@ -157,20 +162,24 @@ def upload_acknowledged(
 
     frames = filter_frames_by_blender_subtask_definition(verification_request.blender_subtask_definition)
 
-    blender_verification_order.delay(
-        subtask_id=verification_request.subtask_id,
-        source_package_path=verification_request.source_package_path,
-        source_size=source_file_size,
-        source_package_hash=source_package_hash,
-        result_package_path=verification_request.result_package_path,
-        result_size=result_file_size,
-        result_package_hash=result_package_hash,
-        output_format=verification_request.blender_subtask_definition.output_format,
-        scene_file=verification_request.blender_subtask_definition.scene_file,
-        verification_deadline=parse_datetime_to_timestamp(verification_request.verification_deadline),
-        frames=frames,
-        blender_crop_script=verification_request.blender_subtask_definition.blender_crop_script,
-    )
+    def call_blender_verification_order() -> None:
+        blender_verification_order.delay(
+            subtask_id=verification_request.subtask_id,
+            source_package_path=verification_request.source_package_path,
+            source_size=source_file_size,
+            source_package_hash=source_package_hash,
+            result_package_path=verification_request.result_package_path,
+            result_size=result_file_size,
+            result_package_hash=result_package_hash,
+            output_format=verification_request.blender_subtask_definition.output_format,
+            scene_file=verification_request.blender_subtask_definition.scene_file,
+            verification_deadline=parse_datetime_to_timestamp(verification_request.verification_deadline),
+            frames=frames,
+            blender_crop_script=verification_request.blender_subtask_definition.blender_crop_script,
+        )
+
+    transaction.on_commit(call_blender_verification_order)
+
     log(
         logger,
         f'Upload acknowledgment finished.',
@@ -180,53 +189,6 @@ def upload_acknowledged(
         f'Result_package_hash: {result_package_hash}',
         subtask_id=subtask_id
     )
-
-
-def store_verification_request_and_blender_subtask_definition(
-    subtask_id: str,
-    source_package_path: str,
-    result_package_path: str,
-    output_format: str,
-    scene_file: str,
-    verification_deadline: int,
-    blender_crop_script: Optional[str],
-) -> tuple:
-    verification_request = VerificationRequest(
-        subtask_id=subtask_id,
-        source_package_path=source_package_path,
-        result_package_path=result_package_path,
-        verification_deadline=parse_timestamp_to_utc_datetime(verification_deadline),
-    )
-    verification_request.full_clean()
-    verification_request.save()
-
-    blender_subtask_definition = BlenderSubtaskDefinition(
-        verification_request=verification_request,
-        output_format=BlenderSubtaskDefinition.OutputFormat[output_format].name,
-        scene_file=scene_file,
-        blender_crop_script=blender_crop_script,
-    )
-    blender_subtask_definition.full_clean()
-    blender_subtask_definition.save()
-
-    return (verification_request, blender_subtask_definition)
-
-
-def store_frames(
-    blender_subtask_definition: BlenderSubtaskDefinition,
-    frame_list: List[int],
-) -> None:
-    for frame in frame_list:
-        store_frame = Frame(
-            blender_subtask_definition=blender_subtask_definition,
-            number=frame,
-        )
-        store_frame.full_clean()
-        store_frame.save()
-
-
-def filter_frames_by_blender_subtask_definition(blender_subtask_definition: BlenderSubtaskDefinition) -> list:
-    return list(Frame.objects.filter(blender_subtask_definition=blender_subtask_definition).values_list('number', flat=True))
 
 
 @shared_task

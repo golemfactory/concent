@@ -58,6 +58,20 @@ def upload_finished(subtask_id: str) -> None:
         if parse_datetime_to_timestamp(subtask.next_deadline) < get_current_utc_timestamp():
             # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
 
+            update_subtask_state(
+                subtask=subtask,
+                state=Subtask.SubtaskState.FAILED.name,  # pylint: disable=no-member
+            )
+
+            # Worker adds SubtaskResultsSettled to provider's and requestor's receive queues (both out-of-band)
+            for public_key in [subtask.provider.public_key_bytes, subtask.requestor.public_key_bytes]:
+                store_pending_message(
+                    response_type=PendingResponse.ResponseType.SubtaskResultsSettled,
+                    client_public_key=public_key,
+                    queue=PendingResponse.Queue.ReceiveOutOfBand,
+                    subtask=subtask,
+                )
+
             def finalize_claims() -> None:
                 finalize_deposit_claim(
                     subtask_id=subtask_id,
@@ -75,20 +89,6 @@ def upload_finished(subtask_id: str) -> None:
                 using='control',
             )
 
-            update_subtask_state(
-                subtask=subtask,
-                state=Subtask.SubtaskState.FAILED.name,  # pylint: disable=no-member
-            )
-
-            # Worker adds SubtaskResultsSettled to provider's and requestor's receive queues (both out-of-band)
-            for public_key in [subtask.provider.public_key_bytes, subtask.requestor.public_key_bytes]:
-                store_pending_message(
-                    response_type=PendingResponse.ResponseType.SubtaskResultsSettled,
-                    client_public_key=public_key,
-                    queue=PendingResponse.Queue.ReceiveOutOfBand,
-                    subtask=subtask,
-                )
-
             return
 
         # Change subtask state to ADDITIONAL VERIFICATION.
@@ -102,13 +102,16 @@ def upload_finished(subtask_id: str) -> None:
         )
 
         # Add upload_acknowledged task to the work queue.
-        tasks.upload_acknowledged.delay(
-            subtask_id=subtask_id,
-            source_file_size=report_computed_task.task_to_compute.size,
-            source_package_hash=report_computed_task.task_to_compute.package_hash,
-            result_file_size=report_computed_task.size,
-            result_package_hash=report_computed_task.package_hash,
-        )
+        def call_upload_acknowledged() -> None:
+            tasks.upload_acknowledged.delay(
+                subtask_id=subtask_id,
+                source_file_size=report_computed_task.task_to_compute.size,
+                source_package_hash=report_computed_task.task_to_compute.package_hash,
+                result_file_size=report_computed_task.size,
+                result_package_hash=report_computed_task.package_hash,
+            )
+
+        transaction.on_commit(call_upload_acknowledged)
 
     # If it's ADDITIONAL VERIFICATION, ACCEPTED or FAILED, log a warning and ignore the notification.
     # Processing ends here. This means that it's a duplicate notification.
@@ -189,7 +192,6 @@ def verification_result(
         return
 
     elif subtask.state_enum == Subtask.SubtaskState.FAILED:
-
         logging.log(
             logger,
             VERIFICATION_RESULT_SUBTASK_STATE_FAILED_LOG_MESSAGE.format(subtask_id),
@@ -213,6 +215,18 @@ def verification_result(
         task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
         # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
 
+        update_subtask_state(
+            subtask=subtask,
+            state=Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
+        )
+        for public_key in [subtask.provider.public_key_bytes, subtask.requestor.public_key_bytes]:
+            store_pending_message(
+                response_type=PendingResponse.ResponseType.SubtaskResultsSettled,
+                client_public_key=public_key,
+                queue=PendingResponse.Queue.ReceiveOutOfBand,
+                subtask=subtask,
+            )
+
         def finalize_claims() -> None:
             finalize_deposit_claim(
                 subtask_id=subtask_id,
@@ -229,17 +243,7 @@ def verification_result(
             finalize_claims,
             using='control',
         )
-        update_subtask_state(
-            subtask=subtask,
-            state=Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
-        )
-        for public_key in [subtask.provider.public_key_bytes, subtask.requestor.public_key_bytes]:
-            store_pending_message(
-                response_type=PendingResponse.ResponseType.SubtaskResultsSettled,
-                client_public_key=public_key,
-                queue=PendingResponse.Queue.ReceiveOutOfBand,
-                subtask=subtask,
-            )
+
         return
 
     if result_enum == VerificationResult.MISMATCH:
@@ -253,6 +257,12 @@ def verification_result(
             )
 
         task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
+
+        # Worker changes subtask state to FAILED
+        subtask.state = Subtask.SubtaskState.FAILED.name  # pylint: disable=no-member
+        subtask.next_deadline = None
+        subtask.full_clean()
+        subtask.save()
 
         def finalize_claims() -> None:  # pylint: disable=function-redefined
             delete_deposit_claim(
@@ -271,12 +281,6 @@ def verification_result(
             using='control',
         )
 
-        # Worker changes subtask state to FAILED
-        subtask.state = Subtask.SubtaskState.FAILED.name  # pylint: disable=no-member
-        subtask.next_deadline = None
-        subtask.full_clean()
-        subtask.save()
-
     elif result_enum in (VerificationResult.MATCH, VerificationResult.ERROR):
         # Worker logs the error code and message
         if result_enum == VerificationResult.ERROR:
@@ -287,7 +291,20 @@ def verification_result(
             )
         task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
 
-        # Worker makes a payment from requestor's deposit just like in the forced acceptance use case.
+        # Worker adds SubtaskResultsSettled to provider's and requestor's receive queues (both out-of-band)
+        for public_key in [subtask.provider.public_key_bytes, subtask.requestor.public_key_bytes]:
+            store_pending_message(
+                response_type=PendingResponse.ResponseType.SubtaskResultsSettled,
+                client_public_key=public_key,
+                queue=PendingResponse.Queue.ReceiveOutOfBand,
+                subtask=subtask,
+            )
+
+        # Worker changes subtask state to ACCEPTED
+        update_subtask_state(
+            subtask=subtask,
+            state=Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
+        )
 
         def finalize_claims() -> None:  # pylint: disable=function-redefined
             finalize_deposit_claim(
@@ -306,20 +323,6 @@ def verification_result(
             using='control',
         )
 
-        # Worker adds SubtaskResultsSettled to provider's and requestor's receive queues (both out-of-band)
-        for public_key in [subtask.provider.public_key_bytes, subtask.requestor.public_key_bytes]:
-            store_pending_message(
-                response_type=PendingResponse.ResponseType.SubtaskResultsSettled,
-                client_public_key=public_key,
-                queue=PendingResponse.Queue.ReceiveOutOfBand,
-                subtask=subtask,
-            )
-
-        # Worker changes subtask state to ACCEPTED
-        update_subtask_state(
-            subtask=subtask,
-            state=Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
-        )
     logging.log(
         logger,
         f'Verification_result_task ends. Result: {result_enum.name}',

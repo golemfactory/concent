@@ -70,19 +70,6 @@ def _update_timed_out_subtask(subtask: Subtask) -> None:
         )
     elif subtask.state == Subtask.SubtaskState.FORCING_ACCEPTANCE.name:  # pylint: disable=no-member
         task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
-
-        def finalize_claim_for_acceptance_case() -> None:
-            finalize_deposit_claim(
-                subtask_id=subtask.subtask_id,
-                concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
-                ethereum_address=task_to_compute.requestor_ethereum_address,
-            )
-
-        transaction.on_commit(
-            finalize_claim_for_acceptance_case,
-            using='control',
-        )
-
         update_subtask_state(
             subtask=subtask,
             state=Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
@@ -98,6 +85,18 @@ def _update_timed_out_subtask(subtask: Subtask) -> None:
             client_public_key=subtask.requestor.public_key_bytes,
             queue=PendingResponse.Queue.ReceiveOutOfBand,
             subtask=subtask,
+        )
+
+        def finalize_claim_for_acceptance_case() -> None:
+            finalize_deposit_claim(
+                subtask_id=subtask.subtask_id,
+                concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
+                ethereum_address=task_to_compute.requestor_ethereum_address,
+            )
+
+        transaction.on_commit(
+            finalize_claim_for_acceptance_case,
+            using='control',
         )
     elif subtask.state == Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER.name:  # pylint: disable=no-member
         update_subtask_state(
@@ -118,6 +117,22 @@ def _update_timed_out_subtask(subtask: Subtask) -> None:
         )
     elif subtask.state == Subtask.SubtaskState.ADDITIONAL_VERIFICATION.name:  # pylint: disable=no-member
         task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
+        update_subtask_state(
+            subtask=subtask,
+            state=Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
+        )
+        store_pending_message(
+            response_type=PendingResponse.ResponseType.SubtaskResultsSettled,
+            client_public_key=subtask.provider.public_key_bytes,
+            queue=PendingResponse.Queue.ReceiveOutOfBand,
+            subtask=subtask,
+        )
+        store_pending_message(
+            response_type=PendingResponse.ResponseType.SubtaskResultsSettled,
+            client_public_key=subtask.requestor.public_key_bytes,
+            queue=PendingResponse.Queue.ReceiveOutOfBand,
+            subtask=subtask,
+        )
 
         def finalize_claim_for_additional_verification_case() -> None:
             finalize_deposit_claim(
@@ -134,23 +149,6 @@ def _update_timed_out_subtask(subtask: Subtask) -> None:
         transaction.on_commit(
             finalize_claim_for_additional_verification_case,
             using='control',
-        )
-
-        update_subtask_state(
-            subtask=subtask,
-            state=Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
-        )
-        store_pending_message(
-            response_type=PendingResponse.ResponseType.SubtaskResultsSettled,
-            client_public_key=subtask.provider.public_key_bytes,
-            queue=PendingResponse.Queue.ReceiveOutOfBand,
-            subtask=subtask,
-        )
-        store_pending_message(
-            response_type=PendingResponse.ResponseType.SubtaskResultsSettled,
-            client_public_key=subtask.requestor.public_key_bytes,
-            queue=PendingResponse.Queue.ReceiveOutOfBand,
-            subtask=subtask,
         )
 
     log(

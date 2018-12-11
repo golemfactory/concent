@@ -154,7 +154,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         upload_report.full_clean()
         upload_report.save()
 
-        with mock.patch('conductor.views.upload_finished.delay') as mock_task:
+        with mock.patch('conductor.views.transaction.on_commit') as mock_transaction_on_commit:
             response = self.client.post(
                 reverse(
                     'conductor:report-upload',
@@ -171,7 +171,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         upload_report = UploadReport.objects.last()
         self.assertEqual(upload_report.path, self.source_package_path)
 
-        mock_task.assert_called_once_with(self.compute_task_def['subtask_id'])
+        mock_transaction_on_commit.assert_called_once()
 
         verification_request.refresh_from_db()
         self.assertTrue(verification_request.upload_finished)
@@ -186,7 +186,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         upload_report.full_clean()
         upload_report.save()
 
-        with mock.patch('conductor.views.upload_finished.delay') as mock_task:
+        with mock.patch('conductor.views.transaction.on_commit') as mock_transaction_on_commit:
             response = self.client.post(
                 reverse(
                     'conductor:report-upload',
@@ -200,7 +200,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
             self.assertEqual(response.status_code, 200)
             self.assertEqual(UploadReport.objects.count(), 2)
 
-            mock_task.assert_called_once_with(self.compute_task_def['subtask_id'])
+            mock_transaction_on_commit.assert_called_once()
 
             verification_request.refresh_from_db()
             self.assertTrue(verification_request.upload_finished)
@@ -217,7 +217,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
 
             self.assertEqual(response.status_code, 200)
             self.assertEqual(UploadReport.objects.count(), 3)
-            self.assertEqual(mock_task.call_count, 1)
+            self.assertEqual(mock_transaction_on_commit.call_count, 1)
 
     def test_that_conductor_should_schedule_verification_order_task_if_uploaded_file_path_was_not_existing_before_and_other_requirements_are_met(self):
         verification_request = self._prepare_verification_request_with_blender_subtask_definition()
@@ -229,7 +229,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         upload_report.full_clean()
         upload_report.save()
 
-        with mock.patch('conductor.views.upload_finished.delay') as mock_task:
+        with mock.patch('conductor.views.transaction.on_commit') as mock_transaction_on_commit:
             response = self.client.post(
                 reverse(
                     'conductor:report-upload',
@@ -243,7 +243,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
             self.assertEqual(response.status_code, 200)
             self.assertEqual(UploadReport.objects.count(), 2)
 
-            mock_task.assert_not_called()
+            mock_transaction_on_commit.assert_not_called()
 
             verification_request.refresh_from_db()
             self.assertFalse(verification_request.upload_finished)
@@ -261,7 +261,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
             self.assertEqual(response.status_code, 200)
             self.assertEqual(UploadReport.objects.count(), 3)
 
-            mock_task.assert_called_once_with(self.compute_task_def['subtask_id'])
+            mock_transaction_on_commit.assert_called_once()
 
             verification_request.refresh_from_db()
             self.assertTrue(verification_request.upload_finished)
@@ -382,7 +382,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         upload_report.full_clean()
         upload_report.save()
 
-        with mock.patch('conductor.tasks.tasks.upload_finished.delay') as mock_task:
+        with mock.patch('conductor.tasks.tasks.transaction.on_commit') as transaction_on_commit:
             blender_verification_request(
                 frames=self.compute_task_def['extra_data']['frames'],
                 subtask_id=self.compute_task_def['subtask_id'],
@@ -397,4 +397,4 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
                 blender_crop_script=self.compute_task_def['extra_data']['script_src'],
             )
 
-        mock_task.assert_called_with(self.compute_task_def['subtask_id'])
+        transaction_on_commit.assert_called_once()

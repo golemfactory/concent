@@ -1,7 +1,9 @@
-from unittest import TestCase
+import unittest
 from assertpy import assert_that
 import mock
 import pytest
+from django.test import override_settings
+from django.test import TestCase
 
 from golem_messages.factories.tasks import ComputeTaskDefFactory, ReportComputedTaskFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
@@ -24,7 +26,7 @@ from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
 from core.exceptions import FrameNumberValidationError
 from core.exceptions import HashingAlgorithmError
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
-from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
+from core.subtask_helpers import are_subtask_results_accepted_messages_properly_signed
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import generate_uuid_for_tests
 from core.validation import validate_all_messages_identical
@@ -49,7 +51,7 @@ from core.validation import validate_uuid
 (DIFFERENT_REQUESTOR_PRIV_ETH_KEY, DIFFERENT_REQUESTOR_PUB_ETH_KEY) = generate_priv_and_pub_eth_account_key()
 
 
-class TestValidateGolemMessageSubtaskResultsRejected(TestCase):
+class TestValidateGolemMessageSubtaskResultsRejected(unittest.TestCase):
     def test_that_exception_is_raised_when_subtask_results_rejected_is_of_wrong_type(self):
         with self.assertRaises(ConcentValidationError):
             validate_golem_message_subtask_results_rejected(None)
@@ -62,7 +64,7 @@ class TestValidateGolemMessageSubtaskResultsRejected(TestCase):
             validate_golem_message_subtask_results_rejected(subtask_results_rejected)
 
 
-class ValidatorsTest(TestCase):
+class ValidatorsTest(unittest.TestCase):
     def test_that_function_raises_exception_when_ethereum_addres_has_wrong_type(self):
         with self.assertRaises(ConcentValidationError):
             validate_ethereum_addresses(int('1' * ETHEREUM_ADDRESS_LENGTH), 'a' * ETHEREUM_ADDRESS_LENGTH)
@@ -161,7 +163,7 @@ class TestValidateIdValue:
         assert_that(exception.value.error_code).is_equal_to(ErrorCode.MESSAGE_WRONG_UUID_TYPE)
 
 
-class TestInvalidHashAlgorithms(TestCase):
+class TestInvalidHashAlgorithms(unittest.TestCase):
 
     def test_that_validation_should_raise_exception_when_checksum_is_invalid(self):
         invalid_values_with_expected_error_code = {
@@ -178,6 +180,10 @@ class TestInvalidHashAlgorithms(TestCase):
             self.assertEqual(context.exception.error_code, error_code)
 
 
+@override_settings(
+    CONCENT_PRIVATE_KEY=CONCENT_PRIVATE_KEY,
+    CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
+)
 class TestAreEthereumAddressesAndKeysUnique(TestCase):
 
     def setUp(self):
@@ -266,11 +272,21 @@ class TestAreEthereumAddressesAndKeysUnique(TestCase):
             self.task_to_compute_2,
             subtask_2_signed_by=DIFFERENT_REQUESTOR_PRIVATE_KEY,
         )
-        result = are_subtask_results_accepted_messages_signed_by_the_same_requestor(subtask_results_accepted_list)
+        result = are_subtask_results_accepted_messages_properly_signed(subtask_results_accepted_list)
         assert_that(result).is_false()
 
+    def test_that_if_messages_are_signed_by_concent_method_should_return_true(self):
+        subtask_results_accepted_list = self.create_subtask_results_accepted_list(
+            self.task_to_compute_1,
+            self.task_to_compute_2,
+            subtask_1_signed_by=CONCENT_PRIVATE_KEY,
+            subtask_2_signed_by=CONCENT_PRIVATE_KEY,
+        )
+        result = are_subtask_results_accepted_messages_properly_signed(subtask_results_accepted_list)
+        assert_that(result).is_true()
 
-class TestFramesListValidation(TestCase):
+
+class TestFramesListValidation(unittest.TestCase):
 
     def test_that_list_of_ints_is_valid(self):
         try:

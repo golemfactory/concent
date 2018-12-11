@@ -280,17 +280,24 @@ def are_keys_and_addresses_unique_in_message_subtask_results_accepted(
     )
 
 
-def are_subtask_results_accepted_messages_signed_by_the_same_requestor(
+def are_subtask_results_accepted_messages_properly_signed(
     subtask_results_accepted_list: List[SubtaskResultsAccepted]
 ) -> bool:
     requestor_public_key = subtask_results_accepted_list[0].task_to_compute.requestor_public_key
-    are_all_signed_by_requestor = all(
+    signed_by_requestor = sum(
         is_golem_message_signed_with_key(
             hex_to_bytes_convert(requestor_public_key),
             subtask_results_accepted
         ) for subtask_results_accepted in subtask_results_accepted_list
     )
-    return are_all_signed_by_requestor
+    signed_by_concent = sum(
+        is_golem_message_signed_with_key(
+            settings.CONCENT_PUBLIC_KEY,
+            subtask_results_accepted
+        ) for subtask_results_accepted in subtask_results_accepted_list
+    )
+
+    return len(subtask_results_accepted_list) == signed_by_concent + signed_by_requestor
 
 
 def get_one_or_none(

@@ -805,12 +805,6 @@ def handle_send_force_payment(
     validate_ethereum_addresses(requestor_eth_address, provider_eth_address)
     requestor_ethereum_public_key = hex_to_bytes_convert(task_to_compute.requestor_ethereum_public_key)
 
-    validate_that_golem_messages_are_signed_with_key(
-        requestor_public_key,
-        *client_message.subtask_results_accepted_list,
-        *[subtask_results_accepted.task_to_compute for subtask_results_accepted in client_message.subtask_results_accepted_list],
-    )
-
     claim_against_requestor = bankster.settle_overdue_acceptances(
         requestor_ethereum_address=requestor_eth_address,
         provider_ethereum_address=provider_eth_address,

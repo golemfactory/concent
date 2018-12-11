@@ -30,7 +30,7 @@ from core.models import Subtask
 from core.payments import service
 from core.payments.backends.sci_backend import get_youngest_payment_timestamp_from_subtask_results_accepted_list
 from core.payments.backends.sci_backend import TransactionType
-from core.payments.service import validate_that_last_closure_time_is_older_than_oldest_payment
+from core.payments.service import validate_that_there_is_no_younger_payment_then_any_of_closure_times
 from core.utils import adjust_transaction_hash
 from core.validation import validate_bytes_public_key
 from core.validation import validate_uuid
@@ -304,7 +304,7 @@ def settle_overdue_acceptances(
     assert len(provider_ethereum_address) == ETHEREUM_ADDRESS_LENGTH
     assert provider_ethereum_address != requestor_ethereum_address
 
-    validate_that_last_closure_time_is_older_than_oldest_payment(  # pylint: disable=no-value-for-parameter
+    validate_that_there_is_no_younger_payment_then_any_of_closure_times(  # pylint: disable=no-value-for-parameter
         requestor_eth_address=requestor_ethereum_address,
         provider_eth_address=provider_ethereum_address,
         search_payments_since_ts=get_youngest_payment_timestamp_from_subtask_results_accepted_list(acceptances),

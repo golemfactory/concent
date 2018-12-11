@@ -3,10 +3,6 @@ import uuid
 from enum import Enum
 
 from typing import Callable
-from typing import List
-from typing import Optional
-
-from golem_sci import ForcedPaymentEvent
 from golem_sci import SmartContractsInterface
 from golem_sci.blockshelper import BlocksHelper
 from web3 import Web3
@@ -58,41 +54,24 @@ def get_list_of_payments(
     return payments_list
 
 
-def validate_that_last_closure_time_is_older_than_last_payment(
+def validate_that_there_is_no_younger_payment_then_any_of_closure_times(
     requestor_eth_address: str,
     provider_eth_address: str,
-    youngest_payment_ts: Optional[int],
+    youngest_payment_ts: int,
 ) -> None:
-    if youngest_payment_ts is None:
-        return
-    forced_payment_event_list = _get_list_of_forced_payment_events(
+    forced_payment_event_list = get_list_of_payments(
         requestor_eth_address=requestor_eth_address,
         provider_eth_address=provider_eth_address,
-        search_payments_since_ts=youngest_payment_ts,
+        payment_ts=youngest_payment_ts,
+        transaction_type=TransactionType.FORCE,
     )
     for forced_payment_event in forced_payment_event_list:
         if youngest_payment_ts < forced_payment_event.closure_time:
             raise BanksterTimestampError
 
 
-def get_youngest_payment_timestamp_from_subtask_results_accepted_list(subtask_results_accepted_list: list) -> Optional[int]:
+def get_youngest_payment_timestamp_from_subtask_results_accepted_list(subtask_results_accepted_list: list) -> int:
     return max(subtask_results_accepted.payment_ts for subtask_results_accepted in subtask_results_accepted_list)
-
-
-def _get_list_of_forced_payment_events(
-    requestor_eth_address: str,
-    provider_eth_address: str,
-    search_payments_since_ts: int,
-) -> List[ForcedPaymentEvent]:
-    payment_interface: SmartContractsInterface = PaymentInterface()
-    first_block_after_given_ts = BlocksHelper(payment_interface).get_first_block_after(search_payments_since_ts).number
-
-    return payment_interface.get_forced_payments(  # pylint: disable=no-member
-        requestor_address=Web3.toChecksumAddress(requestor_eth_address),
-        provider_address=Web3.toChecksumAddress(provider_eth_address),
-        from_block=first_block_after_given_ts,
-        to_block=payment_interface.get_block_number(),  # pylint: disable=no-member
-    )
 
 
 def make_force_payment_to_provider(

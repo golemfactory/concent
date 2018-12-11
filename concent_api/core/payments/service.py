@@ -1,6 +1,5 @@
 from typing import Any
 from typing import Callable
-from typing import Optional
 import importlib
 
 from django.conf import settings
@@ -100,16 +99,21 @@ def call_on_confirmed_transaction(
     tx_hash: str,
     callback: Callable
 ) -> None:
-    backend.call_on_confirmed_transaction(tx_hash, callback)
+    backend.call_on_confirmed_transaction(
+        tx_hash,
+        callback,
+    )
 
 
 @_add_backend
-def validate_that_last_closure_time_is_older_than_oldest_payment(
+def validate_that_there_is_no_younger_payment_then_any_of_closure_times(
     backend: Any,
     requestor_eth_address: str,
     provider_eth_address: str,
-    search_payments_since_ts: Optional[int],
+    search_payments_since_ts: int,
 ) -> bool:
-    return backend.validate_that_last_closure_time_is_older_than_oldest_payment(
-        requestor_eth_address, provider_eth_address, search_payments_since_ts
+    return backend.validate_that_there_is_no_younger_payment_then_any_of_closure_times(
+        requestor_eth_address,
+        provider_eth_address,
+        search_payments_since_ts,
     )

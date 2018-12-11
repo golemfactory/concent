@@ -1,6 +1,5 @@
 import uuid
 from typing import Callable
-from typing import Optional
 
 from core.constants import CLIENT_ETH_ADDRESS_WITH_0_DEPOSIT
 from core.payments.backends.sci_backend import TransactionType
@@ -53,15 +52,15 @@ def cover_additional_verification_cost(
 
 
 def call_on_confirmed_transaction(
-    _tx_hash: str,
-    _callback: Callable,
+    tx_hash: str,  # pylint: disable=unused-argument
+    callback: Callable,  # pylint: disable=unused-argument
 ) -> None:
     pass
 
 
-def validate_that_last_closure_time_is_older_than_oldest_payment(
-    _requestor_eth_address: str,
-    _provider_eth_address: str,
-    _oldest_payments_ts: Optional[int],
+def validate_that_there_is_no_younger_payment_then_any_of_closure_times(
+    requestor_eth_address: str,  # pylint: disable=unused-argument
+    provider_eth_address: str,  # pylint: disable=unused-argument
+    oldest_payments_ts: int,  # pylint: disable=unused-argument
 ) -> None:
     pass

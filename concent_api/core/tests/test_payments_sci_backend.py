@@ -271,24 +271,28 @@ class SCIBackendTest(ConcentIntegrationTestCase):
 
     def test_that_if_there_is_no_previous_transactions_validation_should_pass(self):  # pylint: disable=no-self-use
         last_payment_closure_time_timestamp = get_current_utc_timestamp() - 3600 * 24 * 10  # 10 days ago
-        with mock.patch('core.payments.backends.sci_backend._get_list_of_forced_payment_events', return_value=[]):
-            sci_backend.validate_that_last_closure_time_is_older_than_last_payment(
+        with mock.patch('core.payments.backends.sci_backend.get_list_of_payments', return_value=[]):
+            sci_backend.validate_that_there_is_no_younger_payment_then_any_of_closure_times(
                 'any_key', 'any_key', last_payment_closure_time_timestamp
             )
 
     def test_that_if_there_is_no_payment_younger_then_oldest_payment_timestamp_in_subtask_results_accepted_validation_should_pass(self):  # pylint: disable=no-self-use
         last_payment_closure_time_timestamp = get_current_utc_timestamp() - 3600 * 24 * 10  # 10 days ago
-        with mock.patch('core.payments.backends.sci_backend._get_list_of_forced_payment_events',
-                        return_value=_prepare_forced_payment_event_list_without_younger_payments(last_payment_closure_time_timestamp)):
-            sci_backend.validate_that_last_closure_time_is_older_than_last_payment(
+        with mock.patch(
+            'core.payments.backends.sci_backend.get_list_of_payments',
+            return_value=_prepare_forced_payment_event_list_without_younger_payments(
+                last_payment_closure_time_timestamp)):
+            sci_backend.validate_that_there_is_no_younger_payment_then_any_of_closure_times(
                 'any_key', 'any_key', last_payment_closure_time_timestamp
             )
 
     def test_that_if_there_is_payment_younger_then_oldest_payment_timestamp_in_subtask_results_accepted_validation_should_raise_exception(self):
         last_payment_closure_time_timestamp = get_current_utc_timestamp() - 3600 * 24 * 10  # 10 days ago
-        with mock.patch('core.payments.backends.sci_backend._get_list_of_forced_payment_events',
-                        return_value=_prepare_forced_payment_event_list_with_younger_payments(last_payment_closure_time_timestamp)):
+        with mock.patch(
+            'core.payments.backends.sci_backend.get_list_of_payments',
+            return_value=_prepare_forced_payment_event_list_with_younger_payments(
+                last_payment_closure_time_timestamp)):
             with self.assertRaises(BanksterTimestampError):
-                sci_backend.validate_that_last_closure_time_is_older_than_last_payment(
+                sci_backend.validate_that_there_is_no_younger_payment_then_any_of_closure_times(
                     'any_key', 'any_key', last_payment_closure_time_timestamp
                 )

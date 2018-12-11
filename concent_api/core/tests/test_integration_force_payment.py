@@ -25,6 +25,10 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
 
     def setUp(self):
         super().setUp()
+        self.task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp="2018-02-05 10:00:00",
+            deadline="2018-02-05 10:00:10",
+        )
         self.amount_pending = 0
         self.amount_paid = 10
 
@@ -318,20 +322,13 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         Concent   -> Provider:   ForcePaymentCommitted
         Concent   -> Requestor:  ForcePaymentCommitted
         """
-        task_to_compute = self._get_deserialized_task_to_compute(
-            timestamp                       = "2018-02-05 10:00:00",
-            deadline                        = "2018-02-05 10:00:10",
-            subtask_id=self._get_uuid('1'),
-            price                           = 15000,
-        )
-
         subtask_results_accepted_list = [
             self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 10:00:15",
                 payment_ts="2018-02-05 11:55:00",
                 report_computed_task=self._get_deserialized_report_computed_task(
                     timestamp="2018-02-05 10:00:05",
-                    task_to_compute=task_to_compute,
+                    task_to_compute=self.task_to_compute,
                 )
             ),
             self._get_deserialized_subtask_results_accepted(
@@ -349,67 +346,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             )
         ]
 
-        serialized_force_payment = self._get_serialized_force_payment(
-            timestamp                     = "2018-02-05 12:00:20",
-            subtask_results_accepted_list = subtask_results_accepted_list
-        )
-
-        with freeze_time("2018-02-05 12:00:20"):
-            with mock.patch(
-                'core.message_handlers.bankster.settle_overdue_acceptances',
-                side_effect=self.settle_overdue_acceptances_mock
-            ) as settle_overdue_acceptances:
-                response_1 =self.send_request(
-                    url='core:send',
-                    data                                = serialized_force_payment,
-                )
-
-        settle_overdue_acceptances.assert_called_with(
-            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
-            provider_ethereum_address=task_to_compute.provider_ethereum_address,
-            acceptances=subtask_results_accepted_list,
-            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
-        )
-
-        self._test_response(
-            response_1,
-            status       = 200,
-            key          = self.PROVIDER_PRIVATE_KEY,
-            message_type = message.concents.ForcePaymentCommitted,
-            fields       = {
-                'recipient_type': message.concents.ForcePaymentCommitted.Actor.Provider,
-                'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
-                'amount_pending': self.amount_pending,
-                'amount_paid': self.amount_paid,
-            }
-        )
-        self._assert_stored_message_counter_not_increased()
-
-        last_pending_message = PendingResponse.objects.filter(delivered = False).order_by('created_at').last()
-        self.assertEqual(last_pending_message.response_type,        PendingResponse.ResponseType.ForcePaymentCommitted.name)  # pylint: disable=no-member
-        self.assertEqual(last_pending_message.client.public_key_bytes,    self.REQUESTOR_PUBLIC_KEY)
-
-        with freeze_time("2018-02-05 12:00:21"):
-            response_2 =self.send_request(
-                url='core:receive',
-                data                            = self._create_requestor_auth_message(),
-            )
-        self._test_response(
-            response_2,
-            status       = 200,
-            key          = self.REQUESTOR_PRIVATE_KEY,
-            message_type = message.concents.ForcePaymentCommitted,
-            fields       = {
-                'recipient_type': message.concents.ForcePaymentCommitted.Actor.Requestor,
-                'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:21"),
-                'amount_pending': self.amount_pending,
-                'amount_paid': self.amount_paid,
-                'task_owner_key': decode_hex(task_to_compute.requestor_ethereum_public_key),
-            }
-        )
-        self._assert_stored_message_counter_not_increased()
-        last_pending_message = PendingResponse.objects.filter(delivered = False).last()
-        self.assertIsNone(last_pending_message)
+        self._conduct_successful_payment_scenario(subtask_results_accepted_list)
 
     def test_provider_send_force_payment_with_subtask_results_accepted_list_as_single_message_concent_should_return_http_400(self):
         """
@@ -518,3 +455,62 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             }
         )
         self._assert_stored_message_counter_not_increased()
+
+    def _conduct_successful_payment_scenario(self, subtask_results_accepted_list):
+        serialized_force_payment = self._get_serialized_force_payment(
+            timestamp="2018-02-05 12:00:20",
+            subtask_results_accepted_list=subtask_results_accepted_list
+        )
+        with freeze_time("2018-02-05 12:00:20"):
+            with mock.patch(
+                'core.message_handlers.bankster.settle_overdue_acceptances',
+                side_effect=self.settle_overdue_acceptances_mock
+            ) as settle_overdue_acceptances:
+                response_1 = self.send_request(
+                    url='core:send',
+                    data=serialized_force_payment,
+                )
+        settle_overdue_acceptances.assert_called_with(
+            requestor_ethereum_address=self.task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=self.task_to_compute.provider_ethereum_address,
+            acceptances=subtask_results_accepted_list,
+            requestor_public_key=hex_to_bytes_convert(self.task_to_compute.requestor_public_key),
+        )
+        self._test_response(
+            response_1,
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ForcePaymentCommitted,
+            fields={
+                'recipient_type': message.concents.ForcePaymentCommitted.Actor.Provider,
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+                'amount_pending': self.amount_pending,
+                'amount_paid': self.amount_paid,
+            }
+        )
+        self._assert_stored_message_counter_not_increased()
+        last_pending_message = PendingResponse.objects.filter(delivered=False).order_by('created_at').last()
+        self.assertEqual(last_pending_message.response_type,
+                         PendingResponse.ResponseType.ForcePaymentCommitted.name)  # pylint: disable=no-member
+        self.assertEqual(last_pending_message.client.public_key_bytes, self.REQUESTOR_PUBLIC_KEY)
+        with freeze_time("2018-02-05 12:00:21"):
+            response_2 = self.send_request(
+                url='core:receive',
+                data=self._create_requestor_auth_message(),
+            )
+        self._test_response(
+            response_2,
+            status=200,
+            key=self.REQUESTOR_PRIVATE_KEY,
+            message_type=message.concents.ForcePaymentCommitted,
+            fields={
+                'recipient_type': message.concents.ForcePaymentCommitted.Actor.Requestor,
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:21"),
+                'amount_pending': self.amount_pending,
+                'amount_paid': self.amount_paid,
+                'task_owner_key': decode_hex(self.task_to_compute.requestor_ethereum_public_key),
+            }
+        )
+        self._assert_stored_message_counter_not_increased()
+        last_pending_message = PendingResponse.objects.filter(delivered=False).last()
+        self.assertIsNone(last_pending_message)

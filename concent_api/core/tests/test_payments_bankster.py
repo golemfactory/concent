@@ -8,7 +8,6 @@ from golem_messages import factories
 from common.constants import ConcentUseCase
 from common.helpers import ethereum_public_key_to_address
 from core.constants import MOCK_TRANSACTION_HASH
-from core.exceptions import BanksterTimestampError
 from core.exceptions import TooSmallProviderDeposit
 from core.message_handlers import store_subtask
 from core.models import Client
@@ -263,7 +262,7 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
         subtask_results_accepted_list = [
             self._get_deserialized_subtask_results_accepted(
                 report_computed_task=self._get_deserialized_report_computed_task(
-                    timestamp="2018-02-05 10:00:05",
+                    timestamp="2018-02-04 10:00:05",
                     task_to_compute=task_to_compute
                 )
             )
@@ -286,19 +285,16 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
         self.assertIsNone(claim_against_requestor)
         get_list_of_payments_mock.assert_called()
 
-    @override_settings(
-        PAYMENT_DUE_TIME=10
-    )
     def test_that_settle_overdue_acceptances_should_return_none_if_requestor_deposit_value_is_zero(self):
         task_to_compute = self._get_deserialized_task_to_compute(
             price=10000,
         )
 
-        with freeze_time("2018-02-05 10:00:15"):
+        with freeze_time("2018-02-04 10:00:15"):
             subtask_results_accepted_list = [
                 self._get_deserialized_subtask_results_accepted(
                     report_computed_task=self._get_deserialized_report_computed_task(
-                        timestamp="2018-02-05 10:00:05",
+                        timestamp="2018-02-04 10:00:05",
                         task_to_compute=task_to_compute
                     )
                 )
@@ -320,19 +316,16 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
 
         self.assertIsNone(claim_against_requestor)
 
-    @override_settings(
-        PAYMENT_DUE_TIME=10
-    )
     def test_that_settle_overdue_acceptances_should_return_claim_deposit_with_amount_paid(self):
         task_to_compute = self._get_deserialized_task_to_compute(
             price=15000,
         )
 
-        with freeze_time("2018-02-05 10:00:15"):
+        with freeze_time("2018-02-04 10:00:15"):
             subtask_results_accepted_list = [
                 self._get_deserialized_subtask_results_accepted(
                     report_computed_task=self._get_deserialized_report_computed_task(
-                        timestamp="2018-02-05 10:00:05",
+                        timestamp="2018-02-04 10:00:05",
                         task_to_compute=task_to_compute
                     )
                 )
@@ -366,23 +359,19 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
         # )
         # already_paid_value == 13000, so 2000 left
         # get_deposit_value returns 1000, so 1000 paid and 1000 left (pending)
-
         self.assertEqual(claim_against_requestor.amount, 1000)
 
-    @override_settings(
-        PAYMENT_DUE_TIME=10
-    )
     def test_that_settle_overdue_acceptances_should_return_claim_deposit_with_amount_paid_if_there_was_no_previous_transactions(self):
         subtask_cost = 15000
         task_to_compute = self._get_deserialized_task_to_compute(
             price=subtask_cost,
         )
 
-        with freeze_time("2018-02-05 10:00:15"):
+        with freeze_time("2018-02-04 10:00:15"):
             subtask_results_accepted_list = [
                 self._get_deserialized_subtask_results_accepted(
                     report_computed_task=self._get_deserialized_report_computed_task(
-                        timestamp="2018-02-05 10:00:05",
+                        timestamp="2018-02-04 10:00:05",
                         task_to_compute=task_to_compute
                     )
                 )
@@ -408,40 +397,59 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
         get_list_of_payments_mock.assert_called()
 
         self.assertIsNotNone(claim_against_requestor.tx_hash)
-
         self.assertEqual(claim_against_requestor.amount, subtask_cost)
 
-    def test_that_settle_overdue_acceptances_should_raise_exception_if_any_transaction_from_acceptances_list_is_before_youngest_transaction_timestamp(self):
+    def test_that_settle_overdue_acceptances_should_return_claim_deposit_with_amount_paid_when_requesting_payment_for_multiple_subtasks(self):
         task_to_compute = self._get_deserialized_task_to_compute(
-            price=13000,
+            price=7500,
         )
 
-        subtask_results_accepted_list = [
-            self._get_deserialized_subtask_results_accepted(
-                report_computed_task=self._get_deserialized_report_computed_task(
-                    timestamp="2018-02-05 10:00:05",
-                    task_to_compute=task_to_compute
+        with freeze_time("2018-02-04 10:00:15"):
+            subtask_results_accepted_list = [
+                self._get_deserialized_subtask_results_accepted(
+                    report_computed_task=self._get_deserialized_report_computed_task(
+                        timestamp="2018-02-04 9:00:05",
+                        task_to_compute=task_to_compute
+                    ),
+                    payment_ts="2018-02-04 10:00:05",
                 ),
-                payment_ts="2018-02-05 12:00:00",
-            )
-        ]
-
-        with mock.patch(
-            'core.payments.bankster.service.get_list_of_payments',
-            side_effect=[
-                [self._create_batch_payment_object(amount=1000, closure_time=subtask_results_accepted_list[0].payment_ts + 1)],
-                self._get_list_of_force_transactions(),
-            ]
-        ) as get_list_of_payments_mock:
-            with self.assertRaises(BanksterTimestampError):
-                settle_overdue_acceptances(
-                    requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
-                    provider_ethereum_address=task_to_compute.provider_ethereum_address,
-                    acceptances=subtask_results_accepted_list,
-                    requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+                self._get_deserialized_subtask_results_accepted(
+                    report_computed_task=self._get_deserialized_report_computed_task(
+                        timestamp="2018-02-04 23:00:05",
+                        task_to_compute=task_to_compute
+                    ),
+                    payment_ts="2018-02-05 10:00:05",
                 )
+            ]
 
+        with freeze_time("2018-02-05 10:00:25"):
+            with mock.patch('core.payments.bankster.service.get_deposit_value', return_value=5000) as get_deposit_value_mock:
+                with mock.patch(
+                    'core.payments.bankster.service.get_list_of_payments',
+                    side_effect=[
+                        self._get_list_of_batch_transactions(),
+                        self._get_list_of_force_transactions(),
+                    ]
+                ) as get_list_of_payments_mock:
+                    claim_against_requestor = settle_overdue_acceptances(
+                        requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+                        provider_ethereum_address=task_to_compute.provider_ethereum_address,
+                        acceptances=subtask_results_accepted_list,
+                        requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+                    )
+
+        get_deposit_value_mock.assert_called_once()
         get_list_of_payments_mock.assert_called()
+
+        self.assertIsNotNone(claim_against_requestor.tx_hash)
+
+        # already_paid_value = 2x7500 - (
+        #   (1000 + 2000 + 3000 + 4000)(batch_transactions) +
+        #   (1000 + 2000)(force_transactions)
+        # )
+        # already_paid_value == 13000, so 2000 left
+        # get_deposit_value returns 5000, so claim against requestor is 2000
+        self.assertEqual(claim_against_requestor.amount, 2000)
 
 
 class DiscardClaimBanksterTest(ConcentIntegrationTestCase):

@@ -5,12 +5,15 @@ from logging import Logger
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Union
 
 from django.http import JsonResponse
 from golem_messages.message.base import Message
 from golem_messages.message.concents import FileTransferToken
+from golem_messages.message.concents import ForcePayment
+from golem_messages.message.tasks import SubtaskResultsAccepted
 from golem_messages.utils import encode_hex
 
 from common.constants import MessageIdField
@@ -256,6 +259,45 @@ def log(
         logger.error(f'{subtask_id_message}{client_key_message}{join_messages(*messages_to_log)}')
     else:
         raise TypeError('Unexpected logging level')
+
+
+def log_received_force_payment(
+    logger: Logger,
+    force_payment_message: ForcePayment,
+):
+    log(logger, f"ForcePayment received with {len(force_payment_message.subtask_results_accepted_list)} nested SubtaskResultsAccepted messages:")
+    for i, subtask_results_accepted in enumerate(force_payment_message.subtask_results_accepted_list):
+        log(
+            logger,
+            f" -> {i}. SubtaskResultsAccepted with SUBTASK_ID: {subtask_results_accepted.subtask_id},"
+            f" payment timestamp: {subtask_results_accepted.payment_ts},"
+            f" price: {subtask_results_accepted.task_to_compute.price}."
+        )
+
+
+def log_different_keys_addresses_and_wrong_requestor_signature(
+    logger: Logger,
+    subtask_results_accepted_list: List[SubtaskResultsAccepted],
+):
+    for subtask_results_accepted in subtask_results_accepted_list:
+        log(
+            logger,
+            f"Keys and addresses are not unique within subtask_results_accepted_list ",
+            f"or SubtaskResultsAccepted messages are not signed by the same requestor",
+            subtask_id=subtask_results_accepted.subtask_id)
+
+
+def log_duplicate_subtask_results_accepted(
+    logger: Logger,
+    duplicated_subtask_ids: List[str],
+):
+    log(logger, f"Subtask_ids in subtask_results_accepted_list are duplicated: {duplicated_subtask_ids}")
+
+
+def log_lack_of_unsettled_task(
+    logger: Logger,
+):
+    log(logger, f"Lack of unsettled payments.")
 
 
 def _get_field_value_from_messages_for_logging(field_name: MessageIdField, message: Message) -> str:

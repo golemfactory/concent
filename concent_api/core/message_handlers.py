@@ -1,4 +1,5 @@
 from base64 import b64encode
+from collections import Counter
 from logging import getLogger
 from typing import Any
 from typing import Optional
@@ -751,6 +752,7 @@ def handle_send_force_payment(
     client_message: message.concents.ForcePayment
 ) -> Union[ServiceRefused, ForcePaymentRejected, ForcePaymentCommitted]:
 
+    logging.log_received_force_payment(logger, client_message)
     try:
         for subtask_results_accepted in client_message.subtask_results_accepted_list:
             subtask_results_accepted.validate_ownership_chain(settings.CONCENT_PUBLIC_KEY)
@@ -767,11 +769,15 @@ def handle_send_force_payment(
         are_keys_and_addresses_unique_in_message_subtask_results_accepted(client_message.subtask_results_accepted_list) and
         are_subtask_results_accepted_messages_signed_by_the_same_requestor(client_message.subtask_results_accepted_list)
     ):
+        logging.log_different_keys_addresses_and_wrong_requestor_signature(logger, client_message.subtask_results_accepted_list)
         return message.concents.ServiceRefused(
             reason = message.concents.ServiceRefused.REASON.InvalidRequest
         )
 
-    if not are_items_unique([subtask_results_accepted.subtask_id for subtask_results_accepted in client_message.subtask_results_accepted_list]):
+    subtask_ids_list = [subtask_results_accepted.subtask_id for subtask_results_accepted in client_message.subtask_results_accepted_list]
+    if not are_items_unique(subtask_ids_list):
+        duplicated_subtask_ids = [number_of_items for number_of_items, number_of_duplicated_items in Counter(subtask_ids_list).items() if number_of_duplicated_items > 1]
+        logging.log_duplicate_subtask_results_accepted(logger, duplicated_subtask_ids)
         return message.concents.ServiceRefused(
             reason = message.concents.ServiceRefused.REASON.DuplicateRequest
         )
@@ -781,6 +787,7 @@ def handle_send_force_payment(
 
     if sum([subtask_results_accepted.task_to_compute.price
             for subtask_results_accepted in client_message.subtask_results_accepted_list]) == 0:
+        logging.log_lack_of_unsettled_task(logger)
         return message.concents.ForcePaymentRejected(
             force_payment=client_message,
             reason=message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,

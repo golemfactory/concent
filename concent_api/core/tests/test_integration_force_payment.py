@@ -561,8 +561,10 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         )
         self._assert_stored_message_counter_not_increased()
         last_pending_message = PendingResponse.objects.filter(delivered=False).order_by('created_at').last()
-        self.assertEqual(last_pending_message.response_type,
-                         PendingResponse.ResponseType.ForcePaymentCommitted.name)  # pylint: disable=no-member
+        self.assertEqual(
+            last_pending_message.response_type,
+            PendingResponse.ResponseType.ForcePaymentCommitted.name
+        )  # pylint: disable=no-member
         self.assertEqual(last_pending_message.client.public_key_bytes, self.REQUESTOR_PUBLIC_KEY)
         with freeze_time("2018-02-05 12:00:21"):
             response_2 = self.send_request(

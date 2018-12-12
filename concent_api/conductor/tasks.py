@@ -110,7 +110,7 @@ def blender_verification_request(
         def call_upload_finished() -> None:
             tasks.upload_finished.delay(verification_request.subtask_id)
 
-        transaction.on_commit(call_upload_finished)
+        transaction.on_commit(call_upload_finished, using='control')
 
 
 @shared_task
@@ -178,7 +178,7 @@ def upload_acknowledged(
             blender_crop_script=verification_request.blender_subtask_definition.blender_crop_script,
         )
 
-    transaction.on_commit(call_blender_verification_order)
+    transaction.on_commit(call_blender_verification_order, using='control')
 
     log(
         logger,

@@ -61,7 +61,7 @@ def report_upload(_request: HttpRequest, file_path: str) -> HttpResponse:
         def call_upload_finished() -> None:
             upload_finished.delay(verification_request.subtask_id)
 
-        transaction.on_commit(call_upload_finished)
+        transaction.on_commit(call_upload_finished, using='control')
 
         log(
             logger, 'All expected files have been uploaded',

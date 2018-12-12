@@ -43,6 +43,7 @@ from common.logging import log
 from common.validations import validate_secure_hash_algorithm
 from common import logging
 from conductor.tasks import result_transfer_request
+from core.exceptions import BanksterTimestampError
 from core.exceptions import CreateModelIntegrityError
 from core.exceptions import Http400
 from core.exceptions import TooSmallProviderDeposit
@@ -793,19 +794,6 @@ def handle_send_force_payment(
             reason=message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,
         )
 
-    cut_off_time = get_current_utc_timestamp()
-
-    # Any of the items from list of overdue acceptances
-    # matches condition cut_off_time < payment_ts + PAYMENT_DUE_TIME
-    if any(
-        cut_off_time < subtask_results_accepted.payment_ts + settings.PAYMENT_DUE_TIME
-        for subtask_results_accepted in client_message.subtask_results_accepted_list
-    ):
-        return message.concents.ForcePaymentRejected(
-            force_payment=client_message,
-            reason=message.concents.ForcePaymentRejected.REASON.TimestampError,
-        )
-
     task_to_compute = client_message.subtask_results_accepted_list[0].task_to_compute
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
     (requestor_eth_address, provider_eth_address) = get_clients_eth_accounts(task_to_compute)
@@ -818,13 +806,18 @@ def handle_send_force_payment(
         *[subtask_results_accepted.task_to_compute for subtask_results_accepted in client_message.subtask_results_accepted_list],
     )
 
-    claim_against_requestor = bankster.settle_overdue_acceptances(
-        requestor_ethereum_address=requestor_eth_address,
-        provider_ethereum_address=provider_eth_address,
-        acceptances=client_message.subtask_results_accepted_list,
-        requestor_public_key=requestor_public_key,
-    )
-
+    try:
+        claim_against_requestor = bankster.settle_overdue_acceptances(
+            requestor_ethereum_address=requestor_eth_address,
+            provider_ethereum_address=provider_eth_address,
+            acceptances=client_message.subtask_results_accepted_list,
+            requestor_public_key=requestor_public_key,
+        )
+    except BanksterTimestampError:
+        return message.concents.ForcePaymentRejected(
+            force_payment=client_message,
+            reason=message.concents.ForcePaymentRejected.REASON.TimestampError,
+        )
     # Concent defines time T2 (end time) equal to youngest payment_ts from passed SubtaskResultAccepted messages from
     # subtask_results_accepted_list.
     youngest_payment_ts = max(

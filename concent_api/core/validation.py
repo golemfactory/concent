@@ -6,15 +6,19 @@ from typing import Union
 
 from uuid import UUID
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 
 from golem_messages import message
 from golem_messages.exceptions import MessageError
 from golem_messages.message.tasks import RejectReportComputedTask
 from golem_messages.message.tasks import ReportComputedTask
+from golem_messages.message.tasks import SubtaskResultsAccepted
+from golem_sci import BatchTransferEvent
 
 from common.constants import ErrorCode
 from common.exceptions import ConcentValidationError
+from common.helpers import get_current_utc_timestamp
 from common.logging import log
 from common.logging import LoggingLevel
 from common.validations import validate_secure_hash_algorithm
@@ -24,6 +28,7 @@ from core.constants import GOLEM_PUBLIC_KEY_HEX_LENGTH
 from core.constants import GOLEM_PUBLIC_KEY_LENGTH
 from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
 from core.constants import SCENE_FILE_EXTENSION
+from core.exceptions import BanksterTimestampError
 from core.exceptions import FrameNumberValidationError
 from core.exceptions import Http400
 from core.exceptions import GolemMessageValidationError
@@ -463,3 +468,28 @@ def substitute_new_report_computed_task_if_needed(
         new_report_computed_task = report_computed_task_from_acknowledgement
 
     return new_report_computed_task
+
+
+def validate_list_of_transaction_timestamp(
+    list_of_transactions: List[BatchTransferEvent],
+    acceptances: List[SubtaskResultsAccepted],
+) -> None:
+    """
+    Validate if cut_off_time < youngest_payments_ts(T2) + PDT, unless requestor already made some payment.
+    We compare only youngest payment_ts, because we want to use the highest value of timestamp. Other payment_ts might
+    give false positives.
+    """
+
+    cut_off_time = get_current_utc_timestamp()
+
+    youngest_payments_ts = max(subtask_results_accepted.payment_ts for subtask_results_accepted in acceptances)
+
+    if (
+        (
+            any(youngest_payments_ts > closure_time for closure_time in list_of_transactions) or
+            len(list_of_transactions) == 0
+        ) and (
+            cut_off_time < youngest_payments_ts + settings.PAYMENT_DUE_TIME
+        )
+    ):
+        raise BanksterTimestampError

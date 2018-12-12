@@ -30,6 +30,7 @@ from core.payments import service
 from core.payments.backends.sci_backend import TransactionType
 from core.utils import adjust_transaction_hash
 from core.validation import validate_bytes_public_key
+from core.validation import validate_list_of_transaction_timestamp
 from core.validation import validate_uuid
 
 
@@ -365,6 +366,8 @@ def settle_overdue_acceptances(
             payment_ts=oldest_payments_ts,
             transaction_type=TransactionType.BATCH,
         )
+
+        validate_list_of_transaction_timestamp(list_of_transactions, acceptances)
 
         # Concent gets list of forced payments from payment API where T0 <= payment_ts + PAYMENT_DUE_TIME.
         list_of_forced_payments = service.get_list_of_payments(  # pylint: disable=no-value-for-parameter

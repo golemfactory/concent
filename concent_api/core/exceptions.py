@@ -75,3 +75,7 @@ class UnsupportedProtocolVersion(Exception):
 
 class TooSmallProviderDeposit(Exception):
     pass
+
+
+class BanksterTimestampError(Exception):
+    pass

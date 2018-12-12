@@ -53,7 +53,7 @@ from core.models import Subtask
 from core.payments import bankster
 from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
-from core.subtask_helpers import are_subtask_results_accepted_messages_properly_signed
+from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor_or_concent
 from core.subtask_helpers import delete_deposit_claim
 from core.subtask_helpers import get_one_or_none
 from core.subtask_helpers import is_state_transition_possible
@@ -765,7 +765,7 @@ def handle_send_force_payment(
 
     if not (
         are_keys_and_addresses_unique_in_message_subtask_results_accepted(client_message.subtask_results_accepted_list) and
-        are_subtask_results_accepted_messages_properly_signed(client_message.subtask_results_accepted_list)
+        are_subtask_results_accepted_messages_signed_by_the_same_requestor_or_concent(client_message.subtask_results_accepted_list)
     ):
         return message.concents.ServiceRefused(
             reason = message.concents.ServiceRefused.REASON.InvalidRequest

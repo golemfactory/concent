@@ -280,7 +280,7 @@ def are_keys_and_addresses_unique_in_message_subtask_results_accepted(
     )
 
 
-def are_subtask_results_accepted_messages_properly_signed(
+def are_subtask_results_accepted_messages_signed_by_the_same_requestor_or_concent(
     subtask_results_accepted_list: List[SubtaskResultsAccepted]
 ) -> bool:
     requestor_public_key = subtask_results_accepted_list[0].task_to_compute.requestor_public_key

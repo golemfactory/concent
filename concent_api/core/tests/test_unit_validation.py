@@ -26,7 +26,7 @@ from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
 from core.exceptions import FrameNumberValidationError
 from core.exceptions import HashingAlgorithmError
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
-from core.subtask_helpers import are_subtask_results_accepted_messages_properly_signed
+from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor_or_concent
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import generate_uuid_for_tests
 from core.validation import validate_all_messages_identical
@@ -272,7 +272,7 @@ class TestAreEthereumAddressesAndKeysUnique(TestCase):
             self.task_to_compute_2,
             subtask_2_signed_by=DIFFERENT_REQUESTOR_PRIVATE_KEY,
         )
-        result = are_subtask_results_accepted_messages_properly_signed(subtask_results_accepted_list)
+        result = are_subtask_results_accepted_messages_signed_by_the_same_requestor_or_concent(subtask_results_accepted_list)
         assert_that(result).is_false()
 
     def test_that_if_messages_are_signed_by_concent_method_should_return_true(self):
@@ -282,7 +282,17 @@ class TestAreEthereumAddressesAndKeysUnique(TestCase):
             subtask_1_signed_by=CONCENT_PRIVATE_KEY,
             subtask_2_signed_by=CONCENT_PRIVATE_KEY,
         )
-        result = are_subtask_results_accepted_messages_properly_signed(subtask_results_accepted_list)
+        result = are_subtask_results_accepted_messages_signed_by_the_same_requestor_or_concent(subtask_results_accepted_list)
+        assert_that(result).is_true()
+
+    def test_that_if_messages_are_signed_by_concent_and_requestor_method_should_return_true(self):
+        subtask_results_accepted_list = self.create_subtask_results_accepted_list(
+            self.task_to_compute_1,
+            self.task_to_compute_2,
+            subtask_1_signed_by=REQUESTOR_PRIVATE_KEY,
+            subtask_2_signed_by=CONCENT_PRIVATE_KEY,
+        )
+        result = are_subtask_results_accepted_messages_signed_by_the_same_requestor_or_concent(subtask_results_accepted_list)
         assert_that(result).is_true()
 
 

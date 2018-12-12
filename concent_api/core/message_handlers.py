@@ -825,9 +825,8 @@ def handle_send_force_payment(
     )
 
     if claim_against_requestor is None:
-        return message.concents.ForcePaymentRejected(
-            force_payment=client_message,
-            reason=message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,
+        return message.concents.ServiceRefused(
+            reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
         )
     else:
         provider_force_payment_commited = message.concents.ForcePaymentCommitted(

@@ -301,12 +301,10 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             response,
             status       = 200,
             key          = self.PROVIDER_PRIVATE_KEY,
-            message_type = message.concents.ForcePaymentRejected,
+            message_type = message.concents.ServiceRefused,
             fields       = {
-                'reason':    message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,
+                'reason':    message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
                 'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
-                'force_payment.timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
-                'force_payment.subtask_results_accepted_list': subtask_results_accepted_list,
             }
         )
         self._assert_stored_message_counter_not_increased()

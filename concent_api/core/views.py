@@ -66,11 +66,12 @@ def receive(_request: HttpRequest, _message: Message, _client_public_key: bytes)
 def protocol_constants(_request: HttpRequest) -> JsonResponse:
     """ Endpoint which returns Concent time settings. """
     return JsonResponse(
-        data = {
+        data={
             'concent_messaging_time': settings.CONCENT_MESSAGING_TIME,
             'force_acceptance_time': settings.FORCE_ACCEPTANCE_TIME,
             'minimum_upload_rate': settings.MINIMUM_UPLOAD_RATE,
             'download_leadin_time': settings.DOWNLOAD_LEADIN_TIME,
             'payment_due_time': settings.PAYMENT_DUE_TIME,
+            'additional_verification_call_time': settings.ADDITIONAL_VERIFICATION_CALL_TIME,
         }
     )

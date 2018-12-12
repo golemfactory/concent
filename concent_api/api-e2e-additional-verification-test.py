@@ -30,9 +30,10 @@ from protocol_constants import ProtocolConstants
 
 import requests
 
+from core.utils import calculate_maximum_download_time
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
-CALCULATED_VERIFICATION_TIME = 25  # seconds
 
 (DIFFERENT_REQUESTOR_ETHEREUM_PRIVATE_KEY, DIFFERENT_REQUESTOR_ETHEREUM_PUBLIC_KEY) = generate_priv_and_pub_eth_account_key()
 (DIFFERENT_PROVIDER_ETHEREUM_PRIVATE_KEY, DIFFERENT_PROVIDER_ETHEREUM_PUBLIC_KEY) = generate_priv_and_pub_eth_account_key()
@@ -53,10 +54,12 @@ def get_subtask_results_verify(
     provider_ethereum_public_key: Optional[bytes] = None,
     price: int = 1,
     script_src: Optional[str] = None,
-    time_offset: Optional[int] = None,
+    is_verification_deadline_before_current_time: bool=False,
+    additional_verification_call_time: int=0,
+    minimum_upload_rate: int=0
 ) -> message.concents.SubtaskResultsVerify:
     task_to_compute = create_signed_task_to_compute(
-        deadline=current_time + CALCULATED_VERIFICATION_TIME,
+        deadline=current_time,
         price=price if price is not None else 1,
         size=task_to_compute_size,
         package_hash=task_to_compute_package_hash,
@@ -81,10 +84,16 @@ def get_subtask_results_verify(
             reason=reason,
             report_computed_task=report_computed_task,
         )
-        if time_offset is not None:
+        if is_verification_deadline_before_current_time:
             override_timestamp(
                 subtask_results_rejected,
-                subtask_results_rejected.timestamp - time_offset
+                subtask_results_rejected.timestamp - (
+                    additional_verification_call_time +
+                    calculate_maximum_download_time(
+                        report_computed_task.size,
+                        minimum_upload_rate,
+                    ) + 1
+                )
             )
         subtask_results_rejected.sign_message(
             REQUESTOR_PRIVATE_KEY,
@@ -96,6 +105,22 @@ def get_subtask_results_verify(
         )
 
     return subtask_results_verify
+
+
+def calculate_verification_deadline(
+    subtask_results_rejected_timestamp: int,
+    additional_verification_call_time: int,
+    report_computed_task_size: int,
+    minimum_upload_rate: int,
+) -> int:
+    return (
+        subtask_results_rejected_timestamp +
+        additional_verification_call_time +
+        calculate_maximum_download_time(
+            report_computed_task_size,
+            minimum_upload_rate,
+        )
+    )
 
 
 @count_fails
@@ -166,8 +191,15 @@ def test_case_1_test_for_positive_case(cluster_consts: ProtocolConstants, cluste
         source_file_size
     ))
 
-    # Adding 10 seconds to time sleep makes us sure that subtask is after deadline.
-    time.sleep(CALCULATED_VERIFICATION_TIME * (ADDITIONAL_VERIFICATION_TIME_MULTIPLIER / BLENDER_THREADS))
+    # Adding calculated number of seconds to time sleep makes us sure that subtask is after deadline.
+    time.sleep(
+        calculate_verification_deadline(
+            subtask_results_verify.subtask_results_rejected.timestamp,
+            cluster_consts.additional_verification_call_time,
+            subtask_results_verify.subtask_results_rejected.report_computed_task.size,
+            cluster_consts.minimum_upload_rate,
+        ) - current_time
+    )
 
     api_request(
         cluster_url,
@@ -233,13 +265,15 @@ def test_case_3_test_for_invalid_time(cluster_consts: ProtocolConstants, cluster
         PROVIDER_PRIVATE_KEY,
         CONCENT_PUBLIC_KEY,
         get_subtask_results_verify(
-            current_time - (CALCULATED_VERIFICATION_TIME * (ADDITIONAL_VERIFICATION_TIME_MULTIPLIER / BLENDER_THREADS)),
+            current_time,
             reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
             report_computed_task_size=file_size,
             report_computed_task_package_hash=file_check_sum,
             task_to_compute_size=file_size,
             task_to_compute_package_hash=file_check_sum,
-            time_offset=3600
+            is_verification_deadline_before_current_time=True,
+            additional_verification_call_time=cluster_consts.additional_verification_call_time,
+            minimum_upload_rate=cluster_consts.minimum_upload_rate,
         ),
         expected_status=200,
         expected_message_type=message.concents.ServiceRefused,
@@ -394,8 +428,15 @@ def test_case_6_test_without_script_src_in(cluster_consts: ProtocolConstants, cl
         source_file_size
     ))
 
-    # Adding 10 seconds to time sleep makes us sure that subtask is after deadline.
-    time.sleep(CALCULATED_VERIFICATION_TIME * (ADDITIONAL_VERIFICATION_TIME_MULTIPLIER / BLENDER_THREADS))
+    # Adding calculated number of seconds to time sleep makes us sure that subtask is after deadline.
+    time.sleep(
+        calculate_verification_deadline(
+            subtask_results_verify.subtask_results_rejected.timestamp,
+            cluster_consts.additional_verification_call_time,
+            subtask_results_verify.subtask_results_rejected.report_computed_task.size,
+            cluster_consts.minimum_upload_rate,
+        ) - current_time
+    )
 
     api_request(
         cluster_url,
@@ -424,8 +465,6 @@ if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
         from concent_api.settings import STORAGE_CLUSTER_ADDRESS
-        from concent_api.settings import ADDITIONAL_VERIFICATION_TIME_MULTIPLIER
-        from concent_api.settings import BLENDER_THREADS
         status = run_tests(globals())
         exit(status)
     except requests.exceptions.ConnectionError as exception:

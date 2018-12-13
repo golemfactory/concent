@@ -397,11 +397,15 @@ def settle_overdue_acceptances(
         if requestor_payable_amount <= 0:
             return None
 
+        # This is time T2 (end time) equal to youngest payment_ts from passed SubtaskResultAccepted messages from
+        # subtask_results_accepted_list.
+        youngest_payment_ts = max(subtask_results_accepted.payment_ts for subtask_results_accepted in acceptances)
+
         transaction_hash = service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
             requestor_eth_address=requestor_ethereum_address,
             provider_eth_address=provider_ethereum_address,
             value=requestor_payable_amount,
-            payment_ts=cut_off_time,
+            payment_ts=youngest_payment_ts,
         )
         transaction_hash = adjust_transaction_hash(transaction_hash)
 
@@ -412,6 +416,7 @@ def settle_overdue_acceptances(
             amount=requestor_payable_amount,
             concent_use_case=ConcentUseCase.FORCED_PAYMENT,
             tx_hash=transaction_hash,
+            closure_time=parse_timestamp_to_utc_datetime(youngest_payment_ts),
         )
         claim_against_requestor.full_clean()
         claim_against_requestor.save()

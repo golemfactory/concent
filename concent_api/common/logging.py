@@ -360,3 +360,16 @@ def convert_public_key_to_hex(client_key: Union[bytes, str, None]) -> str:
 
     assert len(decoded_key) == 128 or decoded_key == '-not available-'
     return decoded_key
+
+
+def log_payment_time_exceeded(
+    logger: Logger,
+    subtask_results_accepted_list: List[SubtaskResultsAccepted],
+) -> None:
+    for subtask_results_accepted in subtask_results_accepted_list:
+        log(
+            logger,
+            f"SubtaskResultsAccepted with SUBTASK_ID: {subtask_results_accepted.subtask_id} time exceeded.",
+            f" payment timestamp: {subtask_results_accepted.payment_ts}",
+            f" price: {subtask_results_accepted.task_to_compute.price}",
+        )

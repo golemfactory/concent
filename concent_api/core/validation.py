@@ -21,6 +21,7 @@ from common.exceptions import ConcentValidationError
 from common.helpers import get_current_utc_timestamp
 from common.logging import log
 from common.logging import LoggingLevel
+from common.logging import log_payment_time_exceeded
 from common.validations import validate_secure_hash_algorithm
 from core.constants import VALID_SCENE_FILE_PREFIXES
 from core.constants import ETHEREUM_ADDRESS_LENGTH
@@ -492,4 +493,5 @@ def validate_list_of_transaction_timestamp(
             cut_off_time < youngest_payments_ts + settings.PAYMENT_DUE_TIME
         )
     ):
+        log_payment_time_exceeded(logger, acceptances)
         raise BanksterTimestampError

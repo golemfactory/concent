@@ -8,7 +8,7 @@ from golem_messages import factories
 from common.constants import ConcentUseCase
 from common.helpers import ethereum_public_key_to_address
 from core.constants import MOCK_TRANSACTION_HASH
-from core.exceptions import BanksterTimestampError
+from core.exceptions import PaymentTimestampError
 from core.exceptions import TooSmallProviderDeposit
 from core.message_handlers import store_subtask
 from core.models import Client
@@ -433,7 +433,7 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
                 self._get_list_of_force_transactions(),
             ]
         ) as get_list_of_payments_mock:
-            with self.assertRaises(BanksterTimestampError):
+            with self.assertRaises(PaymentTimestampError):
                 settle_overdue_acceptances(
                     requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
                     provider_ethereum_address=task_to_compute.provider_ethereum_address,

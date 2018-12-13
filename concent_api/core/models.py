@@ -743,6 +743,7 @@ class DepositClaim(Model):
     tx_hash = CharField(max_length=64, blank=True, null=True, unique=True)
     created_at = DateTimeField(auto_now_add=True)
     modified_at = DateTimeField(auto_now=True)
+    closure_time = DateTimeField(blank=True, null=True)
 
     class Meta:
         unique_together = ('subtask_id', 'concent_use_case', 'payee_ethereum_address')

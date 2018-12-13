@@ -106,13 +106,13 @@ def call_on_confirmed_transaction(
 
 
 @_add_backend
-def validate_that_there_is_no_younger_payment_then_any_of_closure_times(
+def validate_that_last_closure_time_is_older_than_oldest_payment(
     backend: Any,
     requestor_eth_address: str,
     provider_eth_address: str,
     search_payments_since_ts: int,
 ) -> bool:
-    return backend.validate_that_there_is_no_younger_payment_then_any_of_closure_times(
+    return backend.validate_that_last_closure_time_is_older_than_oldest_payment(
         requestor_eth_address,
         provider_eth_address,
         search_payments_since_ts,

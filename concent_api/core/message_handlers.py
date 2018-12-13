@@ -41,7 +41,7 @@ from common.logging import log
 from common.validations import validate_secure_hash_algorithm
 from common import logging
 from conductor.tasks import result_transfer_request
-from core.exceptions import BanksterTimestampError
+from core.exceptions import PaymentTimestampError
 from core.exceptions import CreateModelIntegrityError
 from core.exceptions import Http400
 from core.exceptions import TooSmallProviderDeposit
@@ -810,7 +810,7 @@ def handle_send_force_payment(
             acceptances=client_message.subtask_results_accepted_list,
             requestor_public_key=requestor_public_key,
         )
-    except BanksterTimestampError:
+    except PaymentTimestampError:
         return message.concents.ForcePaymentRejected(
             force_payment=client_message,
             reason=message.concents.ForcePaymentRejected.REASON.TimestampError,

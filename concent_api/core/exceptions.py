@@ -77,5 +77,5 @@ class TooSmallProviderDeposit(Exception):
     pass
 
 
-class BanksterTimestampError(Exception):
+class PaymentTimestampError(Exception):
     pass

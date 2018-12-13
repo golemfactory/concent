@@ -8,7 +8,6 @@ from golem_sci.blockshelper import BlocksHelper
 from web3 import Web3
 
 from core.constants import ETHEREUM_ADDRESS_LENGTH
-from core.exceptions import BanksterTimestampError
 from core.payments.payment_interface import PaymentInterface
 from core.validation import validate_uuid
 
@@ -52,26 +51,6 @@ def get_list_of_payments(
             to_block        = payment_interface.get_block_number(),  # pylint: disable=no-member
         )
     return payments_list
-
-
-def validate_that_there_is_no_younger_payment_then_any_of_closure_times(
-    requestor_eth_address: str,
-    provider_eth_address: str,
-    youngest_payment_ts: int,
-) -> None:
-    forced_payment_event_list = get_list_of_payments(
-        requestor_eth_address=requestor_eth_address,
-        provider_eth_address=provider_eth_address,
-        payment_ts=youngest_payment_ts,
-        transaction_type=TransactionType.FORCE,
-    )
-    for forced_payment_event in forced_payment_event_list:
-        if youngest_payment_ts < forced_payment_event.closure_time:
-            raise BanksterTimestampError
-
-
-def get_youngest_payment_timestamp_from_subtask_results_accepted_list(subtask_results_accepted_list: list) -> int:
-    return max(subtask_results_accepted.payment_ts for subtask_results_accepted in subtask_results_accepted_list)
 
 
 def make_force_payment_to_provider(
@@ -160,3 +139,7 @@ def _hexencode_uuid(value: str) -> bytes:
     validate_uuid(value)
 
     return binascii.hexlify(uuid.UUID(value).bytes)
+
+
+def get_youngest_payment_timestamp_from_subtask_results_accepted_list(subtask_results_accepted_list: list) -> int:
+    return max(subtask_results_accepted.payment_ts for subtask_results_accepted in subtask_results_accepted_list)

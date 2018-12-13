@@ -377,6 +377,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             fields       = {
                 'recipient_type': message.concents.ForcePaymentCommitted.Actor.Provider,
                 'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+                'payment_ts': parse_iso_date_to_timestamp("2018-02-05 11:55:00"),
                 'amount_pending': self.amount_pending,
                 'amount_paid': self.amount_paid,
             }
@@ -400,6 +401,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             fields       = {
                 'recipient_type': message.concents.ForcePaymentCommitted.Actor.Requestor,
                 'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:21"),
+                'payment_ts': parse_iso_date_to_timestamp("2018-02-05 11:55:00"),
                 'amount_pending': self.amount_pending,
                 'amount_paid': self.amount_paid,
                 'task_owner_key': decode_hex(task_to_compute.requestor_ethereum_public_key),
@@ -584,6 +586,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             fields       = {
                 'recipient_type': message.concents.ForcePaymentCommitted.Actor.Provider,
                 'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+                'payment_ts': parse_iso_date_to_timestamp("2018-02-05 12:00:00"),
                 'amount_pending': self.amount_pending,
                 'amount_paid': self.amount_paid,
             }
@@ -603,6 +606,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             fields       = {
                 'recipient_type': message.concents.ForcePaymentCommitted.Actor.Requestor,
                 'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:21"),
+                'payment_ts': parse_iso_date_to_timestamp("2018-02-05 12:00:00"),
                 'amount_pending': self.amount_pending,
                 'amount_paid': self.amount_paid,
                 'task_owner_key': decode_hex(task_to_compute.requestor_ethereum_public_key),

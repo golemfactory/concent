@@ -356,8 +356,6 @@ def settle_overdue_acceptances(
         # subtask_results_accepted_list.
         oldest_payments_ts = min(subtask_results_accepted.payment_ts for subtask_results_accepted in acceptances)
 
-        cut_off_time = get_current_utc_timestamp()
-
         # Concent gets list of transactions from payment API where timestamp >= T0.
         list_of_transactions = service.get_list_of_payments(  # pylint: disable=no-value-for-parameter
             requestor_eth_address=requestor_ethereum_address,
@@ -394,11 +392,15 @@ def settle_overdue_acceptances(
         if requestor_payable_amount <= 0:
             return None
 
+        # This is time T2 (end time) equal to youngest payment_ts from passed SubtaskResultAccepted messages from
+        # subtask_results_accepted_list.
+        youngest_payments_ts = max(subtask_results_accepted.payment_ts for subtask_results_accepted in acceptances)
+
         transaction_hash = service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
             requestor_eth_address=requestor_ethereum_address,
             provider_eth_address=provider_ethereum_address,
             value=requestor_payable_amount,
-            payment_ts=cut_off_time,
+            payment_ts=youngest_payments_ts,
         )
         transaction_hash = adjust_transaction_hash(transaction_hash)
 

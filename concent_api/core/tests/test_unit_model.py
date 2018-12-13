@@ -9,6 +9,8 @@ from golem_messages.factories import tasks
 from golem_messages.utils import encode_hex
 
 from common.constants import ConcentUseCase
+from common.helpers import get_current_utc_timestamp
+from common.helpers import parse_timestamp_to_utc_datetime
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.constants import ETHEREUM_TRANSACTION_HASH_LENGTH
 from core.constants import MOCK_TRANSACTION
@@ -272,6 +274,7 @@ class TestDepositClaimValidation(ConcentIntegrationTestCase):
     def test_that_exception_is_not_raised_when_subtask_is_null_and_concent_use_case_is_forced_payment(self):
         self.deposit_claim.subtask = None
         self.deposit_claim.concent_use_case = ConcentUseCase.FORCED_PAYMENT.value
+        self.deposit_claim.closure_time = parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
         self.deposit_claim.clean()
 
     def test_that_exception_is_raised_when_payee_ethereum_address_is_the_same_as_payer_deposit_account_ethereum_address(self):
@@ -321,6 +324,20 @@ class TestDepositClaimValidation(ConcentIntegrationTestCase):
         with pytest.raises(ValidationError) as exception_info:
             self.deposit_claim.clean()
         self.assertIn('tx_hash', exception_info.value.error_dict)
+
+    def test_that_exception_is_raised_when_closure_time_is_none_in_use_case_forced_payment(self):
+        self.deposit_claim.concent_use_case = ConcentUseCase.FORCED_PAYMENT.value
+        self.deposit_claim.closure_time = None
+        with pytest.raises(ValidationError) as exception_info:
+            self.deposit_claim.clean()
+        self.assertIn('closure_time', exception_info.value.error_dict)
+
+    def test_that_exception_is_raised_when_closure_time_is_set_in_use_case_other_than_forced_payment(self):
+        self.deposit_claim.concent_use_case = ConcentUseCase.ADDITIONAL_VERIFICATION.value
+        self.deposit_claim.closure_time = parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
+        with pytest.raises(ValidationError) as exception_info:
+            self.deposit_claim.clean()
+        self.assertIn('closure_time', exception_info.value.error_dict)
 
     def test_that_no_exception_is_raised_when_tx_hash_is_none(self):
         self.deposit_claim.tx_hash = None

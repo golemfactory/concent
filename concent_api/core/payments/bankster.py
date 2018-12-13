@@ -19,6 +19,7 @@ from common.constants import ConcentUseCase
 from common.helpers import deserialize_message
 from common.helpers import ethereum_public_key_to_address
 from common.helpers import get_current_utc_timestamp
+from common.helpers import parse_timestamp_to_utc_datetime
 from common.logging import log
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.exceptions import TooSmallProviderDeposit
@@ -356,8 +357,6 @@ def settle_overdue_acceptances(
         # Concent defines time T0 equal to oldest payment_ts from passed SubtaskResultAccepted messages from
         # subtask_results_accepted_list.
         oldest_payments_ts = min(subtask_results_accepted.payment_ts for subtask_results_accepted in acceptances)
-
-        cut_off_time = get_current_utc_timestamp()
 
         # Concent gets list of transactions from payment API where timestamp >= T0.
         list_of_transactions = service.get_list_of_payments(  # pylint: disable=no-value-for-parameter

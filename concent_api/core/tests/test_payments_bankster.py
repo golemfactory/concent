@@ -268,20 +268,22 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
             )
         ]
 
-        with mock.patch(
-            'core.payments.bankster.service.get_list_of_payments',
-            side_effect=[
-                self._get_list_of_batch_transactions(),
-                self._get_list_of_force_transactions(),
-            ]
-        ) as get_list_of_payments_mock:
-            claim_against_requestor = settle_overdue_acceptances(
-                requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
-                provider_ethereum_address=task_to_compute.provider_ethereum_address,
-                acceptances=subtask_results_accepted_list,
-                requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
-            )
+        with mock.patch('core.payments.bankster.validate_list_of_transaction_timestamp') as validate_list_of_transaction_mock:
+            with mock.patch(
+                'core.payments.bankster.service.get_list_of_payments',
+                side_effect=[
+                    self._get_list_of_batch_transactions(),
+                    self._get_list_of_force_transactions(),
+                ]
+            ) as get_list_of_payments_mock:
+                claim_against_requestor = settle_overdue_acceptances(
+                    requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+                    provider_ethereum_address=task_to_compute.provider_ethereum_address,
+                    acceptances=subtask_results_accepted_list,
+                    requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+                )
 
+        validate_list_of_transaction_mock.assert_called_once()
         self.assertIsNone(claim_against_requestor)
         get_list_of_payments_mock.assert_called()
 
@@ -333,21 +335,23 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
 
         with freeze_time("2018-02-05 10:00:25"):
             with mock.patch('core.payments.bankster.service.get_deposit_value', return_value=1000) as get_deposit_value_mock:
-                with mock.patch(
-                    'core.payments.bankster.service.get_list_of_payments',
-                    side_effect=[
-                        self._get_list_of_batch_transactions(),
-                        self._get_list_of_force_transactions(),
-                    ]
-                ) as get_list_of_payments_mock:
-                    claim_against_requestor = settle_overdue_acceptances(
-                        requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
-                        provider_ethereum_address=task_to_compute.provider_ethereum_address,
-                        acceptances=subtask_results_accepted_list,
-                        requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
-                    )
+                with mock.patch('core.payments.bankster.validate_list_of_transaction_timestamp') as validate_list_of_transaction_mock:
+                    with mock.patch(
+                        'core.payments.bankster.service.get_list_of_payments',
+                        side_effect=[
+                            self._get_list_of_batch_transactions(),
+                            self._get_list_of_force_transactions(),
+                        ]
+                    ) as get_list_of_payments_mock:
+                        claim_against_requestor = settle_overdue_acceptances(
+                            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+                            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+                            acceptances=subtask_results_accepted_list,
+                            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+                        )
 
         get_deposit_value_mock.assert_called_once()
+        validate_list_of_transaction_mock.assert_called_once()
         get_list_of_payments_mock.assert_called()
 
         self.assertIsNotNone(claim_against_requestor.tx_hash)
@@ -424,21 +428,23 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
 
         with freeze_time("2018-02-05 10:00:25"):
             with mock.patch('core.payments.bankster.service.get_deposit_value', return_value=5000) as get_deposit_value_mock:
-                with mock.patch(
-                    'core.payments.bankster.service.get_list_of_payments',
-                    side_effect=[
-                        self._get_list_of_batch_transactions(),
-                        self._get_list_of_force_transactions(),
-                    ]
-                ) as get_list_of_payments_mock:
-                    claim_against_requestor = settle_overdue_acceptances(
-                        requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
-                        provider_ethereum_address=task_to_compute.provider_ethereum_address,
-                        acceptances=subtask_results_accepted_list,
-                        requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
-                    )
+                with mock.patch('core.payments.bankster.validate_list_of_transaction_timestamp') as validate_list_of_transaction_mock:
+                    with mock.patch(
+                        'core.payments.bankster.service.get_list_of_payments',
+                        side_effect=[
+                            self._get_list_of_batch_transactions(),
+                            self._get_list_of_force_transactions(),
+                        ]
+                    ) as get_list_of_payments_mock:
+                        claim_against_requestor = settle_overdue_acceptances(
+                            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+                            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+                            acceptances=subtask_results_accepted_list,
+                            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+                        )
 
         get_deposit_value_mock.assert_called_once()
+        validate_list_of_transaction_mock.assert_called_once()
         get_list_of_payments_mock.assert_called()
 
         self.assertIsNotNone(claim_against_requestor.tx_hash)

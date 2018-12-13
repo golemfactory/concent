@@ -264,7 +264,7 @@ def log(
 def log_received_force_payment(
     logger: Logger,
     force_payment_message: ForcePayment,
-):
+) -> None:
     log(logger, f"ForcePayment received with {len(force_payment_message.subtask_results_accepted_list)} nested SubtaskResultsAccepted messages:")
     for i, subtask_results_accepted in enumerate(force_payment_message.subtask_results_accepted_list):
         log(
@@ -278,7 +278,7 @@ def log_received_force_payment(
 def log_different_keys_addresses_and_wrong_requestor_signature(
     logger: Logger,
     subtask_results_accepted_list: List[SubtaskResultsAccepted],
-):
+) -> None:
     for subtask_results_accepted in subtask_results_accepted_list:
         log(
             logger,
@@ -290,13 +290,13 @@ def log_different_keys_addresses_and_wrong_requestor_signature(
 def log_duplicate_subtask_results_accepted(
     logger: Logger,
     duplicated_subtask_ids: List[str],
-):
+) -> None:
     log(logger, f"Subtask_ids in subtask_results_accepted_list are duplicated: {duplicated_subtask_ids}")
 
 
 def log_lack_of_unsettled_task(
     logger: Logger,
-):
+) -> None:
     log(logger, f"Lack of unsettled payments.")
 
 
@@ -360,3 +360,16 @@ def convert_public_key_to_hex(client_key: Union[bytes, str, None]) -> str:
 
     assert len(decoded_key) == 128 or decoded_key == '-not available-'
     return decoded_key
+
+
+def log_payment_time_exceeded(
+    logger: Logger,
+    subtask_results_accepted_list: List[SubtaskResultsAccepted],
+) -> None:
+    for subtask_results_accepted in subtask_results_accepted_list:
+        log(
+            logger,
+            f"SubtaskResultsAccepted with SUBTASK_ID: {subtask_results_accepted.subtask_id} time exceeded.",
+            f" payment timestamp: {subtask_results_accepted.payment_ts}",
+            f" price: {subtask_results_accepted.task_to_compute.price}",
+        )

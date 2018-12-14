@@ -19,6 +19,7 @@ from common.constants import ConcentUseCase
 from common.helpers import deserialize_message
 from common.helpers import ethereum_public_key_to_address
 from common.helpers import get_current_utc_timestamp
+from common.helpers import parse_timestamp_to_utc_datetime
 from common.logging import log
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.exceptions import TooSmallProviderDeposit
@@ -357,8 +358,6 @@ def settle_overdue_acceptances(
         # subtask_results_accepted_list.
         oldest_payments_ts = min(subtask_results_accepted.payment_ts for subtask_results_accepted in acceptances)
 
-        cut_off_time = get_current_utc_timestamp()
-
         # Concent gets list of transactions from payment API where timestamp >= T0.
         list_of_transactions = service.get_list_of_payments(  # pylint: disable=no-value-for-parameter
             requestor_eth_address=requestor_ethereum_address,
@@ -397,11 +396,15 @@ def settle_overdue_acceptances(
         if requestor_payable_amount <= 0:
             return None
 
+        # This is time T2 (end time) equal to youngest payment_ts from passed SubtaskResultAccepted messages from
+        # subtask_results_accepted_list.
+        youngest_payment_ts = max(subtask_results_accepted.payment_ts for subtask_results_accepted in acceptances)
+
         transaction_hash = service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
             requestor_eth_address=requestor_ethereum_address,
             provider_eth_address=provider_ethereum_address,
             value=requestor_payable_amount,
-            payment_ts=cut_off_time,
+            payment_ts=youngest_payment_ts,
         )
         transaction_hash = adjust_transaction_hash(transaction_hash)
 
@@ -412,6 +415,7 @@ def settle_overdue_acceptances(
             amount=requestor_payable_amount,
             concent_use_case=ConcentUseCase.FORCED_PAYMENT,
             tx_hash=transaction_hash,
+            closure_time=parse_timestamp_to_utc_datetime(youngest_payment_ts),
         )
         claim_against_requestor.full_clean()
         claim_against_requestor.save()

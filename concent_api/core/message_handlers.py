@@ -818,11 +818,6 @@ def handle_send_force_payment(
             force_payment=client_message,
             reason=message.concents.ForcePaymentRejected.REASON.TimestampError,
         )
-    # Concent defines time T2 (end time) equal to youngest payment_ts from passed SubtaskResultAccepted messages from
-    # subtask_results_accepted_list.
-    youngest_payment_ts = max(
-        subtask_results_accepted.payment_ts for subtask_results_accepted in client_message.subtask_results_accepted_list
-    )
 
     if claim_against_requestor is None:
         return message.concents.ServiceRefused(
@@ -830,7 +825,7 @@ def handle_send_force_payment(
         )
     else:
         provider_force_payment_commited = message.concents.ForcePaymentCommitted(
-            payment_ts              = youngest_payment_ts,
+            payment_ts              = parse_datetime_to_timestamp(claim_against_requestor.closure_time),
             task_owner_key          = requestor_ethereum_public_key,
             provider_eth_account    = provider_eth_address,
             amount_paid             = claim_against_requestor.amount,
@@ -839,7 +834,7 @@ def handle_send_force_payment(
         )
 
         requestor_force_payment_commited = message.concents.ForcePaymentCommitted(
-            payment_ts              = youngest_payment_ts,
+            payment_ts              = parse_datetime_to_timestamp(claim_against_requestor.closure_time),
             task_owner_key          = requestor_ethereum_public_key,
             provider_eth_account    = provider_eth_address,
             amount_paid             = claim_against_requestor.amount,

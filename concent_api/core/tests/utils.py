@@ -1066,6 +1066,7 @@ class ConcentIntegrationTestCase(TestCase):
             amount=10,
             concent_use_case=ConcentUseCase.FORCED_PAYMENT,
             payer_deposit_account=requestor_deposit_account,
+            closure_time=parse_timestamp_to_utc_datetime(get_current_utc_timestamp()),
         )
         claim_against_requestor.full_clean()
         claim_against_requestor.save()

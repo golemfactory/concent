@@ -743,6 +743,7 @@ class DepositClaim(Model):
     tx_hash = CharField(max_length=64, blank=True, null=True, unique=True)
     created_at = DateTimeField(auto_now_add=True)
     modified_at = DateTimeField(auto_now=True)
+    closure_time = DateTimeField(blank=True, null=True)
 
     class Meta:
         unique_together = ('subtask_id', 'concent_use_case', 'payee_ethereum_address')
@@ -768,9 +769,16 @@ class DepositClaim(Model):
             raise ValidationError({
                 'amount': 'Amount must be integer and be greater than 0'
             })
-        if self.tx_hash is not None \
-                and not (isinstance(self.tx_hash, str) and len(self.tx_hash) == ETHEREUM_TRANSACTION_HASH_LENGTH):
+        if (
+            self.tx_hash is not None and
+            not (isinstance(self.tx_hash, str) and len(self.tx_hash) == ETHEREUM_TRANSACTION_HASH_LENGTH)
+        ):
             raise ValidationError({
                 'tx_hash': f'The hash of the Ethereum transaction must be a string and '
                            f'{ETHEREUM_TRANSACTION_HASH_LENGTH} characters long'
             })
+        if (
+            (self.closure_time is not None and self.concent_use_case != ConcentUseCase.FORCED_PAYMENT) or
+            (self.closure_time is None and self.concent_use_case == ConcentUseCase.FORCED_PAYMENT)
+        ):
+            raise ValidationError({'closure_time': 'Closure time must be set only in FORCED_PAYMENT use case.'})

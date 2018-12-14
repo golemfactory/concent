@@ -476,21 +476,21 @@ def validate_list_of_transaction_timestamp(
     acceptances: List[SubtaskResultsAccepted],
 ) -> None:
     """
-    Validate if cut_off_time < youngest_payments_ts(T2) + PDT, unless requestor already made some payment.
+    Validate if cut_off_time < youngest_payment_ts(T2) + PDT, unless requestor already made some payment.
     We compare only youngest payment_ts, because we want to use the highest value of timestamp. Other payment_ts might
     give false positives.
     """
 
     cut_off_time = get_current_utc_timestamp()
 
-    youngest_payments_ts = max(subtask_results_accepted.payment_ts for subtask_results_accepted in acceptances)
+    youngest_payment_ts = max(subtask_results_accepted.payment_ts for subtask_results_accepted in acceptances)
 
     if (
         (
-            any(youngest_payments_ts > closure_time for closure_time in list_of_transactions) or
+            any(youngest_payment_ts > closure_time for closure_time in list_of_transactions) or
             len(list_of_transactions) == 0
         ) and (
-            cut_off_time < youngest_payments_ts + settings.PAYMENT_DUE_TIME
+            cut_off_time < youngest_payment_ts + settings.PAYMENT_DUE_TIME
         )
     ):
         log_payment_time_exceeded(logger, acceptances)

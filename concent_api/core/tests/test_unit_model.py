@@ -11,6 +11,7 @@ from golem_messages.utils import encode_hex
 from common.constants import ConcentUseCase
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
+from core.constants import BIG_ENDIAN_INT_MAX_DIGITS
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.constants import ETHEREUM_TRANSACTION_HASH_LENGTH
 from core.constants import MOCK_TRANSACTION
@@ -308,10 +309,20 @@ class TestDepositClaimValidation(ConcentIntegrationTestCase):
             self.deposit_claim.clean()
         self.assertIn('amount', exception_info.value.error_dict)
 
-    def test_that_exception_is_raised_when_amount_is_of_wrong_type(self):
-        self.deposit_claim.amount = 5.0
+    def test_that_exception_is_raised_when_amount_is_too_large(self):
+        self.deposit_claim.amount = int('1' * (BIG_ENDIAN_INT_MAX_DIGITS + 1))
         with pytest.raises(ValidationError):
-            self.deposit_claim.clean()
+            self.deposit_claim.full_clean()
+
+    def test_that_exception_is_not_raised_when_amount_is_at_max_length(self):
+        self.deposit_claim.amount = int('1' * BIG_ENDIAN_INT_MAX_DIGITS)
+        self.deposit_claim.full_clean()
+        self.deposit_claim.save()
+
+    def test_that_exception_is_raised_when_amount_have_decimal_places(self):
+        self.deposit_claim.amount = 5.1
+        with pytest.raises(ValidationError):
+            self.deposit_claim.full_clean()
 
     def test_that_exception_is_raised_when_tx_hash_is_not_none_and_not_string(self):
         self.deposit_claim.tx_hash = b'x' * ETHEREUM_TRANSACTION_HASH_LENGTH

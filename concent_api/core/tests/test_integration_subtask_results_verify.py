@@ -467,17 +467,22 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 parse_datetime_to_timestamp(subtask.next_deadline) + 1
             )
         ):
-            serialized_subtask_results_verify = self._get_serialized_subtask_results_verify(
-                subtask_results_verify=self._get_deserialized_subtask_results_verify(
-                    subtask_results_rejected=subtask_results_rejected
-                )
-            )
-            response =self.send_request(
-                url='core:send',
-                data=serialized_subtask_results_verify,
-            )
+            with mock.patch('core.subtask_helpers.transaction.on_commit') as transaction_on_commit:
+                with mock.patch('core.subtask_helpers.finalize_deposit_claim') as finalize_deposit_claim:
+                    serialized_subtask_results_verify = self._get_serialized_subtask_results_verify(
+                        subtask_results_verify=self._get_deserialized_subtask_results_verify(
+                            subtask_results_rejected=subtask_results_rejected
+                        )
+                    )
+                    response =self.send_request(
+                        url='core:send',
+                        data=serialized_subtask_results_verify,
+                    )
 
         assert response.status_code == 200
+
+        transaction_on_commit.assert_called_once()
+        finalize_deposit_claim.assert_not_called()
 
         subtask.refresh_from_db()
         self.assertEqual(subtask.state_enum, Subtask.SubtaskState.ACCEPTED)

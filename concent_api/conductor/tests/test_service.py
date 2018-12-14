@@ -35,7 +35,7 @@ class ConductorReportFinishedUploadTestCase(ConcentIntegrationTestCase):
         self.result_transfer_request.full_clean()
         self.result_transfer_request.save()
 
-        with mock.patch('conductor.service.result_upload_finished.delay') as result_upload_finished:
+        with mock.patch('conductor.service.transaction.on_commit') as transaction_on_commit:
             update_upload_report(
                 self.path,
                 self.result_transfer_request,
@@ -44,19 +44,21 @@ class ConductorReportFinishedUploadTestCase(ConcentIntegrationTestCase):
         upload_report.refresh_from_db()
         self.assertEqual(upload_report.result_transfer_request, self.result_transfer_request)
 
-        result_upload_finished.assert_not_called()
+        transaction_on_commit.assert_not_called()
 
     def test_that_update_upload_report_should_schedule_result_upload_finished_if_result_transfer_request_upload_finished_is_false(self):
         with mock.patch('conductor.service.transaction.on_commit') as transaction_on_commit:
-            update_upload_report(
-                self.path,
-                self.result_transfer_request,
-            )
+            with mock.patch('conductor.service.result_upload_finished.delay') as result_upload_finished:
+                update_upload_report(
+                    self.path,
+                    self.result_transfer_request,
+                )
 
         self.result_transfer_request.refresh_from_db()
         self.assertTrue(self.result_transfer_request.upload_finished)
 
         transaction_on_commit.assert_called_once()
+        result_upload_finished.assert_not_called()
 
     def test_that_update_upload_report_should_raise_exception_when_related_verification_request_exist(self):
         verification_request = VerificationRequest(
@@ -68,7 +70,7 @@ class ConductorReportFinishedUploadTestCase(ConcentIntegrationTestCase):
         verification_request.full_clean()
         verification_request.save()
 
-        with mock.patch('conductor.service.result_upload_finished.delay') as result_upload_finished:
+        with mock.patch('conductor.service.transaction.on_commit') as transaction_on_commit:
             with self.assertRaises(VerificationRequestAlreadyInitiatedError):
                 update_upload_report(
                     self.path,
@@ -78,4 +80,4 @@ class ConductorReportFinishedUploadTestCase(ConcentIntegrationTestCase):
         self.result_transfer_request.refresh_from_db()
         self.assertFalse(self.result_transfer_request.upload_finished)
 
-        result_upload_finished.assert_not_called()
+        transaction_on_commit.assert_not_called()

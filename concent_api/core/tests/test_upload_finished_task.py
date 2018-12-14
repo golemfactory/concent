@@ -66,16 +66,21 @@ class UploadFinishedTaskTest(ConcentIntegrationTestCase):
             )
         ):
             with mock.patch('core.tasks.tasks.transaction.on_commit') as transaction_on_commit:
-                upload_finished(self.subtask.subtask_id)  # pylint: disable=no-value-for-parameter
+                with mock.patch('core.tasks.tasks.upload_acknowledged.delay') as upload_acknowledged:
+                    upload_finished(self.subtask.subtask_id)  # pylint: disable=no-value-for-parameter
 
         self.subtask.refresh_from_db()
         self.assertEqual(self.subtask.state_enum, Subtask.SubtaskState.ADDITIONAL_VERIFICATION)
+
         transaction_on_commit.assert_called_once()
+        upload_acknowledged.assert_not_called()
 
     def test_that_scheduling_task_for_subtask_after_deadline_should_process_timeout(self):
         datetime = parse_timestamp_to_utc_datetime(get_current_utc_timestamp() + settings.CONCENT_MESSAGING_TIME + 1)
         with freeze_time(datetime):
-            upload_finished(self.subtask.subtask_id)  # pylint: disable=no-value-for-parameter
+            with mock.patch('core.tasks.transaction.on_commit') as transaction_on_commit:
+                with mock.patch('core.tasks.finalize_deposit_claim') as finalize_deposit_claim:
+                    upload_finished(self.subtask.subtask_id)  # pylint: disable=no-value-for-parameter
 
         self.subtask.refresh_from_db()
         self.assertEqual(self.subtask.state_enum, Subtask.SubtaskState.FAILED)
@@ -83,3 +88,6 @@ class UploadFinishedTaskTest(ConcentIntegrationTestCase):
         self.assertEqual(PendingResponse.objects.count(), 2)
         self.assertTrue(PendingResponse.objects.filter(client=self.subtask.provider).exists())
         self.assertTrue(PendingResponse.objects.filter(client=self.subtask.requestor).exists())
+
+        transaction_on_commit.assert_called_once()
+        finalize_deposit_claim.assert_not_called()

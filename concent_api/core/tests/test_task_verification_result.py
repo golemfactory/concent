@@ -89,10 +89,12 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
 
     def test_that_verification_result_mismatch_should_add_pending_messages_subtask_results_rejected(self):
         with freeze_time(parse_timestamp_to_utc_datetime(get_current_utc_timestamp())):
-            verification_result(  # pylint: disable=no-value-for-parameter
-                self.subtask.subtask_id,
-                VerificationResult.MISMATCH.name,
-            )
+            with mock.patch('core.tasks.transaction.on_commit') as transaction_on_commit:
+                with mock.patch('core.tasks.finalize_deposit_claim') as finalize_deposit_claim:
+                    verification_result(  # pylint: disable=no-value-for-parameter
+                        self.subtask.subtask_id,
+                        VerificationResult.MISMATCH.name,
+                    )
 
         self.subtask.refresh_from_db()
         self.assertEqual(self.subtask.state_enum, Subtask.SubtaskState.FAILED)
@@ -101,15 +103,20 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
         self.assertTrue(PendingResponse.objects.filter(client=self.subtask.provider).exists())
         self.assertTrue(PendingResponse.objects.filter(client=self.subtask.requestor).exists())
 
+        transaction_on_commit.assert_called_once()
+        finalize_deposit_claim.assert_not_called()
+
     def test_that_verification_result_error_should_add_pending_messages_subtask_results_settled_and_change_subtask_state_to_accepted(self):
         with freeze_time(parse_timestamp_to_utc_datetime(get_current_utc_timestamp())):
             with mock.patch('core.tasks.logger.info') as logging_info_mock:
-                verification_result(  # pylint: disable=no-value-for-parameter
-                    self.subtask.subtask_id,
-                    VerificationResult.ERROR.name,
-                    'test',
-                    ErrorCode.REQUEST_BODY_NOT_EMPTY.name,
-                )
+                with mock.patch('core.tasks.transaction.on_commit') as transaction_on_commit:
+                    with mock.patch('core.tasks.finalize_deposit_claim') as finalize_deposit_claim:
+                        verification_result(  # pylint: disable=no-value-for-parameter
+                            self.subtask.subtask_id,
+                            VerificationResult.ERROR.name,
+                            'test',
+                            ErrorCode.REQUEST_BODY_NOT_EMPTY.name,
+                        )
 
         self.subtask.refresh_from_db()
         self.assertEqual(self.subtask.state_enum, Subtask.SubtaskState.ACCEPTED)
@@ -122,12 +129,17 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
         self.assertIn(f'SUBTASK_ID: {self.subtask.subtask_id}. Verification_result_task starts. Result: ERROR', str(logging_info_mock.call_args_list))
         self.assertIn(f'SUBTASK_ID: {self.subtask.subtask_id}. Verification_result_task ends. Result: ERROR', str(logging_info_mock.call_args_list))
 
+        transaction_on_commit.assert_called_once()
+        finalize_deposit_claim.assert_not_called()
+
     def test_that_verification_result_match_should_add_pending_messages_subtask_results_settled_and_change_subtask_state_to_accepted(self):
         with freeze_time(parse_timestamp_to_utc_datetime(get_current_utc_timestamp())):
-            verification_result(  # pylint: disable=no-value-for-parameter
-                self.subtask.subtask_id,
-                VerificationResult.MATCH.name,
-            )
+            with mock.patch('core.tasks.transaction.on_commit') as transaction_on_commit:
+                with mock.patch('core.tasks.finalize_deposit_claim') as finalize_deposit_claim:
+                    verification_result(  # pylint: disable=no-value-for-parameter
+                        self.subtask.subtask_id,
+                        VerificationResult.MATCH.name,
+                    )
 
         self.subtask.refresh_from_db()
         self.assertEqual(self.subtask.state_enum, Subtask.SubtaskState.ACCEPTED)
@@ -135,6 +147,9 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
         self.assertEqual(PendingResponse.objects.count(), 2)
         self.assertTrue(PendingResponse.objects.filter(client=self.subtask.provider).exists())
         self.assertTrue(PendingResponse.objects.filter(client=self.subtask.requestor).exists())
+
+        transaction_on_commit.assert_called_once()
+        finalize_deposit_claim.assert_not_called()
 
     def test_that_verification_result_after_deadline_should_add_pending_messages_subtask_results_settled_and_change_subtask_state_to_accepted(self):
         with freeze_time(
@@ -142,10 +157,12 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
                 parse_datetime_to_timestamp(self.subtask.next_deadline) + 1
             )
         ):
-            verification_result(  # pylint: disable=no-value-for-parameter
-                self.subtask.subtask_id,
-                VerificationResult.MATCH.name,
-            )
+            with mock.patch('core.tasks.transaction.on_commit') as transaction_on_commit:
+                with mock.patch('core.tasks.finalize_deposit_claim') as finalize_deposit_claim:
+                    verification_result(  # pylint: disable=no-value-for-parameter
+                        self.subtask.subtask_id,
+                        VerificationResult.MATCH.name,
+                    )
 
         self.subtask.refresh_from_db()
         self.assertEqual(self.subtask.state_enum, Subtask.SubtaskState.ACCEPTED)
@@ -153,6 +170,9 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
         self.assertEqual(PendingResponse.objects.count(), 2)
         self.assertTrue(PendingResponse.objects.filter(client=self.subtask.provider).exists())
         self.assertTrue(PendingResponse.objects.filter(client=self.subtask.requestor).exists())
+
+        transaction_on_commit.assert_called_once()
+        finalize_deposit_claim.assert_not_called()
 
 
 class VerifierVerificationResultTaskTransactionTest(TransactionTestCase):

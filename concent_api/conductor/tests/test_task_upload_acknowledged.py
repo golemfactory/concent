@@ -67,21 +67,23 @@ class ConductorUploadAcknowledgedTaskTestCase(ConcentIntegrationTestCase):
                 report_computed_task=self.report_computed_task,
             )
 
-            with mock.patch('conductor.tasks.transaction.on_commit') as transaction_on_commit, \
-                mock.patch('conductor.tasks.filter_frames_by_blender_subtask_definition', return_value=[1]) as mock_frames_filtering:  # noqa: E125
-                upload_acknowledged(
-                    subtask_id=self.report_computed_task.subtask_id,
-                    source_file_size=self.report_computed_task.task_to_compute.size,
-                    source_package_hash=self.report_computed_task.task_to_compute.package_hash,
-                    result_file_size=self.report_computed_task.size,
-                    result_package_hash=self.report_computed_task.package_hash,
-                )
+            with mock.patch('conductor.tasks.transaction.on_commit') as transaction_on_commit:
+                with mock.patch('conductor.tasks.filter_frames_by_blender_subtask_definition', return_value=[1]) as mock_frames_filtering:  # noqa: E125
+                    with mock.patch('conductor.tasks.blender_verification_order') as blender_verification_order:
+                        upload_acknowledged(
+                            subtask_id=self.report_computed_task.subtask_id,
+                            source_file_size=self.report_computed_task.task_to_compute.size,
+                            source_package_hash=self.report_computed_task.task_to_compute.package_hash,
+                            result_file_size=self.report_computed_task.size,
+                            result_package_hash=self.report_computed_task.package_hash,
+                        )
 
             self.verification_request.refresh_from_db()
 
             self.assertTrue(self.verification_request.upload_acknowledged)
             transaction_on_commit.assert_called_once()
             mock_frames_filtering.assert_called_once()
+            blender_verification_order.assert_not_called()
 
     @mock.patch("conductor.tasks.log")
     def test_that_upload_acknowledged_task_should_log_error_when_verification_request_with_given_subtask_id_does_not_exist(self, mock_logging_error):

@@ -155,15 +155,16 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         upload_report.save()
 
         with mock.patch('conductor.views.transaction.on_commit') as mock_transaction_on_commit:
-            response = self.client.post(
-                reverse(
-                    'conductor:report-upload',
-                    kwargs={
-                        'file_path': self.source_package_path
-                    }
-                ),
-                content_type='application/octet-stream',
-            )
+            with mock.patch('conductor.views.upload_finished.delay') as upload_finished:
+                response = self.client.post(
+                    reverse(
+                        'conductor:report-upload',
+                        kwargs={
+                            'file_path': self.source_package_path
+                        }
+                    ),
+                    content_type='application/octet-stream',
+                )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(UploadReport.objects.count(), 2)
@@ -172,6 +173,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(upload_report.path, self.source_package_path)
 
         mock_transaction_on_commit.assert_called_once()
+        upload_finished.assert_not_called()
 
         verification_request.refresh_from_db()
         self.assertTrue(verification_request.upload_finished)
@@ -187,20 +189,22 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         upload_report.save()
 
         with mock.patch('conductor.views.transaction.on_commit') as mock_transaction_on_commit:
-            response = self.client.post(
-                reverse(
-                    'conductor:report-upload',
-                    kwargs={
-                        'file_path': self.source_package_path
-                    }
-                ),
-                content_type='application/octet-stream',
-            )
+            with mock.patch('conductor.views.upload_finished.delay') as upload_finished:
+                response = self.client.post(
+                    reverse(
+                        'conductor:report-upload',
+                        kwargs={
+                            'file_path': self.source_package_path
+                        }
+                    ),
+                    content_type='application/octet-stream',
+                )
 
             self.assertEqual(response.status_code, 200)
             self.assertEqual(UploadReport.objects.count(), 2)
 
             mock_transaction_on_commit.assert_called_once()
+            upload_finished.assert_not_called()
 
             verification_request.refresh_from_db()
             self.assertTrue(verification_request.upload_finished)
@@ -383,18 +387,20 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         upload_report.save()
 
         with mock.patch('conductor.tasks.tasks.transaction.on_commit') as transaction_on_commit:
-            blender_verification_request(
-                frames=self.compute_task_def['extra_data']['frames'],
-                subtask_id=self.compute_task_def['subtask_id'],
-                source_package_path=self.source_package_path,
-                result_package_path=self.result_package_path,
-                output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
-                scene_file = self.compute_task_def['extra_data']['scene_file'],
-                verification_deadline=self._get_verification_deadline_as_timestamp(
-                    get_current_utc_timestamp(),
-                    self.report_computed_task.size,
-                ),
-                blender_crop_script=self.compute_task_def['extra_data']['script_src'],
-            )
+            with mock.patch('conductor.tasks.tasks.upload_finished.delay') as upload_finished:
+                blender_verification_request(
+                    frames=self.compute_task_def['extra_data']['frames'],
+                    subtask_id=self.compute_task_def['subtask_id'],
+                    source_package_path=self.source_package_path,
+                    result_package_path=self.result_package_path,
+                    output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
+                    scene_file = self.compute_task_def['extra_data']['scene_file'],
+                    verification_deadline=self._get_verification_deadline_as_timestamp(
+                        get_current_utc_timestamp(),
+                        self.report_computed_task.size,
+                    ),
+                    blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+                )
 
         transaction_on_commit.assert_called_once()
+        upload_finished.assert_not_called()

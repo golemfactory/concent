@@ -484,10 +484,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         )
 
         with freeze_time("2018-02-05 11:00:00"):
-            response_2 =self.send_request(
-                url='core:receive',
-                data                            = self._create_requestor_auth_message(),
-            )
+            with mock.patch('core.subtask_helpers.transaction.on_commit') as transaction_on_commit:
+                with mock.patch('core.subtask_helpers.finalize_deposit_claim') as finalize_deposit_claim:
+                    response_2 = self.send_request(
+                        url='core:receive',
+                        data=self._create_requestor_auth_message(),
+                    )
+
+        transaction_on_commit.assert_called_once()
+        finalize_deposit_claim.assert_not_called()
+
         self._test_response(
             response_2,
             status=200,
@@ -1373,20 +1379,15 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 10:00:51"):
-            response_3a =self.send_request(
-                url='core:receive',
-                data=self._create_provider_auth_message(),
-            )
+            with mock.patch('core.subtask_helpers.transaction.on_commit') as transaction_on_commit:
+                with mock.patch('core.subtask_helpers.finalize_deposit_claim') as finalize_deposit_claim:
+                    response_3a =self.send_request(
+                        url='core:receive',
+                        data=self._create_provider_auth_message(),
+                    )
 
-        claim_deposit_true_mock_function.assert_called_with(
-            subtask_id=task_to_compute.subtask_id,
-            concent_use_case=ConcentUseCase.FORCED_ACCEPTANCE,
-            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
-            provider_ethereum_address=task_to_compute.provider_ethereum_address,
-            subtask_cost=task_to_compute.price,
-            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
-            provider_public_key=hex_to_bytes_convert(task_to_compute.provider_public_key),
-        )
+        transaction_on_commit.assert_called_once()
+        finalize_deposit_claim.assert_not_called()
 
         self._test_response(
             response_3a,
@@ -1553,10 +1554,16 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         with freeze_time("2018-02-05 10:00:51"):
-            response_3 =self.send_request(
-                url='core:receive',
-                data                            = self._create_requestor_auth_message(),
-            )
+            with mock.patch('core.subtask_helpers.transaction.on_commit') as transaction_on_commit:
+                with mock.patch('core.subtask_helpers.finalize_deposit_claim') as finalize_deposit_claim:
+                    response_3 =self.send_request(
+                        url='core:receive',
+                        data                            = self._create_requestor_auth_message(),
+                    )
+
+        transaction_on_commit.assert_called_once()
+        finalize_deposit_claim.assert_not_called()
+
         self._test_response(
             response_3,
             status       = 200,

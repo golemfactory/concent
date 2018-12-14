@@ -1,4 +1,5 @@
 from unittest import TestCase
+import pytest
 
 from django.conf import settings
 from django.test import override_settings
@@ -8,6 +9,7 @@ from golem_messages import message
 from common.helpers import parse_timestamp_to_utc_datetime
 from core.exceptions import GolemMessageValidationError
 from core.message_handlers import are_items_unique
+from core.message_handlers import handle_send_force_payment
 from core.message_handlers import update_and_return_updated_subtask
 from core.message_handlers import store_subtask
 from core.models import Subtask
@@ -156,3 +158,13 @@ class TestValidateRejectReportComputedTask(ConcentIntegrationTestCase):
         )
         with self.assertRaises(GolemMessageValidationError):
             validate_reject_report_computed_task(incorrect_reject_reported_computed_task)
+
+
+class TestCorrectMessageToForcePaymentHandler:
+
+    @pytest.mark.parametrize('subtask_results_accepted_list', (None, [], [message.Ping()], ()))
+    def test_that_force_payment_with_malformed_subtask_results_accepted_list_raises_assertion(self, subtask_results_accepted_list):  # pylint: disable=no-self-use
+        force_payment = message.concents.ForcePayment(subtask_results_accepted_list=subtask_results_accepted_list)
+
+        with pytest.raises(AssertionError):
+            handle_send_force_payment(force_payment)

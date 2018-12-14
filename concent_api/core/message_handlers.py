@@ -26,6 +26,7 @@ from golem_messages.message.concents import ForcePaymentRejected
 from golem_messages.message.concents import ForceReportComputedTask
 from golem_messages.message.concents import ForceReportComputedTaskResponse
 from golem_messages.message.concents import ServiceRefused
+from golem_messages.message.tasks import SubtaskResultsAccepted
 from golem_messages.message.tasks import SubtaskResultsRejected
 from golem_messages.register import library
 
@@ -68,13 +69,13 @@ from core.utils import calculate_subtask_verification_time
 from core.utils import is_protocol_version_compatible
 from core.validation import is_golem_message_signed_with_key
 from core.validation import substitute_new_report_computed_task_if_needed
-from core.validation import validate_that_golem_messages_are_signed_with_key
-from core.validation import validate_reject_report_computed_task
 from core.validation import validate_all_messages_identical
 from core.validation import validate_ethereum_addresses
 from core.validation import validate_golem_message_subtask_results_rejected
+from core.validation import validate_reject_report_computed_task
 from core.validation import validate_report_computed_task_time_window
 from core.validation import validate_task_to_compute
+from core.validation import validate_that_golem_messages_are_signed_with_key
 
 from .utils import hex_to_bytes_convert
 
@@ -752,15 +753,17 @@ def get_clients_eth_accounts(task_to_compute: message.tasks.TaskToCompute) -> Tu
 def handle_send_force_payment(
     client_message: message.concents.ForcePayment
 ) -> Union[ServiceRefused, ForcePaymentRejected, ForcePaymentCommitted]:
-
-    logging.log_received_force_payment(logger, client_message)
+    assert isinstance(client_message.subtask_results_accepted_list, list)
+    assert len(client_message.subtask_results_accepted_list) != 0
     try:
         for subtask_results_accepted in client_message.subtask_results_accepted_list:
+            assert isinstance(subtask_results_accepted, SubtaskResultsAccepted)
             subtask_results_accepted.validate_ownership_chain(settings.CONCENT_PUBLIC_KEY)
     except InvalidSignature:
         return ServiceRefused(
             reason=ServiceRefused.REASON.InvalidRequest
         )
+    logging.log_received_force_payment(logger, client_message)
 
     # Concent should not accept payment requests in soft shutdown mode.
     if config.SOFT_SHUTDOWN_MODE is True:

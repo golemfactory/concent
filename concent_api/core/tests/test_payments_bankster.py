@@ -19,8 +19,10 @@ from core.payments.bankster import discard_claim
 from core.payments.bankster import finalize_payment
 from core.payments.bankster import settle_overdue_acceptances
 from core.tests.utils import ConcentIntegrationTestCase
-from core.utils import hex_to_bytes_convert
 from core.utils import generate_uuid
+from core.utils import get_current_utc_timestamp
+from core.utils import hex_to_bytes_convert
+from core.utils import parse_timestamp_to_utc_datetime
 
 
 @override_settings(
@@ -479,7 +481,8 @@ class DiscardClaimBanksterTest(ConcentIntegrationTestCase):
         self.deposit_claim.payee_ethereum_address = self.task_to_compute.provider_ethereum_address
         self.deposit_claim.concent_use_case = ConcentUseCase.FORCED_PAYMENT
         self.deposit_claim.amount = 1
-        self.deposit_claim.clean()
+        self.deposit_claim.closure_time = parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
+        self.deposit_claim.full_clean()
         self.deposit_claim.save()
 
     def test_that_discard_claim_should_return_false_and_not_remove_deposit_claim_if_tx_hash_is_none(self):

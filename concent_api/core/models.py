@@ -5,6 +5,7 @@ import datetime
 
 from django.conf import settings
 from django.core.validators import ValidationError
+from django.core.validators import MinValueValidator
 from django.db.models import BinaryField
 from django.db.models import BooleanField
 from django.db.models import CharField
@@ -33,11 +34,12 @@ from common.helpers import deserialize_database_message
 from common.helpers import deserialize_message
 from common.helpers import parse_datetime_to_timestamp
 
-from .constants import TASK_OWNER_KEY_LENGTH
+from .constants import BIG_ENDIAN_INT_MAX_DIGITS
 from .constants import ETHEREUM_ADDRESS_LENGTH
 from .constants import ETHEREUM_TRANSACTION_HASH_LENGTH
 from .constants import GOLEM_PUBLIC_KEY_LENGTH
 from .constants import MESSAGE_TASK_ID_MAX_LENGTH
+from .constants import TASK_OWNER_KEY_LENGTH
 from .validation import validate_database_report_computed_task
 from .validation import validate_database_task_to_compute
 
@@ -626,25 +628,23 @@ class PaymentInfo(Model):
     payment_ts              = DateTimeField()
     task_owner_key          = BinaryField()
     provider_eth_account    = CharField(max_length = ETHEREUM_ADDRESS_LENGTH)
-    amount_paid             = IntegerField()
+    amount_paid = DecimalField(
+        max_digits=BIG_ENDIAN_INT_MAX_DIGITS,
+        decimal_places=0,
+        validators=[MinValueValidator(0)]
+    )
     recipient_type          = CharField(max_length = 32, choices = RecipientType.choices())
-    amount_pending          = IntegerField()
+    amount_pending = DecimalField(
+        max_digits=BIG_ENDIAN_INT_MAX_DIGITS,
+        decimal_places=0,
+        validators=[MinValueValidator(0)]
+    )
     pending_response        = ForeignKey(PendingResponse, related_name = 'payments')
 
     def clean(self) -> None:
         if self.task_owner_key == self.provider_eth_account:
             raise ValidationError({
                 'provider_eth_account': 'Provider ethereum account address must be diffrent than task owner key'
-            })
-
-        if not isinstance(self.amount_pending, int) or self.amount_pending < 0:
-            raise ValidationError({
-                'amount_pending': 'Amount pending must be an integer and bigger than 0'
-            })
-
-        if not isinstance(self.amount_paid, int) or self.amount_paid < 0:
-            raise ValidationError({
-                'amount_paid': 'Amount paid must be an integer and bigger than or equal 0'
             })
 
         if not isinstance(self.task_owner_key, bytes) or not len(self.task_owner_key) == TASK_OWNER_KEY_LENGTH:
@@ -683,18 +683,18 @@ class PendingEthereumTransaction(Model):
     Represents pending Ethereum transaction state.
     """
 
-    nonce = DecimalField(max_digits=78, decimal_places=0)
+    nonce = DecimalField(max_digits=BIG_ENDIAN_INT_MAX_DIGITS, decimal_places=0)
 
-    gasprice = DecimalField(max_digits=78, decimal_places=0)
-    startgas = DecimalField(max_digits=78, decimal_places=0)
-    value = DecimalField(max_digits=78, decimal_places=0)
+    gasprice = DecimalField(max_digits=BIG_ENDIAN_INT_MAX_DIGITS, decimal_places=0)
+    startgas = DecimalField(max_digits=BIG_ENDIAN_INT_MAX_DIGITS, decimal_places=0)
+    value = DecimalField(max_digits=BIG_ENDIAN_INT_MAX_DIGITS, decimal_places=0)
 
     to = BinaryField(max_length=20)
     data = BinaryField()
 
     v = IntegerField()
-    r = DecimalField(max_digits=78, decimal_places=0)
-    s = DecimalField(max_digits=78, decimal_places=0)
+    r = DecimalField(max_digits=BIG_ENDIAN_INT_MAX_DIGITS, decimal_places=0)
+    s = DecimalField(max_digits=BIG_ENDIAN_INT_MAX_DIGITS, decimal_places=0)
 
     created_at = DateTimeField(auto_now_add=True)
 
@@ -739,7 +739,7 @@ class DepositClaim(Model):
     payer_deposit_account = ForeignKey(DepositAccount)
     payee_ethereum_address = CharField(max_length=ETHEREUM_ADDRESS_LENGTH)
     concent_use_case = IntegerField()
-    amount = IntegerField()
+    amount = DecimalField(max_digits=BIG_ENDIAN_INT_MAX_DIGITS, decimal_places=0)
     tx_hash = CharField(max_length=64, blank=True, null=True, unique=True)
     created_at = DateTimeField(auto_now_add=True)
     modified_at = DateTimeField(auto_now=True)
@@ -765,9 +765,9 @@ class DepositClaim(Model):
                                           f'(requestor, provider or Concent) must be string and must be exactly '
                                           f'{ETHEREUM_ADDRESS_LENGTH} characters long.'
             })
-        if not isinstance(self.amount, int) or self.amount <= 0:
+        if self.amount <= 0:
             raise ValidationError({
-                'amount': 'Amount must be integer and be greater than 0'
+                'amount': 'Amount must be greater than 0.'
             })
         if (
             self.tx_hash is not None and

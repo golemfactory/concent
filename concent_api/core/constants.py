@@ -31,6 +31,9 @@ ETHEREUM_PUBLIC_KEY_LENGTH = 128
 # Defines the length of Ethereum transaction's hash
 ETHEREUM_TRANSACTION_HASH_LENGTH = 64
 
+# Defines various length of number values used in Ethereum transaction's
+BIG_ENDIAN_INT_MAX_DIGITS = 78
+
 # Defines length of Clients ids, public keys or ethereum public keys
 TASK_OWNER_KEY_LENGTH = 64
 

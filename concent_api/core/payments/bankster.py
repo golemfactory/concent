@@ -18,7 +18,6 @@ from psycopg2 import errorcodes as pg_errorcodes
 from common.constants import ConcentUseCase
 from common.helpers import deserialize_message
 from common.helpers import ethereum_public_key_to_address
-from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.logging import log
 from core.constants import ETHEREUM_ADDRESS_LENGTH

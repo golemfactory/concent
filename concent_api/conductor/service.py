@@ -62,7 +62,10 @@ def update_upload_report(file_path: str, result_transfer_request: ResultTransfer
         def call_result_upload_finished() -> None:
             result_upload_finished.delay(result_transfer_request.subtask_id)
 
-        transaction.on_commit(call_result_upload_finished, using='storage')
+        transaction.on_commit(
+            call_result_upload_finished,
+            using='storage',
+        )
 
 
 def store_verification_request_and_blender_subtask_definition(

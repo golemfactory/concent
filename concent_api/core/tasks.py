@@ -111,7 +111,10 @@ def upload_finished(subtask_id: str) -> None:
                 result_package_hash=report_computed_task.package_hash,
             )
 
-        transaction.on_commit(call_upload_acknowledged, using='control')
+        transaction.on_commit(
+            call_upload_acknowledged,
+            using='control',
+        )
 
     # If it's ADDITIONAL VERIFICATION, ACCEPTED or FAILED, log a warning and ignore the notification.
     # Processing ends here. This means that it's a duplicate notification.

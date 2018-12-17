@@ -11,6 +11,8 @@ from web3 import Web3
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.payments.payment_interface import PaymentInterface
 from core.validation import validate_uuid
+from core.validation import validate_value_is_int_convertible_and_non_negative
+from core.validation import validate_value_is_int_convertible_and_positive
 
 
 class TransactionType(Enum):
@@ -56,29 +58,30 @@ def get_list_of_payments(
 
 
 def make_force_payment_to_provider(
-    requestor_eth_address:  str,
-    provider_eth_address:   str,
-    value:                  int,
-    payment_ts:             int,
+    requestor_eth_address: str,
+    provider_eth_address: str,
+    value: int,
+    payment_ts: int,
 ) -> str:
     """
     Concent makes transaction from requestor's deposit to provider's account on amount 'value'.
     If there is less then 'value' on requestor's deposit, Concent transfers as much as possible.
     """
-    assert isinstance(requestor_eth_address,    str) and len(requestor_eth_address) == ETHEREUM_ADDRESS_LENGTH
-    assert isinstance(provider_eth_address,     str) and len(provider_eth_address)  == ETHEREUM_ADDRESS_LENGTH
-    assert isinstance(payment_ts,               int) and payment_ts   >= 0
-    assert isinstance(value,                    int) and value        >= 0
+    assert isinstance(requestor_eth_address, str) and len(requestor_eth_address) == ETHEREUM_ADDRESS_LENGTH
+    assert isinstance(provider_eth_address, str) and len(provider_eth_address) == ETHEREUM_ADDRESS_LENGTH
+    assert isinstance(payment_ts, int) and payment_ts >= 0
+
+    validate_value_is_int_convertible_and_positive(value)
 
     requestor_account_balance = PaymentInterface().get_deposit_value(Web3.toChecksumAddress(requestor_eth_address))  # type: ignore  # pylint: disable=no-member
     if requestor_account_balance < value:
         value = requestor_account_balance
 
     return PaymentInterface().force_payment(  # type: ignore  # pylint: disable=no-member
-        requestor_address   = Web3.toChecksumAddress(requestor_eth_address),
-        provider_address    = Web3.toChecksumAddress(provider_eth_address),
-        value               = value,
-        closure_time        = payment_ts,
+        requestor_address=Web3.toChecksumAddress(requestor_eth_address),
+        provider_address=Web3.toChecksumAddress(provider_eth_address),
+        value=int(value),
+        closure_time=payment_ts,
     )
 
 
@@ -100,13 +103,14 @@ def force_subtask_payment(
 ) -> str:
     assert isinstance(requestor_eth_address, str) and len(requestor_eth_address) == ETHEREUM_ADDRESS_LENGTH
     assert isinstance(provider_eth_address, str) and len(provider_eth_address) == ETHEREUM_ADDRESS_LENGTH
-    assert isinstance(value, int) and value > 0
     assert isinstance(subtask_id, str)
+
+    validate_value_is_int_convertible_and_non_negative(value)
 
     return PaymentInterface().force_subtask_payment(  # type: ignore  # pylint: disable=no-member
         requestor_address=Web3.toChecksumAddress(requestor_eth_address),
         provider_address=Web3.toChecksumAddress(provider_eth_address),
-        value=value,
+        value=int(value),
         subtask_id=_hexencode_uuid(subtask_id),
     )
 
@@ -117,12 +121,13 @@ def cover_additional_verification_cost(
     subtask_id: str,
 ) -> str:
     assert isinstance(provider_eth_address, str) and len(provider_eth_address) == ETHEREUM_ADDRESS_LENGTH
-    assert isinstance(value, int) and value > 0
     assert isinstance(subtask_id, str)
+
+    validate_value_is_int_convertible_and_non_negative(value)
 
     return PaymentInterface().cover_additional_verification_cost(  # type: ignore  # pylint: disable=no-member
         address=Web3.toChecksumAddress(provider_eth_address),
-        value=value,
+        value=int(value),
         subtask_id=_hexencode_uuid(subtask_id),
     )
 

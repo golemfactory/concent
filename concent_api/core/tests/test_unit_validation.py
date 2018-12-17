@@ -32,6 +32,7 @@ from core.validation import validate_compute_task_def
 from core.validation import validate_ethereum_addresses
 from core.validation import validate_frames
 from core.validation import validate_golem_message_subtask_results_rejected
+from core.validation import validate_non_negative_integer_value
 from core.validation import validate_positive_integer_value
 from core.validation import validate_scene_file
 from core.validation import validate_task_to_compute
@@ -83,17 +84,27 @@ class ValidatorsTest(TestCase):
         with self.assertRaises(ConcentValidationError):
             validate_ethereum_addresses('a' * ETHEREUM_ADDRESS_LENGTH, 'b' * 5)
 
-    def test_that_function_raise_exception_when_price_is_not_int(self):
-        with self.assertRaises(ConcentValidationError):
-            validate_positive_integer_value('5')
 
-    def test_that_function_raise_exception_when_price_is_negative(self):
-        with self.assertRaises(ConcentValidationError):
-            validate_positive_integer_value(-5)
+class TestIntegerValidations:
 
-    def test_that_function_raise_exception_when_price_is_zero(self):  # pylint: disable=no-self-use
-        with self.assertRaises(ConcentValidationError):
-            validate_positive_integer_value(0)
+    @pytest.mark.parametrize(('value', 'error_code'), [
+        ('5', ErrorCode.MESSAGE_VALUE_WRONG_TYPE),
+        (-5, ErrorCode.MESSAGE_VALUE_NEGATIVE),
+        (0, ErrorCode.MESSAGE_VALUE_NEGATIVE),
+    ])  # pylint: disable=no-self-use
+    def test_that_validate_positive_integer_function_raise_exception_when_wrong_value_given(self, value, error_code):
+        with pytest.raises(ConcentValidationError) as exception_wrapper:
+            validate_positive_integer_value(value)
+        assert_that(exception_wrapper.value.error_code).is_equal_to(error_code)
+
+    @pytest.mark.parametrize(('value', 'error_code'), [
+        ('5', ErrorCode.MESSAGE_VALUE_WRONG_TYPE),
+        (-5, ErrorCode.MESSAGE_VALUE_NEGATIVE),
+    ])  # pylint: disable=no-self-use
+    def test_that_validate_non_negative_integer_function_raise_exception_when_wrong_value_given(self, value, error_code):
+        with pytest.raises(ConcentValidationError) as exception_wrapper:
+            validate_non_negative_integer_value(value)
+        assert_that(exception_wrapper.value.error_code).is_equal_to(error_code)
 
 
 class TestValidateAllMessagesIdentical(ConcentIntegrationTestCase):

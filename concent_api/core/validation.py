@@ -39,38 +39,24 @@ from core.utils import hex_to_bytes_convert
 logger = getLogger(__name__)
 
 
-def validate_value_is_int_convertible_and_positive(value: int) -> None:
-    """
-    Checks if value is an integer. If not, tries to cast it to an integer.
-    Then checks if value is positive.
-
-    """
-    if not isinstance(value, int):
-        try:
-            value = int(value)
-        except (ValueError, TypeError):
-            raise ConcentValidationError(
-                "Wrong type, expected a value that can be converted to an integer.",
-                error_code=ErrorCode.MESSAGE_VALUE_NOT_INTEGER,
-            )
-    validate_positive_integer_value(value)
-
-
 def validate_value_is_int_convertible_and_non_negative(value: int) -> None:
     """
     Checks if value is an integer. If not, tries to cast it to an integer.
     Then checks if value is non-negative.
-
     """
     if not isinstance(value, int):
-        try:
-            value = int(value)
-        except (ValueError, TypeError):
-            raise ConcentValidationError(
-                "Wrong type, expected a value that can be converted to an integer.",
-                error_code=ErrorCode.MESSAGE_VALUE_NOT_INTEGER,
-            )
-    validate_non_negative_integer_value(value)
+        validate_value_is_int_convertible(value)
+    validate_non_negative_integer_value(int(value))
+
+
+def validate_value_is_int_convertible_and_positive(value: int) -> None:
+    """
+    Checks if value is an integer. If not, tries to cast it to an integer.
+    Then checks if value is positive.
+    """
+    if not isinstance(value, int):
+        validate_value_is_int_convertible(value)
+    validate_positive_integer_value(int(value))
 
 
 def validate_hex_public_key(value: str, field_name: str) -> None:
@@ -316,6 +302,16 @@ def validate_non_negative_integer_value(value: int) -> None:
         raise ConcentValidationError(
             "Value cannot be a negative value",
             error_code=ErrorCode.MESSAGE_VALUE_NEGATIVE,
+        )
+
+
+def validate_value_is_int_convertible(value: int) -> None:
+    try:
+        int(value)
+    except (ValueError, TypeError):
+        raise ConcentValidationError(
+            "Wrong type, expected a value that can be converted to an integer.",
+            error_code=ErrorCode.MESSAGE_VALUE_NOT_INTEGER,
         )
 
 

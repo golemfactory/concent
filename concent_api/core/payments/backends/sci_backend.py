@@ -139,7 +139,3 @@ def _hexencode_uuid(value: str) -> bytes:
     validate_uuid(value)
 
     return binascii.hexlify(uuid.UUID(value).bytes)
-
-
-def get_youngest_payment_timestamp_from_subtask_results_accepted_list(subtask_results_accepted_list: list) -> int:
-    return max(subtask_results_accepted.payment_ts for subtask_results_accepted in subtask_results_accepted_list)

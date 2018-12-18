@@ -28,7 +28,6 @@ from core.models import DepositAccount
 from core.models import DepositClaim
 from core.models import Subtask
 from core.payments import service
-from core.payments.backends.sci_backend import get_youngest_payment_timestamp_from_subtask_results_accepted_list
 from core.payments.backends.sci_backend import TransactionType
 from core.payments.validation import validate_that_last_closure_time_is_older_than_oldest_payment
 from core.utils import adjust_transaction_hash
@@ -507,3 +506,7 @@ def validate_list_of_transactions_timestamps(
             for subtask_results_accepted in acceptances
         ):
             raise PaymentTimestampError
+
+
+def get_youngest_payment_timestamp_from_subtask_results_accepted_list(subtask_results_accepted_list: list) -> int:
+    return max(subtask_results_accepted.payment_ts for subtask_results_accepted in subtask_results_accepted_list)

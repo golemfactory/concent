@@ -41,9 +41,9 @@ from common.logging import log
 from common.validations import validate_secure_hash_algorithm
 from common import logging
 from conductor.tasks import result_transfer_request
-from core.exceptions import PaymentTimestampError
 from core.exceptions import CreateModelIntegrityError
 from core.exceptions import Http400
+from core.exceptions import PaymentTimestampError
 from core.exceptions import TooSmallProviderDeposit
 from core.models import Client
 from core.models import PaymentInfo

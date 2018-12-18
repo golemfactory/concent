@@ -216,16 +216,16 @@
         </text>
     </switch>
     <path fill="url(#c)" stroke="#6c8ebf" d="M102 134h10v60h-10z" pointer-events="none"/>
-    <switch transform="translate(96.5 201.5)">
-        <foreignObject style="overflow:visible" width="21" height="5" pointer-events="all" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+    <switch transform="translate(94.5 201.5)">
+        <foreignObject style="overflow:visible" width="25" height="5" pointer-events="all" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
             <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;font-size:6px;font-family:Helvetica;color:#000;line-height:1.2;vertical-align:top;white-space:nowrap;text-align:center">
                 <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit">
-                    +5 GNT
+                    +16 GNT
                 </div>
             </div>
         </foreignObject>
-        <text x="11" y="6" font-family="Helvetica" font-size="6" text-anchor="middle">
-            +5 GNT
+        <text x="13" y="6" font-family="Helvetica" font-size="6" text-anchor="middle">
+            +16 GNT
         </text>
     </switch>
     <path fill="url(#c)" stroke="#6c8ebf" stroke-miterlimit="10" d="M559 137h20v20l-10 30v-30h-10z" pointer-events="none" transform="matrix(1 0 0 -1 0 324)"/>

@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <mxGraphModel arrows="1"
               connect="1"
-              dx="679"
-              dy="393"
+              dx="475"
+              dy="275"
               fold="1"
               grid="1"
               gridSize="4"
@@ -195,7 +195,7 @@
         <mxCell id="72sBEmUaBvzUqsW06C3p-22"
                 parent="1"
                 style="rounded=0;html=1;fillColor=#dae8fc;fontSize=6;align=center;strokeColor=#6c8ebf;gradientColor=#7ea6e0;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;"
-                value="+5 GNT"
+                value="+16 GNT"
                 vertex="1">
             <mxGeometry as="geometry"
                         height="60"

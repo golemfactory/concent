@@ -127,19 +127,6 @@
         <foreignObject style="overflow:visible" width="10" height="7" pointer-events="all" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
             <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;font-size:8px;font-family:Helvetica;color:#000;line-height:1.2;vertical-align:top;white-space:nowrap;text-align:center">
                 <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit">
-                    S1
-                    <br/>
-                </div>
-            </div>
-        </foreignObject>
-        <text x="5" y="8" font-family="Helvetica" font-size="8" text-anchor="middle">
-            S1&lt;br&gt;
-        </text>
-    </switch>
-    <switch transform="translate(234.5 76.5)">
-        <foreignObject style="overflow:visible" width="10" height="7" pointer-events="all" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
-            <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;font-size:8px;font-family:Helvetica;color:#000;line-height:1.2;vertical-align:top;white-space:nowrap;text-align:center">
-                <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit">
                     S2
                     <br/>
                 </div>
@@ -149,20 +136,20 @@
             S2&lt;br&gt;
         </text>
     </switch>
-    <switch transform="translate(366.5 76.5)">
+    <switch transform="translate(234.5 76.5)">
         <foreignObject style="overflow:visible" width="10" height="7" pointer-events="all" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
             <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;font-size:8px;font-family:Helvetica;color:#000;line-height:1.2;vertical-align:top;white-space:nowrap;text-align:center">
                 <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit">
-                    S4
+                    S3
                     <br/>
                 </div>
             </div>
         </foreignObject>
         <text x="5" y="8" font-family="Helvetica" font-size="8" text-anchor="middle">
-            S4&lt;br&gt;
+            S3&lt;br&gt;
         </text>
     </switch>
-    <switch transform="translate(406.5 76.5)">
+    <switch transform="translate(366.5 76.5)">
         <foreignObject style="overflow:visible" width="10" height="7" pointer-events="all" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
             <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;font-size:8px;font-family:Helvetica;color:#000;line-height:1.2;vertical-align:top;white-space:nowrap;text-align:center">
                 <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit">
@@ -175,30 +162,43 @@
             S5&lt;br&gt;
         </text>
     </switch>
-    <switch transform="translate(599.5 76.5)">
+    <switch transform="translate(406.5 76.5)">
         <foreignObject style="overflow:visible" width="10" height="7" pointer-events="all" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
             <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;font-size:8px;font-family:Helvetica;color:#000;line-height:1.2;vertical-align:top;white-space:nowrap;text-align:center">
                 <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit">
-                    S9
+                    S6
                     <br/>
                 </div>
             </div>
         </foreignObject>
         <text x="5" y="8" font-family="Helvetica" font-size="8" text-anchor="middle">
-            S9&lt;br&gt;
+            S6&lt;br&gt;
+        </text>
+    </switch>
+    <switch transform="translate(597.5 76.5)">
+        <foreignObject style="overflow:visible" width="14" height="7" pointer-events="all" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+            <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;font-size:8px;font-family:Helvetica;color:#000;line-height:1.2;vertical-align:top;white-space:nowrap;text-align:center">
+                <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit">
+                    S10
+                    <br/>
+                </div>
+            </div>
+        </foreignObject>
+        <text x="7" y="8" font-family="Helvetica" font-size="8" text-anchor="middle">
+            S10&lt;br&gt;
         </text>
     </switch>
     <switch transform="translate(371.5 172.5)">
         <foreignObject style="overflow:visible" width="10" height="7" pointer-events="all" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
             <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;font-size:8px;font-family:Helvetica;color:#000;line-height:1.2;vertical-align:top;white-space:nowrap;text-align:center">
                 <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit">
-                    S4
+                    S5
                     <br/>
                 </div>
             </div>
         </foreignObject>
         <text x="5" y="8" font-family="Helvetica" font-size="8" text-anchor="middle">
-            S4&lt;br&gt;
+            S5&lt;br&gt;
         </text>
     </switch>
     <path fill="url(#b)" stroke="#82b366" stroke-miterlimit="10" d="M137 137h20v20l-10 30v-30h-10z" pointer-events="none" transform="matrix(1 0 0 -1 0 324)"/>
@@ -246,13 +246,13 @@
         <foreignObject style="overflow:visible" width="10" height="7" pointer-events="all" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
             <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;font-size:8px;font-family:Helvetica;color:#000;line-height:1.2;vertical-align:top;white-space:nowrap;text-align:center">
                 <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit">
-                    S8
+                    S9
                     <br/>
                 </div>
             </div>
         </foreignObject>
         <text x="5" y="8" font-family="Helvetica" font-size="8" text-anchor="middle">
-            S8&lt;br&gt;
+            S9&lt;br&gt;
         </text>
     </switch>
     <ellipse cx="640" cy="130" fill="#a20025" stroke="#a20025" pointer-events="none" rx="2.5" ry="2.5"/>
@@ -299,13 +299,13 @@
         <foreignObject style="overflow:visible" width="10" height="7" pointer-events="all" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
             <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;font-size:8px;font-family:Helvetica;color:#000;line-height:1.2;vertical-align:top;white-space:nowrap;text-align:center">
                 <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit">
-                    S2
+                    S3
                     <br/>
                 </div>
             </div>
         </foreignObject>
         <text x="5" y="8" font-family="Helvetica" font-size="8" text-anchor="middle">
-            S2&lt;br&gt;
+            S3&lt;br&gt;
         </text>
     </switch>
     <path fill="url(#a)" stroke="#b85450" stroke-miterlimit="10" d="M444 72h20v20l-10 30V92h-10z" pointer-events="none"/>
@@ -325,13 +325,13 @@
         <foreignObject style="overflow:visible" width="10" height="7" pointer-events="all" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
             <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;font-size:8px;font-family:Helvetica;color:#000;line-height:1.2;vertical-align:top;white-space:nowrap;text-align:center">
                 <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit">
-                    S6
+                    S7
                     <br/>
                 </div>
             </div>
         </foreignObject>
         <text x="5" y="8" font-family="Helvetica" font-size="8" text-anchor="middle">
-            S6&lt;br&gt;
+            S7&lt;br&gt;
         </text>
     </switch>
     <path fill="url(#a)" stroke="#b85450" stroke-miterlimit="10" d="M548 72h20v20l-10 30V92h-10z" pointer-events="none"/>
@@ -351,13 +351,13 @@
         <foreignObject style="overflow:visible" width="10" height="7" pointer-events="all" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
             <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;font-size:8px;font-family:Helvetica;color:#000;line-height:1.2;vertical-align:top;white-space:nowrap;text-align:center">
                 <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit">
-                    S8
+                    S9
                     <br/>
                 </div>
             </div>
         </foreignObject>
         <text x="5" y="8" font-family="Helvetica" font-size="8" text-anchor="middle">
-            S8&lt;br&gt;
+            S9&lt;br&gt;
         </text>
     </switch>
     <path fill="url(#a)" stroke="#b85450" stroke-miterlimit="10" d="M504 72h20v20l-10 30V92h-10z" pointer-events="none"/>
@@ -377,13 +377,13 @@
         <foreignObject style="overflow:visible" width="10" height="7" pointer-events="all" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
             <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;font-size:8px;font-family:Helvetica;color:#000;line-height:1.2;vertical-align:top;white-space:nowrap;text-align:center">
                 <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit">
-                    S7
+                    S8
                     <br/>
                 </div>
             </div>
         </foreignObject>
         <text x="5" y="8" font-family="Helvetica" font-size="8" text-anchor="middle">
-            S7&lt;br&gt;
+            S8&lt;br&gt;
         </text>
     </switch>
     <path fill="url(#b)" stroke="#82b366" stroke-miterlimit="10" d="M243 137h20v20l-10 30v-30h-10z" pointer-events="none" transform="matrix(1 0 0 -1 0 324)"/>
@@ -514,13 +514,13 @@
         <foreignObject style="overflow:visible" width="10" height="7" pointer-events="all" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
             <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;font-size:8px;font-family:Helvetica;color:#000;line-height:1.2;vertical-align:top;white-space:nowrap;text-align:center">
                 <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit">
-                    S3
+                    S4
                     <br/>
                 </div>
             </div>
         </foreignObject>
         <text x="5" y="8" font-family="Helvetica" font-size="8" text-anchor="middle">
-            S3&lt;br&gt;
+            S4&lt;br&gt;
         </text>
     </switch>
     <path fill="url(#b)" stroke="#82b366" stroke-miterlimit="10" d="M306 137h20v20l-10 30v-30h-10z" pointer-events="none" transform="matrix(1 0 0 -1 0 324)"/>

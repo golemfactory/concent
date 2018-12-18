@@ -56,11 +56,3 @@ def call_on_confirmed_transaction(
     callback: Callable,  # pylint: disable=unused-argument
 ) -> None:
     pass
-
-
-def validate_that_last_closure_time_is_older_than_oldest_payment(
-    requestor_eth_address: str,  # pylint: disable=unused-argument
-    provider_eth_address: str,  # pylint: disable=unused-argument
-    oldest_payments_ts: int,  # pylint: disable=unused-argument
-) -> None:
-    pass

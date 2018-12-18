@@ -30,7 +30,7 @@ from core.models import Subtask
 from core.payments import service
 from core.payments.backends.sci_backend import get_youngest_payment_timestamp_from_subtask_results_accepted_list
 from core.payments.backends.sci_backend import TransactionType
-from core.payments.service import validate_that_last_closure_time_is_older_than_oldest_payment
+from core.payments.validation import validate_that_last_closure_time_is_older_than_oldest_payment
 from core.utils import adjust_transaction_hash
 from core.validation import validate_bytes_public_key
 from core.validation import validate_uuid

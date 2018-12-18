@@ -103,17 +103,3 @@ def call_on_confirmed_transaction(
         tx_hash,
         callback,
     )
-
-
-@_add_backend
-def validate_that_last_closure_time_is_older_than_oldest_payment(
-    backend: Any,
-    requestor_eth_address: str,
-    provider_eth_address: str,
-    search_payments_since_ts: int,
-) -> bool:
-    return backend.validate_that_last_closure_time_is_older_than_oldest_payment(
-        requestor_eth_address,
-        provider_eth_address,
-        search_payments_since_ts,
-    )

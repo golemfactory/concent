@@ -11,6 +11,7 @@ from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from .models import DepositAccount
 from .models import DepositClaim
+from .models import GlobalTransactionState
 from .models import PendingResponse
 from .models import StoredMessage
 from .models import Subtask
@@ -205,3 +206,4 @@ admin.site.register(DepositClaim, DepositClaimAdmin)
 admin.site.register(PendingResponse, PendingResponseAdmin)
 admin.site.register(StoredMessage, StoredMessageAdmin)
 admin.site.register(Subtask, SubtaskAdmin)
+admin.site.register(GlobalTransactionState)

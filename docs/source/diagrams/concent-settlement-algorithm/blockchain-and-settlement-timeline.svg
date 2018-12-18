@@ -12,6 +12,10 @@
             <stop offset="0%" style="stop-color:#d5e8d4"/>
             <stop offset="100%" style="stop-color:#97d077"/>
         </linearGradient>
+        <linearGradient id="d" x1="0%" x2="0%" y1="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#fff2cc"/>
+            <stop offset="100%" style="stop-color:#ffd966"/>
+        </linearGradient>
     </defs>
     <path fill="#fff" stroke="#000" stroke-linejoin="round" stroke-miterlimit="10" d="M.5 62V52l369.6.19.01-10.5L389.1 57.2l-19.01 15.49.01-10.5z" pointer-events="none"/>
     <switch transform="translate(379.5 32.5)">
@@ -484,7 +488,7 @@
             now
         </text>
     </switch>
-    <path fill="url(#b)" stroke="#b85450" stroke-miterlimit="10" d="M20 0h20v20L30 50V20H20z" pointer-events="none"/>
+    <path fill="url(#d)" stroke="#d6b656" stroke-miterlimit="10" d="M20 0h20v20L30 50V20H20z" pointer-events="none"/>
     <switch transform="translate(25.5 4.5)">
         <foreignObject style="overflow:visible" width="10" height="7" pointer-events="all" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
             <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;font-size:8px;font-family:Helvetica;color:#000;line-height:1.2;vertical-align:top;white-space:nowrap;text-align:center">
@@ -509,6 +513,21 @@
         </foreignObject>
         <text y="6" fill="red" font-family="Helvetica" font-size="6" text-anchor="middle">
             &lt;br style=&quot;font-size: 6px&quot;&gt;
+        </text>
+    </switch>
+    <path fill="none" stroke="#4d4d4d" stroke-miterlimit="10" d="M30.69 55.32L58 11h36" pointer-events="none"/>
+    <ellipse cx="30" cy="56" fill="#4d4d4d" stroke="#4d4d4d" pointer-events="none" rx="1" ry="1"/>
+    <switch transform="translate(60.5 1.5)">
+        <foreignObject style="overflow:visible" width="31" height="5" pointer-events="all" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+            <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;font-size:6px;font-family:Helvetica;color:gray;line-height:1.2;vertical-align:top;white-space:nowrap;text-align:center">
+                <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit">
+                    payment_ts
+                    <br/>
+                </div>
+            </div>
+        </foreignObject>
+        <text x="16" y="6" fill="gray" font-family="Helvetica" font-size="6" text-anchor="middle">
+            payment_ts&lt;br&gt;
         </text>
     </switch>
 </svg>

@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <mxGraphModel arrows="1"
               connect="1"
-              dx="450"
-              dy="332"
+              dx="462"
+              dy="275"
               fold="1"
               grid="1"
               gridSize="1"
@@ -1689,7 +1689,7 @@
         </mxCell>
         <mxCell id="k9v5gKyPEipz8aGqHWKq-23"
                 parent="1"
-                style="shape=callout;html=1;perimeter=calloutPerimeter;fillColor=#f8cecc;strokeColor=#b85450;gradientColor=#ea6b66;base=20;labelPosition=center;verticalLabelPosition=top;align=center;verticalAlign=bottom;fontSize=6;fontColor=#808080;"
+                style="shape=callout;html=1;perimeter=calloutPerimeter;fillColor=#fff2cc;strokeColor=#d6b656;gradientColor=#ffd966;base=20;labelPosition=center;verticalLabelPosition=top;align=center;verticalAlign=bottom;fontSize=6;"
                 value=""
                 vertex="1">
             <mxGeometry as="geometry"
@@ -1719,6 +1719,30 @@
                         width="5"
                         x="27"
                         y="486" />
+        </mxCell>
+        <mxCell edge="1"
+                id="wMpk2AUnhKtZDu97RO2v-1"
+                parent="1"
+                style="endArrow=none;html=1;fillColor=#f5f5f5;strokeColor=#4D4D4D;startArrow=oval;startFill=1;endSize=2;startSize=2;rounded=0;fontSize=6;fontColor=#808080;labelBackgroundColor=none;exitX=0.522;exitY=0.031;exitPerimeter=0;"
+                value="payment_ts&lt;br&gt;">
+            <mxGeometry as="geometry"
+                        height="50"
+                        relative="1"
+                        width="50"
+                        x="0.6182"
+                        y="7">
+                <mxPoint as="sourcePoint"
+                         x="30.16666666666663"
+                         y="488.16666666666663" />
+                <mxPoint as="targetPoint"
+                         x="94"
+                         y="443" />
+                <Array as="points">
+                    <mxPoint x="58"
+                             y="443" />
+                </Array>
+                <mxPoint as="offset" />
+            </mxGeometry>
         </mxCell>
     </root>
 </mxGraphModel>

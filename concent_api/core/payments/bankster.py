@@ -203,6 +203,7 @@ def finalize_payment(deposit_claim: DepositClaim) -> Optional[str]:
     """
 
     assert isinstance(deposit_claim, DepositClaim)
+    assert deposit_claim.tx_hash is None
 
     # Bankster asks SCI about the amount of funds available on the deposit account listed in the DepositClaim.
     available_funds = service.get_deposit_value(  # pylint: disable=no-value-for-parameter

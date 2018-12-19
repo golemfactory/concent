@@ -696,11 +696,14 @@ class PendingEthereumTransaction(Model):
 
 class DepositAccountManager(Manager):
 
-    def get_or_create_full_clean(self, client: bytes, ethereum_address: str) -> 'DepositAccount':
+    def get_or_create_full_clean(self, client: Client, ethereum_address: str) -> 'DepositAccount':
         """
         Returns Model instance.
         Does the same as get_or_create method, but also performs full_clean() on newly created instance.
         """
+        assert isinstance(client, Client)
+        assert isinstance(ethereum_address, str)
+
         try:
             instance = self.get(ethereum_address=ethereum_address)
         except self.model.DoesNotExist:

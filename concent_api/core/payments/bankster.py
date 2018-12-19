@@ -6,14 +6,12 @@ import logging
 
 from django.conf import settings
 from django.db import transaction
-from django.db import IntegrityError
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
 
 from golem_messages.message.tasks import SubtaskResultsAccepted
 from golem_sci.events import BatchTransferEvent
 from golem_sci.events import ForcedPaymentEvent
-from psycopg2 import errorcodes as pg_errorcodes
 
 from common.constants import ConcentUseCase
 from common.helpers import deserialize_message
@@ -75,58 +73,22 @@ def claim_deposit(
     # and also for the provider if there's a non-zero claim against his account.
     # This is done in single database transaction.
     with transaction.atomic(using='control'):
-        try:
-            requestor_client = Client.objects.get_or_create_full_clean(
-                public_key=requestor_public_key,
-            )
-        except IntegrityError as exception:
-            if exception.pgcode == pg_errorcodes.UNIQUE_VIOLATION:
-                requestor_client = Client.objects.get_or_create_full_clean(
-                    public_key=requestor_public_key,
-                )
-            else:
-                raise
+        requestor_client: Client = get_or_create_safely(Client, public_key=requestor_public_key)
 
-        try:
-            requestor_deposit_account = DepositAccount.objects.get_or_create_full_clean(
-                client=requestor_client,
-                ethereum_address=requestor_ethereum_address,
-            )
-        except IntegrityError as exception:
-            if exception.pgcode == pg_errorcodes.UNIQUE_VIOLATION:
-                requestor_deposit_account = DepositAccount.objects.get_or_create_full_clean(
-                    client=requestor_client,
-                    ethereum_address=requestor_ethereum_address,
-                )
-            else:
-                raise
+        requestor_deposit_account: DepositAccount = get_or_create_safely(
+            DepositAccount,
+            client=requestor_client,
+            ethereum_address=requestor_ethereum_address,
+        )
 
         if is_claim_against_provider:
-            try:
-                provider_client = Client.objects.get_or_create_full_clean(
-                    public_key=provider_public_key,
-                )
-            except IntegrityError as exception:
-                if exception.pgcode == pg_errorcodes.UNIQUE_VIOLATION:
-                    provider_client = Client.objects.get_or_create_full_clean(
-                        public_key=provider_public_key,
-                    )
-                else:
-                    raise
+            provider_client: Client = get_or_create_safely(Client, public_key=provider_public_key)
 
-            try:
-                provider_deposit_account = DepositAccount.objects.get_or_create_full_clean(
-                    client=provider_client,
-                    ethereum_address=provider_ethereum_address,
-                )
-            except IntegrityError as exception:
-                if exception.pgcode == pg_errorcodes.UNIQUE_VIOLATION:
-                    provider_deposit_account = DepositAccount.objects.get_or_create_full_clean(
-                        client=provider_client,
-                        ethereum_address=provider_ethereum_address,
-                    )
-                else:
-                    raise
+            provider_deposit_account: DepositAccount = get_or_create_safely(
+                DepositAccount,
+                client=provider_client,
+                ethereum_address=provider_ethereum_address,
+            )
 
     # Bankster asks SCI about the amount of funds available in requestor's deposit.
     requestor_deposit = service.get_deposit_value(client_eth_address=requestor_ethereum_address)  # pylint: disable=no-value-for-parameter

@@ -38,7 +38,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
             'core.payments.payment_interface.PaymentInterface.__new__',
             return_value=mock.Mock(
                 get_forced_payments=mock.Mock(
-                    return_value=self._get_list_of_force_transactions(),
+                    return_value=self._get_list_of_settlement_transactions(),
                 ),
                 get_block_number=mock.Mock(
                     return_value=self.block_number,
@@ -56,7 +56,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
                     sci_backend.TransactionType.FORCE,
                 )
 
-        self.assertEqual(len(list_of_payments), len(self._get_list_of_force_transactions()))
+        self.assertEqual(len(list_of_payments), len(self._get_list_of_settlement_transactions()))
 
         new_sci_rpc.return_value.get_forced_payments.assert_called_with(
             requestor_address=Web3.toChecksumAddress(self.task_to_compute.requestor_ethereum_address),

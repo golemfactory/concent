@@ -917,7 +917,7 @@ class ConcentIntegrationTestCase(TestCase):
         payment_item.closure_time = closure_time
         return payment_item
 
-    def _create_forced_subtask_payment_object(self, amount, subtask_id):  # pylint: disable=no-self-use
+    def _create_settlement_payment_object(self, amount, subtask_id):  # pylint: disable=no-self-use
         payment_item = mock.Mock()
         payment_item.amount = amount
         payment_item.subtask_id = subtask_id
@@ -927,15 +927,13 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_list_of_batch_transactions(self, requestor_eth_address = None, provider_eth_address = None, payment_ts = None, current_time = None, transaction_type = None):  # pylint: disable=unused-argument
         current_time = get_current_utc_timestamp()
-        item1 = self._create_batch_payment_object(amount = 1000, closure_time = current_time - 4000)
-        item2 = self._create_batch_payment_object(amount = 2000, closure_time = current_time - 3000)
-        item3 = self._create_batch_payment_object(amount = 3000, closure_time = current_time - 2000)
-        item4 = self._create_batch_payment_object(amount = 4000, closure_time = current_time - 1000)
-        return [item1, item2, item3, item4]
+        item1 = self._create_batch_payment_object(amount=1000, closure_time=current_time - 4000)
+        item2 = self._create_batch_payment_object(amount=3000, closure_time=current_time - 3000)
+        return [item1, item2]
 
-    def _get_list_of_force_transactions(self, requestor_eth_address = None, provider_eth_address = None, payment_ts = None, current_time = None, transaction_type = None):  # pylint: disable=unused-argument
-        item1 = self._create_forced_subtask_payment_object(amount = 1000, subtask_id = self._get_uuid('1'))
-        item2 = self._create_forced_subtask_payment_object(amount = 2000, subtask_id = self._get_uuid('2'))
+    def _get_list_of_settlement_transactions(self, requestor_eth_address = None, provider_eth_address = None, payment_ts = None, current_time = None, transaction_type = None):  # pylint: disable=unused-argument
+        item1 = self._create_settlement_payment_object(amount=1000, subtask_id=self._get_uuid('1'))
+        item2 = self._create_settlement_payment_object(amount=2000, subtask_id=self._get_uuid('2'))
         return [item1, item2]
 
     def _get_empty_list_of_transactions(self, requestor_eth_address = None, provider_eth_address = None, payment_ts = None, current_time = None, transaction_type = None):  # pylint: disable=no-self-use, unused-argument

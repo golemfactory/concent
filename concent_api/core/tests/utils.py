@@ -921,6 +921,8 @@ class ConcentIntegrationTestCase(TestCase):
         payment_item = mock.Mock()
         payment_item.amount = amount
         payment_item.subtask_id = subtask_id
+        payment_item.tx_hash = MOCK_TRANSACTION_HASH
+        payment_item.closure_time = parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
         return payment_item
 
     def _get_list_of_batch_transactions(self, requestor_eth_address = None, provider_eth_address = None, payment_ts = None, current_time = None, transaction_type = None):  # pylint: disable=unused-argument

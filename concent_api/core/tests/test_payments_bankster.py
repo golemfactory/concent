@@ -8,6 +8,7 @@ from golem_messages import factories
 from common.constants import ConcentUseCase
 from common.helpers import ethereum_public_key_to_address
 from core.constants import MOCK_TRANSACTION_HASH
+from core.exceptions import BanksterTransactionMismatchError
 from core.exceptions import TooSmallProviderDeposit
 from core.message_handlers import store_subtask
 from core.models import Client
@@ -258,7 +259,7 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
 
     def test_that_settle_overdue_acceptances_should_return_none_if_subtask_costs_where_already_paid(self):
         task_to_compute = self._get_deserialized_task_to_compute(
-            price=13000,
+            price=3000,
         )
 
         subtask_results_accepted_list = [
@@ -273,10 +274,7 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
         with mock.patch('core.payments.bankster.validate_list_of_transaction_timestamp') as validate_list_of_transaction_mock:
             with mock.patch(
                 'core.payments.bankster.service.get_list_of_payments',
-                side_effect=[
-                    self._get_list_of_batch_transactions(),
-                    self._get_list_of_force_transactions(),
-                ]
+                return_value=self._get_list_of_force_transactions(),
             ) as get_list_of_payments_mock:
                 claim_against_requestor = settle_overdue_acceptances(
                     requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
@@ -336,14 +334,11 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
             ]
 
         with freeze_time("2018-02-05 10:00:25"):
-            with mock.patch('core.payments.bankster.service.get_deposit_value', return_value=1000) as get_deposit_value_mock:
+            with mock.patch('core.payments.bankster.service.get_deposit_value', return_value=15000) as get_deposit_value_mock:
                 with mock.patch('core.payments.bankster.validate_list_of_transaction_timestamp') as validate_list_of_transaction_mock:
                     with mock.patch(
                         'core.payments.bankster.service.get_list_of_payments',
-                        side_effect=[
-                            self._get_list_of_batch_transactions(),
-                            self._get_list_of_force_transactions(),
-                        ]
+                        return_value=self._get_list_of_force_transactions(),
                     ) as get_list_of_payments_mock:
                         claim_against_requestor = settle_overdue_acceptances(
                             requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
@@ -359,13 +354,12 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
         self.assertIsNotNone(claim_against_requestor.tx_hash)
 
         # The results of payments are calculated in the following way:
-        # already_paid_value = 15000 - (
-        #   (1000 + 2000 + 3000 + 4000)(batch_transactions) +
+        # already_paid_value = (
         #   (1000 + 2000)(force_transactions)
-        # )
-        # already_paid_value == 13000, so 2000 left
-        # get_deposit_value returns 1000, so 1000 paid and 1000 left (pending)
-        self.assertEqual(claim_against_requestor.amount, 1000)
+        # ) = 3000,
+        # so 15000 - 3000 = 12000 left
+        # get_deposit_value returns 15000, so claim against requestor is 12000
+        self.assertEqual(claim_against_requestor.amount, 12000)
 
     def test_that_settle_overdue_acceptances_should_return_claim_deposit_with_amount_paid_if_there_was_no_previous_transactions(self):
         subtask_cost = 15000
@@ -429,14 +423,11 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
             ]
 
         with freeze_time("2018-02-05 10:00:25"):
-            with mock.patch('core.payments.bankster.service.get_deposit_value', return_value=5000) as get_deposit_value_mock:
+            with mock.patch('core.payments.bankster.service.get_deposit_value', return_value=15000) as get_deposit_value_mock:
                 with mock.patch('core.payments.bankster.validate_list_of_transaction_timestamp') as validate_list_of_transaction_mock:
                     with mock.patch(
                         'core.payments.bankster.service.get_list_of_payments',
-                        side_effect=[
-                            self._get_list_of_batch_transactions(),
-                            self._get_list_of_force_transactions(),
-                        ]
+                        return_value=self._get_list_of_force_transactions(),
                     ) as get_list_of_payments_mock:
                         claim_against_requestor = settle_overdue_acceptances(
                             requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
@@ -451,13 +442,355 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
 
         self.assertIsNotNone(claim_against_requestor.tx_hash)
 
-        # already_paid_value = 2x7500 - (
-        #   (1000 + 2000 + 3000 + 4000)(batch_transactions) +
+        # already_paid_value = (
         #   (1000 + 2000)(force_transactions)
-        # )
-        # already_paid_value == 13000, so 2000 left
-        # get_deposit_value returns 5000, so claim against requestor is 2000
-        self.assertEqual(claim_against_requestor.amount, 2000)
+        # ) = 3000,
+        # so 2x7500 - 3000 = 12000 left
+        # get_deposit_value returns 15000, so claim against requestor is 12000
+        self.assertEqual(claim_against_requestor.amount, 12000)
+
+    def test_that_settle_overdue_acceptances_should_return_claim_deposit_with_amount_available_on_requestor_deposit_if_it_is_greater_then_left_amount(self):
+        task_to_compute = self._get_deserialized_task_to_compute(
+            price=15000,
+        )
+
+        with freeze_time("2018-02-04 10:00:15"):
+            subtask_results_accepted_list = [
+                self._get_deserialized_subtask_results_accepted(
+                    report_computed_task=self._get_deserialized_report_computed_task(
+                        timestamp="2018-02-04 10:00:05",
+                        task_to_compute=task_to_compute
+                    )
+                )
+            ]
+
+        with freeze_time("2018-02-05 10:00:25"):
+            with mock.patch('core.payments.bankster.service.get_deposit_value', return_value=5000) as get_deposit_value_mock:
+                with mock.patch('core.payments.bankster.validate_list_of_transaction_timestamp') as validate_list_of_transaction_mock:
+                    with mock.patch(
+                        'core.payments.bankster.service.get_list_of_payments',
+                        return_value=self._get_list_of_force_transactions(),
+                    ) as get_list_of_payments_mock:
+                        claim_against_requestor = settle_overdue_acceptances(
+                            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+                            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+                            acceptances=subtask_results_accepted_list,
+                            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+                        )
+
+        get_deposit_value_mock.assert_called_once()
+        validate_list_of_transaction_mock.assert_called_once()
+        get_list_of_payments_mock.assert_called()
+
+        self.assertIsNotNone(claim_against_requestor.tx_hash)
+
+        # The results of payments are calculated in the following way:
+        # already_paid_value = (
+        #   (1000 + 2000)(force_transactions)
+        # ) = 3000,
+        # so 15000 - 3000 = 12000 left
+        # get_deposit_value returns 5000, so claim against requestor is 5000
+        self.assertEqual(claim_against_requestor.amount, 5000)
+
+    def test_that_settle_overdue_acceptances_should_return_claim_deposit_with_amount_paid_when_there_are_existing_claims(self):
+        task_to_compute = self._get_deserialized_task_to_compute(
+            price=15000,
+        )
+
+        with freeze_time("2018-02-04 10:00:15"):
+            subtask_results_accepted_list = [
+                self._get_deserialized_subtask_results_accepted(
+                    report_computed_task=self._get_deserialized_report_computed_task(
+                        timestamp="2018-02-04 10:00:05",
+                        task_to_compute=task_to_compute
+                    )
+                )
+            ]
+
+        requestor_client = Client(
+            public_key=task_to_compute.requestor_id
+        )
+        requestor_client.full_clean()
+        requestor_client.save()
+
+        requestor_deposit_account = DepositAccount(
+            client=requestor_client,
+            ethereum_address=task_to_compute.requestor_ethereum_address,
+        )
+        requestor_deposit_account.full_clean()
+        requestor_deposit_account.save()
+
+        deposit_claim = DepositClaim(
+            payee_ethereum_address=task_to_compute.provider_ethereum_address,
+            payer_deposit_account=requestor_deposit_account,
+            amount=3000,
+            concent_use_case=ConcentUseCase.FORCED_PAYMENT,
+            tx_hash=64 * 'A',
+            closure_time=parse_timestamp_to_utc_datetime(get_current_utc_timestamp()),
+        )
+        deposit_claim.full_clean()
+        deposit_claim.save()
+
+        deposit_claim = DepositClaim(
+            payee_ethereum_address=task_to_compute.provider_ethereum_address,
+            payer_deposit_account=requestor_deposit_account,
+            amount=4000,
+            concent_use_case=ConcentUseCase.FORCED_PAYMENT,
+            tx_hash=64 * 'B',
+            closure_time=parse_timestamp_to_utc_datetime(get_current_utc_timestamp()),
+        )
+        deposit_claim.full_clean()
+        deposit_claim.save()
+
+        with freeze_time("2018-02-05 10:00:25"):
+            with mock.patch('core.payments.bankster.service.get_deposit_value', return_value=15000) as get_deposit_value_mock:
+                with mock.patch('core.payments.bankster.validate_list_of_transaction_timestamp') as validate_list_of_transaction_mock:
+                    with mock.patch(
+                        'core.payments.bankster.service.get_list_of_payments',
+                        return_value=[],
+                    ) as get_list_of_payments_mock:
+                        claim_against_requestor = settle_overdue_acceptances(
+                            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+                            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+                            acceptances=subtask_results_accepted_list,
+                            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+                        )
+
+        get_deposit_value_mock.assert_called_once()
+        validate_list_of_transaction_mock.assert_called_once()
+        get_list_of_payments_mock.assert_called()
+
+        self.assertIsNotNone(claim_against_requestor.tx_hash)
+
+        # The results of payments are calculated in the following way:
+        # already_paid_value = (
+        #   (3000 + 4000)(existing_claims)
+        # ) = 7000,
+        # so 15000 - 7000 = 8000 left
+        # get_deposit_value returns 15000, so claim against requestor is 8000
+        self.assertEqual(claim_against_requestor.amount, 8000)
+
+    def test_that_settle_overdue_acceptances_should_return_claim_deposit_with_amount_paid_when_there_are_both_existing_claims_and_payments(self):
+        task_to_compute = self._get_deserialized_task_to_compute(
+            price=15000,
+        )
+
+        with freeze_time("2018-02-04 10:00:15"):
+            subtask_results_accepted_list = [
+                self._get_deserialized_subtask_results_accepted(
+                    report_computed_task=self._get_deserialized_report_computed_task(
+                        timestamp="2018-02-04 10:00:05",
+                        task_to_compute=task_to_compute
+                    )
+                )
+            ]
+
+        requestor_client = Client(
+            public_key=task_to_compute.requestor_id
+        )
+        requestor_client.full_clean()
+        requestor_client.save()
+
+        requestor_deposit_account = DepositAccount(
+            client=requestor_client,
+            ethereum_address=task_to_compute.requestor_ethereum_address,
+        )
+        requestor_deposit_account.full_clean()
+        requestor_deposit_account.save()
+
+        deposit_claim = DepositClaim(
+            payee_ethereum_address=task_to_compute.provider_ethereum_address,
+            payer_deposit_account=requestor_deposit_account,
+            amount=3000,
+            concent_use_case=ConcentUseCase.FORCED_PAYMENT,
+            tx_hash=64 * 'A',
+            closure_time=parse_timestamp_to_utc_datetime(get_current_utc_timestamp()),
+        )
+        deposit_claim.full_clean()
+        deposit_claim.save()
+
+        deposit_claim = DepositClaim(
+            payee_ethereum_address=task_to_compute.provider_ethereum_address,
+            payer_deposit_account=requestor_deposit_account,
+            amount=4000,
+            concent_use_case=ConcentUseCase.FORCED_PAYMENT,
+            tx_hash=64 * 'B',
+            closure_time=parse_timestamp_to_utc_datetime(get_current_utc_timestamp()),
+        )
+        deposit_claim.full_clean()
+        deposit_claim.save()
+
+        with freeze_time("2018-02-05 10:00:25"):
+            with mock.patch('core.payments.bankster.service.get_deposit_value', return_value=15000) as get_deposit_value_mock:
+                with mock.patch('core.payments.bankster.validate_list_of_transaction_timestamp') as validate_list_of_transaction_mock:
+                    with mock.patch(
+                        'core.payments.bankster.service.get_list_of_payments',
+                        return_value=self._get_list_of_force_transactions(),
+                    ) as get_list_of_payments_mock:
+                        claim_against_requestor = settle_overdue_acceptances(
+                            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+                            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+                            acceptances=subtask_results_accepted_list,
+                            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+                        )
+
+        get_deposit_value_mock.assert_called_once()
+        validate_list_of_transaction_mock.assert_called_once()
+        get_list_of_payments_mock.assert_called()
+
+        self.assertIsNotNone(claim_against_requestor.tx_hash)
+
+        # The results of payments are calculated in the following way:
+        # already_paid_value = (
+        #   (1000 + 2000)(force_transactions) +
+        #   (3000 + 4000)(existing_claims)
+        # ) = 10000,
+        # so 15000 - 10000 = 5000 left
+        # get_deposit_value returns 15000, so claim against requestor is 5000
+        self.assertEqual(claim_against_requestor.amount, 5000)
+
+    def test_that_settle_overdue_acceptances_should_return_claim_deposit_with_amount_paid_when_there_are_both_existing_claims_and_payments_with_the_same_transaction_hash(self):
+        task_to_compute = self._get_deserialized_task_to_compute(
+            price=15000,
+        )
+
+        with freeze_time("2018-02-04 10:00:15"):
+            subtask_results_accepted_list = [
+                self._get_deserialized_subtask_results_accepted(
+                    report_computed_task=self._get_deserialized_report_computed_task(
+                        timestamp="2018-02-04 10:00:05",
+                        task_to_compute=task_to_compute
+                    )
+                )
+            ]
+
+        requestor_client = Client(
+            public_key=task_to_compute.requestor_id
+        )
+        requestor_client.full_clean()
+        requestor_client.save()
+
+        requestor_deposit_account = DepositAccount(
+            client=requestor_client,
+            ethereum_address=task_to_compute.requestor_ethereum_address,
+        )
+        requestor_deposit_account.full_clean()
+        requestor_deposit_account.save()
+
+        with freeze_time("2018-02-05 10:00:25"):
+            deposit_claim = DepositClaim(
+                payee_ethereum_address=task_to_compute.provider_ethereum_address,
+                payer_deposit_account=requestor_deposit_account,
+                amount=2000,
+                concent_use_case=ConcentUseCase.FORCED_PAYMENT,
+                tx_hash=MOCK_TRANSACTION_HASH,
+                closure_time=parse_timestamp_to_utc_datetime(get_current_utc_timestamp()),
+            )
+            deposit_claim.full_clean()
+            deposit_claim.save()
+
+        deposit_claim = DepositClaim(
+            payee_ethereum_address=task_to_compute.provider_ethereum_address,
+            payer_deposit_account=requestor_deposit_account,
+            amount=4000,
+            concent_use_case=ConcentUseCase.FORCED_PAYMENT,
+            tx_hash=64 * 'B',
+            closure_time=parse_timestamp_to_utc_datetime(get_current_utc_timestamp()),
+        )
+        deposit_claim.full_clean()
+        deposit_claim.save()
+
+        with freeze_time("2018-02-05 10:00:25"):
+            with mock.patch('core.payments.bankster.service.get_deposit_value', return_value=15000) as get_deposit_value_mock:
+                with mock.patch('core.payments.bankster.validate_list_of_transaction_timestamp') as validate_list_of_transaction_mock:
+                    with mock.patch(
+                        'core.payments.bankster.service.get_list_of_payments',
+                        return_value=[
+                            self._create_forced_subtask_payment_object(
+                                subtask_id=task_to_compute.subtask_id,
+                                amount=2000,
+                            )
+                        ],
+                    ) as get_list_of_payments_mock:
+                        claim_against_requestor = settle_overdue_acceptances(
+                            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+                            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+                            acceptances=subtask_results_accepted_list,
+                            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+                        )
+
+        get_deposit_value_mock.assert_called_once()
+        validate_list_of_transaction_mock.assert_called_once()
+        get_list_of_payments_mock.assert_called()
+
+        self.assertIsNotNone(claim_against_requestor.tx_hash)
+
+        # The results of payments are calculated in the following way:
+        # already_paid_value = (
+        #   (1000 + 2000)(force_transactions) +
+        #   (3000 + 2000 - 2000)(existing_claims)(claim matching blockchain transaction is ignored)
+        # ) = 6000,
+        # so 15000 - 6000 = 9000 left
+        # get_deposit_value returns 15000, so claim against requestor is 9000
+        self.assertEqual(claim_against_requestor.amount, 9000)
+
+    def test_that_settle_overdue_acceptances_should_raise_exception_if_transaction_from_blockchain_will_not_match_database_claim(self):
+        task_to_compute = self._get_deserialized_task_to_compute(
+            price=15000,
+        )
+
+        with freeze_time("2018-02-04 10:00:15"):
+            subtask_results_accepted_list = [
+                self._get_deserialized_subtask_results_accepted(
+                    report_computed_task=self._get_deserialized_report_computed_task(
+                        timestamp="2018-02-04 10:00:05",
+                        task_to_compute=task_to_compute
+                    )
+                )
+            ]
+
+        requestor_client = Client(
+            public_key=task_to_compute.requestor_id
+        )
+        requestor_client.full_clean()
+        requestor_client.save()
+
+        requestor_deposit_account = DepositAccount(
+            client=requestor_client,
+            ethereum_address=task_to_compute.requestor_ethereum_address,
+        )
+        requestor_deposit_account.full_clean()
+        requestor_deposit_account.save()
+
+        deposit_claim = DepositClaim(
+            payee_ethereum_address=task_to_compute.provider_ethereum_address,
+            payer_deposit_account=requestor_deposit_account,
+            amount=2000,
+            concent_use_case=ConcentUseCase.FORCED_PAYMENT,
+            tx_hash=MOCK_TRANSACTION_HASH,
+            closure_time=parse_timestamp_to_utc_datetime(get_current_utc_timestamp()),
+        )
+        deposit_claim.full_clean()
+        deposit_claim.save()
+
+        with freeze_time("2018-02-05 10:00:25"):
+            with mock.patch('core.payments.bankster.service.get_deposit_value', return_value=15000) as get_deposit_value_mock:
+                with mock.patch('core.payments.bankster.validate_list_of_transaction_timestamp') as validate_list_of_transaction_mock:
+                    with mock.patch(
+                        'core.payments.bankster.service.get_list_of_payments',
+                        return_value=self._get_list_of_force_transactions(),
+                    ) as get_list_of_payments_mock:
+                        with self.assertRaises(BanksterTransactionMismatchError):
+                            settle_overdue_acceptances(
+                                requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+                                provider_ethereum_address=task_to_compute.provider_ethereum_address,
+                                acceptances=subtask_results_accepted_list,
+                                requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+                            )
+
+        get_deposit_value_mock.assert_called_once()
+        validate_list_of_transaction_mock.assert_called_once()
+        get_list_of_payments_mock.assert_called()
 
 
 class DiscardClaimBanksterTest(ConcentIntegrationTestCase):

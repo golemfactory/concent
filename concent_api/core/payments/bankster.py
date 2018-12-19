@@ -24,9 +24,9 @@ from core.models import Client
 from core.models import DepositAccount
 from core.models import DepositClaim
 from core.models import Subtask
+from core.model_helpers import get_or_create_safely
 from core.payments import service
 from core.payments.backends.sci_backend import TransactionType
-from core.subtask_helpers import get_or_create_safely
 from core.utils import adjust_transaction_hash
 from core.validation import validate_bytes_public_key
 from core.validation import validate_list_of_transaction_timestamp

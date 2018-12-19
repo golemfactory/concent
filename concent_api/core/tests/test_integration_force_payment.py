@@ -1,10 +1,8 @@
 import mock
 from django.test import override_settings
 from freezegun import freeze_time
-from golem_messages import cryptography
 from golem_messages import message
 from golem_messages.utils import decode_hex
-from golem_messages.utils import encode_hex
 
 from common.testing_helpers import generate_ecc_key_pair
 from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH

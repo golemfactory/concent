@@ -270,15 +270,13 @@ def settle_overdue_acceptances(
 
     validate_list_of_transaction_timestamp(acceptances)
 
-    with non_nesting_atomic(using='control'):
-        requestor_client: Client = get_or_create_safely(Client, public_key=requestor_public_key)
+    requestor_client: Client = get_or_create_safely(Client, public_key=requestor_public_key)
 
-    with non_nesting_atomic(using='control'):
-        requestor_deposit_account: DepositAccount = get_or_create_safely(
-            DepositAccount,
-            client=requestor_client,
-            ethereum_address=requestor_ethereum_address
-        )
+    requestor_deposit_account: DepositAccount = get_or_create_safely(
+        DepositAccount,
+        client=requestor_client,
+        ethereum_address=requestor_ethereum_address
+    )
 
     # Bankster asks SCI about the amount of funds available in requestor's deposit.
     requestor_deposit_value = service.get_deposit_value(client_eth_address=requestor_ethereum_address)  # pylint: disable=no-value-for-parameter
@@ -348,23 +346,28 @@ def settle_overdue_acceptances(
         # subtask_results_accepted_list.
         youngest_payment_ts = max(subtask_results_accepted.payment_ts for subtask_results_accepted in acceptances)
 
-        transaction_hash = service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
-            requestor_eth_address=requestor_ethereum_address,
-            provider_eth_address=provider_ethereum_address,
-            value=requestor_payable_amount,
-            payment_ts=youngest_payment_ts,
-        )
-        transaction_hash = adjust_transaction_hash(transaction_hash)
-
         # Deposit lock for requestor.
         claim_against_requestor = DepositClaim(
             payee_ethereum_address=provider_ethereum_address,
             payer_deposit_account=requestor_deposit_account,
             amount=requestor_payable_amount,
             concent_use_case=ConcentUseCase.FORCED_PAYMENT,
-            tx_hash=transaction_hash,
+            tx_hash=None,
             closure_time=parse_timestamp_to_utc_datetime(youngest_payment_ts),
         )
+        claim_against_requestor.full_clean()
+        claim_against_requestor.save()
+
+    transaction_hash = service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
+        requestor_eth_address=requestor_ethereum_address,
+        provider_eth_address=provider_ethereum_address,
+        value=requestor_payable_amount,
+        payment_ts=youngest_payment_ts,
+    )
+    transaction_hash = adjust_transaction_hash(transaction_hash)
+
+    with non_nesting_atomic(using='control'):
+        claim_against_requestor.tx_hash = transaction_hash
         claim_against_requestor.full_clean()
         claim_against_requestor.save()
 

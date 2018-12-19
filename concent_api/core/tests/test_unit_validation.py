@@ -3,9 +3,10 @@ from assertpy import assert_that
 import mock
 import pytest
 
-from golem_messages.factories.tasks import ComputeTaskDefFactory, ReportComputedTaskFactory
-from golem_messages.factories.tasks import TaskToComputeFactory
+from golem_messages.factories.tasks import ComputeTaskDefFactory
+from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.factories.tasks import SubtaskResultsAcceptedFactory
+from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.factories.tasks import WantToComputeTaskFactory
 from golem_messages.message.tasks import ReportComputedTask
 from golem_messages.message.tasks import SubtaskResultsRejected

@@ -165,6 +165,9 @@ def finalize_payment(deposit_claim: DepositClaim) -> Optional[str]:
     For each claim, Bankster uses SCI to submit an Ethereum transaction to the Ethereum client which then propagates it
     to the rest of the network.
     Hopefully the transaction is included in one of the upcoming blocks on the blockchain.
+
+    IMPORTANT!: This function must never be called in parallel for the same DepositClaim - otherwise provider might get
+    paid twice for the same thing. It's caller responsibility to ensure that.
     """
 
     assert isinstance(deposit_claim, DepositClaim)
@@ -202,47 +205,49 @@ def finalize_payment(deposit_claim: DepositClaim) -> Optional[str]:
         # Bankster sets this field to the amount that's actually available.
         elif available_funds_without_claims < deposit_claim.amount:
             deposit_claim.amount = available_funds_without_claims
+            deposit_claim.save()
 
-        # If the DepositClaim still exists at this point, Bankster uses SCI to create an Ethereum transaction.
-        if deposit_claim.concent_use_case == ConcentUseCase.FORCED_ACCEPTANCE:
-            ethereum_transaction_hash = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
-                requestor_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
-                provider_eth_address=deposit_claim.payee_ethereum_address,
-                value=deposit_claim.amount,
-                subtask_id=deposit_claim.subtask_id,
-            )
-        elif deposit_claim.concent_use_case == ConcentUseCase.ADDITIONAL_VERIFICATION:
-            subtask = Subtask.objects.filter(subtask_id=deposit_claim.subtask_id).first()  # pylint: disable=no-member
-            if subtask is not None:
-                task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
-                if task_to_compute.requestor_ethereum_address == deposit_claim.payer_deposit_account.ethereum_address:
-                    ethereum_transaction_hash = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
-                        requestor_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
-                        provider_eth_address=deposit_claim.payee_ethereum_address,
-                        value=deposit_claim.amount,
-                        subtask_id=deposit_claim.subtask_id,
-                    )
-                elif task_to_compute.provider_ethereum_address == deposit_claim.payer_deposit_account.ethereum_address:
-                    ethereum_transaction_hash = service.cover_additional_verification_cost(  # pylint: disable=no-value-for-parameter
-                        provider_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
-                        value=deposit_claim.amount,
-                        subtask_id=deposit_claim.subtask_id,
-                    )
-                else:
-                    assert False
-        else:
-            assert False
+    # If the DepositClaim still exists at this point, Bankster uses SCI to create an Ethereum transaction.
+    if deposit_claim.concent_use_case == ConcentUseCase.FORCED_ACCEPTANCE:
+        ethereum_transaction_hash = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
+            requestor_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
+            provider_eth_address=deposit_claim.payee_ethereum_address,
+            value=deposit_claim.amount,
+            subtask_id=deposit_claim.subtask_id,
+        )
+    elif deposit_claim.concent_use_case == ConcentUseCase.ADDITIONAL_VERIFICATION:
+        subtask = Subtask.objects.filter(subtask_id=deposit_claim.subtask_id).first()  # pylint: disable=no-member
+        if subtask is not None:
+            task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
+            if task_to_compute.requestor_ethereum_address == deposit_claim.payer_deposit_account.ethereum_address:
+                ethereum_transaction_hash = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
+                    requestor_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
+                    provider_eth_address=deposit_claim.payee_ethereum_address,
+                    value=deposit_claim.amount,
+                    subtask_id=deposit_claim.subtask_id,
+                )
+            elif task_to_compute.provider_ethereum_address == deposit_claim.payer_deposit_account.ethereum_address:
+                ethereum_transaction_hash = service.cover_additional_verification_cost(  # pylint: disable=no-value-for-parameter
+                    provider_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
+                    value=deposit_claim.amount,
+                    subtask_id=deposit_claim.subtask_id,
+                )
+            else:
+                assert False
+    else:
+        assert False
 
+    with transaction.atomic(using='control'):
         # Bankster puts transaction ID in DepositClaim.tx_hash.
         ethereum_transaction_hash = adjust_transaction_hash(ethereum_transaction_hash)
         deposit_claim.tx_hash = ethereum_transaction_hash
         deposit_claim.full_clean()
         deposit_claim.save()
 
-        service.call_on_confirmed_transaction(  # pylint: disable=no-value-for-parameter
-            tx_hash=deposit_claim.tx_hash,
-            callback=lambda _: discard_claim(deposit_claim),
-        )
+    service.call_on_confirmed_transaction(  # pylint: disable=no-value-for-parameter
+        tx_hash=deposit_claim.tx_hash,
+        callback=lambda _: discard_claim(deposit_claim),
+    )
 
     return deposit_claim.tx_hash
 

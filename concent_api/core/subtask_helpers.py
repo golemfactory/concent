@@ -1,12 +1,13 @@
 from base64 import b64encode
 from logging import getLogger
-from typing import Any
+from psycopg2 import errorcodes as pg_errorcodes
+from typing import Any, Type
 from typing import List
 from typing import Optional
 from typing import Union
 
 from django.conf import settings
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.db.models import Model
 from django.db.models import Q
 from django.db.models import QuerySet
@@ -344,3 +345,18 @@ def is_state_transition_possible(
     from_: Subtask.SubtaskState,
 ) -> bool:
     return from_ in Subtask.POSSIBLE_TRANSITIONS_TO[to_]  # type: ignore
+
+
+def get_or_create_safely(model: Type[Model], **kwargs: Any) -> Model:
+    try:
+        model_object = model.objects.get_or_create_full_clean(
+            **kwargs,
+        )
+    except IntegrityError as exception:
+        if exception.pgcode == pg_errorcodes.UNIQUE_VIOLATION:
+            model_object = model.objects.get_or_create_full_clean(
+                **kwargs,
+            )
+        else:
+            raise
+    return model_object

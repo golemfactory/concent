@@ -28,6 +28,7 @@ from core.models import DepositClaim
 from core.models import Subtask
 from core.payments import service
 from core.payments.backends.sci_backend import TransactionType
+from core.subtask_helpers import get_or_create_safely
 from core.utils import adjust_transaction_hash
 from core.validation import validate_bytes_public_key
 from core.validation import validate_list_of_transaction_timestamp
@@ -304,32 +305,14 @@ def settle_overdue_acceptances(
     assert provider_ethereum_address != requestor_ethereum_address
 
     with transaction.atomic(using='control'):
-        try:
-            requestor_client = Client.objects.get_or_create_full_clean(
-                public_key=requestor_public_key,
-            )
-        except IntegrityError as exception:
-            if exception.pgcode == pg_errorcodes.UNIQUE_VIOLATION:
-                requestor_client = Client.objects.get_or_create_full_clean(
-                    public_key=requestor_public_key,
-                )
-            else:
-                raise
+        requestor_client: Client = get_or_create_safely(Client, public_key=requestor_public_key)
 
     with transaction.atomic(using='control'):
-        try:
-            requestor_deposit_account = DepositAccount.objects.get_or_create_full_clean(
-                client=requestor_client,
-                ethereum_address=requestor_ethereum_address,
-            )
-        except IntegrityError as exception:
-            if exception.pgcode == pg_errorcodes.UNIQUE_VIOLATION:
-                requestor_deposit_account = DepositAccount.objects.get_or_create_full_clean(
-                    client=requestor_client,
-                    ethereum_address=requestor_ethereum_address,
-                )
-            else:
-                raise
+        requestor_deposit_account: DepositAccount = get_or_create_safely(
+            DepositAccount,
+            client=requestor_client,
+            ethereum_address=requestor_ethereum_address
+        )
 
     # Bankster asks SCI about the amount of funds available in requestor's deposit.
     requestor_deposit_value = service.get_deposit_value(client_eth_address=requestor_ethereum_address)  # pylint: disable=no-value-for-parameter

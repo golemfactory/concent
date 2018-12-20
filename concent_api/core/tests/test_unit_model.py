@@ -12,8 +12,6 @@ from common.constants import ConcentUseCase
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from core.constants import BIG_ENDIAN_INT_MAX_DIGITS
-from core.constants import ETHEREUM_ADDRESS_LENGTH
-from core.constants import ETHEREUM_TRANSACTION_HASH_LENGTH
 from core.constants import MOCK_TRANSACTION
 from core.message_handlers import store_message
 from core.message_handlers import store_subtask
@@ -214,24 +212,6 @@ class TestDepositAccountValidation(ConcentIntegrationTestCase):
         self.client.clean()
         self.client.save()
 
-    def test_that_exception_is_raised_when_ethereum_address_has_wrong_length(self):
-        with pytest.raises(ValidationError) as exception_info:
-            deposit_account = DepositAccount(
-                client=self.client,
-                ethereum_address=self.payer_ethereum_address + '1'
-            )
-            deposit_account.clean()
-        self.assertIn('ethereum_address', exception_info.value.error_dict)
-
-    def test_that_exception_is_raised_when_ethereum_address_has_wrong_type(self):
-        with pytest.raises(ValidationError) as exception_info:
-            deposit_account = DepositAccount(
-                client=self.client,
-                ethereum_address=b'x' * ETHEREUM_ADDRESS_LENGTH
-            )
-            deposit_account.clean()
-        self.assertIn('ethereum_address', exception_info.value.error_dict)
-
     def test_that_exception_is_not_raised_when_ethereum_address_has_valid_length(self):
         deposit_account = DepositAccount(
             client=self.client,
@@ -285,18 +265,6 @@ class TestDepositClaimValidation(ConcentIntegrationTestCase):
             self.deposit_claim.clean()
         self.assertIn('payer_deposit_account', exception_info.value.error_dict)
 
-    def test_that_exception_is_raised_when_payee_ethereum_address_has_wrong_length(self):
-        self.deposit_claim.payee_ethereum_address = self.payee_ethereum_address + '1'
-        with pytest.raises(ValidationError) as exception_info:
-            self.deposit_claim.clean()
-        self.assertIn('payee_ethereum_address', exception_info.value.error_dict)
-
-    def test_that_exception_is_raised_when_payee_ethereum_address_has_wrong_type(self):
-        self.deposit_claim.payee_ethereum_address = b'x' * ETHEREUM_ADDRESS_LENGTH
-        with pytest.raises(ValidationError) as exception_info:
-            self.deposit_claim.clean()
-        self.assertIn('payee_ethereum_address', exception_info.value.error_dict)
-
     def test_that_exception_is_raised_when_amount_is_equal_to_zero(self):
         self.deposit_claim.amount = 0
         with pytest.raises(ValidationError) as exception_info:
@@ -309,32 +277,15 @@ class TestDepositClaimValidation(ConcentIntegrationTestCase):
             self.deposit_claim.clean()
         self.assertIn('amount', exception_info.value.error_dict)
 
-    def test_that_exception_is_raised_when_amount_is_too_large(self):
-        self.deposit_claim.amount = int('1' * (BIG_ENDIAN_INT_MAX_DIGITS + 1))
-        with pytest.raises(ValidationError):
-            self.deposit_claim.full_clean()
-
     def test_that_exception_is_not_raised_when_amount_is_at_max_length(self):
         self.deposit_claim.amount = int('1' * BIG_ENDIAN_INT_MAX_DIGITS)
-        self.deposit_claim.full_clean()
+        self.deposit_claim.clean()
         self.deposit_claim.save()
 
-    def test_that_exception_is_raised_when_amount_have_decimal_places(self):
-        self.deposit_claim.amount = 5.1
-        with pytest.raises(ValidationError):
-            self.deposit_claim.full_clean()
-
     def test_that_exception_is_raised_when_tx_hash_is_not_none_and_not_string(self):
-        self.deposit_claim.tx_hash = b'x' * ETHEREUM_TRANSACTION_HASH_LENGTH
-        with pytest.raises(ValidationError) as exception_info:
-            self.deposit_claim.clean()
-        self.assertIn('tx_hash', exception_info.value.error_dict)
-
-    def test_that_exception_is_raised_when_tx_hash_has_wrong_length(self):
-        self.deposit_claim.tx_hash = encode_hex(MOCK_TRANSACTION.hash) + 'a'
-        with pytest.raises(ValidationError) as exception_info:
-            self.deposit_claim.clean()
-        self.assertIn('tx_hash', exception_info.value.error_dict)
+        self.deposit_claim.tx_hash = '11'
+        self.deposit_claim.clean()
+        self.deposit_claim.save()
 
     def test_that_exception_is_raised_when_closure_time_is_none_in_use_case_forced_payment(self):
         self.deposit_claim.concent_use_case = ConcentUseCase.FORCED_PAYMENT.value

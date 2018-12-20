@@ -20,6 +20,7 @@ from api_testing_common import create_client_auth_message
 from api_testing_common import create_signed_report_computed_task
 from api_testing_common import create_signed_subtask_results_accepted
 from api_testing_common import create_signed_task_to_compute
+from api_testing_common import receive_pending_messages_for_requestor_and_provider
 from api_testing_common import run_tests
 from api_testing_common import timestamp_to_isoformat
 from protocol_constants import ProtocolConstants
@@ -49,6 +50,11 @@ def force_payment(
 @count_fails
 def test_case_2d_send_correct_force_payment(cluster_consts: ProtocolConstants, cluster_url: str) -> None:
     # Test CASE 2D - Send correct ForcePayment
+    receive_pending_messages_for_requestor_and_provider(
+        cluster_url,
+        sci_base,
+        CONCENT_PUBLIC_KEY
+    )
     provider_gntb_balance = sci_base.get_provider_gntb_balance()
     current_time = get_current_utc_timestamp()
     correct_force_payment = force_payment(
@@ -117,6 +123,11 @@ def test_case_2d_send_correct_force_payment(cluster_consts: ProtocolConstants, c
 @count_fails
 def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts: ProtocolConstants, cluster_url: str) -> None:
     #  Test CASE 2C - Send ForcePayment with no value to be paid
+    receive_pending_messages_for_requestor_and_provider(
+        cluster_url,
+        sci_base,
+        CONCENT_PUBLIC_KEY
+    )
     current_time = get_current_utc_timestamp()
     api_request(
         cluster_url,
@@ -170,6 +181,11 @@ def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts: Pro
 @count_fails
 def test_case_2b_send_force_payment_beyond_payment_time(cluster_consts: ProtocolConstants, cluster_url: str) -> None:
     #  Test CASE 2B - Send ForcePayment beyond payment time
+    receive_pending_messages_for_requestor_and_provider(
+        cluster_url,
+        sci_base,
+        CONCENT_PUBLIC_KEY
+    )
     current_time = get_current_utc_timestamp()
     api_request(
         cluster_url,
@@ -229,6 +245,11 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
     cluster_url: str,
 ) -> None:
     # Test CASE 2A - Send ForcePayment with SubtaskResultsAccepted where ethereum accounts are different
+    receive_pending_messages_for_requestor_and_provider(
+        cluster_url,
+        sci_base,
+        CONCENT_PUBLIC_KEY
+    )
     current_time = get_current_utc_timestamp()
     api_request(
         cluster_url,

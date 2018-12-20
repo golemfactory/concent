@@ -18,6 +18,7 @@ from api_testing_common import create_client_auth_message
 from api_testing_common import create_signed_report_computed_task
 from api_testing_common import create_signed_subtask_results_accepted
 from api_testing_common import create_signed_task_to_compute
+from api_testing_common import receive_pending_messages_for_requestor_and_provider
 from api_testing_common import REPORT_COMPUTED_TASK_SIZE
 from api_testing_common import run_tests
 from api_testing_common import timestamp_to_isoformat
@@ -112,6 +113,11 @@ def _precalculate_subtask_verification_time(minimum_upload_rate: int, concent_me
 @count_fails
 def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConstants, cluster_url: str) -> None:
     # Test CASE 2D + 3 + 4B + 5. Requestor sends ForceSubtaskResultsResponse with SubtaskResultsRejected
+    receive_pending_messages_for_requestor_and_provider(
+        cluster_url,
+        sci_base,
+        CONCENT_PUBLIC_KEY
+    )
     current_time = get_current_utc_timestamp()
     signed_task_to_compute = create_signed_task_to_compute(
         timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
@@ -185,6 +191,11 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConst
 def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConstants, cluster_url: str) -> None:
     # Test CASE 4B + 5. Requestor sends ForceSubtaskResultsResponse with SubtaskResultsAccepted
     #  Step 1. Provider sends ForceSubtaskResults
+    receive_pending_messages_for_requestor_and_provider(
+        cluster_url,
+        sci_base,
+        CONCENT_PUBLIC_KEY
+    )
     current_time = get_current_utc_timestamp()
     signed_task_to_compute = create_signed_task_to_compute(
         timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
@@ -258,6 +269,11 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConst
 @count_fails
 def test_case_2c_wrong_timestamps(cluster_consts: ProtocolConstants, cluster_url: str) -> None:
     # Test CASE 2C - Send ForceSubtaskResults with wrong timestamps
+    receive_pending_messages_for_requestor_and_provider(
+        cluster_url,
+        sci_base,
+        CONCENT_PUBLIC_KEY
+    )
     current_time = get_current_utc_timestamp()
     api_request(
         cluster_url,
@@ -300,6 +316,11 @@ def test_case_2c_wrong_timestamps(cluster_consts: ProtocolConstants, cluster_url
 @count_fails
 def test_case_2b_not_enough_funds(cluster_consts: ProtocolConstants, cluster_url: str) -> None:
     #  Test CASE 2B - Send ForceSubtaskResults with not enough amount of funds on account
+    receive_pending_messages_for_requestor_and_provider(
+        cluster_url,
+        sci_base,
+        CONCENT_PUBLIC_KEY
+    )
     current_time = get_current_utc_timestamp()
     api_request(
         cluster_url,
@@ -337,6 +358,11 @@ def test_case_2b_not_enough_funds(cluster_consts: ProtocolConstants, cluster_url
 def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolConstants, cluster_url: str) -> None:
     #  Test CASE 2A + 2D + 3 - Send ForceSubtaskResults with same task_id as stored by Concent before
     #  Step 1. Send ForceSubtaskResults first time
+    receive_pending_messages_for_requestor_and_provider(
+        cluster_url,
+        sci_base,
+        CONCENT_PUBLIC_KEY
+    )
     current_time = get_current_utc_timestamp()
     signed_task_to_compute = create_signed_task_to_compute(
         timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),

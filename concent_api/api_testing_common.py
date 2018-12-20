@@ -466,3 +466,50 @@ def create_signed_report_computed_task(
             provider_private_key,
         )
         return signed_message
+
+
+def receive_all_left_pending_responses(
+    host: str,
+    endpoint: str,
+    client_private_key: bytes,
+    client_public_key: bytes,
+    concent_public_key: bytes,
+    client_name: str,
+) -> None:
+    url = f"{host}/api/v1/{endpoint}/"
+    status_code = 200
+    received_messages = []
+    while status_code == 200:
+        response = requests.post(f"{url}", headers=REQUEST_HEADERS, data=create_client_auth_message(client_private_key, client_public_key, concent_public_key), verify=False)
+        status_code = response.status_code
+        if status_code == 200:
+            if isinstance(response.content, bytes) and response.headers['Content-Type'] == 'application/octet-stream':
+                received_messages.append(load(response.content, client_private_key, concent_public_key).__class__.__name__)
+
+    if len(received_messages) > 0:
+        print(f'Concent had {len(received_messages)} messages which waited for {client_name} to receive. Name of these messages: {received_messages}')
+    else:
+        print(f'Concent had not any pending messages for {client_name}')
+
+
+def receive_pending_messages_for_requestor_and_provider(
+    cluster_url: str,
+    sci_base: SCIBaseTest,
+    concent_public_key: bytes,
+) -> None:
+    receive_all_left_pending_responses(
+        cluster_url,
+        'receive',
+        sci_base.provider_private_key,
+        sci_base.provider_public_key,
+        concent_public_key,
+        'Provider',
+    )
+    receive_all_left_pending_responses(
+        cluster_url,
+        'receive',
+        sci_base.requestor_private_key,
+        sci_base.requestor_public_key,
+        concent_public_key,
+        'Requestor',
+    )

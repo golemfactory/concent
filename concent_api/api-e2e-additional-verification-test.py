@@ -17,6 +17,7 @@ from api_testing_common import assert_condition
 from api_testing_common import count_fails
 from api_testing_common import create_client_auth_message
 from api_testing_common import create_signed_task_to_compute
+from api_testing_common import receive_pending_messages_for_requestor_and_provider
 from api_testing_common import run_tests
 from api_testing_common import timestamp_to_isoformat
 from golem_messages.factories.helpers import override_timestamp
@@ -116,6 +117,11 @@ def calculate_verification_deadline(
 
 @count_fails
 def test_case_1_test_for_positive_case(cluster_consts: ProtocolConstants, cluster_url: str) -> None:  # pylint: disable=unused-argument
+    receive_pending_messages_for_requestor_and_provider(
+        cluster_url,
+        sci_base,
+        CONCENT_PUBLIC_KEY
+    )
     current_time = get_current_utc_timestamp()
     provider_deposit_value = sci_base.get_provider_gntb_balance()
     requestor_deposit_value = sci_base.get_requestor_deposit_value()
@@ -222,6 +228,11 @@ def test_case_1_test_for_positive_case(cluster_consts: ProtocolConstants, cluste
 
 @count_fails
 def test_case_2_test_for_resources_failure_reason(cluster_consts: ProtocolConstants, cluster_url: str) -> None:  # pylint: disable=unused-argument
+    receive_pending_messages_for_requestor_and_provider(
+        cluster_url,
+        sci_base,
+        CONCENT_PUBLIC_KEY
+    )
     current_time = get_current_utc_timestamp()
     file_content = 'test'
     file_size = len(file_content)
@@ -248,6 +259,11 @@ def test_case_2_test_for_resources_failure_reason(cluster_consts: ProtocolConsta
 
 @count_fails
 def test_case_3_test_for_invalid_time(cluster_consts: ProtocolConstants, cluster_url: str) -> None:  # pylint: disable=unused-argument
+    receive_pending_messages_for_requestor_and_provider(
+        cluster_url,
+        sci_base,
+        CONCENT_PUBLIC_KEY
+    )
     current_time = get_current_utc_timestamp()
 
     file_content = 'test'
@@ -278,6 +294,11 @@ def test_case_3_test_for_invalid_time(cluster_consts: ProtocolConstants, cluster
 
 @count_fails
 def test_case_4_test_for_duplicated_request(cluster_consts: ProtocolConstants, cluster_url: str) -> None:  # pylint: disable=unused-argument
+    receive_pending_messages_for_requestor_and_provider(
+        cluster_url,
+        sci_base,
+        CONCENT_PUBLIC_KEY
+    )
     current_time = get_current_utc_timestamp()
 
     result_file_content_1 = 'test'
@@ -324,6 +345,11 @@ def test_case_4_test_for_duplicated_request(cluster_consts: ProtocolConstants, c
 
 @count_fails
 def test_case_5_test_requestor_status_account_negative(cluster_consts: ProtocolConstants, cluster_url: str) -> None:  # pylint: disable=unused-argument
+    receive_pending_messages_for_requestor_and_provider(
+        cluster_url,
+        sci_base,
+        CONCENT_PUBLIC_KEY
+    )
     current_time = get_current_utc_timestamp()
 
     result_file_content_1 = 'test'
@@ -359,6 +385,11 @@ def test_case_5_test_requestor_status_account_negative(cluster_consts: ProtocolC
 
 @count_fails
 def test_case_6_test_without_script_src_in(cluster_consts: ProtocolConstants, cluster_url: str) -> None:  # pylint: disable=unused-argument
+    receive_pending_messages_for_requestor_and_provider(
+        cluster_url,
+        sci_base,
+        CONCENT_PUBLIC_KEY
+    )
     current_time = get_current_utc_timestamp()
     provider_gntb_balance = sci_base.get_provider_gntb_balance()
     requestor_deposit_value = sci_base.get_requestor_deposit_value()

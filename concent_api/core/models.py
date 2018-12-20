@@ -654,22 +654,7 @@ class PaymentInfo(Model):
     def clean(self) -> None:
         if self.task_owner_key == self.provider_eth_account:
             raise ValidationError({
-                'provider_eth_account': 'Provider ethereum account address must be diffrent than task owner key'
-            })
-
-        if not isinstance(self.task_owner_key, bytes) or not len(self.task_owner_key) == TASK_OWNER_KEY_LENGTH:
-            raise ValidationError({
-                'task_owner_key': f'Task owner key must be a bytes string with {TASK_OWNER_KEY_LENGTH} characters'
-            })
-
-        if not isinstance(self.provider_eth_account, str) or not len(self.provider_eth_account) == ETHEREUM_ADDRESS_LENGTH:
-            raise ValidationError({
-                'provider_eth_account': f'Provider ethereum account address must be a string with {ETHEREUM_ADDRESS_LENGTH} characters'
-            })
-
-        if not isinstance(self.pending_response, PendingResponse):
-            raise ValidationError({
-                'pending_response': 'PaymentInfo should be related with Pending Response'
+                'provider_eth_account': 'Provider Ethereum account address must be different than task owner key.'
             })
 
 
@@ -740,13 +725,6 @@ class DepositAccount(Model):
     )
     created_at = DateTimeField(auto_now_add=True)
 
-    def clean(self) -> None:
-        super().clean()
-        if not isinstance(self.ethereum_address, str) or len(self.ethereum_address) != ETHEREUM_ADDRESS_LENGTH:
-            raise ValidationError({
-                'ethereum_address': f'The length of ethereum_address must be exactly {ETHEREUM_ADDRESS_LENGTH} characters.'
-            })
-
 
 class DepositClaim(Model):
     subtask_id = CharField(max_length=MESSAGE_TASK_ID_MAX_LENGTH, blank=True, null=True)
@@ -782,23 +760,9 @@ class DepositClaim(Model):
                 'payer_deposit_account': 'payer_deposit_account.ethereum_address '
                                          'cannot be the same as payee_ethereum_address'
             })
-        if not isinstance(self.payee_ethereum_address, str) or len(self.payee_ethereum_address) != ETHEREUM_ADDRESS_LENGTH:
-            raise ValidationError({
-                'payee_ethereum_address': f'Address of the Ethereum account belonging to the entity '
-                                          f'(requestor, provider or Concent) must be string and must be exactly '
-                                          f'{ETHEREUM_ADDRESS_LENGTH} characters long.'
-            })
         if self.amount <= 0:
             raise ValidationError({
                 'amount': 'Amount must be greater than 0.'
-            })
-        if (
-            self.tx_hash is not None and
-            not (isinstance(self.tx_hash, str) and len(self.tx_hash) == ETHEREUM_TRANSACTION_HASH_LENGTH)
-        ):
-            raise ValidationError({
-                'tx_hash': f'The hash of the Ethereum transaction must be a string and '
-                           f'{ETHEREUM_TRANSACTION_HASH_LENGTH} characters long'
             })
         if (
             (self.closure_time is not None and self.concent_use_case != ConcentUseCase.FORCED_PAYMENT) or

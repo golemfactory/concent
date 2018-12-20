@@ -37,16 +37,10 @@ from concent_api.settings import GOLEM_MESSAGES_VERSION
 from core.exceptions import UnexpectedResponse
 from protocol_constants import get_protocol_constants
 from protocol_constants import print_protocol_constants
+from sci_testing_common import SCIBaseTest
 
 (PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
 (REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
-
-REQUESTOR_ETHEREUM_PRIVATE_KEY = b'}\xf3\xfc\x16ZUoM{h\xa9\xee\xfe_8\xbd\x02\x95\xc3\x8am\xd7\xff\x91R"\x1d\xb71\xed\x08\t'
-REQUESTOR_ETHEREUM_PUBLIC_KEY = b'F\xdei\xa1\xc0\x10\xc8M\xce\xaf\xc0p\r\x8e\x8f\xb1` \x8d\xf7=\xa6\xb6\xbazL\xbbY\xd6:\xd5\x06\x8dP\xe7#\xb9\xbb\xf8T\xc73\xebH\x7f2\xcav\xb1\xd8w\xde\xdb\x89\xf0\xddD\xa5\xbf\x030\xf3\x96;'
-PROVIDER_ETHEREUM_PRIVATE_KEY = b'\x1dJ\xaf_h\xe0Y#;p\xd7s>\xb4fOH\x19\xbc\x9e\xd1\xf4\t\xdf]!\x9c\xfe\x9f\x888x'
-PROVIDER_ETHEREUM_PUBLIC_KEY = b'\x05\xa7w\xc6\x9b\x89<\xf8Rz\xef\xc4AwN}\xa0\x0e{p\xc8\xa7AF\xfc\xd26\xc1)\xdbgp\x8b]9\xfd\xaa]\xd5H@?F\x14\xdbU\x8b\x93\x8d\xf1\xfc{s3\x8c\xc7\x80-,\x9d\x194u\x8d'
-REQUESTOR_ETHEREUM_PRIVATE_KEY_FOR_EMPTY_ACCOUNT = b'\x17\xc0\xd9\xd5}\x82\xa4\xe16\xa0C\xf5f\xda\xc4+\xf5(Y\x1ch\x8c\xf2B\x15\xb3\xb5D!\x18.\x04'
-REQUESTOR_ETHEREUM_PUBLIC_KEY_FOR_EMPTY_ACCOUNT = b'1\xbf\x84\x18*\xa8\x85\xb0\xfap\xbd!)\xf1/{\x1b}Q\x92\xf0o\xa7\x9b\xa7\x0b\xbd\x88\xff\xe2A\xa5b\x94m2!\xd3#E\x07\xe5\xe3\xb4!\xf3\xb9\xbe#\x8bc\xfbM\xe1\xee\x91\x00\x13\x17\xf6>x\xb8\xfc'
 
 REQUEST_HEADERS = {
     'Content-Type': 'application/octet-stream',
@@ -306,12 +300,17 @@ def parse_arguments() -> Tuple:
         type=str,
         help=f'Second version of golem messages to check.',
     )
+    parser.add_argument(
+        '--full_sci',
+        action='store_true',
+        help='To initiate full SCIBase to test add --full_sci flag')
     args = parser.parse_args()
     return (
         args.cluster_url,
         args.tc_patterns,
         args.concent_1_golem_messages_version,
-        args.concent_2_golem_messages_version
+        args.concent_2_golem_messages_version,
+        args.full_sci
     )
 
 
@@ -336,7 +335,7 @@ def execute_tests(tests_to_execute: list, objects: dict, **kwargs: Any) -> None:
 def run_tests(objects: dict, additional_arguments: Optional[dict]=None) -> int:
     if additional_arguments is None:
         additional_arguments = {}
-    (cluster_url, patterns, concent_1_golem_messages_version, concent_2_golem_messages_version) = parse_arguments()
+    (cluster_url, patterns, concent_1_golem_messages_version, concent_2_golem_messages_version, init_new_users_accounts) = parse_arguments()
     if concent_1_golem_messages_version is not None and concent_2_golem_messages_version is not None:
         if concent_1_golem_messages_version == concent_2_golem_messages_version:
             raise TestAssertionException("Use different versions of golem messages to check supportability")
@@ -345,6 +344,7 @@ def run_tests(objects: dict, additional_arguments: Optional[dict]=None) -> int:
     cluster_consts = get_protocol_constants(cluster_url)
     print_protocol_constants(cluster_consts)
     tests_to_execute = get_tests_list(patterns, list(objects.keys()))
+    objects['sci_base'] = SCIBaseTest(cluster_url, init_new_users_accounts)
     print("Tests to be executed: \n * " + "\n * ".join(tests_to_execute))
     print()
     execute_tests(
@@ -375,16 +375,24 @@ def create_signed_task_to_compute(
     deadline: int,
     timestamp: Optional[Union[datetime.datetime, str]]=None,
     provider_public_key: Optional[bytes]=None,
+    provider_private_key: Optional[bytes]=None,
     requestor_public_key: Optional[bytes]=None,
-    requestor_ethereum_public_key: Optional[bytes]=None,
-    requestor_ethereum_private_key: Optional[bytes]=None,
-    provider_ethereum_public_key: Optional[bytes]=None,
+    requestor_private_key: Optional[bytes]=None,
     want_to_compute_task: Optional[WantToComputeTask] = None,
     price: int=1,
     size: int=1,
     package_hash: str='sha1:57786d92d1a6f7eaaba1c984db5e108c68b03f0d',
     script_src: Optional[str]=None,
 ) -> TaskToCompute:
+    # Temporary workaround for requestor's and provider's keys until all Concent use cases will have payments
+    # When we will have payments then all keys will be taken from SCIBaseTest class
+    if provider_public_key is None and provider_private_key is None:
+        provider_public_key = PROVIDER_PUBLIC_KEY
+        provider_private_key = PROVIDER_PRIVATE_KEY
+    if requestor_public_key is None and requestor_private_key is None:
+        requestor_public_key = REQUESTOR_PUBLIC_KEY
+        requestor_private_key = REQUESTOR_PRIVATE_KEY
+
     with freeze_time(timestamp):
         compute_task_def = ComputeTaskDefFactory(
             deadline=deadline,
@@ -398,23 +406,21 @@ def create_signed_task_to_compute(
         if script_src is not None:
             compute_task_def['extra_data']['script_src'] = script_src
         want_to_compute_task = want_to_compute_task if want_to_compute_task is not None else WantToComputeTaskFactory(
-            provider_public_key=encode_hex(provider_public_key) if provider_public_key is not None else _get_provider_hex_public_key(),
-            provider_ethereum_public_key=encode_hex(provider_ethereum_public_key) if provider_ethereum_public_key is not None else encode_hex(PROVIDER_ETHEREUM_PUBLIC_KEY),
+            provider_public_key=encode_hex(provider_public_key),
+            provider_ethereum_public_key=encode_hex(provider_public_key),
         )
-        want_to_compute_task = sign_message(want_to_compute_task, PROVIDER_PRIVATE_KEY)
+        want_to_compute_task = sign_message(want_to_compute_task, provider_private_key)  # type: ignore
         task_to_compute = TaskToComputeFactory(
-            requestor_public_key=encode_hex(requestor_public_key) if requestor_public_key is not None else _get_requestor_hex_public_key(),
+            requestor_public_key=encode_hex(requestor_public_key),
             compute_task_def=compute_task_def,
             want_to_compute_task=want_to_compute_task,
-            requestor_ethereum_public_key=encode_hex(requestor_ethereum_public_key) if requestor_ethereum_public_key is not None else encode_hex(REQUESTOR_ETHEREUM_PUBLIC_KEY),
+            requestor_ethereum_public_key=encode_hex(requestor_public_key),
             price=price,
             size=size,
             package_hash=package_hash,
         )
-        task_to_compute.generate_ethsig(
-            requestor_ethereum_private_key if requestor_ethereum_private_key is not None else REQUESTOR_ETHEREUM_PRIVATE_KEY
-        )
-        signed_task_to_compute: TaskToCompute = sign_message(task_to_compute, REQUESTOR_PRIVATE_KEY)
+        task_to_compute.generate_ethsig(requestor_private_key)
+        signed_task_to_compute: TaskToCompute = sign_message(task_to_compute, requestor_private_key)  # type: ignore
         return signed_task_to_compute
 
 
@@ -430,6 +436,7 @@ def call_function_in_threads(
 
 
 def create_signed_subtask_results_accepted(
+    requestor_private_key: bytes,
     payment_ts: int,
     report_computed_task: message.tasks.ReportComputedTask,
     timestamp: Optional[str] = None,
@@ -440,12 +447,13 @@ def create_signed_subtask_results_accepted(
                 payment_ts=payment_ts,
                 report_computed_task=report_computed_task,
             ),
-            REQUESTOR_PRIVATE_KEY,
+            requestor_private_key,
         )
         return signed_message
 
 
 def create_signed_report_computed_task(
+    provider_private_key: bytes,
     task_to_compute: message.tasks.TaskToCompute,
     timestamp: Optional[str] = None
 ) -> message.tasks.ReportComputedTask:
@@ -455,6 +463,53 @@ def create_signed_report_computed_task(
                 task_to_compute=task_to_compute,
                 size=REPORT_COMPUTED_TASK_SIZE,
             ),
-            PROVIDER_PRIVATE_KEY,
+            provider_private_key,
         )
         return signed_message
+
+
+def receive_all_left_pending_responses(
+    host: str,
+    endpoint: str,
+    client_private_key: bytes,
+    client_public_key: bytes,
+    concent_public_key: bytes,
+    client_name: str,
+) -> None:
+    url = f"{host}/api/v1/{endpoint}/"
+    status_code = 200
+    received_messages = []
+    while status_code == 200:
+        response = requests.post(f"{url}", headers=REQUEST_HEADERS, data=create_client_auth_message(client_private_key, client_public_key, concent_public_key), verify=False)
+        status_code = response.status_code
+        if status_code == 200:
+            if isinstance(response.content, bytes) and response.headers['Content-Type'] == 'application/octet-stream':
+                received_messages.append(load(response.content, client_private_key, concent_public_key).__class__.__name__)
+
+    if len(received_messages) > 0:
+        print(f'Concent had {len(received_messages)} messages which waited for {client_name} to receive. Name of these messages: {received_messages}')
+    else:
+        print(f'Concent had not any pending messages for {client_name}')
+
+
+def receive_pending_messages_for_requestor_and_provider(
+    cluster_url: str,
+    sci_base: SCIBaseTest,
+    concent_public_key: bytes,
+) -> None:
+    receive_all_left_pending_responses(
+        cluster_url,
+        'receive',
+        sci_base.provider_private_key,
+        sci_base.provider_public_key,
+        concent_public_key,
+        'Provider',
+    )
+    receive_all_left_pending_responses(
+        cluster_url,
+        'receive',
+        sci_base.requestor_private_key,
+        sci_base.requestor_public_key,
+        concent_public_key,
+        'Requestor',
+    )

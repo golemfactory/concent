@@ -5,6 +5,7 @@ omit=
     api_testing_common.py
     manage.py
     protocol_constants.py
+    sci_testing_common.py
     signing_service_integration_test_concent_api.py
     signing_service_integration_test_middleman.py
     signing_service_integration_test_recovery.py

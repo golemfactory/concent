@@ -24,3 +24,7 @@ class ConcentBaseException(Exception):
 
 class ConcentValidationError(ConcentBaseException):
     pass
+
+
+class NonPositivePriceTaskToComputeError(ConcentBaseException):
+    pass

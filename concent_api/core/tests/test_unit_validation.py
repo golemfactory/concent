@@ -15,6 +15,7 @@ from golem_messages.message.tasks import WantToComputeTask
 from golem_messages.utils import encode_hex
 from common.constants import ErrorCode
 from common.exceptions import ConcentValidationError
+from common.exceptions import NonPositivePriceTaskToComputeError
 from common.helpers import sign_message
 from common.testing_helpers import generate_ecc_key_pair
 from common.testing_helpers import generate_priv_and_pub_eth_account_key
@@ -33,6 +34,7 @@ from core.validation import validate_compute_task_def
 from core.validation import validate_ethereum_addresses
 from core.validation import validate_frames
 from core.validation import validate_golem_message_subtask_results_rejected
+from core.validation import validate_positive_task_price
 from core.validation import validate_non_negative_integer_value
 from core.validation import validate_positive_integer_value
 from core.validation import validate_scene_file
@@ -106,6 +108,10 @@ class TestIntegerValidations:
         with pytest.raises(ConcentValidationError) as exception_wrapper:
             validate_non_negative_integer_value(value)
         assert_that(exception_wrapper.value.error_code).is_equal_to(error_code)
+
+    def test_that_validate_positive_price_value_causes_non_positive_price_error(self):  # pylint: disable=no-self-use
+        with pytest.raises(NonPositivePriceTaskToComputeError):
+            validate_positive_task_price(0)
 
 
 class TestValidateAllMessagesIdentical(ConcentIntegrationTestCase):

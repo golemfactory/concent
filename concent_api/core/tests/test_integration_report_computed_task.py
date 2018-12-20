@@ -2795,3 +2795,55 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(2)
+
+    def test_provider_forces_computed_task_with_non_positive_price_concnet_returns_service_refused(self):
+        """
+        Test that Concent responds with ServiceRefused (reason: PriceNotPositive)
+        when received task's price is not positive.
+
+        Expected message exchange:
+        Provider -> Concent:   ForceReportComputedTask
+        Concent  -> Provider:  ServiceRefused(PriceNotPositive)
+        """
+
+        compute_task_def = self._get_deserialized_compute_task_def(
+            deadline="2017-12-01 11:00:00"
+        )
+
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp="2017-12-01 10:00:00",
+            compute_task_def=compute_task_def,
+            price=0
+        )
+
+        report_computed_task = self._get_deserialized_report_computed_task(
+            timestamp="2017-12-01 10:59:00",
+            task_to_compute=task_to_compute,
+        )
+
+        serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
+            timestamp="2017-12-01 10:59:00",
+            force_report_computed_task=self._get_deserialized_force_report_computed_task(
+                timestamp="2017-12-01 10:59:00",
+                report_computed_task=report_computed_task
+            ),
+            provider_private_key=self.PROVIDER_PRIVATE_KEY
+        )
+
+        with freeze_time("2017-12-01 10:59:00"):
+            response_1 = self.send_request(
+                url='core:send',
+                data=serialized_force_report_computed_task,
+            )
+
+        self._test_response(
+            response_1,
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ServiceRefused,
+            fields={
+                'timestamp': parse_iso_date_to_timestamp("2017-12-01 10:59:00"),
+                'reason': message.concents.ServiceRefused.REASON.PriceNotPositive,
+            }
+        )
+        self._assert_stored_message_counter_not_increased()

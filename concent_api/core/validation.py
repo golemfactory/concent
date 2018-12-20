@@ -18,6 +18,7 @@ from golem_sci import BatchTransferEvent
 
 from common.constants import ErrorCode
 from common.exceptions import ConcentValidationError
+from common.exceptions import NonPositivePriceTaskToComputeError
 from common.helpers import get_current_utc_timestamp
 from common.logging import log
 from common.logging import LoggingLevel
@@ -104,7 +105,7 @@ def validate_task_to_compute(task_to_compute: message.TaskToCompute) -> None:
     validate_hex_public_key(task_to_compute.provider_public_key, 'provider_public_key')
     validate_hex_public_key(task_to_compute.requestor_public_key, 'requestor_public_key')
     validate_secure_hash_algorithm(task_to_compute.package_hash)
-    validate_positive_integer_value(task_to_compute.price)
+    validate_positive_task_price(task_to_compute.price)
 
 
 def validate_report_computed_task_time_window(report_computed_task: message.ReportComputedTask) -> None:
@@ -491,3 +492,13 @@ def validate_list_of_transaction_timestamp(
     ):
         log_payment_time_exceeded(logger, acceptances)
         raise BanksterTimestampError
+
+
+def validate_positive_task_price(price: int) -> None:
+    try:
+        validate_positive_integer_value(price)
+    except ConcentValidationError:
+        raise NonPositivePriceTaskToComputeError(
+            "Value cannot be a non-positive value",
+            error_code=ErrorCode.MESSAGE_VALUE_NEGATIVE
+        )

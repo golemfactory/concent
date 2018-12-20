@@ -24,7 +24,7 @@ def get_one_or_none(
         return None if len(instances) == 0 else instances[0]
 
 
-def get_or_create_safely(model: Type[Model], **kwargs: Any) -> Model:
+def get_or_create_with_retry(model: Type[Model], **kwargs: Any) -> Model:
     try:
         model_object = model.objects.get_or_create_full_clean(
             **kwargs,

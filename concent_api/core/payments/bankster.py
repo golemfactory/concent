@@ -26,7 +26,7 @@ from core.models import Client
 from core.models import DepositAccount
 from core.models import DepositClaim
 from core.models import Subtask
-from core.model_helpers import get_or_create_safely
+from core.model_helpers import get_or_create_with_retry
 from core.payments import service
 from core.payments.backends.sci_backend import TransactionType
 from core.utils import adjust_transaction_hash
@@ -75,18 +75,18 @@ def claim_deposit(
     # and also for the provider if there's a non-zero claim against his account.
     # This is done in single database transaction.
     with non_nesting_atomic(using='control'):
-        requestor_client: Client = get_or_create_safely(Client, public_key=requestor_public_key)
+        requestor_client: Client = get_or_create_with_retry(Client, public_key=requestor_public_key)
 
-        requestor_deposit_account: DepositAccount = get_or_create_safely(
+        requestor_deposit_account: DepositAccount = get_or_create_with_retry(
             DepositAccount,
             client=requestor_client,
             ethereum_address=requestor_ethereum_address,
         )
 
         if is_claim_against_provider:
-            provider_client: Client = get_or_create_safely(Client, public_key=provider_public_key)
+            provider_client: Client = get_or_create_with_retry(Client, public_key=provider_public_key)
 
-            provider_deposit_account: DepositAccount = get_or_create_safely(
+            provider_deposit_account: DepositAccount = get_or_create_with_retry(
                 DepositAccount,
                 client=provider_client,
                 ethereum_address=provider_ethereum_address,
@@ -237,7 +237,7 @@ def finalize_payment(deposit_claim: DepositClaim) -> Optional[str]:
     else:
         assert False
 
-    with transaction.atomic(using='control'):
+    with non_nesting_atomic(using='control'):
         # Bankster puts transaction ID in DepositClaim.tx_hash.
         ethereum_transaction_hash = adjust_transaction_hash(ethereum_transaction_hash)
         deposit_claim.tx_hash = ethereum_transaction_hash
@@ -275,9 +275,9 @@ def settle_overdue_acceptances(
 
     validate_list_of_transaction_timestamp(acceptances)
 
-    requestor_client: Client = get_or_create_safely(Client, public_key=requestor_public_key)
+    requestor_client: Client = get_or_create_with_retry(Client, public_key=requestor_public_key)
 
-    requestor_deposit_account: DepositAccount = get_or_create_safely(
+    requestor_deposit_account: DepositAccount = get_or_create_with_retry(
         DepositAccount,
         client=requestor_client,
         ethereum_address=requestor_ethereum_address

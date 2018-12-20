@@ -53,12 +53,12 @@ from core.models import PaymentInfo
 from core.models import PendingResponse
 from core.models import StoredMessage
 from core.models import Subtask
+from core.model_helpers import get_one_or_none
 from core.payments import bankster
 from core.queue_operations import send_blender_verification_request
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
 from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
 from core.subtask_helpers import delete_deposit_claim
-from core.subtask_helpers import get_one_or_none
 from core.subtask_helpers import is_state_transition_possible
 from core.transfer_operations import create_file_transfer_token_for_golem_client
 from core.transfer_operations import create_file_transfer_token_for_verification_use_case

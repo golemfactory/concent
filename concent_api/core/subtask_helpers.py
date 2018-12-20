@@ -1,16 +1,12 @@
 from base64 import b64encode
 from logging import getLogger
-from typing import Any
 from typing import List
-from typing import Optional
 from typing import Union
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Model
 from django.db.models import Q
-from django.db.models import QuerySet
-from django.db.models.base import ModelBase
+
 from golem_messages.message import Message
 from golem_messages.message.concents import ForcePayment
 from golem_messages.message.tasks import SubtaskResultsAccepted
@@ -24,6 +20,7 @@ from core.exceptions import UnsupportedProtocolVersion
 from core.models import DepositClaim
 from core.models import PendingResponse
 from core.models import Subtask
+from core.model_helpers import get_one_or_none
 from core.payments import bankster
 from core.transfer_operations import store_pending_message
 from core.transfer_operations import verify_file_status
@@ -201,7 +198,7 @@ def pre_process_message_related_subtasks(
     for subtask_id in subtask_ids_list:
         with transaction.atomic(using='control'):
             subtask = get_one_or_none(
-                subtask_or_query_set=Subtask.objects.select_for_update(),
+                model_or_query_set=Subtask.objects.select_for_update(),
                 subtask_id=subtask_id,
             )
             if subtask is None:
@@ -291,20 +288,6 @@ def are_subtask_results_accepted_messages_signed_by_the_same_requestor(
         ) for subtask_results_accepted in subtask_results_accepted_list
     )
     return are_all_signed_by_requestor
-
-
-def get_one_or_none(
-    subtask_or_query_set: Union[Model, QuerySet],
-    **conditions: Any
-)-> Optional[Model]:
-    if isinstance(subtask_or_query_set, ModelBase):
-        instances = subtask_or_query_set.objects.filter(**conditions)
-        assert len(instances) <= 1
-        return None if len(instances) == 0 else instances[0]
-    else:
-        instances = subtask_or_query_set.filter(**conditions)
-        assert len(instances) <= 1
-        return None if len(instances) == 0 else instances[0]
 
 
 def finalize_deposit_claim(

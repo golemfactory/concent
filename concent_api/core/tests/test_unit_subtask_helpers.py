@@ -10,7 +10,7 @@ from core.message_handlers import store_message
 from core.message_handlers import store_subtask
 from core.models import Client
 from core.models import Subtask
-from core.subtask_helpers import get_one_or_none
+from core.model_helpers import get_one_or_none
 from core.subtask_helpers import is_state_transition_possible
 from core.tests.utils import ConcentIntegrationTestCase
 from core.utils import hex_to_bytes_convert

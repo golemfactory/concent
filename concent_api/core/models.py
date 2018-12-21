@@ -4,8 +4,10 @@ import base64
 import datetime
 
 from django.conf import settings
-from django.core.validators import ValidationError
+from django.core.validators import MaxLengthValidator
+from django.core.validators import MinLengthValidator
 from django.core.validators import MinValueValidator
+from django.core.validators import ValidationError
 from django.db.models import BinaryField
 from django.db.models import BooleanField
 from django.db.models import CharField
@@ -625,41 +627,34 @@ class PaymentInfo(Model):
         Provider    = 'provider'
         Requestor   = 'requestor'
 
-    payment_ts              = DateTimeField()
-    task_owner_key          = BinaryField()
-    provider_eth_account    = CharField(max_length = ETHEREUM_ADDRESS_LENGTH)
+    payment_ts = DateTimeField()
+    task_owner_key = BinaryField(
+        validators=[
+            MinLengthValidator(TASK_OWNER_KEY_LENGTH),
+            MaxLengthValidator(TASK_OWNER_KEY_LENGTH),
+        ]
+    )
+    provider_eth_account = CharField(
+        max_length=ETHEREUM_ADDRESS_LENGTH,
+        validators=[MinLengthValidator(ETHEREUM_ADDRESS_LENGTH)]
+    )
     amount_paid = DecimalField(
         max_digits=BIG_ENDIAN_INT_MAX_DIGITS,
         decimal_places=0,
         validators=[MinValueValidator(0)]
     )
-    recipient_type          = CharField(max_length = 32, choices = RecipientType.choices())
+    recipient_type = CharField(max_length=32, choices=RecipientType.choices())
     amount_pending = DecimalField(
         max_digits=BIG_ENDIAN_INT_MAX_DIGITS,
         decimal_places=0,
         validators=[MinValueValidator(0)]
     )
-    pending_response        = ForeignKey(PendingResponse, related_name = 'payments')
+    pending_response = ForeignKey(PendingResponse, related_name='payments')
 
     def clean(self) -> None:
         if self.task_owner_key == self.provider_eth_account:
             raise ValidationError({
-                'provider_eth_account': 'Provider ethereum account address must be diffrent than task owner key'
-            })
-
-        if not isinstance(self.task_owner_key, bytes) or not len(self.task_owner_key) == TASK_OWNER_KEY_LENGTH:
-            raise ValidationError({
-                'task_owner_key': f'Task owner key must be a bytes string with {TASK_OWNER_KEY_LENGTH} characters'
-            })
-
-        if not isinstance(self.provider_eth_account, str) or not len(self.provider_eth_account) == ETHEREUM_ADDRESS_LENGTH:
-            raise ValidationError({
-                'provider_eth_account': f'Provider ethereum account address must be a string with {ETHEREUM_ADDRESS_LENGTH} characters'
-            })
-
-        if not isinstance(self.pending_response, PendingResponse):
-            raise ValidationError({
-                'pending_response': 'PaymentInfo should be related with Pending Response'
+                'provider_eth_account': 'Provider Ethereum account address must be different than task owner key.'
             })
 
 
@@ -723,24 +718,30 @@ class DepositAccount(Model):
     objects = DepositAccountManager()
 
     client = ForeignKey(Client)
-    ethereum_address = CharField(max_length=ETHEREUM_ADDRESS_LENGTH, unique=True)
+    ethereum_address = CharField(
+        max_length=ETHEREUM_ADDRESS_LENGTH,
+        unique=True,
+        validators=[MinLengthValidator(ETHEREUM_ADDRESS_LENGTH)]
+    )
     created_at = DateTimeField(auto_now_add=True)
-
-    def clean(self) -> None:
-        super().clean()
-        if not isinstance(self.ethereum_address, str) or len(self.ethereum_address) != ETHEREUM_ADDRESS_LENGTH:
-            raise ValidationError({
-                'ethereum_address': f'The length of ethereum_address must be exactly {ETHEREUM_ADDRESS_LENGTH} characters.'
-            })
 
 
 class DepositClaim(Model):
     subtask_id = CharField(max_length=MESSAGE_TASK_ID_MAX_LENGTH, blank=True, null=True)
     payer_deposit_account = ForeignKey(DepositAccount)
-    payee_ethereum_address = CharField(max_length=ETHEREUM_ADDRESS_LENGTH)
+    payee_ethereum_address = CharField(
+        max_length=ETHEREUM_ADDRESS_LENGTH,
+        validators=[MinLengthValidator(ETHEREUM_ADDRESS_LENGTH)]
+    )
     concent_use_case = IntegerField()
     amount = DecimalField(max_digits=BIG_ENDIAN_INT_MAX_DIGITS, decimal_places=0)
-    tx_hash = CharField(max_length=64, blank=True, null=True, unique=True)
+    tx_hash = CharField(
+        max_length=ETHEREUM_TRANSACTION_HASH_LENGTH,
+        blank=True,
+        null=True,
+        unique=True,
+        validators=[MinLengthValidator(ETHEREUM_TRANSACTION_HASH_LENGTH)]
+    )
     created_at = DateTimeField(auto_now_add=True)
     modified_at = DateTimeField(auto_now=True)
     closure_time = DateTimeField(blank=True, null=True)
@@ -759,23 +760,9 @@ class DepositClaim(Model):
                 'payer_deposit_account': 'payer_deposit_account.ethereum_address '
                                          'cannot be the same as payee_ethereum_address'
             })
-        if not isinstance(self.payee_ethereum_address, str) or len(self.payee_ethereum_address) != ETHEREUM_ADDRESS_LENGTH:
-            raise ValidationError({
-                'payee_ethereum_address': f'Address of the Ethereum account belonging to the entity '
-                                          f'(requestor, provider or Concent) must be string and must be exactly '
-                                          f'{ETHEREUM_ADDRESS_LENGTH} characters long.'
-            })
         if self.amount <= 0:
             raise ValidationError({
                 'amount': 'Amount must be greater than 0.'
-            })
-        if (
-            self.tx_hash is not None and
-            not (isinstance(self.tx_hash, str) and len(self.tx_hash) == ETHEREUM_TRANSACTION_HASH_LENGTH)
-        ):
-            raise ValidationError({
-                'tx_hash': f'The hash of the Ethereum transaction must be a string and '
-                           f'{ETHEREUM_TRANSACTION_HASH_LENGTH} characters long'
             })
         if (
             (self.closure_time is not None and self.concent_use_case != ConcentUseCase.FORCED_PAYMENT) or

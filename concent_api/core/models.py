@@ -4,8 +4,10 @@ import base64
 import datetime
 
 from django.conf import settings
-from django.core.validators import ValidationError
+from django.core.validators import MaxLengthValidator
+from django.core.validators import MinLengthValidator
 from django.core.validators import MinValueValidator
+from django.core.validators import ValidationError
 from django.db.models import BinaryField
 from django.db.models import BooleanField
 from django.db.models import CharField
@@ -625,21 +627,29 @@ class PaymentInfo(Model):
         Provider    = 'provider'
         Requestor   = 'requestor'
 
-    payment_ts              = DateTimeField()
-    task_owner_key          = BinaryField()
-    provider_eth_account    = CharField(max_length = ETHEREUM_ADDRESS_LENGTH)
+    payment_ts = DateTimeField()
+    task_owner_key = BinaryField(
+        validators=[
+            MinLengthValidator(TASK_OWNER_KEY_LENGTH),
+            MaxLengthValidator(TASK_OWNER_KEY_LENGTH),
+        ]
+    )
+    provider_eth_account = CharField(
+        max_length=ETHEREUM_ADDRESS_LENGTH,
+        validators=[MinLengthValidator(ETHEREUM_ADDRESS_LENGTH)]
+    )
     amount_paid = DecimalField(
         max_digits=BIG_ENDIAN_INT_MAX_DIGITS,
         decimal_places=0,
         validators=[MinValueValidator(0)]
     )
-    recipient_type          = CharField(max_length = 32, choices = RecipientType.choices())
+    recipient_type = CharField(max_length=32, choices=RecipientType.choices())
     amount_pending = DecimalField(
         max_digits=BIG_ENDIAN_INT_MAX_DIGITS,
         decimal_places=0,
         validators=[MinValueValidator(0)]
     )
-    pending_response        = ForeignKey(PendingResponse, related_name = 'payments')
+    pending_response = ForeignKey(PendingResponse, related_name='payments')
 
     def clean(self) -> None:
         if self.task_owner_key == self.provider_eth_account:
@@ -723,7 +733,11 @@ class DepositAccount(Model):
     objects = DepositAccountManager()
 
     client = ForeignKey(Client)
-    ethereum_address = CharField(max_length=ETHEREUM_ADDRESS_LENGTH, unique=True)
+    ethereum_address = CharField(
+        max_length=ETHEREUM_ADDRESS_LENGTH,
+        unique=True,
+        validators=[MinLengthValidator(ETHEREUM_ADDRESS_LENGTH)]
+    )
     created_at = DateTimeField(auto_now_add=True)
 
     def clean(self) -> None:
@@ -737,10 +751,19 @@ class DepositAccount(Model):
 class DepositClaim(Model):
     subtask_id = CharField(max_length=MESSAGE_TASK_ID_MAX_LENGTH, blank=True, null=True)
     payer_deposit_account = ForeignKey(DepositAccount)
-    payee_ethereum_address = CharField(max_length=ETHEREUM_ADDRESS_LENGTH)
+    payee_ethereum_address = CharField(
+        max_length=ETHEREUM_ADDRESS_LENGTH,
+        validators=[MinLengthValidator(ETHEREUM_ADDRESS_LENGTH)]
+    )
     concent_use_case = IntegerField()
     amount = DecimalField(max_digits=BIG_ENDIAN_INT_MAX_DIGITS, decimal_places=0)
-    tx_hash = CharField(max_length=64, blank=True, null=True, unique=True)
+    tx_hash = CharField(
+        max_length=ETHEREUM_TRANSACTION_HASH_LENGTH,
+        blank=True,
+        null=True,
+        unique=True,
+        validators=[MinLengthValidator(ETHEREUM_TRANSACTION_HASH_LENGTH)]
+    )
     created_at = DateTimeField(auto_now_add=True)
     modified_at = DateTimeField(auto_now=True)
     closure_time = DateTimeField(blank=True, null=True)

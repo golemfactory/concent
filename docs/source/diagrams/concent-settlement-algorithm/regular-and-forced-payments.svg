@@ -438,16 +438,16 @@
         </text>
     </switch>
     <path fill="url(#c)" stroke="#6c8ebf" stroke-miterlimit="10" d="M529 74h20v20l-10 30V94h-10z" pointer-events="none" transform="matrix(1 0 0 -1 0 198)"/>
-    <switch transform="translate(524.5 131.5)">
-        <foreignObject style="overflow:visible" width="28" height="5" pointer-events="all" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
+    <switch transform="translate(526.5 131.5)">
+        <foreignObject style="overflow:visible" width="25" height="5" pointer-events="all" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility">
             <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;font-size:6px;font-family:Helvetica;color:#000;line-height:1.2;vertical-align:top;white-space:nowrap;text-align:center">
                 <div xmlns="http://www.w3.org/1999/xhtml" style="display:inline-block;text-align:inherit;text-decoration:inherit">
-                    +100 GNT
+                    +10 GNT
                     <br style="font-size:6px"/>
                 </div>
             </div>
         </foreignObject>
-        <text x="14" y="6" font-family="Helvetica" font-size="6" text-anchor="middle">
+        <text x="13" y="6" font-family="Helvetica" font-size="6" text-anchor="middle">
             [Not supported by viewer]
         </text>
     </switch>

@@ -76,7 +76,7 @@ class BlenderSubtaskDefinition(Model):
     """
 
     class OutputFormat(ChoiceEnum):
-        JPG = 'jpg'
+        JPEG = 'jpeg'
         PNG = 'png'
         EXR = 'exr'
 

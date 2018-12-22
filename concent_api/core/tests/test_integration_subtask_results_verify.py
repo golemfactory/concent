@@ -650,7 +650,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 'end_task': 6,
                 'frames': [1],
                 'outfilebasename': 'Heli-cycles(3)',
-                'output_format': BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
+                'output_format': BlenderSubtaskDefinition.OutputFormat.JPEG.name,  # pylint: disable=no-member
                 'path_root': '/home/dariusz/Documents/tasks/resources',
                 'scene_file': '/golem/resources/scene-Helicopter-27-internal.blend',
                 'script_src': '# This template is rendered by',

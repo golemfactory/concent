@@ -13,7 +13,7 @@ from golem_messages import helpers
 
 from core.exceptions import SceneFilePathError
 from core.tests.utils import ConcentIntegrationTestCase
-from core.utils import adjust_transaction_hash
+from core.utils import adjust_transaction_hash, adjust_format_name
 from core.utils import calculate_maximum_download_time
 from core.utils import calculate_subtask_verification_time
 from core.utils import extract_name_from_scene_file_path
@@ -189,3 +189,19 @@ class TestTransactionHashMethods:
         result = adjust_transaction_hash(transaction_hash)
 
         assert_that(expected_result).is_equal_to(result)
+
+
+@pytest.mark.parametrize(('output_format', 'expected'), [
+    ('png', 'PNG'),
+    ('PNG', 'PNG'),
+    ('jpg', 'JPEG'),
+    ('JPG', 'JPEG'),
+    ('jpeg', 'JPEG'),
+    ('JPEG', 'JPEG'),
+    ('exr', 'EXR'),
+    ('EXR', 'EXR'),
+])
+def test_that_method_returns_correct_format_name(output_format, expected):
+    upper_output_format = adjust_format_name(output_format)
+
+    assert_that(upper_output_format).is_equal_to(expected)

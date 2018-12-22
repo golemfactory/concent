@@ -90,7 +90,6 @@ def run_blender(
     verification_deadline: Union[int, float],
     script_file: Optional[str],
 ) -> subprocess.CompletedProcess:
-    output_format = adjust_format_name(output_format)
 
     blender_command = [
         "blender",
@@ -116,16 +115,6 @@ def run_blender(
         stderr=subprocess.PIPE,
         timeout=(verification_deadline - get_current_utc_timestamp()),
     )
-
-
-def adjust_format_name(output_format: str) -> str:
-    """
-    This function enforces the upper case for format name.
-    For desired JPG format, the parameter for blender should be JPEG and the extension of result file is *.jpg.
-    """
-    if output_format.upper() == 'JPG':
-        return 'JPEG'
-    return output_format.upper()
 
 
 def unpack_archive(file_path: str) -> None:

@@ -16,7 +16,6 @@ from core.constants import VerificationResult
 from core.tests.utils import generate_uuid_for_tests
 from verifier.exceptions import VerificationError
 from verifier.exceptions import VerificationMismatch
-from verifier.utils import adjust_format_name
 from verifier.utils import get_files_list_from_archive
 from verifier.utils import are_image_sizes_and_color_channels_equal
 from verifier.utils import compare_all_rendered_images_with_user_results_files
@@ -285,21 +284,6 @@ class TestGenerateFilePathMethods():
         )
 
         assert_that(full_blender_output_file).is_equal_to(expected)
-
-    @pytest.mark.parametrize(('output_format', 'expected'), [
-        ('png', 'PNG'),
-        ('PNG', 'PNG'),
-        ('jpg', 'JPEG'),
-        ('JPG', 'JPEG'),
-        ('jpeg', 'JPEG'),
-        ('JPEG', 'JPEG'),
-        ('exr', 'EXR'),
-        ('EXR', 'EXR'),
-    ])  # pylint: disable=no-self-use
-    def test_that_method_returns_correct_format_name(self, output_format, expected):
-        upper_output_format = adjust_format_name(output_format)
-
-        assert_that(upper_output_format).is_equal_to(expected)
 
 
 class TestValidateDownloadedArchives(object):

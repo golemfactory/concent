@@ -58,7 +58,6 @@ def blender_verification_request(
     assert isinstance(output_format, str)
     assert isinstance(verification_deadline, int)
 
-    output_format = output_format.upper()
     assert output_format in BlenderSubtaskDefinition.OutputFormat.__members__.keys()
 
     # The app creates a new instance of VerificationRequest in the database

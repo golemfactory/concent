@@ -161,3 +161,13 @@ def adjust_transaction_hash(tx_hash: str) -> str:
     if tx_hash.startswith('0x'):
         return tx_hash[2:]
     return tx_hash
+
+
+def adjust_format_name(output_format: str) -> str:
+    """
+    This function enforces the upper case for format name.
+    For desired JPG format, the parameter for blender should be JPEG and the extension of result file is *.jpg.
+    """
+    if output_format.upper() == 'JPG':
+        return 'JPEG'
+    return output_format.upper()

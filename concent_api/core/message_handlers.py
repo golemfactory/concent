@@ -10,7 +10,6 @@ from copy import copy
 from django.conf import settings
 from django.core.mail import mail_admins
 from django.db import IntegrityError
-from django.db import transaction
 from django.http import HttpResponse
 
 from constance import config
@@ -32,7 +31,9 @@ from golem_messages.register import library
 
 from common.constants import ConcentUseCase
 from common.constants import ErrorCode
+
 from common.exceptions import ConcentInSoftShutdownMode
+from common.decorators import non_nesting_atomic
 from common.helpers import deserialize_message
 from common.helpers import get_current_utc_timestamp
 from common.helpers import get_storage_result_file_path
@@ -120,7 +121,7 @@ def handle_send_force_report_computed_task(
         return message.concents.ForceReportComputedTaskResponse(
             reason=message.concents.ForceReportComputedTaskResponse.REASON.SubtaskTimeout
         )
-    with transaction.atomic(using='control'):
+    with non_nesting_atomic(using='control'):
         subtask = store_subtask(
             task_id=task_to_compute.compute_task_def['task_id'],
             subtask_id=task_to_compute.compute_task_def['subtask_id'],
@@ -163,7 +164,7 @@ def handle_send_ack_report_computed_task(client_message: message.tasks.AckReport
     )
 
     if get_current_utc_timestamp() <= task_to_compute.compute_task_def['deadline'] + settings.CONCENT_MESSAGING_TIME:
-        with transaction.atomic(using='control'):
+        with non_nesting_atomic(using='control'):
             try:
                 subtask = Subtask.objects.select_for_update().get(
                     subtask_id=task_to_compute.compute_task_def['subtask_id'],
@@ -288,7 +289,7 @@ def handle_send_reject_report_computed_task(client_message: message.tasks.Reject
                 ),
                 error_code=ErrorCode.MESSAGE_INVALID,
             )
-    with transaction.atomic(using='control'):
+    with non_nesting_atomic(using='control'):
         try:
             subtask = Subtask.objects.select_for_update().get(
                 subtask_id=task_to_compute.compute_task_def['subtask_id'],
@@ -433,7 +434,7 @@ def handle_send_force_get_task_result(
             reason=message.concents.ForceGetTaskResultRejected.REASON.AcceptanceTimeLimitExceeded,
             force_get_task_result=client_message,
         )
-    with transaction.atomic(using='control'):
+    with non_nesting_atomic(using='control'):
         subtask = get_one_or_none(
             Subtask.objects.select_for_update(),
             subtask_id=task_to_compute.compute_task_def['subtask_id'],
@@ -583,7 +584,7 @@ def handle_send_force_subtask_results(
             reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
         )
 
-    with transaction.atomic(using='control'):
+    with non_nesting_atomic(using='control'):
         subtask = get_one_or_none(
             Subtask.objects.select_for_update(),
             subtask_id=task_to_compute.compute_task_def['subtask_id'],
@@ -681,7 +682,7 @@ def handle_send_force_subtask_results_response(
             subtask_results_rejected.report_computed_task,
             task_to_compute.want_to_compute_task
         )
-    with transaction.atomic(using='control'):
+    with non_nesting_atomic(using='control'):
         try:
             subtask = Subtask.objects.select_for_update().get(
                 subtask_id=task_to_compute.compute_task_def['subtask_id'],
@@ -845,7 +846,7 @@ def handle_send_force_payment(
             recipient_type          = message.concents.ForcePaymentCommitted.Actor.Requestor,
         )
 
-        with transaction.atomic(using='control'):
+        with non_nesting_atomic(using='control'):
             store_pending_message(
                 response_type=PendingResponse.ResponseType.ForcePaymentCommitted,
                 client_public_key=requestor_public_key,
@@ -957,7 +958,7 @@ def handle_messages_from_database(client_public_key: bytes) -> Union[message.Mes
     assert client_public_key not in ['', None]
     encoded_client_public_key = b64encode(client_public_key)
 
-    with transaction.atomic(using='control'):
+    with non_nesting_atomic(using='control'):
         pending_response = PendingResponse.objects.select_for_update().filter(
             client__public_key=encoded_client_public_key,
             delivered=False,
@@ -1394,7 +1395,7 @@ def handle_send_subtask_results_verify(
             reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
         )
 
-    with transaction.atomic(using='control'):
+    with non_nesting_atomic(using='control'):
         subtask = get_one_or_none(
             Subtask.objects.select_for_update(),
             subtask_id=compute_task_def['subtask_id'],

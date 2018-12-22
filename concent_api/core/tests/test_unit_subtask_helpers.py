@@ -63,12 +63,12 @@ class TestGetOneOrNoneSubtaskFromDatabase(ConcentIntegrationTestCase):
         self.assertIsNone(subtask)
 
     def test_that_if_only_object_id_given_and_queryset_exist_function_returns_expected_object(self) -> None:
-        subtask = get_one_or_none(Subtask.objects.select_for_update(), subtask_id=self.task_to_compute.compute_task_def['subtask_id'])
+        subtask = get_one_or_none(Subtask.objects.all(), subtask_id=self.task_to_compute.compute_task_def['subtask_id'])
         self.assertEqual(self.subtask, subtask)
 
     def test_that_if_more_conditions_given_and_queryset_exist_function_returns_expected_object(self) -> None:
         subtask = get_one_or_none(
-            Subtask.objects.select_for_update(),
+            Subtask.objects.all(),
             subtask_id=self.task_to_compute.compute_task_def['subtask_id'],
             state=Subtask.SubtaskState.FORCING_REPORT.name,  # pylint: disable=no-member
         )
@@ -76,7 +76,7 @@ class TestGetOneOrNoneSubtaskFromDatabase(ConcentIntegrationTestCase):
 
     def test_that_if_more_conditions_given_and_queryset_does_not_exist_function_returns_none(self) -> None:
         subtask = get_one_or_none(
-            Subtask.objects.select_for_update(),
+            Subtask.objects.all(),
             subtask_id=str(uuid.uuid4()),
             state=Subtask.SubtaskState.FORCING_REPORT.name,  # pylint: disable=no-member
         )

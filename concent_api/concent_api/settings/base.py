@@ -357,3 +357,6 @@ USE_SIGNING_SERVICE = False
 # GNT_DEPOSIT_CONTRACT_ADDRESS = ''
 
 GOLEM_MESSAGES_VERSION = __version__
+
+# Define if exception should be raised when database transactions are nested.
+DETECT_NESTED_TRANSACTIONS = True

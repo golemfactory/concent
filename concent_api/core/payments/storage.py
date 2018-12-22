@@ -7,8 +7,7 @@ from ethereum.transactions import Transaction
 from hexbytes import HexBytes
 from golem_sci.transactionsstorage import TransactionsStorage
 
-from django.db import transaction
-
+from common.decorators import non_nesting_atomic
 from core.models import GlobalTransactionState
 from core.models import PendingEthereumTransaction
 
@@ -21,7 +20,7 @@ class DatabaseTransactionsStorage(TransactionsStorage):
     database using Django models.
     """
 
-    @transaction.atomic(using='control')
+    @non_nesting_atomic(using='control')
     def init(self, network_nonce: int) -> None:
         if not self._is_storage_initialized():
             self._init_with_nonce(network_nonce)
@@ -38,7 +37,7 @@ class DatabaseTransactionsStorage(TransactionsStorage):
             global_transaction_state.save()
             return
 
-    @transaction.atomic(using='control')
+    @non_nesting_atomic(using='control')
     def _is_storage_initialized(self) -> bool:
         """
         Should return False if this is the first time we try to use this
@@ -46,7 +45,7 @@ class DatabaseTransactionsStorage(TransactionsStorage):
         """
         return GlobalTransactionState.objects.filter(pk=0).exists()
 
-    @transaction.atomic(using='control')
+    @non_nesting_atomic(using='control')
     def _init_with_nonce(self, nonce: int) -> None:
         logger.info(
             f'Initiating JsonTransactionStorage with nonce=%d',
@@ -59,7 +58,7 @@ class DatabaseTransactionsStorage(TransactionsStorage):
         global_transaction_state.full_clean()
         global_transaction_state.save()
 
-    @transaction.atomic(using='control')
+    @non_nesting_atomic(using='control')
     def _get_nonce(self) -> int:
         """
         Return current nonce.
@@ -67,7 +66,7 @@ class DatabaseTransactionsStorage(TransactionsStorage):
         global_transaction_state = self._get_locked_global_transaction_state()
         return int(global_transaction_state.nonce)
 
-    @transaction.atomic(using='control')  # pylint: disable=no-self-use
+    @non_nesting_atomic(using='control')  # pylint: disable=no-self-use
     def get_all_tx(self) -> List[Transaction]:
         """
         Returns the list of all transactions.
@@ -87,7 +86,7 @@ class DatabaseTransactionsStorage(TransactionsStorage):
             for ethereum_transaction in PendingEthereumTransaction.objects.all()
         ]
 
-    @transaction.atomic(using='control')
+    @non_nesting_atomic(using='control')
     def set_nonce_sign_and_save_tx(
         self,
         sign_tx: Callable[[Transaction], None],
@@ -125,7 +124,7 @@ class DatabaseTransactionsStorage(TransactionsStorage):
         global_transaction_state.full_clean()
         global_transaction_state.save()
 
-    @transaction.atomic(using='control')
+    @non_nesting_atomic(using='control')
     def remove_tx(self, nonce: int) -> None:
         """
         Remove the transaction after it's been confirmed and doesn't have
@@ -142,7 +141,7 @@ class DatabaseTransactionsStorage(TransactionsStorage):
         except PendingEthereumTransaction.DoesNotExist:
             logger.error(f'Trying to remove PendingEthereumTransaction with nonce {nonce} but it does not exist.')
 
-    @transaction.atomic(using='control')
+    @non_nesting_atomic(using='control')
     def revert_last_tx(self) -> None:
         """
         Remove the last transaction that was added.

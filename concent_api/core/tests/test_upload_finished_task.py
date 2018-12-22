@@ -65,7 +65,7 @@ class UploadFinishedTaskTest(ConcentIntegrationTestCase):
                 parse_datetime_to_timestamp(self.subtask.next_deadline) - 1
             )
         ):
-            with mock.patch('core.tasks.tasks.transaction.on_commit') as transaction_on_commit:
+            with mock.patch('core.tasks.transaction.on_commit') as transaction_on_commit:
                 upload_finished(self.subtask.subtask_id)  # pylint: disable=no-value-for-parameter
 
         self.subtask.refresh_from_db()

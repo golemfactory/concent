@@ -12,6 +12,10 @@ class ConcentFeatureIsNotAvailable(Exception):
     pass
 
 
+class ConcentPendingTransactionError(Exception):
+    pass
+
+
 class ConcentBaseException(Exception):
 
     def __init__(self, error_message: Optional[str], error_code: ErrorCode) -> None:

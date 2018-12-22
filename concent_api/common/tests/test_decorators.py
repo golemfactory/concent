@@ -4,8 +4,9 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.http import HttpResponseNotAllowed
 from django.http import JsonResponse
-from django.test import RequestFactory
 from django.test import override_settings
+from django.test import RequestFactory
+from django.test import TransactionTestCase
 from freezegun import freeze_time
 from golem_messages import dump
 from golem_messages import load
@@ -13,6 +14,8 @@ from golem_messages import message
 
 from common.constants import ErrorCode
 from common.decorators import log_task_errors
+from common.decorators import non_nesting_atomic
+from common.exceptions import ConcentPendingTransactionError
 from common.testing_helpers import generate_ecc_key_pair
 from core.decorators import handle_errors_and_responses
 from core.decorators import require_golem_auth_message
@@ -278,3 +281,28 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
 
         mock_format_exc.assert_called_once()
         mock_error.assert_called_once()
+
+
+@override_settings(
+    DETECT_NESTED_TRANSACTIONS=True,
+)
+class NonNestingAtomicDecoratorTestCase(TransactionTestCase):
+
+    def test_that_non_nesting_atomic_decorator_will_raise_exception_if_transaction_is_nested_using_same_database(self):
+        with non_nesting_atomic(using='control'):
+            with self.assertRaises(ConcentPendingTransactionError):
+                with non_nesting_atomic(using='control'):
+                    pass
+
+    def test_that_non_nesting_atomic_decorator_will_not_raise_exception_if_transaction_is_nested_using_different_databases(self):  # pylint: disable=no-self-use
+        with non_nesting_atomic(using='control'):
+            with non_nesting_atomic(using='storage'):
+                pass
+
+    @override_settings(
+        DETECT_NESTED_TRANSACTIONS=False,
+    )
+    def test_that_non_nesting_atomic_decorator_will_not_raise_exception_if_transaction_is_nested_using_same_databases_and_detect_nested_transaction_setting_is_false(self):  # pylint: disable=no-self-use
+        with non_nesting_atomic(using='control'):
+            with non_nesting_atomic(using='control'):
+                pass

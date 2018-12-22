@@ -2,11 +2,16 @@ from functools import wraps
 from logging import getLogger
 from typing import Any
 from typing import Callable
+from typing import Union
 import traceback
 
 from django.conf import settings
+from django.db import DEFAULT_DB_ALIAS
+from django.db.transaction import Atomic
+from django.db.transaction import get_connection
 
 from common.exceptions import ConcentFeatureIsNotAvailable
+from common.exceptions import ConcentPendingTransactionError
 from common.logging import LoggingLevel
 from common.logging import log
 
@@ -47,3 +52,15 @@ def log_task_errors(task: Callable) -> Callable:
                 logging_level=LoggingLevel.ERROR)
             raise
     return wrapper
+
+
+def non_nesting_atomic(using: Union[str, Callable], savepoint: bool=True) -> Atomic:
+    if (
+        settings.DETECT_NESTED_TRANSACTIONS and
+        get_connection(using).in_atomic_block
+    ):
+        raise ConcentPendingTransactionError
+    if callable(using):
+        return Atomic(DEFAULT_DB_ALIAS, savepoint)(using)
+    else:
+        return Atomic(using, savepoint)

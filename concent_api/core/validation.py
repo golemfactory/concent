@@ -24,6 +24,7 @@ from common.logging import log
 from common.logging import LoggingLevel
 from common.logging import log_payment_time_exceeded
 from common.validations import validate_secure_hash_algorithm
+from conductor.models import BlenderSubtaskDefinition
 from core.constants import VALID_SCENE_FILE_PREFIXES
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.constants import GOLEM_PUBLIC_KEY_HEX_LENGTH
@@ -501,4 +502,12 @@ def validate_positive_task_price(price: int) -> None:
         raise NonPositivePriceTaskToComputeError(
             "Value cannot be a non-positive value",
             error_code=ErrorCode.MESSAGE_VALUE_NEGATIVE
+        )
+
+
+def validate_blender_output_format(output_format: str) -> None:
+    if output_format not in BlenderSubtaskDefinition.OutputFormat.__members__.keys():
+        raise ConcentValidationError(
+            f'Unsupported Blender format!',
+            error_code=ErrorCode.MESSAGE_VALUE_NOT_ALLOWED
         )

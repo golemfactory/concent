@@ -1,4 +1,7 @@
 import binascii
+
+import abc
+from logging import Logger
 import logging.config
 import os
 import smtplib
@@ -122,16 +125,22 @@ class SecretProvider(Action):
         setattr(namespace, self.dest, self.const)
 
 
-class ConsoleNotifier:
+class Notifier(abc.ABC):
 
-    @staticmethod
-    def send(
-        message: str,
-    ) -> None:
-        logger.info(message)
+    @abc.abstractmethod
+    def send(self, message: str) -> None:
+        pass
 
 
-class EmailNotifier:
+class ConsoleNotifier(Notifier):
+    def __init__(self, logger_: Logger = logger) -> None:
+        self.logger = logger_
+
+    def send(self, message: str,) -> None:
+        self.logger.info(message)
+
+
+class EmailNotifier(Notifier):
 
     __slots__ = (
         'from_email_address',

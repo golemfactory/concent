@@ -55,6 +55,7 @@ from signing_service.utils import EmailNotifier
 from signing_service.utils import is_private_key_valid
 from signing_service.utils import is_public_key_valid
 from signing_service.utils import make_secret_provider_factory
+from signing_service.utils import Notifier
 
 logger = logging.getLogger()
 crash_logger = logging.getLogger('crash')
@@ -93,7 +94,7 @@ class SigningService:
         signing_service_private_key: bytes,
         ethereum_private_key: str,
         maximum_reconnect_attempts: int,
-        notifier: Union[ConsoleNotifier, EmailNotifier],
+        notifier: Notifier,
     ) -> None:
         assert isinstance(host, str)
         assert isinstance(port, int)
@@ -592,14 +593,7 @@ def main() -> None:
     )
     crash_logger.handlers[0].client = raven_client  # type: ignore
 
-    if hasattr(args, "from_email_address"):
-        notifier = EmailNotifier(
-            args.from_email_address,
-            args.from_email_password,
-            args.to_email_addresses,
-        )
-    else:
-        notifier = ConsoleNotifier()  # type: ignore
+    notifier = _get_notifier(args)
 
     SigningService(
         args.concent_cluster_host,
@@ -611,6 +605,18 @@ def main() -> None:
         args.max_reconnect_attempts,
         notifier,
     ).run()
+
+
+def _get_notifier(args: argparse.Namespace) -> Notifier:
+    if hasattr(args, "from_email_address"):
+        notifier = EmailNotifier(
+            args.from_email_address,
+            args.from_email_password,
+            args.to_email_addresses,
+        )
+    else:
+        notifier = ConsoleNotifier()  # type: ignore
+    return notifier
 
 
 if __name__ == '__main__':

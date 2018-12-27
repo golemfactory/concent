@@ -1,3 +1,4 @@
+import argparse
 import binascii
 
 import abc
@@ -5,9 +6,7 @@ from logging import Logger
 import logging.config
 import os
 import smtplib
-from argparse import Action
-from argparse import Namespace
-from argparse import ArgumentParser
+
 from base64 import b64decode
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -69,7 +68,7 @@ def make_secret_provider_factory(
     return wrapper
 
 
-class SecretProvider(Action):
+class SecretProvider(argparse.Action):
 
     def __init__(
         self,
@@ -99,8 +98,8 @@ class SecretProvider(Action):
 
     def __call__(  # type: ignore
         self,
-        parser: ArgumentParser,
-        namespace: Namespace,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
         value: str,
         option_string: Optional[str]=None
     ) -> None:
@@ -194,3 +193,14 @@ class EmailNotifier(Notifier):
 
     def __end_smtp_server_connection(self) -> None:
         self.server.quit()  # type: ignore
+
+
+def get_notifier(args: argparse.Namespace) -> Notifier:
+    if hasattr(args, "from_email_address"):
+        return EmailNotifier(
+            args.from_email_address,
+            args.from_email_password,
+            args.to_email_addresses,
+        )
+    else:
+        return ConsoleNotifier()

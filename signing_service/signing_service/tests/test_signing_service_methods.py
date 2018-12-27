@@ -20,10 +20,11 @@ from signing_service.constants import SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS
 from signing_service.constants import SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME
 from signing_service.exceptions import Base64DecodeError
 from signing_service.exceptions import SigningServiceValidationError
-from signing_service.signing_service import _get_notifier
 from signing_service.signing_service import _parse_arguments
 from signing_service.signing_service import SigningService
-from signing_service.utils import ConsoleNotifier, EmailNotifier
+from signing_service.utils import ConsoleNotifier
+from signing_service.utils import EmailNotifier
+from signing_service.utils import get_notifier
 from .utils import SigningServiceIntegrationTestCase
 
 
@@ -306,7 +307,7 @@ class SigningServiceParseArgumentsTestCase(TestCase):
             '--to-email-addresses', *recipients
         ]
         args = _parse_arguments()
-        notifier = _get_notifier(args)
+        notifier = get_notifier(args)
         self.assertIsInstance(notifier, EmailNotifier)
 
     def test_that_console_notifier_is_created_by_default(self):
@@ -316,7 +317,7 @@ class SigningServiceParseArgumentsTestCase(TestCase):
             '--signing-service-private-key', self.signing_service_private_key_encoded,
         ]
         args = _parse_arguments()
-        notifier = _get_notifier(args)
+        notifier = get_notifier(args)
         self.assertIsInstance(notifier, ConsoleNotifier)
 
 

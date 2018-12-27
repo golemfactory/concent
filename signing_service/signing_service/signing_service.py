@@ -50,8 +50,7 @@ from signing_service.constants import WARNING_DAILY_THRESHOLD
 from signing_service.exceptions import SigningServiceMaximumReconnectionAttemptsExceeded
 from signing_service.exceptions import SigningServiceUnexpectedMessageError
 from signing_service.exceptions import SigningServiceValidationError
-from signing_service.utils import ConsoleNotifier
-from signing_service.utils import EmailNotifier
+from signing_service.utils import get_notifier
 from signing_service.utils import is_private_key_valid
 from signing_service.utils import is_public_key_valid
 from signing_service.utils import make_secret_provider_factory
@@ -593,7 +592,7 @@ def main() -> None:
     )
     crash_logger.handlers[0].client = raven_client  # type: ignore
 
-    notifier = _get_notifier(args)
+    notifier = get_notifier(args)
 
     SigningService(
         args.concent_cluster_host,
@@ -605,18 +604,6 @@ def main() -> None:
         args.max_reconnect_attempts,
         notifier,
     ).run()
-
-
-def _get_notifier(args: argparse.Namespace) -> Notifier:
-    if hasattr(args, "from_email_address"):
-        notifier = EmailNotifier(
-            args.from_email_address,
-            args.from_email_password,
-            args.to_email_addresses,
-        )
-    else:
-        notifier = ConsoleNotifier()  # type: ignore
-    return notifier
 
 
 if __name__ == '__main__':

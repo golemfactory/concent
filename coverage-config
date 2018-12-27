@@ -25,6 +25,7 @@ omit=
     */mocks/*
     */tests*
     */settings/*
+    */main.py
 
 [html]
 directory = ../htmlcov

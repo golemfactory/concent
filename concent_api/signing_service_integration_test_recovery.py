@@ -45,7 +45,7 @@ def run_signing_service() -> subprocess.Popen:
         [
             'python',
             '-m',
-            'signing_service.signing_service',
+            'signing_service.main',
             '--concent-cluster-host',
             '127.0.0.1',
             '--concent-public-key',

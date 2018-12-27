@@ -1,7 +1,6 @@
 import argparse
 import datetime
 import logging.config
-import os
 import signal
 import socket
 from contextlib import closing
@@ -17,7 +16,6 @@ from golem_messages.cryptography import ecdsa_sign
 from golem_messages.cryptography import privtopub
 from golem_messages.exceptions import MessageError
 from mypy.types import Union
-from raven import Client
 
 from middleman_protocol.concent_golem_messages.message import SignedTransaction
 from middleman_protocol.concent_golem_messages.message import TransactionRejected
@@ -50,7 +48,6 @@ from signing_service.constants import WARNING_DAILY_THRESHOLD
 from signing_service.exceptions import SigningServiceMaximumReconnectionAttemptsExceeded
 from signing_service.exceptions import SigningServiceUnexpectedMessageError
 from signing_service.exceptions import SigningServiceValidationError
-from signing_service.utils import get_notifier
 from signing_service.utils import is_private_key_valid
 from signing_service.utils import is_public_key_valid
 from signing_service.utils import make_secret_provider_factory
@@ -575,36 +572,3 @@ def _parse_arguments() -> argparse.Namespace:
     )
 
     return parser.parse_args()
-
-
-def main() -> None:
-    logging.config.fileConfig(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'logging.ini'))
-
-    # Parse required arguments.
-    args = _parse_arguments()
-
-    raven_client = Client(
-        dsn=args.sentry_dsn,
-        environment=args.sentry_environment,
-        tags={
-            'component': 'signing-service',
-        },
-    )
-    crash_logger.handlers[0].client = raven_client  # type: ignore
-
-    notifier = get_notifier(args)
-
-    SigningService(
-        args.concent_cluster_host,
-        args.concent_cluster_port,
-        args.initial_reconnect_delay,
-        args.concent_public_key,
-        args.signing_service_private_key,
-        args.ethereum_private_key,
-        args.max_reconnect_attempts,
-        notifier,
-    ).run()
-
-
-if __name__ == '__main__':
-    main()

@@ -301,8 +301,8 @@ class NonNestingAtomicDecoratorTestCase(TransactionTestCase):
 
     @override_settings(
         DETECT_NESTED_TRANSACTIONS=False,
-    )
-    def test_that_non_nesting_atomic_decorator_will_not_raise_exception_if_transaction_is_nested_using_same_databases_and_detect_nested_transaction_setting_is_false(self):  # pylint: disable=no-self-use
+    )  # pylint: disable=no-self-use
+    def test_that_non_nesting_atomic_decorator_will_not_raise_exception_if_transaction_is_nested_using_same_databases_and_detect_nested_transaction_setting_is_false(self):
         with non_nesting_atomic(using='control'):
             with non_nesting_atomic(using='control'):
                 pass

@@ -1,7 +1,6 @@
 import argparse
 import datetime
 import logging.config
-import os
 import signal
 import socket
 from contextlib import closing
@@ -17,7 +16,6 @@ from golem_messages.cryptography import ecdsa_sign
 from golem_messages.cryptography import privtopub
 from golem_messages.exceptions import MessageError
 from mypy.types import Union
-from raven import Client
 
 from middleman_protocol.concent_golem_messages.message import SignedTransaction
 from middleman_protocol.concent_golem_messages.message import TransactionRejected
@@ -50,11 +48,10 @@ from signing_service.constants import WARNING_DAILY_THRESHOLD
 from signing_service.exceptions import SigningServiceMaximumReconnectionAttemptsExceeded
 from signing_service.exceptions import SigningServiceUnexpectedMessageError
 from signing_service.exceptions import SigningServiceValidationError
-from signing_service.utils import ConsoleNotifier
-from signing_service.utils import EmailNotifier
 from signing_service.utils import is_private_key_valid
 from signing_service.utils import is_public_key_valid
 from signing_service.utils import make_secret_provider_factory
+from signing_service.utils import Notifier
 
 logger = logging.getLogger()
 crash_logger = logging.getLogger('crash')
@@ -93,7 +90,7 @@ class SigningService:
         signing_service_private_key: bytes,
         ethereum_private_key: str,
         maximum_reconnect_attempts: int,
-        notifier: Union[ConsoleNotifier, EmailNotifier],
+        notifier: Notifier,
     ) -> None:
         assert isinstance(host, str)
         assert isinstance(port, int)
@@ -575,43 +572,3 @@ def _parse_arguments() -> argparse.Namespace:
     )
 
     return parser.parse_args()
-
-
-def main() -> None:
-    logging.config.fileConfig(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'logging.ini'))
-
-    # Parse required arguments.
-    args = _parse_arguments()
-
-    raven_client = Client(
-        dsn=args.sentry_dsn,
-        environment=args.sentry_environment,
-        tags={
-            'component': 'signing-service',
-        },
-    )
-    crash_logger.handlers[0].client = raven_client  # type: ignore
-
-    if hasattr(args, "from_email_address"):
-        notifier = EmailNotifier(
-            args.from_email_address,
-            args.from_email_password,
-            args.to_email_addresses,
-        )
-    else:
-        notifier = ConsoleNotifier()  # type: ignore
-
-    SigningService(
-        args.concent_cluster_host,
-        args.concent_cluster_port,
-        args.initial_reconnect_delay,
-        args.concent_public_key,
-        args.signing_service_private_key,
-        args.ethereum_private_key,
-        args.max_reconnect_attempts,
-        notifier,
-    ).run()
-
-
-if __name__ == '__main__':
-    main()

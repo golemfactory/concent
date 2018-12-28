@@ -23,6 +23,8 @@ from signing_service.exceptions import SigningServiceValidationError
 from signing_service.signing_service import _parse_arguments
 from signing_service.signing_service import SigningService
 from signing_service.utils import ConsoleNotifier
+from signing_service.utils import EmailNotifier
+from signing_service.utils import get_notifier
 from .utils import SigningServiceIntegrationTestCase
 
 
@@ -288,6 +290,35 @@ class SigningServiceParseArgumentsTestCase(TestCase):
             f'Unable to decode "{self.concent_public_key_encoded[:-1]}"',
             str(error.exception)
         )
+
+    def test_that_email_notifier_is_created_when_proper_arguments_are_provided_via_command_line(self):
+        from_email_address = 'your_signing_service@gmail.com'
+        password = '1234secret'
+        recipients = [
+            'golem@golem.network', 'backdoor@pirates.com',
+        ]
+        sys.argv += [
+            '--ethereum-private-key', self.ethereum_private_key_encoded,
+            '--concent-public-key', self.concent_public_key_encoded,
+            '--signing-service-private-key', self.signing_service_private_key_encoded,
+            'smtp-notifier',
+            '--from-email-address', from_email_address,
+            '--from-email-password', password,
+            '--to-email-addresses', *recipients
+        ]
+        args = _parse_arguments()
+        notifier = get_notifier(args)
+        self.assertIsInstance(notifier, EmailNotifier)
+
+    def test_that_console_notifier_is_created_by_default(self):
+        sys.argv += [
+            '--ethereum-private-key', self.ethereum_private_key_encoded,
+            '--concent-public-key', self.concent_public_key_encoded,
+            '--signing-service-private-key', self.signing_service_private_key_encoded,
+        ]
+        args = _parse_arguments()
+        notifier = get_notifier(args)
+        self.assertIsInstance(notifier, ConsoleNotifier)
 
 
 class SigningServiceValidateArgumentsTestCase(TestCase):

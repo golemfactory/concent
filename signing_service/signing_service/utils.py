@@ -1,10 +1,12 @@
+import argparse
 import binascii
+
+import abc
+from logging import Logger
 import logging.config
 import os
 import smtplib
-from argparse import Action
-from argparse import Namespace
-from argparse import ArgumentParser
+
 from base64 import b64decode
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -66,7 +68,7 @@ def make_secret_provider_factory(
     return wrapper
 
 
-class SecretProvider(Action):
+class SecretProvider(argparse.Action):
 
     def __init__(
         self,
@@ -96,8 +98,8 @@ class SecretProvider(Action):
 
     def __call__(  # type: ignore
         self,
-        parser: ArgumentParser,
-        namespace: Namespace,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
         value: str,
         option_string: Optional[str]=None
     ) -> None:
@@ -122,16 +124,22 @@ class SecretProvider(Action):
         setattr(namespace, self.dest, self.const)
 
 
-class ConsoleNotifier:
+class Notifier(abc.ABC):
 
-    @staticmethod
-    def send(
-        message: str,
-    ) -> None:
-        logger.info(message)
+    @abc.abstractmethod
+    def send(self, message: str) -> None:
+        pass
 
 
-class EmailNotifier:
+class ConsoleNotifier(Notifier):
+    def __init__(self, logger_: Logger = logger) -> None:
+        self.logger = logger_
+
+    def send(self, message: str,) -> None:
+        self.logger.info(message)
+
+
+class EmailNotifier(Notifier):
 
     __slots__ = (
         'from_email_address',
@@ -185,3 +193,14 @@ class EmailNotifier:
 
     def __end_smtp_server_connection(self) -> None:
         self.server.quit()  # type: ignore
+
+
+def get_notifier(args: argparse.Namespace) -> Notifier:
+    if hasattr(args, "from_email_address"):
+        return EmailNotifier(
+            args.from_email_address,
+            args.from_email_password,
+            args.to_email_addresses,
+        )
+    else:
+        return ConsoleNotifier()

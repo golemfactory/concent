@@ -5,8 +5,6 @@ from common.helpers import get_storage_result_file_path
 from common.helpers import get_storage_source_file_path
 from core.utils import adjust_format_name
 from core.utils import extract_name_from_scene_file_path
-from core.validation import validate_blender_output_format
-from core.validation import validate_frames
 
 
 def send_blender_verification_request(compute_task_def: ComputeTaskDef, verification_deadline: int) -> None:
@@ -29,8 +27,6 @@ def send_blender_verification_request(compute_task_def: ComputeTaskDef, verifica
     # Function below cuts off beginning prefix and pass to `blender_verification_request` scene_file without it.
     scene_file = extract_name_from_scene_file_path(scene_file_path)
 
-    validate_frames(frames)
-    validate_blender_output_format(output_format)
     assert scene_file is not None
     blender_verification_request.delay(
         subtask_id=subtask_id,

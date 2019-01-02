@@ -22,7 +22,6 @@ from conductor.service import store_frames
 from conductor.service import store_verification_request_and_blender_subtask_definition
 from conductor.service import update_upload_report
 from core import tasks
-from core.validation import validate_frames
 from verifier.tasks import blender_verification_order
 
 logger = logging.getLogger(__name__)
@@ -54,11 +53,9 @@ def blender_verification_request(
         f'With blender_crop_script: {bool(blender_crop_script)}',
         subtask_id=subtask_id
     )
-    validate_frames(frames)
     assert isinstance(output_format, str)
     assert isinstance(verification_deadline, int)
 
-    output_format = output_format.upper()
     assert output_format in BlenderSubtaskDefinition.OutputFormat.__members__.keys()
 
     # The app creates a new instance of VerificationRequest in the database

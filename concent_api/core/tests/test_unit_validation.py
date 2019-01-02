@@ -29,7 +29,7 @@ from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtas
 from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import generate_uuid_for_tests
-from core.validation import validate_all_messages_identical
+from core.validation import validate_all_messages_identical, validate_blender_output_format
 from core.validation import validate_compute_task_def
 from core.validation import validate_ethereum_addresses
 from core.validation import validate_frames
@@ -421,3 +421,25 @@ class TestValidateTaskToCompute(object):
         with pytest.raises(ConcentValidationError) as exception_wrapper:
             validate_task_to_compute(wrong_message)
         assert_that(exception_wrapper.value.error_code).is_equal_to(ErrorCode.MESSAGE_INVALID)
+
+
+class TestValidateOutputFormat:
+
+    @pytest.mark.parametrize(
+        'output_format', [
+            'JPEG',
+            'PNG',
+            'EXR'
+        ]
+    )  # pylint: disable=no-self-use
+    def test_that_valid_output_formats_dont_raise_any_exception(self, output_format):
+        try:
+            validate_blender_output_format(output_format)
+        except Exception as exception:  # pylint: disable=broad-except
+            assert False, f"Unexpected exception has been raised: {str(exception)}"
+
+    def test_that_unsupported_format_raises_concent_validation_error(self):  # pylint: disable=no-self-use
+        unsupported_format = 'BMP'
+        with pytest.raises(ConcentValidationError) as exception_wrapper:
+            validate_blender_output_format(unsupported_format)
+        assert_that(exception_wrapper.value.error_code).is_equal_to(ErrorCode.MESSAGE_VALUE_NOT_ALLOWED)

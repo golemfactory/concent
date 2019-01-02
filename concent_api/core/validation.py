@@ -24,6 +24,7 @@ from common.logging import log
 from common.logging import LoggingLevel
 from common.logging import log_payment_time_exceeded
 from common.validations import validate_secure_hash_algorithm
+from conductor.models import BlenderSubtaskDefinition
 from core.constants import VALID_SCENE_FILE_PREFIXES
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.constants import GOLEM_PUBLIC_KEY_HEX_LENGTH
@@ -34,8 +35,8 @@ from core.exceptions import BanksterTimestampError
 from core.exceptions import FrameNumberValidationError
 from core.exceptions import Http400
 from core.exceptions import GolemMessageValidationError
+from core.utils import adjust_format_name
 from core.utils import hex_to_bytes_convert
-
 
 logger = getLogger(__name__)
 
@@ -353,8 +354,6 @@ def validate_compute_task_def(compute_task_def: message.tasks.ComputeTaskDef) ->
                 ErrorCode.MESSAGE_INVALID
             )
 
-    validate_frames(extra_data["frames"])
-
     for string_field in string_fields:
         if not isinstance(extra_data[string_field], str):
             raise ConcentValidationError(
@@ -362,6 +361,8 @@ def validate_compute_task_def(compute_task_def: message.tasks.ComputeTaskDef) ->
                 ErrorCode.MESSAGE_VALUE_NOT_STRING
             )
 
+    validate_frames(extra_data["frames"])
+    validate_blender_output_format(extra_data["output_format"])
     validate_scene_file(extra_data['scene_file'])
 
 
@@ -501,4 +502,12 @@ def validate_positive_task_price(price: int) -> None:
         raise NonPositivePriceTaskToComputeError(
             "Value cannot be a non-positive value",
             error_code=ErrorCode.MESSAGE_VALUE_NEGATIVE
+        )
+
+
+def validate_blender_output_format(output_format: str) -> None:
+    if adjust_format_name(output_format) not in BlenderSubtaskDefinition.OutputFormat.__members__.keys():
+        raise ConcentValidationError(
+            f'Unsupported Blender format!',
+            error_code=ErrorCode.MESSAGE_VALUE_NOT_ALLOWED
         )

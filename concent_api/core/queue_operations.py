@@ -3,6 +3,7 @@ from golem_messages.message.tasks import ComputeTaskDef
 from conductor.tasks import blender_verification_request
 from common.helpers import get_storage_result_file_path
 from common.helpers import get_storage_source_file_path
+from core.utils import adjust_format_name
 from core.utils import extract_name_from_scene_file_path
 
 
@@ -17,7 +18,7 @@ def send_blender_verification_request(compute_task_def: ComputeTaskDef, verifica
         subtask_id=subtask_id,
         task_id=task_id,
     )
-    output_format = compute_task_def['extra_data']['output_format']
+    output_format = adjust_format_name(compute_task_def['extra_data']['output_format'])
     scene_file_path = compute_task_def['extra_data']['scene_file']
     frames = compute_task_def['extra_data']['frames']
     blender_crop_script = compute_task_def['extra_data'].get('script_src')

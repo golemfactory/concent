@@ -8,13 +8,13 @@ from golem_messages import load
 from golem_messages import message
 
 from common.constants import ConcentUseCase
+from common.constants import ErrorCode
 from common.helpers import get_current_utc_timestamp
 from common.helpers import get_storage_result_file_path
 from common.helpers import get_storage_source_file_path
 from common.helpers import parse_datetime_to_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.testing_helpers import generate_ecc_key_pair
-from conductor.models import BlenderSubtaskDefinition
 from core.exceptions import TooSmallProviderDeposit
 from core.message_handlers import store_subtask
 from core.models import PendingResponse
@@ -341,7 +341,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
 
         # when
         with freeze_time(subtask_results_verify_time_str):
-            response =self.send_request(
+            response = self.send_request(
                 url='core:send',
                 data=serialized_subtask_results_verify,
                 HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
@@ -357,6 +357,33 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             fields={
                 'reason': message.concents.ServiceRefused.REASON.InvalidRequest,
             }
+        )
+        self._assert_stored_message_counter_not_increased()
+
+    def test_that_concent_responds_with_http400_when_unsupported_blender_output_format_is_given(self):
+        """
+        Provider -> Concent: SubtaskResultsVerify
+        Concent -> Provider: Http400
+        """
+        # given
+        self.report_computed_task = self._create_report_computed_task(blender_output_format='bmp')
+        (serialized_subtask_results_verify,
+         subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify(
+        )
+
+        # when
+        with freeze_time(subtask_results_verify_time_str):
+            response = self.send_request(
+                url='core:send',
+                data=serialized_subtask_results_verify,
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
+            )
+
+        # then
+        self._test_400_response(
+            response,
+            error_code=ErrorCode.MESSAGE_VALUE_NOT_ALLOWED
         )
         self._assert_stored_message_counter_not_increased()
 
@@ -394,7 +421,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
             subtask_id=self.task_to_compute.subtask_id,
             source_package_path=self.source_package_path,
             result_package_path=self.result_package_path,
-            output_format=self.report_computed_task.task_to_compute.compute_task_def['extra_data']['output_format'],
+            output_format='JPEG',
             scene_file=extract_name_from_scene_file_path(
                 self.report_computed_task.task_to_compute.compute_task_def['extra_data']['scene_file']
             ),
@@ -642,7 +669,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         )
         return serialized_subtask_results_verify, subtask_results_verify_time_str
 
-    def _create_report_computed_task(self):
+    def _create_report_computed_task(self, blender_output_format='jpeg'):
         time_str = "2018-04-01 10:00:00"
         self.compute_task_def = self._get_deserialized_compute_task_def(
             deadline=add_time_offset_to_date(time_str, 3611),
@@ -650,7 +677,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 'end_task': 6,
                 'frames': [1],
                 'outfilebasename': 'Heli-cycles(3)',
-                'output_format': BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
+                'output_format': blender_output_format,  # pylint: disable=no-member
                 'path_root': '/home/dariusz/Documents/tasks/resources',
                 'scene_file': '/golem/resources/scene-Helicopter-27-internal.blend',
                 'script_src': '# This template is rendered by',

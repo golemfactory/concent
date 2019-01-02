@@ -47,7 +47,7 @@ class ConductorUploadAcknowledgedTaskTestCase(ConcentIntegrationTestCase):
 
         blender_subtask_definition = BlenderSubtaskDefinition(
             verification_request=self.verification_request,
-            output_format=BlenderSubtaskDefinition.OutputFormat.JPG.name,  # pylint: disable=no-member
+            output_format=BlenderSubtaskDefinition.OutputFormat.JPEG.name,  # pylint: disable=no-member
             scene_file=self.compute_task_def['extra_data']['scene_file'],
             blender_crop_script=self.compute_task_def['extra_data']['script_src'],
         )

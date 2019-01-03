@@ -1,5 +1,7 @@
 import enum
 from typing import Any
+from typing import List
+from typing import Union
 
 from golem_messages.message.base import Message
 from golem_messages.register import library
@@ -21,9 +23,19 @@ class NonceAbstractMessage(Message):
         'nonce',
     ] + Message.__slots__
 
+    def slots(self) -> List[List[Union[str, bytes, int]]]:
+        # cbor library has issuses with big integers serialization
+        # before serialization every big integer need to be convert into string
+        slots = super().slots()
+        if ['nonce', self.nonce] in slots:  # pylint: disable=no-member
+            slots[slots.index(['nonce', self.nonce])][1] = str(self.nonce)  # pylint: disable=no-member
+        return slots
+
     def deserialize_slot(self, key: str, value: Any) -> Any:
         value = super().deserialize_slot(key, value)
         if key == 'nonce':
+            # Reverse conversion from string to integer
+            value = int(value)
             validate_integer(
                 field_name=key,
                 value=value,
@@ -49,6 +61,17 @@ class TransactionAbstractMessage(NonceAbstractMessage):
         'data',
     ] + NonceAbstractMessage.__slots__
 
+    SLOTS_TO_CONVERT = ['gasprice', 'startgas', 'value']
+
+    def slots(self) -> List[List[Union[str, bytes, int]]]:
+        # cbor library has issuses with big integers serialization
+        # before serialization every big integer need to be convert into string
+        slots = super().slots()
+        for slot in TransactionAbstractMessage.SLOTS_TO_CONVERT:
+            slot_variable = getattr(self, slot)
+            slots[slots.index([slot, slot_variable])][1] = str(slot_variable)
+        return slots
+
     def deserialize_slot(self, key: str, value: Any) -> Any:
         value = super().deserialize_slot(key, value)
         if key == 'to':
@@ -62,7 +85,9 @@ class TransactionAbstractMessage(NonceAbstractMessage):
                 field_name=key,
                 value=value,
             )
-        if key in ('gasprice', 'startgas', 'value'):
+        if key in TransactionAbstractMessage.SLOTS_TO_CONVERT:
+            # Reverse conversion from string to integer
+            value = int(value)
             validate_integer(
                 field_name=key,
                 value=value
@@ -114,9 +139,22 @@ class SignedTransaction(TransactionAbstractMessage):
         's',
     ] + TransactionAbstractMessage.__slots__
 
+    SLOTS_TO_CONVERT = ['v', 'r', 's']
+
+    def slots(self) -> List[List[Union[str, bytes, int]]]:
+        # cbor library has issuses with big integers serialization
+        # before serialization every big integer need to be convert into string
+        slots = super().slots()
+        for slot in SignedTransaction.SLOTS_TO_CONVERT:
+            slot_variable = getattr(self, slot)
+            slots[slots.index([slot, slot_variable])][1] = str(slot_variable)
+        return slots
+
     def deserialize_slot(self, key: str, value: Any) -> Any:
         value = super().deserialize_slot(key, value)
-        if key in ('v', 'r', 's'):
+        if key in SignedTransaction.SLOTS_TO_CONVERT:
+            # Reverse conversion from string to integer
+            value = int(value)
             validate_integer(
                 field_name=key,
                 value=value,
@@ -133,6 +171,7 @@ class SignedTransaction(TransactionAbstractMessage):
                 value=value,
                 maximum_allowed_length=78,
             )
+
         return value
 
 

@@ -226,14 +226,12 @@ class TestAreEthereumAddressesAndKeysUnique(TestCase):
         subtask_2_signed_by=REQUESTOR_PRIVATE_KEY,
     ) -> list:
         subtask_results_accepted_1 = SubtaskResultsAcceptedFactory(
-            payment_ts="2018-02-05 12:00:16",
             report_computed_task=ReportComputedTaskFactory(
                 task_to_compute=task_to_compute_1
             )
         )
         sign_message(subtask_results_accepted_1, subtask_1_signed_by)
         subtask_results_accepted_2 = SubtaskResultsAcceptedFactory(
-            payment_ts="2018-02-05 12:00:16",
             report_computed_task=ReportComputedTaskFactory(
                 task_to_compute=task_to_compute_2
             )

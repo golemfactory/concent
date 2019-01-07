@@ -656,7 +656,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp="2018-02-05 10:00:43",
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 11:00:00",
-                payment_ts="2018-02-05 11:00:01",
+                payment_ts="2018-02-05 10:00:01",
                 report_computed_task=report_computed_task
             )
         )
@@ -711,7 +711,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             fields          = {
                 'timestamp': parse_iso_date_to_timestamp("2018-02-05 11:00:02"),
                 'subtask_results_accepted.timestamp': parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
-                'subtask_results_accepted.payment_ts': parse_iso_date_to_timestamp("2018-02-05 11:00:01"),
+                'subtask_results_accepted.payment_ts': parse_iso_date_to_timestamp("2018-02-05 10:00:01"),
                 'subtask_results_accepted.task_to_compute.timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:00"),
                 'subtask_results_accepted.task_to_compute.compute_task_def':    task_to_compute.compute_task_def,
             }
@@ -911,7 +911,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp="2018-02-05 11:00:00",
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 11:00:00",
-                payment_ts="2018-02-05 11:00:02",
+                payment_ts="2018-02-05 10:00:02",
                 report_computed_task=self._get_deserialized_report_computed_task(
                     timestamp="2018-02-05 10:00:05",
                     task_to_compute=self._get_deserialized_task_to_compute(
@@ -1135,7 +1135,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp="2018-02-05 12:00:00",
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 12:00:00",
-                payment_ts="2018-02-05 12:00:01",
+                payment_ts="2018-02-05 11:00:01",
                 report_computed_task=report_computed_task
             ),
         )
@@ -1168,7 +1168,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp="2018-02-05 10:00:00",
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 10:00:00",
-                payment_ts="2018-02-05 10:00:01",
+                payment_ts="2018-02-05 9:00:01",
                 report_computed_task=report_computed_task
             ),
         )
@@ -1237,40 +1237,6 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(2)
-
-    def test_requestor_or_provider_send_message_with_wrong_nested_message_type_concent_should_return_http_400(self):
-        """
-        Test if Provider want to submit ForceSubtaskResults with AckReportComputedTask with nested
-        CannotComputeTask insted of TaskToCompute
-
-        Expected message exchange:
-        Provider    -> Concent:     ForceSubtaskResults
-        Concent     -> Provider:    HTTP 400
-        """
-
-        # This has to be done manually, otherwise will fail when signing ReportComputedTask
-        with freeze_time("2018-02-05 10:00:15"):
-            serialized_force_subtask_results = self._get_serialized_force_subtask_results(
-                timestamp="2018-02-05 10:00:00",
-                ack_report_computed_task = message.tasks.AckReportComputedTask(
-                    report_computed_task=(
-                        message.ReportComputedTask(
-                            task_to_compute=message.CannotComputeTask()
-                        )
-                    )
-                )
-            )
-
-        with freeze_time("2018-02-05 10:00:30"):
-            response_1 =self.send_request(
-                url='core:send',
-                data                                = serialized_force_subtask_results,
-            )
-
-        self._test_400_response(response_1)
-        self._assert_stored_message_counter_not_increased()
-
-        self._assert_client_count_is_equal(0)
 
     def test_requestor_doesnt_provide_response_should_end_with_subtask_results_settled_received_from_concent(self):
         """
@@ -1650,7 +1616,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             task_to_compute=task_to_compute,
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 11:00:00",
-                payment_ts="2018-02-05 11:00:01",
+                payment_ts="2018-02-05 10:00:01",
                 report_computed_task=report_computed_task,
             ),
         )
@@ -1664,7 +1630,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp="2018-02-05 11:00:01",
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 11:00:01",
-                payment_ts="2018-02-05 11:00:02",
+                payment_ts="2018-02-05 10:00:02",
                 report_computed_task=report_computed_task,
             )
         )
@@ -1758,7 +1724,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp="2018-02-05 11:00:01",
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 11:00:01",
-                payment_ts="2018-02-05 11:00:02",
+                payment_ts="2018-02-05 10:00:02",
                 report_computed_task=report_computed_task,
             )
         )

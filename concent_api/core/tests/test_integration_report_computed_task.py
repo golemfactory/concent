@@ -8,7 +8,6 @@ from golem_messages import factories
 from django.test import override_settings
 
 from common.constants import ErrorCode
-from common.constants import ERROR_IN_GOLEM_MESSAGE
 from common.testing_helpers import generate_ecc_key_pair
 from core.models import PendingResponse
 from core.models import Subtask
@@ -1682,7 +1681,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
         self._test_400_response(
             response_1,
-            error_message=ERROR_IN_GOLEM_MESSAGE,
+            error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE
         )
         self._assert_stored_message_counter_not_increased()
 
@@ -1831,54 +1830,6 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             response_1,
             error_code=ErrorCode.MESSAGE_VALUE_WRONG_LENGTH,
         )
-        self._assert_stored_message_counter_not_increased()
-
-        self._assert_client_count_is_equal(0)
-
-    def test_requestor_sends_ack_report_computed_task_with_message_cannot_compute_task(self):
-        """
-        Tests if on request AckReportComputedTask message Concent will return HTTP 400 error
-        if message contains CannotComputeTask instead of TaskToCompute.
-
-        Expected message exchange:
-        Requestor -> Concent:    AckReportComputedTask
-        Concent   -> Requestor:  HTTP 400 error.
-        """
-        # STEP 1: Requestor accepts computed task via Concent
-
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
-
-        task_to_compute = self._get_deserialized_task_to_compute(
-            timestamp           = "2017-12-01 10:00:00",
-            compute_task_def    = compute_task_def,
-        )
-
-        cannot_compute_task = self._get_deserialized_cannot_compute_task(
-            timestamp       = "2017-12-01 10:30:00",
-            task_to_compute = task_to_compute,
-            reason          = message.tasks.CannotComputeTask.REASON.WrongCTD
-        )
-
-        # This has to be done manually, otherwise will fail when signing ReportComputedTask
-        with freeze_time("2017-12-01 11:00:05"):
-            serialized_ack_report_computed_task = self._get_serialized_ack_report_computed_task(
-                ack_report_computed_task = message.tasks.AckReportComputedTask(
-                    report_computed_task=(
-                        message.ReportComputedTask(
-                            task_to_compute=cannot_compute_task
-                        )
-                    )
-                )
-            )
-
-        with freeze_time("2017-12-01 11:00:05"):
-            response =self.send_request(
-                url='core:send',
-                data                           = serialized_ack_report_computed_task,
-            )
-        self._test_400_response(response)
         self._assert_stored_message_counter_not_increased()
 
         self._assert_client_count_is_equal(0)

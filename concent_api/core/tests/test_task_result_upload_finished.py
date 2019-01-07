@@ -11,6 +11,7 @@ from golem_messages.factories.tasks import TaskToComputeFactory
 
 from common.helpers import get_current_utc_timestamp
 from common.testing_helpers import generate_ecc_key_pair
+from core.tests.constants_for_tests import ZERO_SIGNATURE
 from core.exceptions import SubtaskStatusError
 from core.message_handlers import store_subtask
 from core.models import Subtask
@@ -103,7 +104,7 @@ class CoreResultUploadFinishedTaskTransactionTest(TransactionTestCase):
         (self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
         (self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
-        self.task_to_compute = TaskToComputeFactory()
+        self.task_to_compute = TaskToComputeFactory(sig=ZERO_SIGNATURE)
 
         self.subtask = store_subtask(
             task_id=self.task_to_compute.task_id,

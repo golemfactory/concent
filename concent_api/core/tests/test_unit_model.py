@@ -13,6 +13,7 @@ from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from core.constants import BIG_ENDIAN_INT_MAX_DIGITS
 from core.constants import MOCK_TRANSACTION
+from core.tests.constants_for_tests import ZERO_SIGNATURE
 from core.message_handlers import store_message
 from core.message_handlers import store_subtask
 from core.models import Client
@@ -26,55 +27,75 @@ from core.utils import hex_to_bytes_convert
 # This all data has to be prepared in separate function because pytest parametrize can't get variables from SetUp()
 # Function allows to prepare 2 packs of data: correct and incorrect.
 def _get_data_list(correct):
-    task_to_compute = factories.tasks.TaskToComputeFactory()
-    different_task_to_compute = factories.tasks.TaskToComputeFactory()
+    task_to_compute = factories.tasks.TaskToComputeFactory(sig=ZERO_SIGNATURE)
+    different_task_to_compute = factories.tasks.TaskToComputeFactory(sig=ZERO_SIGNATURE)
     report_computed_task = factories.tasks.ReportComputedTaskFactory(
-        task_to_compute=task_to_compute
+        sig=ZERO_SIGNATURE,
+        task_to_compute=task_to_compute,
     )
     different_report_computed_task = factories.tasks.ReportComputedTaskFactory(
+        sig=ZERO_SIGNATURE,
         task_to_compute=different_task_to_compute
     )
     ack_report_computed_task = factories.tasks.AckReportComputedTaskFactory(
+        sig=ZERO_SIGNATURE,
         report_computed_task=report_computed_task
     )
     different_ack_report_computed_task = factories.tasks.AckReportComputedTaskFactory(
+        sig=ZERO_SIGNATURE,
         report_computed_task=different_report_computed_task
     )
     reject_report_computed_task_with_task_to_compute = factories.tasks.RejectReportComputedTaskFactory(
+        sig=ZERO_SIGNATURE,
         attached_task_to_compute=task_to_compute,
         reason=message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded
     )
     different_reject_report_computed_task_with_task_to_compute = factories.tasks.RejectReportComputedTaskFactory(
+        sig=ZERO_SIGNATURE,
         attached_task_to_compute=different_task_to_compute,
         reason=message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded
     )
     reject_report_computed_task_with_task_failure = factories.tasks.RejectReportComputedTaskFactory(
+        sig=ZERO_SIGNATURE,
         task_failure=factories.tasks.TaskFailureFactory(task_to_compute=task_to_compute),
         reason=message.tasks.RejectReportComputedTask.REASON.GotMessageTaskFailure,
     )
     different_reject_report_computed_task_with_task_failure = factories.tasks.RejectReportComputedTaskFactory(
+        sig=ZERO_SIGNATURE,
         task_failure=factories.tasks.TaskFailureFactory(task_to_compute=different_task_to_compute),
         reason=message.tasks.RejectReportComputedTask.REASON.GotMessageTaskFailure,
     )
     reject_report_computed_task_with_cannot_compute_task = factories.tasks.RejectReportComputedTaskFactory(
-        cannot_compute_task=factories.tasks.CannotComputeTaskFactory(task_to_compute=task_to_compute),
+        sig=ZERO_SIGNATURE,
+        cannot_compute_task=factories.tasks.CannotComputeTaskFactory(
+            sig=ZERO_SIGNATURE,
+            task_to_compute=task_to_compute,
+        ),
         reason=message.tasks.RejectReportComputedTask.REASON.GotMessageCannotComputeTask,
     )
     different_reject_report_computed_task_with_cannot_compute_task = factories.tasks.RejectReportComputedTaskFactory(
-        cannot_compute_task=factories.tasks.CannotComputeTaskFactory(task_to_compute=different_task_to_compute),
+        sig=ZERO_SIGNATURE,
+        cannot_compute_task=factories.tasks.CannotComputeTaskFactory(
+            sig=ZERO_SIGNATURE,
+            task_to_compute=different_task_to_compute,
+        ),
         reason=message.tasks.RejectReportComputedTask.REASON.GotMessageCannotComputeTask,
     )
-    reject_report_computed_task_without_reason_and_task_to_compute = message.tasks.RejectReportComputedTask()
+    reject_report_computed_task_without_reason_and_task_to_compute = message.tasks.RejectReportComputedTask(sig=ZERO_SIGNATURE)
     force_get_task_result = factories.concents.ForceGetTaskResultFactory(
+        sig=ZERO_SIGNATURE,
         report_computed_task=report_computed_task
     )
     different_force_get_task_result = factories.concents.ForceGetTaskResultFactory(
+        sig=ZERO_SIGNATURE,
         report_computed_task=different_report_computed_task
     )
     subtask_results_rejected = factories.tasks.SubtaskResultsRejectedFactory(
+        sig=ZERO_SIGNATURE,
         report_computed_task=report_computed_task
     )
     different_subtask_results_rejected = factories.tasks.SubtaskResultsRejectedFactory(
+        sig=ZERO_SIGNATURE,
         report_computed_task=different_report_computed_task
     )
     if correct:
@@ -343,7 +364,7 @@ class ProtocolVersionValidationTest(ConcentIntegrationTestCase):
     def test_that_incorrect_version_of_golem_messages_in_stored_message_should_raise_validation_error(self):
 
         with override_settings(GOLEM_MESSAGES_VERSION=self.second_communication_protocol_version):
-            task_to_compute = tasks.TaskToComputeFactory()
+            task_to_compute = tasks.TaskToComputeFactory(sig=ZERO_SIGNATURE)
 
             report_computed_task=tasks.ReportComputedTaskFactory(task_to_compute=task_to_compute)
             with self.assertRaises(ValidationError) as error:

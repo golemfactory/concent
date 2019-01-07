@@ -7,6 +7,7 @@ from golem_messages import constants
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_datetime_to_timestamp
+from core.tests.constants_for_tests import ZERO_SIGNATURE
 from core.message_handlers import store_subtask
 from core.models import Subtask
 from core.utils import calculate_maximum_download_time
@@ -30,7 +31,10 @@ def store_report_computed_task_as_subtask(report_computed_task):
 class TestSubtaskWithTimingColumnsManagerQuerySet():
     @pytest.fixture(autouse=True)
     def setUp(self):
-        self.report_computed_task = ReportComputedTaskFactory()
+        self.report_computed_task = ReportComputedTaskFactory(
+            sig=ZERO_SIGNATURE,
+            task_to_compute__sig=ZERO_SIGNATURE,
+        )
         store_report_computed_task_as_subtask(self.report_computed_task)
 
     @pytest.mark.django_db

@@ -19,6 +19,7 @@ from common.constants import ERROR_IN_GOLEM_MESSAGE
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.testing_helpers import generate_ecc_key_pair
+from core.tests.constants_for_tests import ZERO_SIGNATURE
 from core.message_handlers import store_subtask
 from core.models import Client
 from core.models import StoredMessage
@@ -553,20 +554,24 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
                 max_resource_size=5,
                 max_memory_size=6,
                 num_cores=7,
+                sig=ZERO_SIGNATURE,
             )
             self.task_to_compute = tasks.TaskToComputeFactory(
                 compute_task_def=self.compute_task_def,
                 want_to_compute_task=self.want_to_compute_task,
                 provider_public_key=self._get_provider_hex_public_key(),
                 requestor_public_key=self._get_requestor_hex_public_key(),
+                sig=ZERO_SIGNATURE,
             )
             self.size = 58
             self.report_computed_task = message.tasks.ReportComputedTask(
                 task_to_compute=self.task_to_compute,
-                size=self.size
+                size=self.size,
+                sig=ZERO_SIGNATURE,
             )
             self.force_golem_data = message.concents.ForceReportComputedTask(
                 report_computed_task=self.report_computed_task,
+                sig=ZERO_SIGNATURE,
             )
 
     @freeze_time("2017-11-17 10:00:00")
@@ -823,22 +828,26 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             max_resource_size=5,
             max_memory_size=6,
             num_cores=7,
+            sig=ZERO_SIGNATURE,
         )
         self.task_to_compute = tasks.TaskToComputeFactory(
             compute_task_def=self.compute_task_def,
             want_to_compute_task=self.want_to_compute_task,
             provider_public_key=self._get_provider_hex_public_key(),
             requestor_public_key=self._get_requestor_hex_public_key(),
+            sig=ZERO_SIGNATURE,
         )
         self.size = 58
 
         with freeze_time("2017-11-17 10:00:00"):
             self.report_computed_task = message.tasks.ReportComputedTask(
                 task_to_compute=self.task_to_compute,
-                size=self.size
+                size=self.size,
+                sig=ZERO_SIGNATURE,
             )
             self.force_golem_data = message.concents.ForceReportComputedTask(
-                report_computed_task=self.report_computed_task
+                report_computed_task=self.report_computed_task,
+                sig=ZERO_SIGNATURE,
             )
         message_timestamp = parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
         new_message = StoredMessage(
@@ -875,7 +884,8 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
         task_to_compute_message.save()
 
         ack_report_computed_task = message.tasks.AckReportComputedTask(
-            report_computed_task=self.report_computed_task
+            report_computed_task=self.report_computed_task,
+            sig=ZERO_SIGNATURE,
         )
 
         stored_ack_report_computed_task = StoredMessage(

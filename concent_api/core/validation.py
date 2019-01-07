@@ -14,7 +14,6 @@ from golem_messages.exceptions import MessageError
 from golem_messages.message.tasks import RejectReportComputedTask
 from golem_messages.message.tasks import ReportComputedTask
 from golem_messages.message.tasks import SubtaskResultsAccepted
-from golem_sci import BatchTransferEvent
 
 from common.constants import ErrorCode
 from common.exceptions import ConcentValidationError
@@ -469,10 +468,7 @@ def substitute_new_report_computed_task_if_needed(
     return new_report_computed_task
 
 
-def validate_list_of_transaction_timestamp(
-    list_of_transactions: List[BatchTransferEvent],
-    acceptances: List[SubtaskResultsAccepted],
-) -> None:
+def validate_list_of_transaction_timestamp(acceptances: List[SubtaskResultsAccepted]) -> None:
     """
     Validate if cut_off_time < youngest_payment_ts(T2) + PDT, unless requestor already made some payment.
     We compare only youngest payment_ts, because we want to use the highest value of timestamp. Other payment_ts might
@@ -480,17 +476,9 @@ def validate_list_of_transaction_timestamp(
     """
 
     cut_off_time = get_current_utc_timestamp()
-
     youngest_payment_ts = max(subtask_results_accepted.payment_ts for subtask_results_accepted in acceptances)
 
-    if (
-        (
-            any(youngest_payment_ts > closure_time for closure_time in list_of_transactions) or
-            len(list_of_transactions) == 0
-        ) and (
-            cut_off_time < youngest_payment_ts + settings.PAYMENT_DUE_TIME
-        )
-    ):
+    if youngest_payment_ts > cut_off_time - settings.PAYMENT_DUE_TIME:
         log_payment_time_exceeded(logger, acceptances)
         raise BanksterTimestampError
 

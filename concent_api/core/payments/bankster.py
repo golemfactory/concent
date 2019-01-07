@@ -5,6 +5,7 @@ from typing import Union
 import logging
 
 from django.conf import settings
+from django.db.models import QuerySet
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
 
@@ -19,6 +20,7 @@ from common.helpers import ethereum_public_key_to_address
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.logging import log
 from core.constants import ETHEREUM_ADDRESS_LENGTH
+from core.exceptions import BanksterTransactionMismatchError
 from core.exceptions import TooSmallProviderDeposit
 from core.models import Client
 from core.models import DepositAccount
@@ -266,6 +268,8 @@ def settle_overdue_acceptances(
     assert len(provider_ethereum_address) == ETHEREUM_ADDRESS_LENGTH
     assert provider_ethereum_address != requestor_ethereum_address
 
+    validate_list_of_transaction_timestamp(acceptances)
+
     with non_nesting_atomic(using='control'):
         requestor_client: Client = get_or_create_safely(Client, public_key=requestor_public_key)
 
@@ -292,16 +296,24 @@ def settle_overdue_acceptances(
             sum_of_existing_claims=Coalesce(Sum('amount'), 0)
         )
 
-        assert sum_of_existing_requestor_claims['sum_of_existing_claims'] >= 0
-
-        # If the existing claims against requestor's deposit are greater or equal to his current deposit,
-        # we can't add a new claim.
-        if requestor_deposit_value <= sum_of_existing_requestor_claims['sum_of_existing_claims']:
-            return None
-
         # Concent defines time T0 equal to oldest payment_ts from passed SubtaskResultAccepted messages from
         # subtask_results_accepted_list.
         oldest_payments_ts = min(subtask_results_accepted.payment_ts for subtask_results_accepted in acceptances)
+
+        # Concent gets list of forced payments from payment API where T0 <= payment_ts + PAYMENT_DUE_TIME.
+        list_of_settlement_payments = service.get_list_of_payments(  # pylint: disable=no-value-for-parameter
+            requestor_eth_address=requestor_ethereum_address,
+            provider_eth_address=provider_ethereum_address,
+            payment_ts=oldest_payments_ts,
+            transaction_type=TransactionType.FORCE,
+        )
+
+        already_satisfied_claims_without_duplicates = find_unconfirmed_settlement_payments(
+            list_of_settlement_payments,
+            requestor_deposit_account,
+            provider_ethereum_address,
+            oldest_payments_ts,
+        )
 
         # Concent gets list of transactions from payment API where timestamp >= T0.
         list_of_transactions = service.get_list_of_payments(  # pylint: disable=no-value-for-parameter
@@ -311,19 +323,10 @@ def settle_overdue_acceptances(
             transaction_type=TransactionType.BATCH,
         )
 
-        validate_list_of_transaction_timestamp(list_of_transactions, acceptances)
-
-        # Concent gets list of forced payments from payment API where T0 <= payment_ts + PAYMENT_DUE_TIME.
-        list_of_forced_payments = service.get_list_of_payments(  # pylint: disable=no-value-for-parameter
-            requestor_eth_address=requestor_ethereum_address,
-            provider_eth_address=provider_ethereum_address,
-            payment_ts=oldest_payments_ts,
-            transaction_type=TransactionType.FORCE,
-        )
-
         (_amount_paid, amount_pending) = get_provider_payment_info(
-            list_of_forced_payments=list_of_forced_payments,
-            list_of_payments=list_of_transactions,
+            list_of_settlement_payments=list_of_settlement_payments,
+            list_of_transactions=list_of_transactions,
+            settlement_payment_claims=already_satisfied_claims_without_duplicates,
             subtask_results_accepted_list=acceptances,
         )
 
@@ -383,22 +386,85 @@ def sum_subtask_price(subtask_results_accepted_list: List[SubtaskResultsAccepted
 
 
 def get_provider_payment_info(
-    list_of_forced_payments: List[ForcedPaymentEvent],
-    list_of_payments: List[BatchTransferEvent],
+    list_of_settlement_payments: List[ForcedPaymentEvent],
+    list_of_transactions: List[BatchTransferEvent],
+    settlement_payment_claims: QuerySet,
     subtask_results_accepted_list: List[SubtaskResultsAccepted],
 ) -> Tuple[int, int]:
-    assert isinstance(list_of_payments, list)
-    assert isinstance(list_of_forced_payments, list)
+    assert isinstance(settlement_payment_claims, QuerySet)
+    assert isinstance(list_of_settlement_payments, list)
+    assert isinstance(list_of_transactions, list)
     assert isinstance(subtask_results_accepted_list, list)
 
-    force_payments_price = sum_payments(list_of_forced_payments)
-    payments_price = sum_payments(list_of_payments)
+    settlement_payment_total_price = sum_payments(list_of_settlement_payments)
+    payments_price = sum_payments(list_of_transactions)
+    satisfied_payments_price = settlement_payment_claims.aggregate(
+        sum_of_already_satisfied_claims=Coalesce(Sum('amount'), 0)
+    )['sum_of_already_satisfied_claims']
     subtasks_price = sum_subtask_price(subtask_results_accepted_list)
 
-    amount_paid = payments_price + force_payments_price
+    amount_paid = payments_price + satisfied_payments_price + settlement_payment_total_price
     amount_pending = subtasks_price - amount_paid
 
     return (amount_paid, amount_pending)
+
+
+def find_unconfirmed_settlement_payments(
+    list_of_settlement_payments: List[ForcedPaymentEvent],
+    requestor_deposit_account: DepositAccount,
+    provider_ethereum_address: str,
+    oldest_payments_ts: int,
+) -> QuerySet:
+    """
+    Retrieves claims of settlement payments with pending transaction
+    and removes duplicates which are on list of settlement payments.
+    """
+    already_satisfied_claims = get_already_satisfied_claims(
+        requestor_deposit_account,
+        provider_ethereum_address,
+        oldest_payments_ts,
+    )
+    settlement_payment_tx_hashes = [force_payment.tx_hash for force_payment in list_of_settlement_payments]
+
+    for matching_claim in already_satisfied_claims.filter(tx_hash__in=settlement_payment_tx_hashes):
+        assert matching_claim.concent_use_case == ConcentUseCase.FORCED_PAYMENT
+
+        matching_force_payment = next(iter([
+            force_payment for force_payment in list_of_settlement_payments
+            if force_payment.tx_hash == matching_claim.tx_hash
+        ]))
+
+        # If the information in the database differs from the information on the blockchain,
+        # aborts the settlement and responds with HTTP 500.
+        if (
+            matching_claim.closure_time != matching_force_payment.closure_time or
+            matching_claim.amount != matching_force_payment.amount
+        ):
+            raise BanksterTransactionMismatchError(
+                f'There is a data mismatch between DepositClaim and ForcedPaymentEvent with transaction hash: '
+                f'{matching_force_payment.tx_hash}'
+            )
+
+    return already_satisfied_claims.exclude(tx_hash__in=settlement_payment_tx_hashes)
+
+
+def get_already_satisfied_claims(
+    requestor_deposit_account: DepositAccount,
+    provider_ethereum_address: str,
+    payments_ts: int,
+) -> QuerySet:
+    """
+    Returns all DatabaseClaims that represent settlement payments from requestor's Ethereum account to
+    provider's Ethereum account and for which a transaction has already been sent to the Ethereum client.
+    """
+    return DepositClaim.objects.filter(
+        payer_deposit_account=requestor_deposit_account,
+        payee_ethereum_address=provider_ethereum_address,
+        concent_use_case=ConcentUseCase.FORCED_PAYMENT.value,
+        closure_time__gte=parse_timestamp_to_utc_datetime(payments_ts),
+    ).exclude(
+        tx_hash=None,
+    )
 
 
 def discard_claim(deposit_claim: DepositClaim) -> bool:

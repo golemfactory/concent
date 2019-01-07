@@ -651,6 +651,14 @@ class PaymentInfo(Model):
     )
     pending_response = ForeignKey(PendingResponse, related_name='payments')
 
+    @property
+    def amount_paid_as_int(self) -> int:
+        return int(self.amount_paid)
+
+    @property
+    def amount_pending_as_int(self) -> int:
+        return int(self.amount_pending)
+
     def clean(self) -> None:
         if self.task_owner_key == self.provider_eth_account:
             raise ValidationError({
@@ -748,6 +756,10 @@ class DepositClaim(Model):
     created_at = DateTimeField(auto_now_add=True)
     modified_at = DateTimeField(auto_now=True)
     closure_time = DateTimeField(blank=True, null=True)
+
+    @property
+    def amount_as_int(self) -> int:
+        return int(self.amount)
 
     class Meta:
         unique_together = ('subtask_id', 'concent_use_case', 'payee_ethereum_address')

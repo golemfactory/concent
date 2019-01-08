@@ -1,6 +1,7 @@
 import json
 import mock
 from django.conf import settings
+from django.db.transaction import get_connection
 from django.http import HttpResponse
 from django.http import HttpResponseNotAllowed
 from django.http import JsonResponse
@@ -297,7 +298,8 @@ class NonNestingAtomicDecoratorTestCase(TransactionTestCase):
     def test_that_non_nesting_atomic_decorator_will_not_raise_exception_if_transaction_is_nested_using_different_databases(self):  # pylint: disable=no-self-use
         with non_nesting_atomic(using='control'):
             with non_nesting_atomic(using='storage'):
-                pass
+                self.assertTrue(get_connection('control').in_atomic_block)
+                self.assertTrue(get_connection('storage').in_atomic_block)
 
     @override_settings(
         DETECT_NESTED_TRANSACTIONS=False,
@@ -305,4 +307,20 @@ class NonNestingAtomicDecoratorTestCase(TransactionTestCase):
     def test_that_non_nesting_atomic_decorator_will_not_raise_exception_if_transaction_is_nested_using_same_databases_and_detect_nested_transaction_setting_is_false(self):
         with non_nesting_atomic(using='control'):
             with non_nesting_atomic(using='control'):
-                pass
+                self.assertTrue(get_connection('control').in_atomic_block)
+
+    def test_that_non_nesting_atomic_decorator_wraps_in_transaction_when_used_as_decorator(self):
+        @non_nesting_atomic(using='control')
+        def wrapped_function():
+            self.assertTrue(get_connection('control').in_atomic_block)
+
+        wrapped_function()
+
+    def test_that_decorated_function_called_in_transaction_should_rasie_exception(self):
+        @non_nesting_atomic(using='control')
+        def wrapped_function():
+            pass
+
+        with non_nesting_atomic(using='control'):
+            with self.assertRaises(ConcentPendingTransactionError):
+                wrapped_function()

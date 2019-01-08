@@ -20,7 +20,6 @@ class DatabaseTransactionsStorage(TransactionsStorage):
     database using Django models.
     """
 
-    @non_nesting_atomic(using='control')
     def init(self, network_nonce: int) -> None:
         if not self._is_storage_initialized():
             self._init_with_nonce(network_nonce)
@@ -29,15 +28,14 @@ class DatabaseTransactionsStorage(TransactionsStorage):
         #  If nonce stored in GlobalTransactionState is lower than network_nonce
         #  this statement will update nonce in DatabaseTransactionStorage
         if self._get_nonce() < network_nonce:
-            global_transaction_state = GlobalTransactionState.objects.select_for_update().get(
-                pk=0,
-            )
-            global_transaction_state.nonce = network_nonce
-            global_transaction_state.full_clean()
-            global_transaction_state.save()
-            return
+            with non_nesting_atomic(using='control'):
+                global_transaction_state = GlobalTransactionState.objects.select_for_update().get(
+                    pk=0,
+                )
+                global_transaction_state.nonce = network_nonce
+                global_transaction_state.full_clean()
+                global_transaction_state.save()
 
-    @non_nesting_atomic(using='control')
     def _is_storage_initialized(self) -> bool:
         """
         Should return False if this is the first time we try to use this
@@ -86,7 +84,6 @@ class DatabaseTransactionsStorage(TransactionsStorage):
             for ethereum_transaction in PendingEthereumTransaction.objects.all()
         ]
 
-    @non_nesting_atomic(using='control')
     def set_nonce_sign_and_save_tx(
         self,
         sign_tx: Callable[[Transaction], None],
@@ -96,33 +93,34 @@ class DatabaseTransactionsStorage(TransactionsStorage):
         Sets the next nonce for the transaction, invokes the callback for
         signing and saves it to the storage.
         """
-        global_transaction_state = self._get_locked_global_transaction_state()
-
         tx.nonce = self._get_nonce()
-        sign_tx(tx)
-        logger.info(
-            'Saving transaction %s, nonce=%d',
-            encode_hex(tx.hash),
-            tx.nonce,
-        )
 
-        pending_ethereum_transaction = PendingEthereumTransaction(
-            nonce=tx.nonce,
-            gasprice=tx.gasprice,
-            startgas=tx.startgas,
-            value=tx.value,
-            v=tx.v,
-            r=tx.r,
-            s=tx.s,
-            data=tx.data,
-            to=tx.to,
-        )
-        pending_ethereum_transaction.full_clean()
-        pending_ethereum_transaction.save()
+        with non_nesting_atomic(using='control'):
+            global_transaction_state = self._get_locked_global_transaction_state()
+            sign_tx(tx)
+            logger.info(
+                'Saving transaction %s, nonce=%d',
+                encode_hex(tx.hash),
+                tx.nonce,
+            )
 
-        global_transaction_state.nonce += 1
-        global_transaction_state.full_clean()
-        global_transaction_state.save()
+            pending_ethereum_transaction = PendingEthereumTransaction(
+                nonce=tx.nonce,
+                gasprice=tx.gasprice,
+                startgas=tx.startgas,
+                value=tx.value,
+                v=tx.v,
+                r=tx.r,
+                s=tx.s,
+                data=tx.data,
+                to=tx.to,
+            )
+            pending_ethereum_transaction.full_clean()
+            pending_ethereum_transaction.save()
+
+            global_transaction_state.nonce += 1
+            global_transaction_state.full_clean()
+            global_transaction_state.save()
 
     @non_nesting_atomic(using='control')
     def remove_tx(self, nonce: int) -> None:

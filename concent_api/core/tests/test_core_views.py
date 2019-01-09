@@ -15,10 +15,10 @@ from golem_messages.shortcuts import dump
 from golem_messages.shortcuts import load
 
 from common.constants import ErrorCode
-from common.constants import ERROR_IN_GOLEM_MESSAGE
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.testing_helpers import generate_ecc_key_pair
+from core.tests.constants_for_tests import ZERO_SIGNATURE
 from core.message_handlers import store_subtask
 from core.models import Client
 from core.models import StoredMessage
@@ -190,17 +190,23 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         )
         self._test_400_response(response)
 
-        data = message.concents.ForceReportComputedTask()
-        data.report_computed_task = message.tasks.ReportComputedTask()
-        compute_task_def['deadline'] = self.message_timestamp - 3600
-        data.report_computed_task.task_to_compute = message.TaskToCompute(compute_task_def=compute_task_def)
-
-        response = self.send_request(
-            url='core:send',
-            data=dump(
+        data = message.concents.ForceReportComputedTask(
+            report_computed_task=message.tasks.ReportComputedTask(
+                task_to_compute=message.tasks.TaskToCompute(
+                    compute_task_def=message.tasks.ComputeTaskDef(),
+                    want_to_compute_task=message.tasks.WantToComputeTask()
+                )
+            )
+        )
+        dumped_message = dump(
                 data,
                 self.PROVIDER_PRIVATE_KEY,
-                CONCENT_PUBLIC_KEY),
+                CONCENT_PUBLIC_KEY,
+        )
+        malformed_dumped_message = dumped_message[:-1]
+        response = self.send_request(
+            url='core:send',
+            data=malformed_dumped_message,
         )
         self._test_400_response(response)
         self.assertIn('Error in Golem Message', response.json()['error'])
@@ -462,13 +468,13 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
     def test_send_task_to_compute_without_public_key_should_return_http_400(self):
         assert StoredMessage.objects.count() == 0
 
-        setattr(self.task_to_compute, 'requestor_public_key', None)
+        setattr(self.report_computed_task.task_to_compute, 'requestor_public_key', None)
 
         response = self._send_force_report_computed_task()
 
         self._test_400_response(
             response,
-            error_message=ERROR_IN_GOLEM_MESSAGE
+            error_code=ErrorCode.MESSAGE_VALUE_NOT_STRING
         )
         self._assert_stored_message_counter_not_increased()
         self._assert_client_count_is_equal(0)
@@ -477,22 +483,31 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
     def test_send_task_to_compute_with_public_key_with_wrong_length_should_return_http_400(self):
         assert StoredMessage.objects.count() == 0
 
-        setattr(self.task_to_compute, 'requestor_public_key', getattr(self.task_to_compute, 'requestor_public_key')[:-1])
+        setattr(self.report_computed_task.task_to_compute, 'requestor_public_key', getattr(self.task_to_compute, 'requestor_public_key')[:-1])
 
         response = self._send_force_report_computed_task()
 
         self._test_400_response(
             response,
-            error_message=ERROR_IN_GOLEM_MESSAGE,
+            error_code=ErrorCode.MESSAGE_VALUE_WRONG_LENGTH,
         )
         self._assert_stored_message_counter_not_increased()
         self._assert_client_count_is_equal(0)
 
     @freeze_time("2017-11-17 10:00:00")
     def test_error_in_golem_messages_should_be_logged_and_return_http_400_with_the_same_uuid(self):
-        self.task_to_compute.requestor_public_key = self.task_to_compute.requestor_public_key[:-1]
+        dumped_message = dump(
+            msg=message.concents.ForceReportComputedTask(
+                report_computed_task=message.tasks.ReportComputedTask(
+                    task_to_compute=self.task_to_compute
+                ),
+            ),
+            privkey=self.PROVIDER_PRIVATE_KEY,
+            pubkey=settings.CONCENT_PUBLIC_KEY,
+        )
+        malformed_message = dumped_message[:-1]
         with mock.patch('core.decorators.log') as log:
-            response = self._send_force_report_computed_task()
+            response = self._send_force_report_computed_task(serialized_force_report_computed_task=malformed_message)
 
         uuid_entry = log.call_args[0][1]
         self.assertIn('uuid:', uuid_entry)  # check if variable uuid contains field with id from response
@@ -553,20 +568,24 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
                 max_resource_size=5,
                 max_memory_size=6,
                 num_cores=7,
+                sig=ZERO_SIGNATURE,
             )
             self.task_to_compute = tasks.TaskToComputeFactory(
                 compute_task_def=self.compute_task_def,
                 want_to_compute_task=self.want_to_compute_task,
                 provider_public_key=self._get_provider_hex_public_key(),
                 requestor_public_key=self._get_requestor_hex_public_key(),
+                sig=ZERO_SIGNATURE,
             )
             self.size = 58
             self.report_computed_task = message.tasks.ReportComputedTask(
                 task_to_compute=self.task_to_compute,
-                size=self.size
+                size=self.size,
+                sig=ZERO_SIGNATURE,
             )
             self.force_golem_data = message.concents.ForceReportComputedTask(
                 report_computed_task=self.report_computed_task,
+                sig=ZERO_SIGNATURE,
             )
 
     @freeze_time("2017-11-17 10:00:00")
@@ -823,22 +842,26 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             max_resource_size=5,
             max_memory_size=6,
             num_cores=7,
+            sig=ZERO_SIGNATURE,
         )
         self.task_to_compute = tasks.TaskToComputeFactory(
             compute_task_def=self.compute_task_def,
             want_to_compute_task=self.want_to_compute_task,
             provider_public_key=self._get_provider_hex_public_key(),
             requestor_public_key=self._get_requestor_hex_public_key(),
+            sig=ZERO_SIGNATURE,
         )
         self.size = 58
 
         with freeze_time("2017-11-17 10:00:00"):
             self.report_computed_task = message.tasks.ReportComputedTask(
                 task_to_compute=self.task_to_compute,
-                size=self.size
+                size=self.size,
+                sig=ZERO_SIGNATURE,
             )
             self.force_golem_data = message.concents.ForceReportComputedTask(
-                report_computed_task=self.report_computed_task
+                report_computed_task=self.report_computed_task,
+                sig=ZERO_SIGNATURE,
             )
         message_timestamp = parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
         new_message = StoredMessage(
@@ -875,7 +898,8 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
         task_to_compute_message.save()
 
         ack_report_computed_task = message.tasks.AckReportComputedTask(
-            report_computed_task=self.report_computed_task
+            report_computed_task=self.report_computed_task,
+            sig=ZERO_SIGNATURE,
         )
 
         stored_ack_report_computed_task = StoredMessage(

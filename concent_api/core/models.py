@@ -421,6 +421,13 @@ class Subtask(Model):
         new._current_state_name = new.state  # pylint: disable=no-member
         return new
 
+    def _deserialize_database_message(self, serialized_message: StoredMessage) -> message.Message:  # pylint: disable=no-self-use
+        if isinstance(serialized_message.data, bytes):
+            deserialized_message = deserialize_message(serialized_message.data)
+        else:
+            deserialized_message = deserialize_message(serialized_message.data.tobytes())  # pylint: disable=no-member
+        return deserialized_message
+
     def clean(self) -> None:
         super().clean()
 
@@ -491,29 +498,22 @@ class Subtask(Model):
                     )
                 })
 
-        if isinstance(self.report_computed_task.data, bytes):
-            deserialized_report_computed_task = deserialize_message(self.report_computed_task.data)
-        else:
-            deserialized_report_computed_task = deserialize_message(self.report_computed_task.data.tobytes())  # pylint: disable=no-member
+        deserialized_report_computed_task = self._deserialize_database_message(self.report_computed_task)
 
         # If available, the report_computed_task nested in force_get_task_result must match report_computed_task.
-        if (
-            self.force_get_task_result is not None and
-            deserialize_message(self.force_get_task_result.data).report_computed_task != deserialized_report_computed_task
-        ):
-            raise ValidationError({
-                'force_get_task_result': "ReportComputedTask nested in ForceGetTaskResult must match Subtask's ReportComputedTask."
-            })
+        if self.force_get_task_result is not None:
+            deserialized_force_get_task_result = self._deserialize_database_message(self.force_get_task_result)
+            if deserialized_force_get_task_result.report_computed_task != deserialized_report_computed_task:
+                raise ValidationError({
+                    'force_get_task_result': "ReportComputedTask nested in ForceGetTaskResult must match Subtask's ReportComputedTask."
+                })
 
         if not self.result_package_size == deserialized_report_computed_task.size:
             raise ValidationError({
                 'result_package_size': "ReportComputedTask size mismatch"
             })
 
-        if isinstance(self.task_to_compute.data, bytes):
-            deserialized_task_to_compute = deserialize_message(self.task_to_compute.data)
-        else:
-            deserialized_task_to_compute = deserialize_message(self.task_to_compute.data.tobytes())  # pylint: disable=no-member
+        deserialized_task_to_compute = self._deserialize_database_message(self.task_to_compute)
 
         if not parse_datetime_to_timestamp(self.computation_deadline) == deserialized_task_to_compute.compute_task_def['deadline']:
             raise ValidationError({
@@ -651,6 +651,14 @@ class PaymentInfo(Model):
     )
     pending_response = ForeignKey(PendingResponse, related_name='payments')
 
+    @property
+    def amount_paid_as_int(self) -> int:
+        return int(self.amount_paid)
+
+    @property
+    def amount_pending_as_int(self) -> int:
+        return int(self.amount_pending)
+
     def clean(self) -> None:
         if self.task_owner_key == self.provider_eth_account:
             raise ValidationError({
@@ -748,6 +756,10 @@ class DepositClaim(Model):
     created_at = DateTimeField(auto_now_add=True)
     modified_at = DateTimeField(auto_now=True)
     closure_time = DateTimeField(blank=True, null=True)
+
+    @property
+    def amount_as_int(self) -> int:
+        return int(self.amount)
 
     class Meta:
         unique_together = ('subtask_id', 'concent_use_case', 'payee_ethereum_address')

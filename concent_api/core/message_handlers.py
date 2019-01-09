@@ -832,7 +832,7 @@ def handle_send_force_payment(
             payment_ts              = parse_datetime_to_timestamp(claim_against_requestor.closure_time),
             task_owner_key          = requestor_ethereum_public_key,
             provider_eth_account    = provider_eth_address,
-            amount_paid             = claim_against_requestor.amount,
+            amount_paid             = claim_against_requestor.amount_as_int,
             amount_pending          = 0,
             recipient_type          = message.concents.ForcePaymentCommitted.Actor.Provider,
         )
@@ -841,7 +841,7 @@ def handle_send_force_payment(
             payment_ts              = parse_datetime_to_timestamp(claim_against_requestor.closure_time),
             task_owner_key          = requestor_ethereum_public_key,
             provider_eth_account    = provider_eth_address,
-            amount_paid             = claim_against_requestor.amount,
+            amount_paid             = claim_against_requestor.amount_as_int,
             amount_pending          = 0,
             recipient_type          = message.concents.ForcePaymentCommitted.Actor.Requestor,
         )
@@ -1142,8 +1142,8 @@ def handle_messages_from_database(client_public_key: bytes) -> Union[message.Mes
                 payment_ts=parse_datetime_to_timestamp(payment_message.payment_ts),
                 task_owner_key=payment_message.task_owner_key.tobytes(),
                 provider_eth_account=payment_message.provider_eth_account,
-                amount_paid=payment_message.amount_paid,
-                amount_pending=payment_message.amount_pending,
+                amount_paid=payment_message.amount_paid_as_int,
+                amount_pending=payment_message.amount_pending_as_int,
             )
             if payment_message.recipient_type == PaymentInfo.RecipientType.Requestor.name:  # pylint: disable=no-member
                 response_to_client.recipient_type = message.concents.ForcePaymentCommitted.Actor.Requestor

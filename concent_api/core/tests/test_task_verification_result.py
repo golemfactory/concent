@@ -16,6 +16,7 @@ from common.helpers import parse_datetime_to_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.testing_helpers import generate_ecc_key_pair
 from core.constants import VerificationResult
+from core.tests.constants_for_tests import ZERO_SIGNATURE
 from core.message_handlers import store_subtask
 from core.models import PendingResponse
 from core.models import Subtask
@@ -38,9 +39,10 @@ class VerifierVerificationResultTaskTest(ConcentIntegrationTestCase):
 
         report_computed_task = ReportComputedTaskFactory(
             subtask_id=subtask_id,
-            task_id=task_id
+            task_id=task_id,
+            sig=ZERO_SIGNATURE,
+            task_to_compute__sig=ZERO_SIGNATURE,
         )
-
         self.subtask = store_subtask(
             task_id=task_id,
             subtask_id=subtask_id,
@@ -165,7 +167,7 @@ class VerifierVerificationResultTaskTransactionTest(TransactionTestCase):
         (self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
         (self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
-        task_to_compute = TaskToComputeFactory()
+        task_to_compute = TaskToComputeFactory(sig=ZERO_SIGNATURE)
 
         self.subtask = store_subtask(
             task_id=task_to_compute.task_id,
@@ -201,7 +203,7 @@ class VerificationResultAssertionTest(ConcentIntegrationTestCase):
         (self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
         (self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
-        task_to_compute = TaskToComputeFactory()
+        task_to_compute = TaskToComputeFactory(sig=ZERO_SIGNATURE)
 
         self.subtask = store_subtask(
             task_id=task_to_compute.task_id,

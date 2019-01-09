@@ -626,7 +626,6 @@ class ConcentIntegrationTestCase(TestCase):
         deadline: Union[str, int, float, None] = None,
         extra_data: Optional[dict] = None,
         short_description: str = 'path_root: /home/dariusz/Documents/tasks/resources, start_task: 6, end_task: 6...',
-        working_directory: str = '.',
         performance: float = 829.7531773625524,
         docker_images: Optional[List[set]] = None,
         frames: Optional[List[int]] = None
@@ -636,7 +635,6 @@ class ConcentIntegrationTestCase(TestCase):
             subtask_id=subtask_id if subtask_id is not None else self._get_uuid(),
             extra_data=extra_data,
             short_description=short_description,
-            working_directory=working_directory,
             performance=performance,
         )
         if isinstance(deadline, (int, float)):
@@ -848,20 +846,18 @@ class ConcentIntegrationTestCase(TestCase):
 
         return golem_message
 
-    def _send_force_report_computed_task(self):
-        report_computed_task = message.tasks.ReportComputedTask(
-            task_to_compute = self.task_to_compute  # pylint: disable=no-member
-        )
+    def _send_force_report_computed_task(self, serialized_force_report_computed_task=None):
         force_report_computed_task = message.concents.ForceReportComputedTask(
-            report_computed_task = report_computed_task,
+            report_computed_task=self.report_computed_task,  # pylint: disable=no-member
+        )
+        dumped_message = dump(
+            force_report_computed_task,
+            self.PROVIDER_PRIVATE_KEY,
+            settings.CONCENT_PUBLIC_KEY
         )
         return self.send_request(
             url='core:send',
-            data                                = dump(
-                force_report_computed_task,
-                self.PROVIDER_PRIVATE_KEY,
-                settings.CONCENT_PUBLIC_KEY
-            ),
+            data=serialized_force_report_computed_task if serialized_force_report_computed_task is not None else dumped_message,
         )
 
     def _assert_stored_message_counter_increased(self, increased_by = 1):

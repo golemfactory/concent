@@ -443,7 +443,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp="2018-02-05 10:00:43",
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 10:00:43",
-                payment_ts="2018-02-05 10:00:44",
+                payment_ts="2018-02-05 9:00:44",
                 report_computed_task=report_computed_task,
             )
         )
@@ -477,7 +477,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp="2018-02-05 10:00:43",
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 10:00:43",
-                payment_ts="2018-02-05 10:00:44",
+                payment_ts="2018-02-05 9:00:44",
                 report_computed_task=report_computed_task,
             )
         )
@@ -553,7 +553,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
                 'timestamp': parse_iso_date_to_timestamp("2018-02-05 11:00:02"),
                 'subtask_results_accepted.timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
                 'subtask_results_accepted.task_to_compute.compute_task_def': task_to_compute.compute_task_def,
-                'subtask_results_accepted.payment_ts': parse_iso_date_to_timestamp("2018-02-05 10:00:44")
+                'subtask_results_accepted.payment_ts': parse_iso_date_to_timestamp("2018-02-05 9:00:44")
             }
         )
         self._assert_stored_message_counter_not_increased()
@@ -702,7 +702,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp="2018-02-05 10:00:43",
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 10:00:43",
-                payment_ts="2018-02-05 10:00:44",
+                payment_ts="2018-02-05 9:00:44",
                 report_computed_task=report_computed_task,
             )
         )

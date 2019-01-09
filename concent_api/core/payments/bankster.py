@@ -26,7 +26,7 @@ from core.models import Client
 from core.models import DepositAccount
 from core.models import DepositClaim
 from core.models import Subtask
-from core.model_helpers import get_or_create_safely
+from core.model_helpers import get_or_create_with_retry
 from core.payments import service
 from core.payments.backends.sci_backend import TransactionType
 from core.utils import adjust_transaction_hash
@@ -75,18 +75,18 @@ def claim_deposit(
     # and also for the provider if there's a non-zero claim against his account.
     # This is done in single database transaction.
     with non_nesting_atomic(using='control'):
-        requestor_client: Client = get_or_create_safely(Client, public_key=requestor_public_key)
+        requestor_client: Client = get_or_create_with_retry(Client, public_key=requestor_public_key)
 
-        requestor_deposit_account: DepositAccount = get_or_create_safely(
+        requestor_deposit_account: DepositAccount = get_or_create_with_retry(
             DepositAccount,
             client=requestor_client,
             ethereum_address=requestor_ethereum_address,
         )
 
         if is_claim_against_provider:
-            provider_client: Client = get_or_create_safely(Client, public_key=provider_public_key)
+            provider_client: Client = get_or_create_with_retry(Client, public_key=provider_public_key)
 
-            provider_deposit_account: DepositAccount = get_or_create_safely(
+            provider_deposit_account: DepositAccount = get_or_create_with_retry(
                 DepositAccount,
                 client=provider_client,
                 ethereum_address=provider_ethereum_address,
@@ -165,6 +165,9 @@ def finalize_payment(deposit_claim: DepositClaim) -> Optional[str]:
     For each claim, Bankster uses SCI to submit an Ethereum transaction to the Ethereum client which then propagates it
     to the rest of the network.
     Hopefully the transaction is included in one of the upcoming blocks on the blockchain.
+
+    IMPORTANT!: This function must never be called in parallel for the same DepositClaim - otherwise provider might get
+    paid twice for the same thing. It's caller responsibility to ensure that.
     """
 
     assert isinstance(deposit_claim, DepositClaim)
@@ -202,47 +205,52 @@ def finalize_payment(deposit_claim: DepositClaim) -> Optional[str]:
         # Bankster sets this field to the amount that's actually available.
         elif available_funds_without_claims < deposit_claim.amount:
             deposit_claim.amount = available_funds_without_claims
+            deposit_claim.save()
 
-        # If the DepositClaim still exists at this point, Bankster uses SCI to create an Ethereum transaction.
-        if deposit_claim.concent_use_case == ConcentUseCase.FORCED_ACCEPTANCE:
-            ethereum_transaction_hash = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
-                requestor_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
-                provider_eth_address=deposit_claim.payee_ethereum_address,
-                value=deposit_claim.amount,
-                subtask_id=deposit_claim.subtask_id,
-            )
-        elif deposit_claim.concent_use_case == ConcentUseCase.ADDITIONAL_VERIFICATION:
-            subtask = Subtask.objects.filter(subtask_id=deposit_claim.subtask_id).first()  # pylint: disable=no-member
-            if subtask is not None:
-                task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
-                if task_to_compute.requestor_ethereum_address == deposit_claim.payer_deposit_account.ethereum_address:
-                    ethereum_transaction_hash = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
-                        requestor_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
-                        provider_eth_address=deposit_claim.payee_ethereum_address,
-                        value=deposit_claim.amount,
-                        subtask_id=deposit_claim.subtask_id,
-                    )
-                elif task_to_compute.provider_ethereum_address == deposit_claim.payer_deposit_account.ethereum_address:
-                    ethereum_transaction_hash = service.cover_additional_verification_cost(  # pylint: disable=no-value-for-parameter
-                        provider_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
-                        value=deposit_claim.amount,
-                        subtask_id=deposit_claim.subtask_id,
-                    )
-                else:
-                    assert False
-        else:
-            assert False
+    # If the DepositClaim still exists at this point, Bankster uses SCI to create an Ethereum transaction.
+    if deposit_claim.concent_use_case == ConcentUseCase.FORCED_ACCEPTANCE:
+        ethereum_transaction_hash = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
+            requestor_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
+            provider_eth_address=deposit_claim.payee_ethereum_address,
+            value=deposit_claim.amount,
+            subtask_id=deposit_claim.subtask_id,
+        )
+    elif deposit_claim.concent_use_case == ConcentUseCase.ADDITIONAL_VERIFICATION:
+        subtask = Subtask.objects.filter(subtask_id=deposit_claim.subtask_id).first()  # pylint: disable=no-member
+        if subtask is not None:
+            task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
+            if task_to_compute.requestor_ethereum_address == deposit_claim.payer_deposit_account.ethereum_address:
+                ethereum_transaction_hash = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
+                    requestor_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
+                    provider_eth_address=deposit_claim.payee_ethereum_address,
+                    value=deposit_claim.amount,
+                    subtask_id=deposit_claim.subtask_id,
+                )
+            elif task_to_compute.provider_ethereum_address == deposit_claim.payer_deposit_account.ethereum_address:
+                ethereum_transaction_hash = service.cover_additional_verification_cost(  # pylint: disable=no-value-for-parameter
+                    provider_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
+                    value=deposit_claim.amount,
+                    subtask_id=deposit_claim.subtask_id,
+                )
+            else:
+                assert False
+    else:
+        assert False
 
+    with non_nesting_atomic(using='control'):
+        # The code below is executed in another transaction, so - in theory - deposit_claim object could be modified in
+        # the meantime. Here we are working under assumption that it's not the case and it is coder's responsibility to
+        # ensure that.
         # Bankster puts transaction ID in DepositClaim.tx_hash.
         ethereum_transaction_hash = adjust_transaction_hash(ethereum_transaction_hash)
         deposit_claim.tx_hash = ethereum_transaction_hash
         deposit_claim.full_clean()
         deposit_claim.save()
 
-        service.call_on_confirmed_transaction(  # pylint: disable=no-value-for-parameter
-            tx_hash=deposit_claim.tx_hash,
-            callback=lambda _: discard_claim(deposit_claim),
-        )
+    service.call_on_confirmed_transaction(  # pylint: disable=no-value-for-parameter
+        tx_hash=deposit_claim.tx_hash,
+        callback=lambda _: discard_claim(deposit_claim),
+    )
 
     return deposit_claim.tx_hash
 
@@ -270,15 +278,13 @@ def settle_overdue_acceptances(
 
     validate_list_of_transaction_timestamp(acceptances)
 
-    with non_nesting_atomic(using='control'):
-        requestor_client: Client = get_or_create_safely(Client, public_key=requestor_public_key)
+    requestor_client: Client = get_or_create_with_retry(Client, public_key=requestor_public_key)
 
-    with non_nesting_atomic(using='control'):
-        requestor_deposit_account: DepositAccount = get_or_create_safely(
-            DepositAccount,
-            client=requestor_client,
-            ethereum_address=requestor_ethereum_address
-        )
+    requestor_deposit_account: DepositAccount = get_or_create_with_retry(
+        DepositAccount,
+        client=requestor_client,
+        ethereum_address=requestor_ethereum_address
+    )
 
     # Bankster asks SCI about the amount of funds available in requestor's deposit.
     requestor_deposit_value = service.get_deposit_value(client_eth_address=requestor_ethereum_address)  # pylint: disable=no-value-for-parameter
@@ -348,23 +354,28 @@ def settle_overdue_acceptances(
         # subtask_results_accepted_list.
         youngest_payment_ts = max(subtask_results_accepted.payment_ts for subtask_results_accepted in acceptances)
 
-        transaction_hash = service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
-            requestor_eth_address=requestor_ethereum_address,
-            provider_eth_address=provider_ethereum_address,
-            value=requestor_payable_amount,
-            payment_ts=youngest_payment_ts,
-        )
-        transaction_hash = adjust_transaction_hash(transaction_hash)
-
         # Deposit lock for requestor.
         claim_against_requestor = DepositClaim(
             payee_ethereum_address=provider_ethereum_address,
             payer_deposit_account=requestor_deposit_account,
             amount=requestor_payable_amount,
             concent_use_case=ConcentUseCase.FORCED_PAYMENT,
-            tx_hash=transaction_hash,
+            tx_hash=None,
             closure_time=parse_timestamp_to_utc_datetime(youngest_payment_ts),
         )
+        claim_against_requestor.full_clean()
+        claim_against_requestor.save()
+
+    transaction_hash = service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
+        requestor_eth_address=requestor_ethereum_address,
+        provider_eth_address=provider_ethereum_address,
+        value=requestor_payable_amount,
+        payment_ts=youngest_payment_ts,
+    )
+    transaction_hash = adjust_transaction_hash(transaction_hash)
+
+    with non_nesting_atomic(using='control'):
+        claim_against_requestor.tx_hash = transaction_hash
         claim_against_requestor.full_clean()
         claim_against_requestor.save()
 

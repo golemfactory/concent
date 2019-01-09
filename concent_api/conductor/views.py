@@ -24,6 +24,7 @@ logger = getLogger(__name__)
 @provides_concent_feature('conductor-urls')
 @require_POST
 @csrf_exempt
+@transaction.non_atomic_requests(using='storage')
 @non_nesting_atomic(using='storage')
 def report_upload(_request: HttpRequest, file_path: str) -> HttpResponse:
 

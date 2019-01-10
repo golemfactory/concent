@@ -6,9 +6,9 @@ from typing import Union
 import traceback
 
 from django.conf import settings
-from django.db import DEFAULT_DB_ALIAS
 from django.db.transaction import Atomic
 from django.db.transaction import get_connection
+from django.utils.decorators import ContextDecorator
 
 from common.exceptions import ConcentFeatureIsNotAvailable
 from common.exceptions import ConcentPendingTransactionError
@@ -54,13 +54,34 @@ def log_task_errors(task: Callable) -> Callable:
     return wrapper
 
 
-def non_nesting_atomic(using: Union[str, Callable], savepoint: bool=True) -> Atomic:
-    if (
-        settings.DETECT_NESTED_TRANSACTIONS and
-        get_connection(using).in_atomic_block
-    ):
-        raise ConcentPendingTransactionError
-    if callable(using):
-        return Atomic(DEFAULT_DB_ALIAS, savepoint)(using)
-    else:
-        return Atomic(using, savepoint)
+class non_nesting_atomic(ContextDecorator):
+    """
+    This class acts as either decorator or context manager.
+    It discovers when the callable or code is being run in nested database transaction and raises exception.
+    Otherwise it wraps callable or code in database transaction.
+    """
+
+    def __init__(self, using: Union[str, Callable], savepoint: bool=True):
+        self.using = using
+        self.atomic_context_decorator = Atomic(self.using, savepoint)
+
+    def __enter__(self) -> None:
+        if (
+            settings.DETECT_NESTED_TRANSACTIONS and
+            get_connection(self.using).in_atomic_block
+        ):
+            raise ConcentPendingTransactionError(
+                'Creation of new transaction in the same database detected inside pending transaction.'
+            )
+        return self.atomic_context_decorator.__enter__()
+
+    def __exit__(self, *args: Any, **kwargs: Any) -> None:
+        return self.atomic_context_decorator.__exit__(*args, **kwargs)
+
+    def __call__(self, func: Callable) -> Callable:
+        @wraps(func)
+        def decorated(*args: Any, **kwargs: Any):
+            with self:
+                return func(*args, **kwargs)
+
+        return decorated

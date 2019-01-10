@@ -241,7 +241,6 @@ def finalize_payment(deposit_claim: DepositClaim) -> Optional[str]:
         # The code below is executed in another transaction, so - in theory - deposit_claim object could be modified in
         # the meantime. Here we are working under assumption that it's not the case and it is coder's responsibility to
         # ensure that.
-        # Bankster puts transaction ID in DepositClaim.tx_hash.
         ethereum_transaction_hash = adjust_transaction_hash(ethereum_transaction_hash)
         deposit_claim.tx_hash = ethereum_transaction_hash
         deposit_claim.full_clean()

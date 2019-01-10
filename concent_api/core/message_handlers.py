@@ -46,6 +46,7 @@ from common.validations import validate_secure_hash_algorithm
 from common import logging
 from conductor.tasks import result_transfer_request
 from core.exceptions import BanksterTimestampError
+from core.exceptions import UnsupportedProtocolVersion
 from core.exceptions import CreateModelIntegrityError
 from core.exceptions import Http400
 from core.exceptions import TooSmallProviderDeposit
@@ -973,15 +974,18 @@ def handle_messages_from_database(client_public_key: bytes) -> Union[message.Mes
             pending_response.response_type_enum != PendingResponse.ResponseType.ForcePaymentCommitted and not
             is_protocol_version_compatible(pending_response.subtask.task_to_compute.protocol_version)
         ):
+            error_message = f"Wrong version of golem messages in stored messages. " \
+                f"Version stored in database is {pending_response.subtask.task_to_compute.protocol_version}, " \
+                f"Concent's and Client's version is {settings.GOLEM_MESSAGES_VERSION}."
             log(logger,
-                f'Wrong version of golem messages in stored messages.'
-                f'Version stored in database is { pending_response.subtask.task_to_compute.protocol_version},'
-                f'Concent version is {settings.GOLEM_MESSAGES_VERSION}.',
+                error_message,
                 subtask_id=pending_response.subtask.subtask_id,
                 client_public_key=client_public_key,
                 )
-            return message.concents.ServiceRefused(reason=message.concents.ServiceRefused.REASON.UnsupportedProtocolVersion)
-
+            raise UnsupportedProtocolVersion(
+                error_message=error_message,
+                error_code=ErrorCode.UNSUPPORTED_PROTOCOL_VERSION
+            )
         if pending_response.response_type == PendingResponse.ResponseType.ForceReportComputedTask.name:  # pylint: disable=no-member
             report_computed_task = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
             response_to_client = message.concents.ForceReportComputedTask(

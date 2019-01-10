@@ -1022,14 +1022,10 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
             )
         self._test_response(
             response,
-            status=200,
+            status=404,
             key=self.PROVIDER_PRIVATE_KEY,
-            message_type=message.concents.ServiceRefused,
-            fields={
-                'reason': message.concents.ServiceRefused.REASON.UnsupportedProtocolVersion,
-            }
         )
-        self.assertIn('Wrong version of golem messages. Clients version is 1.12.0, Concent version is 2.15.0', str(log_mock.call_args))
+        self.assertIn("Unsupported protocol version. Client's version is 1.12.0, Concent's version is 2.15.0.", str(log_mock.call_args))
 
     def test_that_concent_should_accept_request_without_protocol_version(self):
         response = self.client.post(

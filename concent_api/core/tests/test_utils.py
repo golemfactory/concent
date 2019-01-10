@@ -161,7 +161,7 @@ class TestValidateCompatibilityGolemMessages:
         '2.15.0', '2.15.3', '2.15.15'
     ])
     def test_that_compatible_version_of_golem_message_should_return_true(self, protocol_version):
-        self.request.META['HTTP_X_Golem_Messages'] = protocol_version
+        self.request.META['HTTP_X_GOLEM_MESSAGES'] = protocol_version
         with override_settings(
             GOLEM_MESSAGES_VERSION='2.15.0',
         ):
@@ -171,7 +171,7 @@ class TestValidateCompatibilityGolemMessages:
         '1.15.0', '2.13.3', '2.16.15'
     ])
     def test_that_not_compatible_version_of_golem_message_should_return_false(self, protocol_version):
-        self.request.META['HTTP_X_Golem_Messages'] = protocol_version
+        self.request.META['HTTP_X_GOLEM_MESSAGES'] = protocol_version
         with override_settings(
             GOLEM_MESSAGES_VERSION='2.15.0',
         ):

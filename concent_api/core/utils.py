@@ -137,10 +137,10 @@ def is_given_golem_messages_version_supported_by_concent(
     """
     If header is missing version is not checked and Concent assumes that client uses compatible version.
     """
-    if 'HTTP_X_Golem_Messages' not in request.META:
+    if 'HTTP_X_GOLEM_MESSAGES' not in request.META:
         return True
     else:
-        golem_message_version = request.META['HTTP_X_Golem_Messages']
+        golem_message_version = request.META['HTTP_X_GOLEM_MESSAGES']
         if not is_protocol_version_compatible(golem_message_version):
             return False
         return True

@@ -61,7 +61,7 @@ class non_nesting_atomic(ContextDecorator):
     Otherwise it wraps callable or code in database transaction.
     """
 
-    def __init__(self, using: Union[str, Callable], savepoint: bool=True):
+    def __init__(self, using: Union[str, Callable], savepoint: bool = True) -> None:
         self.using = using
         self.atomic_context_decorator = Atomic(self.using, savepoint)
 
@@ -80,7 +80,7 @@ class non_nesting_atomic(ContextDecorator):
 
     def __call__(self, func: Callable) -> Callable:
         @wraps(func)
-        def decorated(*args: Any, **kwargs: Any):
+        def decorated(*args: Any, **kwargs: Any) -> None:
             with self:
                 return func(*args, **kwargs)
 

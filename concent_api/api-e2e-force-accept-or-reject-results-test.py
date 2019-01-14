@@ -356,7 +356,7 @@ def test_case_2b_not_enough_funds(cluster_consts: ProtocolConstants, cluster_url
 
 @count_fails
 def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolConstants, cluster_url: str) -> None:
-    #  Test CASE 2A + 2D + 3 - Send ForceSubtaskResults with same task_id as stored by Concent before
+    #  Test CASE 2A + 2D + 3 + 4B + 5 - Send ForceSubtaskResults with same task_id as stored by Concent before
     #  Step 1. Send ForceSubtaskResults first time
     receive_pending_messages_for_requestor_and_provider(
         cluster_url,
@@ -383,6 +383,10 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolC
             ),
             requestor_private_key=sci_base.requestor_private_key,
         )
+    )
+    signed_report_computed_task = create_signed_report_computed_task(
+        task_to_compute=signed_task_to_compute,
+        provider_private_key=sci_base.provider_private_key,
     )
     api_request(
         cluster_url,
@@ -415,6 +419,34 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolC
         create_client_auth_message(sci_base.requestor_private_key, sci_base.requestor_public_key, CONCENT_PUBLIC_KEY),
         expected_status=200,
         expected_message_type=message.concents.ForceSubtaskResults,
+        expected_content_type='application/octet-stream',
+    )
+
+    #  Step 4. Requestor sends ForceSubtaskResultsResponse for the first ForceSubtaskResults
+    api_request(
+        cluster_url,
+        'send',
+        sci_base.requestor_private_key,
+        CONCENT_PUBLIC_KEY,
+        create_force_subtask_results_response(
+            timestamp=timestamp_to_isoformat(current_time),
+            subtask_results_accepted=create_signed_subtask_results_accepted(
+                payment_ts=current_time + 1,
+                report_computed_task=signed_report_computed_task,
+                requestor_private_key=sci_base.requestor_private_key,
+            )
+        ),
+        expected_status=202,
+    )
+    #  Step 5. Provider receives ForceSubtaskResultsResponse
+    api_request(
+        cluster_url,
+        'receive',
+        sci_base.provider_private_key,
+        CONCENT_PUBLIC_KEY,
+        create_client_auth_message(sci_base.provider_private_key, sci_base.provider_public_key, CONCENT_PUBLIC_KEY),
+        expected_status=200,
+        expected_message_type=message.concents.ForceSubtaskResultsResponse,
         expected_content_type='application/octet-stream',
     )
 

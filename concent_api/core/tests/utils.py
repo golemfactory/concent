@@ -399,8 +399,6 @@ class ConcentIntegrationTestCase(TestCase):
             if fields:
                 for field_name, field_value in fields.items():
                     self.assertEqual(functools.reduce(getattr, field_name.split('.'), message_from_concent), field_value)
-        else:
-            self.assertEqual(len(response.content), 0)
 
         if nested_message_verifiable_by is not None:
             assert isinstance(nested_message_verifiable_by, dict)
@@ -1153,7 +1151,7 @@ class ConcentIntegrationTestCase(TestCase):
             reverse(url),
             data=data,
             content_type='application/octet-stream',
-            HTTP_X_Golem_Messages=golem_messages_version,
+            HTTP_X_GOLEM_MESSAGES=golem_messages_version,
             **kwargs
         )
 

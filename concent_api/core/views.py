@@ -29,8 +29,8 @@ logger = getLogger(__name__)
 @provides_concent_feature('concent-api')
 @csrf_exempt
 @require_POST
-@require_golem_message
 @validate_protocol_version_in_core
+@require_golem_message
 @handle_errors_and_responses(database_name='control')
 @log_communication
 @transaction.non_atomic_requests(using='control')
@@ -50,8 +50,8 @@ def send(_request: HttpRequest, client_message: Message, client_public_key: byte
 @provides_concent_feature('concent-api')
 @csrf_exempt
 @require_POST
-@require_golem_auth_message
 @validate_protocol_version_in_core
+@require_golem_auth_message
 @handle_errors_and_responses(database_name='control')
 @transaction.non_atomic_requests(using='control')
 def receive(_request: HttpRequest, _message: Message, _client_public_key: bytes) -> Union[Message, HttpResponse]:

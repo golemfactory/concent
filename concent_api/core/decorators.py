@@ -44,28 +44,16 @@ def validate_protocol_version_in_core(view: Callable) -> Callable:
     @wraps(view)
     def wrapper(
         request: HttpRequest,
-        client_message: message.Message,
-        client_public_key: bytes,
         *args: list,
         **kwargs: dict,
     ) -> Union[HttpResponse, JsonResponse]:
 
         if not is_given_golem_messages_version_supported_by_concent(request=request):
-            log(
-                logger,
-                f'Wrong version of golem messages. Clients version is {request.META["HTTP_X_Golem_Messages"]}, '
-                f'Concent version is {settings.GOLEM_MESSAGES_VERSION}.',
-                client_public_key=client_public_key,
-            )
-            serialized_message = dump(
-                message.concents.ServiceRefused(
-                    reason=message.concents.ServiceRefused.REASON.UnsupportedProtocolVersion,
-                ),
-                settings.CONCENT_PRIVATE_KEY,
-                client_public_key,
-            )
-            return HttpResponse(serialized_message, content_type='application/octet-stream')
-        return view(request, client_message, client_public_key, *args, *kwargs)
+            error_message = f"Unsupported protocol version. Client's version is {request.META['HTTP_X_GOLEM_MESSAGES']}, " \
+                  f"Concent's version is {settings.GOLEM_MESSAGES_VERSION}."
+            log(logger, error_message)
+            return HttpResponse(error_message, status=404)
+        return view(request, *args, *kwargs)
     return wrapper
 
 

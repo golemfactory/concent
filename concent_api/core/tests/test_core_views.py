@@ -1043,7 +1043,7 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
 
         )
 
-    def test_that_send_should_refuse_request_if_all_stored_messages_have_incompatible_protocol_version(self):
+    def test_that_send_should_response_http404_if_all_stored_messages_have_incompatible_protocol_version(self):
         with override_settings(GOLEM_MESSAGES_VERSION='1.11.0'):
             store_subtask(
                 task_id=self.task_to_compute.compute_task_def['task_id'],
@@ -1066,12 +1066,8 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
             )
         self._test_response(
             response,
-            status=200,
+            status=404,
             key=self.PROVIDER_PRIVATE_KEY,
-            message_type=message.concents.ServiceRefused,
-            fields={
-                'reason': message.concents.ServiceRefused.REASON.UnsupportedProtocolVersion,
-            }
         )
 
         log_called_mock.assert_called()
@@ -1119,10 +1115,7 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
             )
             self._test_response(
                 response2,
-                status=200,
+                status=404,
                 key=self.PROVIDER_PRIVATE_KEY,
-                message_type=message.concents.ServiceRefused,
-                fields={
-                    'reason': message.concents.ServiceRefused.REASON.UnsupportedProtocolVersion,
-                }
             )
+            self.assertIn('Wrong version of golem messages in stored messages.', str(response2.content))

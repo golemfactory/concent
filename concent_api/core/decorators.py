@@ -193,7 +193,7 @@ def handle_errors_and_responses(database_name: str) -> Callable:
             client_public_key: bytes,
             *args: list,
             **kwargs: dict,
-        ) -> Union[HttpRequest, JsonResponse]:
+        ) -> Union[HttpResponse, JsonResponse]:
             assert database_name in settings.DATABASES or database_name is None
             try:
                 if database_name is not None:
@@ -219,6 +219,9 @@ def handle_errors_and_responses(database_name: str) -> Callable:
                     ),
                     content_type='application/octet-stream'
                 )
+            except UnsupportedProtocolVersion as exception:
+                return HttpResponse(exception.error_message, status=404)
+
             except ConcentBaseException as exception:
                 log_400_error(
                     logger,
@@ -236,15 +239,6 @@ def handle_errors_and_responses(database_name: str) -> Callable:
                         'error_code': exception.error_code.value,
                     },
                     status=400
-                )
-            except UnsupportedProtocolVersion:
-                return HttpResponse(
-                    dump(
-                        message.concents.ServiceRefused(reason=message.concents.ServiceRefused.REASON.UnsupportedProtocolVersion),
-                        settings.CONCENT_PRIVATE_KEY,
-                        client_public_key,
-                    ),
-                    content_type='application/octet-stream'
                 )
             except ConcentInSoftShutdownMode:
                 transaction.savepoint_rollback(sid, using=database_name)

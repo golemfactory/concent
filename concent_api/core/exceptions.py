@@ -69,7 +69,7 @@ class CreateModelIntegrityError(Exception):
     pass
 
 
-class UnsupportedProtocolVersion(Exception):
+class UnsupportedProtocolVersion(ConcentBaseException):
     pass
 
 

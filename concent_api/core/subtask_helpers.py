@@ -12,6 +12,7 @@ from golem_messages.message.concents import ForcePayment
 from golem_messages.message.tasks import SubtaskResultsAccepted
 
 from common.constants import ConcentUseCase
+from common.constants import ErrorCode
 from common.decorators import non_nesting_atomic
 from common.helpers import deserialize_message
 from common.helpers import get_current_utc_timestamp
@@ -159,15 +160,18 @@ def _update_timed_out_subtask(subtask: Subtask) -> None:
 
 def check_compatibility(subtask: Subtask, client_public_key: bytes) -> None:
     if not is_protocol_version_compatible(subtask.task_to_compute.protocol_version):
+        error_message = f'Unsupported version of golem messages in stored messages. ' \
+            f'Version stored in database is {subtask.task_to_compute.protocol_version}, ' \
+            f'Concent version is {settings.GOLEM_MESSAGES_VERSION}.'
         log(
             logger,
-            f'Unsupported version of golem messages in stored messages. '
-            f'Version stored in database is {subtask.task_to_compute.protocol_version}, '
-            f'Concent version is {settings.GOLEM_MESSAGES_VERSION}.',
+            error_message,
             subtask_id=subtask.subtask_id,
             client_public_key=client_public_key,
         )
-        raise UnsupportedProtocolVersion
+        raise UnsupportedProtocolVersion(
+            error_message=error_message,
+            error_code=ErrorCode.UNSUPPORTED_PROTOCOL_VERSION)
 
 
 def update_subtasks_states(subtask: Subtask, client_public_key: bytes) -> None:

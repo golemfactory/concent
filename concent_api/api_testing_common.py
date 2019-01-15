@@ -18,14 +18,15 @@ import requests
 from freezegun import freeze_time
 
 from golem_messages import message
+from golem_messages.datastructures.tasks import TaskHeader
 from golem_messages.exceptions import MessageError
+from golem_messages.factories.datastructures.tasks import TaskHeaderFactory
 from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.factories.tasks import WantToComputeTaskFactory
 from golem_messages.message import Message
 from golem_messages.message.concents import ClientAuthorization
 from golem_messages.message.tasks import TaskToCompute
-from golem_messages.message.tasks import WantToComputeTask
 from golem_messages.shortcuts import dump
 from golem_messages.shortcuts import load
 from golem_messages.utils import encode_hex
@@ -378,7 +379,6 @@ def create_signed_task_to_compute(
     provider_private_key: Optional[bytes]=None,
     requestor_public_key: Optional[bytes]=None,
     requestor_private_key: Optional[bytes]=None,
-    want_to_compute_task: Optional[WantToComputeTask] = None,
     price: int=1,
     size: int=1,
     package_hash: str='sha1:57786d92d1a6f7eaaba1c984db5e108c68b03f0d',
@@ -405,11 +405,19 @@ def create_signed_task_to_compute(
         )
         if script_src is not None:
             compute_task_def['extra_data']['script_src'] = script_src
-        want_to_compute_task = want_to_compute_task if want_to_compute_task is not None else WantToComputeTaskFactory(
+
+        task_header: TaskHeader = TaskHeaderFactory(
+            task_id=compute_task_def['task_id'],
+            sign__privkey=requestor_private_key,
+        )
+
+        want_to_compute_task = WantToComputeTaskFactory(
             provider_public_key=encode_hex(provider_public_key),
             provider_ethereum_public_key=encode_hex(provider_public_key),
+            task_header=task_header,
+            sign__privkey=provider_private_key
         )
-        want_to_compute_task = sign_message(want_to_compute_task, provider_private_key)  # type: ignore
+
         task_to_compute = TaskToComputeFactory(
             requestor_public_key=encode_hex(requestor_public_key),
             compute_task_def=compute_task_def,

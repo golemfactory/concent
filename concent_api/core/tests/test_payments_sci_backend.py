@@ -73,7 +73,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
                     self.task_to_compute.requestor_ethereum_address,
                     self.task_to_compute.provider_ethereum_address,
                     self.current_time,
-                    sci_backend.TransactionType.FORCE,
+                    sci_backend.TransactionType.SETTLEMENT,
                 )
 
         self.assertEqual(len(list_of_payments), len(self._get_list_of_settlement_transactions()))

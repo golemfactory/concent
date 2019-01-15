@@ -56,3 +56,7 @@ def call_on_confirmed_transaction(
     _callback: Callable,
 ) -> None:
     pass
+
+
+def get_covered_additional_verification_costs(client_eth_address: str, payment_ts: int) -> list:  # pylint: disable=unused-argument
+    return []

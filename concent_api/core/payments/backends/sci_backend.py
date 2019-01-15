@@ -171,6 +171,21 @@ def call_on_confirmed_transaction(
     )
 
 
+def get_covered_additional_verification_costs(client_eth_address: str, payment_ts: int) -> list:
+    assert isinstance(client_eth_address, str) and len(client_eth_address) == ETHEREUM_ADDRESS_LENGTH
+    assert isinstance(payment_ts, int) and payment_ts >= 0
+
+    payment_interface: SCIImplementation = PaymentInterface()
+
+    first_block_after_payment_number = BlocksHelper(payment_interface).get_first_block_after(payment_ts).number
+
+    return payment_interface.get_covered_additional_verification_costs(  # pylint: disable=no-member
+        address=Web3.toChecksumAddress(client_eth_address),
+        from_block=first_block_after_payment_number,
+        to_block=payment_interface.get_block_number() - payment_interface.REQUIRED_CONFS,  # pylint: disable=no-member
+    )
+
+
 def _hexencode_uuid(value: str) -> bytes:
     validate_uuid(value)
 

@@ -879,7 +879,14 @@ class ConcentIntegrationTestCase(TestCase):
         payment_item.closure_time = closure_time
         return payment_item
 
-    def _create_settlement_payment_object(self, amount, subtask_id):  # pylint: disable=no-self-use
+    def _create_settlement_payment_object(self, amount):  # pylint: disable=no-self-use
+        payment_item = mock.Mock()
+        payment_item.amount = amount
+        payment_item.tx_hash = MOCK_TRANSACTION_HASH
+        payment_item.closure_time = parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
+        return payment_item
+
+    def _create_forced_subtask_payment_object(self, amount, subtask_id):  # pylint: disable=no-self-use
         payment_item = mock.Mock()
         payment_item.amount = amount
         payment_item.subtask_id = subtask_id
@@ -901,8 +908,13 @@ class ConcentIntegrationTestCase(TestCase):
         return [item1, item2]
 
     def _get_list_of_settlement_transactions(self, requestor_eth_address = None, provider_eth_address = None, payment_ts = None, current_time = None, transaction_type = None):  # pylint: disable=unused-argument
-        item1 = self._create_settlement_payment_object(amount=1000, subtask_id=self._get_uuid('1'))
-        item2 = self._create_settlement_payment_object(amount=2000, subtask_id=self._get_uuid('2'))
+        item1 = self._create_settlement_payment_object(amount=1000)
+        item2 = self._create_settlement_payment_object(amount=2000)
+        return [item1, item2]
+
+    def _get_list_of_forced_subtask_transactions(self, requestor_eth_address = None, provider_eth_address = None, payment_ts = None, current_time = None, transaction_type = None):  # pylint: disable=unused-argument
+        item1 = self._create_forced_subtask_payment_object(amount=1000, subtask_id=self._get_uuid('1'))
+        item2 = self._create_forced_subtask_payment_object(amount=2000, subtask_id=self._get_uuid('2'))
         return [item1, item2]
 
     def _get_list_of_covered_additional_verification_costs(self, requestor_eth_address = None, provider_eth_address = None, payment_ts = None, current_time = None, transaction_type = None):  # pylint: disable=unused-argument

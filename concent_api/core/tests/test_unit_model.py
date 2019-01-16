@@ -11,9 +11,9 @@ from golem_messages.utils import encode_hex
 from common.constants import ConcentUseCase
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
+from common.testing_helpers import generate_ecc_key_pair
 from core.constants import BIG_ENDIAN_INT_MAX_DIGITS
 from core.constants import MOCK_TRANSACTION
-from core.tests.constants_for_tests import ZERO_SIGNATURE
 from core.message_handlers import store_message
 from core.message_handlers import store_subtask
 from core.models import Client
@@ -24,78 +24,90 @@ from core.tests.utils import ConcentIntegrationTestCase
 from core.utils import hex_to_bytes_convert
 
 
+(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
+(REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
+
+
 # This all data has to be prepared in separate function because pytest parametrize can't get variables from SetUp()
 # Function allows to prepare 2 packs of data: correct and incorrect.
 def _get_data_list(correct):
-    task_to_compute = factories.tasks.TaskToComputeFactory(sig=ZERO_SIGNATURE)
-    different_task_to_compute = factories.tasks.TaskToComputeFactory(sig=ZERO_SIGNATURE)
+    task_to_compute = factories.tasks.TaskToComputeFactory(sign__privkey=REQUESTOR_PRIVATE_KEY)
+    different_task_to_compute = factories.tasks.TaskToComputeFactory(sign__privkey=REQUESTOR_PRIVATE_KEY)
     report_computed_task = factories.tasks.ReportComputedTaskFactory(
-        sig=ZERO_SIGNATURE,
+        sign__privkey=PROVIDER_PRIVATE_KEY,
         task_to_compute=task_to_compute,
     )
     different_report_computed_task = factories.tasks.ReportComputedTaskFactory(
-        sig=ZERO_SIGNATURE,
+        sign__privkey=PROVIDER_PRIVATE_KEY,
         task_to_compute=different_task_to_compute
     )
     ack_report_computed_task = factories.tasks.AckReportComputedTaskFactory(
-        sig=ZERO_SIGNATURE,
+        sign__privkey=REQUESTOR_PRIVATE_KEY,
         report_computed_task=report_computed_task
     )
     different_ack_report_computed_task = factories.tasks.AckReportComputedTaskFactory(
-        sig=ZERO_SIGNATURE,
+        sign__privkey=REQUESTOR_PRIVATE_KEY,
         report_computed_task=different_report_computed_task
     )
     reject_report_computed_task_with_task_to_compute = factories.tasks.RejectReportComputedTaskFactory(
-        sig=ZERO_SIGNATURE,
+        sign__privkey=REQUESTOR_PRIVATE_KEY,
         attached_task_to_compute=task_to_compute,
         reason=message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded
     )
     different_reject_report_computed_task_with_task_to_compute = factories.tasks.RejectReportComputedTaskFactory(
-        sig=ZERO_SIGNATURE,
+        sign__privkey=REQUESTOR_PRIVATE_KEY,
         attached_task_to_compute=different_task_to_compute,
         reason=message.tasks.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded
     )
     reject_report_computed_task_with_task_failure = factories.tasks.RejectReportComputedTaskFactory(
-        sig=ZERO_SIGNATURE,
-        task_failure=factories.tasks.TaskFailureFactory(task_to_compute=task_to_compute),
+        sign__privkey=REQUESTOR_PRIVATE_KEY,
+        task_failure=factories.tasks.TaskFailureFactory(
+            sign__privkey=PROVIDER_PRIVATE_KEY,
+            task_to_compute=task_to_compute,
+        ),
         reason=message.tasks.RejectReportComputedTask.REASON.GotMessageTaskFailure,
     )
     different_reject_report_computed_task_with_task_failure = factories.tasks.RejectReportComputedTaskFactory(
-        sig=ZERO_SIGNATURE,
-        task_failure=factories.tasks.TaskFailureFactory(task_to_compute=different_task_to_compute),
+        sign__privkey=REQUESTOR_PRIVATE_KEY,
+        task_failure=factories.tasks.TaskFailureFactory(
+            sign__privkey=PROVIDER_PRIVATE_KEY,
+            task_to_compute=different_task_to_compute,
+        ),
         reason=message.tasks.RejectReportComputedTask.REASON.GotMessageTaskFailure,
     )
     reject_report_computed_task_with_cannot_compute_task = factories.tasks.RejectReportComputedTaskFactory(
-        sig=ZERO_SIGNATURE,
+        sign__privkey=REQUESTOR_PRIVATE_KEY,
         cannot_compute_task=factories.tasks.CannotComputeTaskFactory(
-            sig=ZERO_SIGNATURE,
+            sign__privkey=PROVIDER_PRIVATE_KEY,
             task_to_compute=task_to_compute,
         ),
         reason=message.tasks.RejectReportComputedTask.REASON.GotMessageCannotComputeTask,
     )
     different_reject_report_computed_task_with_cannot_compute_task = factories.tasks.RejectReportComputedTaskFactory(
-        sig=ZERO_SIGNATURE,
+        sign__privkey=REQUESTOR_PRIVATE_KEY,
         cannot_compute_task=factories.tasks.CannotComputeTaskFactory(
-            sig=ZERO_SIGNATURE,
+            sign__privkey=PROVIDER_PRIVATE_KEY,
             task_to_compute=different_task_to_compute,
         ),
         reason=message.tasks.RejectReportComputedTask.REASON.GotMessageCannotComputeTask,
     )
-    reject_report_computed_task_without_reason_and_task_to_compute = message.tasks.RejectReportComputedTask(sig=ZERO_SIGNATURE)
+    reject_report_computed_task_without_reason_and_task_to_compute = factories.tasks.RejectReportComputedTaskFactory(
+        sign__privkey=REQUESTOR_PRIVATE_KEY
+    )
     force_get_task_result = factories.concents.ForceGetTaskResultFactory(
-        sig=ZERO_SIGNATURE,
+        sign__privkey=PROVIDER_PRIVATE_KEY,
         report_computed_task=report_computed_task
     )
     different_force_get_task_result = factories.concents.ForceGetTaskResultFactory(
-        sig=ZERO_SIGNATURE,
+        sign__privkey=PROVIDER_PRIVATE_KEY,
         report_computed_task=different_report_computed_task
     )
     subtask_results_rejected = factories.tasks.SubtaskResultsRejectedFactory(
-        sig=ZERO_SIGNATURE,
+        sign__privkey=REQUESTOR_PRIVATE_KEY,
         report_computed_task=report_computed_task
     )
     different_subtask_results_rejected = factories.tasks.SubtaskResultsRejectedFactory(
-        sig=ZERO_SIGNATURE,
+        sign__privkey=REQUESTOR_PRIVATE_KEY,
         report_computed_task=different_report_computed_task
     )
     if correct:
@@ -200,11 +212,25 @@ class TestSubtaskModelValidation():
 
 
 def store_report_computed_task_as_subtask():
-    task_to_compute = factories.tasks.TaskToComputeFactory()
-    report_computed_task = factories.tasks.ReportComputedTaskFactory(task_to_compute=task_to_compute)
-    ack_report_computed_task = factories.tasks.AckReportComputedTaskFactory(report_computed_task=report_computed_task)
-    force_get_task_result = factories.concents.ForceGetTaskResultFactory(report_computed_task=report_computed_task)
-    subtask_results_rejected = factories.tasks.SubtaskResultsRejectedFactory(report_computed_task=report_computed_task)
+    task_to_compute = factories.tasks.TaskToComputeFactory(
+        sign__privkey=REQUESTOR_PRIVATE_KEY,
+    )
+    report_computed_task = factories.tasks.ReportComputedTaskFactory(
+        sign__privkey=PROVIDER_PRIVATE_KEY,
+        task_to_compute=task_to_compute,
+    )
+    ack_report_computed_task = factories.tasks.AckReportComputedTaskFactory(
+        sign__privkey=REQUESTOR_PRIVATE_KEY,
+        report_computed_task=report_computed_task,
+    )
+    force_get_task_result = factories.concents.ForceGetTaskResultFactory(
+        sign__privkey=PROVIDER_PRIVATE_KEY,
+        report_computed_task=report_computed_task,
+    )
+    subtask_results_rejected = factories.tasks.SubtaskResultsRejectedFactory(
+        sign__privkey=REQUESTOR_PRIVATE_KEY,
+        report_computed_task=report_computed_task,
+    )
 
     subtask = store_subtask(
         task_id=task_to_compute.task_id,
@@ -364,9 +390,12 @@ class ProtocolVersionValidationTest(ConcentIntegrationTestCase):
     def test_that_incorrect_version_of_golem_messages_in_stored_message_should_raise_validation_error(self):
 
         with override_settings(GOLEM_MESSAGES_VERSION=self.second_communication_protocol_version):
-            task_to_compute = tasks.TaskToComputeFactory(sig=ZERO_SIGNATURE)
+            task_to_compute = tasks.TaskToComputeFactory(sign__privkey=REQUESTOR_PRIVATE_KEY)
 
-            report_computed_task=tasks.ReportComputedTaskFactory(task_to_compute=task_to_compute)
+            report_computed_task=tasks.ReportComputedTaskFactory(
+                sign__privkey=PROVIDER_PRIVATE_KEY,
+                task_to_compute=task_to_compute,
+            )
             with self.assertRaises(ValidationError) as error:
                 with mock.patch('core.message_handlers.store_message', side_effect=self.store_message_with_custom_protocol_version):
                     store_subtask(

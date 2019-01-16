@@ -17,6 +17,8 @@ from numpy import ndarray
 from golem_messages import dump
 from golem_messages import load
 from golem_messages import message
+from golem_messages.datastructures.tasks import TaskHeader
+from golem_messages.factories.datastructures.tasks import TaskHeaderFactory
 from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
@@ -73,6 +75,14 @@ def add_time_offset_to_date(base_time: str, offset: int) -> str:
     return parse_timestamp_to_utc_datetime(parse_iso_date_to_timestamp(base_time) + offset).strftime(
         '%Y-%m-%d %H:%M:%S'
     )
+
+
+def generate_uuid_for_tests(last_char: Optional[str] = None):
+    generated = generate_uuid(seed=0)
+    if last_char is not None:
+        assert len(last_char) == 1
+        return generated[:-1] + last_char
+    return generated
 
 
 class ConcentIntegrationTestCase(TestCase):
@@ -221,8 +231,8 @@ class ConcentIntegrationTestCase(TestCase):
         self,
         timestamp: Union[str, datetime.datetime, None] = None,
         deadline: Union[str, int, None] = None,
-        task_id: Optional[str] = None,
-        subtask_id: Optional[str] = None,
+        task_id: str = generate_uuid_for_tests(),
+        subtask_id: str = generate_uuid_for_tests(),
         compute_task_def: Optional[ComputeTaskDef] = None,
         want_to_compute_task: Optional[WantToComputeTask] = None,
         requestor_id: Optional[bytes] = None,
@@ -240,10 +250,11 @@ class ConcentIntegrationTestCase(TestCase):
     ) -> TaskToCompute:
 
         """ Returns TaskToCompute deserialized. """
+
         compute_task_def = (
             compute_task_def if compute_task_def is not None else self._get_deserialized_compute_task_def(
-                task_id=task_id if task_id is not None else self._get_uuid(),
-                subtask_id=subtask_id if subtask_id is not None else self._get_uuid(),
+                task_id=task_id,
+                subtask_id=subtask_id,
                 deadline=deadline,
                 frames=frames if frames is not None else [1],
             )
@@ -272,6 +283,7 @@ class ConcentIntegrationTestCase(TestCase):
                 want_to_compute_task=want_to_compute_task if want_to_compute_task is not None else self._get_deserialized_want_to_compute_task(
                     provider_public_key=provider_public_key,
                     provider_ethereum_public_key=provider_ethereum_public_key,
+                    task_id=task_id,
                 ),
                 package_hash=package_hash,
                 size=size,
@@ -288,26 +300,31 @@ class ConcentIntegrationTestCase(TestCase):
         return task_to_compute
 
     def _get_deserialized_want_to_compute_task(
-        self,
-        timestamp: Union[str, datetime.datetime, None] = None,
+        self, timestamp: Union[str, datetime.datetime, None] = None,
         node_name: int = None,
         task_id: Optional[str] = None,
-        perf_index = None,
-        max_resource_size = None,
-        max_memory_size = None,
-        num_cores = None,
-        price = None,
-        concent_enabled = None,
-        extra_data = None,
+        perf_index=None,
+        max_resource_size=None,
+        max_memory_size=None,
+        num_cores=None,
+        price=None,
+        concent_enabled=None,
+        extra_data=None,
         provider_public_key: Optional[str] = None,
         provider_ethereum_public_key: Optional[str] = None,
+        requestor_private_key: Optional[bytes] = None,
     ) -> WantToComputeTask:
 
         """ Returns WantToComputeTask deserialized. """
+
         with freeze_time(timestamp or get_timestamp_string()):
+            task_header: TaskHeader = TaskHeaderFactory(
+                task_id=task_id,
+                sign__privkey=requestor_private_key if requestor_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
+            )
+
             want_to_compute_task = WantToComputeTaskFactory(
                 node_name=node_name,
-                task_id=task_id,
                 perf_index=perf_index,
                 max_resource_size=max_resource_size,
                 max_memory_size=max_memory_size,
@@ -321,6 +338,7 @@ class ConcentIntegrationTestCase(TestCase):
                 provider_ethereum_public_key=(
                     provider_ethereum_public_key if provider_ethereum_public_key is not None else self._get_provider_ethereum_hex_public_key()
                 ),
+                task_header=task_header,
             )
         want_to_compute_task = self._sign_message(
             want_to_compute_task,
@@ -1154,11 +1172,3 @@ class ConcentIntegrationTestCase(TestCase):
             HTTP_X_GOLEM_MESSAGES=golem_messages_version,
             **kwargs
         )
-
-
-def generate_uuid_for_tests(last_char: Optional[str] = None):
-    generated = generate_uuid(seed=0)
-    if last_char is not None:
-        assert len(last_char) == 1
-        return generated[:-1] + last_char
-    return generated

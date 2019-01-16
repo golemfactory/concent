@@ -31,7 +31,7 @@ def get_deposit_value(client_eth_address: str) -> int:  # pylint: disable=unused
     if client_eth_address == CLIENT_ETH_ADDRESS_WITH_0_DEPOSIT:
         return 0
     else:
-        return 10000
+        return 20000
 
 
 def force_subtask_payment(

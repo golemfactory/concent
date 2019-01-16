@@ -60,6 +60,9 @@ def test_case_2d_send_correct_force_payment(cluster_consts: ProtocolConstants, c
     correct_force_payment = force_payment(
         subtask_results_accepted_list=[
             create_signed_subtask_results_accepted(
+                timestamp=timestamp_to_isoformat(
+                    current_time - cluster_consts.payment_due_time + AVERAGE_TIME_FOR_TWO_BLOCKS
+                ),
                 payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                 report_computed_task=create_signed_report_computed_task(
                     task_to_compute=create_signed_task_to_compute(
@@ -76,6 +79,9 @@ def test_case_2d_send_correct_force_payment(cluster_consts: ProtocolConstants, c
                 requestor_private_key=sci_base.requestor_private_key,
             ),
             create_signed_subtask_results_accepted(
+                timestamp=timestamp_to_isoformat(
+                    current_time - cluster_consts.payment_due_time + AVERAGE_TIME_FOR_TWO_BLOCKS
+                ),
                 payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                 report_computed_task=create_signed_report_computed_task(
                     task_to_compute=create_signed_task_to_compute(
@@ -138,7 +144,9 @@ def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts: Pro
             timestamp=timestamp_to_isoformat(current_time),
             subtask_results_accepted_list=[
                 create_signed_subtask_results_accepted(
-                    timestamp=timestamp_to_isoformat(current_time),
+                    timestamp=timestamp_to_isoformat(
+                        current_time - cluster_consts.payment_due_time + AVERAGE_TIME_FOR_TWO_BLOCKS
+                    ),
                     payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                     report_computed_task=create_signed_report_computed_task(
                         task_to_compute=create_signed_task_to_compute(
@@ -155,7 +163,9 @@ def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts: Pro
                     requestor_private_key=sci_base.requestor_private_key,
                 ),
                 create_signed_subtask_results_accepted(
-                    timestamp=timestamp_to_isoformat(current_time),
+                    timestamp=timestamp_to_isoformat(
+                        current_time - cluster_consts.payment_due_time + AVERAGE_TIME_FOR_TWO_BLOCKS
+                    ),
                     payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                     report_computed_task=create_signed_report_computed_task(
                         task_to_compute=create_signed_task_to_compute(
@@ -214,7 +224,9 @@ def test_case_2b_send_force_payment_beyond_payment_time(cluster_consts: Protocol
                 ),
 
                 create_signed_subtask_results_accepted(
-                    timestamp=timestamp_to_isoformat(current_time),
+                    timestamp=timestamp_to_isoformat(
+                        current_time - cluster_consts.payment_due_time + AVERAGE_TIME_FOR_TWO_BLOCKS
+                    ),
                     payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                     report_computed_task=create_signed_report_computed_task(
                         task_to_compute=create_signed_task_to_compute(
@@ -260,7 +272,9 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
             timestamp=timestamp_to_isoformat(current_time),
             subtask_results_accepted_list=[
                 create_signed_subtask_results_accepted(
-                    timestamp=timestamp_to_isoformat(current_time),
+                    timestamp=timestamp_to_isoformat(
+                        current_time - cluster_consts.payment_due_time + AVERAGE_TIME_FOR_TWO_BLOCKS
+                    ),
                     payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                     report_computed_task=create_signed_report_computed_task(
                         task_to_compute=create_signed_task_to_compute(
@@ -278,7 +292,9 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
                 ),
 
                 create_signed_subtask_results_accepted(
-                    timestamp=timestamp_to_isoformat(current_time),
+                    timestamp=timestamp_to_isoformat(
+                        current_time - cluster_consts.payment_due_time + AVERAGE_TIME_FOR_TWO_BLOCKS
+                    ),
                     payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
                     report_computed_task=create_signed_report_computed_task(
                         task_to_compute=create_signed_task_to_compute(

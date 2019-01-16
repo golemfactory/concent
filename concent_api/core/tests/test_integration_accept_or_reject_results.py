@@ -656,7 +656,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp="2018-02-05 10:00:43",
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 11:00:00",
-                payment_ts="2018-02-05 10:00:01",
+                payment_ts="2018-02-05 10:59:01",
                 report_computed_task=report_computed_task
             )
         )
@@ -711,7 +711,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             fields          = {
                 'timestamp': parse_iso_date_to_timestamp("2018-02-05 11:00:02"),
                 'subtask_results_accepted.timestamp': parse_iso_date_to_timestamp("2018-02-05 11:00:00"),
-                'subtask_results_accepted.payment_ts': parse_iso_date_to_timestamp("2018-02-05 10:00:01"),
+                'subtask_results_accepted.payment_ts': parse_iso_date_to_timestamp("2018-02-05 10:59:01"),
                 'subtask_results_accepted.task_to_compute.timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:00"),
                 'subtask_results_accepted.task_to_compute.compute_task_def':    task_to_compute.compute_task_def,
             }
@@ -911,7 +911,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp="2018-02-05 11:00:00",
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 11:00:00",
-                payment_ts="2018-02-05 10:00:02",
+                payment_ts="2018-02-05 10:59:02",
                 report_computed_task=self._get_deserialized_report_computed_task(
                     timestamp="2018-02-05 10:00:05",
                     task_to_compute=self._get_deserialized_task_to_compute(
@@ -1135,7 +1135,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp="2018-02-05 12:00:00",
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 12:00:00",
-                payment_ts="2018-02-05 11:00:01",
+                payment_ts="2018-02-05 11:59:01",
                 report_computed_task=report_computed_task
             ),
         )
@@ -1168,7 +1168,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp="2018-02-05 10:00:00",
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 10:00:00",
-                payment_ts="2018-02-05 9:00:01",
+                payment_ts="2018-02-05 9:59:01",
                 report_computed_task=report_computed_task
             ),
         )
@@ -1616,7 +1616,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             task_to_compute=task_to_compute,
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 11:00:00",
-                payment_ts="2018-02-05 10:00:01",
+                payment_ts="2018-02-05 10:59:01",
                 report_computed_task=report_computed_task,
             ),
         )
@@ -1630,7 +1630,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp="2018-02-05 11:00:01",
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 11:00:01",
-                payment_ts="2018-02-05 10:00:02",
+                payment_ts="2018-02-05 10:59:02",
                 report_computed_task=report_computed_task,
             )
         )
@@ -1724,7 +1724,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp="2018-02-05 11:00:01",
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 11:00:01",
-                payment_ts="2018-02-05 10:00:02",
+                payment_ts="2018-02-05 10:59:02",
                 report_computed_task=report_computed_task,
             )
         )

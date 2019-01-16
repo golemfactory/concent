@@ -192,13 +192,15 @@ def test_case_1_test_for_positive_case(cluster_consts: ProtocolConstants, cluste
     ))
 
     # Adding calculated number of seconds to time sleep makes us sure that subtask is after deadline.
+    sleep_time = calculate_verification_deadline(
+        subtask_results_verify.subtask_results_rejected.timestamp,
+        cluster_consts.additional_verification_call_time,
+        subtask_results_verify.subtask_results_rejected.report_computed_task.size,
+        cluster_consts.minimum_upload_rate,
+    ) - current_time
+    print(f"Going to sleep for {sleep_time} secs...")
     time.sleep(
-        calculate_verification_deadline(
-            subtask_results_verify.subtask_results_rejected.timestamp,
-            cluster_consts.additional_verification_call_time,
-            subtask_results_verify.subtask_results_rejected.report_computed_task.size,
-            cluster_consts.minimum_upload_rate,
-        ) - current_time
+        sleep_time
     )
 
     api_request(
@@ -459,13 +461,15 @@ def test_case_6_test_without_script_src_in(cluster_consts: ProtocolConstants, cl
     ))
 
     # Adding calculated number of seconds to time sleep makes us sure that subtask is after deadline.
+    sleep_time = calculate_verification_deadline(
+        subtask_results_verify.subtask_results_rejected.timestamp,
+        cluster_consts.additional_verification_call_time,
+        subtask_results_verify.subtask_results_rejected.report_computed_task.size,
+        cluster_consts.minimum_upload_rate,
+    ) - current_time
+    print(f"Going to sleep for {sleep_time} secs...")
     time.sleep(
-        calculate_verification_deadline(
-            subtask_results_verify.subtask_results_rejected.timestamp,
-            cluster_consts.additional_verification_call_time,
-            subtask_results_verify.subtask_results_rejected.report_computed_task.size,
-            cluster_consts.minimum_upload_rate,
-        ) - current_time
+        sleep_time
     )
 
     api_request(

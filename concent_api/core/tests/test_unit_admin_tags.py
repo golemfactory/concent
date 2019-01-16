@@ -5,7 +5,6 @@ from golem_messages.message.concents import ForceGetTaskResult
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
-from core.tests.constants_for_tests import ZERO_SIGNATURE
 from core.message_handlers import store_subtask
 from core.models import Subtask
 from core.templatetags.admin_tags import get_longest_lasting_subtask_timestamp, get_time_until_concent_can_be_shut_down
@@ -25,13 +24,14 @@ class TestAdminTagsQuerySet(ConcentIntegrationTestCase):
             deadline=deadline,
             price=0,
             timestamp=parse_timestamp_to_utc_datetime(current_time),
+            signer_private_key=self.REQUESTOR_PRIVATE_KEY
         )
         report_computed_task = ReportComputedTaskFactory(
             task_to_compute=task_to_compute,
             size=file_size,
             package_hash=file_check_sum,
             subtask_id=subtask_id,
-            sig=ZERO_SIGNATURE,
+            sign__privkey=self.PROVIDER_PRIVATE_KEY,
         )
         force_get_task_result = ForceGetTaskResult(
             report_computed_task=report_computed_task,

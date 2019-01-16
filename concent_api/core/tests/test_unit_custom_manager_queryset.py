@@ -4,10 +4,10 @@ from django.test import override_settings
 import pytest
 
 from golem_messages import constants
-from golem_messages.factories.tasks import ReportComputedTaskFactory
+from golem_messages.factories import tasks
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_datetime_to_timestamp
-from core.tests.constants_for_tests import ZERO_SIGNATURE
+from common.testing_helpers import generate_ecc_key_pair
 from core.message_handlers import store_subtask
 from core.models import Subtask
 from core.utils import calculate_maximum_download_time
@@ -31,9 +31,15 @@ def store_report_computed_task_as_subtask(report_computed_task):
 class TestSubtaskWithTimingColumnsManagerQuerySet():
     @pytest.fixture(autouse=True)
     def setUp(self):
-        self.report_computed_task = ReportComputedTaskFactory(
-            sig=ZERO_SIGNATURE,
-            task_to_compute__sig=ZERO_SIGNATURE,
+
+        (self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
+        (self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
+
+        self.report_computed_task = tasks.ReportComputedTaskFactory(
+            sign__privkey=self.PROVIDER_PRIVATE_KEY,
+            task_to_compute=tasks.TaskToComputeFactory(
+                sign__privkey=self.REQUESTOR_PRIVATE_KEY,
+            )
         )
         store_report_computed_task_as_subtask(self.report_computed_task)
 

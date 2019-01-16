@@ -8,7 +8,7 @@ from core.payments.backends.sci_backend import TransactionType
 def get_list_of_payments(
     requestor_eth_address: str,  # pylint: disable=unused-argument
     provider_eth_address: str,  # pylint: disable=unused-argument
-    payment_ts: int,  # pylint: disable=unused-argument
+    min_block_timestamp: int,  # pylint: disable=unused-argument
     transaction_type: TransactionType,  # pylint: disable=unused-argument
 ) -> list:  # pylint: disable=inconsistent-return-statements
     return []

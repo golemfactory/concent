@@ -559,13 +559,6 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             self.compute_task_def = tasks.ComputeTaskDefFactory()
             self.compute_task_def['deadline'] = get_current_utc_timestamp() + (60 * 37)
             self.want_to_compute_task = tasks.WantToComputeTaskFactory(
-                node_name=1,
-                task_id=self._get_uuid(),
-                perf_index=3,
-                price=4,
-                max_resource_size=5,
-                max_memory_size=6,
-                num_cores=7,
                 sign__privkey=self.PROVIDER_PRIVATE_KEY,
             )
             self.task_to_compute = tasks.TaskToComputeFactory(
@@ -832,13 +825,6 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
         self.compute_task_def = tasks.ComputeTaskDefFactory()
         self.compute_task_def['deadline'] = get_current_utc_timestamp() - 60
         self.want_to_compute_task = tasks.WantToComputeTaskFactory(
-            node_name=1,
-            task_id=self._get_uuid(),
-            perf_index=3,
-            price=4,
-            max_resource_size=5,
-            max_memory_size=6,
-            num_cores=7,
             sign__privkey=self.PROVIDER_PRIVATE_KEY,
         )
         self.task_to_compute = tasks.TaskToComputeFactory(

@@ -309,7 +309,7 @@ def settle_overdue_acceptances(
         list_of_settlement_payments = service.get_list_of_payments(  # pylint: disable=no-value-for-parameter
             requestor_eth_address=requestor_ethereum_address,
             provider_eth_address=provider_ethereum_address,
-            payment_ts=oldest_payments_ts,
+            min_block_timestamp=oldest_payments_ts,
             transaction_type=TransactionType.FORCE,
         )
 
@@ -324,7 +324,7 @@ def settle_overdue_acceptances(
         list_of_transactions = service.get_list_of_payments(  # pylint: disable=no-value-for-parameter
             requestor_eth_address=requestor_ethereum_address,
             provider_eth_address=provider_ethereum_address,
-            payment_ts=oldest_payments_ts,
+            min_block_timestamp=oldest_payments_ts,
             transaction_type=TransactionType.BATCH,
         )
 

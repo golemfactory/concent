@@ -9,8 +9,7 @@ from django.urls import reverse
 from golem_messages import message
 from golem_messages import settings as golem_settings
 from golem_messages.factories import tasks
-from golem_messages.factories.tasks import ComputeTaskDefFactory
-from golem_messages.factories.tasks import WantToComputeTaskFactory
+from golem_messages.factories import concents
 from golem_messages.shortcuts import dump
 from golem_messages.shortcuts import load
 
@@ -54,7 +53,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             report_computed_task=self.report_computed_task
         )
 
-        self.want_to_compute = WantToComputeTaskFactory(
+        self.want_to_compute = tasks.WantToComputeTaskFactory(
             node_name=1,
             task_id=self._get_uuid(),
             perf_index=3,
@@ -170,7 +169,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         task_to_compute = message.TaskToCompute(
             compute_task_def=compute_task_def,
             requestor_public_key=self._get_encoded_requestor_public_key(),
-            want_to_compute_task=WantToComputeTaskFactory(),
+            want_to_compute_task=tasks.WantToComputeTaskFactory(),
         )
         report_computed_task = message.tasks.ReportComputedTask(
             task_to_compute=task_to_compute
@@ -262,7 +261,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_task_to_compute_deadline_exceeded(self):
-        compute_task_def = ComputeTaskDefFactory()
+        compute_task_def = tasks.ComputeTaskDefFactory()
         compute_task_def['deadline'] = self.message_timestamp - 9000
 
         with freeze_time(parse_timestamp_to_utc_datetime(self.message_timestamp - 10000)):
@@ -378,7 +377,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_task_to_compute_deadline_is_not_an_integer(self):
-        compute_task_def = ComputeTaskDefFactory()
+        compute_task_def = tasks.ComputeTaskDefFactory()
 
         invalid_values = [
             -11,
@@ -430,7 +429,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_202_if_task_to_compute_deadline_is_correct(self):
-        compute_task_def = ComputeTaskDefFactory()
+        compute_task_def = tasks.ComputeTaskDefFactory()
 
         valid_values = [
             11,
@@ -557,9 +556,9 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
     def setUp(self):
         with freeze_time("2017-11-17 10:00:00"):
             super().setUp()
-            self.compute_task_def = ComputeTaskDefFactory()
+            self.compute_task_def = tasks.ComputeTaskDefFactory()
             self.compute_task_def['deadline'] = get_current_utc_timestamp() + (60 * 37)
-            self.want_to_compute_task = WantToComputeTaskFactory(
+            self.want_to_compute_task = tasks.WantToComputeTaskFactory(
                 node_name=1,
                 task_id=self._get_uuid(),
                 perf_index=3,
@@ -830,9 +829,9 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
 
     def setUp(self):
         super().setUp()
-        self.compute_task_def = ComputeTaskDefFactory()
+        self.compute_task_def = tasks.ComputeTaskDefFactory()
         self.compute_task_def['deadline'] = get_current_utc_timestamp() - 60
-        self.want_to_compute_task = WantToComputeTaskFactory(
+        self.want_to_compute_task = tasks.WantToComputeTaskFactory(
             node_name=1,
             task_id=self._get_uuid(),
             perf_index=3,

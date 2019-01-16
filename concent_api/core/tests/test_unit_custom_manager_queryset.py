@@ -4,7 +4,7 @@ from django.test import override_settings
 import pytest
 
 from golem_messages import constants
-from golem_messages.factories.tasks import ReportComputedTaskFactory, TaskToComputeFactory
+from golem_messages.factories import tasks
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_datetime_to_timestamp
 from common.testing_helpers import generate_ecc_key_pair
@@ -35,9 +35,9 @@ class TestSubtaskWithTimingColumnsManagerQuerySet():
         (self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
         (self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
-        self.report_computed_task = ReportComputedTaskFactory(
+        self.report_computed_task = tasks.ReportComputedTaskFactory(
             sign__privkey=self.PROVIDER_PRIVATE_KEY,
-            task_to_compute=TaskToComputeFactory(
+            task_to_compute=tasks.TaskToComputeFactory(
                 sign__privkey=self.REQUESTOR_PRIVATE_KEY,
             )
         )

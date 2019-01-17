@@ -14,6 +14,7 @@ from django.conf import settings
 from common.helpers import generate_ethereum_address_from_ethereum_public_key_bytes
 from common.helpers import RequestIDGenerator
 from core.constants import SCI_CALLBACK_MAXIMUM_TIMEOUT
+from core.decorators import retry_middleman_connection_if_not_pass_timeout
 from core.exceptions import SCICallbackFrameError
 from core.exceptions import SCICallbackPayloadError
 from core.exceptions import SCICallbackPayloadSignatureError
@@ -86,6 +87,7 @@ def create_transaction_signing_request(transaction: Transaction) -> TransactionS
     return transaction_signing_request
 
 
+@retry_middleman_connection_if_not_pass_timeout
 def send_request_to_middleman(middleman_message: GolemMessageFrame) -> bytes:
     """
     Opens socket connection to Middleman, sends Frame to MiddleMan through MiddleMan Protocol and receive response.

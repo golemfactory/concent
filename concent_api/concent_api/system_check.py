@@ -14,6 +14,7 @@ from golem_messages import constants
 from common.exceptions import ConcentValidationError
 from concent_api.constants import AVAILABLE_CONCENT_FEATURES
 from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
+from core.constants import SCI_CALLBACK_MAXIMUM_TIMEOUT
 from core.validation import validate_bytes_public_key
 
 
@@ -445,6 +446,22 @@ def create_error_62_additional_verification_call_time_has_wrong_value() -> Error
     )
 
 
+def create_error_63_sci_callback_retries_is_not_set() -> Error:
+    return Error(
+        "SCI_CALLBACK_RETRIES_TIME is not set.",
+        hint="SCI_CALLBACK_RETRIES_TIME must be set to non-negative integer.",
+        id="concent.E063",
+    )
+
+
+def create_error_64_sci_callback_retries_has_wrong_value() -> Error:
+    return Error(
+        "SCI_CALLBACK_RETRIES_TIME has wrong value.",
+        hint=f"SCI_CALLBACK_RETRIES_TIME must be set to non-negative integer, grater then SCI_CALLBACK_MAXIMUM_TIMEOUT({SCI_CALLBACK_MAXIMUM_TIMEOUT}).",
+        id="concent.E064",
+    )
+
+
 @register()
 def check_settings_concent_features(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
 
@@ -812,3 +829,17 @@ def check_additional_verification_call_time(app_configs: None=None, **kwargs: An
     if not isinstance(settings.ADDITIONAL_VERIFICATION_CALL_TIME, int) or settings.ADDITIONAL_VERIFICATION_CALL_TIME < 0:
         return [create_error_62_additional_verification_call_time_has_wrong_value()]
     return errors
+
+
+@register()
+def check_sci_callback_retries(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
+    if 'concent-api' in settings.CONCENT_FEATURES:
+        if not hasattr(settings, 'SCI_CALLBACK_RETRIES_TIME'):
+            return [create_error_63_sci_callback_retries_is_not_set()]
+        if (
+            not isinstance(settings.SCI_CALLBACK_RETRIES_TIME, int) or settings.SCI_CALLBACK_RETRIES_TIME < 0 or
+            settings.SCI_CALLBACK_RETRIES_TIME <= SCI_CALLBACK_MAXIMUM_TIMEOUT
+        ):
+            return [create_error_64_sci_callback_retries_has_wrong_value()]
+
+    return []

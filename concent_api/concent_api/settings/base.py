@@ -360,3 +360,6 @@ GOLEM_MESSAGES_VERSION = __version__
 
 # Define if exception should be raised when database transactions are nested.
 DETECT_NESTED_TRANSACTIONS = True
+
+# Define how long concent wait for middleman response before raising exception.
+SCI_CALLBACK_RETRIES_TIME = 60

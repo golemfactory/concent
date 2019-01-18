@@ -311,9 +311,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent     -> Requestor:   ForceSubtaskResults (new timestamp)
         """
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline="2018-02-05 10:00:15",
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2018-02-05 10:00:15"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp="2018-02-05 10:00:00",
@@ -414,9 +412,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent     -> Requestor:   SubtaskResultsSettled
         """
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline="2018-02-05 10:00:15",
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2018-02-05 10:00:15"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp="2018-02-05 10:00:00",
@@ -902,9 +898,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent     -> Requestor:   HTTP 400
         """
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2018-02-05 11:00:00",
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2018-02-05 11:00:00"})
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key=self.REQUESTOR_PRIVATE_KEY,
@@ -1048,9 +1042,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent     -> Requestor:   HTTP 400
         """
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2018-02-05 10:00:15",
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2018-02-05 10:00:15"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2018-02-05 10:00:00",
@@ -1116,9 +1108,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             ]
         )
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2018-02-05 11:00:00",
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2018-02-05 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp="2018-02-05 10:00:00",
@@ -1149,9 +1139,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(response_2)
         self._assert_stored_message_counter_not_increased()
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2018-02-05 10:00:00",
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2018-02-05 10:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2018-02-05 9:00:00",
@@ -1251,9 +1239,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent     -> Requestor:   HTTP 204
         """
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline="2018-02-05 10:00:15",
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2018-02-05 10:00:15"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp="2018-02-05 10:00:00",
@@ -1431,9 +1417,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent     -> Requestor:   HTTP 204
         """
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline="2018-02-05 10:00:15",
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2018-02-05 10:00:15"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp="2018-02-05 10:00:00",

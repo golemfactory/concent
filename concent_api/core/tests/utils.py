@@ -1,4 +1,5 @@
 from base64 import b64encode
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
@@ -253,10 +254,12 @@ class ConcentIntegrationTestCase(TestCase):
 
         compute_task_def = (
             compute_task_def if compute_task_def is not None else self._get_deserialized_compute_task_def(
-                task_id=task_id,
-                subtask_id=subtask_id,
-                deadline=deadline,
-                frames=frames if frames is not None else [1],
+                kwargs={
+                    'task_id': task_id,
+                    'subtask_id': subtask_id,
+                    'deadline': deadline,
+                    'extra_data__frames': frames if frames is not None else [1],
+                },
             )
         )
         assert isinstance(requestor_id, str) or requestor_id is None
@@ -281,9 +284,11 @@ class ConcentIntegrationTestCase(TestCase):
                     provider_id if provider_id is not None else self._get_provider_hex_public_key()
                 ),
                 want_to_compute_task=want_to_compute_task if want_to_compute_task is not None else self._get_deserialized_want_to_compute_task(
-                    provider_public_key=provider_public_key,
-                    provider_ethereum_public_key=provider_ethereum_public_key,
-                    task_id=task_id,
+                    kwargs={
+                        'provider_public_key': provider_public_key,
+                        'provider_ethereum_public_key': provider_ethereum_public_key,
+                        'task_id': task_id,
+                    },
                 ),
                 package_hash=package_hash,
                 size=size,
@@ -299,52 +304,26 @@ class ConcentIntegrationTestCase(TestCase):
         )
         return task_to_compute
 
-    def _get_deserialized_want_to_compute_task(
-        self, timestamp: Union[str, datetime.datetime, None] = None,
-        node_name: int = None,
-        task_id: Optional[str] = None,
-        perf_index=None,
-        max_resource_size=None,
-        max_memory_size=None,
-        num_cores=None,
-        price=None,
-        concent_enabled=None,
-        extra_data=None,
-        provider_public_key: Optional[str] = None,
-        provider_ethereum_public_key: Optional[str] = None,
-        requestor_private_key: Optional[bytes] = None,
+    def _get_deserialized_want_to_compute_task(self,
+        kwargs: Dict[str, Union[int, bytes, str]],
+        timestamp: Optional[Union[str, datetime.datetime, None]] = None,
     ) -> WantToComputeTask:
 
         """ Returns WantToComputeTask deserialized. """
 
         with freeze_time(timestamp or get_timestamp_string()):
             task_header: TaskHeader = TaskHeaderFactory(
-                task_id=task_id,
-                sign__privkey=requestor_private_key if requestor_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
+                task_id=kwargs['task_id'],
+                sign__privkey=kwargs['requestor_private_key'] if kwargs.get('requestor_private_key') is not None else self.REQUESTOR_PRIVATE_KEY,
             )
-
-            want_to_compute_task = WantToComputeTaskFactory(
-                node_name=node_name,
-                perf_index=perf_index,
-                max_resource_size=max_resource_size,
-                max_memory_size=max_memory_size,
-                num_cores=num_cores,
-                price=price,
-                concent_enabled=concent_enabled,
-                extra_data=extra_data,
-                provider_public_key=(
-                    provider_public_key if provider_public_key is not None else self._get_provider_hex_public_key()
-                ),
-                provider_ethereum_public_key=(
-                    provider_ethereum_public_key if provider_ethereum_public_key is not None else self._get_provider_ethereum_hex_public_key()
-                ),
-                task_header=task_header,
-            )
-        want_to_compute_task = self._sign_message(
-            want_to_compute_task,
-            self.PROVIDER_PRIVATE_KEY,
-        )
-        return want_to_compute_task
+        kwargs['task_header'] = task_header
+        if kwargs.get('provider_public_key') is None:
+            kwargs['provider_public_key'] = self._get_provider_hex_public_key()
+        if kwargs.get('provider_ethereum_public_key') is None:
+            kwargs['provider_ethereum_public_key'] = self._get_provider_ethereum_hex_public_key()
+        if kwargs.get('sign__privkey') is None:
+            kwargs['sign__privkey'] = self.PROVIDER_PRIVATE_KEY
+        return WantToComputeTaskFactory(**kwargs)
 
     def _get_deserialized_ack_report_computed_task(
         self,
@@ -637,45 +616,16 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_compute_task_def(  # pylint: disable=no-self-use
         self,
-        task_id: Optional[str] = None,
-        subtask_id: Optional[str] = None,
-        deadline: Union[str, int, float, None] = None,
-        extra_data: Optional[dict] = None,
-        short_description: str = 'path_root: /home/dariusz/Documents/tasks/resources, start_task: 6, end_task: 6...',
-        performance: float = 829.7531773625524,
-        docker_images: Optional[List[set]] = None,
-        frames: Optional[List[int]] = None
+        kwargs: Optional[Dict[str, Union[int, bytes, str]]] = None,
     ) -> ComputeTaskDef:
-        compute_task_def = ComputeTaskDefFactory(
-            task_id=task_id if task_id is not None else self._get_uuid(),
-            subtask_id=subtask_id if subtask_id is not None else self._get_uuid(),
-            extra_data=extra_data,
-            short_description=short_description,
-            performance=performance,
-        )
-        if isinstance(deadline, (int, float)):
-            compute_task_def['deadline'] = deadline
-        elif isinstance(deadline, str):
-            compute_task_def['deadline'] = parse_iso_date_to_timestamp(deadline)
-        else:
-            compute_task_def['deadline'] = parse_iso_date_to_timestamp(get_timestamp_string()) + 10
+        if not isinstance(kwargs, dict):
+            kwargs = {}
+        if kwargs.get('deadline') is None:
+            kwargs['deadline'] = parse_iso_date_to_timestamp(get_timestamp_string()) + 3600
+        elif isinstance(kwargs['deadline'], str):
+            kwargs['deadline'] = parse_iso_date_to_timestamp(kwargs['deadline'])
 
-        if extra_data is None:
-            compute_task_def['extra_data'] = {
-                'end_task': 6,
-                'frames': frames if frames is not None else [1],
-                'outfilebasename': 'Heli-cycles(3)',
-                'output_format': 'PNG',
-                'path_root': '/home/dariusz/Documents/tasks/resources',
-                'scene_file': '/golem/resources/scene-Helicopter-27-internal.blend',
-                'script_src': '# This template is rendered by',
-                'start_task': 6,
-                'total_tasks': 8
-            }
-        if docker_images is None:
-            compute_task_def['docker_images'] = [{'image_id': None, 'repository': 'golemfactory/blender', 'tag': '1.4'}]
-
-        return compute_task_def
+        return ComputeTaskDefFactory(**kwargs)
 
     def _get_deserialized_force_subtask_results_response(  # pylint: disable=no-self-use
         self,

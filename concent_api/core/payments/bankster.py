@@ -72,27 +72,22 @@ def claim_deposit(
         concent_use_case == ConcentUseCase.ADDITIONAL_VERIFICATION and
         settings.ADDITIONAL_VERIFICATION_COST > 0
     )
-
     # Bankster creates Client and DepositAccount objects (if they don't exist yet) for the requestor
     # and also for the provider if there's a non-zero claim against his account.
     # This is done in single database transaction.
-    with non_nesting_atomic(using='control'):
-        requestor_client: Client = get_or_create_with_retry(Client, public_key=requestor_public_key)
-
-        requestor_deposit_account: DepositAccount = get_or_create_with_retry(
+    requestor_client: Client = get_or_create_with_retry(Client, public_key=requestor_public_key)
+    requestor_deposit_account: DepositAccount = get_or_create_with_retry(
+        DepositAccount,
+        client=requestor_client,
+        ethereum_address=requestor_ethereum_address,
+    )
+    if is_claim_against_provider:
+        provider_client: Client = get_or_create_with_retry(Client, public_key=provider_public_key)
+        provider_deposit_account: DepositAccount = get_or_create_with_retry(
             DepositAccount,
-            client=requestor_client,
-            ethereum_address=requestor_ethereum_address,
+            client=provider_client,
+            ethereum_address=provider_ethereum_address,
         )
-
-        if is_claim_against_provider:
-            provider_client: Client = get_or_create_with_retry(Client, public_key=provider_public_key)
-
-            provider_deposit_account: DepositAccount = get_or_create_with_retry(
-                DepositAccount,
-                client=provider_client,
-                ethereum_address=provider_ethereum_address,
-            )
 
     # Bankster asks SCI about the amount of funds available in requestor's deposit.
     requestor_deposit = service.get_deposit_value(client_eth_address=requestor_ethereum_address)  # pylint: disable=no-value-for-parameter
@@ -105,6 +100,16 @@ def claim_deposit(
     # Bankster puts database locks on DepositAccount objects
     # that will be used as payers in newly created DepositClaims.
     with non_nesting_atomic(using='control'):
+        DepositAccount.objects.select_for_update().filter(
+            client=requestor_client,
+            ethereum_address=requestor_ethereum_address,
+        )
+        if is_claim_against_provider:
+            DepositAccount.objects.select_for_update().filter(
+                client=provider_client,
+                ethereum_address=provider_ethereum_address,
+            )
+
         # Bankster sums the amounts of all existing DepositClaims that have the same payer as the one being processed.
         aggregated_claims_against_requestor = DepositClaim.objects.filter(
             payer_deposit_account=requestor_deposit_account

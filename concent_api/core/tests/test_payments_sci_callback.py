@@ -17,6 +17,7 @@ from middleman_protocol.message import GolemMessageFrame
 from middleman_protocol.message import ErrorFrame
 from common.helpers import RequestIDGenerator
 from common.testing_helpers import generate_ecc_key_pair
+from core.decorators import retry_middleman_connection_if_not_pass_timeout
 from core.exceptions import SCICallbackFrameError
 from core.exceptions import SCICallbackPayloadError
 from core.exceptions import SCICallbackPayloadSignatureError
@@ -36,6 +37,7 @@ from core.payments.sci_callback import sci_callback
     CONCENT_PUBLIC_KEY=CONCENT_PUBLIC_KEY,
     SIGNING_SERVICE_PUBLIC_KEY=SIGNING_SERVICE_PUBLIC_KEY,
     CONCENT_ETHEREUM_PUBLIC_KEY='a7ea7479471be3035e3de19ecc495c13ab77d0f9c0bfcfb2b60356d89d874c6a0e016b1610719cd16581025bb65431f2c45f2ce4be2609ee88a63c9ef05e9e8c',
+    SCI_CALLBACK_RETRIES_TIME=1,
 )
 class SCICallbackTest(TestCase):
 
@@ -61,6 +63,7 @@ class SCICallbackTest(TestCase):
             yield self.frame
 
         self.frame_iterator = iterator
+        self.middleman_message = GolemMessageFrame(payload=Ping(), request_id=self.request_id)
 
     def _create_transaction_signing_request(self):  # pylint: disable=no-self-use
         transaction_siging_request = TransactionSigningRequest(
@@ -106,6 +109,16 @@ class SCICallbackTest(TestCase):
         self.assertEqual(signed_transaction.v, self.v)
         self.assertEqual(signed_transaction.r, self.r)
         self.assertEqual(signed_transaction.s, self.s)
+
+    def test_that_sci_callback_should_sign_transaction_after_two_retries(self):
+        with mock.patch('core.payments.sci_callback.socket.socket.connect'):
+            with mock.patch('core.payments.sci_callback.send_over_stream', side_effect=[socket.timeout, socket.timeout, None]):
+                with mock.patch('core.payments.sci_callback.unescape_stream', side_effect=self.frame_iterator):
+                    signed_transaction = sci_callback(self.transaction)
+
+            self.assertEqual(signed_transaction.v, self.v)
+            self.assertEqual(signed_transaction.r, self.r)
+            self.assertEqual(signed_transaction.s, self.s)
 
     def test_that_sci_callback_should_raise_exception_on_timeout(self):
         with mock.patch('core.payments.sci_callback.socket.socket.connect'):
@@ -204,3 +217,20 @@ class SCICallbackTest(TestCase):
                     ):
                         with self.assertRaises(SCICallbackTransactionSignatureError):
                             sci_callback(self.transaction)
+
+    def test_retry_middleman_connection_returns_correct_value(self):
+
+        @retry_middleman_connection_if_not_pass_timeout
+        def dummy_send_request_to_middleman_returns_none_value(_middleman_message):
+            return None
+
+        self.assertEqual(dummy_send_request_to_middleman_returns_none_value(self.middleman_message), None)
+
+    def test_retry_middleman_connection_returns_error_after_timout(self):
+
+        @retry_middleman_connection_if_not_pass_timeout
+        def dummy_send_request_to_middleman_raise_timeout_errors(_middleman_message):
+            raise SCICallbackTimeoutError()
+
+        with self.assertRaises(SCICallbackTimeoutError):
+            dummy_send_request_to_middleman_raise_timeout_errors(self.middleman_message)

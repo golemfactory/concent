@@ -1,5 +1,6 @@
 from functools import wraps
 from logging import getLogger
+from time import time
 from typing import Any
 from typing import Callable
 from typing import Union
@@ -17,6 +18,7 @@ from golem_messages.exceptions import MessageError
 from golem_messages.exceptions import MessageFromFutureError
 from golem_messages.exceptions import MessageTooOldError
 from golem_messages.exceptions import TimestampError
+from middleman_protocol.message import GolemMessageFrame
 
 from common import logging
 from common.constants import ERROR_IN_GOLEM_MESSAGE
@@ -31,6 +33,7 @@ from common.logging import log
 from common.logging import log_400_error
 from common.shortcuts import load_without_public_key
 from core.exceptions import CreateModelIntegrityError
+from core.exceptions import SCICallbackTimeoutError
 from core.exceptions import UnsupportedProtocolVersion
 from core.utils import generate_uuid
 from core.utils import is_given_golem_messages_version_supported_by_concent
@@ -315,4 +318,21 @@ def log_communication(view: Callable) -> Callable:
         log(logger, str(json_message_to_log))
         response_from_view = view(request,  golem_message, client_public_key)
         return response_from_view
+    return wrapper
+
+
+def retry_middleman_connection_if_not_pass_timeout(send_request_to_middleman: Callable) -> Callable:
+
+    @wraps(send_request_to_middleman)
+    def wrapper(middleman_message: GolemMessageFrame) -> bytes:
+        connection_start = time()
+        retry_counter = 0
+        while time() - connection_start < settings.SCI_CALLBACK_RETRIES_TIME:
+            try:
+                return send_request_to_middleman(middleman_message)
+            except (SCICallbackTimeoutError, SystemExit):
+                log(logger, f"Concent didn't get any response from middleman. Retrying. Retry amount: {retry_counter}.")
+                retry_counter += 1
+        log(logger, f'error: Concent failed to get response from middleman, in {retry_counter} retries.')
+        raise SCICallbackTimeoutError()
     return wrapper

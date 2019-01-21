@@ -138,7 +138,11 @@ class SigningService:
                 except (socket.error, socket.timeout) as exception:
                     logger.error(f'Socket error occurred: {exception}')
 
-                    self._attempt_reconnection()
+                    try:
+                        self._attempt_reconnection()
+                    except SigningServiceMaximumReconnectionAttemptsExceeded:
+                        logger.error('Maximum number of reconnections exceeded.')
+                        break
                 except KeyboardInterrupt:
                     # Handle keyboard interrupt.
                     logger.info('Closing connection and exiting on KeyboardInterrupt.')
@@ -153,7 +157,6 @@ class SigningService:
         self._increase_delay()
         self.reconnection_counter += 1
         if self.reconnection_counter > self.maximum_reconnection_attempts:
-            crash_logger.error("Maximum reconnection attempts exceeded.")
             raise SigningServiceMaximumReconnectionAttemptsExceeded
         logger.info(f'Reconnecting... (attempt: {self.reconnection_counter}/{self.maximum_reconnection_attempts})')
 

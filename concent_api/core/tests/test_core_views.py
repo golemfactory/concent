@@ -200,7 +200,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         self.assertIn('Error in Golem Message', response.json()['error'])
 
     @freeze_time("2017-11-17 10:00:00")
-    def test_send_should_return_http_400_if_task_id_already_use(self):
+    def test_send_should_return_http_400_if_subtask_id_already_use(self):
 
         response_202 = self.send_request(
             url='core:send',
@@ -229,6 +229,49 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             response_400,
             error_code=ErrorCode.SUBTASK_DUPLICATE_REQUEST
         )
+
+    @freeze_time("2017-11-17 10:00:00")
+    def test_send_should_return_http_202_if_task_id_already_in_use_but_subtask_id_differs_for_the_same_requestor(self):
+
+        response_202 = self.send_request(
+            url='core:send',
+            data=dump(
+                self.correct_golem_data,
+                self.PROVIDER_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY,
+            ),
+        )
+
+        self.assertIsInstance(response_202, HttpResponse)
+        self.assertEqual(response_202.status_code, 202)
+
+        task_to_compute = self._get_deserialized_task_to_compute()
+        task_to_compute.compute_task_def['task_id'] = self.compute_task_def['task_id']
+        task_to_compute.sign_message(self.REQUESTOR_PRIVATE_KEY)
+        report_computed_task = self._get_deserialized_report_computed_task(
+            task_to_compute=task_to_compute
+        )
+        force_report_computed_task = self._get_deserialized_force_report_computed_task(
+            report_computed_task=report_computed_task
+        )
+
+        response_202_again = self.send_request(
+            url='core:send',
+            data=dump(
+                force_report_computed_task,
+                self.PROVIDER_PRIVATE_KEY,
+                CONCENT_PUBLIC_KEY,
+            ),
+        )
+
+        self.assertIsInstance(response_202, HttpResponse)
+        self.assertEqual(response_202_again.status_code, 202)
+
+        subtask_1 = Subtask.objects.all().order_by('created_at')[0]  # pylint: disable=no-member
+        subtask_2 = Subtask.objects.all().order_by('created_at')[1]  # pylint: disable=no-member
+
+        self.assertEqual(subtask_1.task_id, subtask_2.task_id)
+        self.assertEqual(subtask_1.requestor, subtask_2.requestor)
 
     @freeze_time("2017-11-17 10:00:00")
     def test_send_should_return_http_400_if_get_invalid_type_of_message(self):

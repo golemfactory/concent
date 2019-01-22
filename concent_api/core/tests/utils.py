@@ -287,7 +287,7 @@ class ConcentIntegrationTestCase(TestCase):
                     kwargs={
                         'provider_public_key': provider_public_key,
                         'provider_ethereum_public_key': provider_ethereum_public_key,
-                        'task_id': task_id,
+                        'task_id': compute_task_def['task_id'],
                     },
                 ),
                 package_hash=package_hash,

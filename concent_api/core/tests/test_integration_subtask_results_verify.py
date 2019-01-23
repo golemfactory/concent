@@ -672,18 +672,18 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
     def _create_report_computed_task(self, blender_output_format='jpeg'):
         time_str = "2018-04-01 10:00:00"
         self.compute_task_def = self._get_deserialized_compute_task_def(
-            deadline=add_time_offset_to_date(time_str, 3611),
-            extra_data={
-                'end_task': 6,
-                'frames': [1],
-                'outfilebasename': 'Heli-cycles(3)',
-                'output_format': blender_output_format,  # pylint: disable=no-member
-                'path_root': '/home/dariusz/Documents/tasks/resources',
-                'scene_file': '/golem/resources/scene-Helicopter-27-internal.blend',
-                'script_src': '# This template is rendered by',
-                'start_task': 6,
-                'total_tasks': 8
-            }
+            kwargs={
+                'deadline': add_time_offset_to_date(time_str, 3611),
+                'extra_data__end_task': 6,
+                'extra_data__frames': [1],
+                'extra_data__outfilebasename': 'Heli-cycles(3)',
+                'extra_data__output_format': blender_output_format,  # pylint: disable=no-member
+                'extra_data__path_root': '/home/dariusz/Documents/tasks/resources',
+                'extra_data__scene_file': '/golem/resources/scene-Helicopter-27-internal.blend',
+                'extra_data__script_src': '# This template is rendered by',
+                'extra_data__start_task': 6,
+                'extra_data__total_tasks': 8
+            },
         )
         self.task_to_compute = self._get_deserialized_task_to_compute(
             timestamp=time_str,

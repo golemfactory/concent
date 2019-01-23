@@ -188,9 +188,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent     -> Requestor:                 ForceSubtaskResults (new timestamp)
         """
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline="2018-02-05 10:00:15",
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2018-02-05 10:00:15"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp="2018-02-05 10:00:00",
@@ -834,9 +832,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent                   -> Requestor                    SubtaskResultsSettled
         """
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline="2018-02-05 10:00:15",
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2018-02-05 10:00:15"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp="2018-02-05 10:00:00",
@@ -1031,9 +1027,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         Concent                   -> Provider:                    SubtaskResultsSettled
         """
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline="2018-02-05 10:00:15",
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2018-02-05 10:00:15"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp="2018-02-05 10:00:00",

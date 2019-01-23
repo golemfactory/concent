@@ -38,9 +38,7 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
         Concent will not accept any new messages which create or update subtasks in active state.
         """
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline="2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp="2017-12-01 10:00:00",
@@ -78,9 +76,7 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
         It also checks if email to admins is sent when all subtasks are turned into passive states.
         """
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline="2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp="2017-12-01 10:00:00",
             compute_task_def=compute_task_def,

@@ -27,7 +27,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
     def setUp(self):
         super().setUp()
         self.compute_task_def = self._get_deserialized_compute_task_def(
-            deadline=self._create_timestamp_from_string("2017-12-01 11:00:00")
+            kwargs={'deadline': self._create_timestamp_from_string("2017-12-01 11:00:00")},
         )
 
         with freeze_time("2017-12-01 10:00:00"):

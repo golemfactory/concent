@@ -31,9 +31,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent. Concent rejects computed task immediately when deadline is exceeded
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -79,7 +77,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         """
 
         compute_task_def = self._get_deserialized_compute_task_def(
-            deadline=float(parse_iso_date_to_timestamp("2017-12-01 11:00:00")) + 0.123
+            kwargs={'deadline': float(parse_iso_date_to_timestamp("2017-12-01 11:00:00")) + 0.123}
         )
 
         task_to_compute = self._get_deserialized_task_to_compute(
@@ -146,9 +144,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -303,9 +299,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -472,9 +466,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -675,9 +667,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # Concent   -> Requestor:  MessageVerdictReportComputedTask
 
         # STEP 1: Provider forces computed task report via Concent
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -833,9 +823,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         """
 
         # STEP 1: Provider forces computed task report via Concent
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -916,9 +904,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         """
         # STEP 1: Requestor accepts computed task via Concent
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -958,9 +944,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         """
         # STEP 1: Requestor accepts computed task via Concent
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -1006,9 +990,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -1168,9 +1150,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -1333,9 +1313,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -1454,9 +1432,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -1650,9 +1626,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -1699,9 +1673,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -1748,9 +1720,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -1797,9 +1767,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -1845,9 +1813,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         """
         # STEP 1: Requestor accepts computed task via Concent
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -1889,9 +1855,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -1934,9 +1898,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -1983,9 +1945,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -2147,9 +2107,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -2316,9 +2274,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         # Concent   -> Provider:   HTTP 204
 
         # STEP 1: Provider forces computed task report via Concent
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline    = "2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp           = "2017-12-01 10:00:00",
@@ -2427,9 +2383,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 1: Provider forces computed task report via Concent
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline="2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp="2017-12-01 10:00:00",
@@ -2757,9 +2711,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         Concent  -> Provider:  ServiceRefused(PriceNotPositive)
         """
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline="2017-12-01 11:00:00"
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp="2017-12-01 10:00:00",

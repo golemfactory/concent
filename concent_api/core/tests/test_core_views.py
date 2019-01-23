@@ -41,7 +41,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
         self.stored_message_counter = 0
         self.message_timestamp = get_current_utc_timestamp()  # 1510912800
         self.compute_task_def = self._get_deserialized_compute_task_def(
-            deadline=self.message_timestamp + settings.CONCENT_MESSAGING_TIME
+            kwargs={'deadline': self.message_timestamp + settings.CONCENT_MESSAGING_TIME}
         )
         self.task_to_compute = self._get_deserialized_task_to_compute(
             compute_task_def=self.compute_task_def,
@@ -53,15 +53,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
             report_computed_task=self.report_computed_task
         )
 
-        self.want_to_compute = tasks.WantToComputeTaskFactory(
-            node_name=1,
-            task_id=self._get_uuid(),
-            perf_index=3,
-            price=4,
-            max_resource_size=5,
-            max_memory_size=6,
-            num_cores=7,
-        )
+        self.want_to_compute = self._get_deserialized_want_to_compute_task({'task_id': self._get_uuid()})
 
         self.cannot_compute_task = message.CannotComputeTask(
             task_to_compute=self.task_to_compute
@@ -130,9 +122,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
     def test_send_should_accept_valid_message_with_non_numeric_task_id(self):
         assert StoredMessage.objects.count() == 0
 
-        compute_task_def = self._get_deserialized_compute_task_def(
-            deadline=self.message_timestamp
-        )
+        compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': self.message_timestamp})
         task_to_compute = self._get_deserialized_task_to_compute(
             compute_task_def=compute_task_def,
         )
@@ -245,11 +235,12 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
         assert isinstance(self.want_to_compute, message.Message)
 
+        # Message already signed so there is no need to use dump() function with private_key
         response_400 = self.send_request(
             url='core:send',
             data=dump(
                 self.want_to_compute,
-                self.PROVIDER_PRIVATE_KEY,
+                None,
                 CONCENT_PUBLIC_KEY
             ),
         )
@@ -963,7 +954,7 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
         super().setUp()
 
         self.compute_task_def = self._get_deserialized_compute_task_def(
-            deadline=get_current_utc_timestamp() + 100
+            kwargs={'deadline': get_current_utc_timestamp() + 100}
         )
 
         self.task_to_compute = self._get_deserialized_task_to_compute(

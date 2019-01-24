@@ -1,5 +1,3 @@
-from django.test import override_settings
-
 import mock
 from web3 import Web3
 
@@ -15,11 +13,6 @@ from core.tests.utils import ConcentIntegrationTestCase
 (SIGNING_SERVICE_PRIVATE_KEY, SIGNING_SERVICE_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
-@override_settings(
-    CONCENT_ETHEREUM_PUBLIC_KEY='b51e9af1ae9303315ca0d6f08d15d8fbcaecf6958f037cc68f9ec18a77c6f63eae46daaba5c637e06a3e4a52a2452725aafba3d4fda4e15baf48798170eb7412',
-    GETH_ADDRESS='http://localhost:5555/',
-    GNT_DEPOSIT_CONTRACT_ADDRESS='0xcfB81A6EE3ae6aD4Ac59ddD21fB4589055c13DaD',
-)
 class SCIBackendTest(ConcentIntegrationTestCase):
 
     def setUp(self):

@@ -4,7 +4,9 @@ from web3 import Web3
 from common.testing_helpers import generate_ecc_key_pair
 from common.helpers import get_current_utc_timestamp
 from core.constants import MOCK_TRANSACTION_HASH
+from core.exceptions import SCINotSynchronized
 from core.payments.backends import sci_backend
+from core.payments.backends.sci_backend import handle_sci_synchronization
 from core.tests.utils import ConcentIntegrationTestCase
 
 
@@ -273,3 +275,70 @@ class SCIBackendTest(ConcentIntegrationTestCase):
             value=self.transaction_value,
             subtask_id=sci_backend._hexencode_uuid(self.task_to_compute.subtask_id),
         )
+
+    def test_handle_sci_synchronization_raise_custom_exception_if_not_sync(self):
+
+        @handle_sci_synchronization
+        def dummy_handle_exception_if_sci_not_synchronized():
+            return None
+
+        with mock.patch(
+            'core.payments.payment_interface.PaymentInterface.__new__',
+            return_value=mock.Mock(
+                is_synchronized=mock.Mock(
+                    return_value=False,
+                ),
+            )
+        ):
+            with self.assertRaises(SCINotSynchronized):
+                dummy_handle_exception_if_sci_not_synchronized()
+
+    def test_handle_sci_synchronization_returns_empty_list_on_specific_value_error(self):
+
+        @handle_sci_synchronization
+        def dummy_handle_exception_if_sci_not_synchronized():
+            raise ValueError("There are currently no blocks after")
+
+        with mock.patch(
+            'core.payments.payment_interface.PaymentInterface.__new__',
+            return_value=mock.Mock(
+                is_synchronized=mock.Mock(
+                    return_value=True,
+                ),
+            )
+        ):
+            self.assertEqual(dummy_handle_exception_if_sci_not_synchronized(), [])
+
+    def test_that_handle_sci_synchronization_raises_not_specific_value_error(self):
+
+        @handle_sci_synchronization
+        def dummy_handle_exception_if_sci_not_synchronized():
+            raise ValueError()
+
+        with mock.patch(
+            'core.payments.payment_interface.PaymentInterface.__new__',
+            return_value=mock.Mock(
+                is_synchronized=mock.Mock(
+                    return_value=True,
+                ),
+            )
+        ):
+            with self.assertRaises(ValueError):
+                dummy_handle_exception_if_sci_not_synchronized()
+
+    def test_that_handle_sci_synchronization_does_not_catch_other_exceptions(self):
+
+        @handle_sci_synchronization
+        def dummy_handle_exception_if_sci_not_synchronized():
+            raise Exception("foo You!!!")
+
+        with mock.patch(
+            'core.payments.payment_interface.PaymentInterface.__new__',
+            return_value=mock.Mock(
+                is_synchronized=mock.Mock(
+                    return_value=True,
+                ),
+            )
+        ):
+            with self.assertRaises(Exception):
+                dummy_handle_exception_if_sci_not_synchronized()

@@ -73,6 +73,7 @@ class ErrorCode(enum.Enum):
     QUEUE_TIMEOUT                                                       = 'queue.timeout'
     QUEUE_WRONG_STATE                                                   = 'queue.wrong_state'
     REQUEST_BODY_NOT_EMPTY                                              = 'request_body.not_empty'
+    SCI_NOT_SYNCHRONIZED                                                = 'sci.not_synchronized'
     SUBTASK_DUPLICATE_REQUEST                                           = 'subtask.duplicate_request'
     UNSUPPORTED_PROTOCOL_VERSION                                        = 'concent.unsupported_protocol_version'
     VERIFIER_COMPUTING_SSIM_FAILED                                     = 'verifier.computing_ssim_failed'

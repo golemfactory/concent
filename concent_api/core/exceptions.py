@@ -83,3 +83,7 @@ class BanksterTimestampError(Exception):
 
 class BanksterTransactionMismatchError(Exception):
     pass
+
+
+class SCINotSynchronized(ConcentBaseException):
+    pass

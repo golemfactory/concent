@@ -34,6 +34,7 @@ from common.logging import log_400_error
 from common.shortcuts import load_without_public_key
 from core.exceptions import CreateModelIntegrityError
 from core.exceptions import SCICallbackTimeoutError
+from core.exceptions import SCINotSynchronized
 from core.exceptions import UnsupportedProtocolVersion
 from core.utils import generate_uuid
 from core.utils import is_given_golem_messages_version_supported_by_concent
@@ -224,6 +225,17 @@ def handle_errors_and_responses(database_name: str) -> Callable:
                 )
             except UnsupportedProtocolVersion as exception:
                 return HttpResponse(exception.error_message, status=404)
+
+            except SCINotSynchronized as exception:
+                json_response = JsonResponse(
+                    {
+                        'error': 'SCI is currently not synchronized',
+                        'error_code': exception.error_code.value,
+                    },
+                    status=502
+                )
+                log(logger, str(json_response))
+                return json_response
 
             except ConcentBaseException as exception:
                 log_400_error(

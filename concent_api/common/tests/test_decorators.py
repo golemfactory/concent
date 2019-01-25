@@ -21,10 +21,11 @@ from common.testing_helpers import generate_ecc_key_pair
 from core.decorators import handle_errors_and_responses
 from core.decorators import require_golem_auth_message
 from core.exceptions import Http400
+from core.exceptions import SCINotSynchronized
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
 
-(CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
+(CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
 
 
 @require_golem_auth_message
@@ -269,6 +270,23 @@ class DecoratorsTestCase(ConcentIntegrationTestCase):
 
         self.assertEqual(response.status_code, 405)
         self.assertEqual(len(response.content), 0)
+
+    def test_handle_errors_and_responses_should_return_json_response_if_sci_not_synchronize(self):
+        request = self.request_factory.post(
+            "/dummy-url/",
+            content_type='application/octet-stream',
+            HTTP_X_GOLEM_MESSAGES=settings.GOLEM_MESSAGES_VERSION,
+        )
+
+        @handle_errors_and_responses(database_name='default')
+        def dummy_view_handle_sci_not_synchronize(_request, _message, _client_public_key):
+            raise SCINotSynchronized('dummy', error_code=ErrorCode.SCI_NOT_SYNCHRONIZED)
+
+        response = dummy_view_handle_sci_not_synchronize(request, self.client_auth, self.PROVIDER_PUBLIC_KEY)  # pylint: disable=assignment-from-no-return
+
+        self.assertEqual(response.status_code, 502)  # pylint: disable=no-member
+        self.assertIn('error', json.loads(response.content))  # pylint: disable=no-member
+        self.assertEqual('sci.not_synchronized', json.loads(response.content)['error_code'])  # pylint: disable=no-member
 
     def test_log_task_errors(self):
         @log_task_errors

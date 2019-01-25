@@ -1,14 +1,18 @@
 import binascii
 import uuid
 from enum import Enum
+from functools import wraps
 
+from typing import Any
 from typing import Callable
 
 from golem_sci.blockshelper import BlocksHelper
 from golem_sci.implementation import SCIImplementation
 from web3 import Web3
 
+from common.constants import ErrorCode
 from core.constants import ETHEREUM_ADDRESS_LENGTH
+from core.exceptions import SCINotSynchronized
 from core.payments.payment_interface import PaymentInterface
 from core.validation import validate_uuid
 from core.validation import validate_value_is_int_convertible_and_non_negative
@@ -20,6 +24,27 @@ class TransactionType(Enum):
     FORCE = 'force'
 
 
+def handle_sci_synchronization(sci_function: Callable) -> Callable:
+
+    @wraps(sci_function)
+    def wrapper(*args: Any, **kwargs: Any) -> None:
+        if PaymentInterface().is_synchronized():  # type: ignore  # pylint: disable=no-member
+            try:
+                return sci_function(*args, **kwargs)
+            except ValueError as exception:
+                if "There are currently no blocks after" in str(exception):
+                    return []  # type: ignore
+                else:
+                    raise
+        else:
+            raise SCINotSynchronized(
+                'SCI is currently not synchronized',
+                ErrorCode.SCI_NOT_SYNCHRONIZED,
+            )
+    return wrapper
+
+
+@handle_sci_synchronization
 def get_list_of_payments(
     requestor_eth_address: str,
     provider_eth_address: str,
@@ -92,6 +117,7 @@ def get_transaction_count() -> int:
     return PaymentInterface().get_transaction_count()  # type: ignore  # pylint: disable=no-member
 
 
+@handle_sci_synchronization
 def get_deposit_value(client_eth_address: str) -> int:
     assert isinstance(client_eth_address, str) and len(client_eth_address) == ETHEREUM_ADDRESS_LENGTH
 

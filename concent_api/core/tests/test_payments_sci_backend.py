@@ -342,3 +342,37 @@ class SCIBackendTest(ConcentIntegrationTestCase):
         ):
             with self.assertRaises(Exception):
                 dummy_handle_exception_if_sci_not_synchronized()
+
+    def test_that_sci_backend_get_covered_additional_verification_costs_should_return_list_of_payments(self):
+        with mock.patch(
+            'core.payments.payment_interface.PaymentInterface.__new__',
+            return_value=mock.Mock(
+                get_covered_additional_verification_costs=mock.Mock(
+                    return_value=self._get_list_of_covered_additional_verification_costs()
+                ),
+                get_block_number=mock.Mock(
+                    return_value=self.block_number,
+                ),
+                REQUIRED_CONFS=self.required_confs,
+            ),
+        ) as new_sci_rpc:
+            with mock.patch(
+                'core.payments.backends.sci_backend.BlocksHelper.get_first_block_after',
+                return_value=mock.MagicMock(number=self.last_block),
+            ) as get_first_block_after:
+                list_of_payments = sci_backend.get_covered_additional_verification_costs(
+                    self.task_to_compute.provider_ethereum_address,
+                    self.current_time,
+                )
+
+        self.assertEqual(len(list_of_payments), len(self._get_list_of_covered_additional_verification_costs()))
+
+        new_sci_rpc.return_value.get_covered_additional_verification_costs.assert_called_with(
+            address=Web3.toChecksumAddress(self.task_to_compute.provider_ethereum_address),
+            from_block=self.last_block,
+            to_block=self.block_number - self.required_confs,
+        )
+
+        new_sci_rpc.return_value.get_block_number.assert_called()
+
+        get_first_block_after.assert_called_with(self.current_time)

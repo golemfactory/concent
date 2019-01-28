@@ -1,0 +1,25 @@
+{% extends "admin/index.html" %}
+{% block content %}
+{{ block.super }}
+{% endblock %}
+
+{% block sidebar %}
+{{ block.super }}
+<style>
+a.button {
+    background-color: #79aec8;
+    border-color: #247c94;
+    color: white;
+    padding: 10px 26px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 18px;
+    margin: 4px 2px;
+    cursor: pointer;
+}
+</style>
+<div>
+    <a href="{% url 'admin:payment_report' %}" class="button">$ Generate Payment Report $</a>
+</div>
+{% endblock %}

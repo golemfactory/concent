@@ -71,21 +71,10 @@ def store_pending_message(
             client=client,
             queue=queue.name,
             subtask=subtask,
+            payment_info=_create_payment_info_if_necessary(payment_message)
         )
         receive_queue.full_clean()
         receive_queue.save()
-        if payment_message is not None:
-            payment_committed_message = PaymentInfo(
-                payment_ts=parse_timestamp_to_utc_datetime(payment_message.payment_ts),
-                task_owner_key=payment_message.task_owner_key,
-                provider_eth_account=payment_message.provider_eth_account,
-                amount_paid=payment_message.amount_paid,
-                recipient_type=payment_message.recipient_type.name,  # pylint: disable=no-member
-                amount_pending=payment_message.amount_pending,
-                pending_response=receive_queue
-            )
-            payment_committed_message.full_clean()
-            payment_committed_message.save()
     except IntegrityError:
         raise CreateModelIntegrityError
 
@@ -95,6 +84,25 @@ def store_pending_message(
         queue.name,
         subtask
     )
+
+
+def _create_payment_info_if_necessary(
+    payment_message: Optional[message.concents.ForcePaymentCommitted]=None
+) -> Optional[PaymentInfo]:
+    if payment_message is not None:
+        payment_info = PaymentInfo(
+            payment_ts=parse_timestamp_to_utc_datetime(payment_message.payment_ts),
+            task_owner_key=payment_message.task_owner_key,
+            provider_eth_account=payment_message.provider_eth_account,
+            amount_paid=payment_message.amount_paid,
+            recipient_type=payment_message.recipient_type.name,  # pylint: disable=no-member
+            amount_pending=payment_message.amount_pending,
+        )
+        payment_info.full_clean()
+        payment_info.save()
+        return payment_info
+    else:
+        return None
 
 
 def create_file_transfer_token_for_concent(

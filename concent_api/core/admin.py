@@ -1,11 +1,20 @@
-import datetime
 from decimal import Decimal
+from typing import Any
+from typing import Dict
+from typing import List
+
+import datetime
+
+from django.conf import settings
 from django.contrib import admin
+from django.db import transaction
 from django.db.models import Q
 from django.db.models import QuerySet
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
 from django.http.request import HttpRequest
+from django.utils.decorators import method_decorator
+from django.views.generic import TemplateView
 from common.admin import ModelAdminReadOnlyMixin
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
@@ -16,9 +25,46 @@ from .models import PendingResponse
 from .models import StoredMessage
 from .models import Subtask
 from .models import SubtaskWithTimingColumnsManager
+from .payments.report import create_report
 
 ACTIVE_STATE_NAMES = [x.name for x in Subtask.ACTIVE_STATES]
 PASSIVE_STATE_NAMES = [x.name for x in Subtask.PASSIVE_STATES]
+
+
+@method_decorator(transaction.non_atomic_requests(using='control'), name='dispatch')
+class PaymentReportAdminView(TemplateView):
+
+    template_name = 'admin/payment_report.html'
+
+    def get_context_data(self, **kwargs: Any) -> Dict:
+        context_data = super().get_context_data(**kwargs)
+        context_data['payment_report'] = create_report()
+        context_data['eth_network'] = self._get_eth_network()
+        return context_data
+
+    @staticmethod
+    def _get_eth_network() -> str:
+        if settings.ETHEREUM_CHAIN == 'rinkeby':
+            return 'rinkeby.'
+        else:
+            return ''
+
+
+old_get_urls = admin.site.get_urls
+
+
+def get_urls() -> List:
+    from django.conf.urls import url
+
+    urls = old_get_urls()
+    urls += [
+        url(r'^payment_report/$', admin.site.admin_view(PaymentReportAdminView.as_view()), name='payment_report')
+    ]
+    return urls
+
+
+# This is a way to add custom non-model related view to Django admin.
+admin.site.get_urls = get_urls
 
 
 class ActivePassiveDownloadsStateFilter(admin.SimpleListFilter):

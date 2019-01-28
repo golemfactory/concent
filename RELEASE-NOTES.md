@@ -1,3 +1,36 @@
+### 0.11.0
+#### Compatibility
+- golem-messages: 2.24.2
+- golem-smart-contracts-interface: 1.6.1
+
+#### Endpoints and uses cases in general
+- Bugfix: Change concent response from ServiceRefused to Http404 when client want to communicate with "unsupported_protocol_version" (#1051).
+- Bugfix: Validate protocol version (#1057).
+- Bugfix: Fix non nesting atomic to verify transaction nesting in runtime instead of on startup (#1053).
+- Bugfix: Fix jpeg handling in verification use case (#1046).
+- Bugfix: Validate message not identical (#1097).
+- Bugfix: Remove constraint in subtask model that says that the requestor must be unique together with task (#1080).
+- Bugfix: Validate message not identical (#1056).
+
+#### Payments
+- Preventing multiple settlement payments for the same subtasks (#1039).
+- Bugfix: Concent was not ignoring unconfirmed blocks when searching for payments (#1067).
+- Bugfix: Nonce gets incremented when settle overdue acceptances fail (#1037).
+- Bugfix: Wrong payment_ts given in ForcePaymentCommitted message (PR: #1020).
+- Bugfix: Acceptances covered by an existing payment that was too low should overdue (#1007).
+- Bugfix: Message type returned by Concent when there is not enough requestor deposit (#1011).
+- Bugfix: Concent should accept SubtaskResultsAccepted signed by concent (#1006).
+- Bugfix: SubtaskResultsAccepted signature not checked (#1000).
+- Bugfix: Payment rejected if there was a payment after one of the acceptances (#983).
+- Bugfix: Case with no payments from the requestor is not handled (#980).
+- Bugfix: Wrong list of forced payments used in the payment use case (#982).
+- Bugfix: Finalize deposit claim (#977, #978).
+- Bugfix: discard_claim operation error handling (#974).
+- Bugfix: Concent doesn't reject already paid acceptances (#1091).
+
+##### New settings
+- `SCI_CALLBACK_RETRIES` (#850).
+
 ### 0.10.2
 
 #### Endpoints and uses cases in general

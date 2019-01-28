@@ -604,9 +604,11 @@ class PendingResponse(Model):
     created_at = DateTimeField(auto_now_add=True)
     modified_at = DateTimeField(auto_now=True)
 
+    payment_info = OneToOneField('PaymentInfo', blank=True, null=True)
+
     def clean(self) -> None:
         # payment_message can be included only if current state is ForcePaymentCommitted
-        if self.response_type != PendingResponse.ResponseType.ForcePaymentCommitted.name and self.payments.filter(pending_response__pk = self.pk).exists():  # pylint: disable=no-member
+        if self.response_type_enum != PendingResponse.ResponseType.ForcePaymentCommitted and self.payment_info is not None:
             raise ValidationError({
                 'payments_message': "Only 'ForcePaymentCommitted' responses can have a 'PaymentInfo' instance associated with it"
             })
@@ -649,7 +651,6 @@ class PaymentInfo(Model):
         decimal_places=0,
         validators=[MinValueValidator(0)]
     )
-    pending_response = ForeignKey(PendingResponse, related_name='payments')
 
     @property
     def amount_paid_as_int(self) -> int:

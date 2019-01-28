@@ -22,7 +22,7 @@ from core.validation import validate_value_is_int_convertible_and_positive
 
 class TransactionType(Enum):
     BATCH = 'batch'
-    FORCE = 'force'
+    FORCED_SUBTASK_PAYMENT = 'force_subtask_payment'
     SETTLEMENT = 'settlement'
 
 
@@ -83,7 +83,7 @@ def get_list_of_payments(
             from_block=first_block_after_payment_number,
             to_block=latest_block_number - payment_interface.REQUIRED_CONFS,  # pylint: disable=no-member
         )
-    elif transaction_type == TransactionType.FORCE:
+    elif transaction_type == TransactionType.FORCED_SUBTASK_PAYMENT:
         payments_list = payment_interface.get_forced_subtask_payments(  # pylint: disable=no-member
             payer_address=Web3.toChecksumAddress(requestor_eth_address),
             payee_address=Web3.toChecksumAddress(provider_eth_address),

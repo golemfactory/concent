@@ -887,6 +887,13 @@ class ConcentIntegrationTestCase(TestCase):
         payment_item.closure_time = parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
         return payment_item
 
+    def _create_cover_additional_verification_costs_object(self, amount, subtask_id):  # pylint: disable=no-self-use
+        payment_item = mock.Mock()
+        payment_item.amount = amount
+        payment_item.subtask_id = subtask_id
+        payment_item.tx_hash = MOCK_TRANSACTION_HASH
+        return payment_item
+
     def _get_list_of_batch_transactions(self, requestor_eth_address = None, provider_eth_address = None, payment_ts = None, current_time = None, transaction_type = None):  # pylint: disable=unused-argument
         current_time = get_current_utc_timestamp()
         item1 = self._create_batch_payment_object(amount=1000, closure_time=current_time - 4000)
@@ -896,6 +903,11 @@ class ConcentIntegrationTestCase(TestCase):
     def _get_list_of_settlement_transactions(self, requestor_eth_address = None, provider_eth_address = None, payment_ts = None, current_time = None, transaction_type = None):  # pylint: disable=unused-argument
         item1 = self._create_settlement_payment_object(amount=1000, subtask_id=self._get_uuid('1'))
         item2 = self._create_settlement_payment_object(amount=2000, subtask_id=self._get_uuid('2'))
+        return [item1, item2]
+
+    def _get_list_of_covered_additional_verification_costs(self, requestor_eth_address = None, provider_eth_address = None, payment_ts = None, current_time = None, transaction_type = None):  # pylint: disable=unused-argument
+        item1 = self._create_cover_additional_verification_costs_object(amount=1000, subtask_id=self._get_uuid('1'))
+        item2 = self._create_cover_additional_verification_costs_object(amount=2000, subtask_id=self._get_uuid('2'))
         return [item1, item2]
 
     def _get_empty_list_of_transactions(self, requestor_eth_address = None, provider_eth_address = None, payment_ts = None, current_time = None, transaction_type = None):  # pylint: disable=no-self-use, unused-argument

@@ -100,3 +100,15 @@ def call_on_confirmed_transaction(
     callback: Callable
 ) -> None:
     backend.call_on_confirmed_transaction(tx_hash, callback)
+
+
+@_add_backend
+def get_covered_additional_verification_costs(
+    backend: Any,
+    client_eth_address: str,
+    payment_ts: int,
+) -> list:
+    return backend.get_covered_additional_verification_costs(
+        client_eth_address,
+        payment_ts,
+    )

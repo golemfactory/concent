@@ -1138,9 +1138,7 @@ def handle_messages_from_database(client_public_key: bytes) -> Union[message.Mes
             return response_to_client
 
         elif pending_response.response_type == PendingResponse.ResponseType.ForcePaymentCommitted.name:  # pylint: disable=no-member
-            payment_message = pending_response.payments.filter(
-                pending_response__pk = pending_response.pk
-            ).order_by('id').last()
+            payment_message = pending_response.payments.order_by('id').last()
 
             response_to_client = message.concents.ForcePaymentCommitted(
                 payment_ts=parse_datetime_to_timestamp(payment_message.payment_ts),

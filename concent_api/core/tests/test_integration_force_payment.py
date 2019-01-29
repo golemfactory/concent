@@ -7,6 +7,7 @@ from golem_messages.utils import decode_hex
 
 from common.testing_helpers import generate_ecc_key_pair
 from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
+from core.exceptions import NoUnsettledTasks
 from core.exceptions import TooSmallRequestorDeposit
 from core.models import PendingResponse
 from core.tests.utils import ConcentIntegrationTestCase
@@ -238,6 +239,76 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         Expected message exchange:
         Provider  -> Concent:    ForcePayment
         Concent   -> Provider:   ForcePaymentRejected
+        """
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp                       = "2018-02-05 10:00:00",
+            deadline                        = "2018-02-05 10:00:10",
+            subtask_id=self._get_uuid('1'),
+            price                           = 10000,
+        )
+
+        subtask_results_accepted_list = [
+            self._get_deserialized_subtask_results_accepted(
+                timestamp="2018-02-05 10:00:15",
+                payment_ts="2018-02-05 9:55:00",
+                report_computed_task=self._get_deserialized_report_computed_task(
+                    timestamp="2018-02-05 10:00:05",
+                    task_to_compute=task_to_compute
+                )
+            ),
+            self._get_deserialized_subtask_results_accepted(
+                timestamp="2018-02-05 9:00:15",
+                payment_ts="2018-02-05 8:55:00",
+                report_computed_task=self._get_deserialized_report_computed_task(
+                    timestamp="2018-02-05 10:00:05",
+                    task_to_compute=self._get_deserialized_task_to_compute(
+                        timestamp="2018-02-05 9:00:00",
+                        deadline="2018-02-05 9:00:10",
+                        subtask_id=self._get_uuid('2'),
+                        price=3000,
+                    )
+                )
+            )
+        ]
+        serialized_force_payment = self._get_serialized_force_payment(
+            timestamp                     = "2018-02-05 12:00:20",
+            subtask_results_accepted_list = subtask_results_accepted_list
+        )
+
+        with freeze_time("2018-02-05 12:00:20"):
+            with mock.patch(
+                'core.message_handlers.bankster.settle_overdue_acceptances',
+                side_effect=NoUnsettledTasks()
+            ) as settle_overdue_acceptances:
+                response = self.send_request(
+                    url='core:send',
+                    data                                = serialized_force_payment,
+                )
+
+        settle_overdue_acceptances.assert_called_with(
+            requestor_ethereum_address=task_to_compute.requestor_ethereum_address,
+            provider_ethereum_address=task_to_compute.provider_ethereum_address,
+            acceptances=subtask_results_accepted_list,
+            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+        )
+
+        self._test_response(
+            response,
+            status       = 200,
+            key          = self.PROVIDER_PRIVATE_KEY,
+            message_type = message.concents.ForcePaymentRejected,
+            fields       = {
+                'reason':    message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,
+                'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
+            }
+        )
+        self._assert_stored_message_counter_not_increased()
+
+    def test_that_if_requestor_does_not_have_funds_concent_responds_with_service_refused(self):
+        """
+        Expected message exchange:
+        Provider  -> Concent:    ForcePayment
+        Concent   -> Provider:   ServiceRefused (RESASON: TooSmallRequestorDeposit)
         """
         task_to_compute = self._get_deserialized_task_to_compute(
             timestamp                       = "2018-02-05 10:00:00",

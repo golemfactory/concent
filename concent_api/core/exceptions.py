@@ -81,6 +81,10 @@ class TooSmallRequestorDeposit(Exception):
     pass
 
 
+class NoUnsettledTasks(Exception):
+    pass
+
+
 class BanksterTimestampError(Exception):
     pass
 

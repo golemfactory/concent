@@ -48,6 +48,7 @@ from conductor.tasks import result_transfer_request
 from core.exceptions import BanksterTimestampError
 from core.exceptions import CreateModelIntegrityError
 from core.exceptions import Http400
+from core.exceptions import NoUnsettledTasks
 from core.exceptions import TooSmallProviderDeposit
 from core.exceptions import TooSmallRequestorDeposit
 from core.exceptions import UnsupportedProtocolVersion
@@ -820,6 +821,11 @@ def handle_send_force_payment(
         return message.concents.ServiceRefused(
             task_to_compute=task_to_compute,
             reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
+        )
+    except NoUnsettledTasks:
+        return message.concents.ForcePaymentRejected(
+            force_payment=client_message,
+            reason=message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,
         )
     provider_force_payment_commited = message.concents.ForcePaymentCommitted(
         payment_ts              = parse_datetime_to_timestamp(claim_against_requestor.closure_time),

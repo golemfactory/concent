@@ -9,6 +9,7 @@ from common.constants import ConcentUseCase
 from common.helpers import ethereum_public_key_to_address
 from core.constants import MOCK_TRANSACTION_HASH
 from core.exceptions import BanksterTransactionMismatchError
+from core.exceptions import NoUnsettledTasks
 from core.exceptions import TooSmallProviderDeposit
 from core.exceptions import TooSmallRequestorDeposit
 from core.message_handlers import store_subtask
@@ -344,7 +345,7 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
         self.validate_list_of_transaction_mock.assert_called_once()
         self.assertEqual(self.get_list_of_payments_mock.call_count, get_list_of_payments_call_count)
 
-    def test_that_settle_overdue_acceptances_should_return_none_if_subtask_costs_where_already_paid(self):
+    def test_that_settle_overdue_acceptances_should_raise_no_unsettled_tasks_exception_when_all_tasks_are_paid_off(self):
         """
         In this test we have following calculations:
 
@@ -357,26 +358,36 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
         """
         self.create_subtask_results_accepted_list(price=3000)
 
-        claim_against_requestor = self.call_settle_overdue_acceptances_with_mocked_sci_functions()
+        with self.assertRaises(NoUnsettledTasks):
+            self.call_settle_overdue_acceptances_with_mocked_sci_functions()
 
-        self.assertIsNone(claim_against_requestor)
         self.assert_mocked_sci_functions_were_called()
 
     def test_that_settle_overdue_acceptances_should_raise_too_small_requestor_deposit_exception_when_requestor_has_insufficient_funds(self):
         """
-        In this test we have following calculations:
+        In this test we have following calculations
+        (functions are mocked, but values are set to better understand calculations):
 
-        TaskToCompute price:                                    3000 (does not matter in this case)
-        Sum of amounts from list of settlement transactions:    3000 (does not matter in this case)
-        Sum of amounts from list of transactions:               4000 (does not matter in this case)
+        TaskToCompute price:                                    12000
+        Sum of amounts from list of settlement transactions:    3000
+        Sum of amounts from list of transactions:               4000
         Requestor deposit value:                                0
         """
-        self.create_subtask_results_accepted_list(price=3000)
 
-        with self.assertRaises(TooSmallRequestorDeposit):
-            self.call_settle_overdue_acceptances_with_mocked_sci_functions(
-                get_deposit_value_return_value=0
-            )
+        subtasks_collective_price = 12000
+        already_paid_in_transactions = 3000 + 4000
+
+        self.create_subtask_results_accepted_list(price=subtasks_collective_price)
+
+        with mock.patch('core.payments.bankster.find_unconfirmed_settlement_payments'):
+            with mock.patch(
+                'core.payments.bankster.get_provider_payment_info',
+                return_value=(already_paid_in_transactions, subtasks_collective_price - already_paid_in_transactions)
+            ):
+                with self.assertRaises(TooSmallRequestorDeposit):
+                    self.call_settle_overdue_acceptances_with_mocked_sci_functions(
+                        get_deposit_value_return_value=0,
+                    )
 
         self.assert_mocked_sci_functions_were_called()
 

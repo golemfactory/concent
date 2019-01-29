@@ -21,6 +21,7 @@ from common.helpers import parse_timestamp_to_utc_datetime
 from common.logging import log
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.exceptions import BanksterTransactionMismatchError
+from core.exceptions import NoUnsettledTasks
 from core.exceptions import TooSmallProviderDeposit
 from core.exceptions import TooSmallRequestorDeposit
 from core.models import Client
@@ -260,7 +261,7 @@ def settle_overdue_acceptances(
     provider_ethereum_address: str,
     acceptances: List[SubtaskResultsAccepted],
     requestor_public_key: bytes,
-) -> Optional[DepositClaim]:
+) -> DepositClaim:
     """
     The purpose of this operation is to calculate the total amount that the requestor owes provider for completed
     computations and transfer that amount from requestor's deposit.
@@ -335,6 +336,8 @@ def settle_overdue_acceptances(
             settlement_payment_claims=already_satisfied_claims_without_duplicates,
             subtask_results_accepted_list=acceptances,
         )
+        if amount_pending <= 0:
+            raise NoUnsettledTasks()
 
         # Bankster compares the amount with the available deposit minus the existing claims against requestor's account.
         # If the whole amount can't be paid, Concent lowers it to pay as much as possible.

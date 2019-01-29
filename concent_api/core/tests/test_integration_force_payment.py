@@ -403,6 +403,55 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         last_pending_message = PendingResponse.objects.filter(delivered = False).last()
         self.assertIsNone(last_pending_message)
 
+    @override_settings(
+        PAYMENT_DUE_TIME=60 * 60 * 12  # twelve hours
+    )
+    def test_that_when_provider_sends_force_payment_too_early_concent_responds_with_force_payment_rejected(self):
+        """
+        Expected message exchange:
+        Provider  -> Concent:    ForcePayment
+        Concent   -> Provider:   ForcePaymentRejected (REASON: TimestampError)
+        """
+        task_to_compute = self._get_deserialized_task_to_compute(
+            timestamp="2018-02-05 10:00:00",
+            deadline="2018-02-05 10:00:10",
+            subtask_id=self._get_uuid('1'),
+            price=15000,
+        )
+
+        subtask_results_accepted_list = [
+            self._get_deserialized_subtask_results_accepted(
+                timestamp="2018-02-05 10:00:15",
+                payment_ts="2018-02-05 9:55:00",
+                report_computed_task=self._get_deserialized_report_computed_task(
+                    timestamp="2018-02-05 10:00:05",
+                    task_to_compute=task_to_compute,
+                )
+            ),
+        ]
+
+        serialized_force_payment = self._get_serialized_force_payment(
+            timestamp="2018-02-05 12:00:20",
+            subtask_results_accepted_list=subtask_results_accepted_list
+        )
+
+        with freeze_time("2018-02-05 12:00:20"):
+            response = self.send_request(
+                url='core:send',
+                data=serialized_force_payment,
+            )
+
+        self._test_response(
+            response,
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ForcePaymentRejected,
+            fields={
+                'reason': message.concents.ForcePaymentRejected.REASON.TimestampError,
+            }
+        )
+        self._assert_stored_message_counter_not_increased()
+
     def test_provider_send_force_payment_with_subtask_results_accepted_list_as_single_message_concent_should_return_http_400(self):
         """
         Expected message exchange:

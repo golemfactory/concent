@@ -791,14 +791,6 @@ def handle_send_force_payment(
     for subtask_results_accepted in client_message.subtask_results_accepted_list:
         validate_task_to_compute(subtask_results_accepted.task_to_compute)
 
-    if sum([subtask_results_accepted.task_to_compute.price
-            for subtask_results_accepted in client_message.subtask_results_accepted_list]) == 0:
-        logging.log_lack_of_unsettled_task(logger)
-        return message.concents.ForcePaymentRejected(
-            force_payment=client_message,
-            reason=message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,
-        )
-
     task_to_compute = client_message.subtask_results_accepted_list[0].task_to_compute
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
     (requestor_eth_address, provider_eth_address) = get_clients_eth_accounts(task_to_compute)

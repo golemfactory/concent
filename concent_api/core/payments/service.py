@@ -40,10 +40,10 @@ def get_list_of_payments(
 @_add_backend
 def make_force_payment_to_provider(
     backend: Any,
-    requestor_eth_address: str = None,
-    provider_eth_address: str = None,
-    value: int = None,
-    payment_ts: int = None,
+    requestor_eth_address: str,
+    provider_eth_address: str,
+    value: int,
+    payment_ts: int,
 ) -> Transaction:
     return backend.make_force_payment_to_provider(
         requestor_eth_address   = requestor_eth_address,

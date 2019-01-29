@@ -310,7 +310,7 @@ def settle_overdue_acceptances(
             requestor_eth_address=requestor_ethereum_address,
             provider_eth_address=provider_ethereum_address,
             min_block_timestamp=oldest_payments_ts,
-            transaction_type=TransactionType.FORCE,
+            transaction_type=TransactionType.SETTLEMENT,
         )
 
         already_satisfied_claims_without_duplicates = find_unconfirmed_settlement_payments(

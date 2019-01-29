@@ -12,6 +12,7 @@ from web3 import Web3
 
 from common.constants import ErrorCode
 from core.constants import ETHEREUM_ADDRESS_LENGTH
+from core.constants import PAYMENTS_FROM_BLOCK_SAFETY_MARGIN
 from core.exceptions import SCINotSynchronized
 from core.payments.payment_interface import PaymentInterface
 from core.validation import validate_uuid
@@ -21,7 +22,8 @@ from core.validation import validate_value_is_int_convertible_and_positive
 
 class TransactionType(Enum):
     BATCH = 'batch'
-    FORCE = 'force'
+    FORCED_SUBTASK_PAYMENT = 'force_subtask_payment'
+    SETTLEMENT = 'settlement'
 
 
 def handle_sci_synchronization(sci_function: Callable) -> Callable:
@@ -67,7 +69,7 @@ def get_list_of_payments(
     if latest_block_number - first_block_after_payment_number < payment_interface.REQUIRED_CONFS:  # pylint: disable=no-member
         return []
 
-    if transaction_type == TransactionType.FORCE:
+    if transaction_type == TransactionType.SETTLEMENT:
         payments_list = payment_interface.get_forced_payments(  # pylint: disable=no-member
             requestor_address=Web3.toChecksumAddress(requestor_eth_address),
             provider_address=Web3.toChecksumAddress(provider_eth_address),
@@ -79,6 +81,15 @@ def get_list_of_payments(
             payer_address=Web3.toChecksumAddress(requestor_eth_address),
             payee_address=Web3.toChecksumAddress(provider_eth_address),
             from_block=first_block_after_payment_number,
+            to_block=latest_block_number - payment_interface.REQUIRED_CONFS,  # pylint: disable=no-member
+        )
+    elif transaction_type == TransactionType.FORCED_SUBTASK_PAYMENT:
+        payments_list = payment_interface.get_forced_subtask_payments(  # pylint: disable=no-member
+            payer_address=Web3.toChecksumAddress(requestor_eth_address),
+            payee_address=Web3.toChecksumAddress(provider_eth_address),
+            # We start few blocks before first matching block because forced subtask payments
+            # do not have closure_time so we are relying on blockchain timestamps
+            from_block=first_block_after_payment_number - PAYMENTS_FROM_BLOCK_SAFETY_MARGIN,
             to_block=latest_block_number - payment_interface.REQUIRED_CONFS,  # pylint: disable=no-member
         )
 
@@ -181,7 +192,9 @@ def get_covered_additional_verification_costs(client_eth_address: str, payment_t
 
     return payment_interface.get_covered_additional_verification_costs(  # pylint: disable=no-member
         address=Web3.toChecksumAddress(client_eth_address),
-        from_block=first_block_after_payment_number,
+        # We start few blocks before first matching block because additional verification payments
+        # do not have closure_time so we are relying on blockchain timestamps
+        from_block=first_block_after_payment_number - PAYMENTS_FROM_BLOCK_SAFETY_MARGIN,
         to_block=payment_interface.get_block_number() - payment_interface.REQUIRED_CONFS,  # pylint: disable=no-member
     )
 

@@ -47,6 +47,10 @@ MAXIMUM_VERIFICATION_RESULT_TASK_RETRIES = 3
 # Defines how many seconds should SCI callback wait for response from MiddleMan.
 SCI_CALLBACK_MAXIMUM_TIMEOUT = 30
 
+# Defines how many blocks before first block for forced subtask payments or additional verification payments
+# should be listed.
+PAYMENTS_FROM_BLOCK_SAFETY_MARGIN = 10
+
 VERIFICATION_RESULT_SUBTASK_STATE_ACCEPTED_LOG_MESSAGE = (
     'Verification has timed out and a client has already asked about the result '
     'or verification result for subtask with ID {} must have been already processed.'

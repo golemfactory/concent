@@ -3,6 +3,7 @@ from web3 import Web3
 
 from common.testing_helpers import generate_ecc_key_pair
 from common.helpers import get_current_utc_timestamp
+from core.constants import PAYMENTS_FROM_BLOCK_SAFETY_MARGIN
 from core.constants import MOCK_TRANSACTION_HASH
 from core.exceptions import SCINotSynchronized
 from core.payments.backends import sci_backend
@@ -47,12 +48,12 @@ class SCIBackendTest(ConcentIntegrationTestCase):
                     self.task_to_compute.requestor_ethereum_address,
                     self.task_to_compute.provider_ethereum_address,
                     self.current_time,
-                    sci_backend.TransactionType.FORCE,
+                    sci_backend.TransactionType.FORCED_SUBTASK_PAYMENT,
                 )
 
         self.assertEqual(list_of_payments, [])
 
-    def test_that_sci_backend_get_list_of_payments_should_return_list_of_forced_subtask_payments(self):
+    def test_that_sci_backend_get_list_of_payments_should_return_list_of_settlement_payments(self):
         with mock.patch(
             'core.payments.payment_interface.PaymentInterface.__new__',
             return_value=mock.Mock(
@@ -73,7 +74,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
                     self.task_to_compute.requestor_ethereum_address,
                     self.task_to_compute.provider_ethereum_address,
                     self.current_time,
-                    sci_backend.TransactionType.FORCE,
+                    sci_backend.TransactionType.SETTLEMENT,
                 )
 
         self.assertEqual(len(list_of_payments), len(self._get_list_of_settlement_transactions()))
@@ -129,6 +130,43 @@ class SCIBackendTest(ConcentIntegrationTestCase):
         get_first_block_after_mock.assert_called_with(
             self.current_time - 1
         )
+
+    def test_that_sci_backend_get_list_of_payments_should_return_list_of_forced_subtask_payments(self):
+        with mock.patch(
+            'core.payments.payment_interface.PaymentInterface.__new__',
+            return_value=mock.Mock(
+                get_forced_subtask_payments=mock.Mock(
+                    return_value=self._get_list_of_forced_subtask_transactions(),
+                ),
+                get_block_number=mock.Mock(
+                    return_value=self.block_number,
+                ),
+                REQUIRED_CONFS=self.required_confs,
+            )
+        ) as new_sci_rpc:
+            with mock.patch(
+                'core.payments.backends.sci_backend.BlocksHelper.get_first_block_after',
+                return_value=mock.MagicMock(number=self.last_block),
+            ) as get_first_block_after:
+                list_of_payments = sci_backend.get_list_of_payments(
+                    self.task_to_compute.requestor_ethereum_address,
+                    self.task_to_compute.provider_ethereum_address,
+                    self.current_time,
+                    sci_backend.TransactionType.FORCED_SUBTASK_PAYMENT,
+                )
+
+        self.assertEqual(len(list_of_payments), len(self._get_list_of_forced_subtask_transactions()))
+
+        new_sci_rpc.return_value.get_forced_subtask_payments.assert_called_with(
+            payer_address=Web3.toChecksumAddress(self.task_to_compute.requestor_ethereum_address),
+            payee_address=Web3.toChecksumAddress(self.task_to_compute.provider_ethereum_address),
+            from_block=self.last_block - PAYMENTS_FROM_BLOCK_SAFETY_MARGIN,
+            to_block=self.block_number - self.required_confs,
+        )
+
+        new_sci_rpc.return_value.get_block_number.assert_called()
+
+        get_first_block_after.assert_called_with(self.current_time - 1)
 
     def test_that_sci_backend_make_force_payment_to_provider_should_return_transaction_hash(self):
         with mock.patch(
@@ -369,7 +407,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
 
         new_sci_rpc.return_value.get_covered_additional_verification_costs.assert_called_with(
             address=Web3.toChecksumAddress(self.task_to_compute.provider_ethereum_address),
-            from_block=self.last_block,
+            from_block=self.last_block - PAYMENTS_FROM_BLOCK_SAFETY_MARGIN,
             to_block=self.block_number - self.required_confs,
         )
 

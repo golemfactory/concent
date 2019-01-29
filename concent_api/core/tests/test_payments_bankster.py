@@ -556,7 +556,6 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 10:00:25"):
             list_of_payments_return_value = [
                 self._create_settlement_payment_object(
-                    subtask_id=self.task_to_compute.subtask_id,
                     amount=2000,
                 )
             ]

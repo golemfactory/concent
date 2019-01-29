@@ -365,7 +365,6 @@ class Subtask(Model):
 
     class Meta:
         unique_together = (
-            ('requestor', 'task_id'),
             ('requestor', 'subtask_id'),
         )
 

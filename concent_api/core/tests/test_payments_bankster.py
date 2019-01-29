@@ -10,6 +10,7 @@ from common.helpers import ethereum_public_key_to_address
 from core.constants import MOCK_TRANSACTION_HASH
 from core.exceptions import BanksterTransactionMismatchError
 from core.exceptions import TooSmallProviderDeposit
+from core.exceptions import TooSmallRequestorDeposit
 from core.message_handlers import store_subtask
 from core.models import Client
 from core.models import DepositAccount
@@ -361,7 +362,7 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
         self.assertIsNone(claim_against_requestor)
         self.assert_mocked_sci_functions_were_called()
 
-    def test_that_settle_overdue_acceptances_should_return_none_if_requestor_deposit_value_is_zero(self):
+    def test_that_settle_overdue_acceptances_should_raise_too_small_requestor_deposit_exception_when_requestor_has_insufficient_funds(self):
         """
         In this test we have following calculations:
 
@@ -372,11 +373,11 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
         """
         self.create_subtask_results_accepted_list(price=3000)
 
-        claim_against_requestor = self.call_settle_overdue_acceptances_with_mocked_sci_functions(
-            get_deposit_value_return_value=0
-        )
+        with self.assertRaises(TooSmallRequestorDeposit):
+            self.call_settle_overdue_acceptances_with_mocked_sci_functions(
+                get_deposit_value_return_value=0
+            )
 
-        self.assertIsNone(claim_against_requestor)
         self.assert_mocked_sci_functions_were_called()
 
     def test_that_settle_overdue_acceptances_should_return_claim_deposit_with_amount_paid(self):

@@ -46,10 +46,11 @@ from common.validations import validate_secure_hash_algorithm
 from common import logging
 from conductor.tasks import result_transfer_request
 from core.exceptions import BanksterTimestampError
-from core.exceptions import UnsupportedProtocolVersion
 from core.exceptions import CreateModelIntegrityError
 from core.exceptions import Http400
 from core.exceptions import TooSmallProviderDeposit
+from core.exceptions import TooSmallRequestorDeposit
+from core.exceptions import UnsupportedProtocolVersion
 from core.models import Client
 from core.models import PaymentInfo
 from core.models import PendingResponse
@@ -815,40 +816,39 @@ def handle_send_force_payment(
             force_payment=client_message,
             reason=message.concents.ForcePaymentRejected.REASON.TimestampError,
         )
-
-    if claim_against_requestor is None:
+    except TooSmallRequestorDeposit:
         return message.concents.ServiceRefused(
+            task_to_compute=task_to_compute,
             reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
         )
-    else:
-        provider_force_payment_commited = message.concents.ForcePaymentCommitted(
-            payment_ts              = parse_datetime_to_timestamp(claim_against_requestor.closure_time),
-            task_owner_key          = requestor_ethereum_public_key,
-            provider_eth_account    = provider_eth_address,
-            amount_paid             = claim_against_requestor.amount_as_int,
-            amount_pending          = 0,
-            recipient_type          = message.concents.ForcePaymentCommitted.Actor.Provider,
+    provider_force_payment_commited = message.concents.ForcePaymentCommitted(
+        payment_ts              = parse_datetime_to_timestamp(claim_against_requestor.closure_time),
+        task_owner_key          = requestor_ethereum_public_key,
+        provider_eth_account    = provider_eth_address,
+        amount_paid             = claim_against_requestor.amount_as_int,
+        amount_pending          = 0,
+        recipient_type          = message.concents.ForcePaymentCommitted.Actor.Provider,
+    )
+
+    requestor_force_payment_commited = message.concents.ForcePaymentCommitted(
+        payment_ts              = parse_datetime_to_timestamp(claim_against_requestor.closure_time),
+        task_owner_key          = requestor_ethereum_public_key,
+        provider_eth_account    = provider_eth_address,
+        amount_paid             = claim_against_requestor.amount_as_int,
+        amount_pending          = 0,
+        recipient_type          = message.concents.ForcePaymentCommitted.Actor.Requestor,
+    )
+
+    with non_nesting_atomic(using='control'):
+        store_pending_message(
+            response_type=PendingResponse.ResponseType.ForcePaymentCommitted,
+            client_public_key=requestor_public_key,
+            queue=PendingResponse.Queue.ReceiveOutOfBand,
+            payment_message=requestor_force_payment_commited
         )
 
-        requestor_force_payment_commited = message.concents.ForcePaymentCommitted(
-            payment_ts              = parse_datetime_to_timestamp(claim_against_requestor.closure_time),
-            task_owner_key          = requestor_ethereum_public_key,
-            provider_eth_account    = provider_eth_address,
-            amount_paid             = claim_against_requestor.amount_as_int,
-            amount_pending          = 0,
-            recipient_type          = message.concents.ForcePaymentCommitted.Actor.Requestor,
-        )
-
-        with non_nesting_atomic(using='control'):
-            store_pending_message(
-                response_type=PendingResponse.ResponseType.ForcePaymentCommitted,
-                client_public_key=requestor_public_key,
-                queue=PendingResponse.Queue.ReceiveOutOfBand,
-                payment_message=requestor_force_payment_commited
-            )
-
-        provider_force_payment_commited.sig = None
-        return provider_force_payment_commited
+    provider_force_payment_commited.sig = None
+    return provider_force_payment_commited
 
 
 def handle_unsupported_golem_messages_type(client_message: Any) -> None:

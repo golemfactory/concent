@@ -22,6 +22,7 @@ from common.logging import log
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.exceptions import BanksterTransactionMismatchError
 from core.exceptions import TooSmallProviderDeposit
+from core.exceptions import TooSmallRequestorDeposit
 from core.models import Client
 from core.models import DepositAccount
 from core.models import DepositClaim
@@ -347,7 +348,7 @@ def settle_overdue_acceptances(
         )
 
         if requestor_payable_amount <= 0:
-            return None
+            raise TooSmallRequestorDeposit(f"Requestor payable amount is {requestor_payable_amount}")
 
         # This is time T2 (end time) equal to youngest payment_ts from passed SubtaskResultAccepted messages from
         # subtask_results_accepted_list.

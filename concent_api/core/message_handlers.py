@@ -45,11 +45,13 @@ from common.logging import log
 from common.validations import validate_secure_hash_algorithm
 from common import logging
 from conductor.tasks import result_transfer_request
+from core.exceptions import BanksterNoUnsettledTasksError
 from core.exceptions import BanksterTimestampError
-from core.exceptions import UnsupportedProtocolVersion
+from core.exceptions import BanksterTooSmallProviderDepositError
+from core.exceptions import BanksterTooSmallRequestorDepositError
 from core.exceptions import CreateModelIntegrityError
 from core.exceptions import Http400
-from core.exceptions import TooSmallProviderDeposit
+from core.exceptions import UnsupportedProtocolVersion
 from core.models import Client
 from core.models import PaymentInfo
 from core.models import PendingResponse
@@ -791,14 +793,6 @@ def handle_send_force_payment(
     for subtask_results_accepted in client_message.subtask_results_accepted_list:
         validate_task_to_compute(subtask_results_accepted.task_to_compute)
 
-    if sum([subtask_results_accepted.task_to_compute.price
-            for subtask_results_accepted in client_message.subtask_results_accepted_list]) == 0:
-        logging.log_lack_of_unsettled_task(logger)
-        return message.concents.ForcePaymentRejected(
-            force_payment=client_message,
-            reason=message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,
-        )
-
     task_to_compute = client_message.subtask_results_accepted_list[0].task_to_compute
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
     (requestor_eth_address, provider_eth_address) = get_clients_eth_accounts(task_to_compute)
@@ -823,40 +817,44 @@ def handle_send_force_payment(
             force_payment=client_message,
             reason=message.concents.ForcePaymentRejected.REASON.TimestampError,
         )
-
-    if claim_against_requestor is None:
+    except BanksterTooSmallRequestorDepositError:
         return message.concents.ServiceRefused(
+            task_to_compute=task_to_compute,
             reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
         )
-    else:
-        provider_force_payment_commited = message.concents.ForcePaymentCommitted(
-            payment_ts              = parse_datetime_to_timestamp(claim_against_requestor.closure_time),
-            task_owner_key          = requestor_ethereum_public_key,
-            provider_eth_account    = provider_eth_address,
-            amount_paid             = claim_against_requestor.amount_as_int,
-            amount_pending          = 0,
-            recipient_type          = message.concents.ForcePaymentCommitted.Actor.Provider,
+    except BanksterNoUnsettledTasksError:
+        return message.concents.ForcePaymentRejected(
+            force_payment=client_message,
+            reason=message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,
+        )
+    provider_force_payment_commited = message.concents.ForcePaymentCommitted(
+        payment_ts=parse_datetime_to_timestamp(claim_against_requestor.closure_time),
+        task_owner_key=requestor_ethereum_public_key,
+        provider_eth_account=provider_eth_address,
+        amount_paid=claim_against_requestor.amount_as_int,
+        amount_pending=0,
+        recipient_type=message.concents.ForcePaymentCommitted.Actor.Provider,
+    )
+
+    requestor_force_payment_commited = message.concents.ForcePaymentCommitted(
+        payment_ts=parse_datetime_to_timestamp(claim_against_requestor.closure_time),
+        task_owner_key=requestor_ethereum_public_key,
+        provider_eth_account=provider_eth_address,
+        amount_paid=claim_against_requestor.amount_as_int,
+        amount_pending=0,
+        recipient_type=message.concents.ForcePaymentCommitted.Actor.Requestor,
+    )
+
+    with non_nesting_atomic(using='control'):
+        store_pending_message(
+            response_type=PendingResponse.ResponseType.ForcePaymentCommitted,
+            client_public_key=requestor_public_key,
+            queue=PendingResponse.Queue.ReceiveOutOfBand,
+            payment_message=requestor_force_payment_commited
         )
 
-        requestor_force_payment_commited = message.concents.ForcePaymentCommitted(
-            payment_ts              = parse_datetime_to_timestamp(claim_against_requestor.closure_time),
-            task_owner_key          = requestor_ethereum_public_key,
-            provider_eth_account    = provider_eth_address,
-            amount_paid             = claim_against_requestor.amount_as_int,
-            amount_pending          = 0,
-            recipient_type          = message.concents.ForcePaymentCommitted.Actor.Requestor,
-        )
-
-        with non_nesting_atomic(using='control'):
-            store_pending_message(
-                response_type=PendingResponse.ResponseType.ForcePaymentCommitted,
-                client_public_key=requestor_public_key,
-                queue=PendingResponse.Queue.ReceiveOutOfBand,
-                payment_message=requestor_force_payment_commited
-            )
-
-        provider_force_payment_commited.sig = None
-        return provider_force_payment_commited
+    provider_force_payment_commited.sig = None
+    return provider_force_payment_commited
 
 
 def handle_unsupported_golem_messages_type(client_message: Any) -> None:
@@ -1388,7 +1386,7 @@ def handle_send_subtask_results_verify(
             requestor_public_key=requestor_public_key,
             provider_public_key=provider_public_key,
         )
-    except TooSmallProviderDeposit:
+    except BanksterTooSmallProviderDepositError:
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.TooSmallProviderDeposit,
         )

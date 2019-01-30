@@ -15,7 +15,7 @@ from common.helpers import get_storage_source_file_path
 from common.helpers import parse_datetime_to_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.testing_helpers import generate_ecc_key_pair
-from core.exceptions import TooSmallProviderDeposit
+from core.exceptions import BanksterTooSmallProviderDepositError
 from core.message_handlers import store_subtask
 from core.models import PendingResponse
 from core.models import Subtask
@@ -265,7 +265,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         # when
         with mock.patch(
             "core.message_handlers.bankster.claim_deposit",
-            side_effect=TooSmallProviderDeposit
+            side_effect=BanksterTooSmallProviderDepositError
         ) as claim_deposit_mock:
             with freeze_time(subtask_results_verify_time_str):
                 response =self.send_request(

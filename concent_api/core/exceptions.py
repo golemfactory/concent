@@ -73,7 +73,15 @@ class UnsupportedProtocolVersion(ConcentBaseException):
     pass
 
 
-class TooSmallProviderDeposit(Exception):
+class BanksterTooSmallProviderDepositError(Exception):
+    pass
+
+
+class BanksterTooSmallRequestorDepositError(Exception):
+    pass
+
+
+class BanksterNoUnsettledTasksError(Exception):
     pass
 
 

@@ -20,8 +20,10 @@ from common.helpers import ethereum_public_key_to_address
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.logging import log
 from core.constants import ETHEREUM_ADDRESS_LENGTH
+from core.exceptions import BanksterNoUnsettledTasksError
+from core.exceptions import BanksterTooSmallProviderDepositError
+from core.exceptions import BanksterTooSmallRequestorDepositError
 from core.exceptions import BanksterTransactionMismatchError
-from core.exceptions import TooSmallProviderDeposit
 from core.models import Client
 from core.models import DepositAccount
 from core.models import DepositClaim
@@ -136,9 +138,12 @@ def claim_deposit(
 
             # If the total of existing claims and the current claim is greater or equal to the current deposit,
             # we can't add a new claim.
-            if provider_deposit <= aggregated_claims_against_provider['sum_of_existing_claims'] + settings.ADDITIONAL_VERIFICATION_COST:
+            provider_obligations = aggregated_claims_against_provider['sum_of_existing_claims'] + settings.ADDITIONAL_VERIFICATION_COST
+            if provider_deposit <= provider_obligations:
                 claim_against_requestor.delete()
-                raise TooSmallProviderDeposit
+                raise BanksterTooSmallProviderDepositError(
+                    f'Provider deposit is {provider_deposit} (required: {provider_obligations}'
+                )
 
         # Deposit lock for provider.
         if is_claim_against_provider:
@@ -259,7 +264,7 @@ def settle_overdue_acceptances(
     provider_ethereum_address: str,
     acceptances: List[SubtaskResultsAccepted],
     requestor_public_key: bytes,
-) -> Optional[DepositClaim]:
+) -> DepositClaim:
     """
     The purpose of this operation is to calculate the total amount that the requestor owes provider for completed
     computations and transfer that amount from requestor's deposit.
@@ -334,6 +339,8 @@ def settle_overdue_acceptances(
             settlement_payment_claims=already_satisfied_claims_without_duplicates,
             subtask_results_accepted_list=acceptances,
         )
+        if amount_pending <= 0:
+            raise BanksterNoUnsettledTasksError()
 
         # Bankster compares the amount with the available deposit minus the existing claims against requestor's account.
         # If the whole amount can't be paid, Concent lowers it to pay as much as possible.
@@ -347,7 +354,7 @@ def settle_overdue_acceptances(
         )
 
         if requestor_payable_amount <= 0:
-            return None
+            raise BanksterTooSmallRequestorDepositError(f"Requestor payable amount is {requestor_payable_amount}")
 
         # This is time T2 (end time) equal to youngest payment_ts from passed SubtaskResultAccepted messages from
         # subtask_results_accepted_list.

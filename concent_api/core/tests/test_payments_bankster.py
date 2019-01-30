@@ -8,10 +8,10 @@ from golem_messages import factories
 from common.constants import ConcentUseCase
 from common.helpers import ethereum_public_key_to_address
 from core.constants import MOCK_TRANSACTION_HASH
+from core.exceptions import BanksterNoUnsettledTasksError
+from core.exceptions import BanksterTooSmallProviderDepositError
+from core.exceptions import BanksterTooSmallRequestorDepositError
 from core.exceptions import BanksterTransactionMismatchError
-from core.exceptions import NoUnsettledTasks
-from core.exceptions import TooSmallProviderDeposit
-from core.exceptions import TooSmallRequestorDeposit
 from core.message_handlers import store_subtask
 from core.models import Client
 from core.models import DepositAccount
@@ -129,7 +129,7 @@ class ClaimDepositBanksterTest(ConcentIntegrationTestCase):
     )
     def test_that_claim_deposit_return_none_for_provider_if_provider_has_less_funds_than_needed(self):
         with mock.patch('core.payments.service.get_deposit_value', return_value=1) as get_deposit_value:
-            with self.assertRaises(TooSmallProviderDeposit):
+            with self.assertRaises(BanksterTooSmallProviderDepositError):
                 claim_deposit(
                     subtask_id=self.task_to_compute.subtask_id,
                     concent_use_case=ConcentUseCase.ADDITIONAL_VERIFICATION,
@@ -358,7 +358,7 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
         """
         self.create_subtask_results_accepted_list(price=3000)
 
-        with self.assertRaises(NoUnsettledTasks):
+        with self.assertRaises(BanksterNoUnsettledTasksError):
             self.call_settle_overdue_acceptances_with_mocked_sci_functions()
 
         self.assert_mocked_sci_functions_were_called()
@@ -384,7 +384,7 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
                 'core.payments.bankster.get_provider_payment_info',
                 return_value=(already_paid_in_transactions, subtasks_collective_price - already_paid_in_transactions)
             ):
-                with self.assertRaises(TooSmallRequestorDeposit):
+                with self.assertRaises(BanksterTooSmallRequestorDepositError):
                     self.call_settle_overdue_acceptances_with_mocked_sci_functions(
                         get_deposit_value_return_value=0,
                     )

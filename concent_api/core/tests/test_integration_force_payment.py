@@ -7,8 +7,8 @@ from golem_messages.utils import decode_hex
 
 from common.testing_helpers import generate_ecc_key_pair
 from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
-from core.exceptions import NoUnsettledTasks
-from core.exceptions import TooSmallRequestorDeposit
+from core.exceptions import BanksterNoUnsettledTasksError
+from core.exceptions import BanksterTooSmallRequestorDepositError
 from core.models import PendingResponse
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
@@ -278,7 +278,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 12:00:20"):
             with mock.patch(
                 'core.message_handlers.bankster.settle_overdue_acceptances',
-                side_effect=NoUnsettledTasks()
+                side_effect=BanksterNoUnsettledTasksError()
             ) as settle_overdue_acceptances:
                 response = self.send_request(
                     url='core:send',
@@ -348,7 +348,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 12:00:20"):
             with mock.patch(
                 'core.message_handlers.bankster.settle_overdue_acceptances',
-                side_effect=TooSmallRequestorDeposit()
+                side_effect=BanksterTooSmallRequestorDepositError()
             ) as settle_overdue_acceptances:
                 response = self.send_request(
                     url='core:send',

@@ -45,12 +45,12 @@ from common.logging import log
 from common.validations import validate_secure_hash_algorithm
 from common import logging
 from conductor.tasks import result_transfer_request
+from core.exceptions import BanksterNoUnsettledTasksError
 from core.exceptions import BanksterTimestampError
+from core.exceptions import BanksterTooSmallProviderDepositError
+from core.exceptions import BanksterTooSmallRequestorDepositError
 from core.exceptions import CreateModelIntegrityError
 from core.exceptions import Http400
-from core.exceptions import NoUnsettledTasks
-from core.exceptions import TooSmallProviderDeposit
-from core.exceptions import TooSmallRequestorDeposit
 from core.exceptions import UnsupportedProtocolVersion
 from core.models import Client
 from core.models import PaymentInfo
@@ -817,12 +817,12 @@ def handle_send_force_payment(
             force_payment=client_message,
             reason=message.concents.ForcePaymentRejected.REASON.TimestampError,
         )
-    except TooSmallRequestorDeposit:
+    except BanksterTooSmallRequestorDepositError:
         return message.concents.ServiceRefused(
             task_to_compute=task_to_compute,
             reason=message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
         )
-    except NoUnsettledTasks:
+    except BanksterNoUnsettledTasksError:
         return message.concents.ForcePaymentRejected(
             force_payment=client_message,
             reason=message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,
@@ -1386,7 +1386,7 @@ def handle_send_subtask_results_verify(
             requestor_public_key=requestor_public_key,
             provider_public_key=provider_public_key,
         )
-    except TooSmallProviderDeposit:
+    except BanksterTooSmallProviderDepositError:
         return message.concents.ServiceRefused(
             reason=message.concents.ServiceRefused.REASON.TooSmallProviderDeposit,
         )

@@ -828,21 +828,21 @@ def handle_send_force_payment(
             reason=message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,
         )
     provider_force_payment_commited = message.concents.ForcePaymentCommitted(
-        payment_ts              = parse_datetime_to_timestamp(claim_against_requestor.closure_time),
-        task_owner_key          = requestor_ethereum_public_key,
-        provider_eth_account    = provider_eth_address,
-        amount_paid             = claim_against_requestor.amount_as_int,
-        amount_pending          = 0,
-        recipient_type          = message.concents.ForcePaymentCommitted.Actor.Provider,
+        payment_ts=parse_datetime_to_timestamp(claim_against_requestor.closure_time),
+        task_owner_key=requestor_ethereum_public_key,
+        provider_eth_account=provider_eth_address,
+        amount_paid=claim_against_requestor.amount_as_int,
+        amount_pending=0,
+        recipient_type=message.concents.ForcePaymentCommitted.Actor.Provider,
     )
 
     requestor_force_payment_commited = message.concents.ForcePaymentCommitted(
-        payment_ts              = parse_datetime_to_timestamp(claim_against_requestor.closure_time),
-        task_owner_key          = requestor_ethereum_public_key,
-        provider_eth_account    = provider_eth_address,
-        amount_paid             = claim_against_requestor.amount_as_int,
-        amount_pending          = 0,
-        recipient_type          = message.concents.ForcePaymentCommitted.Actor.Requestor,
+        payment_ts=parse_datetime_to_timestamp(claim_against_requestor.closure_time),
+        task_owner_key=requestor_ethereum_public_key,
+        provider_eth_account=provider_eth_address,
+        amount_paid=claim_against_requestor.amount_as_int,
+        amount_pending=0,
+        recipient_type=message.concents.ForcePaymentCommitted.Actor.Requestor,
     )
 
     with non_nesting_atomic(using='control'):

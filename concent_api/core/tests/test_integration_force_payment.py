@@ -271,8 +271,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             )
         ]
         serialized_force_payment = self._get_serialized_force_payment(
-            timestamp                     = "2018-02-05 12:00:20",
-            subtask_results_accepted_list = subtask_results_accepted_list
+            timestamp="2018-02-05 12:00:20",
+            subtask_results_accepted_list=subtask_results_accepted_list
         )
 
         with freeze_time("2018-02-05 12:00:20"):
@@ -282,7 +282,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             ) as settle_overdue_acceptances:
                 response = self.send_request(
                     url='core:send',
-                    data                                = serialized_force_payment,
+                    data=serialized_force_payment,
                 )
 
         settle_overdue_acceptances.assert_called_with(
@@ -294,11 +294,11 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_response(
             response,
-            status       = 200,
-            key          = self.PROVIDER_PRIVATE_KEY,
-            message_type = message.concents.ForcePaymentRejected,
-            fields       = {
-                'reason':    message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ForcePaymentRejected,
+            fields={
+                'reason': message.concents.ForcePaymentRejected.REASON.NoUnsettledTasksFound,
                 'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
             }
         )
@@ -311,10 +311,10 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
         Concent   -> Provider:   ServiceRefused (RESASON: TooSmallRequestorDeposit)
         """
         task_to_compute = self._get_deserialized_task_to_compute(
-            timestamp                       = "2018-02-05 10:00:00",
-            deadline                        = "2018-02-05 10:00:10",
+            timestamp="2018-02-05 10:00:00",
+            deadline="2018-02-05 10:00:10",
             subtask_id=self._get_uuid('1'),
-            price                           = 10000,
+            price=10000,
         )
 
         subtask_results_accepted_list = [
@@ -341,8 +341,8 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             )
         ]
         serialized_force_payment = self._get_serialized_force_payment(
-            timestamp                     = "2018-02-05 12:00:20",
-            subtask_results_accepted_list = subtask_results_accepted_list
+            timestamp="2018-02-05 12:00:20",
+            subtask_results_accepted_list=subtask_results_accepted_list
         )
 
         with freeze_time("2018-02-05 12:00:20"):
@@ -352,7 +352,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             ) as settle_overdue_acceptances:
                 response = self.send_request(
                     url='core:send',
-                    data                                = serialized_force_payment,
+                    data=serialized_force_payment,
                 )
 
         settle_overdue_acceptances.assert_called_with(
@@ -364,11 +364,11 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_response(
             response,
-            status       = 200,
-            key          = self.PROVIDER_PRIVATE_KEY,
-            message_type = message.concents.ServiceRefused,
-            fields       = {
-                'reason':    message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ServiceRefused,
+            fields={
+                'reason': message.concents.ServiceRefused.REASON.TooSmallRequestorDeposit,
                 'timestamp': parse_iso_date_to_timestamp("2018-02-05 12:00:20"),
             }
         )

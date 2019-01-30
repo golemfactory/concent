@@ -223,6 +223,8 @@ class SCIBaseTest():
 
     def get_gnt_deposit_address_from_cluster_address(self, address: str) -> str:
         cluster_name = address.split('.')[0]
+        if cluster_name.startswith('http'):
+            cluster_name = cluster_name.split('//')[1]
         # If staging or testnet cluster will be tested then it should return 'staging' or 'test'
         # elsewhere it should always return 'devel' because of possibility to test Concent locally
         if cluster_name in CLUSTER_GNT_DEPOSIT_CONTRACT_ADDRESSES.keys():

@@ -1,8 +1,11 @@
+from copy import deepcopy
+
 from django.test                    import override_settings
 from django.test                    import TestCase
 
 from golem_messages                 import message
 from golem_messages.factories       import tasks
+from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.shortcuts       import dump
 from golem_messages.shortcuts       import load
 
@@ -134,16 +137,12 @@ class ValidateListOfIdenticalTaskToComputeUnitTest(TestCase):
             self.fail()
 
     def test_that_validate_all_messages_identical_should_raise_http400_when_not_all_task_to_compute_are_identical(self):
+        task_to_compute = TaskToComputeFactory()
+        different_task_to_compute = TaskToComputeFactory(requestor_id=b'')
         list_of_not_identical_task_to_compute = [
-            message.TaskToCompute(
-                requestor_id = 1
-            ),
-            message.TaskToCompute(
-                requestor_id = 2
-            ),
-            message.TaskToCompute(
-                requestor_id = 1
-            ),
+            task_to_compute,
+            task_to_compute,
+            different_task_to_compute,
         ]
 
         with self.assertRaises(ConcentValidationError):
@@ -152,16 +151,16 @@ class ValidateListOfIdenticalTaskToComputeUnitTest(TestCase):
             )
 
     def test_that_validate_all_messages_identical_should_not_raise_http400_when_all_task_to_compute_are_identical(self):
+        task_to_compute = TaskToComputeFactory()
+        copied_task_to_compute = deepcopy(task_to_compute)
+        # validation function should not raise exception for difference in encrypted parameter
+        copied_task_to_compute.encrypted = True
+        self.assertEqual(copied_task_to_compute.encrypted, True)
+        self.assertEqual(task_to_compute.encrypted, False)
         list_of_identical_task_to_compute = [
-            message.TaskToCompute(
-                requestor_id = 1
-            ),
-            message.TaskToCompute(
-                requestor_id = 1
-            ),
-            message.TaskToCompute(
-                requestor_id = 1
-            ),
+            task_to_compute,
+            copied_task_to_compute,
+            task_to_compute,
         ]
 
         try:

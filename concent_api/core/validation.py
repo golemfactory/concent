@@ -126,21 +126,12 @@ def validate_all_messages_identical(golem_messages_list: List[message.Message]) 
 
     base_golem_message = golem_messages_list[0]
 
-    for i, golem_message in enumerate(golem_messages_list[1:], start=1):
-        for slot in base_golem_message.__slots__:
-            if getattr(base_golem_message, slot) != getattr(golem_message, slot):
-                raise ConcentValidationError(
-                    '{} messages are not identical. '
-                    'There is a difference between messages with index 0 on passed list and with index {}'
-                    'The difference is on field {}: {} is not equal {}'.format(
-                        type(base_golem_message).__name__,
-                        i,
-                        slot,
-                        getattr(base_golem_message, slot),
-                        getattr(golem_message, slot),
-                    ),
-                    error_code=ErrorCode.MESSAGES_NOT_IDENTICAL,
-                )
+    for golem_message in golem_messages_list[1:]:
+        if base_golem_message != golem_message:
+            raise ConcentValidationError(
+                f'Messages {base_golem_message.__class__.__name__} are not identical',
+                error_code=ErrorCode.MESSAGES_NOT_IDENTICAL,
+            )
 
 
 def is_golem_message_signed_with_key(

@@ -238,14 +238,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_400_response(
             response,
-            error_message = 'TaskToCompute messages are not identical. '
-                'There is a difference between messages with index 0 on passed list and with index {}'
-                'The difference is on field {}: {} is not equal {}'.format(
-                    1,
-                    'provider_id',
-                    'different_id',
-                    self.deserialized_task_to_compute.provider_id
-                ),
+            error_message='Messages TaskToCompute are not identical',
             error_code=ErrorCode.MESSAGES_NOT_IDENTICAL,
         )
 
@@ -517,14 +510,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_400_response(
             response,
-            error_message = 'TaskToCompute messages are not identical. '
-                'There is a difference between messages with index 0 on passed list and with index {}'
-                'The difference is on field {}: {} is not equal {}'.format(
-                    1,
-                    'provider_id',
-                    'different_id',
-                    self.deserialized_task_to_compute.provider_id
-                ),
+            error_message='Messages TaskToCompute are not identical',
             error_code=ErrorCode.MESSAGES_NOT_IDENTICAL,
         )
 
@@ -814,14 +800,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         self._test_400_response(
             response,
-            error_message = 'TaskToCompute messages are not identical. '
-                'There is a difference between messages with index 0 on passed list and with index {}'
-                'The difference is on field {}: {} is not equal {}'.format(
-                    1,
-                    'provider_id',
-                    'different_id',
-                    self.deserialized_task_to_compute.provider_id
-                ),
+            error_message='Messages TaskToCompute are not identical',
             error_code=ErrorCode.MESSAGES_NOT_IDENTICAL,
         )
 

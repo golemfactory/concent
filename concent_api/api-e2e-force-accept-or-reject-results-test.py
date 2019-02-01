@@ -3,57 +3,32 @@
 import os
 import sys
 import time
-from freezegun import freeze_time
 from typing import Optional
+
+import requests
+from freezegun import freeze_time
+from golem_messages import message
 from mock import Mock
 
-from golem_messages import message
-
-from common.helpers import get_current_utc_timestamp
-from common.helpers import sign_message
-
 from api_testing_common import api_request
+from api_testing_common import calculate_deadline
+from api_testing_common import calculate_deadline_too_far_in_the_future
+from api_testing_common import calculate_timestamp
 from api_testing_common import count_fails
+from api_testing_common import create_ack_report_computed_task
 from api_testing_common import create_client_auth_message
+from api_testing_common import create_force_subtask_results
 from api_testing_common import create_signed_report_computed_task
 from api_testing_common import create_signed_subtask_results_accepted
 from api_testing_common import create_signed_task_to_compute
 from api_testing_common import receive_pending_messages_for_requestor_and_provider
-from api_testing_common import REPORT_COMPUTED_TASK_SIZE
 from api_testing_common import run_tests
 from api_testing_common import timestamp_to_isoformat
+from common.helpers import get_current_utc_timestamp
+from common.helpers import sign_message
 from protocol_constants import ProtocolConstants
 
-import requests
-
-from core.utils import calculate_maximum_download_time
-
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
-
-
-def create_force_subtask_results(
-    timestamp: Optional[str]=None,
-    ack_report_computed_task: Optional[message.tasks.AckReportComputedTask]=None,
-) -> message.concents.ForceSubtaskResults:
-    with freeze_time(timestamp):
-        return message.concents.ForceSubtaskResults(
-            ack_report_computed_task=ack_report_computed_task,
-        )
-
-
-def create_ack_report_computed_task(
-    requestor_private_key: bytes,
-    timestamp: Optional[str]=None,
-    report_computed_task: Optional[message.tasks.ReportComputedTask]=None,
-) -> message.tasks.AckReportComputedTask:
-    with freeze_time(timestamp):
-        signed_message: message.tasks.AckReportComputedTask = sign_message(
-            message.tasks.AckReportComputedTask(
-                report_computed_task=report_computed_task,
-            ),
-            requestor_private_key,
-        )
-        return signed_message
 
 
 def create_force_subtask_results_response(
@@ -83,31 +58,6 @@ def create_subtask_results_rejected(
             requestor_private_key,
         )
         return signed_message
-
-
-def calculate_timestamp(current_time: int, concent_messaging_time: int, minimum_upload_rate: int) -> str:
-    return timestamp_to_isoformat(
-        current_time - (2 * concent_messaging_time + _precalculate_subtask_verification_time(minimum_upload_rate, concent_messaging_time))
-    )
-
-
-def calculate_deadline(current_time: int, concent_messaging_time: int, minimum_upload_rate: int) -> int:
-    return current_time - (concent_messaging_time + _precalculate_subtask_verification_time(minimum_upload_rate, concent_messaging_time))
-
-
-def calculate_deadline_too_far_in_the_future(current_time: int, minimum_upload_rate: int, concent_messaging_time: int) -> int:
-    return current_time - (1 + (20 * _precalculate_subtask_verification_time(minimum_upload_rate, concent_messaging_time)))
-
-
-def _precalculate_subtask_verification_time(minimum_upload_rate: int, concent_messaging_time: int) -> int:
-    maxiumum_download_time = calculate_maximum_download_time(
-        size=REPORT_COMPUTED_TASK_SIZE,
-        rate=minimum_upload_rate,
-    )
-    return (
-        (4 * concent_messaging_time) +
-        (3 * maxiumum_download_time)
-    )
 
 
 @count_fails

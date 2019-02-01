@@ -36,6 +36,7 @@ from common.helpers import sign_message
 from common.testing_helpers import generate_ecc_key_pair
 from concent_api.settings import GOLEM_MESSAGES_VERSION
 from core.exceptions import UnexpectedResponse
+from core.utils import calculate_maximum_download_time
 from protocol_constants import get_protocol_constants
 from protocol_constants import print_protocol_constants
 from sci_testing_common import SCIBaseTest
@@ -520,4 +521,54 @@ def receive_pending_messages_for_requestor_and_provider(
         sci_base.requestor_public_key,
         concent_public_key,
         'Requestor',
+    )
+
+
+def calculate_timestamp(current_time: int, concent_messaging_time: int, minimum_upload_rate: int) -> str:
+    return timestamp_to_isoformat(
+        current_time - (2 * concent_messaging_time + _precalculate_subtask_verification_time(minimum_upload_rate, concent_messaging_time))
+    )
+
+
+def calculate_deadline(current_time: int, concent_messaging_time: int, minimum_upload_rate: int) -> int:
+    return current_time - (concent_messaging_time + _precalculate_subtask_verification_time(minimum_upload_rate, concent_messaging_time))
+
+
+def create_force_subtask_results(
+    timestamp: Optional[str]=None,
+    ack_report_computed_task: Optional[message.tasks.AckReportComputedTask]=None,
+) -> message.concents.ForceSubtaskResults:
+    with freeze_time(timestamp):
+        return message.concents.ForceSubtaskResults(
+            ack_report_computed_task=ack_report_computed_task,
+        )
+
+
+def create_ack_report_computed_task(
+    requestor_private_key: bytes,
+    timestamp: Optional[str]=None,
+    report_computed_task: Optional[message.tasks.ReportComputedTask]=None,
+) -> message.tasks.AckReportComputedTask:
+    with freeze_time(timestamp):
+        signed_message: message.tasks.AckReportComputedTask = sign_message(
+            message.tasks.AckReportComputedTask(
+                report_computed_task=report_computed_task,
+            ),
+            requestor_private_key,
+        )
+        return signed_message
+
+
+def calculate_deadline_too_far_in_the_future(current_time: int, minimum_upload_rate: int, concent_messaging_time: int) -> int:
+    return current_time - (1 + (20 * _precalculate_subtask_verification_time(minimum_upload_rate, concent_messaging_time)))
+
+
+def _precalculate_subtask_verification_time(minimum_upload_rate: int, concent_messaging_time: int) -> int:
+    maxiumum_download_time = calculate_maximum_download_time(
+        size=REPORT_COMPUTED_TASK_SIZE,
+        rate=minimum_upload_rate,
+    )
+    return (
+        (4 * concent_messaging_time) +
+        (3 * maxiumum_download_time)
     )

@@ -49,7 +49,7 @@ def verify_file_status(subtask: Subtask, client_public_key: bytes) -> None:
         )
         logging.log(
             logger,
-            f'File assigned to TASK_ID: {subtask.task_id} is already uploaded'
+            f'File assigned to TASK_ID: {subtask.task_id} is already uploaded '
             f'REQUESTOR PUBLIC KEY: {subtask.requestor.public_key} '
             f'PROVIDER PUBLIC KEY {subtask.provider.public_key}',
             subtask_id=subtask.subtask_id

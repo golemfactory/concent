@@ -122,8 +122,8 @@ def log_400_error(
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
     log(
         logger,
-         f"Error 400 has been returned from `{endpoint}()` -- MESSAGE_TYPE: {_get_message_type(message)} -- "
-        f"ERROR CODE: {error_code} -- ERROR MESSAGE: {error_message} -- TASK_ID: '{task_id}' -- ",
+        f"Error 400 has been returned from `{endpoint}()` -- MESSAGE_TYPE: {_get_message_type(message)} -- "
+        f"ERROR CODE: {error_code} -- ERROR MESSAGE: {error_message} -- TASK_ID: '{task_id}' --",
         subtask_id=subtask_id,
         client_public_key=client_public_key
     )
@@ -147,9 +147,9 @@ def log_subtask_stored(
         f"NEXT_DEADLINE: {next_deadline} -- "
         f"TASK_ID: {task_id} -- "
         f"PROVIDER PUBLIC KEY: {convert_public_key_to_hex(provider_public_key)} "
-        f"REQUESTOR PUBLIC KEY: {convert_public_key_to_hex(requestor_public_key)}"
+        f"REQUESTOR PUBLIC KEY: {convert_public_key_to_hex(requestor_public_key)} "
         f"RESULT_PACKAGE_SIZE: {result_package_size} -- "
-        f"COMPUTATION_DEADLINE: {computation_deadline} -- ",
+        f"COMPUTATION_DEADLINE: {computation_deadline} --",
         subtask_id=subtask_id,
     )
 

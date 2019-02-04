@@ -19,6 +19,7 @@ from signing_service.constants import SIGNING_SERVICE_DEFAULT_INITIAL_RECONNECT_
 from signing_service.constants import SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS
 from signing_service.constants import SIGNING_SERVICE_MAXIMUM_RECONNECT_TIME
 from signing_service.exceptions import Base64DecodeError
+from signing_service.exceptions import BytesToStringDecodeError
 from signing_service.exceptions import SigningServiceValidationError
 from signing_service.signing_service import _parse_arguments
 from signing_service.signing_service import SigningService
@@ -208,7 +209,7 @@ class SigningServiceParseArgumentsTestCase(TestCase):
 
     def test_that_argument_parser_should_fail_if_port_cannot_be_casted_to_int(self):
         sys.argv += [
-            '--concent_cluster_host', '127.0.0.1',
+            '--concent-cluster-host', '127.0.0.1',
             '--concent-public-key', self.concent_public_key_encoded,
             '--concent-cluster-port', 'abc',
             '--ethereum-private-key', self.ethereum_private_key_encoded,
@@ -216,6 +217,27 @@ class SigningServiceParseArgumentsTestCase(TestCase):
         ]
 
         with self.assertRaises(SystemExit):
+            _parse_arguments()
+
+    def test_that_argument_parser_should_raise_exception_if_ethereum_key_cannot_be_decoded_to_string(self):
+        ethereum_private_key_raw = b'\x19\xf9\x16\xcc$F/\xf3\x1e\xdb\t8\xd6d\xb45\x14\x9c\x87e\xcc\xa6\x02\x17`\xb4Zj\xc9\x9c\xa3<'
+
+        # Proof that this particular key UnicodeDecodeError will be raised.
+        try:
+            ethereum_private_key_raw.decode()
+            assert False
+        except UnicodeDecodeError:
+            pass
+
+        ethereum_private_key_as_string = b64encode(ethereum_private_key_raw).decode()
+
+        sys.argv += [
+            '--concent-cluster-host', '127.0.0.1',
+            '--concent-public-key', self.concent_public_key_encoded,
+            '--ethereum-private-key', ethereum_private_key_as_string,
+        ]
+
+        with self.assertRaises(BytesToStringDecodeError):
             _parse_arguments()
 
     def test_that_argument_parser_should_parse_correct_secrets_from_env_variables(self):

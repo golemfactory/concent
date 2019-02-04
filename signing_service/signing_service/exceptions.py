@@ -13,3 +13,7 @@ class SigningServiceMaximumReconnectionAttemptsExceeded(Exception):
 
 class Base64DecodeError(Exception):
     pass
+
+
+class BytesToStringDecodeError(Exception):
+    pass

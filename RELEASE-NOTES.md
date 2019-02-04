@@ -1,3 +1,7 @@
+### Next
+#### Signing Service
+- Bugfix: Catch exception when `ethereum-private-key` is badly encoded and raise custom exception.
+
 ### 0.11.0
 #### Compatibility
 - golem-messages: 2.24.2

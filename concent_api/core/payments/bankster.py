@@ -256,7 +256,7 @@ def finalize_payment(deposit_claim: DepositClaim) -> Optional[str]:
         deposit_claim.full_clean()
         deposit_claim.save()
 
-    service.call_on_confirmed_transaction(  # pylint: disable=no-value-for-parameter
+    service.register_confirmed_transaction_handler(  # pylint: disable=no-value-for-parameter
         tx_hash=deposit_claim.tx_hash,
         callback=lambda _: discard_claim(deposit_claim),
     )
@@ -377,11 +377,11 @@ def settle_overdue_acceptances(
         claim_against_requestor.full_clean()
         claim_against_requestor.save()
 
-    transaction_hash = service.make_force_payment_to_provider(  # pylint: disable=no-value-for-parameter
+    transaction_hash = service.make_settlement_payment(  # pylint: disable=no-value-for-parameter
         requestor_eth_address=requestor_ethereum_address,
         provider_eth_address=provider_ethereum_address,
         value=requestor_payable_amount,
-        payment_ts=youngest_payment_ts,
+        closure_time=youngest_payment_ts,
     )
     transaction_hash = adjust_transaction_hash(transaction_hash)
 

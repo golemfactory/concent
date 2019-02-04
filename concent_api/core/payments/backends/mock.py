@@ -14,11 +14,11 @@ def get_list_of_payments(
     return []
 
 
-def make_force_payment_to_provider(
+def make_settlement_payment(
     requestor_eth_address: str,  # pylint: disable=unused-argument
     provider_eth_address: str,  # pylint: disable=unused-argument
     value: int,  # pylint: disable=unused-argument
-    payment_ts: int,  # pylint: disable=unused-argument
+    closure_time: int,  # pylint: disable=unused-argument
 ) -> str:
     return f'{uuid.uuid4()}{uuid.uuid4()}'[:64].replace('-', '1')
 
@@ -51,7 +51,7 @@ def cover_additional_verification_cost(
     return f'{uuid.uuid4()}{uuid.uuid4()}'[:64].replace('-', '1')
 
 
-def call_on_confirmed_transaction(
+def register_confirmed_transaction_handler(
     _tx_hash: str,
     _callback: Callable,
 ) -> None:

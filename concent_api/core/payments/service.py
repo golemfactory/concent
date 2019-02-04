@@ -38,18 +38,18 @@ def get_list_of_payments(
 
 
 @_add_backend
-def make_force_payment_to_provider(
+def make_settlement_payment(
     backend: Any,
     requestor_eth_address: str,
     provider_eth_address: str,
     value: int,
-    payment_ts: int,
+    closure_time: int,
 ) -> Transaction:
-    return backend.make_force_payment_to_provider(
-        requestor_eth_address   = requestor_eth_address,
-        provider_eth_address    = provider_eth_address,
-        value                   = value,
-        payment_ts              = payment_ts,
+    return backend.make_settlement_payment(
+        requestor_eth_address=requestor_eth_address,
+        provider_eth_address=provider_eth_address,
+        value=value,
+        closure_time=closure_time,
     )
 
 
@@ -94,12 +94,12 @@ def cover_additional_verification_cost(
 
 
 @_add_backend
-def call_on_confirmed_transaction(
+def register_confirmed_transaction_handler(
     backend: Any,
     tx_hash: str,
     callback: Callable
 ) -> None:
-    backend.call_on_confirmed_transaction(tx_hash, callback)
+    backend.register_confirmed_transaction_handler(tx_hash, callback)
 
 
 @_add_backend

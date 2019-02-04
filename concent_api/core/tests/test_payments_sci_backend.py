@@ -168,7 +168,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
 
         get_first_block_after.assert_called_with(self.current_time - 1)
 
-    def test_that_sci_backend_make_force_payment_to_provider_should_return_transaction_hash(self):
+    def test_that_sci_backend_make_settlement_payment_to_provider_should_return_transaction_hash(self):
         with mock.patch(
             'core.payments.payment_interface.PaymentInterface.__new__',
             return_value=mock.Mock(
@@ -180,7 +180,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
                 ),
             )
         ) as new_sci_rpc:
-            transaction_hash = sci_backend.make_force_payment_to_provider(
+            transaction_hash = sci_backend.make_settlement_payment(
                 self.task_to_compute.requestor_ethereum_address,
                 self.task_to_compute.provider_ethereum_address,
                 self.transaction_value,
@@ -200,7 +200,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
             closure_time=self.current_time,
         )
 
-    def test_that_sci_backend_make_force_payment_to_provider_should_pay_at_least_requestor_account_balance(self):
+    def test_that_sci_backend_make_settlement_payment_to_provider_should_pay_at_least_requestor_account_balance(self):
         with mock.patch(
             'core.payments.payment_interface.PaymentInterface.__new__',
             return_value=mock.Mock(
@@ -212,7 +212,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
                 ),
             )
         ) as new_sci_rpc:
-            transaction_hash = sci_backend.make_force_payment_to_provider(
+            transaction_hash = sci_backend.make_settlement_payment(
                 self.task_to_compute.requestor_ethereum_address,
                 self.task_to_compute.provider_ethereum_address,
                 self.transaction_value,

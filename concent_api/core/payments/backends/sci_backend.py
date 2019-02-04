@@ -96,19 +96,19 @@ def get_list_of_payments(
     return payments_list
 
 
-def make_force_payment_to_provider(
+def make_settlement_payment(
     requestor_eth_address: str,
     provider_eth_address: str,
     value: int,
-    payment_ts: int,
+    closure_time: int,
 ) -> str:
     """
-    Concent makes transaction from requestor's deposit to provider's account on amount 'value'.
+    Makes forced transaction from requestor's deposit to provider's account on amount 'value'.
     If there is less then 'value' on requestor's deposit, Concent transfers as much as possible.
     """
     assert isinstance(requestor_eth_address, str) and len(requestor_eth_address) == ETHEREUM_ADDRESS_LENGTH
     assert isinstance(provider_eth_address, str) and len(provider_eth_address) == ETHEREUM_ADDRESS_LENGTH
-    assert isinstance(payment_ts, int) and payment_ts >= 0
+    assert isinstance(closure_time, int) and closure_time >= 0
 
     validate_value_is_int_convertible_and_positive(value)
 
@@ -120,7 +120,7 @@ def make_force_payment_to_provider(
         requestor_address=Web3.toChecksumAddress(requestor_eth_address),
         provider_address=Web3.toChecksumAddress(provider_eth_address),
         value=int(value),
-        closure_time=payment_ts,
+        closure_time=closure_time,
     )
 
 
@@ -172,7 +172,7 @@ def cover_additional_verification_cost(
     )
 
 
-def call_on_confirmed_transaction(
+def register_confirmed_transaction_handler(
     tx_hash: str,
     callback: Callable
 ) -> None:

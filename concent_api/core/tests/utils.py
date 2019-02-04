@@ -925,7 +925,7 @@ class ConcentIntegrationTestCase(TestCase):
     def _get_empty_list_of_transactions(self, requestor_eth_address = None, provider_eth_address = None, payment_ts = None, current_time = None, transaction_type = None):  # pylint: disable=no-self-use, unused-argument
         return []
 
-    def _make_force_payment_to_provider(self, requestor_eth_address, provider_eth_address, value, payment_ts):  # pylint: disable=no-self-use, unused-argument
+    def _make_settlement_payment_to_provider(self, requestor_eth_address, provider_eth_address, value, closure_time):  # pylint: disable=no-self-use, unused-argument
         return None
 
     def _get_number_of_eth_block(self):  # pylint: disable=no-self-use

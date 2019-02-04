@@ -115,12 +115,8 @@ class SigningService:
 
         self._validate_arguments()
 
-        def _set_was_sigterm_caught_true(signum: int, frame: Optional[FrameType]) -> None:  # pylint: disable=unused-argument
-            logger.info('Closing connection and exiting on SIGTERM.')
-            self.was_sigterm_caught = True
-
         # Handle shutdown signal.
-        signal.signal(signal.SIGTERM, _set_was_sigterm_caught_true)
+        signal.signal(signal.SIGTERM, self._set_was_sigterm_caught_true)
 
     def run(self) -> None:
         """
@@ -343,6 +339,10 @@ class SigningService:
     def _was_sigterm_caught(self) -> bool:
         """ Helper function which checks if SIGTERM signal was caught. """
         return self.was_sigterm_caught
+
+    def _set_was_sigterm_caught_true(self, signum: int, frame: Optional[FrameType]) -> None:  # pylint: disable=unused-argument
+        logger.info('Closing connection and exiting on SIGTERM.')
+        self.was_sigterm_caught = True
 
     def _validate_arguments(self) -> None:
         if not 0 < self.port < 65535:

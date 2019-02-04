@@ -417,3 +417,27 @@ class SigningServiceDailyThresholdTestCase(TestCase):
         self.signing_service._update_daily_transactions_limit_file_name()
         self.assertEqual(self.signing_service.daily_transactions_limit_file_name, datetime.datetime.now().strftime('%Y-%m-%d'))
         self.assertEqual(self.signing_service.signing_service_daily_transaction_sum_so_far, 0)
+
+
+class SigningServiceSetSigtermTestCase(TestCase):
+
+    def setUp(self):
+        self.host = '127.0.0.1'
+        self.port = 8000
+        self.initial_reconnect_delay = 2
+
+        with mock.patch('signing_service.signing_service.SigningService.run'):
+            self.signing_service = SigningService(
+                self.host,
+                self.port,
+                self.initial_reconnect_delay,
+                CONCENT_PUBLIC_KEY,
+                SIGNING_SERVICE_PRIVATE_KEY,
+                TEST_ETHEREUM_PRIVATE_KEY,
+                SIGNING_SERVICE_DEFAULT_RECONNECT_ATTEMPTS,
+                ConsoleNotifier(),
+            )
+
+    def test_that_calling_set_was_sigterm_caught_sets_was_sigterm_caught_to_true(self):
+        self.signing_service._set_was_sigterm_caught_true(mock.Mock(), mock.Mock())
+        self.assertTrue(self.signing_service.was_sigterm_caught)

@@ -20,6 +20,7 @@ from golem_messages.exceptions import InvalidKeys
 
 from signing_service.constants import ETHEREUM_PRIVATE_KEY_REGEXP
 from signing_service.exceptions import Base64DecodeError
+from signing_service.exceptions import BytesToStringDecodeError
 
 logger = logging.getLogger()
 
@@ -54,7 +55,7 @@ def make_secret_provider_factory(
     env_variable_name: Union[str, None]=None,
     use_file: bool=False,
     base64_convert: bool=False,
-    string_decode: bool=False,
+    decode_to_string: bool=False,
 ) -> Callable:
     def wrapper(**kwargs: Any) -> 'SecretProvider':
         return SecretProvider(
@@ -62,7 +63,7 @@ def make_secret_provider_factory(
             env_variable_name,
             use_file,
             base64_convert,
-            string_decode,
+            decode_to_string,
             **kwargs
         )
     return wrapper
@@ -76,7 +77,7 @@ class SecretProvider(argparse.Action):
         env_variable_name: Union[str, None],
         use_file: bool,
         base64_convert: bool,
-        string_decode: bool,
+        decode_to_string: bool,
         option_strings: list,
         dest: str,
         required: bool=False,
@@ -86,7 +87,7 @@ class SecretProvider(argparse.Action):
         self.env_variable_name = env_variable_name
         self.use_file = use_file
         self.base64_convert = base64_convert
-        self.string_decode = string_decode
+        self.decode_to_string = decode_to_string
 
         super().__init__(
             option_strings=option_strings,
@@ -119,8 +120,13 @@ class SecretProvider(argparse.Action):
             except binascii.Error as exception:
                 logger.error(f'Unable to decode "{self.const}", {exception}')
                 raise Base64DecodeError(f'Unable to decode "{self.const}", {exception}')
-            if self.string_decode:
-                self.const = self.const.decode()
+            if self.decode_to_string:
+                assert isinstance(self.const, bytes)
+                try:
+                    self.const = self.const.decode()
+                except UnicodeDecodeError as exception:
+                    logger.error(f'Unable to decode bytes to string "{self.const}", {exception}')
+                    raise BytesToStringDecodeError(f'Unable to decode bytes to string "{self.const}", {exception}')
         setattr(namespace, self.dest, self.const)
 
 

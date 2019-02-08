@@ -5,14 +5,23 @@ from django.test import override_settings
 from golem_messages import message
 from golem_messages.cryptography import ECCx
 
+from common.constants import ConcentUseCase
 from common.helpers import deserialize_message
+from core.constants import MOCK_TRANSACTION_HASH
 from core.message_handlers import store_subtask
 from core.models import Client
+from core.models import DepositAccount
+from core.models import DepositClaim
 from core.models import PaymentInfo
 from core.models import PendingResponse
 from core.models import Subtask
 from core.payments.report import create_report
 from core.payments.report import get_subtasks_with_distinct_clients_pairs
+from core.payments.report import get_errors_and_warnings
+from core.payments.report import MatchingError
+from core.payments.report import MatchingWarning
+from core.payments.report import Payments
+from core.payments.report import PendingResponses
 from core.tests.utils import ConcentIntegrationTestCase
 from core.transfer_operations import store_pending_message
 from core.utils import get_current_utc_timestamp
@@ -102,6 +111,8 @@ class PaymentsReportTest(ConcentIntegrationTestCase):
             self.assertIn(len(pair_report.payments.requestor_additional_verification_payments), [1, 2])
             # 1 for each of 1 or 2 Subtasks.
             self.assertIn(len(pair_report.payments.provider_additional_verification_payments), [1, 2])
+            self.assertEqual(len(pair_report.errors), 0)
+            self.assertEqual(len(pair_report.warnings), 0)
 
         self.assertEqual(pairs_with_two_subtasks_count, self.number_of_pairs / 2)
 
@@ -211,3 +222,541 @@ class PaymentsReportTest(ConcentIntegrationTestCase):
                 queue=PendingResponse.Queue.Receive,
                 subtask=subtask,
             )
+
+
+@override_settings(
+    ADDITIONAL_VERIFICATION_COST=10,
+)
+class GetErrorsAndWarningsPaymentsReportTest(ConcentIntegrationTestCase):
+
+    def setUp(self):
+        super().setUp()
+
+        task_to_compute = self._get_deserialized_task_to_compute()
+        report_computed_task = self._get_deserialized_report_computed_task(task_to_compute=task_to_compute)
+
+        self.subtask = store_subtask(
+            task_id=report_computed_task.task_id,
+            subtask_id=report_computed_task.subtask_id,
+            provider_public_key=hex_to_bytes_convert(task_to_compute.provider_public_key),
+            requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
+            state=Subtask.SubtaskState.ACCEPTED,
+            next_deadline=None,
+            task_to_compute=task_to_compute,
+            report_computed_task=report_computed_task,
+        )
+
+        self.default_payment_amount = 10
+        self.closure_time = get_current_utc_timestamp()
+        self.payment_ts = parse_timestamp_to_utc_datetime(self.closure_time)
+
+        store_pending_message(
+            response_type=PendingResponse.ResponseType.SubtaskResultsSettled,
+            client_public_key=self.subtask.requestor.public_key_bytes,
+            queue=PendingResponse.Queue.Receive,
+            subtask=self.subtask,
+        )
+        self.pending_response_subtask_results_settled = PendingResponse.objects.last()
+
+        store_pending_message(
+            response_type=PendingResponse.ResponseType.SubtaskResultsRejected,
+            client_public_key=self.subtask.requestor.public_key_bytes,
+            queue=PendingResponse.Queue.Receive,
+            subtask=self.subtask,
+        )
+        self.pending_response_subtask_results_rejected = PendingResponse.objects.last()
+
+        store_pending_message(
+            response_type=PendingResponse.ResponseType.ForcePaymentCommitted,
+            client_public_key=self.subtask.requestor.public_key_bytes,
+            queue=PendingResponse.Queue.Receive,
+            subtask=self.subtask,
+        )
+        self.pending_response_force_payment_committed = PendingResponse.objects.last()
+
+        task_to_compute = deserialize_message(self.subtask.task_to_compute.data)
+
+        payment_info = PaymentInfo(
+            payment_ts=self.payment_ts,
+            task_owner_key=hex_to_bytes_convert(task_to_compute.requestor_ethereum_public_key),
+            provider_eth_account=task_to_compute.provider_ethereum_address,
+            amount_paid=self.default_payment_amount,
+            recipient_type=message.concents.ForcePaymentCommitted.Actor.Requestor.name,  # pylint: disable=no-member
+            amount_pending=0,
+        )
+        payment_info.full_clean()
+        payment_info.save()
+
+        self.pending_response_force_payment_committed.payment_info = payment_info
+        self.pending_response_force_payment_committed.full_clean()
+        self.pending_response_force_payment_committed.save()
+
+    def test_get_errors_and_warnings_should_return_error_if_pair_data_has_no_forced_payment_related_to_message(self):
+        payments = Payments(
+            regular_payments=[],
+            settlement_payments=[],
+            forced_subtask_payments=[],
+            requestor_additional_verification_payments=[],
+            provider_additional_verification_payments=[],
+        )
+        pending_responses = PendingResponses(
+            subtask_results_settled=[self.pending_response_subtask_results_settled],
+            subtask_results_rejected=[],
+            force_payment_committed=[],
+        )
+
+        (errors, warnings) = get_errors_and_warnings(payments, pending_responses)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(len(warnings), 0)
+        self.assertEqual(errors[0].matching_error, MatchingError.MESSAGE_NOT_MATCHED_WITH_ANY_PAYMENT)
+
+    def test_get_errors_and_warnings_should_return_error_and_warning_if_pair_data_has_no_forced_payment_related_to_message_and_deposit_claim_exists(self):
+        payments = Payments(
+            regular_payments=[],
+            settlement_payments=[],
+            forced_subtask_payments=[],
+            requestor_additional_verification_payments=[],
+            provider_additional_verification_payments=[],
+        )
+        pending_responses = PendingResponses(
+            subtask_results_settled=[self.pending_response_subtask_results_settled],
+            subtask_results_rejected=[],
+            force_payment_committed=[],
+        )
+
+        self._create_client_and_related_deposit_account_and_deposit_claim(
+            self.subtask,
+            ConcentUseCase.FORCED_ACCEPTANCE,
+        )
+
+        (errors, warnings) = get_errors_and_warnings(payments, pending_responses)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(len(warnings), 1)
+        self.assertEqual(errors[0].matching_error, MatchingError.MESSAGE_NOT_MATCHED_WITH_ANY_PAYMENT)
+        self.assertEqual(warnings[0].matching_warning, MatchingWarning.NO_MATCHING_MESSAGE_FOR_PAYMENT_BUT_DEPOSIT_CLAIM_EXISTS)
+
+    def test_get_errors_and_warnings_should_return_error_if_pair_data_has_two_forced_payments_related_to_message(self):
+        payments = Payments(
+            regular_payments=[],
+            settlement_payments=[],
+            forced_subtask_payments=[
+                self._create_forced_subtask_payment_object(self.default_payment_amount, self.subtask.subtask_id),
+                self._create_forced_subtask_payment_object(self.default_payment_amount, self.subtask.subtask_id),
+            ],
+            requestor_additional_verification_payments=[],
+            provider_additional_verification_payments=[],
+        )
+        pending_responses = PendingResponses(
+            subtask_results_settled=[self.pending_response_subtask_results_settled],
+            subtask_results_rejected=[],
+            force_payment_committed=[],
+        )
+
+        (errors, warnings) = get_errors_and_warnings(payments, pending_responses)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(len(warnings), 0)
+        self.assertEqual(errors[0].matching_error, MatchingError.MORE_THAN_ONE_MATCHING_PAYMENT_FOR_MESSAGE)
+
+    def test_get_errors_and_warnings_should_return_error_if_pair_data_has_no_message_related_to_verification_payment(self):
+        payments = Payments(
+            regular_payments=[],
+            settlement_payments=[],
+            forced_subtask_payments=[],
+            requestor_additional_verification_payments=[
+                self._create_cover_additional_verification_costs_object(
+                    self.default_payment_amount, self.subtask.subtask_id
+                ),
+            ],
+            provider_additional_verification_payments=[],
+        )
+        pending_responses = PendingResponses(
+            subtask_results_settled=[],
+            subtask_results_rejected=[],
+            force_payment_committed=[],
+        )
+
+        (errors, warnings) = get_errors_and_warnings(payments, pending_responses)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(len(warnings), 0)
+        self.assertEqual(errors[0].matching_error, MatchingError.PAYMENT_NOT_MATCHED_WITH_ANY_MESSAGE)
+
+    def test_get_errors_and_warnings_should_return_error_and_warning_if_pair_data_has_no_message_related_to_verification_payment_and_deposit_claim_exists(self):
+        payments = Payments(
+            regular_payments=[],
+            settlement_payments=[],
+            forced_subtask_payments=[],
+            requestor_additional_verification_payments=[
+                self._create_cover_additional_verification_costs_object(
+                    self.default_payment_amount, self.subtask.subtask_id
+                ),
+            ],
+            provider_additional_verification_payments=[],
+        )
+        pending_responses = PendingResponses(
+            subtask_results_settled=[],
+            subtask_results_rejected=[],
+            force_payment_committed=[],
+        )
+
+        self._create_client_and_related_deposit_account_and_deposit_claim(
+            self.subtask,
+            ConcentUseCase.ADDITIONAL_VERIFICATION,
+        )
+
+        (errors, warnings) = get_errors_and_warnings(payments, pending_responses)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(len(warnings), 1)
+        self.assertEqual(errors[0].matching_error, MatchingError.PAYMENT_NOT_MATCHED_WITH_ANY_MESSAGE)
+        self.assertEqual(warnings[0].matching_warning, MatchingWarning.NO_MATCHING_MESSAGE_FOR_PAYMENT_BUT_DEPOSIT_CLAIM_EXISTS)
+
+    def test_get_errors_and_warnings_should_return_error_if_pair_data_has_three_messages_of_one_type_related_to_verification_payment(self):
+        payments = Payments(
+            regular_payments=[],
+            settlement_payments=[],
+            forced_subtask_payments=[
+                self._create_forced_subtask_payment_object(self.default_payment_amount, self.subtask.subtask_id),
+            ],
+            requestor_additional_verification_payments=[
+                self._create_cover_additional_verification_costs_object(
+                    self.default_payment_amount, self.subtask.subtask_id
+                ),
+            ],
+            provider_additional_verification_payments=[],
+        )
+        pending_responses = PendingResponses(
+            subtask_results_settled=[
+                self.pending_response_subtask_results_settled,
+                self.pending_response_subtask_results_settled,
+                self.pending_response_subtask_results_settled,
+            ],
+            subtask_results_rejected=[],
+            force_payment_committed=[],
+        )
+
+        (errors, warnings) = get_errors_and_warnings(payments, pending_responses)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(len(warnings), 0)
+        self.assertEqual(errors[0].matching_error, MatchingError.MORE_THAN_EXPECTED_MATCHING_MESSAGES_FOR_PAYMENT)
+
+    def test_get_errors_and_warnings_should_return_error_if_pair_data_has_messages_of_both_types_related_to_verification_payment(self):
+        payments = Payments(
+            regular_payments=[],
+            settlement_payments=[],
+            forced_subtask_payments=[
+                self._create_forced_subtask_payment_object(self.default_payment_amount, self.subtask.subtask_id),
+            ],
+            requestor_additional_verification_payments=[
+                self._create_cover_additional_verification_costs_object(
+                    self.default_payment_amount, self.subtask.subtask_id
+                ),
+            ],
+            provider_additional_verification_payments=[],
+        )
+        pending_responses = PendingResponses(
+            subtask_results_settled=[self.pending_response_subtask_results_settled],
+            subtask_results_rejected=[self.pending_response_subtask_results_rejected],
+            force_payment_committed=[],
+        )
+
+        (errors, warnings) = get_errors_and_warnings(payments, pending_responses)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(len(warnings), 0)
+        self.assertEqual(errors[0].matching_error, MatchingError.MORE_THAN_ONE_SUBTASK_RESULT_FOR_SUBTASK)
+
+    def test_get_errors_and_warnings_should_return_error_if_subtask_related_to_verification_payment_was_removed(self):
+        payments = Payments(
+            regular_payments=[],
+            settlement_payments=[],
+            forced_subtask_payments=[],
+            requestor_additional_verification_payments=[
+                self._create_cover_additional_verification_costs_object(
+                    self.default_payment_amount, 'not_existing'
+                ),
+            ],
+            provider_additional_verification_payments=[],
+        )
+        pending_responses = PendingResponses(
+            subtask_results_settled=[self.pending_response_subtask_results_settled],
+            subtask_results_rejected=[],
+            force_payment_committed=[],
+        )
+
+        (_, warnings) = get_errors_and_warnings(payments, pending_responses)
+
+        self.assertEqual(len(warnings), 1)
+        self.assertEqual(warnings[0].matching_warning, MatchingWarning.VERIFICATION_PAYMENT_DO_NOT_HAVE_RELATED_SUBTASK)
+
+    @override_settings(
+        ADDITIONAL_VERIFICATION_COST=9,
+    )
+    def test_get_errors_and_warnings_should_return_error_if_pair_data_has_message_subtask_results_rejected_and_payment_amount_differs_from_additional_verification_cost(self):
+        payments = Payments(
+            regular_payments=[],
+            settlement_payments=[],
+            forced_subtask_payments=[],
+            requestor_additional_verification_payments=[
+                self._create_cover_additional_verification_costs_object(
+                    self.default_payment_amount, self.subtask.subtask_id
+                ),
+            ],
+            provider_additional_verification_payments=[],
+        )
+        pending_responses = PendingResponses(
+            subtask_results_settled=[],
+            subtask_results_rejected=[self.pending_response_subtask_results_rejected],
+            force_payment_committed=[],
+        )
+
+        (errors, warnings) = get_errors_and_warnings(payments, pending_responses)
+
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(len(warnings), 1)
+        self.assertEqual(warnings[0].matching_warning, MatchingWarning.PAYMENT_VALUE_DIFFERS_FROM_VERIFICATION_COST)
+
+    def test_get_errors_and_warnings_should_return_error_if_pair_data_has_no_settlement_payment_related_to_message(self):
+        payments = Payments(
+            regular_payments=[],
+            settlement_payments=[],
+            forced_subtask_payments=[],
+            requestor_additional_verification_payments=[],
+            provider_additional_verification_payments=[],
+        )
+        pending_responses = PendingResponses(
+            subtask_results_settled=[],
+            subtask_results_rejected=[],
+            force_payment_committed=[self.pending_response_force_payment_committed],
+        )
+
+        (errors, warnings) = get_errors_and_warnings(payments, pending_responses)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(len(warnings), 0)
+        self.assertEqual(errors[0].matching_error, MatchingError.MESSAGE_NOT_MATCHED_WITH_ANY_PAYMENT)
+
+    def test_get_errors_and_warnings_should_return_error_and_warning_if_pair_data_has_no_settlement_payment_related_to_message_and_deposit_claim_exists(self):
+        payments = Payments(
+            regular_payments=[],
+            settlement_payments=[],
+            forced_subtask_payments=[],
+            requestor_additional_verification_payments=[],
+            provider_additional_verification_payments=[],
+        )
+        pending_responses = PendingResponses(
+            subtask_results_settled=[],
+            subtask_results_rejected=[],
+            force_payment_committed=[self.pending_response_force_payment_committed],
+        )
+
+        self._create_client_and_related_deposit_account_and_deposit_claim(
+            self.subtask,
+            ConcentUseCase.FORCED_PAYMENT,
+            closure_time=self.closure_time,
+        )
+
+        (errors, warnings) = get_errors_and_warnings(payments, pending_responses)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(len(warnings), 1)
+        self.assertEqual(errors[0].matching_error, MatchingError.MESSAGE_NOT_MATCHED_WITH_ANY_PAYMENT)
+        self.assertEqual(warnings[0].matching_warning, MatchingWarning.NO_MATCHING_MESSAGE_FOR_PAYMENT_BUT_DEPOSIT_CLAIM_EXISTS)
+
+    def test_get_errors_and_warnings_should_return_error_if_pair_data_has_two_settlement_payments_related_to_message(self):
+        payments = Payments(
+            regular_payments=[],
+            settlement_payments=[
+                self._create_settlement_payment_object(
+                    self.default_payment_amount, self.closure_time
+                ),
+                self._create_settlement_payment_object(
+                    self.default_payment_amount, self.closure_time
+                )
+            ],
+            forced_subtask_payments=[],
+            requestor_additional_verification_payments=[],
+            provider_additional_verification_payments=[],
+        )
+        pending_responses = PendingResponses(
+            subtask_results_settled=[],
+            subtask_results_rejected=[],
+            force_payment_committed=[self.pending_response_force_payment_committed],
+        )
+
+        (errors, warnings) = get_errors_and_warnings(payments, pending_responses)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(len(warnings), 0)
+        self.assertEqual(errors[0].matching_error, MatchingError.MORE_THAN_ONE_MATCHING_PAYMENT_FOR_MESSAGE)
+
+    def test_get_errors_and_warnings_should_return_error_if_pair_data_has_settlement_payment_with_different_payment_value_than_message(self):
+        payments = Payments(
+            regular_payments=[],
+            settlement_payments=[
+                self._create_settlement_payment_object(
+                    self.default_payment_amount - 1, self.closure_time
+                )
+            ],
+            forced_subtask_payments=[],
+            requestor_additional_verification_payments=[],
+            provider_additional_verification_payments=[],
+        )
+        pending_responses = PendingResponses(
+            subtask_results_settled=[],
+            subtask_results_rejected=[],
+            force_payment_committed=[self.pending_response_force_payment_committed],
+        )
+
+        (errors, warnings) = get_errors_and_warnings(payments, pending_responses)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(len(warnings), 0)
+        self.assertEqual(errors[0].matching_error, MatchingError.MESSAGE_VALUE_DIFFERS_FROM_PAYMENT_VALUE)
+
+    def test_get_errors_and_warnings_should_return_error_if_pair_data_has_settlement_payment_with_different_closure_time_than_message(self):
+        payments = Payments(
+            regular_payments=[],
+            settlement_payments=[
+                self._create_settlement_payment_object(
+                    self.default_payment_amount, self.closure_time - 1
+                )
+            ],
+            forced_subtask_payments=[],
+            requestor_additional_verification_payments=[],
+            provider_additional_verification_payments=[],
+        )
+        pending_responses = PendingResponses(
+            subtask_results_settled=[],
+            subtask_results_rejected=[],
+            force_payment_committed=[self.pending_response_force_payment_committed],
+        )
+
+        (errors, warnings) = get_errors_and_warnings(payments, pending_responses)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(len(warnings), 0)
+        self.assertEqual(errors[0].matching_error, MatchingError.FORCE_PAYMENT_COMMITED_PAYMENT_TS_DIFFERS_FROM_SETTLEMENT_PAYMENT_CLOSURE_TIMESTAMP)
+
+    def test_get_errors_and_warnings_should_return_warning_if_pair_data_has_settlement_payment_with_related_message_with_amount_pending(self):
+        payments = Payments(
+            regular_payments=[],
+            settlement_payments=[
+                self._create_settlement_payment_object(
+                    self.default_payment_amount, self.closure_time
+                )
+            ],
+            forced_subtask_payments=[],
+            requestor_additional_verification_payments=[],
+            provider_additional_verification_payments=[],
+        )
+
+        payment_info = self.pending_response_force_payment_committed.payment_info
+        payment_info.amount_pending = 1
+        payment_info.full_clean()
+        payment_info.save()
+
+        pending_responses = PendingResponses(
+            subtask_results_settled=[],
+            subtask_results_rejected=[],
+            force_payment_committed=[self.pending_response_force_payment_committed],
+        )
+
+        (errors, warnings) = get_errors_and_warnings(payments, pending_responses)
+
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(len(warnings), 1)
+        self.assertEqual(warnings[0].matching_warning, MatchingWarning.NOT_ENOUGH_DEPOSIT_TO_COVER_WHOLE_COST)
+
+    def test_get_errors_and_warnings_should_return_warning_if_pair_data_has_settlement_payment_with_related_deposit_claim(self):
+        payments = Payments(
+            regular_payments=[],
+            settlement_payments=[
+                self._create_settlement_payment_object(
+                    self.default_payment_amount, self.closure_time - 1
+                )
+            ],
+            forced_subtask_payments=[],
+            requestor_additional_verification_payments=[],
+            provider_additional_verification_payments=[],
+        )
+        pending_responses = PendingResponses(
+            subtask_results_settled=[],
+            subtask_results_rejected=[],
+            force_payment_committed=[],
+        )
+
+        self._create_client_and_related_deposit_account_and_deposit_claim(
+            self.subtask,
+            ConcentUseCase.FORCED_PAYMENT,
+            closure_time=self.closure_time,
+        )
+
+        (errors, warnings) = get_errors_and_warnings(payments, pending_responses)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(len(warnings), 0)
+        self.assertEqual(errors[0].matching_error, MatchingError.DEPOSIT_CLAIM_RELATED_TO_SETTLEMENT_PAYMENT_EXISTS)
+
+    def test_get_errors_and_warnings_should_return_warning_if_pair_data_has_forced_payment_with_related_deposit_claim(self):
+        payments = Payments(
+            regular_payments=[],
+            settlement_payments=[],
+            forced_subtask_payments=[
+                self._create_forced_subtask_payment_object(self.default_payment_amount, self.subtask.subtask_id),
+            ],
+            requestor_additional_verification_payments=[],
+            provider_additional_verification_payments=[],
+        )
+        pending_responses = PendingResponses(
+            subtask_results_settled=[],
+            subtask_results_rejected=[],
+            force_payment_committed=[],
+        )
+
+        self._create_client_and_related_deposit_account_and_deposit_claim(
+            self.subtask,
+            ConcentUseCase.FORCED_PAYMENT,
+            closure_time=self.closure_time,
+        )
+
+        (errors, warnings) = get_errors_and_warnings(payments, pending_responses)
+
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(len(warnings), 0)
+        self.assertEqual(errors[0].matching_error, MatchingError.DEPOSIT_CLAIM_RELATED_TO_FORCED_PAYMENT_EXISTS)
+
+    def _create_client_and_related_deposit_account_and_deposit_claim(
+        self,
+        subtask,
+        concent_use_case,
+        closure_time=None,
+    ):
+        task_to_compute = deserialize_message(subtask.task_to_compute.data)
+
+        requestor_client = Client.objects.get(
+            public_key=base64.b64encode(hex_to_bytes_convert(task_to_compute.requestor_public_key))
+        )
+
+        requestor_deposit_account = DepositAccount.objects.get_or_create_full_clean(
+            client=requestor_client,
+            ethereum_address=task_to_compute.requestor_ethereum_address,
+        )
+        requestor_deposit_account.full_clean()
+        requestor_deposit_account.save()
+
+        deposit_claim = DepositClaim(
+            subtask_id=subtask.subtask_id,
+            payee_ethereum_address=task_to_compute.provider_ethereum_address,
+            payer_deposit_account=requestor_deposit_account,
+            amount=self.default_payment_amount,
+            concent_use_case=concent_use_case,
+            tx_hash=MOCK_TRANSACTION_HASH,
+            closure_time=parse_timestamp_to_utc_datetime(closure_time) if closure_time is not None else closure_time,
+        )
+        deposit_claim.full_clean()
+        deposit_claim.save()

@@ -82,6 +82,23 @@ class PaymentsReportTest(ConcentIntegrationTestCase):
         self.assertEqual(get_list_of_payments_mock.call_count, self.number_of_pairs * 3)
         self.assertEqual(get_covered_additional_verification_costs_mock.call_count, self.number_of_pairs * 2)
 
+        # Test Report Summary.
+        self.assertEqual(report.summary.number_of_pairs, self.number_of_pairs)
+        self.assertEqual(report.summary.number_of_subtasks, self.number_of_subtasks)
+        # 1 payment per pair.
+        self.assertEqual(report.summary.number_of_regular_payments, self.number_of_pairs)
+        # (2 regular payments for odds * 10 odds) + (2 regular payments for even * 10 evens)
+        self.assertEqual(report.summary.number_of_forced_payments, 110)
+        # 1 message per Subtask * default_payment_amount.
+        self.assertEqual(report.summary.total_amount_to_be_paid, self.number_of_subtasks * 20)
+        # (2 regular payments for odds * 10 odds) + (2 regular payments for even * 10 evens) * default_payment_amount
+        self.assertEqual(report.summary.total_amount_actually_paid, 110 * self.default_payment_amount)
+        # All payments paid correctly, so no pending payments.
+        self.assertEqual(report.summary.total_amount_unrecoverable, 0)
+
+        # Test Pairs Reports.
+        self.assertEqual(len(report.pair_reports), self.number_of_pairs)
+
         # Test Pairs Reports.
         self.assertEqual(len(report.pair_reports), self.number_of_pairs)
 
@@ -113,6 +130,14 @@ class PaymentsReportTest(ConcentIntegrationTestCase):
             self.assertIn(len(pair_report.payments.provider_additional_verification_payments), [1, 2])
             self.assertEqual(len(pair_report.errors), 0)
             self.assertEqual(len(pair_report.warnings), 0)
+
+            # Test Pair Report Summary.
+            self.assertEqual(pair_report.summary.number_of_pairs, 1)
+            self.assertIn(pair_report.summary.number_of_subtasks, [1, 2])
+            self.assertEqual(pair_report.summary.number_of_regular_payments, 1)
+            self.assertIn(pair_report.summary.total_amount_to_be_paid, [10, 20, 30])
+            self.assertIn(pair_report.summary.total_amount_actually_paid, [40, 70])
+            self.assertEqual(pair_report.summary.total_amount_unrecoverable, 0)
 
         self.assertEqual(pairs_with_two_subtasks_count, self.number_of_pairs / 2)
 

@@ -76,6 +76,16 @@ class Payments(NamedTuple):
         return is_regular_payments_empty and is_settlement_payments_empty and is_forced_subtask_payments_empty and is_requestor_additional_verification_payments_empty and is_provider_additional_verification_payments_empty
 
 
+class Summary(NamedTuple):
+    number_of_pairs: int
+    number_of_subtasks: int
+    number_of_regular_payments: int
+    number_of_forced_payments: int
+    total_amount_to_be_paid: int
+    total_amount_actually_paid: int
+    total_amount_unrecoverable: int
+
+
 class PairReport(NamedTuple):
     requestor: Client
     provider: Client
@@ -85,6 +95,7 @@ class PairReport(NamedTuple):
     payments: Payments
     errors: list
     warnings: list
+    summary: Summary
 
 
 class ClientEthereumAddresses(NamedTuple):
@@ -94,6 +105,7 @@ class ClientEthereumAddresses(NamedTuple):
 
 class Report(NamedTuple):
     pair_reports: list
+    summary: Summary
 
 
 class Error(NamedTuple):
@@ -144,10 +156,19 @@ def create_report() -> Report:
                 payments=related_payments_for_pair,
                 errors=errors,
                 warnings=warnings,
+                summary=create_pair_summary(
+                    requestor=subtask.requestor,
+                    provider=subtask.provider,
+                    pending_responses=related_pending_responses_for_pair,
+                    payments=related_payments_for_pair,
+                ),
             )
             pair_reports.append(pair_report)
 
-    return Report(pair_reports)
+    return Report(
+        pair_reports,
+        summary=create_report_summary(pair_reports),
+    )
 
 
 def get_subtasks_with_distinct_clients_pairs() -> QuerySet:
@@ -689,6 +710,62 @@ def check_warning_payment_value_differs_from_verification_cost_in_settings(
                             f'verification cost defined in settings {settings.ADDITIONAL_VERIFICATION_COST}.',
                 )
             )
+
+
+def create_pair_summary(
+    provider: Client,
+    requestor: Client,
+    payments: Payments,
+    pending_responses: PendingResponses,
+) -> Summary:
+    """ Prepare summary for provider/requestor pair. """
+    return Summary(
+        number_of_pairs=1,
+        number_of_subtasks=Subtask.objects.filter(
+            provider=provider,
+            requestor=requestor,
+        ).count(),
+        number_of_regular_payments=len(payments.regular_payments),
+        number_of_forced_payments=(
+            len(payments.settlement_payments) +
+            len(payments.forced_subtask_payments) +
+            len(payments.requestor_additional_verification_payments) +
+            len(payments.provider_additional_verification_payments)
+        ),
+        total_amount_to_be_paid=(
+            sum([
+                int(force_payment_committed.payment_info.amount_paid)
+                for force_payment_committed in pending_responses.force_payment_committed
+                if force_payment_committed.payment_info is not None
+            ])
+        ),
+        total_amount_actually_paid=(
+            sum([payment.amount for payment in payments.settlement_payments]) +
+            sum([payment.amount for payment in payments.forced_subtask_payments]) +
+            sum([payment.amount for payment in payments.requestor_additional_verification_payments]) +
+            sum([payment.amount for payment in payments.provider_additional_verification_payments])
+        ),
+        total_amount_unrecoverable=(
+            sum([
+                int(force_payment_committed.payment_info.amount_pending)
+                for force_payment_committed in pending_responses.force_payment_committed
+                if force_payment_committed.payment_info is not None
+            ])
+        ),
+    )
+
+
+def create_report_summary(pair_reports: List[PairReport]) -> Summary:
+    """ Prepare summary for the whole report. """
+    return Summary(
+        number_of_pairs=len(pair_reports),
+        number_of_subtasks=sum([pair_report.summary.number_of_subtasks for pair_report in pair_reports]),
+        number_of_regular_payments=sum([pair_report.summary.number_of_regular_payments for pair_report in pair_reports]),
+        number_of_forced_payments=sum([pair_report.summary.number_of_forced_payments for pair_report in pair_reports]),
+        total_amount_to_be_paid=sum([pair_report.summary.total_amount_to_be_paid for pair_report in pair_reports]),
+        total_amount_actually_paid=sum([pair_report.summary.total_amount_actually_paid for pair_report in pair_reports]),
+        total_amount_unrecoverable=sum([pair_report.summary.total_amount_unrecoverable for pair_report in pair_reports]),
+    )
 
 
 def check_warning_force_payment_committed_indicates_that_deposit_was_too_low_to_cover_whole_cost(

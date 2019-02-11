@@ -428,11 +428,11 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         # STEP 4:
-        # ReportComputedTask is send signed with different key, request is rejected with proper error message.
+        # TaskToCompute is send signed with different key, request is rejected with proper error message.
 
-        report_computed_task.sig = None
-        report_computed_task = self._sign_message(
-            report_computed_task,
+        task_to_compute.sig = None
+        task_to_compute = self._sign_message(
+            task_to_compute,
             self.DIFFERENT_PROVIDER_PRIVATE_KEY
         )
 
@@ -442,7 +442,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 10:00:43",
                 payment_ts="2018-02-05 9:59:44",
-                report_computed_task=report_computed_task,
+                task_to_compute=task_to_compute,
             )
         )
 
@@ -455,8 +455,8 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(
             response,
             error_message = 'There was an exception when validating if golem_message {} is signed with public key {}'.format(
-                message.ReportComputedTask.__name__,
-                self.PROVIDER_PUBLIC_KEY,
+                message.TaskToCompute.__name__,
+                self.REQUESTOR_PUBLIC_KEY,
             ),
             error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG
         )
@@ -464,10 +464,10 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 5: Requestor sends forces subtask results response via Concent with correct keys.
         # Request is processed correctly.
-        report_computed_task.sig = None
-        report_computed_task = self._sign_message(
-            report_computed_task,
-            self.PROVIDER_PRIVATE_KEY
+        task_to_compute.sig = None
+        task_to_compute = self._sign_message(
+            task_to_compute,
+            self.REQUESTOR_PRIVATE_KEY
         )
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
@@ -476,7 +476,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 10:00:43",
                 payment_ts="2018-02-05 9:59:44",
-                report_computed_task=report_computed_task,
+                task_to_compute=task_to_compute,
             )
         )
 
@@ -687,12 +687,12 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._assert_stored_message_counter_not_increased()
 
         # STEP 4:
-        # ReportComputedTask is send signed with different key, request is rejected with proper error message.
+        # TaskToCompute is send signed with different key, request is rejected with proper error message.
 
-        report_computed_task.sig = None
-        report_computed_task = self._sign_message(
-            report_computed_task,
-            self.DIFFERENT_PROVIDER_PRIVATE_KEY,
+        task_to_compute.sig = None
+        task_to_compute = self._sign_message(
+            task_to_compute,
+            self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
         )
 
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
@@ -701,7 +701,7 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 10:00:43",
                 payment_ts="2018-02-05 9:59:44",
-                report_computed_task=report_computed_task,
+                task_to_compute=task_to_compute,
             )
         )
 
@@ -714,8 +714,8 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         self._test_400_response(
             response,
             error_message = 'There was an exception when validating if golem_message {} is signed with public key {}'.format(
-                message.ReportComputedTask.__name__,
-                self.PROVIDER_PUBLIC_KEY,
+                message.TaskToCompute.__name__,
+                self.REQUESTOR_PUBLIC_KEY,
             ),
             error_code=ErrorCode.MESSAGE_SIGNATURE_WRONG
         )
@@ -723,6 +723,13 @@ class AuthAcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
 
         # STEP 5: Requestor sends forces subtask results response via Concent with correct keys.
         # Request is processed correctly.
+        task_to_compute.sig = None
+        task_to_compute = self._sign_message(
+            task_to_compute,
+            self.REQUESTOR_PRIVATE_KEY,
+        )
+        report_computed_task.task_to_compute = task_to_compute
+
         report_computed_task.sig = None
         report_computed_task = self._sign_message(
             report_computed_task,

@@ -92,7 +92,6 @@ def handle_send_force_report_computed_task(
     task_to_compute = client_message.report_computed_task.task_to_compute
     provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
-
     validate_secure_hash_algorithm(client_message.report_computed_task.package_hash)
     validate_that_golem_messages_are_signed_with_key(
         provider_public_key,
@@ -668,8 +667,8 @@ def handle_send_force_subtask_results_response(
             subtask_results_accepted,
         )
         validate_that_golem_messages_are_signed_with_key(
-            provider_public_key,
-            subtask_results_accepted.report_computed_task,
+            requestor_public_key,
+            subtask_results_accepted.task_to_compute,
         )
     else:
         task_to_compute = client_message.subtask_results_rejected.report_computed_task.task_to_compute

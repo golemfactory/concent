@@ -197,7 +197,7 @@ def test_case_4b_requestor_accepts_subtaks_results(cluster_consts: ProtocolConst
             timestamp=timestamp_to_isoformat(current_time),
             subtask_results_accepted=create_signed_subtask_results_accepted(
                 payment_ts=current_time + 1,
-                report_computed_task=signed_report_computed_task,
+                task_to_compute=signed_task_to_compute,
                 requestor_private_key=sci_base.requestor_private_key,
             )
         ),
@@ -334,10 +334,6 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolC
             requestor_private_key=sci_base.requestor_private_key,
         )
     )
-    signed_report_computed_task = create_signed_report_computed_task(
-        task_to_compute=signed_task_to_compute,
-        provider_private_key=sci_base.provider_private_key,
-    )
     api_request(
         cluster_url,
         'send',
@@ -382,7 +378,7 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolC
             timestamp=timestamp_to_isoformat(current_time),
             subtask_results_accepted=create_signed_subtask_results_accepted(
                 payment_ts=current_time + 1,
-                report_computed_task=signed_report_computed_task,
+                task_to_compute=signed_task_to_compute,
                 requestor_private_key=sci_base.requestor_private_key,
             )
         ),

@@ -17,7 +17,6 @@ from common.helpers import parse_timestamp_to_utc_datetime
 from api_testing_common import api_request
 from api_testing_common import count_fails
 from api_testing_common import create_client_auth_message
-from api_testing_common import create_signed_report_computed_task
 from api_testing_common import create_signed_subtask_results_accepted
 from api_testing_common import create_signed_task_to_compute
 from api_testing_common import receive_pending_messages_for_requestor_and_provider
@@ -64,17 +63,14 @@ def test_case_2d_send_correct_force_payment(cluster_consts: ProtocolConstants, c
                     current_time - cluster_consts.payment_due_time + AVERAGE_TIME_FOR_TWO_BLOCKS
                 ),
                 payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
-                report_computed_task=create_signed_report_computed_task(
-                    task_to_compute=create_signed_task_to_compute(
-                        timestamp=parse_timestamp_to_utc_datetime(current_time),
-                        deadline=current_time,
-                        price=1000,
-                        provider_public_key=sci_base.provider_public_key,
-                        provider_private_key=sci_base.provider_private_key,
-                        requestor_public_key=sci_base.requestor_public_key,
-                        requestor_private_key=sci_base.requestor_private_key,
-                    ),
-                    provider_private_key=sci_base.provider_private_key
+                task_to_compute=create_signed_task_to_compute(
+                    timestamp=parse_timestamp_to_utc_datetime(current_time),
+                    deadline=current_time,
+                    price=1000,
+                    provider_public_key=sci_base.provider_public_key,
+                    provider_private_key=sci_base.provider_private_key,
+                    requestor_public_key=sci_base.requestor_public_key,
+                    requestor_private_key=sci_base.requestor_private_key,
                 ),
                 requestor_private_key=sci_base.requestor_private_key,
             ),
@@ -83,17 +79,14 @@ def test_case_2d_send_correct_force_payment(cluster_consts: ProtocolConstants, c
                     current_time - cluster_consts.payment_due_time + AVERAGE_TIME_FOR_TWO_BLOCKS
                 ),
                 payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
-                report_computed_task=create_signed_report_computed_task(
-                    task_to_compute=create_signed_task_to_compute(
-                        timestamp=parse_timestamp_to_utc_datetime(current_time),
-                        deadline=current_time,
-                        price=1000,
-                        provider_public_key=sci_base.provider_public_key,
-                        provider_private_key=sci_base.provider_private_key,
-                        requestor_public_key=sci_base.requestor_public_key,
-                        requestor_private_key=sci_base.requestor_private_key,
-                    ),
-                    provider_private_key=sci_base.provider_private_key
+                task_to_compute=create_signed_task_to_compute(
+                    timestamp=parse_timestamp_to_utc_datetime(current_time),
+                    deadline=current_time,
+                    price=1000,
+                    provider_public_key=sci_base.provider_public_key,
+                    provider_private_key=sci_base.provider_private_key,
+                    requestor_public_key=sci_base.requestor_public_key,
+                    requestor_private_key=sci_base.requestor_private_key,
                 ),
                 requestor_private_key=sci_base.requestor_private_key,
             ),
@@ -148,17 +141,14 @@ def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts: Pro
                         current_time - cluster_consts.payment_due_time + AVERAGE_TIME_FOR_TWO_BLOCKS
                     ),
                     payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
-                    report_computed_task=create_signed_report_computed_task(
-                        task_to_compute=create_signed_task_to_compute(
-                            timestamp=parse_timestamp_to_utc_datetime(current_time),
-                            deadline=current_time,
-                            price=0,
-                            provider_public_key=sci_base.provider_public_key,
-                            provider_private_key=sci_base.provider_private_key,
-                            requestor_public_key=sci_base.requestor_public_key,
-                            requestor_private_key=sci_base.requestor_private_key,
-                        ),
-                        provider_private_key=sci_base.provider_private_key
+                    task_to_compute=create_signed_task_to_compute(
+                        timestamp=parse_timestamp_to_utc_datetime(current_time),
+                        deadline=current_time,
+                        price=0,
+                        provider_public_key=sci_base.provider_public_key,
+                        provider_private_key=sci_base.provider_private_key,
+                        requestor_public_key=sci_base.requestor_public_key,
+                        requestor_private_key=sci_base.requestor_private_key,
                     ),
                     requestor_private_key=sci_base.requestor_private_key,
                 ),
@@ -167,17 +157,14 @@ def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts: Pro
                         current_time - cluster_consts.payment_due_time + AVERAGE_TIME_FOR_TWO_BLOCKS
                     ),
                     payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
-                    report_computed_task=create_signed_report_computed_task(
-                        task_to_compute=create_signed_task_to_compute(
-                            timestamp=parse_timestamp_to_utc_datetime(current_time),
-                            deadline=current_time,
-                            price=0,
-                            provider_public_key=sci_base.provider_public_key,
-                            provider_private_key=sci_base.provider_private_key,
-                            requestor_public_key=sci_base.requestor_public_key,
-                            requestor_private_key=sci_base.requestor_private_key,
-                        ),
-                        provider_private_key=sci_base.provider_private_key
+                    task_to_compute=create_signed_task_to_compute(
+                        timestamp=parse_timestamp_to_utc_datetime(current_time),
+                        deadline=current_time,
+                        price=0,
+                        provider_public_key=sci_base.provider_public_key,
+                        provider_private_key=sci_base.provider_private_key,
+                        requestor_public_key=sci_base.requestor_public_key,
+                        requestor_private_key=sci_base.requestor_private_key,
                     ),
                     requestor_private_key=sci_base.requestor_private_key,
                 ),
@@ -208,17 +195,14 @@ def test_case_2b_send_force_payment_beyond_payment_time(cluster_consts: Protocol
                 create_signed_subtask_results_accepted(
                     timestamp=timestamp_to_isoformat(current_time),
                     payment_ts=current_time,
-                    report_computed_task=create_signed_report_computed_task(
-                        task_to_compute=create_signed_task_to_compute(
-                            timestamp=parse_timestamp_to_utc_datetime(current_time),
-                            deadline=current_time,
-                            price=15000,
-                            provider_public_key=sci_base.provider_public_key,
-                            provider_private_key=sci_base.provider_private_key,
-                            requestor_public_key=sci_base.requestor_public_key,
-                            requestor_private_key=sci_base.requestor_private_key,
-                        ),
+                    task_to_compute=create_signed_task_to_compute(
+                        timestamp=parse_timestamp_to_utc_datetime(current_time),
+                        deadline=current_time,
+                        price=15000,
+                        provider_public_key=sci_base.provider_public_key,
                         provider_private_key=sci_base.provider_private_key,
+                        requestor_public_key=sci_base.requestor_public_key,
+                        requestor_private_key=sci_base.requestor_private_key,
                     ),
                     requestor_private_key=sci_base.requestor_private_key
                 ),
@@ -228,17 +212,14 @@ def test_case_2b_send_force_payment_beyond_payment_time(cluster_consts: Protocol
                         current_time - cluster_consts.payment_due_time + AVERAGE_TIME_FOR_TWO_BLOCKS
                     ),
                     payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
-                    report_computed_task=create_signed_report_computed_task(
-                        task_to_compute=create_signed_task_to_compute(
-                            timestamp=parse_timestamp_to_utc_datetime(current_time),
-                            deadline=current_time,
-                            price=15000,
-                            provider_public_key=sci_base.provider_public_key,
-                            provider_private_key=sci_base.provider_private_key,
-                            requestor_public_key=sci_base.requestor_public_key,
-                            requestor_private_key=sci_base.requestor_private_key,
-                        ),
+                    task_to_compute=create_signed_task_to_compute(
+                        timestamp=parse_timestamp_to_utc_datetime(current_time),
+                        deadline=current_time,
+                        price=15000,
+                        provider_public_key=sci_base.provider_public_key,
                         provider_private_key=sci_base.provider_private_key,
+                        requestor_public_key=sci_base.requestor_public_key,
+                        requestor_private_key=sci_base.requestor_private_key,
                     ),
                     requestor_private_key=sci_base.requestor_private_key
                 )
@@ -276,17 +257,14 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
                         current_time - cluster_consts.payment_due_time + AVERAGE_TIME_FOR_TWO_BLOCKS
                     ),
                     payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
-                    report_computed_task=create_signed_report_computed_task(
-                        task_to_compute=create_signed_task_to_compute(
-                            timestamp=parse_timestamp_to_utc_datetime(current_time),
-                            deadline=current_time,
-                            price=15000,
-                            provider_public_key=sci_base.provider_public_key,
-                            provider_private_key=sci_base.provider_private_key,
-                            requestor_public_key=sci_base.requestor_public_key,
-                            requestor_private_key=sci_base.requestor_private_key,
-                        ),
+                    task_to_compute=create_signed_task_to_compute(
+                        timestamp=parse_timestamp_to_utc_datetime(current_time),
+                        deadline=current_time,
+                        price=15000,
+                        provider_public_key=sci_base.provider_public_key,
                         provider_private_key=sci_base.provider_private_key,
+                        requestor_public_key=sci_base.requestor_public_key,
+                        requestor_private_key=sci_base.requestor_private_key,
                     ),
                     requestor_private_key=sci_base.requestor_private_key
                 ),
@@ -296,17 +274,14 @@ def test_case_2_a_force_payment_with_subtask_result_accepted_where_ethereum_acco
                         current_time - cluster_consts.payment_due_time + AVERAGE_TIME_FOR_TWO_BLOCKS
                     ),
                     payment_ts=current_time - cluster_consts.payment_due_time - AVERAGE_TIME_FOR_TWO_BLOCKS,
-                    report_computed_task=create_signed_report_computed_task(
-                        task_to_compute=create_signed_task_to_compute(
-                            timestamp=parse_timestamp_to_utc_datetime(current_time),
-                            deadline=current_time,
-                            price=15000,
-                            provider_public_key=sci_base.provider_empty_account_public_key,
-                            provider_private_key=sci_base.provider_empty_account_private_key,
-                            requestor_public_key=sci_base.requestor_empty_account_public_key,
-                            requestor_private_key=sci_base.requestor_empty_account_private_key,
-                        ),
-                        provider_private_key=sci_base.provider_private_key,
+                    task_to_compute=create_signed_task_to_compute(
+                        timestamp=parse_timestamp_to_utc_datetime(current_time),
+                        deadline=current_time,
+                        price=15000,
+                        provider_public_key=sci_base.provider_empty_account_public_key,
+                        provider_private_key=sci_base.provider_empty_account_private_key,
+                        requestor_public_key=sci_base.requestor_empty_account_public_key,
+                        requestor_private_key=sci_base.requestor_empty_account_private_key,
                     ),
                     requestor_private_key=sci_base.requestor_private_key
                 )

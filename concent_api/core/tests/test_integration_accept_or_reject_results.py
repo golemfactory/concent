@@ -653,7 +653,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 11:00:00",
                 payment_ts="2018-02-05 10:59:01",
-                report_computed_task=report_computed_task
+                task_to_compute=task_to_compute
             )
         )
 
@@ -906,12 +906,9 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 11:00:00",
                 payment_ts="2018-02-05 10:59:02",
-                report_computed_task=self._get_deserialized_report_computed_task(
-                    timestamp="2018-02-05 10:00:05",
-                    task_to_compute=self._get_deserialized_task_to_compute(
-                        timestamp="2018-02-05 10:00:00",
-                        compute_task_def=compute_task_def,
-                    )
+                task_to_compute=self._get_deserialized_task_to_compute(
+                    timestamp="2018-02-05 10:00:00",
+                    compute_task_def=compute_task_def,
                 )
             )
         )
@@ -1115,18 +1112,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             compute_task_def=compute_task_def,
         )
 
-        report_computed_task = self._get_deserialized_report_computed_task(
-            timestamp="2018-02-05 10:00:05",
-            task_to_compute=task_to_compute
-        )
-
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key=self.REQUESTOR_PRIVATE_KEY,
             timestamp="2018-02-05 12:00:00",
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 12:00:00",
                 payment_ts="2018-02-05 11:59:01",
-                report_computed_task=report_computed_task
+                task_to_compute=task_to_compute
             ),
         )
 
@@ -1146,18 +1138,13 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             compute_task_def    = compute_task_def,
         )
 
-        report_computed_task = self._get_deserialized_report_computed_task(
-            timestamp="2018-02-05 9:00:05",
-            task_to_compute=task_to_compute
-        )
-
         serialized_force_subtask_results_response = self._get_serialized_force_subtask_results_response(
             requestor_private_key=self.REQUESTOR_PRIVATE_KEY,
             timestamp="2018-02-05 10:00:00",
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 10:00:00",
                 payment_ts="2018-02-05 9:59:01",
-                report_computed_task=report_computed_task
+                task_to_compute=task_to_compute,
             ),
         )
 
@@ -1601,7 +1588,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 11:00:00",
                 payment_ts="2018-02-05 10:59:01",
-                report_computed_task=report_computed_task,
+                task_to_compute=task_to_compute,
             ),
         )
         subtask.full_clean()
@@ -1615,7 +1602,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 11:00:01",
                 payment_ts="2018-02-05 10:59:02",
-                report_computed_task=report_computed_task,
+                task_to_compute=task_to_compute,
             )
         )
 
@@ -1709,7 +1696,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 11:00:01",
                 payment_ts="2018-02-05 10:59:02",
-                report_computed_task=report_computed_task,
+                task_to_compute=task_to_compute,
             )
         )
 
@@ -1787,9 +1774,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
     def test_that_force_subtask_results_response_with_both_subtask_results_rejected_and_accepted_should_return_http400(self):
         force_subtask_results_response = self._get_deserialized_force_subtask_results_response(
             subtask_results_accepted=self._get_deserialized_subtask_results_accepted(
-                report_computed_task=self._get_deserialized_report_computed_task(
-                    task_to_compute=self._get_deserialized_task_to_compute(),
-                )
+                task_to_compute=self._get_deserialized_task_to_compute(),
             ),
             subtask_results_rejected=self._get_deserialized_subtask_results_rejected(
                 reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative),

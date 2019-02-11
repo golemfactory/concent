@@ -532,7 +532,6 @@ class Subtask(Model):
             self.ack_report_computed_task,
             self.subtask_results_rejected,
             self.force_get_task_result,
-            self.subtask_results_accepted,
         ]
 
         for task_to_compute_to_validate in MESSAGES_TO_VALIDATE_TASK_TO_COMPUTE:

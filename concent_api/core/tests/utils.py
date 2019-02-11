@@ -221,11 +221,8 @@ class ConcentIntegrationTestCase(TestCase):
                 ),
                 package_hash=package_hash,
                 size=size,
+                sign__privkey=signer_private_key if signer_private_key is not None else self.PROVIDER_PRIVATE_KEY
             )
-        report_computed_task = self._sign_message(
-            report_computed_task,
-            signer_private_key if signer_private_key is not None else self.PROVIDER_PRIVATE_KEY,
-        )
         return report_computed_task
 
     def _get_deserialized_task_to_compute(
@@ -549,7 +546,7 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_subtask_results_accepted(
         self,
-        report_computed_task: ReportComputedTask,
+        task_to_compute: TaskToCompute,
         payment_ts: Optional[str] = None,
         timestamp: Union[str, datetime.datetime, None] = None,
         signer_private_key: Optional[bytes] = None,
@@ -558,7 +555,7 @@ class ConcentIntegrationTestCase(TestCase):
         """ Return SubtaskResultsAccepted deserialized """
         with freeze_time(timestamp or get_timestamp_string()):
             subtask_results_accepted = SubtaskResultsAccepted(
-                report_computed_task=report_computed_task,
+                task_to_compute=task_to_compute,
                 payment_ts=(
                     parse_iso_date_to_timestamp(payment_ts) if payment_ts is not None else
                     parse_iso_date_to_timestamp(get_timestamp_string())

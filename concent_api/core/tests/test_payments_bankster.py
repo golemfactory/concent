@@ -274,10 +274,7 @@ class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):
         self.task_to_compute = self._get_deserialized_task_to_compute(price=price)
         self.subtask_results_accepted_list = [
             self._get_deserialized_subtask_results_accepted(
-                report_computed_task=self._get_deserialized_report_computed_task(
-                    timestamp="2018-02-04 10:00:05",
-                    task_to_compute=self.task_to_compute
-                )
+                task_to_compute=self.task_to_compute
             ) for _ in range(number_of_items)
         ]
 

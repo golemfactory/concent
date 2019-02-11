@@ -4,7 +4,6 @@ import mock
 import pytest
 
 from golem_messages.factories.tasks import ComputeTaskDefFactory
-from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.factories.tasks import SubtaskResultsAcceptedFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.factories.tasks import WantToComputeTaskFactory
@@ -226,15 +225,11 @@ class TestAreEthereumAddressesAndKeysUnique(TestCase):
         subtask_2_signed_by=REQUESTOR_PRIVATE_KEY,
     ) -> list:
         subtask_results_accepted_1 = SubtaskResultsAcceptedFactory(
-            report_computed_task=ReportComputedTaskFactory(
-                task_to_compute=task_to_compute_1
-            )
+            task_to_compute=task_to_compute_1
         )
         sign_message(subtask_results_accepted_1, subtask_1_signed_by)
         subtask_results_accepted_2 = SubtaskResultsAcceptedFactory(
-            report_computed_task=ReportComputedTaskFactory(
-                task_to_compute=task_to_compute_2
-            )
+            task_to_compute=task_to_compute_2
         )
         sign_message(subtask_results_accepted_2, subtask_2_signed_by)
         subtask_results_accepted_list = [

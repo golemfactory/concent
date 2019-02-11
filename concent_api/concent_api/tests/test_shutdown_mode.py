@@ -155,14 +155,11 @@ class SoftShutdownModeTest(ConcentIntegrationTestCase):
             self._get_deserialized_subtask_results_accepted(
                 timestamp="2018-02-05 10:00:15",
                 payment_ts="2018-02-05 10:00:13",
-                report_computed_task=self._get_deserialized_report_computed_task(
-                    timestamp="2018-02-05 10:00:05",
-                    task_to_compute=self._get_deserialized_task_to_compute(
-                        timestamp="2018-02-05 10:00:00",
-                        deadline="2018-02-05 10:00:10",
-                        requestor_public_key=self._get_requestor_hex_public_key(),
-                        requestor_ethereum_public_key=self._get_requestor_ethereum_hex_public_key(),
-                    )
+                task_to_compute=self._get_deserialized_task_to_compute(
+                    timestamp="2018-02-05 10:00:00",
+                    deadline="2018-02-05 10:00:10",
+                    requestor_public_key=self._get_requestor_hex_public_key(),
+                    requestor_ethereum_public_key=self._get_requestor_ethereum_hex_public_key(),
                 )
             )
         ]

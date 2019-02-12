@@ -14,6 +14,7 @@ from golem_messages.shortcuts import dump
 from golem_messages.shortcuts import load
 
 from common.constants import ErrorCode
+from common.constants import ERROR_IN_GOLEM_MESSAGE
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.testing_helpers import generate_ecc_key_pair
@@ -506,7 +507,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
         self._test_400_response(
             response,
-            error_code=ErrorCode.MESSAGE_VALUE_NOT_STRING
+            error_message=ERROR_IN_GOLEM_MESSAGE
         )
         self._assert_stored_message_counter_not_increased()
         self._assert_client_count_is_equal(0)
@@ -521,7 +522,7 @@ class CoreViewSendTest(ConcentIntegrationTestCase):
 
         self._test_400_response(
             response,
-            error_code=ErrorCode.MESSAGE_VALUE_WRONG_LENGTH,
+            error_message=ERROR_IN_GOLEM_MESSAGE
         )
         self._assert_stored_message_counter_not_increased()
         self._assert_client_count_is_equal(0)

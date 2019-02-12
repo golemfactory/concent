@@ -756,11 +756,16 @@ def get_clients_eth_accounts(task_to_compute: message.tasks.TaskToCompute) -> Tu
 def handle_send_force_payment(
     client_message: message.concents.ForcePayment
 ) -> Union[ServiceRefused, ForcePaymentRejected, ForcePaymentCommitted]:
-    assert isinstance(client_message.subtask_results_accepted_list, list)
-    assert len(client_message.subtask_results_accepted_list) != 0
+    if not isinstance(client_message.subtask_results_accepted_list, list) or len(client_message.subtask_results_accepted_list) == 0:
+        return message.concents.ServiceRefused(
+            reason = message.concents.ServiceRefused.REASON.InvalidRequest
+        )
     try:
         for subtask_results_accepted in client_message.subtask_results_accepted_list:
-            assert isinstance(subtask_results_accepted, SubtaskResultsAccepted)
+            if not isinstance(subtask_results_accepted, SubtaskResultsAccepted):
+                return message.concents.ServiceRefused(
+                    reason=message.concents.ServiceRefused.REASON.InvalidRequest
+                )
             subtask_results_accepted.validate_ownership_chain(settings.CONCENT_PUBLIC_KEY)
     except InvalidSignature:
         return ServiceRefused(

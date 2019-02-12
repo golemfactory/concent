@@ -314,7 +314,7 @@ ADDITIONAL_VERIFICATION_TIME_MULTIPLIER = 2.0
 # ADDITIONAL_VERIFICATION_COST = 0
 
 # A global constant defining deadline for submitting SubtaskResultsVerify.
-ADDITIONAL_VERIFICATION_CALL_TIME = int(constants.AVCT.total_seconds())
+ADDITIONAL_VERIFICATION_CALL_TIME = 3 * CONCENT_MESSAGING_TIME + FORCE_ACCEPTANCE_TIME
 
 # Which components of this Django application should be enabled in this particular server instance.
 # The application is basically a bunch of services with totally different responsibilites that share a lot of code.

@@ -18,9 +18,7 @@ import requests
 from freezegun import freeze_time
 
 from golem_messages import message
-from golem_messages.datastructures.tasks import TaskHeader
 from golem_messages.exceptions import MessageError
-from golem_messages.factories.datastructures.tasks import TaskHeaderFactory
 from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.factories.tasks import WantToComputeTaskFactory
@@ -407,15 +405,10 @@ def create_signed_task_to_compute(
         if script_src is not None:
             compute_task_def['extra_data']['script_src'] = script_src
 
-        task_header: TaskHeader = TaskHeaderFactory(
-            task_id=compute_task_def['task_id'],
-            sign__privkey=requestor_private_key,
-        )
-
         want_to_compute_task = WantToComputeTaskFactory(
+            task_id=compute_task_def['task_id'],
             provider_public_key=encode_hex(provider_public_key),
             provider_ethereum_public_key=encode_hex(provider_public_key),
-            task_header=task_header,
             sign__privkey=provider_private_key
         )
 

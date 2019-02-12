@@ -18,8 +18,6 @@ from numpy import ndarray
 from golem_messages import dump
 from golem_messages import load
 from golem_messages import message
-from golem_messages.datastructures.tasks import TaskHeader
-from golem_messages.factories.datastructures.tasks import TaskHeaderFactory
 from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
@@ -303,17 +301,10 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_deserialized_want_to_compute_task(self,
         kwargs: Dict[str, Union[int, bytes, str]],
-        timestamp: Optional[Union[str, datetime.datetime, None]] = None,
     ) -> WantToComputeTask:
 
         """ Returns WantToComputeTask deserialized. """
 
-        with freeze_time(timestamp or get_timestamp_string()):
-            task_header: TaskHeader = TaskHeaderFactory(
-                task_id=kwargs['task_id'],
-                sign__privkey=kwargs['requestor_private_key'] if kwargs.get('requestor_private_key') is not None else self.REQUESTOR_PRIVATE_KEY,
-            )
-        kwargs['task_header'] = task_header
         if kwargs.get('provider_public_key') is None:
             kwargs['provider_public_key'] = self._get_provider_hex_public_key()
         if kwargs.get('provider_ethereum_public_key') is None:

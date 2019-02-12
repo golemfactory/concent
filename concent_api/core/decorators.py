@@ -26,7 +26,6 @@ from common.constants import ErrorCode
 from common.exceptions import ConcentBaseException
 from common.exceptions import ConcentInSoftShutdownMode
 from common.exceptions import ConcentValidationError
-from common.exceptions import NonPositivePriceTaskToComputeError
 from common.helpers import join_messages
 from common.logging import get_json_from_message_without_redundant_fields_for_logging
 from common.logging import log
@@ -213,16 +212,6 @@ def handle_errors_and_responses(database_name: str) -> Callable:
                     client_public_key=client_public_key,
                 )
                 response_from_view = view(request, client_message, client_public_key, *args, **kwargs)
-            except NonPositivePriceTaskToComputeError as exception:
-                log(logger, 'TaskToCompute contains non-positive price.', exception.error_message)
-                return HttpResponse(
-                    dump(
-                        message.concents.ServiceRefused(reason=message.concents.ServiceRefused.REASON.PriceNotPositive),
-                        settings.CONCENT_PRIVATE_KEY,
-                        client_public_key,
-                    ),
-                    content_type='application/octet-stream'
-                )
             except UnsupportedProtocolVersion as exception:
                 return HttpResponse(exception.error_message, status=404)
 

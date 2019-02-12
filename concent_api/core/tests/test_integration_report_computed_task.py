@@ -8,6 +8,7 @@ from golem_messages import factories
 from django.test import override_settings
 
 from common.constants import ErrorCode
+from common.constants import ERROR_IN_GOLEM_MESSAGE
 from common.testing_helpers import generate_ecc_key_pair
 from core.models import PendingResponse
 from core.models import Subtask
@@ -1655,7 +1656,7 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
             )
         self._test_400_response(
             response_1,
-            error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE
+            error_message=ERROR_IN_GOLEM_MESSAGE
         )
         self._assert_stored_message_counter_not_increased()
 
@@ -2739,14 +2740,8 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
                 data=serialized_force_report_computed_task,
             )
 
-        self._test_response(
+        self._test_400_response(
             response_1,
-            status=200,
-            key=self.PROVIDER_PRIVATE_KEY,
-            message_type=message.concents.ServiceRefused,
-            fields={
-                'timestamp': parse_iso_date_to_timestamp("2017-12-01 10:59:00"),
-                'reason': message.concents.ServiceRefused.REASON.PriceNotPositive,
-            }
+            error_code=ErrorCode.MESSAGE_VALUE_NEGATIVE,
         )
         self._assert_stored_message_counter_not_increased()

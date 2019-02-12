@@ -11,6 +11,7 @@ from mock import Mock
 
 from golem_messages import message
 
+from common.constants import ErrorCode
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 
@@ -170,8 +171,8 @@ def test_case_2c_send_force_payment_with_no_value_to_be_paid(cluster_consts: Pro
                 ),
             ]
         ),
-        expected_status=200,
-        expected_message_type=message.concents.ServiceRefused,
+        expected_status=400,
+        expected_error_code=ErrorCode.MESSAGE_VALUE_NEGATIVE.value,
     )
 
 

@@ -1,4 +1,5 @@
 from unittest import TestCase
+from assertpy import assert_that
 import pytest
 
 from django.conf import settings
@@ -168,5 +169,7 @@ class TestCorrectMessageToForcePaymentHandler:
     def test_that_force_payment_with_malformed_subtask_results_accepted_list_raises_assertion(self, subtask_results_accepted_list):  # pylint: disable=no-self-use
         force_payment = message.concents.ForcePayment(subtask_results_accepted_list=subtask_results_accepted_list)
 
-        with pytest.raises(AssertionError):
-            handle_send_force_payment(force_payment)
+        service_refused = handle_send_force_payment(force_payment)
+
+        assert_that(service_refused).is_instance_of(message.concents.ServiceRefused)
+        assert_that(service_refused.reason).is_equal_to(message.concents.ServiceRefused.REASON.InvalidRequest)  # pylint: disable=no-member

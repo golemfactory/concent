@@ -81,7 +81,7 @@ No   Condition                                                                  
 6    Payment from a different Ethereum account than listed in the subtask                                            `ServiceRefused`         `InvalidRequest`
 7    Payment to a different Ethereum account than listed in the subtask                                              `ServiceRefused`         `InvalidRequest`
 8    `payment_ts` <= `closure_time` of the last settlement payment                                                   `ForcePaymentRejected`   `TimestampError`
-9    `payment_ts` != `timestamp` of the message                                                                      `ForcePaymentRejected`   `TimestampError`
+9    `payment_ts` > `timestamp` of the message                                                                       `ForcePaymentRejected`   `TimestampError`
 10   `payment_ts` > current time (according to Concent's clock)                                                      `ForcePaymentRejected`   `TimestampError`
 11   `payment_ts >= max(current time - PDT, closure_time of most recent payment)` (according to Concent's clock)     `ForcePaymentRejected`   `TimestampError`
 12   Requestor has no deposit                                                                                        `ServiceRefused`         `TooSmallRequestorDeposit`

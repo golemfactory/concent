@@ -133,8 +133,8 @@ The `closure_time` is `T2` which is the `payment_ts` timestamp of the youngest s
 ~~~~~~~~~~~~~~~~~~~~~
 `LAR` can be further subdivided into:
 
-- `LAU` - list of all acceptances from `LAR` older or equal to the youngest payment from `LT`
-- `LAO` - list of all acceptances from `LAR` younger than the youngest payment from `LT`
+- `LAU` - list of all acceptances from `LAR` older than or equal to `T1` (i.e. the youngest payment from `LT`)
+- `LAO` - list of all acceptances from `LAR` younger than `T1`.
 
 The distinction is just another way to express condition 11 from the previous section.
 `LAU` is the list of those acceptances that are already covered by an existing payment.

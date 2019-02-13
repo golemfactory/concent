@@ -407,6 +407,8 @@ class Subtask(Model):
     # Flag used to notify Concent Core that Storage Cluster has uploaded files related with this Subtask.
     result_upload_finished = BooleanField(default=False)
 
+    protocol_version = CharField(max_length=10)
+
     def __init__(self, *args: list, **kwargs: Union[str, int, datetime.datetime, StoredMessage, None]) -> None:
         super().__init__(*args, **kwargs)
         self._current_state_name = None
@@ -550,10 +552,10 @@ class Subtask(Model):
         for related_message_name in Subtask.MESSAGE_FOR_FIELD:
             related_message = getattr(self, related_message_name)
             assert isinstance(related_message, StoredMessage) or related_message is None
-            if related_message is not None and related_message.protocol_version != settings.GOLEM_MESSAGES_VERSION:
+            if related_message is not None and related_message.protocol_version != self.protocol_version:
                 raise ValidationError(
                     f'Unsupported Golem Message version. Version in: `{related_message_name}` is {related_message.protocol_version}, '
-                    f'Version in Concent is {settings.GOLEM_MESSAGES_VERSION}'
+                    f'Version in Concent is {self.protocol_version}'
                 )
 
     @property

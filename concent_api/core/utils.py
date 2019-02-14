@@ -121,14 +121,19 @@ def extract_name_from_scene_file_path(absoulte_scene_file_path_in_docker: str) -
     return relative_scene_file_path_in_archive
 
 
+def get_major_and_minor_golem_messages_version(protocol_version: str) -> str:
+    divided_version = protocol_version.split('.')
+    return f'{divided_version[0]}.{divided_version[1]}'
+
+
 def is_protocol_version_compatible(protocol_version: str) -> bool:
     """
     Versions are considered compatible if they share the minor and major version number. E.g 2.18.5 is compatible with
     2.18.1 but not with 2.17.5 or 3.0.0. This supports semver version style https://semver.org/
     """
-    major, minor, _ = protocol_version.split('.')
-    concent_major, concent_minor, _ = settings.GOLEM_MESSAGES_VERSION.split('.')
-    return major == concent_major and minor == concent_minor
+    clients_golem_messages_version = get_major_and_minor_golem_messages_version(protocol_version)
+    concents_golem_messages_version = settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION
+    return clients_golem_messages_version == concents_golem_messages_version
 
 
 def is_given_golem_messages_version_supported_by_concent(

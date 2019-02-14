@@ -7,6 +7,8 @@ from golem_messages import __version__
 from golem_messages import constants
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+from core.utils import get_major_and_minor_golem_messages_version
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Application definition
@@ -357,6 +359,8 @@ USE_SIGNING_SERVICE = False
 # GNT_DEPOSIT_CONTRACT_ADDRESS = ''
 
 GOLEM_MESSAGES_VERSION = __version__
+
+MAJOR_MINOR_GOLEM_MESSAGES_VERSION = get_major_and_minor_golem_messages_version(GOLEM_MESSAGES_VERSION)
 
 # Define if exception should be raised when database transactions are nested.
 DETECT_NESTED_TRANSACTIONS = True

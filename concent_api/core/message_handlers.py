@@ -1308,7 +1308,7 @@ def store_message(
         data=copy(golem_message).serialize(),
         task_id=task_id,
         subtask_id=subtask_id,
-        protocol_version=settings.GOLEM_MESSAGES_VERSION
+        protocol_version=get_major_and_minor_golem_messages_version(settings.GOLEM_MESSAGES_VERSION)
     )
     stored_message.full_clean()
     stored_message.save()

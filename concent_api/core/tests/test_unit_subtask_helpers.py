@@ -119,6 +119,7 @@ class TestAreAllStoredMessagesCompatibleWithProtocolVersion(ConcentIntegrationTe
             task_to_compute=store_message(self.task_to_compute, self.task_id, self.subtask_id),
             want_to_compute_task=store_message(self.task_to_compute.want_to_compute_task, self.task_id, self.subtask_id),
             report_computed_task=store_message(self.report_computed_task, self.task_id, self.subtask_id),
+            protocol_version=settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION
         )
         subtask.full_clean()
         subtask.save()
@@ -130,7 +131,10 @@ class TestAreAllStoredMessagesCompatibleWithProtocolVersion(ConcentIntegrationTe
         )
 
     def test_that_if_stored_messages_have_incompatible_protocol_version_function_should_return_false(self):
-        with override_settings(GOLEM_MESSAGES_VERSION='1.11.1'):
+        with override_settings(
+            GOLEM_MESSAGES_VERSION='1.11.1',
+            MAJOR_MINOR_GOLEM_MESSAGES_VERSION='1.11',
+        ):
             subtask = Subtask(
                 task_id=self.task_to_compute.compute_task_def['task_id'],
                 subtask_id=self.task_to_compute.compute_task_def['subtask_id'],
@@ -143,6 +147,7 @@ class TestAreAllStoredMessagesCompatibleWithProtocolVersion(ConcentIntegrationTe
                 task_to_compute=store_message(self.task_to_compute, self.task_id, self.subtask_id),
                 want_to_compute_task=store_message(self.task_to_compute.want_to_compute_task, self.task_id, self.subtask_id),
                 report_computed_task=store_message(self.report_computed_task, self.task_id, self.subtask_id),
+                protocol_version=settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION,
             )
             subtask.full_clean()
             subtask.save()

@@ -21,6 +21,7 @@ from core.models import DepositAccount
 from core.models import DepositClaim
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
+from core.utils import get_major_and_minor_golem_messages_version
 from core.utils import hex_to_bytes_convert
 
 
@@ -380,7 +381,10 @@ class ProtocolVersionValidationTest(ConcentIntegrationTestCase):
         task_id: str,
         subtask_id: str,
     ):
-        with override_settings(GOLEM_MESSAGES_VERSION=self.first_communication_protocol_version):
+        with override_settings(
+            GOLEM_MESSAGES_VERSION=self.first_communication_protocol_version,
+            MAJOR_MINOR_GOLEM_MESSAGES_VERSION='1.11',
+        ):
             return store_message(
                 golem_message=golem_message,
                 task_id=task_id,
@@ -389,7 +393,10 @@ class ProtocolVersionValidationTest(ConcentIntegrationTestCase):
 
     def test_that_incorrect_version_of_golem_messages_in_stored_message_should_raise_validation_error(self):
 
-        with override_settings(GOLEM_MESSAGES_VERSION=self.second_communication_protocol_version):
+        with override_settings(
+            GOLEM_MESSAGES_VERSION=self.second_communication_protocol_version,
+            MAJOR_MINOR_GOLEM_MESSAGES_VERSION='2.13',
+        ):
             task_to_compute = tasks.TaskToComputeFactory(sign__privkey=REQUESTOR_PRIVATE_KEY)
 
             report_computed_task=tasks.ReportComputedTaskFactory(
@@ -410,7 +417,7 @@ class ProtocolVersionValidationTest(ConcentIntegrationTestCase):
                     )
 
         self.assertIn(
-            f"Unsupported Golem Message version. Version in: `task_to_compute` is {self.first_communication_protocol_version}, "
-            f"Version in Concent is {self.second_communication_protocol_version}",
+            f"Unsupported Golem Message version. Version in: `task_to_compute` is {get_major_and_minor_golem_messages_version(self.first_communication_protocol_version)}, "
+            f"Version in Concent is {get_major_and_minor_golem_messages_version(self.second_communication_protocol_version)}",
             str(error.exception)
         )

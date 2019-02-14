@@ -621,7 +621,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             data=self.force_golem_data.report_computed_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
-            protocol_version=settings.GOLEM_MESSAGES_VERSION,
+            protocol_version=settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION,
         )
         new_message.full_clean()
         new_message.save()
@@ -644,7 +644,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             data=self.want_to_compute_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
-            protocol_version=settings.GOLEM_MESSAGES_VERSION,
+            protocol_version=settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION,
         )
         want_to_compute_message.full_clean()
         want_to_compute_message.save()
@@ -655,7 +655,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             data=self.task_to_compute.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
-            protocol_version=settings.GOLEM_MESSAGES_VERSION,
+            protocol_version=settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION,
         )
         task_to_compute_message.full_clean()
         task_to_compute_message.save()
@@ -670,7 +670,8 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             provider                = client_provider,
             requestor               = client_requestor,
             result_package_size=self.size,
-            computation_deadline=parse_timestamp_to_utc_datetime(self.compute_task_def['deadline'])
+            computation_deadline=parse_timestamp_to_utc_datetime(self.compute_task_def['deadline']),
+            protocol_version=settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION,
         )
         subtask.full_clean()
         subtask.save()
@@ -717,7 +718,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             data=self.force_golem_data.report_computed_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
-            protocol_version=settings.GOLEM_MESSAGES_VERSION,
+            protocol_version=settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION,
         )
         new_message.full_clean()
         new_message.save()
@@ -728,7 +729,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             data=self.want_to_compute_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
-            protocol_version=settings.GOLEM_MESSAGES_VERSION,
+            protocol_version=settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION,
         )
         want_to_compute_message.full_clean()
         want_to_compute_message.save()
@@ -739,7 +740,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             data=self.task_to_compute.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
-            protocol_version=settings.GOLEM_MESSAGES_VERSION,
+            protocol_version=settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION,
         )
         task_to_compute_message.full_clean()
         task_to_compute_message.save()
@@ -754,7 +755,7 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             data=ack_report_computed_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
-            protocol_version=settings.GOLEM_MESSAGES_VERSION,
+            protocol_version=settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION,
         )
         stored_ack_report_computed_task.full_clean()
         stored_ack_report_computed_task.save()
@@ -782,7 +783,8 @@ class CoreViewReceiveTest(ConcentIntegrationTestCase):
             provider                 = client_provider,
             requestor                = client_requestor,
             result_package_size=self.size,
-            computation_deadline=parse_timestamp_to_utc_datetime(self.compute_task_def['deadline'])
+            computation_deadline=parse_timestamp_to_utc_datetime(self.compute_task_def['deadline']),
+            protocol_version=settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION,
         )
         subtask.full_clean()
         subtask.save()
@@ -887,7 +889,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             data=self.force_golem_data.report_computed_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
-            protocol_version=settings.GOLEM_MESSAGES_VERSION,
+            protocol_version=settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION,
         )
         new_message.full_clean()
         new_message.save()
@@ -898,7 +900,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             data=self.want_to_compute_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
-            protocol_version=settings.GOLEM_MESSAGES_VERSION,
+            protocol_version=settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION,
         )
         want_to_compute_message.full_clean()
         want_to_compute_message.save()
@@ -909,7 +911,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             data=self.task_to_compute.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
-            protocol_version=settings.GOLEM_MESSAGES_VERSION,
+            protocol_version=settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION,
         )
         task_to_compute_message.full_clean()
         task_to_compute_message.save()
@@ -925,7 +927,7 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             data=ack_report_computed_task.serialize(),
             task_id=self.compute_task_def['task_id'],  # pylint: disable=no-member
             subtask_id=self.compute_task_def['subtask_id'],  # pylint: disable=no-member
-            protocol_version=settings.GOLEM_MESSAGES_VERSION,
+            protocol_version=settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION,
         )
         stored_ack_report_computed_task.full_clean()
         stored_ack_report_computed_task.save()
@@ -953,7 +955,8 @@ class CoreViewReceiveOutOfBandTest(ConcentIntegrationTestCase):
             provider                 = client_provider,
             requestor                = client_requestor,
             result_package_size=self.size,
-            computation_deadline=parse_timestamp_to_utc_datetime(self.compute_task_def['deadline'])
+            computation_deadline=parse_timestamp_to_utc_datetime(self.compute_task_def['deadline']),
+            protocol_version=settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION,
         )
         subtask.full_clean()
         subtask.save()
@@ -1026,7 +1029,10 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
         self.provider_public_key = hex_to_bytes_convert(self.task_to_compute.provider_public_key)
         self.requestor_public_key = hex_to_bytes_convert(self.task_to_compute.requestor_public_key)
 
-    @override_settings(GOLEM_MESSAGES_VERSION='2.15.0')
+    @override_settings(
+        GOLEM_MESSAGES_VERSION='2.15.0',
+        MAJOR_MINOR_GOLEM_MESSAGES_VERSION='2.15',
+    )
     def test_that_concent_should_refuse_request_with_incompatible_protocol_version(self):
         with mock.patch('core.decorators.log') as log_mock:
             response = self.send_request(
@@ -1061,7 +1067,10 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
         )
 
     def test_that_send_should_response_http404_if_all_stored_messages_have_incompatible_protocol_version(self):
-        with override_settings(GOLEM_MESSAGES_VERSION='1.11.0'):
+        with override_settings(
+            GOLEM_MESSAGES_VERSION='1.11.0',
+            MAJOR_MINOR_GOLEM_MESSAGES_VERSION='1.11',
+        ):
             store_subtask(
                 task_id=self.task_to_compute.compute_task_def['task_id'],
                 subtask_id=self.task_to_compute.compute_task_def['subtask_id'],
@@ -1079,7 +1088,8 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
                 data=dump(
                     self.force_report_computed_task,
                     self.PROVIDER_PRIVATE_KEY,
-                    CONCENT_PUBLIC_KEY),
+                    CONCENT_PUBLIC_KEY
+                ),
             )
         self._test_response(
             response,
@@ -1090,7 +1100,7 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
         log_called_mock.assert_called()
         log_not_called_mock.assert_not_called()
 
-        self.assertIn(f'Version stored in database is 1.11.0, Concent version is {settings.GOLEM_MESSAGES_VERSION}', str(log_called_mock.call_args))
+        self.assertIn(f'Version stored in database is 1.11, Concent version is {settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION}', str(log_called_mock.call_args))
 
     def test_that_receive_should_refuse_request_if_stored_messages_in_database_have_incompatible_protocol_version(self):
         """
@@ -1124,7 +1134,10 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
             key=self.REQUESTOR_PRIVATE_KEY,
         )
 
-        with override_settings(GOLEM_MESSAGES_VERSION='1.11.0'):
+        with override_settings(
+            GOLEM_MESSAGES_VERSION='1.11.0',
+            MAJOR_MINOR_GOLEM_MESSAGES_VERSION='1.11',
+        ):
             response2 = self.send_request(
                 url='core:receive',
                 data=self._create_client_auth_message(self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY),

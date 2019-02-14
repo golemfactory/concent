@@ -164,6 +164,7 @@ class TestValidateCompatibilityGolemMessages:
         self.request.META['HTTP_X_GOLEM_MESSAGES'] = protocol_version
         with override_settings(
             GOLEM_MESSAGES_VERSION='2.15.0',
+            MAJOR_MINOR_GOLEM_MESSAGES_VERSION='2.15',
         ):
             assert is_given_golem_messages_version_supported_by_concent(self.request)
 
@@ -174,6 +175,7 @@ class TestValidateCompatibilityGolemMessages:
         self.request.META['HTTP_X_GOLEM_MESSAGES'] = protocol_version
         with override_settings(
             GOLEM_MESSAGES_VERSION='2.15.0',
+            MAJOR_MINOR_GOLEM_MESSAGES_VERSION='2.15',
         ):
             assert not is_given_golem_messages_version_supported_by_concent(self.request)
 
@@ -181,6 +183,7 @@ class TestValidateCompatibilityGolemMessages:
         assert 'HTTP_X_GOLEM_MESSAGES' not in self.request.META
         with override_settings(
             GOLEM_MESSAGES_VERSION='2.15.0',
+            MAJOR_MINOR_GOLEM_MESSAGES_VERSION='2.15',
         ):
             assert is_given_golem_messages_version_supported_by_concent(self.request)
 

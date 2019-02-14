@@ -51,7 +51,6 @@ from core.exceptions import BanksterTooSmallProviderDepositError
 from core.exceptions import BanksterTooSmallRequestorDepositError
 from core.exceptions import CreateModelIntegrityError
 from core.exceptions import Http400
-from core.exceptions import UnsupportedProtocolVersion
 from core.models import Client
 from core.models import PaymentInfo
 from core.models import PendingResponse
@@ -70,7 +69,6 @@ from core.transfer_operations import store_pending_message
 from core.utils import calculate_concent_verification_time
 from core.utils import calculate_maximum_download_time
 from core.utils import calculate_subtask_verification_time
-from core.utils import is_protocol_version_compatible
 from core.validation import is_golem_message_signed_with_key
 from core.validation import substitute_new_report_computed_task_if_needed
 from core.validation import validate_all_messages_identical
@@ -917,6 +915,7 @@ def store_subtask(
             task_to_compute=store_message(task_to_compute, task_id, subtask_id),
             want_to_compute_task=store_message(task_to_compute.want_to_compute_task, task_id, subtask_id),
             report_computed_task=store_message(report_computed_task, task_id, subtask_id),
+            protocol_version=settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION
         )
 
         set_subtask_messages(
@@ -957,34 +956,30 @@ def store_subtask(
 def handle_messages_from_database(client_public_key: bytes) -> Union[message.Message, None]:
     assert client_public_key not in ['', None]
     encoded_client_public_key = b64encode(client_public_key)
-
     with non_nesting_atomic(using='control'):
-        pending_response = PendingResponse.objects.select_for_update().filter(
+        payments_info_response = PendingResponse.objects.select_for_update().filter(
+            payment_info__isnull=False,
             client__public_key=encoded_client_public_key,
             delivered=False,
         ).order_by('created_at').first()
 
-        if pending_response is None:
-            return None
+        subtask_response = PendingResponse.objects.select_for_update().filter(
+            subtask__protocol_version=settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION,
+            client__public_key=encoded_client_public_key,
+            delivered=False,
+        ).order_by('created_at').first()
+        if payments_info_response is not None and subtask_response is not None:
+            if payments_info_response.created_at > subtask_response.created_at:
+                pending_response = payments_info_response
+            else:
+                pending_response = subtask_response
+        else:
+            pending_response = subtask_response or payments_info_response
+            if not pending_response:
+                return None
 
         assert pending_response.response_type_enum in set(PendingResponse.ResponseType)
 
-        if (
-            pending_response.response_type_enum != PendingResponse.ResponseType.ForcePaymentCommitted and not
-            is_protocol_version_compatible(pending_response.subtask.task_to_compute.protocol_version)
-        ):
-            error_message = f"Wrong version of golem messages in stored messages. " \
-                f"Version stored in database is {pending_response.subtask.task_to_compute.protocol_version}, " \
-                f"Concent's and Client's version is {settings.GOLEM_MESSAGES_VERSION}."
-            log(logger,
-                error_message,
-                subtask_id=pending_response.subtask.subtask_id,
-                client_public_key=client_public_key,
-                )
-            raise UnsupportedProtocolVersion(
-                error_message=error_message,
-                error_code=ErrorCode.UNSUPPORTED_PROTOCOL_VERSION
-            )
         if pending_response.response_type == PendingResponse.ResponseType.ForceReportComputedTask.name:  # pylint: disable=no-member
             report_computed_task = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
             response_to_client = message.concents.ForceReportComputedTask(
@@ -1308,7 +1303,7 @@ def store_message(
         data=copy(golem_message).serialize(),
         task_id=task_id,
         subtask_id=subtask_id,
-        protocol_version=get_major_and_minor_golem_messages_version(settings.GOLEM_MESSAGES_VERSION)
+        protocol_version=settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION
     )
     stored_message.full_clean()
     stored_message.save()

@@ -1102,7 +1102,7 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
 
         self.assertIn(f'Version stored in database is 1.11, Concent version is {settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION}', str(log_called_mock.call_args))
 
-    def test_that_receive_should_refuse_request_if_stored_messages_in_database_have_incompatible_protocol_version(self):
+    def test_that_receive_should_return_http_204_if_stored_messages_in_database_have_incompatible_protocol_version(self):
         """
         This case may happen, if client sends a request to core:send and in next step sends request to core:receive
         using different protocol version. The client is always required to stay on the same protocol version while
@@ -1145,7 +1145,6 @@ class ConcentProtocolVersionTest(ConcentIntegrationTestCase):
             )
             self._test_response(
                 response2,
-                status=404,
+                status=204,
                 key=self.PROVIDER_PRIVATE_KEY,
             )
-            self.assertIn('Wrong version of golem messages in stored messages.', str(response2.content))

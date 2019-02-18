@@ -162,7 +162,7 @@ def check_compatibility(subtask: Subtask, client_public_key: bytes) -> None:
     if not is_protocol_version_compatible(subtask.task_to_compute.protocol_version):
         error_message = f'Unsupported version of golem messages in stored messages. ' \
             f'Version stored in database is {subtask.task_to_compute.protocol_version}, ' \
-            f'Concent version is {settings.GOLEM_MESSAGES_VERSION}.'
+            f'Concent version is {settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION}.'
         log(
             logger,
             error_message,

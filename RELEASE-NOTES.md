@@ -1,4 +1,8 @@
 ### Next
+
+#### Version Compatibility
+- Bugfix: Pending messages in older versions block receiving any other messages from `receive/` (#1106)
+
 #### Signing Service
 - Bugfix: Catch exception when `ethereum-private-key` is badly encoded and raise custom exception.
 

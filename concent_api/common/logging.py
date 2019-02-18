@@ -10,6 +10,7 @@ from typing import Optional
 from typing import Union
 
 from django.http import JsonResponse
+from golem_messages.message.base import AbstractReasonMessage
 from golem_messages.message.base import Message
 from golem_messages.message.concents import FileTransferToken
 from golem_messages.message.concents import ForcePayment
@@ -59,9 +60,16 @@ def log_message_returned(
 ) -> None:
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, response_message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, response_message)
+    reason = ""
+    if isinstance(response_message, AbstractReasonMessage):
+        reason = f"(with reason: {response_message.reason}) "
+    message_to_log = f'A message has been returned from `{endpoint}` ' \
+        f'-- MESSAGE_TYPE: {_get_message_type(response_message)} {reason}' \
+        f'-- TASK_ID: {task_id} -- '
+
     log(
         logger,
-        f'A message has been returned from `{endpoint}` -- MESSAGE_TYPE: {_get_message_type(response_message)} -- TASK_ID: {task_id} -- ',
+        message_to_log,
         subtask_id=subtask_id,
         client_public_key=client_public_key
     )

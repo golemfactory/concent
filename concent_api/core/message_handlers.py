@@ -546,11 +546,12 @@ def handle_send_force_subtask_results(
         )
 
     if current_time <= verification_deadline:
-        logging.log_timeout(
+        logging.log(
             logger,
-            client_message,
-            provider_public_key,
-            verification_deadline,
+            f"Request has been sent too early: current time = {current_time}, "
+            f"verification deadline = {verification_deadline}",
+            subtask_id=task_to_compute.subtask_id,
+            client_public_key=provider_public_key,
         )
         return message.concents.ForceSubtaskResultsRejected(
             force_subtask_results=client_message,

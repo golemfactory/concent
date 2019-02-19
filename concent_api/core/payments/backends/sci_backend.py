@@ -11,7 +11,9 @@ from golem_sci.implementation import SCIImplementation
 from web3 import Web3
 
 from common.constants import ErrorCode
+from common.helpers import get_current_utc_timestamp
 from core.constants import ETHEREUM_ADDRESS_LENGTH
+from core.constants import MINIMUM_BLOCK_TIMESTAMP_MARGIN
 from core.constants import PAYMENTS_FROM_BLOCK_SAFETY_MARGIN
 from core.exceptions import SCINotSynchronized
 from core.payments.payment_interface import PaymentInterface
@@ -64,7 +66,11 @@ def get_list_of_payments(
 
     payment_interface: SCIImplementation = PaymentInterface()
 
-    first_block_after_payment_number = BlocksHelper(payment_interface).get_first_block_after(min_block_timestamp -1).number
+    current_time = get_current_utc_timestamp()
+    if min_block_timestamp + MINIMUM_BLOCK_TIMESTAMP_MARGIN > current_time:
+        min_block_timestamp = current_time - MINIMUM_BLOCK_TIMESTAMP_MARGIN
+
+    first_block_after_payment_number = BlocksHelper(payment_interface).get_first_block_after(min_block_timestamp).number
     latest_block_number = payment_interface.get_block_number()  # pylint: disable=no-member
     if latest_block_number - first_block_after_payment_number < payment_interface.REQUIRED_CONFS:  # pylint: disable=no-member
         return []
@@ -188,14 +194,23 @@ def get_covered_additional_verification_costs(client_eth_address: str, payment_t
 
     payment_interface: SCIImplementation = PaymentInterface()
 
+    current_time = get_current_utc_timestamp()  # pylint: disable=no-member
+    if payment_ts + MINIMUM_BLOCK_TIMESTAMP_MARGIN > current_time:
+        payment_ts = current_time - MINIMUM_BLOCK_TIMESTAMP_MARGIN
+
     first_block_after_payment_number = BlocksHelper(payment_interface).get_first_block_after(payment_ts).number
+
+    latest_block_number = payment_interface.get_block_number()  # pylint: disable=no-member
+
+    if latest_block_number - first_block_after_payment_number < payment_interface.REQUIRED_CONFS:  # pylint: disable=no-member
+        return []
 
     return payment_interface.get_covered_additional_verification_costs(  # pylint: disable=no-member
         address=Web3.toChecksumAddress(client_eth_address),
         # We start few blocks before first matching block because additional verification payments
         # do not have closure_time so we are relying on blockchain timestamps
         from_block=first_block_after_payment_number - PAYMENTS_FROM_BLOCK_SAFETY_MARGIN,
-        to_block=payment_interface.get_block_number() - payment_interface.REQUIRED_CONFS,  # pylint: disable=no-member
+        to_block=latest_block_number - payment_interface.REQUIRED_CONFS,  # pylint: disable=no-member
     )
 
 

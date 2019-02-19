@@ -4,6 +4,7 @@ from web3 import Web3
 from common.testing_helpers import generate_ecc_key_pair
 from common.helpers import get_current_utc_timestamp
 from core.constants import PAYMENTS_FROM_BLOCK_SAFETY_MARGIN
+from core.constants import MINIMUM_BLOCK_TIMESTAMP_MARGIN
 from core.constants import MOCK_TRANSACTION_HASH
 from core.exceptions import SCINotSynchronized
 from core.payments.backends import sci_backend
@@ -88,9 +89,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
 
         new_sci_rpc_mock.return_value.get_block_number.assert_called()
 
-        get_first_block_after_mock.assert_called_with(
-            self.current_time - 1
-        )
+        get_first_block_after_mock.assert_called_with(self.current_time - MINIMUM_BLOCK_TIMESTAMP_MARGIN)
 
     def test_that_sci_backend_get_list_of_payments_should_return_list_of_batch_transfers(self):
         with mock.patch(
@@ -127,9 +126,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
 
         new_sci_rpc_mock.return_value.get_block_number.assert_called()
 
-        get_first_block_after_mock.assert_called_with(
-            self.current_time - 1
-        )
+        get_first_block_after_mock.assert_called_with(self.current_time - MINIMUM_BLOCK_TIMESTAMP_MARGIN)
 
     def test_that_sci_backend_get_list_of_payments_should_return_list_of_forced_subtask_payments(self):
         with mock.patch(
@@ -166,7 +163,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
 
         new_sci_rpc.return_value.get_block_number.assert_called()
 
-        get_first_block_after.assert_called_with(self.current_time - 1)
+        get_first_block_after.assert_called_with(self.current_time - MINIMUM_BLOCK_TIMESTAMP_MARGIN)
 
     def test_that_sci_backend_make_settlement_payment_to_provider_should_return_transaction_hash(self):
         with mock.patch(
@@ -413,4 +410,4 @@ class SCIBackendTest(ConcentIntegrationTestCase):
 
         new_sci_rpc.return_value.get_block_number.assert_called()
 
-        get_first_block_after.assert_called_with(self.current_time)
+        get_first_block_after.assert_called_with(self.current_time - MINIMUM_BLOCK_TIMESTAMP_MARGIN)

@@ -51,6 +51,9 @@ SCI_CALLBACK_MAXIMUM_TIMEOUT = 30
 # should be listed.
 PAYMENTS_FROM_BLOCK_SAFETY_MARGIN = 10
 
+# Defines minimum block timestamp margin for fetching newest block
+MINIMUM_BLOCK_TIMESTAMP_MARGIN = 20
+
 VERIFICATION_RESULT_SUBTASK_STATE_ACCEPTED_LOG_MESSAGE = (
     'Verification has timed out and a client has already asked about the result '
     'or verification result for subtask with ID {} must have been already processed.'

@@ -158,8 +158,8 @@ class SCIBackendTest(ConcentIntegrationTestCase):
         self.assertEqual(len(list_of_payments), len(self._get_list_of_forced_subtask_transactions()))
 
         new_sci_rpc.return_value.get_forced_subtask_payments.assert_called_with(
-            payer_address=Web3.toChecksumAddress(self.task_to_compute.requestor_ethereum_address),
-            payee_address=Web3.toChecksumAddress(self.task_to_compute.provider_ethereum_address),
+            requestor_address=Web3.toChecksumAddress(self.task_to_compute.requestor_ethereum_address),
+            provider_address=Web3.toChecksumAddress(self.task_to_compute.provider_ethereum_address),
             from_block=self.last_block - PAYMENTS_FROM_BLOCK_SAFETY_MARGIN,
             to_block=self.block_number - self.required_confs,
         )

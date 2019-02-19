@@ -85,8 +85,8 @@ def get_list_of_payments(
         )
     elif transaction_type == TransactionType.FORCED_SUBTASK_PAYMENT:
         payments_list = payment_interface.get_forced_subtask_payments(  # pylint: disable=no-member
-            payer_address=Web3.toChecksumAddress(requestor_eth_address),
-            payee_address=Web3.toChecksumAddress(provider_eth_address),
+            requestor_address=Web3.toChecksumAddress(requestor_eth_address),
+            provider_address=Web3.toChecksumAddress(provider_eth_address),
             # We start few blocks before first matching block because forced subtask payments
             # do not have closure_time so we are relying on blockchain timestamps
             from_block=first_block_after_payment_number - PAYMENTS_FROM_BLOCK_SAFETY_MARGIN,

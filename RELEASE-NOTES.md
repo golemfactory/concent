@@ -8,7 +8,7 @@
 
 ### 0.11.0
 #### Compatibility
-- golem-messages: 2.24.2
+- golem-messages: 2.24.3
 - golem-smart-contracts-interface: 1.6.1
 
 #### Endpoints and uses cases in general

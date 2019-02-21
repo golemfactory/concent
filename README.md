@@ -129,7 +129,7 @@ You can put the output of the script above directly in your `local_settings.py`
 8. Create a superuser account:
 
     ```
-    concent_api/manage.py createsuperuser
+    concent_api/manage.py createsuperuser --database control
     ```
     
 9. Enable time synchronization:

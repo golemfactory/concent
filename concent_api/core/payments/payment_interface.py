@@ -3,7 +3,6 @@ from typing import Any
 from django.conf import settings
 from web3 import Web3
 
-from golem_sci import chains
 from golem_sci import new_sci_rpc
 from golem_sci.contracts import Contract
 from golem_sci.implementation import SCIImplementation
@@ -25,7 +24,7 @@ class PaymentInterface:
                         settings.CONCENT_ETHEREUM_PUBLIC_KEY
                     )
                 ),
-                chain=chains.RINKEBY,
+                chain=settings.ETHEREUM_CHAIN,
                 storage=DatabaseTransactionsStorage(),
                 tx_sign=(
                     sci_callback if settings.USE_SIGNING_SERVICE else

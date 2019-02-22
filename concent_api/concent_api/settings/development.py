@@ -1,5 +1,6 @@
 # pylint: disable=unused-wildcard-import
 import os
+
 from middleman.constants import DEFAULT_INTERNAL_PORT
 from .base import *  # NOQA  # pylint: disable=wildcard-import
 
@@ -52,3 +53,5 @@ SIGNING_SERVICE_PUBLIC_KEY = b'\x19\xaew&P>\xce\xd7D\xfb\xbff)55\xc1%\xea\xebN\x
 GNT_DEPOSIT_CONTRACT_ADDRESS = '0xcfB81A6EE3ae6aD4Ac59ddD21fB4589055c13DaD'
 
 ADDITIONAL_VERIFICATION_COST = 10
+
+ETHEREUM_CHAIN = 'rinkeby'

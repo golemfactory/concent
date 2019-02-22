@@ -91,3 +91,5 @@ DETECT_NESTED_TRANSACTIONS = False
 # disable HandleServerErrorMiddleware in tests
 if MIDDLEWARE.index('concent_api.middleware.HandleServerErrorMiddleware') is not None:
     MIDDLEWARE.remove('concent_api.middleware.HandleServerErrorMiddleware')
+
+ETHEREUM_CHAIN = 'rinkeby'

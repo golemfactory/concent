@@ -1,13 +1,13 @@
-from assertpy                   import assert_that
-from django.test                import override_settings
-from django.conf                import settings
-from django.test                import TestCase
-from mock                       import patch
+from assertpy import assert_that
+from django.test import override_settings
+from django.conf import settings
+from django.test import TestCase
+from mock import patch
 
-from concent_api.system_check   import create_error_54_ssl_cert_path_is_none
-from concent_api.system_check   import create_error_55_cert_path_does_not_exist
-from concent_api.system_check   import create_error_56_ssl_cert_path_is_not_a_file
-from concent_api.system_check   import storage_cluster_certificate_path_check
+from concent_api.system_check import create_error_54_ssl_cert_path_is_none
+from concent_api.system_check import create_error_55_cert_path_does_not_exist
+from concent_api.system_check import create_error_56_ssl_cert_path_is_not_a_file
+from concent_api.system_check import storage_cluster_certificate_path_check
 
 
 # pylint: disable=no-self-use

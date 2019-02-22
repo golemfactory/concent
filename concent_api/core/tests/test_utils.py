@@ -13,7 +13,9 @@ from golem_messages import helpers
 
 from core.exceptions import SceneFilePathError
 from core.tests.utils import ConcentIntegrationTestCase
-from core.utils import adjust_transaction_hash, adjust_format_name
+from core.utils import adjust_format_name
+from core.utils import adjust_transaction_hash
+from core.utils import BlocksHelper
 from core.utils import calculate_maximum_download_time
 from core.utils import calculate_subtask_verification_time
 from core.utils import extract_name_from_scene_file_path
@@ -215,3 +217,44 @@ def test_that_method_returns_correct_format_name(output_format, expected):
     upper_output_format = adjust_format_name(output_format)
 
     assert_that(upper_output_format).is_equal_to(expected)
+
+
+class TestBlocksHelper():
+    @pytest.fixture(autouse=True)
+    def setUp(self):
+        self.blocks_map = {
+            0: 15,
+            1: 30,
+            2: 45,
+            3: 60,
+            4: 75,
+            5: 90,
+            6: 105,
+            7: 120,
+            8: 135,
+            9: 150,
+        }
+        self.sci = mock.Mock()
+        self.blocks_helper = BlocksHelper(self.sci)
+        self.sci.get_block_number.return_value = 9
+        self.sci.get_block_by_number.side_effect = self.mocked_get_block_by_number
+
+    def mocked_get_block_by_number(self, number):
+        timestamp = self.blocks_map.get(number)
+        return mock.Mock(number=number, timestamp=timestamp)
+
+    @pytest.mark.parametrize(('timestamp', 'block_number'), [
+        (10, 0),
+        (15, 1),
+        (31, 2),
+        (50, 3),
+        (74, 4),
+        (150, 9),
+        (151, 9),
+        (71830, 9),
+    ])
+    def test_get_latest_existing_block_at(self, timestamp, block_number):
+        latest_existing_block = self.blocks_helper.get_latest_existing_block_at(timestamp)
+        mocked_block = self.mocked_get_block_by_number(block_number)
+        assert_that(latest_existing_block.timestamp).is_equal_to(mocked_block.timestamp)
+        assert_that(latest_existing_block.number).is_equal_to(mocked_block.number)

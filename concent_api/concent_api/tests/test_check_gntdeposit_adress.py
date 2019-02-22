@@ -3,9 +3,9 @@ from django.test import override_settings
 from django.test import TestCase
 
 from concent_api.system_check import check_gntdeposit_adress
-from concent_api.system_check import create_error_56_gntdeposit_not_set
-from concent_api.system_check import create_error_57_gntdeposit_has_wrong_type
-from concent_api.system_check import create_error_58_gntdeposit_wrong_value
+from concent_api.system_check import create_error_45_gntdeposit_not_set
+from concent_api.system_check import create_error_46_gntdeposit_has_wrong_type
+from concent_api.system_check import create_error_47_gntdeposit_wrong_value
 
 
 class TestGNTDepositCheck(TestCase):
@@ -25,7 +25,7 @@ class TestGNTDepositCheck(TestCase):
         errors = check_gntdeposit_adress()
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0], create_error_56_gntdeposit_not_set())
+        self.assertEqual(errors[0], create_error_45_gntdeposit_not_set())
 
     @override_settings(
         PAYMENT_BACKEND='core.payments.backends.sci_backend',
@@ -35,7 +35,7 @@ class TestGNTDepositCheck(TestCase):
         errors = check_gntdeposit_adress()
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0], create_error_57_gntdeposit_has_wrong_type(settings.GNT_DEPOSIT_CONTRACT_ADDRESS))
+        self.assertEqual(errors[0], create_error_46_gntdeposit_has_wrong_type(settings.GNT_DEPOSIT_CONTRACT_ADDRESS))
 
     @override_settings(
         PAYMENT_BACKEND='core.payments.backends.sci_backend',
@@ -45,4 +45,4 @@ class TestGNTDepositCheck(TestCase):
         errors = check_gntdeposit_adress()
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0], create_error_58_gntdeposit_wrong_value(settings.GNT_DEPOSIT_CONTRACT_ADDRESS))
+        self.assertEqual(errors[0], create_error_47_gntdeposit_wrong_value(settings.GNT_DEPOSIT_CONTRACT_ADDRESS))

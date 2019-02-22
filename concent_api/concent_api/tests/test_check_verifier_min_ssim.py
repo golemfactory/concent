@@ -2,8 +2,8 @@ from django.test                import override_settings
 from django.conf                import settings
 from django.test                import TestCase
 
-from concent_api.system_check   import create_error_31_verifier_min_ssim_has_wrong_type
-from concent_api.system_check   import create_error_32_verifier_min_ssim_has_wrong_value
+from concent_api.system_check   import create_error_21_verifier_min_ssim_has_wrong_type
+from concent_api.system_check   import create_error_22_verifier_min_ssim_has_wrong_value
 from concent_api.system_check   import check_verifier_min_ssim
 
 
@@ -28,7 +28,7 @@ class TestVerifierMinSSIMCheck(TestCase):
         errors = check_verifier_min_ssim()
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0], create_error_31_verifier_min_ssim_has_wrong_type())
+        self.assertEqual(errors[0], create_error_21_verifier_min_ssim_has_wrong_type())
 
     @override_settings(
         CONCENT_FEATURES=[
@@ -40,4 +40,4 @@ class TestVerifierMinSSIMCheck(TestCase):
         errors = check_verifier_min_ssim()
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0], create_error_32_verifier_min_ssim_has_wrong_value(settings.VERIFIER_MIN_SSIM))
+        self.assertEqual(errors[0], create_error_22_verifier_min_ssim_has_wrong_value(settings.VERIFIER_MIN_SSIM))

@@ -3,8 +3,8 @@ from django.conf import settings
 from django.test import override_settings
 from django.test import TestCase
 
-from concent_api.system_check import create_error_21_if_download_leadin_time_is_not_set
-from concent_api.system_check import create_error_22_if_download_leadin_time_has_wrong_value
+from concent_api.system_check import create_error_8_if_download_leadin_time_is_not_set
+from concent_api.system_check import create_error_9_if_download_leadin_time_has_wrong_value
 from concent_api.system_check import check_download_leadin_time
 
 
@@ -25,7 +25,7 @@ class TestDownloadLeadinTimeCheck(TestCase):
         errors = check_download_leadin_time()
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0], create_error_21_if_download_leadin_time_is_not_set())
+        self.assertEqual(errors[0], create_error_8_if_download_leadin_time_is_not_set())
 
     @override_settings(
         DOWNLOAD_LEADIN_TIME='1'
@@ -34,7 +34,7 @@ class TestDownloadLeadinTimeCheck(TestCase):
         errors = check_download_leadin_time()
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0], create_error_22_if_download_leadin_time_has_wrong_value())
+        self.assertEqual(errors[0], create_error_9_if_download_leadin_time_has_wrong_value())
 
     @override_settings(
         DOWNLOAD_LEADIN_TIME=-1
@@ -43,4 +43,4 @@ class TestDownloadLeadinTimeCheck(TestCase):
         errors = check_download_leadin_time()
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0], create_error_22_if_download_leadin_time_has_wrong_value())
+        self.assertEqual(errors[0], create_error_9_if_download_leadin_time_has_wrong_value())

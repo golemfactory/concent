@@ -181,20 +181,6 @@ def create_error_20_custom_protocol_times_is_false_and_settings_does_not_match_g
     )
 
 
-def create_error_31_verifier_min_ssim_is_not_set() -> Error:
-    return Error(
-        'VERIFIER_MIN_SSIM setting is not defined but `verifier` Concent feature is on',
-        hint='Set VERIFIER_MIN_SSIM in your local settings when `verifier` Concent feature is on.',
-        id='concent.E031',
-    )
-
-
-def create_error_32_verifier_min_ssim_is_set() -> Error:
-    return Error(
-        'VERIFIER_MIN_SSIM setting is defined but `verifier` Concent feature is off',
-        hint='Unset or set to None VERIFIER_MIN_SSIM in your local settings when `verifier` Concent feature is off.',
-        id='concent.E032',
-    )
 def create_error_21_verifier_min_ssim_has_wrong_type() -> Error:
     return Error(
         "VERIFIER_MIN_SSIM has wrong type",

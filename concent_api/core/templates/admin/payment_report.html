@@ -51,36 +51,25 @@ br {
             <th rowspan="3">PendingResponses</th>
             <th>SubtaskResultsSettled</th>
             <td>
-            {% for subtask_results_settled in pair_report.pending_responses.subtask_results_settled %}
-                <p><a href="{% url 'admin:core_pendingresponse_change' subtask_results_settled.id %}">
-                - subtask_id: {{ subtask_results_settled.subtask.subtask_id }},
-                delivered: {{ subtask_results_settled.delivered }},
-                created_at: {{ subtask_results_settled.created_at }}</a>
-                </p>
-            {% endfor %}
+                {% with pending_responses=pair_report.pending_responses.subtask_results_settled %}
+                {% include "admin/snippets/pending_respons_for_loop.html" %}
+                {% endwith %}
             </td>
         </tr>
         <tr>
             <th>SubtaskResultsRejected</th>
             <td>
-            {% for subtask_results_rejected in pair_report.pending_responses.subtask_results_rejected %}
-                <p><a href="{% url 'admin:core_pendingresponse_change' subtask_results_rejected.id %}">
-                    - subtask_id: {{ subtask_results_rejected.subtask.subtask_id }},
-                    delivered: {{ subtask_results_rejected.delivered }},
-                    created_at: {{ subtask_results_rejected.created_at }}</a>
-                </p>
-            {% endfor %}
+                {% with pending_responses=pair_report.pending_responses.subtask_results_rejected %}
+                {% include "admin/snippets/pending_respons_for_loop.html" %}
+                {% endwith %}
             </td>
         </tr>
         <tr>
             <th>ForcePaymentCommitted</th>
             <td>
-            {% for force_payment_committed in pair_report.pending_responses.force_payment_committed %}
-                <p><a href="{% url 'admin:core_pendingresponse_change' force_payment_committed.id %}">
-                    - delivered: {{ force_payment_committed.delivered }},
-                    created_at: {{ force_payment_committed.created_at }}</a>
-                </p>
-            {% endfor %}
+                {% with pending_responses=pair_report.pending_responses.force_payment_committed %}
+                {% include "admin/snippets/pending_respons_for_loop.html" %}
+                {% endwith %}
             </td>
         </tr>
 
@@ -89,66 +78,41 @@ br {
             <th rowspan="5">Payments</th>
             <th>Regular payments</th>
             <td>
-            {% for payment in pair_report.payments.regular_payments %}
-                <p>
-                    <a href="https://{{ eth_network }}etherscan.io/address/{{ payment.provider }}">- provider: {{ payment.provider }}</a>,
-                    <a href="https://{{ eth_network }}etherscan.io/address/{{ payment.requestor }}">requestor: {{ payment.requestor }}</a>,
-                    amount: {{ payment.amount }},
-                    <a href="https://{{ eth_network }}etherscan.io/tx/{{ payment.tx_hash }}">tx_hash: {{ payment.tx_hash }}</a>
-                </p>
-            {% endfor %}
+                {% with payments=pair_report.payments.regular_payments %}
+                {% include "admin/snippets/regular_payments_for_loop.html" %}
+                {% endwith %}
             </td>
         </tr>
         <tr>
             <th>settlement_payments</th>
             <td>
-            {% for payment in pair_report.payments.settlement_payments %}
-                <p>
-                    <a href="https://{{ eth_network }}etherscan.io/address/{{ payment.provider }}">- provider: {{ payment.provider }}</a>,
-                    <a href="https://{{ eth_network }}etherscan.io/address/{{ payment.requestor }}">requestor: {{ payment.requestor }}</a>,
-                    amount: {{ payment.amount }},
-                    <a href="https://{{ eth_network }}etherscan.io/tx/{{ payment.tx_hash }}">tx_hash: {{ payment.tx_hash }}</a>
-                </p>
-            {% endfor %}
+                {% with payments=pair_report.payments.settlement_payments %}
+                {% include "admin/snippets/regular_payments_for_loop.html" %}
+                {% endwith %}
             </td>
         </tr>
         <tr>
             <th>forced_subtask_payments</th>
             <td>
-            {% for payment in pair_report.payments.forced_subtask_payments %}
-                <p>
-                    <a href="https://{{ eth_network }}etherscan.io/address/{{ payment.provider }}">- provider: {{ payment.provider }}</a>,
-                    <a href="https://{{ eth_network }}etherscan.io/address/{{ payment.requestor }}">requestor: {{ payment.requestor }}</a>,
-                    amount: {{ payment.amount }},
-                    <a href="https://{{ eth_network }}etherscan.io/tx/{{ payment.tx_hash }}">tx_hash: {{ payment.tx_hash }}</a>
-                </p>
-            {% endfor %}
+                {% with payments=pair_report.payments.forced_subtask_payments %}
+                {% include "admin/snippets/regular_payments_for_loop.html" %}
+                {% endwith %}
             </td>
         </tr>
         <tr>
             <th>requestor_additional_verification_payments</th>
             <td>
-            {% for payment in pair_report.payments.additional_verification_payments_for_requestor %}
-                <p>
-                - subtask_id: {{ payment.subtask_id }},
-                <a href="https://{{ eth_network }}etherscan.io/address/{{ payment.address }}">address: {{ payment.address }}</a>,
-                amount: {{ payment.amount }},
-                <a href="https://{{ eth_network }}etherscan.io/tx/{{ payment.tx_hash }}">tx_hash: {{ payment.tx_hash }}</a>
-                </p>
-            {% endfor %}
+                {% with verification_payments=pair_report.payments.additional_verification_payments_for_requestor %}
+                {% include "admin/snippets/verification_payments_for_loop.html" %}
+                {% endwith %}
             </td>
         </tr>
         <tr>
             <th>provider_additional_verification_payments</th>
             <td>
-            {% for payment in pair_report.payments.additional_verification_payments_for_provider %}
-                <p>
-                - subtask_id: {{ payment.subtask_id }},
-                <a href="https://{{ eth_network }}etherscan.io/address/{{ payment.address }}">address: {{ payment.address }}</a>,
-                amount: {{ payment.amount }},
-                <a href="https://{{ eth_network }}etherscan.io/tx/{{ payment.tx_hash }}">tx_hash: {{ payment.tx_hash }}</a>
-                </p>
-            {% endfor %}
+                {% with verification_payments=pair_report.payments.additional_verification_payments_for_provider %}
+                {% include "admin/snippets/verification_payments_for_loop.html" %}
+                {% endwith %}
             </td>
         </tr>
     </table>

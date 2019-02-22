@@ -10,6 +10,7 @@ from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 
 from golem_messages import constants
+from golem_sci import chains
 
 from common.exceptions import ConcentValidationError
 from concent_api.constants import AVAILABLE_CONCENT_FEATURES
@@ -494,6 +495,30 @@ def create_warning_1_multiple_features_in_concent_feature() -> Warning:
     )
 
 
+def create_error_59_ethereum_chain_is_not_set() -> Error:
+    return Error(
+        'ETHEREUM_CHAIN settings is not set',
+        hint='Set ETHEREUM_CHAIN in your local_settings.py using golem_sci.chains',
+        id='concent.E059',
+    )
+
+
+def create_error_60_ethereum_chain_is_not_a_string() -> Error:
+    return Error(
+        'ETHEREUM_CHAIN settings is not a string',
+        hint='Set ETHEREUM_CHAIN in your local_settings.py using golem_sci.chains',
+        id='concent.E060',
+    )
+
+
+def create_error_61_ethereum_chain_is_invalid() -> Error:
+    return Error(
+        'ETHEREUM_CHAIN settings is invalid',
+        hint='Set ETHEREUM_CHAIN in your local_settings.py using golem_sci.chains',
+        id='concent.E061',
+    )
+
+
 @register()
 def check_settings_concent_features(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
 
@@ -850,5 +875,18 @@ def check_sci_callback_retries(app_configs: None=None, **kwargs: Any) -> list:  
             settings.SCI_CALLBACK_RETRIES_TIME <= SCI_CALLBACK_MAXIMUM_TIMEOUT
         ):
             return [create_error_53_sci_callback_retries_has_wrong_value()]
+
+    return []
+
+
+@register()
+def check_ethereum_chain(app_configs: None=None, **kwargs: Any) -> list:  # pylint: disable=unused-argument
+    if hasattr(settings, 'GETH_ADDRESS'):
+        if not hasattr(settings, 'ETHEREUM_CHAIN'):
+            return [create_error_59_ethereum_chain_is_not_set()]
+        if not isinstance(settings.ETHEREUM_CHAIN, str):
+            return [create_error_60_ethereum_chain_is_not_a_string()]
+        if not hasattr(chains, settings.ETHEREUM_CHAIN.upper()):
+            return [create_error_61_ethereum_chain_is_invalid()]
 
     return []

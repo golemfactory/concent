@@ -367,3 +367,6 @@ DETECT_NESTED_TRANSACTIONS = True
 
 # Define how long concent wait for middleman response before raising exception.
 SCI_CALLBACK_RETRIES_TIME = 60
+
+# Define chain where PaymentInterface has to connect to geth
+# ETHEREUM_CHAIN =

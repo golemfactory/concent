@@ -3,8 +3,8 @@ from django.test import override_settings
 from django.test import TestCase
 from mock import patch
 
-from concent_api.system_check import create_error_63_sci_callback_retries_is_not_set
-from concent_api.system_check import create_error_64_sci_callback_retries_has_wrong_value
+from concent_api.system_check import create_error_52_sci_callback_retries_is_not_set
+from concent_api.system_check import create_error_53_sci_callback_retries_has_wrong_value
 from concent_api.system_check import check_sci_callback_retries
 
 
@@ -26,7 +26,7 @@ class TestSciCallbackRetriesCheck(TestCase):
         errors = check_sci_callback_retries()
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0], create_error_63_sci_callback_retries_is_not_set())
+        self.assertEqual(errors[0], create_error_52_sci_callback_retries_is_not_set())
 
     @override_settings(
         SCI_CALLBACK_RETRIES_TIME=1
@@ -36,7 +36,7 @@ class TestSciCallbackRetriesCheck(TestCase):
         errors = check_sci_callback_retries()
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0], create_error_64_sci_callback_retries_has_wrong_value())
+        self.assertEqual(errors[0], create_error_53_sci_callback_retries_has_wrong_value())
 
     @override_settings(
         SCI_CALLBACK_RETRIES_TIME='1'
@@ -45,7 +45,7 @@ class TestSciCallbackRetriesCheck(TestCase):
         errors = check_sci_callback_retries()
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0], create_error_64_sci_callback_retries_has_wrong_value())
+        self.assertEqual(errors[0], create_error_53_sci_callback_retries_has_wrong_value())
 
     @override_settings(
         SCI_CALLBACK_RETRIES_TIME=-1
@@ -54,4 +54,4 @@ class TestSciCallbackRetriesCheck(TestCase):
         errors = check_sci_callback_retries()
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0], create_error_64_sci_callback_retries_has_wrong_value())
+        self.assertEqual(errors[0], create_error_53_sci_callback_retries_has_wrong_value())

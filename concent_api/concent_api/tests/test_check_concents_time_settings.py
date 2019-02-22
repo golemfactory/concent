@@ -3,18 +3,18 @@ from django.test                import TestCase
 from django.conf import settings
 
 from concent_api.system_check   import check_concents_time_settings
-from concent_api.system_check   import create_error_23_if_concent_time_settings_is_not_defined
-from concent_api.system_check   import create_error_24_if_concent_time_settings_have_wrong_value
+from concent_api.system_check   import create_error_10_if_concent_time_settings_is_not_defined
+from concent_api.system_check   import create_error_11_if_concent_time_settings_have_wrong_value
 
 
 class TestConcentsTimeSettingsCheck(TestCase):
     def setUp(self):
-        self.error_CMT_wrong_value = create_error_24_if_concent_time_settings_have_wrong_value('CONCENT_MESSAGING_TIME')
-        self.error_CMT_not_defined = create_error_23_if_concent_time_settings_is_not_defined('CONCENT_MESSAGING_TIME')
-        self.error_FAT_wrong_value = create_error_24_if_concent_time_settings_have_wrong_value('FORCE_ACCEPTANCE_TIME')
-        self.error_FAT_not_defined = create_error_23_if_concent_time_settings_is_not_defined('FORCE_ACCEPTANCE_TIME')
-        self.error_PDT_wrong_value = create_error_24_if_concent_time_settings_have_wrong_value('PAYMENT_DUE_TIME')
-        self.error_PDT_not_defined = create_error_23_if_concent_time_settings_is_not_defined('PAYMENT_DUE_TIME')
+        self.error_CMT_wrong_value = create_error_11_if_concent_time_settings_have_wrong_value('CONCENT_MESSAGING_TIME')
+        self.error_CMT_not_defined = create_error_10_if_concent_time_settings_is_not_defined('CONCENT_MESSAGING_TIME')
+        self.error_FAT_wrong_value = create_error_11_if_concent_time_settings_have_wrong_value('FORCE_ACCEPTANCE_TIME')
+        self.error_FAT_not_defined = create_error_10_if_concent_time_settings_is_not_defined('FORCE_ACCEPTANCE_TIME')
+        self.error_PDT_wrong_value = create_error_11_if_concent_time_settings_have_wrong_value('PAYMENT_DUE_TIME')
+        self.error_PDT_not_defined = create_error_10_if_concent_time_settings_is_not_defined('PAYMENT_DUE_TIME')
 
     @override_settings(
     )

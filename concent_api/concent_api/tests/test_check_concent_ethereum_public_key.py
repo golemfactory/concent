@@ -4,9 +4,9 @@ from django.test import override_settings
 from django.test import TestCase
 
 from concent_api.system_check import check_concent_ethereum_public_key
-from concent_api.system_check import create_error_45_concent_ethereum_public_key_is_not_set
-from concent_api.system_check import create_error_46_concent_ethereum_public_key_has_wrong_type
-from concent_api.system_check import create_error_47_concent_ethereum_public_key_has_wrong_length
+from concent_api.system_check import create_error_34_concent_ethereum_public_key_is_not_set
+from concent_api.system_check import create_error_35_concent_ethereum_public_key_has_wrong_type
+from concent_api.system_check import create_error_36_concent_ethereum_public_key_has_wrong_length
 from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
 
 
@@ -29,7 +29,7 @@ class CheckConcentEthereumPublicKeyTestCase(TestCase):
         errors = check_concent_ethereum_public_key()
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0], create_error_45_concent_ethereum_public_key_is_not_set())
+        self.assertEqual(errors[0], create_error_34_concent_ethereum_public_key_is_not_set())
 
     @override_settings(
         CONCENT_FEATURES=[
@@ -43,7 +43,7 @@ class CheckConcentEthereumPublicKeyTestCase(TestCase):
         self.assertEqual(len(errors), 1)
         self.assertEqual(
             errors[0],
-            create_error_46_concent_ethereum_public_key_has_wrong_type(settings.CONCENT_ETHEREUM_PUBLIC_KEY)
+            create_error_35_concent_ethereum_public_key_has_wrong_type(settings.CONCENT_ETHEREUM_PUBLIC_KEY)
         )
 
     @override_settings(
@@ -58,7 +58,7 @@ class CheckConcentEthereumPublicKeyTestCase(TestCase):
         self.assertEqual(len(errors), 1)
         self.assertEqual(
             errors[0],
-            create_error_47_concent_ethereum_public_key_has_wrong_length(settings.CONCENT_ETHEREUM_PUBLIC_KEY)
+            create_error_36_concent_ethereum_public_key_has_wrong_length(settings.CONCENT_ETHEREUM_PUBLIC_KEY)
         )
 
     @override_settings(

@@ -1,13 +1,13 @@
 import mock
 
-from django.test                import override_settings
-from django.conf                import settings
-from django.test                import TestCase
+from django.test import override_settings
+from django.conf import settings
+from django.test import TestCase
 
-from concent_api.system_check   import create_error_15_verifier_storage_path_is_not_set
-from concent_api.system_check   import create_error_16_verifier_storage_path_is_does_not_exists
-from concent_api.system_check   import create_error_17_verifier_storage_path_is_not_accessible
-from concent_api.system_check   import check_settings_verifier_storage_path
+from concent_api.system_check import create_error_15_verifier_storage_path_is_not_set
+from concent_api.system_check import create_error_16_verifier_storage_path_is_does_not_exists
+from concent_api.system_check import create_error_17_verifier_storage_path_is_not_accessible
+from concent_api.system_check import check_settings_verifier_storage_path
 
 
 class TestVerifierStoragePathCheck(TestCase):

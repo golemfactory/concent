@@ -1,6 +1,6 @@
+from django.conf import settings
 from django.test import override_settings
 from django.test import TestCase
-from django.conf import settings
 
 import assertpy
 import pytest

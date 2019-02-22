@@ -1,10 +1,10 @@
-from django.test                import override_settings
-from django.test                import TestCase
 from django.conf import settings
+from django.test import override_settings
+from django.test import TestCase
 
-from concent_api.system_check   import check_concents_time_settings
-from concent_api.system_check   import create_error_10_if_concent_time_settings_is_not_defined
-from concent_api.system_check   import create_error_11_if_concent_time_settings_have_wrong_value
+from concent_api.system_check import check_concents_time_settings
+from concent_api.system_check import create_error_10_if_concent_time_settings_is_not_defined
+from concent_api.system_check import create_error_11_if_concent_time_settings_have_wrong_value
 
 
 class TestConcentsTimeSettingsCheck(TestCase):

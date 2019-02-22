@@ -1,0 +1,8 @@
+{% for payment in verification_payments %}
+    <p>
+        - subtask_id: {{ payment.subtask_id }},
+        <a href="https://{{ eth_network }}etherscan.io/address/{{ payment.address }}">address: {{ payment.address }}</a>,
+        amount: {{ payment.amount }},
+        <a href="https://{{ eth_network }}etherscan.io/tx/{{ payment.tx_hash }}">tx_hash: {{ payment.tx_hash }}</a>
+    </p>
+{% endfor %}

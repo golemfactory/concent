@@ -6,9 +6,9 @@ import assertpy
 import pytest
 
 from concent_api.system_check import check_middleman_port
-from concent_api.system_check import create_error_50_middleman_port_is_not_set
-from concent_api.system_check import create_error_51_middleman_port_has_wrong_type
-from concent_api.system_check import create_error_52_middleman_port_has_wrong_value
+from concent_api.system_check import create_error_39_middleman_port_is_not_set
+from concent_api.system_check import create_error_40_middleman_port_has_wrong_type
+from concent_api.system_check import create_error_41_middleman_port_has_wrong_value
 
 
 class MiddlemanPortCheckTestCase(TestCase):
@@ -25,7 +25,7 @@ class MiddlemanPortCheckTestCase(TestCase):
         errors = check_middleman_port()
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0], create_error_50_middleman_port_is_not_set())
+        self.assertEqual(errors[0], create_error_39_middleman_port_is_not_set())
 
     @override_settings(
         CONCENT_FEATURES=[]
@@ -48,7 +48,7 @@ class MiddlemanPortCheckTestCase(TestCase):
         errors = check_middleman_port()
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0], create_error_51_middleman_port_has_wrong_type(settings.MIDDLEMAN_PORT))
+        self.assertEqual(errors[0], create_error_40_middleman_port_has_wrong_type(settings.MIDDLEMAN_PORT))
 
 
 class TestMiddlemanPortCheck:
@@ -87,5 +87,5 @@ class TestMiddlemanPortCheck:
 
             assertpy.assert_that(errors).is_length(1)
             assertpy.assert_that(errors[0]).is_equal_to(
-                create_error_52_middleman_port_has_wrong_value(settings.MIDDLEMAN_PORT)
+                create_error_41_middleman_port_has_wrong_value(settings.MIDDLEMAN_PORT)
             )

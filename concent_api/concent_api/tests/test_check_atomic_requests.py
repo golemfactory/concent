@@ -1,8 +1,8 @@
 from django.test import override_settings
 from django.test import TestCase
 
-from concent_api.system_check import create_error_18_invalid_setting_type
-from concent_api.system_check import create_error_25_atomic_requests_not_set_for_database
+from concent_api.system_check import create_error_5_invalid_setting_type
+from concent_api.system_check import create_error_12_atomic_requests_not_set_for_database
 from concent_api.system_check import check_atomic_requests
 
 
@@ -27,7 +27,7 @@ class TestAtomicRequestsCheck(TestCase):
     def test_missing_atomic_request_setting_should_produce_error(self):
         errors = check_atomic_requests()
 
-        self.assertEqual(errors[0], create_error_25_atomic_requests_not_set_for_database('non-default'))
+        self.assertEqual(errors[0], create_error_12_atomic_requests_not_set_for_database('non-default'))
 
     @override_settings(
         DATABASES={
@@ -42,7 +42,7 @@ class TestAtomicRequestsCheck(TestCase):
     def test_atomic_request_setting_set_to_false_should_produce_error(self):
         errors = check_atomic_requests()
 
-        self.assertEqual(errors[0], create_error_25_atomic_requests_not_set_for_database('non-default'))
+        self.assertEqual(errors[0], create_error_12_atomic_requests_not_set_for_database('non-default'))
 
     @override_settings(
         DATABASES={
@@ -59,7 +59,7 @@ class TestAtomicRequestsCheck(TestCase):
 
         self.assertEqual(
             errors[0],
-            create_error_18_invalid_setting_type(f"DATABASES[default]['ATOMIC_REQUESTS']", 'test')
+            create_error_5_invalid_setting_type(f"DATABASES[default]['ATOMIC_REQUESTS']", 'test')
         )
 
     @override_settings(

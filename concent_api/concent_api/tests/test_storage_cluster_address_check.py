@@ -3,9 +3,9 @@ from django.conf import settings
 from django.test import TestCase
 
 from concent_api.system_check import check_settings_storage_cluster_address
-from concent_api.system_check import create_error_36_storage_cluster_address_does_not_end_with_slash
-from concent_api.system_check import create_error_38_storage_cluster_address_is_not_valid_url
-from concent_api.system_check import create_error_39_storage_server_internal_address_is_not_set
+from concent_api.system_check import create_error_25_storage_cluster_address_does_not_end_with_slash
+from concent_api.system_check import create_error_27_storage_cluster_address_is_not_valid_url
+from concent_api.system_check import create_error_28_storage_cluster_address_is_not_set
 
 
 class TestStorageClusterAddressCheck(TestCase):
@@ -21,7 +21,7 @@ class TestStorageClusterAddressCheck(TestCase):
         errors = check_settings_storage_cluster_address()
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0], create_error_39_storage_server_internal_address_is_not_set())
+        self.assertEqual(errors[0], create_error_28_storage_cluster_address_is_not_set())
 
     @override_settings(
         CONCENT_FEATURES=[]
@@ -45,7 +45,7 @@ class TestStorageClusterAddressCheck(TestCase):
         self.assertEqual(len(errors), 1)
         self.assertEqual(
             errors[0],
-            create_error_38_storage_cluster_address_is_not_valid_url(
+            create_error_27_storage_cluster_address_is_not_valid_url(
                 "['Enter a valid URL.']"
             )
         )
@@ -60,7 +60,7 @@ class TestStorageClusterAddressCheck(TestCase):
         errors = check_settings_storage_cluster_address()
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0], create_error_36_storage_cluster_address_does_not_end_with_slash())
+        self.assertEqual(errors[0], create_error_25_storage_cluster_address_does_not_end_with_slash())
 
     @override_settings(
         CONCENT_FEATURES=[

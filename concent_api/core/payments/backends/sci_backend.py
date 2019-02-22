@@ -6,7 +6,6 @@ from functools import wraps
 from typing import Any
 from typing import Callable
 
-from golem_sci.blockshelper import BlocksHelper
 from golem_sci.implementation import SCIImplementation
 from web3 import Web3
 
@@ -15,6 +14,7 @@ from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.constants import PAYMENTS_FROM_BLOCK_SAFETY_MARGIN
 from core.exceptions import SCINotSynchronized
 from core.payments.payment_interface import PaymentInterface
+from core.utils import BlocksHelper
 from core.validation import validate_uuid
 from core.validation import validate_value_is_int_convertible_and_non_negative
 from core.validation import validate_value_is_int_convertible_and_positive
@@ -64,7 +64,7 @@ def get_list_of_payments(
 
     payment_interface: SCIImplementation = PaymentInterface()
 
-    first_block_after_payment_number = BlocksHelper(payment_interface).get_first_block_after(min_block_timestamp -1).number
+    first_block_after_payment_number = BlocksHelper(payment_interface).get_latest_existing_block_at(min_block_timestamp).number
     latest_block_number = payment_interface.get_block_number()  # pylint: disable=no-member
     if latest_block_number - first_block_after_payment_number < payment_interface.REQUIRED_CONFS:  # pylint: disable=no-member
         return []
@@ -188,7 +188,7 @@ def get_covered_additional_verification_costs(client_eth_address: str, payment_t
 
     payment_interface: SCIImplementation = PaymentInterface()
 
-    first_block_after_payment_number = BlocksHelper(payment_interface).get_first_block_after(payment_ts).number
+    first_block_after_payment_number = BlocksHelper(payment_interface).get_latest_existing_block_at(payment_ts).number
 
     return payment_interface.get_covered_additional_verification_costs(  # pylint: disable=no-member
         address=Web3.toChecksumAddress(client_eth_address),

@@ -11,6 +11,8 @@ from golem_messages import message
 from golem_messages.helpers import maximum_download_time
 from golem_messages.helpers import subtask_verification_time
 from golem_messages.utils import decode_hex
+from golem_sci import Block
+from golem_sci import SmartContractsInterface
 
 from common.constants import ErrorCode
 from common.helpers import get_current_utc_timestamp
@@ -176,3 +178,25 @@ def adjust_format_name(output_format: str) -> str:
     if output_format.upper() == 'JPG':
         return 'JPEG'
     return output_format.upper()
+
+
+class BlocksHelper:
+    def __init__(self, sci: SmartContractsInterface) -> None:
+        self._sci = sci
+
+    def get_latest_existing_block_at(self, timestamp: int) -> Block:
+        """
+        Returns block with smallest number for which
+        `block.timestamp > timestamp` is satisfied or if
+        such block doesn't exist returns latest block.
+        """
+        lowest = -1
+        highest = self._sci.get_block_number()
+        while lowest + 1 < highest:
+            medium = (lowest + highest) // 2
+            if self._sci.get_block_by_number(medium).timestamp > timestamp:
+                highest = medium
+            else:
+                lowest = medium
+        block = self._sci.get_block_by_number(highest)
+        return block

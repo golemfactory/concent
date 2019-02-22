@@ -1,7 +1,7 @@
-from django.test                import override_settings
-from django.test                import TestCase
-from concent_api.system_check   import create_error_4_if_geth_container_address_has_wrong_value
-from concent_api.system_check   import geth_container_address_check
+from django.test import override_settings
+from django.test import TestCase
+from concent_api.system_check import create_error_4_if_geth_container_address_has_wrong_value
+from concent_api.system_check import geth_container_address_check
 
 
 @override_settings(

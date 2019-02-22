@@ -1,5 +1,5 @@
-from django.test import override_settings
 from django.conf import settings
+from django.test import override_settings
 from django.test import TestCase
 
 from concent_api.system_check import check_middleman_address

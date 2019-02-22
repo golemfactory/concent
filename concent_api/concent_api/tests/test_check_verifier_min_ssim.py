@@ -1,10 +1,10 @@
-from django.test                import override_settings
-from django.conf                import settings
-from django.test                import TestCase
+from django.test import override_settings
+from django.conf import settings
+from django.test import TestCase
 
-from concent_api.system_check   import create_error_21_verifier_min_ssim_has_wrong_type
-from concent_api.system_check   import create_error_22_verifier_min_ssim_has_wrong_value
-from concent_api.system_check   import check_verifier_min_ssim
+from concent_api.system_check import create_error_21_verifier_min_ssim_has_wrong_type
+from concent_api.system_check import create_error_22_verifier_min_ssim_has_wrong_value
+from concent_api.system_check import check_verifier_min_ssim
 
 
 class TestVerifierMinSSIMCheck(TestCase):

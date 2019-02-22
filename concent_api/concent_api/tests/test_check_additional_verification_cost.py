@@ -9,11 +9,12 @@ from concent_api.system_check import create_error_49_additional_verification_cos
 from concent_api.system_check import check_additional_verification_cost
 
 
+# pylint: disable=no-self-use
 class TestAdditionalVerificationCostCheck:
 
     @override_settings(
         ADDITIONAL_VERIFICATION_COST=1,
-    )  # pylint: disable=no-self-use
+    )
     def test_that_check_additional_verification_cost_not_produce_error_when_additional_verification_cost_is_set_to_int(self):
         errors = check_additional_verification_cost()
 
@@ -35,7 +36,7 @@ class TestAdditionalVerificationCostCheck:
         'test',
         [],
         {},
-    ])  # pylint: disable=no-self-use
+    ])
     @override_settings()
     def test_that_additional_verification_cost_set_to_non_int_will_produce_error(self, additional_verification_cost):
         settings.ADDITIONAL_VERIFICATION_COST = additional_verification_cost

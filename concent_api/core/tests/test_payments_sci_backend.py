@@ -41,7 +41,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
             )
         ):
             with mock.patch(
-                'core.payments.backends.sci_backend.BlocksHelper.get_first_block_after',
+                'core.payments.backends.sci_backend.BlocksHelper.get_latest_existing_block_at',
                 return_value=mock.MagicMock(number=self.last_block + self.required_confs),
             ):
                 list_of_payments = sci_backend.get_list_of_payments(
@@ -67,9 +67,9 @@ class SCIBackendTest(ConcentIntegrationTestCase):
             )
         ) as new_sci_rpc_mock:
             with mock.patch(
-                'core.payments.backends.sci_backend.BlocksHelper.get_first_block_after',
+                'core.payments.backends.sci_backend.BlocksHelper.get_latest_existing_block_at',
                 return_value=mock.MagicMock(number=self.last_block),
-            ) as get_first_block_after_mock:
+            ) as get_latest_existing_block_at_mock:
                 list_of_payments = sci_backend.get_list_of_payments(
                     self.task_to_compute.requestor_ethereum_address,
                     self.task_to_compute.provider_ethereum_address,
@@ -88,9 +88,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
 
         new_sci_rpc_mock.return_value.get_block_number.assert_called()
 
-        get_first_block_after_mock.assert_called_with(
-            self.current_time - 1
-        )
+        get_latest_existing_block_at_mock.assert_called_with(self.current_time)
 
     def test_that_sci_backend_get_list_of_payments_should_return_list_of_batch_transfers(self):
         with mock.patch(
@@ -106,9 +104,9 @@ class SCIBackendTest(ConcentIntegrationTestCase):
             )
         ) as new_sci_rpc_mock:
             with mock.patch(
-                'core.payments.backends.sci_backend.BlocksHelper.get_first_block_after',
+                'core.payments.backends.sci_backend.BlocksHelper.get_latest_existing_block_at',
                 return_value=mock.MagicMock(number=self.last_block),
-            ) as get_first_block_after_mock:
+            ) as get_latest_existing_block_at_mock:
                 list_of_payments = sci_backend.get_list_of_payments(
                     self.task_to_compute.requestor_ethereum_address,
                     self.task_to_compute.provider_ethereum_address,
@@ -127,9 +125,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
 
         new_sci_rpc_mock.return_value.get_block_number.assert_called()
 
-        get_first_block_after_mock.assert_called_with(
-            self.current_time - 1
-        )
+        get_latest_existing_block_at_mock.assert_called_with(self.current_time)
 
     def test_that_sci_backend_get_list_of_payments_should_return_list_of_forced_subtask_payments(self):
         with mock.patch(
@@ -145,9 +141,9 @@ class SCIBackendTest(ConcentIntegrationTestCase):
             )
         ) as new_sci_rpc:
             with mock.patch(
-                'core.payments.backends.sci_backend.BlocksHelper.get_first_block_after',
+                'core.payments.backends.sci_backend.BlocksHelper.get_latest_existing_block_at',
                 return_value=mock.MagicMock(number=self.last_block),
-            ) as get_first_block_after:
+            ) as get_latest_existing_block_at:
                 list_of_payments = sci_backend.get_list_of_payments(
                     self.task_to_compute.requestor_ethereum_address,
                     self.task_to_compute.provider_ethereum_address,
@@ -166,7 +162,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
 
         new_sci_rpc.return_value.get_block_number.assert_called()
 
-        get_first_block_after.assert_called_with(self.current_time - 1)
+        get_latest_existing_block_at.assert_called_with(self.current_time)
 
     def test_that_sci_backend_make_settlement_payment_to_provider_should_return_transaction_hash(self):
         with mock.patch(
@@ -395,9 +391,9 @@ class SCIBackendTest(ConcentIntegrationTestCase):
             ),
         ) as new_sci_rpc:
             with mock.patch(
-                'core.payments.backends.sci_backend.BlocksHelper.get_first_block_after',
+                'core.payments.backends.sci_backend.BlocksHelper.get_latest_existing_block_at',
                 return_value=mock.MagicMock(number=self.last_block),
-            ) as get_first_block_after:
+            ) as get_latest_existing_block_at:
                 list_of_payments = sci_backend.get_covered_additional_verification_costs(
                     self.task_to_compute.provider_ethereum_address,
                     self.current_time,
@@ -413,4 +409,4 @@ class SCIBackendTest(ConcentIntegrationTestCase):
 
         new_sci_rpc.return_value.get_block_number.assert_called()
 
-        get_first_block_after.assert_called_with(self.current_time)
+        get_latest_existing_block_at.assert_called_with(self.current_time)

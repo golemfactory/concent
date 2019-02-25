@@ -1,4 +1,9 @@
 ### Next
+##### New settings
+- `ETHEREUM_CHAIN` (#1121).
+
+#### Payments
+- Bugfix: Concent is hard coded for rinkeby (#1121).
 
 #### Version Compatibility
 - Bugfix: Pending messages in older versions block receiving any other messages from `receive/` (#1106)

@@ -115,6 +115,22 @@ br {
                 {% endwith %}
             </td>
         </tr>
+        <tr>
+            <th>Warnings</th>
+            <td colspan="2">
+                {% for warning in pair_report.warnings %}
+                    <p>- {{ warning.matching_warning.name }}: {{ warning.message }}</p>
+                {% endfor %}
+            </td>
+        </tr>
+        <tr>
+            <th>Errors</th>
+            <td colspan="2">
+                {% for error in pair_report.errors %}
+                    <p>- {{ error.matching_error.name }}: {{ error.message }}</p>
+                {% endfor %}
+            </td>
+        </tr>
     </table>
     <br>
     {% endfor %}

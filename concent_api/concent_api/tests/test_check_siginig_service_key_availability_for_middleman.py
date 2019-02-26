@@ -4,8 +4,8 @@ from django.test import override_settings
 
 from common.testing_helpers import generate_ecc_key_pair
 from concent_api.system_check import check_signing_service_key_availability_for_middleman
-from concent_api.system_check import create_error_43_signing_service_public_key_is_missing
-from concent_api.system_check import create_error_44_signing_service_public_key_is_invalid
+from concent_api.system_check import create_error_32_signing_service_public_key_is_missing
+from concent_api.system_check import create_error_33_signing_service_public_key_is_invalid
 
 
 (_, SIGNING_SERVICE_PUBLIC_KEY) = generate_ecc_key_pair()
@@ -22,7 +22,7 @@ class TestCheckSigningServiceKeyAvailabilityForMiddleMan:  # pylint: disable=no-
         del settings.SIGNING_SERVICE_PUBLIC_KEY
         errors = check_signing_service_key_availability_for_middleman()
         assert_that(errors).is_length(1)
-        assert_that(errors[0]).is_equal_to(create_error_43_signing_service_public_key_is_missing())
+        assert_that(errors[0]).is_equal_to(create_error_32_signing_service_public_key_is_missing())
 
     def test_that_if_middleman_is_enabled_and_valid_signing_service_public_key_is_defined_no_errors_are_returned(self):
         with override_settings(
@@ -37,4 +37,4 @@ class TestCheckSigningServiceKeyAvailabilityForMiddleMan:  # pylint: disable=no-
         ):
             errors = check_signing_service_key_availability_for_middleman()
             assert_that(errors).is_length(1)
-            assert_that(errors[0]).is_equal_to(create_error_44_signing_service_public_key_is_invalid())
+            assert_that(errors[0]).is_equal_to(create_error_33_signing_service_public_key_is_invalid())

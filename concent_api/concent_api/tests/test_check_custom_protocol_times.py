@@ -7,9 +7,9 @@ from django.test import TestCase
 from golem_messages import constants
 
 from concent_api.system_check import check_custom_protocol_times
-from concent_api.system_check import create_error_31_custom_protocol_times_is_not_set
-from concent_api.system_check import create_error_32_custom_protocol_times_has_wrong_value
-from concent_api.system_check import create_error_33_custom_protocol_times_is_false_and_settings_does_not_match_golem_messages_constants
+from concent_api.system_check import create_error_18_custom_protocol_times_is_not_set
+from concent_api.system_check import create_error_19_custom_protocol_times_has_wrong_value
+from concent_api.system_check import create_error_20_custom_protocol_times_is_false_and_settings_does_not_match_golem_messages_constants
 
 
 class TestCustomProtocolTimesCheck(TestCase):
@@ -24,7 +24,7 @@ class TestCustomProtocolTimesCheck(TestCase):
         del settings.CUSTOM_PROTOCOL_TIMES
         errors = check_custom_protocol_times()
 
-        self.assertEqual([create_error_31_custom_protocol_times_is_not_set()], errors)
+        self.assertEqual([create_error_18_custom_protocol_times_is_not_set()], errors)
 
     def test_that_check_custom_protocol_times_should_return_error_if_custom_protocol_times_setting_is_not_bool_value(self):
         for wrong_value in [
@@ -36,7 +36,7 @@ class TestCustomProtocolTimesCheck(TestCase):
 
             errors = check_custom_protocol_times()
 
-            self.assertEqual([create_error_32_custom_protocol_times_has_wrong_value()], errors)
+            self.assertEqual([create_error_19_custom_protocol_times_has_wrong_value()], errors)
 
     @override_settings(
         CONCENT_MESSAGING_TIME=1,
@@ -60,10 +60,10 @@ class TestCustomProtocolTimesCheck(TestCase):
 
         self.assertEqual(
             [
-                create_error_33_custom_protocol_times_is_false_and_settings_does_not_match_golem_messages_constants(
+                create_error_20_custom_protocol_times_is_false_and_settings_does_not_match_golem_messages_constants(
                     'CONCENT_MESSAGING_TIME'
                 ),
-                create_error_33_custom_protocol_times_is_false_and_settings_does_not_match_golem_messages_constants(
+                create_error_20_custom_protocol_times_is_false_and_settings_does_not_match_golem_messages_constants(
                     'FORCE_ACCEPTANCE_TIME'
                 )
             ],

@@ -1,10 +1,10 @@
-from django.test import override_settings
 from django.conf import settings
+from django.test import override_settings
 from django.test import TestCase
 
 from concent_api.system_check import check_middleman_address
-from concent_api.system_check import create_error_48_middleman_address_has_wrong_type
-from concent_api.system_check import create_error_49_middleman_address_is_not_set
+from concent_api.system_check import create_error_37_middleman_address_has_wrong_type
+from concent_api.system_check import create_error_38_middleman_address_is_not_set
 
 
 class TestMiddlemanAddressCheck(TestCase):
@@ -21,7 +21,7 @@ class TestMiddlemanAddressCheck(TestCase):
         errors = check_middleman_address()
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0], create_error_49_middleman_address_is_not_set())
+        self.assertEqual(errors[0], create_error_38_middleman_address_is_not_set())
 
     @override_settings(
         CONCENT_FEATURES=[]
@@ -44,7 +44,7 @@ class TestMiddlemanAddressCheck(TestCase):
         errors = check_middleman_address()
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0], create_error_48_middleman_address_has_wrong_type(settings.MIDDLEMAN_ADDRESS))
+        self.assertEqual(errors[0], create_error_37_middleman_address_has_wrong_type(settings.MIDDLEMAN_ADDRESS))
 
     @override_settings(
         CONCENT_FEATURES=[

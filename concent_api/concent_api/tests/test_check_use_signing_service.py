@@ -4,9 +4,9 @@ from django.test import override_settings
 from django.test import TestCase
 
 from concent_api.system_check import check_use_signing_service
-from concent_api.system_check import create_error_53_use_signing_service_not_set
-from concent_api.system_check import create_error_54_use_signing_service_has_wrong_type
-from concent_api.system_check import create_error_55_use_signing_service_is_true_but_middleman_is_missing
+from concent_api.system_check import create_error_42_use_signing_service_not_set
+from concent_api.system_check import create_error_43_use_signing_service_has_wrong_type
+from concent_api.system_check import create_error_44_use_signing_service_is_true_but_middleman_is_missing
 
 
 class CheckUseSigningServiceTestCase(TestCase):
@@ -27,7 +27,7 @@ class CheckUseSigningServiceTestCase(TestCase):
         errors = check_use_signing_service()
 
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0], create_error_53_use_signing_service_not_set())
+        self.assertEqual(errors[0], create_error_42_use_signing_service_not_set())
 
     @override_settings(
         PAYMENT_BACKEND='core.payments.backends.sci_backend',
@@ -39,7 +39,7 @@ class CheckUseSigningServiceTestCase(TestCase):
         self.assertEqual(len(errors), 1)
         self.assertEqual(
             errors[0],
-            create_error_54_use_signing_service_has_wrong_type(settings.USE_SIGNING_SERVICE)
+            create_error_43_use_signing_service_has_wrong_type(settings.USE_SIGNING_SERVICE)
         )
 
     @override_settings(
@@ -53,7 +53,7 @@ class CheckUseSigningServiceTestCase(TestCase):
         self.assertEqual(len(errors), 1)
         self.assertEqual(
             errors[0],
-            create_error_55_use_signing_service_is_true_but_middleman_is_missing()
+            create_error_44_use_signing_service_is_true_but_middleman_is_missing()
         )
 
     @override_settings(

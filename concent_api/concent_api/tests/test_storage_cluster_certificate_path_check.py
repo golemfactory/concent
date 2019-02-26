@@ -1,13 +1,13 @@
-from assertpy                   import assert_that
-from django.test                import override_settings
-from django.conf                import settings
-from django.test                import TestCase
-from mock                       import patch
+from assertpy import assert_that
+from django.test import override_settings
+from django.conf import settings
+from django.test import TestCase
+from mock import patch
 
-from concent_api.system_check   import create_error_13_ssl_cert_path_is_none
-from concent_api.system_check   import create_error_14_cert_path_does_not_exist
-from concent_api.system_check   import create_error_15_ssl_cert_path_is_not_a_file
-from concent_api.system_check   import storage_cluster_certificate_path_check
+from concent_api.system_check import create_error_54_ssl_cert_path_is_none
+from concent_api.system_check import create_error_55_cert_path_does_not_exist
+from concent_api.system_check import create_error_56_ssl_cert_path_is_not_a_file
+from concent_api.system_check import storage_cluster_certificate_path_check
 
 
 # pylint: disable=no-self-use
@@ -25,7 +25,7 @@ class TestStorageClusterCertificatePathCheck(TestCase):
         STORAGE_CLUSTER_SSL_CERTIFICATE_PATH = 'non_existing_path.crt'
     )
     def test_that_non_existing_path_produces_an_error(self):
-        expected_error  = create_error_14_cert_path_does_not_exist(settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH)
+        expected_error  = create_error_55_cert_path_does_not_exist(settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH)
         errors          = storage_cluster_certificate_path_check()
 
         assert_that(errors).is_length(1)
@@ -35,7 +35,7 @@ class TestStorageClusterCertificatePathCheck(TestCase):
         STORAGE_CLUSTER_SSL_CERTIFICATE_PATH = None
     )
     def test_that_none_produces_an_error(self):
-        expected_error  = create_error_13_ssl_cert_path_is_none()
+        expected_error  = create_error_54_ssl_cert_path_is_none()
         errors          = storage_cluster_certificate_path_check()
 
         assert_that(errors).is_length(1)
@@ -47,7 +47,7 @@ class TestStorageClusterCertificatePathCheck(TestCase):
     @patch('concent_api.system_check.os.path.exists', return_value = True)
     @patch('concent_api.system_check.os.path.isfile', return_value = False)
     def test_that_wrong_type_produces_an_error(self, _isfile_mock, _exists_mock):
-        expected_error  = create_error_15_ssl_cert_path_is_not_a_file(settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH)
+        expected_error  = create_error_56_ssl_cert_path_is_not_a_file(settings.STORAGE_CLUSTER_SSL_CERTIFICATE_PATH)
         errors          = storage_cluster_certificate_path_check()
 
         assert_that(errors).is_length(1)

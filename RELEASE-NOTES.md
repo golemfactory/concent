@@ -18,6 +18,9 @@
 #### Signing Service
 - Bugfix: Catch exception when `ethereum-private-key` is badly encoded and raise custom exception.
 
+#### Endpoints and uses cases in general
+- Receive-out-of-band endpoint removed (#842).
+
 ### 0.11.0
 #### Compatibility
 - golem-messages: 2.24.3

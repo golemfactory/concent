@@ -7,6 +7,9 @@ cd concent_api
 pip install -r requirements.lock
 cd ..
 
+printf "=================== GENERATE CONCENT VERSION ====================\n"
+python generate_version.py
+
 printf "=================== INSTALL MIDDLEMAN_PROTOCOL REQUIREMENTS ====================\n"
 cd middleman_protocol
 python setup.py develop

@@ -2,6 +2,9 @@
 # Run this script only directly, without changing folders, because of relative paths
 # ./install-development-requirements.sh - OK, ./concent/install-development-requirements.sh - incorrect
 
+printf "=================== GENERATE CONCENT VERSION ====================\n"
+python generate_version.py
+
 printf "=================== INSTALL CONCENT_API REQUIREMENTS ====================\n"
 cd concent_api
 pip install -r requirements.lock

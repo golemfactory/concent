@@ -1,4 +1,7 @@
 ### Next
+#### Compatibility
+- golem-messages: 3.3.0
+
 ##### New settings
 - `ETHEREUM_CHAIN` (#1121).
 

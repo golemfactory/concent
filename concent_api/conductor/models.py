@@ -3,7 +3,9 @@ from django.core.validators import ValidationError
 from django.db.models import BooleanField
 from django.db.models import CharField
 from django.db.models import DateTimeField
+from django.db.models import DecimalField
 from django.db.models import ForeignKey
+from django.db.models import IntegerField
 from django.db.models import Model
 from django.db.models import OneToOneField
 from django.db.models import PositiveIntegerField
@@ -70,6 +72,18 @@ class ResultTransferRequest(Model):
     modified_at = DateTimeField(auto_now=True)
 
 
+class BlenderCropScriptParameters(Model):
+
+    resolution_x = IntegerField()
+    resolution_y = IntegerField()
+    samples = IntegerField()
+    use_compositing = BooleanField()
+    borders_y_min = DecimalField(max_digits=10, decimal_places=9)
+    borders_y_max = DecimalField(max_digits=10, decimal_places=9)
+    borders_x_min = DecimalField(max_digits=10, decimal_places=9)
+    borders_x_max = DecimalField(max_digits=10, decimal_places=9)
+
+
 class BlenderSubtaskDefinition(Model):
     """
     For each VerificationRequest there must be exactly one BlenderSubtaskDefinition in the database.
@@ -93,6 +107,9 @@ class BlenderSubtaskDefinition(Model):
 
     # Source code of the Python script to be executed by Blender.
     blender_crop_script = TextField(blank=True, null=True)
+
+    # Parameters needed to generate Python script to be executed by Blender.
+    blender_crop_script_parameters = OneToOneField(BlenderCropScriptParameters, related_name='blender_subtask_definition', blank=True, null=True)
 
 
 class UploadReport(Model):

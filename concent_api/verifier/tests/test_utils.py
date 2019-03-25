@@ -16,7 +16,6 @@ from core.constants import VerificationResult
 from core.tests.utils import generate_uuid_for_tests
 from verifier.exceptions import VerificationError
 from verifier.exceptions import VerificationMismatch
-from verifier.utils import get_files_list_from_archive
 from verifier.utils import are_image_sizes_and_color_channels_equal
 from verifier.utils import compare_all_rendered_images_with_user_results_files
 from verifier.utils import compare_images
@@ -24,9 +23,11 @@ from verifier.utils import compare_minimum_ssim_with_results
 from verifier.utils import ensure_enough_result_files_provided
 from verifier.utils import ensure_frames_have_related_files_to_compare
 from verifier.utils import generate_base_blender_output_file_name
+from verifier.utils import generate_blender_script
 from verifier.utils import generate_full_blender_output_file_name
 from verifier.utils import generate_upload_file_path
 from verifier.utils import generate_verifier_storage_file_path
+from verifier.utils import get_files_list_from_archive
 from verifier.utils import parse_result_files_with_frames
 from verifier.utils import render_images_by_frames
 from verifier.utils import upload_blender_output_file
@@ -115,7 +116,7 @@ class VerifierUtilsTest(TestCase):
                 scene_file=self.scene_file,
                 subtask_id=self.subtask_id,
                 verification_deadline=None,
-                blender_crop_script=None,
+                blender_crop_script_parameters=None,
             )
             self.assertEqual(self.correct_parsed_all_files, parsed_files_to_compare)
             self.assertEqual(self.correct_blender_output_file_name_list, blender_output_file_name_list)
@@ -327,3 +328,41 @@ def test_that_method_returns_correct_archives_list(expected_list):
                 archive.writestr(file, 'Some content here')
         files_list = get_files_list_from_archive(tmp)
         assert_that(files_list).is_equal_to(expected_list)
+
+
+def mocked_generate_blender_crop_file(script_file_out, resolution, borders_x, borders_y, use_compositing, samples, mounted_paths):
+    return dict(
+        script_file_out=script_file_out,
+        resolution=resolution,
+        borders_x=borders_x,
+        borders_y=borders_y,
+        use_compositing=use_compositing,
+        samples=samples,
+        mounted_paths=mounted_paths,
+    )
+
+
+@mock.patch('verifier.utils.import_generate_blender_crop_file', return_value=mocked_generate_blender_crop_file)
+class TestGenerateBlenderScript:
+
+    def test_that_function_is_called_with_right_parameters(self, mocked_import_generate_blender_crop_file):  # pylint: disable=no-self-use
+        blender_crop_script_parameters = dict(
+            resolution=[100, 100],
+            borders_x=[0.0, 1.0],
+            borders_y=[0.0, 1.0],
+            use_compositing=False,
+            samples=30,
+        )
+        output_generate_blender_script = generate_blender_script('subtask_id', blender_crop_script_parameters)
+        assert_that(mocked_import_generate_blender_crop_file.called).is_true()
+        assert_that(output_generate_blender_script).is_equal_to(
+            mocked_generate_blender_crop_file(
+                'blender_crop_script_subtask_id.py',
+                blender_crop_script_parameters['resolution'],
+                blender_crop_script_parameters['borders_x'],
+                blender_crop_script_parameters['borders_y'],
+                blender_crop_script_parameters['use_compositing'],
+                blender_crop_script_parameters['samples'],
+                {'WORK_DIR': '/tmp/'},
+            )
+        )

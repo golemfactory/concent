@@ -1,3 +1,5 @@
+import sys
+
 import hashlib
 from base64 import b64encode
 from typing import Dict
@@ -34,6 +36,7 @@ from verifier.exceptions import VerificationMismatch
 from .constants import UNPACK_CHUNK_SIZE
 
 
+sys.path.append('/golem/entrypoints/scripts/render_tools')
 logger = logging.getLogger(__name__)
 crash_logger = logging.getLogger('concent.crash')
 FramesToParsedFilePaths = Dict[int, List[str]]
@@ -88,21 +91,15 @@ def run_blender(
     output_format: str,
     frame_number: int,
     verification_deadline: Union[int, float],
-    script_file: Optional[str],
+    blender_crop_script_parameters: Dict[str, Union[int, List[float], bool]],
+    subtask_id: str,
 ) -> subprocess.CompletedProcess:
 
     blender_command = [
         "blender",
         "-b", f"{generate_verifier_storage_file_path(scene_file)}",
-    ]
-
-    if script_file is not None:
-        blender_command += [
-            "-y",  # enable scripting by default
-            "-P", f"{generate_verifier_storage_file_path(script_file)}",
-        ]
-
-    blender_command += [
+        "-y",  # enable scripting by default
+        "-P", f"{generate_blender_script(subtask_id, blender_crop_script_parameters)}",
         "-o", f"{generate_base_blender_output_file_name(scene_file)}",
         "-noaudio",
         "-F", f"{output_format}",
@@ -295,13 +292,8 @@ def render_image(
     scene_file: str,
     subtask_id: str,
     verification_deadline: Union[int, float],
-    blender_crop_script: Optional[str]=None
+    blender_crop_script_parameters: Dict[str, Union[int, List[float], bool]],
 ) -> None:
-    # Verifier stores Blender crop script to a file.
-    if blender_crop_script is not None:
-        blender_script_file_name = store_blender_script_file(subtask_id, blender_crop_script)  # type: Optional[str]
-    else:
-        blender_script_file_name = None
     # Verifier runs blender process.
     try:
         completed_process = run_blender(
@@ -309,8 +301,10 @@ def render_image(
             output_format,
             frame_number,
             verification_deadline,
-            blender_script_file_name,
+            blender_crop_script_parameters,
+            subtask_id,
         )
+        clean_directory(os.path.join(settings.VERIFIER_STORAGE_PATH, 'render-scripts'), subtask_id)
         # If Blender finishes with errors, verification ends here
         # Verification_result informing about the error is sent to the work queue.
         if completed_process.returncode != 0:
@@ -439,11 +433,11 @@ def render_images_by_frames(
     scene_file: str,
     subtask_id: str,
     verification_deadline: Union[int, float],
-    blender_crop_script: Optional[str],
+    blender_crop_script_parameters: Dict[str, Union[int, List[float], bool]],
 ) -> Tuple[List[str], FramesToParsedFilePaths]:
     blender_output_file_name_list = []
     for frame_number in frames:
-        render_image(frame_number, output_format, scene_file, subtask_id, verification_deadline, blender_crop_script)
+        render_image(frame_number, output_format, scene_file, subtask_id, verification_deadline, blender_crop_script_parameters)
         blender_out_file_name = generate_full_blender_output_file_name(scene_file, frame_number, output_format)
         blender_output_file_name_list.append(blender_out_file_name)
         parsed_files_to_compare[frame_number].append(blender_out_file_name)
@@ -476,11 +470,18 @@ def ensure_frames_have_related_files_to_compare(frames: List[int], parsed_files_
 def compare_all_rendered_images_with_user_results_files(parsed_files_to_compare: FramesToParsedFilePaths, subtask_id: str) -> List[float]:
     ssim_list = []
     for (result_file, blender_output_file_name) in parsed_files_to_compare.values():
+        log(
+            logger,
+            f'blender_output_file_name: {blender_output_file_name}.'
+            f'result_file: {result_file}',
+            logging_level=LoggingLevel.WARNING
+        )
         image_1, image_2 = load_images(
             blender_output_file_name,
             result_file,
             subtask_id
         )
+        log(logger, f'image_1 size: {image_1.shape} image_2 size: {image_2.shape}')
         if not are_image_sizes_and_color_channels_equal(image_1, image_2):
             log(
                 logger,
@@ -493,10 +494,20 @@ def compare_all_rendered_images_with_user_results_files(parsed_files_to_compare:
     return ssim_list
 
 
-def store_blender_script_file(subtask_id: str, blender_crop_script: str) -> str:
+def generate_blender_script(subtask_id: str, blender_crop_script_parameters: Dict[str, Union[int, List[float], bool]],) -> str:
     """ Writes content of the Blender crop script to python script file. """
-    blender_script_file_name = f'blender_crop_script_{subtask_id}.py'
-    with open(generate_verifier_storage_file_path(blender_script_file_name), 'x') as blender_script_file:
-        blender_script_file.write(blender_crop_script)
+    generate_blender_crop_file = import_generate_blender_crop_file()  # type: ignore
+    return generate_blender_crop_file(
+        script_file_out=f'blender_crop_script_{subtask_id}.py',
+        resolution=blender_crop_script_parameters['resolution'],
+        borders_x=blender_crop_script_parameters['borders_x'],
+        borders_y=blender_crop_script_parameters['borders_y'],
+        use_compositing=blender_crop_script_parameters['use_compositing'],
+        samples=blender_crop_script_parameters['samples'],
+        mounted_paths={'WORK_DIR': settings.VERIFIER_STORAGE_PATH},
+    )
 
-    return blender_script_file_name
+
+def import_generate_blender_crop_file():  # type: ignore
+    from scenefileeditor import generate_blender_crop_file  # pylint: disable=import-error
+    return generate_blender_crop_file

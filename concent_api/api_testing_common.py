@@ -1,4 +1,5 @@
 from typing import Any
+from typing import Dict
 from typing import Callable
 from typing import Iterable
 from typing import MutableMapping
@@ -383,7 +384,7 @@ def create_signed_task_to_compute(
     price: int=1,
     size: int=1,
     package_hash: str='sha1:57786d92d1a6f7eaaba1c984db5e108c68b03f0d',
-    script_src: Optional[str]=None,
+    render_parameters: Optional[Dict[str, Any]]=None,
 ) -> TaskToCompute:
     # Temporary workaround for requestor's and provider's keys until all Concent use cases will have payments
     # When we will have payments then all keys will be taken from SCIBaseTest class
@@ -401,11 +402,17 @@ def create_signed_task_to_compute(
                 'output_format': 'png',
                 'scene_file': '/golem/resources/golem-header-light.blend',
                 'frames': [1],
-                'script_src': script_src,
+                'resolution': render_parameters.get('resolution') if render_parameters is not None else [400, 400],
+                'use_compositing': render_parameters.get('use_compositing') if render_parameters is not None else False,
+                'samples': render_parameters.get('samples') if render_parameters is not None else 0,
+                'crops': [
+                    {
+                        'borders_x': render_parameters['borders_x'] if render_parameters is not None else [0.0, 1.0],
+                        'borders_y': render_parameters['borders_y'] if render_parameters is not None else [0.0, 1.0],
+                    }
+                ]
             }
         )
-        if script_src is not None:
-            compute_task_def['extra_data']['script_src'] = script_src
 
         task_header: TaskHeader = TaskHeaderFactory(
             task_id=compute_task_def['task_id'],

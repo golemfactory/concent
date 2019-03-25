@@ -93,3 +93,5 @@ if MIDDLEWARE.index('concent_api.middleware.HandleServerErrorMiddleware') is not
     MIDDLEWARE.remove('concent_api.middleware.HandleServerErrorMiddleware')
 
 ETHEREUM_CHAIN = 'rinkeby'
+
+BLENDER_RENDER_TOOLS_DIR = 'golem_render_tools'

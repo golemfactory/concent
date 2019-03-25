@@ -1,5 +1,4 @@
 # pylint: disable=unused-wildcard-import
-import os
 
 from middleman.constants import DEFAULT_INTERNAL_PORT
 from .base import *  # NOQA  # pylint: disable=wildcard-import
@@ -17,8 +16,6 @@ DATABASES['storage']['PASSWORD'] = ''
 
 CONCENT_PUBLIC_KEY  = b'\xf3\x97\x19\xcdX\xda\x86tiP\x1c&\xd39M\x9e\xa4\xddb\x89\xb5,]O\xd5cR\x84\xb85\xed\xc9\xa17e,\xb2s\xeb\n1\xcaN.l\xba\xc3\xb7\xc2\xba\xff\xabN\xde\xb3\x0b\xa6l\xbf6o\x81\xe0;'
 CONCENT_PRIVATE_KEY = b'l\xcdh\x19\xeb$>\xbcG\xa1\xc7v\xe8\xd7o\x0c\xbf\x0e\x0fM\x89lw\x1e\xd7K\xd6Hnv$\xa2'
-
-SIGNING_SERVICE_PUBLIC_KEY = b'\xc0$\xa3\xab\x8d\x04[q\x0b\x1b\x00#\x8b\x18\xd9\xcf\x95\xf1\\`\x08w@\xf0\x9d\xf6B7;\xe56\xc8\xb1pp\x97\xac\xb3\xd3\xc1\xb0\x96a6\xcat\x8b\xea\xbb\x98\x04\xcfD28\x97$\xa9\xb9b8\x17\xe1\xfc'
 
 CONCENT_FEATURES = [
     "admin-panel",
@@ -55,3 +52,5 @@ GNT_DEPOSIT_CONTRACT_ADDRESS = '0xcfB81A6EE3ae6aD4Ac59ddD21fB4589055c13DaD'
 ADDITIONAL_VERIFICATION_COST = 10
 
 ETHEREUM_CHAIN = 'rinkeby'
+
+BLENDER_RENDER_TOOLS_DIR = 'golem_render_tools'

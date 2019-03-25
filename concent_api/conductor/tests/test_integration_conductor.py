@@ -5,6 +5,7 @@ from django.urls import reverse
 from common.helpers import get_current_utc_timestamp
 from common.helpers import get_storage_result_file_path
 from common.helpers import get_storage_source_file_path
+from conductor.models import BlenderCropScriptParameters
 from conductor.models import BlenderSubtaskDefinition
 from conductor.models import ResultTransferRequest
 from conductor.models import UploadReport
@@ -23,6 +24,13 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         super().setUp()
         self.task_to_compute = self._get_deserialized_task_to_compute()
         self.compute_task_def = self.task_to_compute.compute_task_def
+        self.blender_crop_script_parameters = dict(
+            resolution=self.compute_task_def['extra_data']['resolution'],
+            samples=self.compute_task_def['extra_data']['samples'],
+            use_compositing=self.compute_task_def['extra_data']['use_compositing'],
+            borders_x=self.compute_task_def['extra_data']['crops'][0]['borders_x'],
+            borders_y=self.compute_task_def['extra_data']['crops'][0]['borders_y'],
+        )
         self.source_package_path = get_storage_source_file_path(
             self.task_to_compute.subtask_id,
             self.task_to_compute.task_id,
@@ -325,12 +333,12 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
             source_package_path=self.source_package_path,
             result_package_path=self.result_package_path,
             output_format=BlenderSubtaskDefinition.OutputFormat.JPEG.name,  # pylint: disable=no-member
-            scene_file = self.compute_task_def['extra_data']['scene_file'],
+            scene_file=self.compute_task_def['extra_data']['scene_file'],
             verification_deadline=self._get_verification_deadline_as_timestamp(
                 get_current_utc_timestamp(),
                 self.report_computed_task.size,
             ),
-            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+            blender_crop_script_parameters=self.blender_crop_script_parameters,
         )
 
         self.assertEqual(VerificationRequest.objects.count(), 1)
@@ -341,6 +349,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(verification_request.result_package_path, self.result_package_path)
         self.assertEqual(verification_request.blender_subtask_definition.output_format, BlenderSubtaskDefinition.OutputFormat.JPEG.name)  # pylint: disable=no-member
         self.assertEqual(verification_request.blender_subtask_definition.scene_file, self.compute_task_def['extra_data']['scene_file'])
+        self.assertIsInstance(verification_request.blender_subtask_definition.blender_crop_script_parameters, BlenderCropScriptParameters)
 
     def test_blender_verification_request_task_should_not_link_upload_requests_to_unrelated_upload_reports(self):
         upload_report = UploadReport(
@@ -360,7 +369,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
                 get_current_utc_timestamp(),
                 self.report_computed_task.size,
             ),
-            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+            blender_crop_script_parameters=self.blender_crop_script_parameters,
         )
 
         self.assertEqual(VerificationRequest.objects.count(), 1)
@@ -368,6 +377,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
         verification_request = VerificationRequest.objects.first()
         self.assertEqual(verification_request.upload_reports.count(), 0)
         self.assertFalse(verification_request.upload_reports.filter(path=self.source_package_path).exists())
+        self.assertIsInstance(verification_request.blender_subtask_definition.blender_crop_script_parameters, BlenderCropScriptParameters)
 
     def test_blender_verification_request_task_should_schedule_upload_finished_task_if_all_related_upload_requests_have_reports(self):
         upload_report = UploadReport(
@@ -394,7 +404,7 @@ class ConductorVerificationIntegrationTest(ConcentIntegrationTestCase):
                     get_current_utc_timestamp(),
                     self.report_computed_task.size,
                 ),
-                blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+                blender_crop_script_parameters=self.blender_crop_script_parameters,
             )
 
         transaction_on_commit.assert_called_once()

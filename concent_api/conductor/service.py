@@ -1,6 +1,7 @@
 import logging
+from typing import Any
+from typing import Dict
 from typing import List
-from typing import Optional
 
 from django.db import transaction
 from django.db.models import Q
@@ -10,6 +11,7 @@ from common.helpers import parse_timestamp_to_utc_datetime
 from common.logging import log
 from common.logging import LoggingLevel
 from conductor.exceptions import VerificationRequestAlreadyInitiatedError
+from conductor.models import BlenderCropScriptParameters
 from conductor.models import BlenderSubtaskDefinition
 from conductor.models import Frame
 from conductor.models import ResultTransferRequest
@@ -75,7 +77,7 @@ def store_verification_request_and_blender_subtask_definition(
     output_format: str,
     scene_file: str,
     verification_deadline: int,
-    blender_crop_script: Optional[str],
+    blender_parameters: Dict[str, Any],
 ) -> tuple:
     verification_request = VerificationRequest(
         subtask_id=subtask_id,
@@ -86,11 +88,13 @@ def store_verification_request_and_blender_subtask_definition(
     verification_request.full_clean()
     verification_request.save()
 
+    blender_crop_script_parameters = _store_blender_crop_script_parameters(blender_parameters)
+
     blender_subtask_definition = BlenderSubtaskDefinition(
         verification_request=verification_request,
         output_format=BlenderSubtaskDefinition.OutputFormat[output_format].name,
         scene_file=scene_file,
-        blender_crop_script=blender_crop_script,
+        blender_crop_script_parameters=blender_crop_script_parameters,
     )
     blender_subtask_definition.full_clean()
     blender_subtask_definition.save()
@@ -113,3 +117,20 @@ def store_frames(
 
 def filter_frames_by_blender_subtask_definition(blender_subtask_definition: BlenderSubtaskDefinition) -> list:
     return list(Frame.objects.filter(blender_subtask_definition=blender_subtask_definition).values_list('number', flat=True))
+
+
+def _store_blender_crop_script_parameters(blender_parameters: Any) -> BlenderCropScriptParameters:
+    blender_crop_script_parameters = BlenderCropScriptParameters(
+        resolution_x=blender_parameters['resolution'][0],
+        resolution_y=blender_parameters['resolution'][1],
+        samples=blender_parameters['samples'],
+        use_compositing=blender_parameters['use_compositing'],
+        borders_x_min=blender_parameters['borders_x'][0],
+        borders_x_max=blender_parameters['borders_x'][1],
+        borders_y_min=blender_parameters['borders_y'][0],
+        borders_y_max=blender_parameters['borders_y'][1],
+    )
+    blender_crop_script_parameters.full_clean()
+    blender_crop_script_parameters.save()
+
+    return blender_crop_script_parameters

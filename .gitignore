@@ -118,3 +118,6 @@ ENV/
 
 # Signing service daily tresholds
 daily_thresholds/
+
+# Render tools downloaded from golem repository
+concent_api/verifier/golem_render_tools/

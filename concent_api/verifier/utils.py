@@ -470,12 +470,6 @@ def ensure_frames_have_related_files_to_compare(frames: List[int], parsed_files_
 def compare_all_rendered_images_with_user_results_files(parsed_files_to_compare: FramesToParsedFilePaths, subtask_id: str) -> List[float]:
     ssim_list = []
     for (result_file, blender_output_file_name) in parsed_files_to_compare.values():
-        log(
-            logger,
-            f'blender_output_file_name: {blender_output_file_name}.'
-            f'result_file: {result_file}',
-            logging_level=LoggingLevel.WARNING
-        )
         image_1, image_2 = load_images(
             blender_output_file_name,
             result_file,

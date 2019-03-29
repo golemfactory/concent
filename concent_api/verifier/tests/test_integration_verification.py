@@ -12,6 +12,7 @@ from conductor.models import BlenderSubtaskDefinition
 from core.constants import VerificationResult
 from core.tasks import verification_result
 from core.tests.utils import ConcentIntegrationTestCase
+from core.utils import extract_blender_parameters_from_compute_task_def
 from verifier.exceptions import VerificationError
 from ..tasks import blender_verification_order
 
@@ -49,6 +50,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         super().setUp()
         self.task_to_compute = self._get_deserialized_task_to_compute()
         self.compute_task_def = self.task_to_compute.compute_task_def
+        self.blender_crop_script_parameters = extract_blender_parameters_from_compute_task_def(self.compute_task_def['extra_data'])
         self.source_package_path = get_storage_source_file_path(
             self.task_to_compute.subtask_id,
             self.task_to_compute.task_id,
@@ -128,7 +130,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 current_time,
                 self.report_computed_task.size,
             ),
-            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+            blender_crop_script_parameters=self.blender_crop_script_parameters,
         )
         self.assertEqual(mock_delete_source_files.call_count, 1)
         self.assertEqual(mock_get_files_list_from_archive.call_count, 1)
@@ -168,7 +170,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 current_time,
                 self.report_computed_task.size,
             ),
-            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+            blender_crop_script_parameters=self.blender_crop_script_parameters,
         )
         self.assertEqual(mock_delete_source_files.call_count, 1)
         self.assertEqual(mock_parse_result_files_with_frames.call_count, 1)
@@ -312,7 +314,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 current_time,
                 self.report_computed_task.size,
             ),
-            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+            blender_crop_script_parameters=self.blender_crop_script_parameters,
         )
         self.assertEqual(mock_delete_source_files.call_count, 1)
         self.assertEqual(mock_try_to_upload_file.call_count, 1)
@@ -361,7 +363,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 current_time,
                 self.report_computed_task.size,
             ),
-            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+            blender_crop_script_parameters=self.blender_crop_script_parameters,
         )
         self.assertEqual(mock_delete_source_files.call_count, 1)
         self.assertEqual(mock_try_to_upload_file.call_count, 1)
@@ -404,7 +406,7 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 current_time,
                 self.report_computed_task.size,
             ),
-            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+            blender_crop_script_parameters=self.blender_crop_script_parameters,
         )
         self.assertEqual(mock_delete_source_files.call_count, 1)
         self.assertEqual(mock_get_files_list_from_archive.call_count, 1)
@@ -459,5 +461,5 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
                 self.report_computed_task.size,
             ),
             frames=frames if frames is not None else self.frames,
-            blender_crop_script=self.compute_task_def['extra_data']['script_src'],
+            blender_crop_script_parameters=self.blender_crop_script_parameters,
         )

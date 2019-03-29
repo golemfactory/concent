@@ -4,6 +4,7 @@ from conductor.tasks import blender_verification_request
 from common.helpers import get_storage_result_file_path
 from common.helpers import get_storage_source_file_path
 from core.utils import adjust_format_name
+from core.utils import extract_blender_parameters_from_compute_task_def
 from core.utils import extract_name_from_scene_file_path
 
 
@@ -21,8 +22,7 @@ def send_blender_verification_request(compute_task_def: ComputeTaskDef, verifica
     output_format = adjust_format_name(compute_task_def['extra_data']['output_format'])
     scene_file_path = compute_task_def['extra_data']['scene_file']
     frames = compute_task_def['extra_data']['frames']
-    blender_crop_script = compute_task_def['extra_data'].get('script_src')
-
+    blender_crop_script_parameters = extract_blender_parameters_from_compute_task_def(compute_task_def['extra_data'])
     # Verifier needs to get scene_file path without golem's resource directory prefix
     # Function below cuts off beginning prefix and pass to `blender_verification_request` scene_file without it.
     scene_file = extract_name_from_scene_file_path(scene_file_path)
@@ -36,5 +36,5 @@ def send_blender_verification_request(compute_task_def: ComputeTaskDef, verifica
         scene_file=scene_file,
         verification_deadline=verification_deadline,
         frames=frames,
-        blender_crop_script=blender_crop_script,
+        blender_crop_script_parameters=blender_crop_script_parameters,
     )

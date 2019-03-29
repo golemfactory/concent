@@ -72,6 +72,7 @@ from core.utils import calculate_subtask_verification_time
 from core.validation import is_golem_message_signed_with_key
 from core.validation import substitute_new_report_computed_task_if_needed
 from core.validation import validate_all_messages_identical
+from core.validation import validate_blender_script_parameters
 from core.validation import validate_ethereum_addresses
 from core.validation import validate_golem_message_subtask_results_rejected
 from core.validation import validate_reject_report_computed_task
@@ -1321,6 +1322,7 @@ def handle_send_subtask_results_verify(
     requestor_public_key = hex_to_bytes_convert(task_to_compute.requestor_public_key)
     provider_public_key = hex_to_bytes_convert(task_to_compute.provider_public_key)
     validate_task_to_compute(task_to_compute)
+    validate_blender_script_parameters(task_to_compute.compute_task_def['extra_data'])
     validate_golem_message_subtask_results_rejected(subtask_results_rejected)
     validate_that_golem_messages_are_signed_with_key(
         requestor_public_key,

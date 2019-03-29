@@ -1,4 +1,5 @@
 from base64 import b64encode
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -248,6 +249,7 @@ class ConcentIntegrationTestCase(TestCase):
         signer_private_key: Optional[bytes] = None,
         size: int = 1,
         frames: Optional[List[int]] = None,
+        render_parameters: Optional[Dict[str, Any]] = None
     ) -> TaskToCompute:
 
         """ Returns TaskToCompute deserialized. """
@@ -259,6 +261,13 @@ class ConcentIntegrationTestCase(TestCase):
                     'subtask_id': subtask_id,
                     'deadline': deadline,
                     'extra_data__frames': frames if frames is not None else [1],
+                    'extra_data__samples': render_parameters['samples'] if render_parameters is not None else 0,
+                    'extra_data__use_compositing': render_parameters['use_compositing'] if render_parameters is not None else False,
+                    'extra_data__resolution': render_parameters['resolution'] if render_parameters is not None else [400, 400],
+                    'extra_data__crops': render_parameters['crops'] if render_parameters is not None else [{
+                        'borders_x': [0.0, 1.0],
+                        'borders_y': [0.0, 1.0],
+                    }]
                 },
             )
         )

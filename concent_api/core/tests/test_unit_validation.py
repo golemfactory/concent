@@ -29,7 +29,13 @@ from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtas
 from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import generate_uuid_for_tests
-from core.validation import validate_all_messages_identical, validate_blender_output_format
+from core.validation import validate_all_messages_identical
+from core.validation import validate_blender_output_format
+from core.validation import validate_blender_script_parameters
+from core.validation import validate_crops
+from core.validation import validate_resolution
+from core.validation import validate_samples
+from core.validation import validate_use_compositing
 from core.validation import validate_compute_task_def
 from core.validation import validate_ethereum_addresses
 from core.validation import validate_frames
@@ -441,3 +447,212 @@ class TestValidateOutputFormat:
         with pytest.raises(ConcentValidationError) as exception_wrapper:
             validate_blender_output_format(unsupported_format)
         assert_that(exception_wrapper.value.error_code).is_equal_to(ErrorCode.MESSAGE_VALUE_NOT_ALLOWED)
+
+
+class TestValidateSceneResolution:
+
+    @pytest.mark.parametrize(
+        'resolution', [
+            '400x400',
+            [0, 0],
+            [100, 0],
+            [0, 100],
+            [-100, 100],
+            [100, -100],
+            ['100', 100],
+            [],
+            ['400x800'],
+            [71830.23, 1000],
+        ]
+    )  # pylint: disable=no-self-use
+    def test_that_invalid_resolution_value_raise_exception(self, resolution):
+        with pytest.raises(ConcentValidationError) as exception_wrapper:
+            validate_resolution(resolution)
+        assert_that(exception_wrapper.value.error_code).is_equal_to(ErrorCode.MESSAGE_INVALID)
+
+    @pytest.mark.parametrize(
+        'resolution', [
+            [1, 1],
+            [100000000, 100000000],
+        ]
+    )  # pylint: disable=no-self-use
+    def test_that_valid_resolution_value_doesnt_raise_exception(self, resolution):
+        try:
+            validate_resolution(resolution)
+        except Exception as exception:  # pylint: disable=broad-except
+            assert False, f"Unexpected exception has been raised: {str(exception)}"
+
+
+class TestValidateSceneUseCompositing:
+
+    @pytest.mark.parametrize(
+        'use_compositing', [
+            'True',
+            1,
+            [True]
+        ]
+    )  # pylint: disable=no-self-use
+    def test_that_invalid_use_compositing_value_raise_exception(self, use_compositing):
+        with pytest.raises(ConcentValidationError) as exception_wrapper:
+            validate_use_compositing(use_compositing)
+        assert_that(exception_wrapper.value.error_code).is_equal_to(ErrorCode.MESSAGE_INVALID)
+
+    @pytest.mark.parametrize(
+        'use_compositing', [
+            True,
+            False
+        ]
+    )  # pylint: disable=no-self-use
+    def test_that_valid_use_compositing_value_doesnt_raise_exception(self, use_compositing):
+        try:
+            validate_use_compositing(use_compositing)
+        except ConcentValidationError as exception:  # pylint: disable=broad-except
+            assert False, f"Unexpected exception has been raised: {str(exception)}"
+
+
+class TestValidateSceneSamples:
+
+    @pytest.mark.parametrize(
+        'samples', [
+            [1],
+            1.2,
+            '1',
+            -1,
+        ]
+    )  # pylint: disable=no-self-use
+    def test_that_invalid_samples_value_raise_exception(self, samples):
+        with pytest.raises(ConcentValidationError) as exception_wrapper:
+            validate_samples(samples)
+        assert_that(exception_wrapper.value.error_code).is_equal_to(ErrorCode.MESSAGE_INVALID)
+
+    @pytest.mark.parametrize(
+        'samples', [
+            0,
+            1,
+            1000000000,
+        ]
+    )  # pylint: disable=no-self-use
+    def test_that_valid_samples_value_doesnt_raise_exception(self, samples):
+        try:
+            validate_samples(samples)
+        except ConcentValidationError as exception:  # pylint: disable=broad-except
+            assert False, f"Unexpected exception has been raised: {str(exception)}"
+
+
+class TestValidateSceneCrop:
+
+    def create_crop_dict(self, borders_x, borders_y):  # pylint: disable=no-self-use
+        return dict(
+            borders_x=borders_x,
+            borders_y=borders_y,
+        )
+
+    @pytest.mark.parametrize(
+        ['borders_x', 'borders_y'], [
+            [[0.0, 1.0], [0.0, 1.0]],
+            [[0.71830, 1.0], [0.9, 1.0]],
+        ]
+    )
+    def test_that_valid_crops_value_doesnt_raise_exception(self, borders_x, borders_y):
+        try:
+            validate_crops([self.create_crop_dict(borders_x, borders_y)])
+        except ConcentValidationError as exception:  # pylint: disable=broad-except
+            assert False, f"Unexpected exception has been raised: {str(exception)}"
+
+    @pytest.mark.parametrize(
+        ['borders_x', 'borders_y'], [
+            [[0, 1], [0.0, 1.0]],
+            [[0.0, 1.0], [0, 1]],
+            [[1.0, 1.0], [0.0, 1.0]],
+            [[0.0, 1.0], [1.0, 1.0]],
+            [[0.5, 0.4], [0.0, 1.0]],
+            [[0.0, 1.0], [0.5, 0.4]],
+            [[1.0], [0.1, 0.0]],
+            [[0.0, 1.0], [1.0]],
+            [[], [0.0, 1.0]],
+            [[0.0, 1.0], []],
+            [(0.0, 1.0), [0.0, 1.0]],
+            [[0.0, 1.0], (0.0, 1.0)],
+            [None, [0.0, 1.0]],
+            [[0.0, 1.0], None],
+            [[0.0, 2.0], [0.0, 1.0]],
+            [[0.0, 1.0], [0.0, 2.0]],
+            [[-1.0, 1.0], [0.0, 1.0]],
+            [[0.0, 1.0], [-1.0, 1.0]],
+        ]
+    )
+    def test_that_invalid_borders_values_in_crops_dict_raise_exception(self, borders_x, borders_y):
+        with pytest.raises(ConcentValidationError) as exception_wrapper:
+            validate_crops([self.create_crop_dict(borders_x, borders_y)])
+        assert_that(exception_wrapper.value.error_code).is_equal_to(ErrorCode.MESSAGE_INVALID)
+
+    @pytest.mark.parametrize(
+        'crops', [
+            [
+                dict(borders_x=[0.0, 1.0], borders_y=[0.0, 1.0]),
+                dict(borders_x=[0.0, 1.0], borders_y=[0.0, 1.0]),
+            ],
+            (
+                dict(borders_x=[0.0, 1.0], borders_y=[0.0, 1.0]),
+            ),
+            [
+                dict(borders_x=[0.0, 1.0]),
+            ],
+            [
+                dict(borders_y=[0.0, 1.0]),
+            ]
+        ]
+    )  # pylint: disable=no-self-use
+    def test_that_invalid_crops_list_raise_exception(self, crops):
+        with pytest.raises(ConcentValidationError) as exception_wrapper:
+            validate_crops(crops)
+        assert_that(exception_wrapper.value.error_code).is_equal_to(ErrorCode.MESSAGE_INVALID)
+
+
+@mock.patch('core.validation.validate_use_compositing')
+@mock.patch('core.validation.validate_samples')
+@mock.patch('core.validation.validate_crops')
+@mock.patch('core.validation.validate_resolution')
+class TestValidateBlenderScriptParameters:
+
+    @pytest.fixture(autouse=True)
+    def _create_blender_script_parameters(self, resolution=None, use_compositing=None, samples=None, crops=None):  # pylint: disable=no-self-use
+        return dict(
+            resolution=resolution,
+            use_compositing=use_compositing,
+            samples=samples,
+            crops=crops,
+        )
+
+    def test_that_valid_extra_data_doesnt_raise_exception(self, mocked_use_compositing_validator, mocked_samples_validator, mocked_crops_validator, mocked_resolution_validator):
+        try:
+            validate_blender_script_parameters(self._create_blender_script_parameters())
+        except Exception as exception:  # pylint: disable=broad-except
+            assert False, f"Unexpected exception has been raised: {str(exception)}"
+
+        assert_that(mocked_use_compositing_validator.called).is_true()
+        assert_that(mocked_samples_validator.called).is_true()
+        assert_that(mocked_crops_validator.called).is_true()
+        assert_that(mocked_resolution_validator.called).is_true()
+
+    @pytest.mark.parametrize(
+        'field_to_delete', [
+            'resolution',
+            'use_compositing',
+            'samples',
+            'crops',
+        ]
+    )
+    def test_that_invalid_extra_data_raise_exception(self, mocked_use_compositing_validator, mocked_samples_validator, mocked_crops_validator, mocked_resolution_validator, field_to_delete):
+        extra_data = self._create_blender_script_parameters()
+        extra_data.pop(field_to_delete)
+
+        with pytest.raises(ConcentValidationError) as exception_wrapper:
+            validate_blender_script_parameters(extra_data)
+
+        assert_that(exception_wrapper.value.error_code).is_equal_to(ErrorCode.MESSAGE_INVALID)
+        assert_that(field_to_delete in exception_wrapper.value.error_message).is_true()
+        assert_that(mocked_use_compositing_validator.called).is_false()
+        assert_that(mocked_samples_validator.called).is_false()
+        assert_that(mocked_crops_validator.called).is_false()
+        assert_that(mocked_resolution_validator.called).is_false()

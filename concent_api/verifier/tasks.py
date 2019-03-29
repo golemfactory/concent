@@ -1,11 +1,11 @@
 import logging
 import os
+from typing import Dict
 from typing import List
 from typing import Union
 
 from celery import shared_task
 from golem_messages import message
-from mypy.types import Optional
 
 from conductor.models import BlenderSubtaskDefinition
 from core.transfer_operations import create_file_transfer_token_for_concent
@@ -47,7 +47,7 @@ def blender_verification_order(
     scene_file: str,
     verification_deadline: Union[int, float],
     frames: List[int],
-    blender_crop_script: Optional[str],
+    blender_crop_script_parameters: Dict[str, Union[int, List[float], bool]],
 ) -> None:
     log(
         logger,
@@ -69,6 +69,7 @@ def blender_verification_order(
     assert (source_size and source_package_hash and source_package_path) and (result_size and result_package_hash and result_package_path)
     assert isinstance(subtask_id, str)
     assert isinstance(verification_deadline, (int, float))
+    assert blender_crop_script_parameters is not None
 
     # Generate a FileTransferToken valid for a download of any file listed in the order.
     file_transfer_token = create_file_transfer_token_for_concent(
@@ -126,7 +127,7 @@ def blender_verification_order(
         scene_file=scene_file,
         subtask_id=subtask_id,
         verification_deadline=verification_deadline,
-        blender_crop_script=blender_crop_script,
+        blender_crop_script_parameters=blender_crop_script_parameters,
     )
 
     delete_source_files(package_paths_to_downloaded_archive_names[source_package_path], subtask_id)

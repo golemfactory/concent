@@ -1,5 +1,6 @@
 from logging import getLogger
 from typing import Any
+from typing import Dict
 from typing import Optional
 from typing import List
 from typing import Union
@@ -319,6 +320,113 @@ def validate_scene_file(scene_file: str) -> None:
             f'{scene_file} path must starts with one of {VALID_SCENE_FILE_PREFIXES} paths',
             ErrorCode.MESSAGE_INVALID
         )
+
+
+def validate_resolution(resolution: List[float]) -> None:
+    if not isinstance(resolution, list):
+        raise ConcentValidationError(
+            'resolution is not a list',
+            ErrorCode.MESSAGE_INVALID,
+        )
+    if len(resolution) != 2:
+        raise ConcentValidationError(
+            'resolution must contain exactly 2 values',
+            ErrorCode.MESSAGE_INVALID,
+        )
+    for element in resolution:
+        if not isinstance(element, int):
+            raise ConcentValidationError(
+                'resolution is not a list of integers',
+                ErrorCode.MESSAGE_INVALID,
+            )
+        if element <= 0:
+            raise ConcentValidationError(
+                'resolution must contain positive integers',
+                ErrorCode.MESSAGE_INVALID,
+            )
+
+
+def validate_use_compositing(use_compositing: bool) -> None:
+    if not isinstance(use_compositing, bool):
+        raise ConcentValidationError(
+            'use_compositing must be a boolean',
+            ErrorCode.MESSAGE_INVALID,
+        )
+
+
+def validate_samples(samples: int) -> None:
+    if not isinstance(samples, int):
+        raise ConcentValidationError(
+            'samples must be integer',
+            ErrorCode.MESSAGE_INVALID,
+        )
+    if samples < 0:
+        raise ConcentValidationError(
+            'samples must be bigger or equal zero',
+            ErrorCode.MESSAGE_INVALID,
+        )
+
+
+def validate_crops(crops: List[Dict[str, List[float]]]) -> None:
+    if not isinstance(crops, list):
+        raise ConcentValidationError(
+            "crops field in 'extra_data' must be a list",
+            ErrorCode.MESSAGE_INVALID,
+        )
+    if len(crops) != 1:
+        raise ConcentValidationError(
+            "crops field must contain exactly one dict with borders details",
+            ErrorCode.MESSAGE_INVALID,
+        )
+    crop_details = crops[0]
+    mandatory_fields = ['borders_x', 'borders_y']
+    for field in mandatory_fields:
+        if field not in crop_details:
+            raise ConcentValidationError(
+                f'{field} does not exist in crop_details dict',
+                ErrorCode.MESSAGE_INVALID,
+            )
+        if not isinstance(crop_details[field], list):
+            raise ConcentValidationError(
+                f'{field} is not a list',
+                ErrorCode.MESSAGE_INVALID,
+            )
+        if len(crop_details[field]) != 2:
+            raise ConcentValidationError(
+                f'{field} must have exactly 2 fields',
+                ErrorCode.MESSAGE_INVALID
+            )
+        for border in crop_details[field]:
+            if not isinstance(border, float):
+                raise ConcentValidationError(
+                    f'{field} must contain float borders',
+                    ErrorCode.MESSAGE_INVALID,
+                )
+            if border > 1.0 or border < 0.0:
+                raise ConcentValidationError(
+                    f'Border in {field} must has value between 0.0 and 1.0',
+                    ErrorCode.MESSAGE_INVALID,
+                )
+        if crop_details[field][0] >= crop_details[field][1]:
+            raise ConcentValidationError(
+                f'Minimum of {field} can not be bigger or equal maximum',
+                ErrorCode.MESSAGE_INVALID,
+            )
+
+
+def validate_blender_script_parameters(extra_data: Any) -> None:
+    mandatory_fields = ['resolution', 'use_compositing', 'samples', 'crops']
+
+    for field in mandatory_fields:
+        if field not in extra_data:
+            raise ConcentValidationError(
+                f"{field} is missing in 'extra_data' in ComputeTaskDef",
+                ErrorCode.MESSAGE_INVALID,
+            )
+    validate_resolution(extra_data['resolution'])
+    validate_use_compositing(extra_data['use_compositing'])
+    validate_samples(extra_data['samples'])
+    validate_crops(extra_data['crops'])
 
 
 def validate_compute_task_def(compute_task_def: message.tasks.ComputeTaskDef) -> None:

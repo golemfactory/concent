@@ -3,7 +3,11 @@ import math
 import random
 import uuid
 from logging import getLogger
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
+from typing import Union
 
 from django.conf import settings
 from django.http import HttpRequest
@@ -200,3 +204,13 @@ class BlocksHelper:
                 lowest = medium
         block = self._sci.get_block_by_number(highest)
         return block
+
+
+def extract_blender_parameters_from_compute_task_def(extra_data: Any) -> Dict[str, Union[List[float], bool, int]]:
+    return dict(
+        resolution=extra_data['resolution'],
+        samples=extra_data['samples'],
+        use_compositing=extra_data['use_compositing'],
+        borders_x=extra_data['crops'][0]['borders_x'],
+        borders_y=extra_data['crops'][0]['borders_y'],
+    )

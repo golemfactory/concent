@@ -1,9 +1,10 @@
 import logging
+from typing import Any
+from typing import Dict
 from typing import List
 
 from celery import shared_task
 from django.db import transaction
-from mypy.types import Optional
 
 from common.constants import ErrorCode
 from common.decorators import log_task_errors
@@ -21,6 +22,7 @@ from conductor.service import filter_frames_by_blender_subtask_definition
 from conductor.service import store_frames
 from conductor.service import store_verification_request_and_blender_subtask_definition
 from conductor.service import update_upload_report
+from conductor.utils import parse_blender_crop_script_parameters_to_dict_from_query
 from core import tasks
 from verifier.tasks import blender_verification_order
 
@@ -39,7 +41,7 @@ def blender_verification_request(
     scene_file: str,
     verification_deadline: int,
     frames: List[int],
-    blender_crop_script: Optional[str],
+    blender_crop_script_parameters: Dict[str, Any],
 ) -> None:
     log(
         logger,
@@ -50,7 +52,7 @@ def blender_verification_request(
         f'Scene_file: {scene_file}',
         f'Frames: {frames}',
         f'Verification_deadline: {verification_deadline}',
-        f'With blender_crop_script: {bool(blender_crop_script)}',
+        f'With blender_crop_script_parameters: {blender_crop_script_parameters}',
         subtask_id=subtask_id
     )
     assert isinstance(output_format, str)
@@ -67,7 +69,7 @@ def blender_verification_request(
         verification_deadline=verification_deadline,
         output_format=output_format,
         scene_file=scene_file,
-        blender_crop_script=blender_crop_script,
+        blender_parameters=blender_crop_script_parameters,
     )
 
     store_frames(
@@ -163,6 +165,7 @@ def upload_acknowledged(
     frames = filter_frames_by_blender_subtask_definition(verification_request.blender_subtask_definition)
 
     def call_blender_verification_order() -> None:
+        blender_crop_script_parameters = verification_request.blender_subtask_definition.blender_crop_script_parameters
         blender_verification_order.delay(
             subtask_id=verification_request.subtask_id,
             source_package_path=verification_request.source_package_path,
@@ -175,7 +178,8 @@ def upload_acknowledged(
             scene_file=verification_request.blender_subtask_definition.scene_file,
             verification_deadline=parse_datetime_to_timestamp(verification_request.verification_deadline),
             frames=frames,
-            blender_crop_script=verification_request.blender_subtask_definition.blender_crop_script,
+            blender_crop_script_parameters=parse_blender_crop_script_parameters_to_dict_from_query(
+                blender_crop_script_parameters),
         )
 
     transaction.on_commit(

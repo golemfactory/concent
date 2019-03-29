@@ -5,6 +5,8 @@ import os
 import sys
 import time
 from freezegun import freeze_time
+from typing import Any
+from typing import Dict
 from typing import Optional
 from mock import Mock
 
@@ -44,17 +46,17 @@ def get_subtask_results_verify(
     requestor_public_key: Optional[bytes] = None,
     requestor_private_key: Optional[bytes] = None,
     price: int = 1,
-    script_src: Optional[str] = None,
     is_verification_deadline_before_current_time: bool=False,
     additional_verification_call_time: int=0,
-    minimum_upload_rate: int=0
+    minimum_upload_rate: int=0,
+    render_parameters: Dict[str, Any]=None
 ) -> message.concents.SubtaskResultsVerify:
     task_to_compute = create_signed_task_to_compute(
         deadline=current_time,
         price=price if price is not None else 1,
         size=task_to_compute_size,
         package_hash=task_to_compute_package_hash,
-        script_src=script_src,
+        render_parameters=render_parameters,
         provider_public_key=provider_public_key if provider_public_key else sci_base.provider_public_key,
         provider_private_key=provider_private_key if provider_private_key else sci_base.provider_private_key,
         requestor_public_key=requestor_public_key if requestor_public_key else sci_base.requestor_public_key,
@@ -115,6 +117,16 @@ def calculate_verification_deadline(
     )
 
 
+def get_render_params() -> Dict[str, Any]:
+    return dict(
+        resolution=[1024, 768],
+        use_compositing=False,
+        samples=0,
+        borders_x=[0.0, 1.0],
+        borders_y=[0.0, 1.0],
+    )
+
+
 @count_fails
 def test_case_1_test_for_positive_case(cluster_consts: ProtocolConstants, cluster_url: str) -> None:  # pylint: disable=unused-argument
     receive_pending_messages_for_requestor_and_provider(
@@ -144,8 +156,8 @@ def test_case_1_test_for_positive_case(cluster_consts: ProtocolConstants, cluste
         report_computed_task_package_hash=result_file_checksum,
         task_to_compute_size=source_file_size,
         task_to_compute_package_hash=source_file_checksum,
-        script_src='# This template is rendered by\n# apps.blender.resources.scenefileeditor.generate_blender_crop_file(),\n# written to tempfile and passed as arg to blender.\nimport bpy\n\nclass EngineWarning(bpy.types.Operator):\n    bl_idname = "wm.engine_warning"\n    bl_label = "Inform about not supported rendering engine"\n\n    def execute(self, context):\n        self.report({"ERROR"}, "Engine " + bpy.context.scene.render.engine + \\\n                               " not supported by Golem")\n        return {"FINISHED"}\n\nclass ShowInformation(bpy.types.Operator):\n    bl_idname = "wm.scene_information"\n    bl_label = "Inform user about scene settings"\n\n\n    def execute(self, context):\n        self.report({"INFO"}, "Resolution: " +\n                              str(bpy.context.scene.render.resolution_x) +\n                               " x " +\n                               str(bpy.context.scene.render.resolution_y))\n        self.report({"INFO"}, "File format: " +\n                               str(bpy.context.scene.render.file_extension))\n        self.report({"INFO"}, "Filepath: " +\n                              str(bpy.context.scene.render.filepath))\n        self.report({"INFO"}, "Frames: " +\n                              str(bpy.context.scene.frame_start) + "-" +\n                              str(bpy.context.scene.frame_end) + ";" +\n                              str(bpy.context.scene.frame_step))\n\n        return {"FINISHED"}\n\n\nbpy.utils.register_class(EngineWarning)\nengine = bpy.context.scene.render.engine\nif engine not in ("BLENDER_RENDER", "CYCLES"):\n    bpy.ops.wm.engine_warning()\n\nbpy.utils.register_class(ShowInformation)\nbpy.ops.wm.scene_information()\n\n\nfor scene in bpy.data.scenes:\n\n    scene.render.tile_x = 0\n    scene.render.tile_y = 0\n    scene.render.resolution_x = 1024\n    scene.render.resolution_y = 768\n    scene.render.resolution_percentage = 100\n    scene.render.use_border = True\n    scene.render.use_crop_to_border = True\n    scene.render.border_max_x = 1.0\n    scene.render.border_min_x = 0.0\n    scene.render.border_min_y = 0.0\n    scene.render.border_max_y = 1.0\n    scene.render.use_compositing = bool(False)\n\n#and check if additional files aren\'t missing\nbpy.ops.file.report_missing_files()\n',
         price=10000,
+        render_parameters=get_render_params()
     )
 
     ack_subtask_results_verify = api_request(
@@ -252,6 +264,7 @@ def test_case_2_test_for_resources_failure_reason(cluster_consts: ProtocolConsta
             report_computed_task_package_hash=file_check_sum,
             task_to_compute_size=file_size,
             task_to_compute_package_hash=file_check_sum,
+            render_parameters=get_render_params()
         ),
         expected_status=200,
         expected_message_type=message.concents.ServiceRefused,
@@ -287,6 +300,7 @@ def test_case_3_test_for_invalid_time(cluster_consts: ProtocolConstants, cluster
             is_verification_deadline_before_current_time=True,
             additional_verification_call_time=cluster_consts.additional_verification_call_time,
             minimum_upload_rate=cluster_consts.minimum_upload_rate,
+            render_parameters=get_render_params()
         ),
         expected_status=200,
         expected_message_type=message.concents.ServiceRefused,
@@ -317,6 +331,7 @@ def test_case_4_test_for_duplicated_request(cluster_consts: ProtocolConstants, c
         report_computed_task_package_hash=result_file_check_sum_1,
         task_to_compute_size=source_file_size_2,
         task_to_compute_package_hash=source_file_check_sum_2,
+        render_parameters=get_render_params()
     )
 
     api_request(
@@ -377,7 +392,8 @@ def test_case_5_test_requestor_status_account_negative(cluster_consts: ProtocolC
             provider_private_key=sci_base.provider_empty_account_private_key,
             requestor_public_key=sci_base.requestor_empty_account_public_key,
             requestor_private_key=sci_base.requestor_empty_account_private_key,
-            price=1000
+            price=1000,
+            render_parameters=get_render_params()
         ),
         expected_status=200,
         expected_message_type=message.concents.ServiceRefused,
@@ -386,15 +402,13 @@ def test_case_5_test_requestor_status_account_negative(cluster_consts: ProtocolC
 
 
 @count_fails
-def test_case_6_test_without_script_src_in(cluster_consts: ProtocolConstants, cluster_url: str) -> None:  # pylint: disable=unused-argument
+def test_case_6_test_with_invalid_blender_script_parameters(cluster_consts: ProtocolConstants, cluster_url: str) -> None:  # pylint: disable=unused-argument
     receive_pending_messages_for_requestor_and_provider(
         cluster_url,
         sci_base,
         CONCENT_PUBLIC_KEY
     )
     current_time = get_current_utc_timestamp()
-    provider_gntb_balance = sci_base.get_provider_gntb_balance()
-    requestor_deposit_value = sci_base.get_requestor_deposit_value()
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(current_dir, 'tests_resources', 'source.zip'), 'rb') as archive:
@@ -407,7 +421,7 @@ def test_case_6_test_without_script_src_in(cluster_consts: ProtocolConstants, cl
     result_file_checksum = 'sha1:' + hashlib.sha1(result_file_content).hexdigest()
     source_file_checksum = 'sha1:' + hashlib.sha1(source_file_content).hexdigest()
 
-    subtask_results_verify= get_subtask_results_verify(
+    subtask_results_verify=get_subtask_results_verify(
         current_time,
         reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
         report_computed_task_size=result_file_size,
@@ -417,84 +431,21 @@ def test_case_6_test_without_script_src_in(cluster_consts: ProtocolConstants, cl
         price=1000,
     )
 
-    ack_subtask_results_verify = api_request(
+    # Setting parameters which are necessary for proper blender work to invalid values
+    subtask_results_verify.task_to_compute.compute_task_def['extra_data']['crops'] = None
+    subtask_results_verify.task_to_compute.compute_task_def['extra_data']['resolution'] = None
+    subtask_results_verify.task_to_compute.compute_task_def['extra_data']['samples'] = None
+    subtask_results_verify.task_to_compute.compute_task_def['extra_data']['use_compositing'] = None
+
+    api_request(
         cluster_url,
         'send',
         sci_base.provider_private_key,
         CONCENT_PUBLIC_KEY,
         subtask_results_verify,
-        expected_status=200,
-        expected_message_type=message.concents.AckSubtaskResultsVerify,
-        expected_content_type='application/octet-stream',
+        expected_status=400,
+        expected_error_code='message.invalid',
     )
-
-    response = upload_file_to_storage_cluster(
-        result_file_content,
-        ack_subtask_results_verify.file_transfer_token.files[0]['path'],  # type: ignore
-        ack_subtask_results_verify.file_transfer_token,  # type: ignore
-        sci_base.provider_private_key,
-        sci_base.provider_public_key,
-        CONCENT_PUBLIC_KEY,
-        STORAGE_CLUSTER_ADDRESS,
-    )
-    assert_condition(response.status_code, 200, 'File has not been stored on cluster')
-    print('\nUploaded file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(
-        subtask_results_verify.task_id,
-        result_file_checksum,
-        result_file_size
-    ))
-
-    response = upload_file_to_storage_cluster(
-        source_file_content,
-        ack_subtask_results_verify.file_transfer_token.files[1]['path'],  # type: ignore
-        ack_subtask_results_verify.file_transfer_token,  # type: ignore
-        sci_base.provider_private_key,
-        sci_base.provider_public_key,
-        CONCENT_PUBLIC_KEY,
-        STORAGE_CLUSTER_ADDRESS,
-    )
-    assert_condition(response.status_code, 200, 'File has not been stored on cluster')
-    print('\nUploaded file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(
-        subtask_results_verify.task_id,
-        source_file_checksum,
-        source_file_size
-    ))
-
-    # Adding calculated number of seconds to time sleep makes us sure that subtask is after deadline.
-    sleep_time = calculate_verification_deadline(
-        subtask_results_verify.subtask_results_rejected.timestamp,
-        cluster_consts.additional_verification_call_time,
-        subtask_results_verify.subtask_results_rejected.report_computed_task.size,
-        cluster_consts.minimum_upload_rate,
-    ) - current_time
-    print(f"Going to sleep for {sleep_time} secs...")
-    time.sleep(
-        sleep_time
-    )
-
-    api_request(
-        cluster_url,
-        'receive',
-        sci_base.requestor_private_key,
-        CONCENT_PUBLIC_KEY,
-        create_client_auth_message(sci_base.requestor_private_key, sci_base.requestor_public_key, CONCENT_PUBLIC_KEY),
-        expected_status=200,
-        expected_message_type=message.concents.SubtaskResultsSettled,
-        expected_content_type='application/octet-stream',
-    )
-
-    api_request(
-        cluster_url,
-        'receive',
-        sci_base.provider_private_key,
-        CONCENT_PUBLIC_KEY,
-        create_client_auth_message(sci_base.provider_private_key, sci_base.provider_public_key, CONCENT_PUBLIC_KEY),
-        expected_status=200,
-        expected_message_type=message.concents.SubtaskResultsSettled,
-        expected_content_type='application/octet-stream',
-    )
-    sci_base.ensure_that_provider_has_specific_gntb_balance(value=provider_gntb_balance + 1000)
-    sci_base.ensure_that_requestor_has_specific_deposit_balance(value=requestor_deposit_value - 1000)
 
 
 if __name__ == '__main__':

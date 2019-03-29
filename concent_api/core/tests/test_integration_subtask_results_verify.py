@@ -23,6 +23,7 @@ from core.tests.utils import add_time_offset_to_date
 from core.tests.utils import ConcentIntegrationTestCase
 from core.tests.utils import parse_iso_date_to_timestamp
 from core.transfer_operations import create_file_transfer_token_for_verification_use_case
+from core.utils import extract_blender_parameters_from_compute_task_def
 from core.utils import extract_name_from_scene_file_path
 from core.utils import hex_to_bytes_convert
 
@@ -430,7 +431,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 self.report_computed_task.size,
                 self.report_computed_task.task_to_compute,
             ),
-            blender_crop_script=self.report_computed_task.task_to_compute.compute_task_def['extra_data']['script_src'],
+            blender_crop_script_parameters=extract_blender_parameters_from_compute_task_def(self.report_computed_task.task_to_compute.compute_task_def['extra_data']),
         )
 
         # then
@@ -682,7 +683,16 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 'extra_data__scene_file': '/golem/resources/scene-Helicopter-27-internal.blend',
                 'extra_data__script_src': '# This template is rendered by',
                 'extra_data__start_task': 6,
-                'extra_data__total_tasks': 8
+                'extra_data__total_tasks': 8,
+                'extra_data__samples': 0,
+                'extra_data__use_compositing': False,
+                'extra_data__resolution': [400, 400],
+                'extra_data__crops': [
+                    {
+                        'borders_x': [0.0, 1.0],
+                        'borders_y': [0.0, 1.0],
+                    }
+                ]
             },
         )
         self.task_to_compute = self._get_deserialized_task_to_compute(

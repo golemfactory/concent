@@ -1,5 +1,3 @@
-import sys
-
 import hashlib
 from base64 import b64encode
 from typing import Dict
@@ -36,7 +34,6 @@ from verifier.exceptions import VerificationMismatch
 from .constants import UNPACK_CHUNK_SIZE
 
 
-sys.path.append('/golem/entrypoints/scripts/render_tools')
 logger = logging.getLogger(__name__)
 crash_logger = logging.getLogger('concent.crash')
 FramesToParsedFilePaths = Dict[int, List[str]]

@@ -23,3 +23,7 @@ cd ..
 printf "=================== INSTALL REQUIREMENTS DEVELOPMENT ====================\n"
 pip install -r requirements-development.txt
 printf "\n"
+
+printf "=================== DOWNLOAD RENDER_TOOLS FROM GOLEM REPOSITORY ====================\n"
+./download-render-tools-from-golem-repository.sh
+printf "\n"

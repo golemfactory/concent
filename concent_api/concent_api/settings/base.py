@@ -370,3 +370,6 @@ SCI_CALLBACK_RETRIES_TIME = 60
 
 # Define chain where PaymentInterface has to connect to geth
 # ETHEREUM_CHAIN =
+
+# Define dir where render_tools from golem repository should be stored
+# BLENDER_RENDER_TOOLS_DIR = ''

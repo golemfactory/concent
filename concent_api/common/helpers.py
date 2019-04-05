@@ -181,7 +181,8 @@ def upload_file_to_storage_cluster(
             ),
         ).decode(),
         'Concent-Upload-Path': file_path,
-        'Content-Type': 'application/octet-stream'
+        'Content-Type': 'application/octet-stream',
+        'X-Golem-Messages': settings.GOLEM_MESSAGES_VERSION,
     }
     return requests.post(
         f"{storage_cluster_address if storage_cluster_address is not None else settings.STORAGE_CLUSTER_ADDRESS}upload/",

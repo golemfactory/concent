@@ -55,7 +55,6 @@ class ApiViewTestCase(TestCase):
             "price":                self.want_to_compute.price,                 # pylint: disable=no-member
             "max_resource_size":    self.want_to_compute.max_resource_size,     # pylint: disable=no-member
             "max_memory_size":      self.want_to_compute.max_memory_size,       # pylint: disable=no-member
-            "num_cores":            self.want_to_compute.num_cores,             # pylint: disable=no-member
         }
         deadline_offset = 10
         message_timestamp = get_current_utc_timestamp() + deadline_offset

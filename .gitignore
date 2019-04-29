@@ -108,7 +108,7 @@ ENV/
 *.sw[ponm]
 
 # Version
-/RELEASE-VERSION
+RELEASE-VERSION
 
 # Version
 /concent_api/verifier_storage

@@ -436,6 +436,7 @@ def create_signed_task_to_compute(
             package_hash=package_hash,
         )
         task_to_compute.generate_ethsig(requestor_private_key)
+        task_to_compute.sign_promissory_note(requestor_private_key)
         signed_task_to_compute: TaskToCompute = sign_message(task_to_compute, requestor_private_key)  # type: ignore
         return signed_task_to_compute
 

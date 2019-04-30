@@ -33,7 +33,9 @@ from core.utils import hex_to_bytes_convert
 
 (CONCENT_PRIVATE_KEY,   CONCENT_PUBLIC_KEY)   = generate_ecc_key_pair()
 (PROVIDER_PRIVATE_KEY,  PROVIDER_PUBLIC_KEY)  = generate_ecc_key_pair()
+(PROVIDER_ETHEREUM_PRIVATE_KEY,  PROVIDER_ETHERUM_PUBLIC_KEY)  = generate_ecc_key_pair()
 (REQUESTOR_PRIVATE_KEY, REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
+(REQUESTOR_ETHEREUM_PRIVATE_KEY,  REQUESTOR_ETHERUM_PUBLIC_KEY)  = generate_ecc_key_pair()
 
 
 class CustomException(Exception):
@@ -209,14 +211,18 @@ class ApiViewTransactionTestCase(TransactionTestCase):
         self.compute_task_def['deadline'] = message_timestamp
         want_to_compute_task = WantToComputeTaskFactory(
             provider_public_key=encode_hex(PROVIDER_PUBLIC_KEY),
+            provider_ethereum_public_key=encode_hex(PROVIDER_ETHERUM_PUBLIC_KEY)
         )
         want_to_compute_task = sign_message(want_to_compute_task, PROVIDER_PRIVATE_KEY)
         task_to_compute = tasks.TaskToComputeFactory(
             compute_task_def=self.compute_task_def,
             requestor_public_key=encode_hex(REQUESTOR_PUBLIC_KEY),
+            requestor_ethereum_public_key=encode_hex(REQUESTOR_ETHERUM_PUBLIC_KEY),
             want_to_compute_task=want_to_compute_task,
             price=1,
         )
+        task_to_compute.generate_ethsig(REQUESTOR_ETHEREUM_PRIVATE_KEY)
+        task_to_compute.sign_promissory_note(REQUESTOR_ETHEREUM_PRIVATE_KEY)
         self.task_to_compute = load(
             dump(
                 task_to_compute,

@@ -305,8 +305,9 @@ class ConcentIntegrationTestCase(TestCase):
             )
         self._generate_ethereum_signature(
             task_to_compute,
-            requestor_ethereum_private_key,
+            requestor_ethereum_private_key if requestor_ethereum_private_key is not None else self.REQUESTOR_PRIV_ETH_KEY,
         )
+        task_to_compute.sign_promissory_note(requestor_ethereum_private_key if requestor_ethereum_private_key is not None else self.REQUESTOR_PRIV_ETH_KEY)
         task_to_compute = self._sign_message(
             task_to_compute,
             signer_private_key,

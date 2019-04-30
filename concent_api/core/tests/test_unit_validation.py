@@ -412,7 +412,10 @@ class TestValidateTaskToCompute(object):
 
     @pytest.fixture(autouse=True)
     def setUp(self):
-        self.task_to_compute = TaskToComputeFactory()
+        (REQUESTOR_ETHEREUM_PRIVATE_KEY, REQUESTOR_ETHERUM_PUBLIC_KEY) = generate_ecc_key_pair()
+        self.task_to_compute = TaskToComputeFactory(requestor_ethereum_public_key=encode_hex(REQUESTOR_ETHERUM_PUBLIC_KEY))
+        self.task_to_compute.generate_ethsig(REQUESTOR_ETHEREUM_PRIVATE_KEY)
+        self.task_to_compute.sign_promissory_note(REQUESTOR_ETHEREUM_PRIVATE_KEY)
 
     def test_that_valid_task_to_compute_doesnt_raise_any_exception(self):
         try:

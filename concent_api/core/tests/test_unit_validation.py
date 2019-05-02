@@ -2,6 +2,7 @@ from unittest import TestCase
 from assertpy import assert_that
 import mock
 import pytest
+from freezegun import freeze_time
 
 from golem_messages.factories.concents import SubtaskResultsVerifyFactory
 from golem_messages.factories.tasks import ComputeTaskDefFactory
@@ -234,22 +235,23 @@ class TestAreEthereumAddressesAndKeysUnique(TestCase):
         subtask_1_signed_by=REQUESTOR_PRIVATE_KEY,
         subtask_2_signed_by=REQUESTOR_PRIVATE_KEY,
     ) -> list:
-        subtask_results_accepted_1 = SubtaskResultsAcceptedFactory(
-            report_computed_task=ReportComputedTaskFactory(
-                task_to_compute=task_to_compute_1
+        with freeze_time():
+            subtask_results_accepted_1 = SubtaskResultsAcceptedFactory(
+                report_computed_task=ReportComputedTaskFactory(
+                    task_to_compute=task_to_compute_1
+                )
             )
-        )
-        sign_message(subtask_results_accepted_1, subtask_1_signed_by)
-        subtask_results_accepted_2 = SubtaskResultsAcceptedFactory(
-            report_computed_task=ReportComputedTaskFactory(
-                task_to_compute=task_to_compute_2
+            sign_message(subtask_results_accepted_1, subtask_1_signed_by)
+            subtask_results_accepted_2 = SubtaskResultsAcceptedFactory(
+                report_computed_task=ReportComputedTaskFactory(
+                    task_to_compute=task_to_compute_2
+                )
             )
-        )
-        sign_message(subtask_results_accepted_2, subtask_2_signed_by)
-        subtask_results_accepted_list = [
-            subtask_results_accepted_1,
-            subtask_results_accepted_2,
-        ]
+            sign_message(subtask_results_accepted_2, subtask_2_signed_by)
+            subtask_results_accepted_list = [
+                subtask_results_accepted_1,
+                subtask_results_accepted_2,
+            ]
         return subtask_results_accepted_list
 
     def test_that_if_the_same_values_given_method_should_return_true(self):

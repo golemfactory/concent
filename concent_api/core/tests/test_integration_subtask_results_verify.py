@@ -28,6 +28,7 @@ from core.utils import extract_name_from_scene_file_path
 from core.utils import hex_to_bytes_convert
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
+GNT_DEPOSIT_CONTRACT_ADDRESS = '0xcfB81A6EE3ae6aD4Ac59ddD21fB4589055c13DaD'
 
 
 @override_settings(
@@ -39,6 +40,7 @@ from core.utils import hex_to_bytes_convert
     ADDITIONAL_VERIFICATION_CALL_TIME=3600,
     BLENDER_THREADS=1,
     CONCENT_ETHEREUM_PUBLIC_KEY='b51e9af1ae9303315ca0d6f08d15d8fbcaecf6958f037cc68f9ec18a77c6f63eae46daaba5c637e06a3e4a52a2452725aafba3d4fda4e15baf48798170eb7412',
+    GNT_DEPOSIT_CONTRACT_ADDRESS=GNT_DEPOSIT_CONTRACT_ADDRESS,
 )
 class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
     def setUp(self):
@@ -388,6 +390,33 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         )
         self._assert_stored_message_counter_not_increased()
 
+    def test_that_concet_responds_with_http400_when_request_has_invalid_concent_promissary_note(self):
+        """"
+        Provider -> Concent: SubtaskResultsVerify
+        Concent -> Provider: Http400
+        """
+        # given
+        (serialized_subtask_results_verify,
+         subtask_results_verify_time_str) = self._create_serialized_subtask_results_verify(
+            key_for_promissary_note=self.DIFFERENT_PROVIDER_PRIVATE_KEY,
+        )
+
+        # when
+        with freeze_time(subtask_results_verify_time_str):
+            response =self.send_request(
+                url='core:send',
+                data=serialized_subtask_results_verify,
+                HTTP_CONCENT_CLIENT_PUBLIC_KEY=self._get_encoded_provider_public_key(),
+                HTTP_CONCENT_OTHER_PARTY_PUBLIC_KEY=self._get_encoded_requestor_public_key(),
+            )
+
+        # then
+        self._test_400_response(
+            response,
+            error_code=ErrorCode.MESSAGE_INVALID
+        )
+        self._assert_stored_message_counter_not_increased()
+
     def test_that_concent_accepts_valid_request_and_sends_verification_order_to_work_queue(self):
         """
         Provider -> Concent: SubtaskResultsVerify
@@ -495,11 +524,17 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 parse_datetime_to_timestamp(subtask.next_deadline) + 1
             )
         ):
-            serialized_subtask_results_verify = self._get_serialized_subtask_results_verify(
-                subtask_results_verify=self._get_deserialized_subtask_results_verify(
-                    subtask_results_rejected=subtask_results_rejected
-                )
+            subtask_results_verify = self._get_deserialized_subtask_results_verify(
+                subtask_results_rejected=subtask_results_rejected
             )
+            subtask_results_verify.sign_concent_promissory_note(
+                GNT_DEPOSIT_CONTRACT_ADDRESS,
+                self.PROVIDER_PRIVATE_KEY,
+            )
+            serialized_subtask_results_verify = self._get_serialized_subtask_results_verify(
+                subtask_results_verify=subtask_results_verify
+            )
+
             response =self.send_request(
                 url='core:send',
                 data=serialized_subtask_results_verify,
@@ -646,6 +681,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         reason_of_rejection=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
         time_offset=None,
         key=None,
+        key_for_promissary_note=None,
     ):
         if time_offset is None:
             time_offset = (self.compute_task_def['deadline'] - self.task_to_compute.timestamp)
@@ -664,6 +700,11 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
         subtask_results_verify = self._get_deserialized_subtask_results_verify(
             timestamp=subtask_results_verify_time_str,
             subtask_results_rejected=subtask_results_rejected)
+
+        subtask_results_verify.sign_concent_promissory_note(
+            GNT_DEPOSIT_CONTRACT_ADDRESS,
+            key_for_promissary_note if key_for_promissary_note is not None else self.PROVIDER_PRIVATE_KEY,
+        )
 
         serialized_subtask_results_verify = self._get_serialized_subtask_results_verify(
             subtask_results_verify=subtask_results_verify

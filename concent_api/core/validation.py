@@ -12,6 +12,7 @@ from django.core.exceptions import ValidationError
 
 from golem_messages import message
 from golem_messages.exceptions import MessageError
+from golem_messages.message.concents import SubtaskResultsVerify
 from golem_messages.message.tasks import RejectReportComputedTask
 from golem_messages.message.tasks import ReportComputedTask
 from golem_messages.message.tasks import SubtaskResultsAccepted
@@ -111,6 +112,14 @@ def validate_task_to_compute(task_to_compute: message.TaskToCompute) -> None:
     validate_hex_public_key(task_to_compute.requestor_public_key, 'requestor_public_key')
     validate_secure_hash_algorithm(task_to_compute.package_hash)
     validate_positive_task_price(task_to_compute.price)
+
+
+def validate_subtask_results_verify(msg: SubtaskResultsVerify, deposit_contract_address: str) -> None:
+    if not msg.verify_concent_promissory_note(deposit_contract_address):
+        raise ConcentValidationError(
+            "The signature of the PromissiryNote for Concent is incorrect",
+            error_code=ErrorCode.MESSAGE_INVALID,
+        )
 
 
 def validate_report_computed_task_time_window(report_computed_task: message.ReportComputedTask) -> None:

@@ -32,8 +32,6 @@ from core.utils import calculate_maximum_download_time
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
 
-#  TODO NEGATIVE TEST CASES
-
 def get_subtask_results_verify(
     current_time: int,
     reason: message.tasks.SubtaskResultsRejected.REASON,
@@ -46,10 +44,10 @@ def get_subtask_results_verify(
     requestor_public_key: Optional[bytes] = None,
     requestor_private_key: Optional[bytes] = None,
     price: int = 1,
-    is_verification_deadline_before_current_time: bool=False,
-    additional_verification_call_time: int=0,
-    minimum_upload_rate: int=0,
-    render_parameters: Dict[str, Any]=None
+    is_verification_deadline_before_current_time: bool = False,
+    additional_verification_call_time: int = 0,
+    minimum_upload_rate: int = 0,
+    render_parameters: Dict[str, Any] = None
 ) -> message.concents.SubtaskResultsVerify:
     task_to_compute = create_signed_task_to_compute(
         deadline=current_time,
@@ -98,6 +96,10 @@ def get_subtask_results_verify(
             subtask_results_rejected=subtask_results_rejected,
         )
 
+        subtask_results_verify.sign_concent_promissory_note(
+            deposit_contract_address=GNT_DEPOSIT_CONTRACT_ADDRESS,
+            private_key=provider_private_key or sci_base.provider_private_key,
+        )
     return subtask_results_verify
 
 
@@ -452,6 +454,7 @@ if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
         from concent_api.settings import STORAGE_CLUSTER_ADDRESS
+        from concent_api.settings import GNT_DEPOSIT_CONTRACT_ADDRESS
         # Dirty workaround for init `sci_base` variable to hide errors in IDE.
         # sci_base is initiated in `run_tests` function
         sci_base = Mock()

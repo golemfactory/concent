@@ -51,7 +51,6 @@ from common.helpers import parse_datetime_to_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from common.helpers import sign_message
 from common.testing_helpers import generate_ecc_key_pair
-from common.testing_helpers import generate_priv_and_pub_eth_account_key
 
 from core.constants import MOCK_TRANSACTION_HASH
 from core.models import Client
@@ -95,14 +94,10 @@ class ConcentIntegrationTestCase(TestCase):
         super().setUp()
 
         # Keys
-        (self.PROVIDER_PRIVATE_KEY,                 self.PROVIDER_PUBLIC_KEY)               = generate_ecc_key_pair()
-        (self.REQUESTOR_PRIVATE_KEY,                self.REQUESTOR_PUBLIC_KEY)              = generate_ecc_key_pair()
-        (self.DIFFERENT_PROVIDER_PRIVATE_KEY,       self.DIFFERENT_PROVIDER_PUBLIC_KEY)     = generate_ecc_key_pair()
-        (self.DIFFERENT_REQUESTOR_PRIVATE_KEY,      self.DIFFERENT_REQUESTOR_PUBLIC_KEY)    = generate_ecc_key_pair()
-        (self.PROVIDER_PRIV_ETH_KEY,                self.PROVIDER_PUB_ETH_KEY)              = generate_priv_and_pub_eth_account_key()
-        (self.REQUESTOR_PRIV_ETH_KEY,               self.REQUESTOR_PUB_ETH_KEY)             = generate_priv_and_pub_eth_account_key()
-        (self.DIFFERENT_PROVIDER_PRIV_ETH_KEY,      self.DIFFERENT_PROVIDER_PUB_ETH_KEY)    = generate_priv_and_pub_eth_account_key()
-        (self.DIFFERENT_REQUESTOR_PRIV_ETH_KEY,     self.DIFFERENT_REQUESTOR_PUB_ETH_KEY)   = generate_priv_and_pub_eth_account_key()
+        (self.PROVIDER_PRIVATE_KEY, self.PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
+        (self.REQUESTOR_PRIVATE_KEY, self.REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
+        (self.DIFFERENT_PROVIDER_PRIVATE_KEY, self.DIFFERENT_PROVIDER_PUBLIC_KEY) = generate_ecc_key_pair()
+        (self.DIFFERENT_REQUESTOR_PRIVATE_KEY, self.DIFFERENT_REQUESTOR_PUBLIC_KEY) = generate_ecc_key_pair()
 
         # StoredMessage
         self.stored_message_counter = 0
@@ -128,27 +123,27 @@ class ConcentIntegrationTestCase(TestCase):
 
     def _get_requestor_ethereum_private_key(self):
         """ Return requestor private ethereum key """
-        return self.REQUESTOR_PRIV_ETH_KEY
+        return self.REQUESTOR_PRIVATE_KEY
 
     def _get_requestor_ethereum_hex_public_key(self):
         """ Returns requestor ethereum public key encoded. """
-        return encode_hex(self.REQUESTOR_PUB_ETH_KEY)
+        return encode_hex(self.REQUESTOR_PUBLIC_KEY)
 
     def _get_requestor_ethereum_hex_public_key_different(self):
         """ Returns requestor ethereum public key encoded. """
-        return encode_hex(self.DIFFERENT_REQUESTOR_PUB_ETH_KEY)
+        return encode_hex(self.DIFFERENT_REQUESTOR_PUBLIC_KEY)
 
     def _get_provider_ethereum_private_key(self):
         """ Returns provider ethereum private key """
-        return self.PROVIDER_PRIV_ETH_KEY
+        return self.PROVIDER_PRIVATE_KEY
 
     def _get_provider_ethereum_hex_public_key(self):
         """ Returns provider ethereum address """
-        return encode_hex(self.PROVIDER_PUB_ETH_KEY)
+        return encode_hex(self.PROVIDER_PUBLIC_KEY)
 
     def _get_provider_ethereum_hex_public_key_different(self):
         """ Returns provider ethereum diffrent address """
-        return encode_hex(self.DIFFERENT_PROVIDER_PUB_ETH_KEY)
+        return encode_hex(self.DIFFERENT_PROVIDER_PUBLIC_KEY)
 
     def _get_provider_hex_public_key(self):
         """ Returns provider hex public key """
@@ -177,7 +172,7 @@ class ConcentIntegrationTestCase(TestCase):
         assert isinstance(task_to_compute, TaskToCompute)
         assert requestor_ethereum_private_key is None or isinstance(requestor_ethereum_private_key, bytes)
         task_to_compute.generate_ethsig(
-            requestor_ethereum_private_key if requestor_ethereum_private_key is not None else self.REQUESTOR_PRIV_ETH_KEY
+            requestor_ethereum_private_key if requestor_ethereum_private_key is not None else self.REQUESTOR_PRIVATE_KEY
         )
 
     def _get_serialized_force_get_task_result(
@@ -305,8 +300,9 @@ class ConcentIntegrationTestCase(TestCase):
             )
         self._generate_ethereum_signature(
             task_to_compute,
-            requestor_ethereum_private_key,
+            requestor_ethereum_private_key if requestor_ethereum_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
         )
+        task_to_compute.sign_promissory_note(requestor_ethereum_private_key if requestor_ethereum_private_key is not None else self.REQUESTOR_PRIVATE_KEY)
         task_to_compute = self._sign_message(
             task_to_compute,
             signer_private_key,

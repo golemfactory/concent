@@ -155,7 +155,7 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
                         timestamp="2018-02-05 9:00:00",
                         deadline="2018-02-05 9:00:10",
                         requestor_ethereum_public_key=self._get_requestor_ethereum_hex_public_key_different(),
-                        requestor_ethereum_private_key=self.DIFFERENT_REQUESTOR_PRIV_ETH_KEY,
+                        requestor_ethereum_private_key=self.DIFFERENT_REQUESTOR_PRIVATE_KEY,
                         subtask_id=self._get_uuid('2'),
                     )
                 )

@@ -77,6 +77,7 @@ from core.validation import validate_ethereum_addresses
 from core.validation import validate_golem_message_subtask_results_rejected
 from core.validation import validate_reject_report_computed_task
 from core.validation import validate_report_computed_task_time_window
+from core.validation import validate_subtask_results_verify
 from core.validation import validate_task_to_compute
 from core.validation import validate_that_golem_messages_are_signed_with_key
 
@@ -1333,6 +1334,8 @@ def handle_send_subtask_results_verify(
         report_computed_task,
         task_to_compute.want_to_compute_task
     )
+
+    validate_subtask_results_verify(subtask_results_verify, settings.GNT_DEPOSIT_CONTRACT_ADDRESS)
 
     if subtask_results_rejected.reason != SubtaskResultsRejected.REASON.VerificationNegative:
         return message.concents.ServiceRefused(

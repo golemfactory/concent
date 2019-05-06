@@ -2,12 +2,15 @@ from unittest import TestCase
 from assertpy import assert_that
 import mock
 import pytest
+from freezegun import freeze_time
 
+from golem_messages.factories.concents import SubtaskResultsVerifyFactory
 from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.factories.tasks import SubtaskResultsAcceptedFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.factories.tasks import WantToComputeTaskFactory
+from golem_messages.message.concents import SubtaskResultsVerify
 from golem_messages.message.tasks import ReportComputedTask
 from golem_messages.message.tasks import SubtaskResultsRejected
 from golem_messages.message.tasks import TaskToCompute
@@ -44,6 +47,7 @@ from core.validation import validate_positive_task_price
 from core.validation import validate_non_negative_integer_value
 from core.validation import validate_positive_integer_value
 from core.validation import validate_scene_file
+from core.validation import validate_subtask_results_verify
 from core.validation import validate_task_to_compute
 from core.validation import validate_uuid
 
@@ -231,22 +235,23 @@ class TestAreEthereumAddressesAndKeysUnique(TestCase):
         subtask_1_signed_by=REQUESTOR_PRIVATE_KEY,
         subtask_2_signed_by=REQUESTOR_PRIVATE_KEY,
     ) -> list:
-        subtask_results_accepted_1 = SubtaskResultsAcceptedFactory(
-            report_computed_task=ReportComputedTaskFactory(
-                task_to_compute=task_to_compute_1
+        with freeze_time():
+            subtask_results_accepted_1 = SubtaskResultsAcceptedFactory(
+                report_computed_task=ReportComputedTaskFactory(
+                    task_to_compute=task_to_compute_1
+                )
             )
-        )
-        sign_message(subtask_results_accepted_1, subtask_1_signed_by)
-        subtask_results_accepted_2 = SubtaskResultsAcceptedFactory(
-            report_computed_task=ReportComputedTaskFactory(
-                task_to_compute=task_to_compute_2
+            sign_message(subtask_results_accepted_1, subtask_1_signed_by)
+            subtask_results_accepted_2 = SubtaskResultsAcceptedFactory(
+                report_computed_task=ReportComputedTaskFactory(
+                    task_to_compute=task_to_compute_2
+                )
             )
-        )
-        sign_message(subtask_results_accepted_2, subtask_2_signed_by)
-        subtask_results_accepted_list = [
-            subtask_results_accepted_1,
-            subtask_results_accepted_2,
-        ]
+            sign_message(subtask_results_accepted_2, subtask_2_signed_by)
+            subtask_results_accepted_list = [
+                subtask_results_accepted_1,
+                subtask_results_accepted_2,
+            ]
         return subtask_results_accepted_list
 
     def test_that_if_the_same_values_given_method_should_return_true(self):
@@ -412,7 +417,10 @@ class TestValidateTaskToCompute(object):
 
     @pytest.fixture(autouse=True)
     def setUp(self):
-        self.task_to_compute = TaskToComputeFactory()
+        (REQUESTOR_ETHEREUM_PRIVATE_KEY, REQUESTOR_ETHERUM_PUBLIC_KEY) = generate_ecc_key_pair()
+        self.task_to_compute = TaskToComputeFactory(requestor_ethereum_public_key=encode_hex(REQUESTOR_ETHERUM_PUBLIC_KEY))
+        self.task_to_compute.generate_ethsig(REQUESTOR_ETHEREUM_PRIVATE_KEY)
+        self.task_to_compute.sign_promissory_note(REQUESTOR_ETHEREUM_PRIVATE_KEY)
 
     def test_that_valid_task_to_compute_doesnt_raise_any_exception(self):
         try:
@@ -656,3 +664,51 @@ class TestValidateBlenderScriptParameters:
         assert_that(mocked_samples_validator.called).is_false()
         assert_that(mocked_crops_validator.called).is_false()
         assert_that(mocked_resolution_validator.called).is_false()
+
+
+class TestValidateSubtaskResultsVerify:
+    @pytest.fixture(autouse=True)
+    def setUp(self):
+        self.provider_private_key, self.provider_public_key = generate_ecc_key_pair()
+        self.deposit_contract_address = '0xcfB81A6EE3ae6aD4Ac59ddD21fB4589055c13DaD'
+
+        want_to_compute_task = WantToComputeTaskFactory(
+            provider_public_key=encode_hex(self.provider_public_key)
+        )
+        arguments = {
+            'subtask_results_rejected__'
+            'report_computed_task__'
+            'task_to_compute__'
+            'want_to_compute_task': want_to_compute_task
+        }
+        self.subtask_results_verify: SubtaskResultsVerify = SubtaskResultsVerifyFactory(**arguments)
+
+    def test_that_correct_signature_doesnt_raise_any_exception(self):
+        self.subtask_results_verify.sign_concent_promissory_note(
+            self.deposit_contract_address,
+            self.provider_private_key,
+        )
+        try:
+            validate_subtask_results_verify(self.subtask_results_verify, self.deposit_contract_address)
+        except Exception as exception:  # pylint: disable=broad-except
+            pytest.fail(f"Unexpected exception has been raised: {exception}")
+
+    def test_that_incorrect_signature_raises_concent_validation_error(self):
+        different_provider_private_key, _ = generate_ecc_key_pair()
+
+        self.subtask_results_verify.sign_concent_promissory_note(
+            self.deposit_contract_address,
+            different_provider_private_key,
+        )
+        with pytest.raises(ConcentValidationError):
+            validate_subtask_results_verify(self.subtask_results_verify, self.deposit_contract_address)
+
+    def test_that_wrong_deposit_address_raises_concent_validation_error(self):
+        different_deposit_contract_address = '0x89915ddA14eFd6b064da953431E8b7f902d89c83'
+
+        self.subtask_results_verify.sign_concent_promissory_note(
+            self.deposit_contract_address,
+            self.provider_private_key,
+        )
+        with pytest.raises(ConcentValidationError):
+            validate_subtask_results_verify(self.subtask_results_verify, different_deposit_contract_address)

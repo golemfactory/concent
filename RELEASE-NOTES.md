@@ -1,6 +1,6 @@
 ### Next
 #### Compatibility
-- golem-messages: 3.3.0
+- golem-messages: 3.4.0
 
 ##### New settings
 - `ETHEREUM_CHAIN` (#1121).
@@ -28,6 +28,7 @@
 
 #### Endpoints and uses cases in general
 - Receive-out-of-band endpoint removed (#842).
+- Add validation of `concent_promissary_note` for `SubtaskResultsVerify` and `promissary_note` for `TaskToCompute`
 
 ### 0.11.0
 #### Compatibility

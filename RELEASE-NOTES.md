@@ -39,6 +39,13 @@
 ##### New settings
 - `SCI_CALLBACK_RETRIES` (#850).
 
+### 0.10.4
+##### Concent with all features/bugfixes backported from v0.11.1 downgraded to use previous golem-messages version
+
+#### Compatibility
+- golem-messages: 2.15.2
+- golem-smart-contracts-interface: 1.6.1
+
 ### 0.10.3
 ##### Concent with all features/bugfixes backported from v0.11.0 downgraded to use previous golem-messages version
 #### Compatibility

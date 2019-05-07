@@ -70,12 +70,18 @@ def force_subtask_payment(
     provider_eth_address: str,
     value: int,
     subtask_id: str,
+    v: int,
+    r: bytes,
+    s: bytes,
 ) -> str:
     return backend.force_subtask_payment(
         requestor_eth_address=requestor_eth_address,
         provider_eth_address=provider_eth_address,
         value=value,
         subtask_id=subtask_id,
+        v=v,
+        r=r,
+        s=s,
     )
 
 

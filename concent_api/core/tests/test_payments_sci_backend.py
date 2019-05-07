@@ -267,6 +267,9 @@ class SCIBackendTest(ConcentIntegrationTestCase):
         )
 
     def test_that_sci_backend_force_subtask_payment_should_return_transaction_hash(self):
+        self.task_to_compute.sign_promissory_note(self.REQUESTOR_PRIVATE_KEY)
+        v, r, s = self.task_to_compute.promissory_note_sig
+
         with mock.patch(
             'core.payments.payment_interface.PaymentInterface.__new__',
             return_value=mock.Mock(
@@ -280,6 +283,9 @@ class SCIBackendTest(ConcentIntegrationTestCase):
                 self.task_to_compute.provider_ethereum_address,
                 self.transaction_value,
                 self.task_to_compute.subtask_id,
+                v,
+                r,
+                s,
             )
 
         self.assertEqual(transaction_hash, MOCK_TRANSACTION_HASH)
@@ -289,6 +295,9 @@ class SCIBackendTest(ConcentIntegrationTestCase):
             provider_address=Web3.toChecksumAddress(self.task_to_compute.provider_ethereum_address),
             value=self.transaction_value,
             subtask_id=sci_backend._hexencode_uuid(self.task_to_compute.subtask_id),
+            v=v,
+            r=r,
+            s=s,
         )
 
     def test_that_sci_backend_cover_additional_verification_cost_should_return_transaction_hash(self):

@@ -140,6 +140,9 @@ def force_subtask_payment(
     provider_eth_address: str,
     value: int,
     subtask_id: str,
+    v: int,
+    r: bytes,
+    s: bytes,
 ) -> str:
     assert isinstance(requestor_eth_address, str) and len(requestor_eth_address) == ETHEREUM_ADDRESS_LENGTH
     assert isinstance(provider_eth_address, str) and len(provider_eth_address) == ETHEREUM_ADDRESS_LENGTH
@@ -152,6 +155,9 @@ def force_subtask_payment(
         provider_address=Web3.toChecksumAddress(provider_eth_address),
         value=int(value),
         subtask_id=_hexencode_uuid(subtask_id),
+        v=v,
+        r=r,
+        s=s,
     )
 
 

@@ -39,6 +39,9 @@ def force_subtask_payment(
     provider_eth_address: str,  # pylint: disable=unused-argument
     value: int,  # pylint: disable=unused-argument
     subtask_id: str,  # pylint: disable=unused-argument
+    v: int,  # pylint: disable=unused-argument
+    r: bytes,  # pylint: disable=unused-argument
+    s: bytes,  # pylint: disable=unused-argument
 ) -> str:
     return f'{uuid.uuid4()}{uuid.uuid4()}'[:64].replace('-', '1')
 

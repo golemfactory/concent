@@ -85,11 +85,17 @@ def cover_additional_verification_cost(
     provider_eth_address: str,
     value: int,
     subtask_id: str,
+    v: int,
+    r: bytes,
+    s: bytes,
 ) -> Transaction:
     return backend.cover_additional_verification_cost(
         provider_eth_address=provider_eth_address,
         value=value,
         subtask_id=subtask_id,
+        v=v,
+        r=r,
+        s=s,
     )
 
 

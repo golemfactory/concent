@@ -159,6 +159,9 @@ def cover_additional_verification_cost(
     provider_eth_address: str,
     value: int,
     subtask_id: str,
+    v: int,
+    r: bytes,
+    s: bytes,
 ) -> str:
     assert isinstance(provider_eth_address, str) and len(provider_eth_address) == ETHEREUM_ADDRESS_LENGTH
     assert isinstance(subtask_id, str)
@@ -169,6 +172,9 @@ def cover_additional_verification_cost(
         address=Web3.toChecksumAddress(provider_eth_address),
         value=int(value),
         subtask_id=_hexencode_uuid(subtask_id),
+        v=v,
+        r=r,
+        s=s,
     )
 
 

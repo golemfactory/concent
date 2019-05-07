@@ -9,6 +9,7 @@ from django.db.models import QuerySet
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
 
+from golem_messages.message.concents import SubtaskResultsVerify
 from golem_messages.message.tasks import SubtaskResultsAccepted
 from golem_sci.events import BatchTransferEvent
 from golem_sci.events import ForcedPaymentEvent
@@ -237,10 +238,17 @@ def finalize_payment(deposit_claim: DepositClaim) -> Optional[str]:
                     subtask_id=deposit_claim.subtask_id,
                 )
             elif task_to_compute.provider_ethereum_address == deposit_claim.payer_deposit_account.ethereum_address:
+                subtask_results_verify: SubtaskResultsVerify = deserialize_message(
+                    subtask.subtask_results_verify.tobytes()
+                )
+                (v, r, s) = subtask_results_verify.concent_promissory_note_sig
                 ethereum_transaction_hash = service.cover_additional_verification_cost(  # pylint: disable=no-value-for-parameter
                     provider_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
                     value=deposit_claim.amount,
                     subtask_id=deposit_claim.subtask_id,
+                    v=v,
+                    r=r,
+                    s=s,
                 )
             else:
                 assert False

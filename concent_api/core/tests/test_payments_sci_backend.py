@@ -1,4 +1,7 @@
 import mock
+from golem_messages.factories.concents import SubtaskResultsVerifyFactory
+from golem_messages.factories.tasks import WantToComputeTaskFactory
+from golem_messages.message.concents import SubtaskResultsVerify
 from web3 import Web3
 
 from common.testing_helpers import generate_ecc_key_pair
@@ -29,6 +32,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
         self.transaction_count = 5
         self.deposit_value = 1000
         self.transaction_value = 100
+        self.gnt_deposit = '0xcfB81A6EE3ae6aD4Ac59ddD21fB4589055c13DaD'
 
     def test_that_if_number_of_blocks_from_timestamp_is_smaller_than_required_confs_empty_list_is_returned(self):
         with mock.patch(
@@ -288,6 +292,20 @@ class SCIBackendTest(ConcentIntegrationTestCase):
         )
 
     def test_that_sci_backend_cover_additional_verification_cost_should_return_transaction_hash(self):
+        want_to_compute_task = WantToComputeTaskFactory(
+            provider_public_key=self._get_provider_ethereum_hex_public_key()
+        )
+        subtask_results_verify: SubtaskResultsVerify = SubtaskResultsVerifyFactory(**{
+            'subtask_results_rejected__'
+            'report_computed_task__'
+            'task_to_compute__'
+            'want_to_compute_task': want_to_compute_task
+        })
+        subtask_results_verify.sign_concent_promissory_note(
+            self.gnt_deposit,
+            self.PROVIDER_PRIVATE_KEY,
+        )
+        v, r, s = subtask_results_verify.concent_promissory_note_sig
         with mock.patch(
             'core.payments.payment_interface.PaymentInterface.__new__',
             return_value=mock.Mock(
@@ -300,6 +318,9 @@ class SCIBackendTest(ConcentIntegrationTestCase):
                 self.task_to_compute.provider_ethereum_address,
                 self.transaction_value,
                 self.task_to_compute.subtask_id,
+                v,
+                r,
+                s
             )
 
         self.assertEqual(transaction_hash, MOCK_TRANSACTION_HASH)
@@ -308,6 +329,9 @@ class SCIBackendTest(ConcentIntegrationTestCase):
             address=Web3.toChecksumAddress(self.task_to_compute.provider_ethereum_address),
             value=self.transaction_value,
             subtask_id=sci_backend._hexencode_uuid(self.task_to_compute.subtask_id),
+            v=v,
+            r=r,
+            s=s,
         )
 
     def test_handle_sci_synchronization_raise_custom_exception_if_not_sync(self):

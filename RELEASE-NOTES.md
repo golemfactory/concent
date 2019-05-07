@@ -2,15 +2,10 @@
 #### Compatibility
 - golem-messages: 3.4.0
 
-##### New settings
-- `ETHEREUM_CHAIN` (#1121).
-
 #### Additional Verification
 - Bugfix: Bugfix verifier after gm update 3.3.0 (#1128)
 
 #### Payments
-- Bugfix: Concent is hard coded for rinkeby (#1121).
-- Bugfix: Add BlocksHelper class (#1119)
 - Feature: Feature payment report admin view and template part 1 (#1117)
 
 ### 0.11.1
@@ -19,6 +14,13 @@
 #### Compatibility
 - golem-messages: 2.24.3
 - golem-smart-contracts-interface: 1.6.1
+
+##### New settings
+- `ETHEREUM_CHAIN` (#1121).
+
+#### Payments
+- Bugfix: Concent is hard coded for rinkeby (#1121).
+- Bugfix: Add BlocksHelper class (#1119)
 
 #### Version Compatibility
 - Bugfix: Pending messages in older versions block receiving any other messages from `receive/` (#1106)
@@ -64,7 +66,7 @@
 - `SCI_CALLBACK_RETRIES` (#850).
 
 ### 0.10.4
-##### Concent backported bugfix: Add X-Golem-Messages header to file upload function (#1130)
+##### Concent with all features/bugfixes backported from v0.11.1 downgraded to use previous golem-messages version
 
 #### Compatibility
 - golem-messages: 2.15.2

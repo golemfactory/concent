@@ -3,6 +3,7 @@ from enum import Enum
 from functools import wraps
 
 from typing import Any
+from typing import List
 from typing import Callable
 
 from golem_messages.utils import uuid_to_bytes32
@@ -100,27 +101,37 @@ def get_list_of_payments(
 def make_settlement_payment(
     requestor_eth_address: str,
     provider_eth_address: str,
-    value: int,
+    value: List[int],
+    subtask_ids: List[str],
     closure_time: int,
+    v: List[int],
+    r: List[bytes],
+    s: List[bytes],
+    reimburse_amount: int,
 ) -> str:
     """
-    Makes forced transaction from requestor's deposit to provider's account on amount 'value'.
-    If there is less then 'value' on requestor's deposit, Concent transfers as much as possible.
+    Makes forced transaction from requestor's deposit to provider's account on amount 'reimburse_amount'.
+    If there is less then 'reimburse_amount' on requestor's deposit, Concent transfers as much as possible.
     """
     assert isinstance(requestor_eth_address, str) and len(requestor_eth_address) == ETHEREUM_ADDRESS_LENGTH
     assert isinstance(provider_eth_address, str) and len(provider_eth_address) == ETHEREUM_ADDRESS_LENGTH
     assert isinstance(closure_time, int) and closure_time >= 0
 
-    validate_value_is_int_convertible_and_positive(value)
+    validate_value_is_int_convertible_and_positive(reimburse_amount)
 
     requestor_account_balance = PaymentInterface().get_deposit_value(Web3.toChecksumAddress(requestor_eth_address))  # type: ignore  # pylint: disable=no-member
-    if requestor_account_balance < value:
-        value = requestor_account_balance
+    if requestor_account_balance < reimburse_amount:
+        reimburse_amount = requestor_account_balance
 
     return PaymentInterface().force_payment(  # type: ignore  # pylint: disable=no-member
         requestor_address=Web3.toChecksumAddress(requestor_eth_address),
         provider_address=Web3.toChecksumAddress(provider_eth_address),
-        value=int(value),
+        value=value,
+        subtask_id=[_hexencode_uuid(subtask_id) for subtask_id in subtask_ids],
+        v=v,
+        r=r,
+        s=s,
+        reimburse_amount=reimburse_amount,
         closure_time=closure_time,
     )
 

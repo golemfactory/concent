@@ -1,5 +1,6 @@
 import uuid
 from typing import Callable
+from typing import List
 
 from core.constants import CLIENT_ETH_ADDRESS_WITH_0_DEPOSIT
 from core.payments.backends.sci_backend import TransactionType
@@ -17,8 +18,13 @@ def get_list_of_payments(
 def make_settlement_payment(
     requestor_eth_address: str,  # pylint: disable=unused-argument
     provider_eth_address: str,  # pylint: disable=unused-argument
-    value: int,  # pylint: disable=unused-argument
+    value: List[int],  # pylint: disable=unused-argument
+    subtask_ids: List[str],  # pylint: disable=unused-argument
     closure_time: int,  # pylint: disable=unused-argument
+    v: List[int],  # pylint: disable=unused-argument
+    r: List[bytes],  # pylint: disable=unused-argument
+    s: List[bytes],  # pylint: disable=unused-argument
+    reimburse_amount: int,  # pylint: disable=unused-argument
 ) -> str:
     return f'{uuid.uuid4()}{uuid.uuid4()}'[:64].replace('-', '1')
 

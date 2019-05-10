@@ -1,5 +1,6 @@
 from typing import Any
 from typing import Callable
+from typing import List
 import importlib
 
 from django.conf import settings
@@ -42,14 +43,24 @@ def make_settlement_payment(
     backend: Any,
     requestor_eth_address: str,
     provider_eth_address: str,
-    value: int,
+    value: List[int],
+    subtask_ids: List[int],
     closure_time: int,
+    v: List[int],
+    r: List[bytes],
+    s: List[bytes],
+    reimburse_amount: int,
 ) -> Transaction:
     return backend.make_settlement_payment(
         requestor_eth_address=requestor_eth_address,
         provider_eth_address=provider_eth_address,
         value=value,
+        subtask_ids=subtask_ids,
         closure_time=closure_time,
+        v=v,
+        r=r,
+        s=s,
+        reimburse_amount=reimburse_amount,
     )
 
 

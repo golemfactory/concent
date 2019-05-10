@@ -396,11 +396,25 @@ def settle_overdue_acceptances(
         claim_against_requestor.full_clean()
         claim_against_requestor.save()
 
+    v_list, r_list, s_list, values, subtask_id_list = [], [], [], [], []
+    for subtask_results_accepted in acceptances:
+        v, r, s = subtask_results_accepted.task_to_compute.promissory_note_sig
+        v_list.append(v)
+        r_list.append(r)
+        s_list.append(s)
+        values.append(subtask_results_accepted.task_to_compute.price)
+        subtask_id_list.append(subtask_results_accepted.task_to_compute.subtask_id)
+
     transaction_hash = service.make_settlement_payment(  # pylint: disable=no-value-for-parameter
         requestor_eth_address=requestor_ethereum_address,
         provider_eth_address=provider_ethereum_address,
-        value=requestor_payable_amount,
+        value=values,
+        subtask_ids=subtask_id_list,
         closure_time=youngest_payment_ts,
+        v=v_list,
+        r=r_list,
+        s=s_list,
+        reimburse_amount=claim_against_requestor.amount_as_int,
     )
     transaction_hash = adjust_transaction_hash(transaction_hash)
 

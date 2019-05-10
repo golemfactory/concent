@@ -885,6 +885,7 @@ def store_subtask(
     subtask_results_accepted: Optional[message.tasks.SubtaskResultsAccepted] = None,
     subtask_results_rejected: Optional[message.tasks.SubtaskResultsRejected] = None,
     force_get_task_result: Optional[message.concents.ForceGetTaskResult] = None,
+    subtask_results_verify: Optional[message.concents.SubtaskResultsVerify] = None,
 ) -> Subtask:
     """
     Validates and stores subtask and its data in Subtask table.
@@ -927,6 +928,7 @@ def store_subtask(
             subtask_results_accepted=subtask_results_accepted,
             subtask_results_rejected=subtask_results_rejected,
             force_get_task_result=force_get_task_result,
+            subtask_results_verify=subtask_results_verify,
         )
 
         subtask.full_clean()
@@ -1182,6 +1184,7 @@ def update_and_return_updated_subtask(
     subtask_results_accepted: Optional[message.tasks.SubtaskResultsAccepted] = None,
     subtask_results_rejected: Optional[message.tasks.SubtaskResultsRejected] = None,
     force_get_task_result: Optional[message.concents.ForceGetTaskResult] = None,
+    subtask_results_verify: Optional[message.concents.SubtaskResultsVerify] = None,
 ) -> Subtask:
     """
     Validates and updates subtask and its data.
@@ -1202,7 +1205,8 @@ def update_and_return_updated_subtask(
         reject_report_computed_task=reject_report_computed_task,
         subtask_results_accepted=subtask_results_accepted,
         subtask_results_rejected=subtask_results_rejected,
-        force_get_task_result=force_get_task_result
+        force_get_task_result=force_get_task_result,
+        subtask_results_verify=subtask_results_verify,
     )
 
     if set_next_deadline:
@@ -1245,7 +1249,8 @@ def set_subtask_messages(
     reject_report_computed_task: Optional[message.tasks.RejectReportComputedTask] = None,
     subtask_results_accepted: Optional[message.tasks.SubtaskResultsAccepted] = None,
     subtask_results_rejected: Optional[message.tasks.SubtaskResultsRejected] = None,
-    force_get_task_result: Optional[message.concents.ForceGetTaskResult] = None
+    force_get_task_result: Optional[message.concents.ForceGetTaskResult] = None,
+    subtask_results_verify: Optional[message.concents.SubtaskResultsVerify] = None,
 ) -> None:
     """
     Stores and adds relation of passed StoredMessages to given subtask.
@@ -1258,7 +1263,8 @@ def set_subtask_messages(
         'reject_report_computed_task': reject_report_computed_task,
         'subtask_results_accepted': subtask_results_accepted,
         'subtask_results_rejected': subtask_results_rejected,
-        'force_get_task_result': force_get_task_result
+        'force_get_task_result': force_get_task_result,
+        'subtask_results_verify': subtask_results_verify,
     }
 
     assert set(subtask_messages_to_set).issubset({f.name for f in Subtask._meta.get_fields()})
@@ -1414,6 +1420,7 @@ def handle_send_subtask_results_verify(
                 task_to_compute=task_to_compute,
                 report_computed_task=report_computed_task,
                 subtask_results_rejected=subtask_results_rejected,
+                subtask_results_verify=subtask_results_verify,
             )
         else:
             if task_to_compute is not None and subtask.task_to_compute is not None:
@@ -1430,6 +1437,7 @@ def handle_send_subtask_results_verify(
                 task_to_compute=task_to_compute,
                 report_computed_task=report_computed_task,
                 subtask_results_rejected=subtask_results_rejected,
+                subtask_results_verify=subtask_results_verify,
             )
 
     blender_rendering_deadline = verification_deadline + calculate_concent_verification_time(task_to_compute)

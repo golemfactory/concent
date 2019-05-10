@@ -2,6 +2,10 @@ import mock
 
 from django.conf import settings
 from freezegun import freeze_time
+from golem_messages.factories.concents import SubtaskResultsVerifyFactory
+from golem_messages.factories.tasks import TaskToComputeFactory, ReportComputedTaskFactory, \
+    SubtaskResultsRejectedFactory
+from golem_messages.message.tasks import SubtaskResultsRejected
 
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_datetime_to_timestamp
@@ -19,19 +23,31 @@ class UploadFinishedTaskTest(ConcentIntegrationTestCase):
 
     def setUp(self):
         super().setUp()
-        self.task_to_compute = self._get_deserialized_task_to_compute(task_id='1', subtask_id='8', )
-        self.report_computed_task = self._get_deserialized_report_computed_task(
-            task_to_compute=self.task_to_compute,
+        task_to_compute = TaskToComputeFactory(sign__privkey=self.REQUESTOR_PRIVATE_KEY)
+        report_computed_task = ReportComputedTaskFactory(
+            subtask_id=task_to_compute.subtask_id,
+            task_to_compute=task_to_compute,
+            sign__privkey=self.PROVIDER_PRIVATE_KEY,
         )
+        subtask_results_rejected = SubtaskResultsRejectedFactory(
+            reason=SubtaskResultsRejected.REASON.VerificationNegative,
+            report_computed_task=report_computed_task,
+        )
+        subtask_results_verify = SubtaskResultsVerifyFactory(
+            subtask_results_rejected=subtask_results_rejected,
+        )
+
         self.subtask = store_subtask(
-            task_id=self._get_uuid(),
-            subtask_id=self._get_uuid(),
+            task_id=task_to_compute.task_id,
+            subtask_id=task_to_compute.subtask_id,
             provider_public_key=self.PROVIDER_PUBLIC_KEY,
             requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
             state=Subtask.SubtaskState.VERIFICATION_FILE_TRANSFER,
             next_deadline=get_current_utc_timestamp() + settings.CONCENT_MESSAGING_TIME,
-            task_to_compute=self.task_to_compute,
-            report_computed_task=self.report_computed_task
+            task_to_compute=task_to_compute,
+            report_computed_task=report_computed_task,
+            subtask_results_rejected=subtask_results_rejected,
+            subtask_results_verify=subtask_results_verify,
         )
 
     def test_that_scheduling_task_for_subtask_with_accepted_or_failed_or_additional_verification_state_should_log_warning_and_finish_task(self):
@@ -62,7 +78,7 @@ class UploadFinishedTaskTest(ConcentIntegrationTestCase):
     def test_that_scheduling_task_for_subtask_before_deadline_should_change_subtask_state_and_schedule_upload_acknowledged_task(self):
         with freeze_time(
             parse_timestamp_to_utc_datetime(
-                parse_datetime_to_timestamp(self.subtask.next_deadline) - 1
+                parse_datetime_to_timestamp(self.subtask.next_deadline) - 2
             )
         ):
             with mock.patch('core.tasks.transaction.on_commit') as transaction_on_commit:

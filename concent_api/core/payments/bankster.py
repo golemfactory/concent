@@ -247,7 +247,7 @@ def finalize_payment(deposit_claim: DepositClaim) -> Optional[str]:
                 )
             elif task_to_compute.provider_ethereum_address == deposit_claim.payer_deposit_account.ethereum_address:
                 subtask_results_verify: SubtaskResultsVerify = deserialize_message(
-                    subtask.subtask_results_verify.tobytes()
+                    subtask.subtask_results_verify.data.tobytes()
                 )
                 (v, r, s) = subtask_results_verify.concent_promissory_note_sig
                 ethereum_transaction_hash = service.cover_additional_verification_cost(  # pylint: disable=no-value-for-parameter

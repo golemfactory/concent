@@ -42,6 +42,7 @@ def force_subtask_payment(
     v: int,  # pylint: disable=unused-argument
     r: bytes,  # pylint: disable=unused-argument
     s: bytes,  # pylint: disable=unused-argument
+    reimburse_amount: int,  # pylint: disable=unused-argument
 ) -> str:
     return f'{uuid.uuid4()}{uuid.uuid4()}'[:64].replace('-', '1')
 
@@ -53,6 +54,7 @@ def cover_additional_verification_cost(
     v: int,  # pylint: disable=unused-argument
     r: bytes,  # pylint: disable=unused-argument
     s: bytes,  # pylint: disable=unused-argument
+    reimburse_amount: int,  # pylint: disable=unused-argument
 ) -> str:
     return f'{uuid.uuid4()}{uuid.uuid4()}'[:64].replace('-', '1')
 

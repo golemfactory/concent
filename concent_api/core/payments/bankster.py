@@ -227,11 +227,12 @@ def finalize_payment(deposit_claim: DepositClaim) -> Optional[str]:
         ethereum_transaction_hash = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
             requestor_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
             provider_eth_address=deposit_claim.payee_ethereum_address,
-            value=deposit_claim.amount,
+            value=task_to_compute.price,
             subtask_id=deposit_claim.subtask_id,
             v=v,
             r=r,
             s=s,
+            reimburse_amount=deposit_claim.amount_as_int,
         )
     elif deposit_claim.concent_use_case == ConcentUseCase.ADDITIONAL_VERIFICATION:
         if subtask is not None:
@@ -239,11 +240,12 @@ def finalize_payment(deposit_claim: DepositClaim) -> Optional[str]:
                 ethereum_transaction_hash = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
                     requestor_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
                     provider_eth_address=deposit_claim.payee_ethereum_address,
-                    value=deposit_claim.amount,
+                    value=task_to_compute.price,
                     subtask_id=deposit_claim.subtask_id,
                     v=v,
                     r=r,
                     s=s,
+                    reimburse_amount=deposit_claim.amount_as_int,
                 )
             elif task_to_compute.provider_ethereum_address == deposit_claim.payer_deposit_account.ethereum_address:
                 subtask_results_verify: SubtaskResultsVerify = deserialize_message(
@@ -252,11 +254,12 @@ def finalize_payment(deposit_claim: DepositClaim) -> Optional[str]:
                 (v, r, s) = subtask_results_verify.concent_promissory_note_sig
                 ethereum_transaction_hash = service.cover_additional_verification_cost(  # pylint: disable=no-value-for-parameter
                     provider_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
-                    value=deposit_claim.amount,
+                    value=subtask_results_verify.task_to_compute.price,
                     subtask_id=deposit_claim.subtask_id,
                     v=v,
                     r=r,
                     s=s,
+                    reimburse_amount=deposit_claim.amount_as_int,
                 )
             else:
                 assert False

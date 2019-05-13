@@ -73,6 +73,7 @@ def force_subtask_payment(
     v: int,
     r: bytes,
     s: bytes,
+    reimburse_amount: int,
 ) -> str:
     return backend.force_subtask_payment(
         requestor_eth_address=requestor_eth_address,
@@ -82,6 +83,7 @@ def force_subtask_payment(
         v=v,
         r=r,
         s=s,
+        reimburse_amount=reimburse_amount,
     )
 
 
@@ -94,6 +96,7 @@ def cover_additional_verification_cost(
     v: int,
     r: bytes,
     s: bytes,
+    reimburse_amount: int,
 ) -> Transaction:
     return backend.cover_additional_verification_cost(
         provider_eth_address=provider_eth_address,
@@ -102,6 +105,7 @@ def cover_additional_verification_cost(
         v=v,
         r=r,
         s=s,
+        reimburse_amount=reimburse_amount,
     )
 
 

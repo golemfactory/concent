@@ -63,28 +63,29 @@ def get_list_of_payments(
     assert isinstance(transaction_type, Enum) and transaction_type in TransactionType
 
     payment_interface: SCIImplementation = PaymentInterface()
+    payments: list = []
 
     first_block_after_payment_number = BlocksHelper(payment_interface).get_latest_existing_block_at(min_block_timestamp).number
     latest_block_number = payment_interface.get_block_number()  # pylint: disable=no-member
     if latest_block_number - first_block_after_payment_number < payment_interface.REQUIRED_CONFS:  # pylint: disable=no-member
-        return []
+        return payments
 
     if transaction_type == TransactionType.SETTLEMENT:
-        payments_list = payment_interface.get_forced_payments(  # pylint: disable=no-member
+        payments = payment_interface.get_forced_payments(  # pylint: disable=no-member
             requestor_address=Web3.toChecksumAddress(requestor_eth_address),
             provider_address=Web3.toChecksumAddress(provider_eth_address),
             from_block=first_block_after_payment_number,
             to_block=latest_block_number - payment_interface.REQUIRED_CONFS,  # pylint: disable=no-member
         )
     elif transaction_type == TransactionType.BATCH:
-        payments_list = payment_interface.get_batch_transfers(  # pylint: disable=no-member
+        payments = payment_interface.get_batch_transfers(  # pylint: disable=no-member
             payer_address=Web3.toChecksumAddress(requestor_eth_address),
             payee_address=Web3.toChecksumAddress(provider_eth_address),
             from_block=first_block_after_payment_number,
             to_block=latest_block_number - payment_interface.REQUIRED_CONFS,  # pylint: disable=no-member
         )
     elif transaction_type == TransactionType.FORCED_SUBTASK_PAYMENT:
-        payments_list = payment_interface.get_forced_subtask_payments(  # pylint: disable=no-member
+        payments = payment_interface.get_forced_subtask_payments(  # pylint: disable=no-member
             requestor_address=Web3.toChecksumAddress(requestor_eth_address),
             provider_address=Web3.toChecksumAddress(provider_eth_address),
             # We start few blocks before first matching block because forced subtask payments
@@ -93,7 +94,7 @@ def get_list_of_payments(
             to_block=latest_block_number - payment_interface.REQUIRED_CONFS,  # pylint: disable=no-member
         )
 
-    return payments_list
+    return payments
 
 
 def make_settlement_payment(
@@ -143,6 +144,7 @@ def force_subtask_payment(
     v: int,
     r: bytes,
     s: bytes,
+    reimburse_amount: int,
 ) -> str:
     assert isinstance(requestor_eth_address, str) and len(requestor_eth_address) == ETHEREUM_ADDRESS_LENGTH
     assert isinstance(provider_eth_address, str) and len(provider_eth_address) == ETHEREUM_ADDRESS_LENGTH
@@ -158,6 +160,7 @@ def force_subtask_payment(
         v=v,
         r=r,
         s=s,
+        reimburse_amount=reimburse_amount,
     )
 
 
@@ -168,6 +171,7 @@ def cover_additional_verification_cost(
     v: int,
     r: bytes,
     s: bytes,
+    reimburse_amount: int,
 ) -> str:
     assert isinstance(provider_eth_address, str) and len(provider_eth_address) == ETHEREUM_ADDRESS_LENGTH
     assert isinstance(subtask_id, str)
@@ -181,6 +185,7 @@ def cover_additional_verification_cost(
         v=v,
         r=r,
         s=s,
+        reimburse_amount=reimburse_amount,
     )
 
 

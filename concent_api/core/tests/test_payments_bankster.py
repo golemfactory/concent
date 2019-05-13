@@ -200,11 +200,12 @@ class FinalizePaymentBanksterTest(ConcentIntegrationTestCase):
         force_subtask_payment.assert_called_once_with(
             requestor_eth_address=self.deposit_claim.payer_deposit_account.ethereum_address,
             provider_eth_address=self.deposit_claim.payee_ethereum_address,
-            value=self.deposit_claim.amount,
+            value=self.task_to_compute.price,
             subtask_id=self.deposit_claim.subtask_id,
             v=v,
             r=r,
             s=s,
+            reimburse_amount=self.deposit_claim.amount
         )
 
     def test_that_when_deposit_claim_is_for_additional_verification_use_case_finalize_payment_should_call_cover_additional_verification_cost(self):
@@ -225,11 +226,12 @@ class FinalizePaymentBanksterTest(ConcentIntegrationTestCase):
         force_subtask_payment.assert_called_once_with(
             requestor_eth_address=self.deposit_claim.payer_deposit_account.ethereum_address,
             provider_eth_address=self.deposit_claim.payee_ethereum_address,
-            value=self.deposit_claim.amount,
+            value=self.task_to_compute.price,
             subtask_id=self.deposit_claim.subtask_id,
             v=v,
             r=r,
             s=s,
+            reimburse_amount=self.deposit_claim.amount
         )
 
     def test_that_when_there_are_other_deposit_claims_finalize_payment_substract_them_from_currently_processed_claim(self):
@@ -248,12 +250,13 @@ class FinalizePaymentBanksterTest(ConcentIntegrationTestCase):
         force_subtask_payment.assert_called_once_with(
             requestor_eth_address=newest_deposit_claim.payer_deposit_account.ethereum_address,
             provider_eth_address=newest_deposit_claim.payee_ethereum_address,
-            # 5 - (2 + 2) | deposit_value - sum_of_other_claims
-            value=1,
+            value=newest_task_to_compute.price,
             subtask_id=newest_deposit_claim.subtask_id,
             v=v,
             r=r,
             s=s,
+            # 5 - (2 + 2) | deposit_value - sum_of_other_claims
+            reimburse_amount=1,
         )
 
     def create_n_deposits_with_subtasks(self, n=1, amount=2):
@@ -261,6 +264,7 @@ class FinalizePaymentBanksterTest(ConcentIntegrationTestCase):
             task_to_compute = self._get_deserialized_task_to_compute(
                 provider_public_key=self._get_requestor_hex_public_key(),
                 requestor_public_key=self._get_requestor_hex_public_key(),
+                price=amount,
             )
             store_subtask(
                 task_id=task_to_compute.task_id,

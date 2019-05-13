@@ -279,13 +279,14 @@ class SCIBackendTest(ConcentIntegrationTestCase):
             )
         ) as new_sci_rpc:
             transaction_hash = sci_backend.force_subtask_payment(
-                self.task_to_compute.requestor_ethereum_address,
-                self.task_to_compute.provider_ethereum_address,
-                self.transaction_value,
-                self.task_to_compute.subtask_id,
-                v,
-                r,
-                s,
+                requestor_eth_address=self.task_to_compute.requestor_ethereum_address,
+                provider_eth_address=self.task_to_compute.provider_ethereum_address,
+                value=self.task_to_compute.price,
+                subtask_id=self.task_to_compute.subtask_id,
+                v=v,
+                r=r,
+                s=s,
+                reimburse_amount=self.transaction_value,
             )
 
         self.assertEqual(transaction_hash, MOCK_TRANSACTION_HASH)
@@ -293,11 +294,12 @@ class SCIBackendTest(ConcentIntegrationTestCase):
         new_sci_rpc.return_value.force_subtask_payment.assert_called_with(
             requestor_address=Web3.toChecksumAddress(self.task_to_compute.requestor_ethereum_address),
             provider_address=Web3.toChecksumAddress(self.task_to_compute.provider_ethereum_address),
-            value=self.transaction_value,
+            value=self.task_to_compute.price,
             subtask_id=sci_backend._hexencode_uuid(self.task_to_compute.subtask_id),
             v=v,
             r=r,
             s=s,
+            reimburse_amount=self.transaction_value,
         )
 
     def test_that_sci_backend_cover_additional_verification_cost_should_return_transaction_hash(self):
@@ -324,23 +326,25 @@ class SCIBackendTest(ConcentIntegrationTestCase):
             ),
         ) as new_sci_rpc:
             transaction_hash = sci_backend.cover_additional_verification_cost(
-                self.task_to_compute.provider_ethereum_address,
-                self.transaction_value,
-                self.task_to_compute.subtask_id,
-                v,
-                r,
-                s
+                provider_eth_address=self.task_to_compute.provider_ethereum_address,
+                value=self.task_to_compute.price,
+                subtask_id=self.task_to_compute.subtask_id,
+                v=v,
+                r=r,
+                s=s,
+                reimburse_amount=self.transaction_value
             )
 
         self.assertEqual(transaction_hash, MOCK_TRANSACTION_HASH)
 
         new_sci_rpc.return_value.cover_additional_verification_cost.assert_called_with(
             address=Web3.toChecksumAddress(self.task_to_compute.provider_ethereum_address),
-            value=self.transaction_value,
+            value=self.task_to_compute.price,
             subtask_id=sci_backend._hexencode_uuid(self.task_to_compute.subtask_id),
             v=v,
             r=r,
             s=s,
+            reimburse_amount=self.transaction_value,
         )
 
     def test_handle_sci_synchronization_raise_custom_exception_if_not_sync(self):

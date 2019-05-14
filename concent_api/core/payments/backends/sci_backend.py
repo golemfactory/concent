@@ -1,4 +1,3 @@
-import binascii
 import uuid
 from enum import Enum
 from functools import wraps
@@ -6,6 +5,7 @@ from functools import wraps
 from typing import Any
 from typing import Callable
 
+from golem_messages.utils import uuid_to_bytes32
 from golem_sci.implementation import SCIImplementation
 from web3 import Web3
 
@@ -219,4 +219,4 @@ def get_covered_additional_verification_costs(client_eth_address: str, payment_t
 def _hexencode_uuid(value: str) -> bytes:
     validate_uuid(value)
 
-    return binascii.hexlify(uuid.UUID(value).bytes)
+    return uuid_to_bytes32(uuid.UUID(value))

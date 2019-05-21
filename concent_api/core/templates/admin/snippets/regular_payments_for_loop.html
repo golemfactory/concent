@@ -1,8 +1,0 @@
-{% for payment in payments %}
-    <p>
-        <a href="https://{{ eth_network }}etherscan.io/address/{{ payment.provider }}">- provider: {{ payment.provider }}</a>,
-        <a href="https://{{ eth_network }}etherscan.io/address/{{ payment.requestor }}">requestor: {{ payment.requestor }}</a>,
-        amount: {{ payment.amount }},
-        <a href="https://{{ eth_network }}etherscan.io/tx/{{ payment.tx_hash }}">tx_hash: {{ payment.tx_hash }}</a>
-    </p>
-{% endfor %}

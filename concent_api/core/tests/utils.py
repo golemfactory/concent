@@ -884,11 +884,11 @@ class ConcentIntegrationTestCase(TestCase):
         payment_item.closure_time = closure_time
         return payment_item
 
-    def _create_settlement_payment_object(self, amount, closure_time=None):  # pylint: disable=no-self-use
+    def _create_settlement_payment_object(self, amount):  # pylint: disable=no-self-use
         payment_item = mock.Mock()
         payment_item.amount = amount
         payment_item.tx_hash = MOCK_TRANSACTION_HASH
-        payment_item.closure_time = closure_time if closure_time is not None else get_current_utc_timestamp()
+        payment_item.closure_time = parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
         return payment_item
 
     def _create_forced_subtask_payment_object(self, amount, subtask_id):  # pylint: disable=no-self-use
@@ -896,6 +896,7 @@ class ConcentIntegrationTestCase(TestCase):
         payment_item.amount = amount
         payment_item.subtask_id = subtask_id
         payment_item.tx_hash = MOCK_TRANSACTION_HASH
+        payment_item.closure_time = parse_timestamp_to_utc_datetime(get_current_utc_timestamp())
         return payment_item
 
     def _create_cover_additional_verification_costs_object(self, amount, subtask_id):  # pylint: disable=no-self-use

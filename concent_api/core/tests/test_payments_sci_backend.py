@@ -1,4 +1,10 @@
+from uuid import UUID
+
 import mock
+from golem_messages.factories.concents import SubtaskResultsVerifyFactory
+from golem_messages.factories.tasks import WantToComputeTaskFactory
+from golem_messages.message.concents import SubtaskResultsVerify
+from golem_messages.utils import uuid_to_bytes32
 from web3 import Web3
 
 from common.testing_helpers import generate_ecc_key_pair
@@ -29,6 +35,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
         self.transaction_count = 5
         self.deposit_value = 1000
         self.transaction_value = 100
+        self.gnt_deposit = '0xcfB81A6EE3ae6aD4Ac59ddD21fB4589055c13DaD'
 
     def test_that_if_number_of_blocks_from_timestamp_is_smaller_than_required_confs_empty_list_is_returned(self):
         with mock.patch(
@@ -165,6 +172,8 @@ class SCIBackendTest(ConcentIntegrationTestCase):
         get_latest_existing_block_at.assert_called_with(self.current_time)
 
     def test_that_sci_backend_make_settlement_payment_to_provider_should_return_transaction_hash(self):
+        self.task_to_compute.sign_promissory_note(self.REQUESTOR_PRIVATE_KEY)
+        (v, r, s) = self.task_to_compute.promissory_note_sig
         with mock.patch(
             'core.payments.payment_interface.PaymentInterface.__new__',
             return_value=mock.Mock(
@@ -177,10 +186,15 @@ class SCIBackendTest(ConcentIntegrationTestCase):
             )
         ) as new_sci_rpc:
             transaction_hash = sci_backend.make_settlement_payment(
-                self.task_to_compute.requestor_ethereum_address,
-                self.task_to_compute.provider_ethereum_address,
-                self.transaction_value,
-                self.current_time,
+                requestor_eth_address=self.task_to_compute.requestor_ethereum_address,
+                provider_eth_address=self.task_to_compute.provider_ethereum_address,
+                value=[self.task_to_compute.price],
+                subtask_ids=[self.task_to_compute.subtask_id],
+                closure_time=self.current_time,
+                v=[v],
+                r=[r],
+                s=[s],
+                reimburse_amount=self.transaction_value,
             )
 
         self.assertEqual(transaction_hash, MOCK_TRANSACTION_HASH)
@@ -192,11 +206,18 @@ class SCIBackendTest(ConcentIntegrationTestCase):
         new_sci_rpc.return_value.force_payment.assert_called_with(
             requestor_address=Web3.toChecksumAddress(self.task_to_compute.requestor_ethereum_address),
             provider_address=Web3.toChecksumAddress(self.task_to_compute.provider_ethereum_address),
-            value=self.transaction_value,
+            value=[self.task_to_compute.price],
+            subtask_id=[uuid_to_bytes32(UUID(self.task_to_compute.subtask_id))],
             closure_time=self.current_time,
+            v=[v],
+            r=[r],
+            s=[s],
+            reimburse_amount=self.transaction_value,
         )
 
     def test_that_sci_backend_make_settlement_payment_to_provider_should_pay_at_least_requestor_account_balance(self):
+        self.task_to_compute.sign_promissory_note(self.REQUESTOR_PRIVATE_KEY)
+        (v, r, s) = self.task_to_compute.promissory_note_sig
         with mock.patch(
             'core.payments.payment_interface.PaymentInterface.__new__',
             return_value=mock.Mock(
@@ -209,10 +230,15 @@ class SCIBackendTest(ConcentIntegrationTestCase):
             )
         ) as new_sci_rpc:
             transaction_hash = sci_backend.make_settlement_payment(
-                self.task_to_compute.requestor_ethereum_address,
-                self.task_to_compute.provider_ethereum_address,
-                self.transaction_value,
-                self.current_time,
+                requestor_eth_address=self.task_to_compute.requestor_ethereum_address,
+                provider_eth_address=self.task_to_compute.provider_ethereum_address,
+                value=[self.task_to_compute.price],
+                subtask_ids=[self.task_to_compute.subtask_id],
+                closure_time=self.current_time,
+                v=[v],
+                r=[r],
+                s=[s],
+                reimburse_amount=self.transaction_value,
             )
 
         self.assertEqual(transaction_hash, MOCK_TRANSACTION_HASH)
@@ -224,8 +250,13 @@ class SCIBackendTest(ConcentIntegrationTestCase):
         new_sci_rpc.return_value.force_payment.assert_called_with(
             requestor_address=Web3.toChecksumAddress(self.task_to_compute.requestor_ethereum_address),
             provider_address=Web3.toChecksumAddress(self.task_to_compute.provider_ethereum_address),
-            value=self.transaction_value - 1,
+            value=[self.task_to_compute.price],
+            subtask_id=[uuid_to_bytes32(UUID(self.task_to_compute.subtask_id))],
             closure_time=self.current_time,
+            v=[v],
+            r=[r],
+            s=[s],
+            reimburse_amount=self.transaction_value - 1,
         )
 
     def test_that_sci_backend_get_transaction_count_should_return_transaction_count(self):
@@ -263,6 +294,9 @@ class SCIBackendTest(ConcentIntegrationTestCase):
         )
 
     def test_that_sci_backend_force_subtask_payment_should_return_transaction_hash(self):
+        self.task_to_compute.sign_promissory_note(self.REQUESTOR_PRIVATE_KEY)
+        v, r, s = self.task_to_compute.promissory_note_sig
+
         with mock.patch(
             'core.payments.payment_interface.PaymentInterface.__new__',
             return_value=mock.Mock(
@@ -272,10 +306,14 @@ class SCIBackendTest(ConcentIntegrationTestCase):
             )
         ) as new_sci_rpc:
             transaction_hash = sci_backend.force_subtask_payment(
-                self.task_to_compute.requestor_ethereum_address,
-                self.task_to_compute.provider_ethereum_address,
-                self.transaction_value,
-                self.task_to_compute.subtask_id,
+                requestor_eth_address=self.task_to_compute.requestor_ethereum_address,
+                provider_eth_address=self.task_to_compute.provider_ethereum_address,
+                value=self.task_to_compute.price,
+                subtask_id=self.task_to_compute.subtask_id,
+                v=v,
+                r=r,
+                s=s,
+                reimburse_amount=self.transaction_value,
             )
 
         self.assertEqual(transaction_hash, MOCK_TRANSACTION_HASH)
@@ -283,11 +321,29 @@ class SCIBackendTest(ConcentIntegrationTestCase):
         new_sci_rpc.return_value.force_subtask_payment.assert_called_with(
             requestor_address=Web3.toChecksumAddress(self.task_to_compute.requestor_ethereum_address),
             provider_address=Web3.toChecksumAddress(self.task_to_compute.provider_ethereum_address),
-            value=self.transaction_value,
+            value=self.task_to_compute.price,
             subtask_id=sci_backend._hexencode_uuid(self.task_to_compute.subtask_id),
+            v=v,
+            r=r,
+            s=s,
+            reimburse_amount=self.transaction_value,
         )
 
     def test_that_sci_backend_cover_additional_verification_cost_should_return_transaction_hash(self):
+        want_to_compute_task = WantToComputeTaskFactory(
+            provider_public_key=self._get_provider_ethereum_hex_public_key()
+        )
+        subtask_results_verify: SubtaskResultsVerify = SubtaskResultsVerifyFactory(**{
+            'subtask_results_rejected__'
+            'report_computed_task__'
+            'task_to_compute__'
+            'want_to_compute_task': want_to_compute_task
+        })
+        subtask_results_verify.sign_concent_promissory_note(
+            self.gnt_deposit,
+            self.PROVIDER_PRIVATE_KEY,
+        )
+        v, r, s = subtask_results_verify.concent_promissory_note_sig
         with mock.patch(
             'core.payments.payment_interface.PaymentInterface.__new__',
             return_value=mock.Mock(
@@ -297,17 +353,25 @@ class SCIBackendTest(ConcentIntegrationTestCase):
             ),
         ) as new_sci_rpc:
             transaction_hash = sci_backend.cover_additional_verification_cost(
-                self.task_to_compute.provider_ethereum_address,
-                self.transaction_value,
-                self.task_to_compute.subtask_id,
+                provider_eth_address=self.task_to_compute.provider_ethereum_address,
+                value=self.task_to_compute.price,
+                subtask_id=self.task_to_compute.subtask_id,
+                v=v,
+                r=r,
+                s=s,
+                reimburse_amount=self.transaction_value
             )
 
         self.assertEqual(transaction_hash, MOCK_TRANSACTION_HASH)
 
         new_sci_rpc.return_value.cover_additional_verification_cost.assert_called_with(
             address=Web3.toChecksumAddress(self.task_to_compute.provider_ethereum_address),
-            value=self.transaction_value,
+            value=self.task_to_compute.price,
             subtask_id=sci_backend._hexencode_uuid(self.task_to_compute.subtask_id),
+            v=v,
+            r=r,
+            s=s,
+            reimburse_amount=self.transaction_value,
         )
 
     def test_handle_sci_synchronization_raise_custom_exception_if_not_sync(self):

@@ -267,6 +267,9 @@ class Subtask(Model):
         'force_get_task_result': {
             SubtaskState.FORCING_RESULT_TRANSFER,
             SubtaskState.RESULT_UPLOADED,
+        },
+        'subtask_results_verify': {
+            SubtaskState.VERIFICATION_FILE_TRANSFER,
         }
     }
 
@@ -298,7 +301,11 @@ class Subtask(Model):
         'force_get_task_result': {
             SubtaskState.FORCING_REPORT,
             SubtaskState.REPORTED,
-        }
+        },
+        'subtask_results_verify': {
+            SubtaskState.FORCING_REPORT,
+            SubtaskState.FORCING_RESULT_TRANSFER,
+        },
     }
 
     # Defines related golem message for related stored messages
@@ -311,6 +318,7 @@ class Subtask(Model):
         'subtask_results_accepted':     message.tasks.SubtaskResultsAccepted,
         'subtask_results_rejected':     message.tasks.SubtaskResultsRejected,
         'force_get_task_result':        message.concents.ForceGetTaskResult,
+        'subtask_results_verify':       message.concents.SubtaskResultsVerify,
     }
 
     assert set(MESSAGE_FOR_FIELD) == set(REQUIRED_RELATED_MESSAGES_IN_STATES)
@@ -403,6 +411,7 @@ class Subtask(Model):
     subtask_results_accepted = OneToOneField(StoredMessage, blank=True, null=True, related_name='subtasks_for_subtask_results_accepted')
     subtask_results_rejected = OneToOneField(StoredMessage, blank=True, null=True, related_name='subtasks_for_subtask_results_rejected')
     force_get_task_result = OneToOneField(StoredMessage, blank=True, null=True, related_name='subtasks_for_force_get_task_result')
+    subtask_results_verify = OneToOneField(StoredMessage, blank=True, null=True, related_name='subtasks_for_subtask_results_verify')
 
     # Flag used to notify Concent Core that Storage Cluster has uploaded files related with this Subtask.
     result_upload_finished = BooleanField(default=False)

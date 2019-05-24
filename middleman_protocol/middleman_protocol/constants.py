@@ -54,7 +54,7 @@ assert len(set(ESCAPE_SEQUENCES.values())) == len(ESCAPE_SEQUENCES)
 assert all([FRAME_SEPARATOR not in escape_sequence for escape_sequence in ESCAPE_SEQUENCES.values()])
 
 RECEIVE_BYTES_PER_LOOP = 1
-MAXIMUM_FRAME_LENGTH = 1000
+MAXIMUM_FRAME_LENGTH = 2**12  # 4096 B
 
 MIDDLEMAN_EXCEPTION_TO_ERROR_CODE_MAP = {
     exceptions.PayloadTypeInvalidMiddlemanProtocolError: ErrorCode.InvalidPayload,

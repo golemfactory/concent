@@ -22,7 +22,6 @@ from core.payments.bankster import discard_claim
 from core.payments.bankster import finalize_payment
 from core.payments.bankster import settle_overdue_acceptances
 from core.tests.utils import ConcentIntegrationTestCase
-from core.utils import generate_uuid
 from core.utils import get_current_utc_timestamp
 from core.utils import hex_to_bytes_convert
 from core.utils import parse_timestamp_to_utc_datetime
@@ -189,6 +188,7 @@ class FinalizePaymentBanksterTest(ConcentIntegrationTestCase):
         )
 
     def test_that_when_deposit_claim_is_for_forced_acceptance_use_case_finalize_payment_should_call_force_subtask_payment(self):
+        (v, r, s) = self.task_to_compute.promissory_note_sig
         with mock.patch('core.payments.service.get_deposit_value', return_value=2) as get_deposit_value:
             with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION_HASH) as force_subtask_payment:
                 returned_value = finalize_payment(self.deposit_claim)
@@ -200,14 +200,19 @@ class FinalizePaymentBanksterTest(ConcentIntegrationTestCase):
         force_subtask_payment.assert_called_once_with(
             requestor_eth_address=self.deposit_claim.payer_deposit_account.ethereum_address,
             provider_eth_address=self.deposit_claim.payee_ethereum_address,
-            value=self.deposit_claim.amount,
+            value=self.task_to_compute.price,
             subtask_id=self.deposit_claim.subtask_id,
+            v=v,
+            r=r,
+            s=s,
+            reimburse_amount=self.deposit_claim.amount
         )
 
     def test_that_when_deposit_claim_is_for_additional_verification_use_case_finalize_payment_should_call_cover_additional_verification_cost(self):
         self.deposit_claim.concent_use_case = ConcentUseCase.ADDITIONAL_VERIFICATION
         self.deposit_claim.clean()
         self.deposit_claim.save()
+        (v, r, s) = self.task_to_compute.promissory_note_sig
 
         with mock.patch('core.payments.service.get_deposit_value', return_value=2) as get_deposit_value:
             with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION_HASH) as force_subtask_payment:
@@ -221,40 +226,66 @@ class FinalizePaymentBanksterTest(ConcentIntegrationTestCase):
         force_subtask_payment.assert_called_once_with(
             requestor_eth_address=self.deposit_claim.payer_deposit_account.ethereum_address,
             provider_eth_address=self.deposit_claim.payee_ethereum_address,
-            value=self.deposit_claim.amount,
+            value=self.task_to_compute.price,
             subtask_id=self.deposit_claim.subtask_id,
+            v=v,
+            r=r,
+            s=s,
+            reimburse_amount=self.deposit_claim.amount
         )
 
     def test_that_when_there_are_other_deposit_claims_finalize_payment_substract_them_from_currently_processed_claim(self):
-        self.deposit_claim = DepositClaim()
-        self.deposit_claim.subtask_id = self._get_uuid('1')
-        self.deposit_claim.payer_deposit_account = self.deposit_account
-        self.deposit_claim.payee_ethereum_address = self.task_to_compute.provider_ethereum_address
-        self.deposit_claim.concent_use_case = ConcentUseCase.FORCED_ACCEPTANCE
-        self.deposit_claim.amount = 2
-        self.deposit_claim.clean()
-        # Save twice because we want two claims.
-        self.deposit_claim.save()
-        self.deposit_claim.pk = None
-        self.deposit_claim.subtask_id = generate_uuid()
-        self.deposit_claim.save()
+        newest_deposit_claim, newest_task_to_compute = self.create_n_deposits_with_subtasks(2)
+        (v, r, s) = newest_task_to_compute.promissory_note_sig
 
         with mock.patch('core.payments.service.get_deposit_value', return_value=5) as get_deposit_value:
             with mock.patch('core.payments.service.force_subtask_payment', return_value=MOCK_TRANSACTION_HASH) as force_subtask_payment:
-                returned_value = finalize_payment(self.deposit_claim)
+                returned_value = finalize_payment(newest_deposit_claim)
 
         self.assertEqual(returned_value, MOCK_TRANSACTION_HASH)
 
         get_deposit_value.assert_called_with(
-            client_eth_address=self.deposit_claim.payer_deposit_account.ethereum_address,
+            client_eth_address=newest_deposit_claim.payer_deposit_account.ethereum_address,
         )
         force_subtask_payment.assert_called_once_with(
-            requestor_eth_address=self.deposit_claim.payer_deposit_account.ethereum_address,
-            provider_eth_address=self.deposit_claim.payee_ethereum_address,
+            requestor_eth_address=newest_deposit_claim.payer_deposit_account.ethereum_address,
+            provider_eth_address=newest_deposit_claim.payee_ethereum_address,
+            value=newest_task_to_compute.price,
+            subtask_id=newest_deposit_claim.subtask_id,
+            v=v,
+            r=r,
+            s=s,
             # 5 - (2 + 2) | deposit_value - sum_of_other_claims
-            value=1,
-            subtask_id=self.deposit_claim.subtask_id,
+            reimburse_amount=1,
         )
+
+    def create_n_deposits_with_subtasks(self, n=1, amount=2):
+        for _ in range(n):
+            task_to_compute = self._get_deserialized_task_to_compute(
+                provider_public_key=self._get_requestor_hex_public_key(),
+                requestor_public_key=self._get_requestor_hex_public_key(),
+                price=amount,
+            )
+            store_subtask(
+                task_id=task_to_compute.task_id,
+                subtask_id=task_to_compute.subtask_id,
+                provider_public_key=self.PROVIDER_PUBLIC_KEY,
+                requestor_public_key=self.REQUESTOR_PUBLIC_KEY,
+                state=Subtask.SubtaskState.ACCEPTED,
+                next_deadline=None,
+                task_to_compute=task_to_compute,
+                report_computed_task=factories.tasks.ReportComputedTaskFactory(task_to_compute=task_to_compute)
+            )
+
+            deposit_claim = DepositClaim()
+            deposit_claim.subtask_id = task_to_compute.subtask_id
+            deposit_claim.payer_deposit_account = self.deposit_account
+            deposit_claim.payee_ethereum_address = task_to_compute.provider_ethereum_address
+            deposit_claim.concent_use_case = ConcentUseCase.FORCED_ACCEPTANCE
+            deposit_claim.amount = amount
+            deposit_claim.clean()
+            deposit_claim.save()
+        return deposit_claim, task_to_compute
 
 
 class SettleOverdueAcceptancesBanksterTest(ConcentIntegrationTestCase):

@@ -489,7 +489,7 @@ class SubtaskResultsVerifyIntegrationTest(ConcentIntegrationTestCase):
                 ]
             }
         )
-        self._assert_stored_message_counter_increased(increased_by=4)
+        self._assert_stored_message_counter_increased(increased_by=5)
 
     def test_that_concent_should_change_subtask_state_if_verification_is_after_deadline(self):
         """

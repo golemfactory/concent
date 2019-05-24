@@ -9,7 +9,9 @@ from django.db.models import QuerySet
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
 
+from golem_messages.message.concents import SubtaskResultsVerify
 from golem_messages.message.tasks import SubtaskResultsAccepted
+from golem_messages.message.tasks import TaskToCompute
 from golem_sci.events import BatchTransferEvent
 from golem_sci.events import ForcedPaymentEvent
 
@@ -218,29 +220,46 @@ def finalize_payment(deposit_claim: DepositClaim) -> Optional[str]:
             deposit_claim.save()
 
     # If the DepositClaim still exists at this point, Bankster uses SCI to create an Ethereum transaction.
+    subtask = Subtask.objects.filter(subtask_id=deposit_claim.subtask_id).first()  # pylint: disable=no-member
+    task_to_compute: TaskToCompute = deserialize_message(subtask.task_to_compute.data.tobytes())
+    v, r, s = task_to_compute.promissory_note_sig
     if deposit_claim.concent_use_case == ConcentUseCase.FORCED_ACCEPTANCE:
         ethereum_transaction_hash = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
             requestor_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
             provider_eth_address=deposit_claim.payee_ethereum_address,
-            value=deposit_claim.amount,
+            value=task_to_compute.price,
             subtask_id=deposit_claim.subtask_id,
+            v=v,
+            r=r,
+            s=s,
+            reimburse_amount=deposit_claim.amount_as_int,
         )
     elif deposit_claim.concent_use_case == ConcentUseCase.ADDITIONAL_VERIFICATION:
-        subtask = Subtask.objects.filter(subtask_id=deposit_claim.subtask_id).first()  # pylint: disable=no-member
         if subtask is not None:
-            task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
             if task_to_compute.requestor_ethereum_address == deposit_claim.payer_deposit_account.ethereum_address:
                 ethereum_transaction_hash = service.force_subtask_payment(  # pylint: disable=no-value-for-parameter
                     requestor_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
                     provider_eth_address=deposit_claim.payee_ethereum_address,
-                    value=deposit_claim.amount,
+                    value=task_to_compute.price,
                     subtask_id=deposit_claim.subtask_id,
+                    v=v,
+                    r=r,
+                    s=s,
+                    reimburse_amount=deposit_claim.amount_as_int,
                 )
             elif task_to_compute.provider_ethereum_address == deposit_claim.payer_deposit_account.ethereum_address:
+                subtask_results_verify: SubtaskResultsVerify = deserialize_message(
+                    subtask.subtask_results_verify.data.tobytes()
+                )
+                (v, r, s) = subtask_results_verify.concent_promissory_note_sig
                 ethereum_transaction_hash = service.cover_additional_verification_cost(  # pylint: disable=no-value-for-parameter
                     provider_eth_address=deposit_claim.payer_deposit_account.ethereum_address,
-                    value=deposit_claim.amount,
+                    value=subtask_results_verify.task_to_compute.price,
                     subtask_id=deposit_claim.subtask_id,
+                    v=v,
+                    r=r,
+                    s=s,
+                    reimburse_amount=deposit_claim.amount_as_int,
                 )
             else:
                 assert False
@@ -377,11 +396,25 @@ def settle_overdue_acceptances(
         claim_against_requestor.full_clean()
         claim_against_requestor.save()
 
+    v_list, r_list, s_list, values, subtask_id_list = [], [], [], [], []
+    for subtask_results_accepted in acceptances:
+        v, r, s = subtask_results_accepted.task_to_compute.promissory_note_sig
+        v_list.append(v)
+        r_list.append(r)
+        s_list.append(s)
+        values.append(subtask_results_accepted.task_to_compute.price)
+        subtask_id_list.append(subtask_results_accepted.task_to_compute.subtask_id)
+
     transaction_hash = service.make_settlement_payment(  # pylint: disable=no-value-for-parameter
         requestor_eth_address=requestor_ethereum_address,
         provider_eth_address=provider_ethereum_address,
-        value=requestor_payable_amount,
+        value=values,
+        subtask_ids=subtask_id_list,
         closure_time=youngest_payment_ts,
+        v=v_list,
+        r=r_list,
+        s=s_list,
+        reimburse_amount=claim_against_requestor.amount_as_int,
     )
     transaction_hash = adjust_transaction_hash(transaction_hash)
 

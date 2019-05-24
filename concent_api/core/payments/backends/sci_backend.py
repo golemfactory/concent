@@ -1,11 +1,12 @@
-import binascii
 import uuid
 from enum import Enum
 from functools import wraps
 
 from typing import Any
+from typing import List
 from typing import Callable
 
+from golem_messages.utils import uuid_to_bytes32
 from golem_sci.implementation import SCIImplementation
 from web3 import Web3
 
@@ -63,28 +64,29 @@ def get_list_of_payments(
     assert isinstance(transaction_type, Enum) and transaction_type in TransactionType
 
     payment_interface: SCIImplementation = PaymentInterface()
+    payments: list = []
 
     first_block_after_payment_number = BlocksHelper(payment_interface).get_latest_existing_block_at(min_block_timestamp).number
     latest_block_number = payment_interface.get_block_number()  # pylint: disable=no-member
     if latest_block_number - first_block_after_payment_number < payment_interface.REQUIRED_CONFS:  # pylint: disable=no-member
-        return []
+        return payments
 
     if transaction_type == TransactionType.SETTLEMENT:
-        payments_list = payment_interface.get_forced_payments(  # pylint: disable=no-member
+        payments = payment_interface.get_forced_payments(  # pylint: disable=no-member
             requestor_address=Web3.toChecksumAddress(requestor_eth_address),
             provider_address=Web3.toChecksumAddress(provider_eth_address),
             from_block=first_block_after_payment_number,
             to_block=latest_block_number - payment_interface.REQUIRED_CONFS,  # pylint: disable=no-member
         )
     elif transaction_type == TransactionType.BATCH:
-        payments_list = payment_interface.get_batch_transfers(  # pylint: disable=no-member
+        payments = payment_interface.get_batch_transfers(  # pylint: disable=no-member
             payer_address=Web3.toChecksumAddress(requestor_eth_address),
             payee_address=Web3.toChecksumAddress(provider_eth_address),
             from_block=first_block_after_payment_number,
             to_block=latest_block_number - payment_interface.REQUIRED_CONFS,  # pylint: disable=no-member
         )
     elif transaction_type == TransactionType.FORCED_SUBTASK_PAYMENT:
-        payments_list = payment_interface.get_forced_subtask_payments(  # pylint: disable=no-member
+        payments = payment_interface.get_forced_subtask_payments(  # pylint: disable=no-member
             requestor_address=Web3.toChecksumAddress(requestor_eth_address),
             provider_address=Web3.toChecksumAddress(provider_eth_address),
             # We start few blocks before first matching block because forced subtask payments
@@ -93,33 +95,43 @@ def get_list_of_payments(
             to_block=latest_block_number - payment_interface.REQUIRED_CONFS,  # pylint: disable=no-member
         )
 
-    return payments_list
+    return payments
 
 
 def make_settlement_payment(
     requestor_eth_address: str,
     provider_eth_address: str,
-    value: int,
+    value: List[int],
+    subtask_ids: List[str],
     closure_time: int,
+    v: List[int],
+    r: List[bytes],
+    s: List[bytes],
+    reimburse_amount: int,
 ) -> str:
     """
-    Makes forced transaction from requestor's deposit to provider's account on amount 'value'.
-    If there is less then 'value' on requestor's deposit, Concent transfers as much as possible.
+    Makes forced transaction from requestor's deposit to provider's account on amount 'reimburse_amount'.
+    If there is less then 'reimburse_amount' on requestor's deposit, Concent transfers as much as possible.
     """
     assert isinstance(requestor_eth_address, str) and len(requestor_eth_address) == ETHEREUM_ADDRESS_LENGTH
     assert isinstance(provider_eth_address, str) and len(provider_eth_address) == ETHEREUM_ADDRESS_LENGTH
     assert isinstance(closure_time, int) and closure_time >= 0
 
-    validate_value_is_int_convertible_and_positive(value)
+    validate_value_is_int_convertible_and_positive(reimburse_amount)
 
     requestor_account_balance = PaymentInterface().get_deposit_value(Web3.toChecksumAddress(requestor_eth_address))  # type: ignore  # pylint: disable=no-member
-    if requestor_account_balance < value:
-        value = requestor_account_balance
+    if requestor_account_balance < reimburse_amount:
+        reimburse_amount = requestor_account_balance
 
     return PaymentInterface().force_payment(  # type: ignore  # pylint: disable=no-member
         requestor_address=Web3.toChecksumAddress(requestor_eth_address),
         provider_address=Web3.toChecksumAddress(provider_eth_address),
-        value=int(value),
+        value=value,
+        subtask_id=[_hexencode_uuid(subtask_id) for subtask_id in subtask_ids],
+        v=v,
+        r=r,
+        s=s,
+        reimburse_amount=reimburse_amount,
         closure_time=closure_time,
     )
 
@@ -140,6 +152,10 @@ def force_subtask_payment(
     provider_eth_address: str,
     value: int,
     subtask_id: str,
+    v: int,
+    r: bytes,
+    s: bytes,
+    reimburse_amount: int,
 ) -> str:
     assert isinstance(requestor_eth_address, str) and len(requestor_eth_address) == ETHEREUM_ADDRESS_LENGTH
     assert isinstance(provider_eth_address, str) and len(provider_eth_address) == ETHEREUM_ADDRESS_LENGTH
@@ -152,6 +168,10 @@ def force_subtask_payment(
         provider_address=Web3.toChecksumAddress(provider_eth_address),
         value=int(value),
         subtask_id=_hexencode_uuid(subtask_id),
+        v=v,
+        r=r,
+        s=s,
+        reimburse_amount=reimburse_amount,
     )
 
 
@@ -159,6 +179,10 @@ def cover_additional_verification_cost(
     provider_eth_address: str,
     value: int,
     subtask_id: str,
+    v: int,
+    r: bytes,
+    s: bytes,
+    reimburse_amount: int,
 ) -> str:
     assert isinstance(provider_eth_address, str) and len(provider_eth_address) == ETHEREUM_ADDRESS_LENGTH
     assert isinstance(subtask_id, str)
@@ -169,6 +193,10 @@ def cover_additional_verification_cost(
         address=Web3.toChecksumAddress(provider_eth_address),
         value=int(value),
         subtask_id=_hexencode_uuid(subtask_id),
+        v=v,
+        r=r,
+        s=s,
+        reimburse_amount=reimburse_amount,
     )
 
 
@@ -202,4 +230,4 @@ def get_covered_additional_verification_costs(client_eth_address: str, payment_t
 def _hexencode_uuid(value: str) -> bytes:
     validate_uuid(value)
 
-    return binascii.hexlify(uuid.UUID(value).bytes)
+    return uuid_to_bytes32(uuid.UUID(value))

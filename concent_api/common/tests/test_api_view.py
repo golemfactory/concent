@@ -51,7 +51,6 @@ class ApiViewTestCase(TestCase):
         self.request_factory = RequestFactory()
         self.want_to_compute = WantToComputeTaskFactory()
         self.message_to_view = {
-            "node_name":            self.want_to_compute.node_name,             # pylint: disable=no-member
             "task_id":              self.want_to_compute.task_id,               # pylint: disable=no-member
             "perf_index":           self.want_to_compute.perf_index,            # pylint: disable=no-member
             "price":                self.want_to_compute.price,                 # pylint: disable=no-member

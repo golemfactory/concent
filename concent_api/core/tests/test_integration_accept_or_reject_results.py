@@ -731,8 +731,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         """
 
         task_to_compute = self._get_deserialized_task_to_compute(
-            timestamp   = "2018-02-05 10:00:00",
-            deadline    = "2018-02-05 10:00:15",
+            timestamp="2018-02-05 10:00:00",
+            deadline="2018-02-05 10:00:15",
         )
 
         deserialized_force_subtask_results = self._get_deserialized_force_subtask_results(
@@ -755,7 +755,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             side_effect=self.claim_deposit_true_mock
         ) as claim_deposit_true_mock_function:
             with freeze_time("2018-02-05 10:00:30"):
-                response_1 =self.send_request(
+                response_1 = self.send_request(
                     url='core:send',
                     data=serialized_force_subtask_results,
                 )
@@ -770,8 +770,8 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             provider_public_key=hex_to_bytes_convert(task_to_compute.provider_public_key),
         )
 
-        assert len(response_1.content)  == 0
-        assert response_1.status_code   == 202
+        assert len(response_1.content) == 0
+        assert response_1.status_code == 202
         self._assert_stored_message_counter_increased(increased_by=4)
         self._test_subtask_state(
             task_id=task_to_compute.task_id,
@@ -779,7 +779,12 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             subtask_state=Subtask.SubtaskState.FORCING_ACCEPTANCE,
             provider_key=self._get_encoded_provider_public_key(),
             requestor_key=self._get_encoded_requestor_public_key(),
-            expected_nested_messages={'task_to_compute', 'want_to_compute_task', 'report_computed_task', 'ack_report_computed_task'},
+            expected_nested_messages={
+                'task_to_compute',
+                'want_to_compute_task',
+                'report_computed_task',
+                'ack_report_computed_task',
+            },
             next_deadline=parse_iso_date_to_timestamp("2018-02-05 10:00:45"),
         )
         self._test_last_stored_messages(
@@ -803,7 +808,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 10:00:44"):
             response_2 =self.send_request(
                 url='core:receive',
-                data                            = self._create_requestor_auth_message(),
+                data=self._create_requestor_auth_message(),
             )
 
         self._test_response(
@@ -824,7 +829,11 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp="2018-02-05 10:00:43",
             subtask_results_rejected=self._get_deserialized_subtask_results_rejected(
                 timestamp="2018-02-05 10:00:43",
-                reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
+                reason=message.tasks.SubtaskResultsRejected.REASON.ForcedResourcesFailure,
+                force_get_task_result_failed=self._get_deserialized_force_get_task_result_failed(
+                    timestamp="2018-02-05 10:00:43",
+                    task_to_compute=deserialized_force_subtask_results.ack_report_computed_task.task_to_compute  # pylint: disable=no-member
+                ),
                 report_computed_task=deserialized_force_subtask_results.ack_report_computed_task.report_computed_task  # pylint: disable=no-member
             )
         )
@@ -832,7 +841,7 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 10:00:44"):
             self.send_request(
                 url='core:send',
-                data                                = serialized_force_subtask_results_response,
+                data=serialized_force_subtask_results_response,
             )
 
         self._assert_stored_message_counter_increased(increased_by=1)
@@ -868,19 +877,20 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
         with freeze_time("2018-02-05 11:00:02"):
             response_3 =self.send_request(
                 url='core:receive',
-                data                            = self._create_provider_auth_message(),
+                data=self._create_provider_auth_message(),
             )
 
         self._test_response(
             response_3,
-            status          = 200,
-            key             = self.PROVIDER_PRIVATE_KEY,
-            message_type    = message.concents.ForceSubtaskResultsResponse,
-            fields          = {
+            status=200,
+            key=self.PROVIDER_PRIVATE_KEY,
+            message_type=message.concents.ForceSubtaskResultsResponse,
+            fields={
                 'timestamp': parse_iso_date_to_timestamp("2018-02-05 11:00:02"),
                 'subtask_results_rejected.timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:43"),
-                'subtask_results_rejected.reason': message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
-                'subtask_results_rejected.report_computed_task.timestamp': parse_iso_date_to_timestamp("2018-02-05 10:00:20"),
+                'subtask_results_rejected.reason': message.tasks.SubtaskResultsRejected.REASON.ForcedResourcesFailure,
+                'subtask_results_rejected.report_computed_task.timestamp':
+                    parse_iso_date_to_timestamp("2018-02-05 10:00:20"),
                 'subtask_results_rejected.report_computed_task.subtask_id': task_to_compute.subtask_id
             }
         )

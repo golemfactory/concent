@@ -20,12 +20,14 @@ from golem_messages import dump
 from golem_messages import load
 from golem_messages import message
 from golem_messages.datastructures.tasks import TaskHeader
+from golem_messages.factories.concents import ForceGetTaskResultFailedFactory
 from golem_messages.factories.datastructures.tasks import TaskHeaderFactory
 from golem_messages.factories.tasks import ComputeTaskDefFactory
 from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.factories.tasks import WantToComputeTaskFactory
 from golem_messages.message.base import Message
+from golem_messages.message.concents import ForceGetTaskResultFailed
 from golem_messages.message.concents import ForcePayment
 from golem_messages.message.concents import ForceReportComputedTask
 from golem_messages.message.concents import ForceSubtaskResults
@@ -581,6 +583,7 @@ class ConcentIntegrationTestCase(TestCase):
         timestamp: Union[str, datetime.datetime, None] = None,
         report_computed_task: Optional[ReportComputedTask] = None,
         signer_private_key: Optional[bytes] = None,
+        force_get_task_result_failed=None,
     ) -> SubtaskResultsRejected:
 
         """ Return SubtaskResultsRejected deserialized """
@@ -597,6 +600,7 @@ class ConcentIntegrationTestCase(TestCase):
                         task_to_compute = self._get_deserialized_task_to_compute()
                     )
                 ),
+                force_get_task_result_failed=force_get_task_result_failed,
             )
         subtask_results_rejected = self._sign_message(
             subtask_results_rejected,
@@ -795,6 +799,16 @@ class ConcentIntegrationTestCase(TestCase):
             privkey=provider_private_key if provider_private_key is not None else self.PROVIDER_PRIVATE_KEY,
             pubkey=settings.CONCENT_PUBLIC_KEY,
         )
+
+    def _get_deserialized_force_get_task_result_failed(  # pylint: disable=no-self-use
+        self,
+        task_to_compute: TaskToCompute,
+        timestamp: Union[str, datetime.datetime, None] = None,
+    ) -> ForceGetTaskResultFailed:
+        with freeze_time(timestamp or get_timestamp_string()):
+            return ForceGetTaskResultFailedFactory(
+                task_to_compute=task_to_compute,
+            )
 
     def _store_golem_messages_in_database(
         self,

@@ -262,7 +262,7 @@ class FinalizePaymentBanksterTest(ConcentIntegrationTestCase):
     def create_n_deposits_with_subtasks(self, n=1, amount=2):
         for _ in range(n):
             task_to_compute = self._get_deserialized_task_to_compute(
-                provider_public_key=self._get_requestor_hex_public_key(),
+                provider_public_key=self._get_provider_hex_public_key(),
                 requestor_public_key=self._get_requestor_hex_public_key(),
                 price=amount,
             )

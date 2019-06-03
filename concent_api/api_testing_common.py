@@ -421,7 +421,6 @@ def create_signed_task_to_compute(
 
         want_to_compute_task = WantToComputeTaskFactory(
             provider_public_key=encode_hex(provider_public_key),
-            provider_ethereum_public_key=encode_hex(provider_public_key),
             task_header=task_header,
             sign__privkey=provider_private_key
         )

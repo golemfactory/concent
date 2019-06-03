@@ -210,7 +210,6 @@ class ApiViewTransactionTestCase(TransactionTestCase):
         self.compute_task_def['deadline'] = message_timestamp
         want_to_compute_task = WantToComputeTaskFactory(
             provider_public_key=encode_hex(PROVIDER_PUBLIC_KEY),
-            provider_ethereum_public_key=encode_hex(PROVIDER_ETHERUM_PUBLIC_KEY)
         )
         want_to_compute_task = sign_message(want_to_compute_task, PROVIDER_PRIVATE_KEY)
         task_to_compute = tasks.TaskToComputeFactory(

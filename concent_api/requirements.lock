@@ -37,7 +37,7 @@ execnet==1.5.0
 factory-boy==2.11.1
 Faker==0.8.16
 freezegun==0.3.10
---editable git://github.com/golemfactory/golem-messages.git@b1c68e6535a95b961c4f90ca0112c3d3f762fdcf#egg=Golem_Messages
+--editable git://github.com/golemfactory/golem-messages.git@0f3af63a0cce77c6c798d08ab05b79cd3df1727f#egg=Golem_Messages
 --editable git://github.com/golemfactory/golem-smart-contracts-interface.git@28d3d85d26395d91d82654c6c71768a4bb1eff74#egg=Golem_Smart_Contracts_Interface
 hexbytes==0.1.0
 idna==2.7

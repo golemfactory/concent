@@ -1,6 +1,6 @@
 ### Next
 #### Compatibility
-- golem-messages: 3.4.0
+- golem-messages: 3.7.0
 - golem-smart-contracts-interface: 1.9.0
 
 #### Additional Verification

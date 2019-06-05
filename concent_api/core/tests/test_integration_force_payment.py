@@ -4,6 +4,7 @@ from freezegun import freeze_time
 
 from golem_messages import message
 from golem_messages.utils import decode_hex
+from golem_messages.utils import pubkey_to_address
 
 from common.testing_helpers import generate_ecc_key_pair
 from core.constants import ETHEREUM_PUBLIC_KEY_LENGTH
@@ -195,13 +196,14 @@ class ForcePaymentIntegrationTest(ConcentIntegrationTestCase):
             )
         )
 
-        provider_ethereum_public_key = self._get_provider_ethereum_hex_public_key_different()
-
         report_computed_task_2 = self._get_deserialized_report_computed_task(
             task_to_compute=self._get_deserialized_task_to_compute(
                 subtask_id=self._get_uuid('2'),
-                provider_ethereum_public_key=provider_ethereum_public_key,
             )
+        )
+
+        report_computed_task_2.task_to_compute.want_to_compute_task.provider_ethereum_address = pubkey_to_address(
+            self.DIFFERENT_PROVIDER_PUBLIC_KEY
         )
 
         subtask_results_accepted_list = [

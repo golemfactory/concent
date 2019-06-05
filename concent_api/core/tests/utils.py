@@ -240,7 +240,6 @@ class ConcentIntegrationTestCase(TestCase):
         requestor_ethereum_private_key: Optional[bytes] = None,
         provider_id: Optional[bytes] = None,
         provider_public_key: Optional[bytes] = None,
-        provider_ethereum_public_key: Optional[bytes] = None,
         price: int = 1,
         package_hash: str = 'sha1:230fb0cad8c7ed29810a2183f0ec1d39c9df3f4a',
         signer_private_key: Optional[bytes] = None,
@@ -292,7 +291,6 @@ class ConcentIntegrationTestCase(TestCase):
                 want_to_compute_task=want_to_compute_task if want_to_compute_task is not None else self._get_deserialized_want_to_compute_task(
                     kwargs={
                         'provider_public_key': provider_public_key,
-                        'provider_ethereum_public_key': provider_ethereum_public_key,
                         'task_id': compute_task_def['task_id'],
                     },
                 ),
@@ -311,7 +309,8 @@ class ConcentIntegrationTestCase(TestCase):
         )
         return task_to_compute
 
-    def _get_deserialized_want_to_compute_task(self,
+    def _get_deserialized_want_to_compute_task(
+        self,
         kwargs: Dict[str, Union[int, bytes, str]],
         timestamp: Optional[Union[str, datetime.datetime, None]] = None,
     ) -> WantToComputeTask:
@@ -326,8 +325,6 @@ class ConcentIntegrationTestCase(TestCase):
         kwargs['task_header'] = task_header
         if kwargs.get('provider_public_key') is None:
             kwargs['provider_public_key'] = self._get_provider_hex_public_key()
-        if kwargs.get('provider_ethereum_public_key') is None:
-            kwargs['provider_ethereum_public_key'] = self._get_provider_ethereum_hex_public_key()
         if kwargs.get('sign__privkey') is None:
             kwargs['sign__privkey'] = self.PROVIDER_PRIVATE_KEY
         return WantToComputeTaskFactory(**kwargs)

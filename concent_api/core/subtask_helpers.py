@@ -262,7 +262,6 @@ def are_keys_and_addresses_unique_in_message_subtask_results_accepted(
 
     unique_provider_public_keys = set(subtask_results_accepted.task_to_compute.provider_public_key for subtask_results_accepted in subtask_results_accepted_list)
     unique_provider_ethereum_addresses = set(subtask_results_accepted.task_to_compute.provider_ethereum_address for subtask_results_accepted in subtask_results_accepted_list)
-    unique_provider_ethereum_public_keys = set(subtask_results_accepted.task_to_compute.provider_ethereum_public_key for subtask_results_accepted in subtask_results_accepted_list)
 
     is_requestor_public_key_unique = (len(unique_requestor_public_keys) == 1)
     is_requestor_ethereum_address_unique = (len(unique_requestor_ethereum_addresses) == 1)
@@ -270,15 +269,13 @@ def are_keys_and_addresses_unique_in_message_subtask_results_accepted(
 
     is_provider_public_key_unique = (len(unique_provider_public_keys) == 1)
     is_provider_ethereum_address_unique = (len(unique_provider_ethereum_addresses) == 1)
-    is_provider_ethereum_public_key_unique = (len(unique_provider_ethereum_public_keys) == 1)
 
     return (
         is_requestor_public_key_unique and
         is_requestor_ethereum_address_unique and
         is_requestor_ethereum_public_key_unique and
         is_provider_public_key_unique and
-        is_provider_ethereum_address_unique and
-        is_provider_ethereum_public_key_unique
+        is_provider_ethereum_address_unique
     )
 
 

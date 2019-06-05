@@ -1,6 +1,4 @@
 # noqa  # pylint: disable=too-many-lines
-from base64 import b64encode
-
 from freezegun import freeze_time
 from golem_messages import message
 from golem_messages import factories
@@ -1676,29 +1674,30 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
-            timestamp           = "2017-12-01 10:00:00",
-            compute_task_def    = compute_task_def,
-            provider_public_key='bad__key' * 11,
+            timestamp="2017-12-01 10:00:00",
+            compute_task_def=compute_task_def,
         )
 
+        task_to_compute.want_to_compute_task.provider_public_key = 'bad__key' * 11
+
         report_computed_task = self._get_deserialized_report_computed_task(
-            timestamp = "2017-12-01 10:59:00",
-            task_to_compute = task_to_compute,
+            timestamp="2017-12-01 10:59:00",
+            task_to_compute=task_to_compute,
         )
 
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
-            timestamp = "2017-12-01 10:59:00",
-            force_report_computed_task = self._get_deserialized_force_report_computed_task(
-                timestamp               = "2017-12-01 10:59:00",
-                report_computed_task    = report_computed_task
+            timestamp="2017-12-01 10:59:00",
+            force_report_computed_task=self._get_deserialized_force_report_computed_task(
+                timestamp="2017-12-01 10:59:00",
+                report_computed_task=report_computed_task
             ),
-            provider_private_key = self.PROVIDER_PRIVATE_KEY
+            provider_private_key=self.PROVIDER_PRIVATE_KEY
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 =self.send_request(
+            response_1 = self.send_request(
                 url='core:send',
-                data                           = serialized_force_report_computed_task,
+                data=serialized_force_report_computed_task,
             )
         self._test_400_response(
             response_1,
@@ -1723,29 +1722,31 @@ class ReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
         compute_task_def = self._get_deserialized_compute_task_def(kwargs={'deadline': "2017-12-01 11:00:00"})
 
         task_to_compute = self._get_deserialized_task_to_compute(
-            timestamp           = "2017-12-01 10:00:00",
-            compute_task_def    = compute_task_def,
-            provider_public_key = b64encode(self.PROVIDER_PUBLIC_KEY)[:32].decode('ascii'),
+            timestamp="2017-12-01 10:00:00",
+            compute_task_def=compute_task_def,
         )
 
+        task_to_compute.want_to_compute_task.provider_public_key = \
+            task_to_compute.want_to_compute_task.provider_public_key[:-1]
+
         report_computed_task = self._get_deserialized_report_computed_task(
-            timestamp = "2017-12-01 10:59:00",
-            task_to_compute = task_to_compute,
+            timestamp="2017-12-01 10:59:00",
+            task_to_compute=task_to_compute,
         )
 
         serialized_force_report_computed_task = self._get_serialized_force_report_computed_task(
-            timestamp = "2017-12-01 10:59:00",
-            force_report_computed_task = self._get_deserialized_force_report_computed_task(
-                timestamp               = "2017-12-01 10:59:00",
-                report_computed_task    = report_computed_task
+            timestamp="2017-12-01 10:59:00",
+            force_report_computed_task=self._get_deserialized_force_report_computed_task(
+                timestamp="2017-12-01 10:59:00",
+                report_computed_task=report_computed_task
             ),
-            provider_private_key = self.PROVIDER_PRIVATE_KEY
+            provider_private_key=self.PROVIDER_PRIVATE_KEY
         )
 
         with freeze_time("2017-12-01 10:59:00"):
-            response_1 =self.send_request(
+            response_1 = self.send_request(
                 url='core:send',
-                data                           = serialized_force_report_computed_task,
+                data=serialized_force_report_computed_task,
             )
         self._test_400_response(
             response_1,

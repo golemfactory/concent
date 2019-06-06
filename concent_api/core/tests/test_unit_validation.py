@@ -28,6 +28,7 @@ from common.validations import validate_secure_hash_algorithm
 from core.constants import ETHEREUM_ADDRESS_LENGTH
 from core.constants import MESSAGE_TASK_ID_MAX_LENGTH
 from core.exceptions import FrameNumberValidationError
+from core.exceptions import GolemMessageValidationError
 from core.exceptions import HashingAlgorithmError
 from core.subtask_helpers import are_keys_and_addresses_unique_in_message_subtask_results_accepted
 from core.subtask_helpers import are_subtask_results_accepted_messages_signed_by_the_same_requestor
@@ -48,6 +49,7 @@ from core.validation import validate_positive_task_price
 from core.validation import validate_non_negative_integer_value
 from core.validation import validate_positive_integer_value
 from core.validation import validate_scene_file
+from core.validation import validate_subtask_results_rejected_reason
 from core.validation import validate_subtask_results_verify
 from core.validation import validate_task_to_compute
 from core.validation import validate_uuid
@@ -727,3 +729,15 @@ class TestValidateSubtaskResultsVerify:
         )
         with pytest.raises(ConcentValidationError):
             validate_subtask_results_verify(self.subtask_results_verify, different_deposit_contract_address)
+
+
+class TestSubtaskResultsRejectedValidator:
+    def test_that_no_reason_raise_validation_error(self):  # pylint: disable=no-self-use
+        subtask_result_rejected = SubtaskResultsRejected()
+        with pytest.raises(GolemMessageValidationError):
+            validate_subtask_results_rejected_reason(subtask_result_rejected, False)
+
+    def test_that_failed_resources_reason_without_force_get_task_results_failed_in_database_raise_validation_error(self):  # pylint: disable=no-self-use
+        subtask_result_rejected = SubtaskResultsRejected(reason=SubtaskResultsRejected.REASON.ForcedResourcesFailure)
+        with pytest.raises(GolemMessageValidationError):
+            validate_subtask_results_rejected_reason(subtask_result_rejected, False)

@@ -77,6 +77,7 @@ from core.validation import validate_ethereum_addresses
 from core.validation import validate_golem_message_subtask_results_rejected
 from core.validation import validate_reject_report_computed_task
 from core.validation import validate_report_computed_task_time_window
+from core.validation import validate_subtask_results_rejected_reason
 from core.validation import validate_subtask_results_verify
 from core.validation import validate_task_to_compute
 from core.validation import validate_that_golem_messages_are_signed_with_key
@@ -685,6 +686,14 @@ def handle_send_force_subtask_results_response(
             provider_public_key,
             subtask_results_rejected.report_computed_task,
             task_to_compute.want_to_compute_task
+        )
+        force_get_task_results_failed_exists = StoredMessage.objects.filter(
+            type=4011,  # type 4011 == ForceGetTaskResultFailed
+            subtask_id=client_message.subtask_id
+        ).exists()
+        validate_subtask_results_rejected_reason(
+            client_message.subtask_results_rejected,
+            force_get_task_results_failed_exists,
         )
     with non_nesting_atomic(using='control'):
         try:

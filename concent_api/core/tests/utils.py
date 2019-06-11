@@ -807,27 +807,6 @@ class ConcentIntegrationTestCase(TestCase):
                 task_to_compute=task_to_compute,
             )
 
-    def _store_golem_messages_in_database(
-        self,
-        message_type,
-        timestamp,
-        data,
-        task_id,
-    ):  # pylint: disable=no-self-use
-        with freeze_time(timestamp or get_timestamp_string()):
-            message_timestamp = get_current_utc_timestamp()
-            golem_message = StoredMessage(
-                type        = message_type,
-                timestamp   = message_timestamp,
-                data        = data.serialize(),
-                task_id     = task_id
-            )
-
-            golem_message.full_clean()
-            golem_message.save()
-
-        return golem_message
-
     def _send_force_report_computed_task(self, serialized_force_report_computed_task=None):
         force_report_computed_task = message.concents.ForceReportComputedTask(
             report_computed_task=self.report_computed_task,  # pylint: disable=no-member

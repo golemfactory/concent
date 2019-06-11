@@ -16,6 +16,7 @@ from golem_messages.message.concents import SubtaskResultsVerify
 from golem_messages.message.tasks import RejectReportComputedTask
 from golem_messages.message.tasks import ReportComputedTask
 from golem_messages.message.tasks import SubtaskResultsAccepted
+from golem_messages.message.tasks import SubtaskResultsRejected
 
 from common.constants import ErrorCode
 from common.exceptions import ConcentValidationError
@@ -610,4 +611,25 @@ def validate_blender_output_format(output_format: str) -> None:
         raise ConcentValidationError(
             f'Unsupported Blender format!',
             error_code=ErrorCode.MESSAGE_VALUE_NOT_ALLOWED
+        )
+
+
+def validate_subtask_results_rejected_reason(
+        client_message: SubtaskResultsRejected,
+        force_get_task_results_failed_exists: bool,
+) -> None:
+    if client_message.reason == SubtaskResultsRejected.REASON.VerificationNegative:
+        pass
+    elif client_message.reason == SubtaskResultsRejected.REASON.ForcedResourcesFailure:
+        if not force_get_task_results_failed_exists:
+            raise GolemMessageValidationError(
+                f'Error during handling SubtaskResultsRejected. No ForceGetTaskResultFailed message in Concent '
+                f'database for ForcedResourcesFailure REASON.',
+                error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE
+            )
+    else:
+        raise GolemMessageValidationError(
+            f'Error during handling SubtaskResultsRejected. Only VerificationNegative or ForcedResourcesFailure reasons'
+            f' are supported by Concent.',
+            error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE
         )

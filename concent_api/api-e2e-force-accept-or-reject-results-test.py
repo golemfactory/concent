@@ -114,7 +114,7 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConst
         create_force_subtask_results_response(
             timestamp=timestamp_to_isoformat(current_time),
             subtask_results_rejected=create_subtask_results_rejected(
-                reason=message.tasks.SubtaskResultsRejected.REASON.ConcentVerificationNegative,
+                reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
                 timestamp=timestamp_to_isoformat(current_time),
                 report_computed_task=create_signed_report_computed_task(
                     task_to_compute=signed_task_to_compute,

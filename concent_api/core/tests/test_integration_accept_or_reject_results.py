@@ -1,4 +1,5 @@
 import mock
+from django.conf import settings
 
 from django.test import override_settings
 from freezegun import freeze_time
@@ -7,6 +8,7 @@ from golem_messages.shortcuts import dump
 
 from common.constants import ConcentUseCase
 from common.constants import ErrorCode
+from common.helpers import parse_timestamp_to_utc_datetime
 from common.testing_helpers import generate_ecc_key_pair
 from core.exceptions import Http400
 from core.message_handlers import handle_send_force_subtask_results_response
@@ -734,6 +736,24 @@ class AcceptOrRejectIntegrationTest(ConcentIntegrationTestCase):
             timestamp="2018-02-05 10:00:00",
             deadline="2018-02-05 10:00:15",
         )
+
+        force_get_task_result_failed = self._get_deserialized_force_get_task_result_failed(
+            timestamp="2018-02-05 10:00:43",
+            task_to_compute=task_to_compute,
+        )
+
+        force_get_task_result_failed_message = StoredMessage(
+            type=force_get_task_result_failed.header.type_,
+            timestamp=parse_timestamp_to_utc_datetime(parse_iso_date_to_timestamp("2018-02-05 10:00:43")),
+            data=force_get_task_result_failed.serialize(),
+            task_id=task_to_compute.task_id,
+            subtask_id=task_to_compute.subtask_id,
+            protocol_version=settings.MAJOR_MINOR_GOLEM_MESSAGES_VERSION,
+        )
+        force_get_task_result_failed_message.full_clean()
+        force_get_task_result_failed_message.save()
+
+        self._assert_stored_message_counter_increased(increased_by=1)
 
         deserialized_force_subtask_results = self._get_deserialized_force_subtask_results(
             timestamp="2018-02-05 10:00:30",

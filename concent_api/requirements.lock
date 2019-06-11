@@ -22,7 +22,7 @@ cycler==0.10.0
 cytoolz==0.9.0.1
 dask==0.18.1
 decorator==4.3.0
-Django==1.11.13
+Django==1.11.21
 django-constance==2.2.0
 django-picklefield==1.0.0
 eth-abi==1.1.1

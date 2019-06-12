@@ -9,6 +9,9 @@
 #### Payments
 - Feature: Feature payment report admin view and template part 1 (#1117)
 
+#### Endpoints and uses cases in general
+- Bugfix: Concent does not validate reason in SubtaskResultsRejected (#1140)
+
 ### 0.11.1
 - Bugfix: Add X-Golem-Messages header to file upload function (#1130)
 

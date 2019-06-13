@@ -236,7 +236,7 @@ class TestBlocksHelper():
         }
         self.sci = mock.Mock()
         self.blocks_helper = BlocksHelper(self.sci)
-        self.sci.get_block_number.return_value = 9
+        self.sci.get_latest_confirmed_block_number.return_value = 9
         self.sci.get_block_by_number.side_effect = self.mocked_get_block_by_number
 
     def mocked_get_block_by_number(self, number):

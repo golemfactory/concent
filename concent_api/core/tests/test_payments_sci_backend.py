@@ -41,7 +41,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
         with mock.patch(
             'core.payments.payment_interface.PaymentInterface.__new__',
             return_value=mock.Mock(
-                get_block_number=mock.Mock(
+                get_latest_confirmed_block_number=mock.Mock(
                     return_value=self.block_number,
                 ),
                 REQUIRED_CONFS=self.required_confs,
@@ -67,7 +67,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
                 get_forced_payments=mock.Mock(
                     return_value=self._get_list_of_settlement_transactions(),
                 ),
-                get_block_number=mock.Mock(
+                get_latest_confirmed_block_number=mock.Mock(
                     return_value=self.block_number,
                 ),
                 REQUIRED_CONFS=self.required_confs,
@@ -93,7 +93,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
             to_block=self.block_number - self.required_confs,
         )
 
-        new_sci_rpc_mock.return_value.get_block_number.assert_called()
+        new_sci_rpc_mock.return_value.get_latest_confirmed_block_number.assert_called()
 
         get_latest_existing_block_at_mock.assert_called_with(self.current_time)
 
@@ -104,7 +104,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
                 get_batch_transfers=mock.Mock(
                     return_value=self._get_list_of_batch_transactions(),
                 ),
-                get_block_number=mock.Mock(
+                get_latest_confirmed_block_number=mock.Mock(
                     return_value=self.block_number,
                 ),
                 REQUIRED_CONFS=self.required_confs,
@@ -130,7 +130,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
             to_block=self.block_number - self.required_confs,
         )
 
-        new_sci_rpc_mock.return_value.get_block_number.assert_called()
+        new_sci_rpc_mock.return_value.get_latest_confirmed_block_number.assert_called()
 
         get_latest_existing_block_at_mock.assert_called_with(self.current_time)
 
@@ -141,7 +141,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
                 get_forced_subtask_payments=mock.Mock(
                     return_value=self._get_list_of_forced_subtask_transactions(),
                 ),
-                get_block_number=mock.Mock(
+                get_latest_confirmed_block_number=mock.Mock(
                     return_value=self.block_number,
                 ),
                 REQUIRED_CONFS=self.required_confs,
@@ -167,7 +167,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
             to_block=self.block_number - self.required_confs,
         )
 
-        new_sci_rpc.return_value.get_block_number.assert_called()
+        new_sci_rpc.return_value.get_latest_confirmed_block_number.assert_called()
 
         get_latest_existing_block_at.assert_called_with(self.current_time)
 
@@ -448,7 +448,7 @@ class SCIBackendTest(ConcentIntegrationTestCase):
                 get_covered_additional_verification_costs=mock.Mock(
                     return_value=self._get_list_of_covered_additional_verification_costs()
                 ),
-                get_block_number=mock.Mock(
+                get_latest_confirmed_block_number=mock.Mock(
                     return_value=self.block_number,
                 ),
                 REQUIRED_CONFS=self.required_confs,
@@ -471,6 +471,6 @@ class SCIBackendTest(ConcentIntegrationTestCase):
             to_block=self.block_number - self.required_confs,
         )
 
-        new_sci_rpc.return_value.get_block_number.assert_called()
+        new_sci_rpc.return_value.get_latest_confirmed_block_number.assert_called()
 
         get_latest_existing_block_at.assert_called_with(self.current_time)

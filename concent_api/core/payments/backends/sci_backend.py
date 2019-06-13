@@ -67,7 +67,7 @@ def get_list_of_payments(
     payments: list = []
 
     first_block_after_payment_number = BlocksHelper(payment_interface).get_latest_existing_block_at(min_block_timestamp).number
-    latest_block_number = payment_interface.get_block_number()  # pylint: disable=no-member
+    latest_block_number = payment_interface.get_latest_confirmed_block_number()  # pylint: disable=no-member
     if latest_block_number - first_block_after_payment_number < payment_interface.REQUIRED_CONFS:  # pylint: disable=no-member
         return payments
 
@@ -223,7 +223,7 @@ def get_covered_additional_verification_costs(client_eth_address: str, payment_t
         # We start few blocks before first matching block because additional verification payments
         # do not have closure_time so we are relying on blockchain timestamps
         from_block=first_block_after_payment_number - PAYMENTS_FROM_BLOCK_SAFETY_MARGIN,
-        to_block=payment_interface.get_block_number() - payment_interface.REQUIRED_CONFS,  # pylint: disable=no-member
+        to_block=payment_interface.get_latest_confirmed_block_number() - payment_interface.REQUIRED_CONFS,  # pylint: disable=no-member
     )
 
 

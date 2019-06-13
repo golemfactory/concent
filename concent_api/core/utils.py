@@ -195,7 +195,7 @@ class BlocksHelper:
         such block doesn't exist returns latest block.
         """
         lowest = -1
-        highest = self._sci.get_block_number()
+        highest = self._sci.get_latest_confirmed_block_number()
         while lowest + 1 < highest:
             medium = (lowest + highest) // 2
             if self._sci.get_block_by_number(medium).timestamp > timestamp:

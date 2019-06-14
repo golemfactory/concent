@@ -360,6 +360,8 @@ def run_tests(objects: dict, additional_arguments: Optional[dict]=None) -> int:
     number_of_failed_tests = count_fails.get_fails()
     if number_of_failed_tests > 0:
         count_fails.print_fails()
+    objects['sci_base'].requestor_sci.stop()
+    objects['sci_base'].provider_sci.stop()
     print("END")
     status_code = int(number_of_failed_tests > 0)
     return status_code

@@ -220,7 +220,10 @@ class ApiViewTransactionTestCase(TransactionTestCase):
             price=1,
         )
         task_to_compute.generate_ethsig(REQUESTOR_ETHEREUM_PRIVATE_KEY)
-        task_to_compute.sign_promissory_note(REQUESTOR_ETHEREUM_PRIVATE_KEY)
+        task_to_compute.sign_all_promissory_notes(
+            deposit_contract_address=settings.GNT_DEPOSIT_CONTRACT_ADDRESS,
+            private_key=REQUESTOR_ETHEREUM_PRIVATE_KEY,
+        )
         self.task_to_compute = load(
             dump(
                 task_to_compute,

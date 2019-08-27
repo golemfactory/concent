@@ -95,3 +95,5 @@ if MIDDLEWARE.index('concent_api.middleware.HandleServerErrorMiddleware') is not
 ETHEREUM_CHAIN = 'rinkeby'
 
 BLENDER_RENDER_TOOLS_DIR = 'golem_render_tools'
+
+GNT_DEPOSIT_CONTRACT_ADDRESS = "0xcfB81A6EE3ae6aD4Ac59ddD21fB4589055c13DaD"

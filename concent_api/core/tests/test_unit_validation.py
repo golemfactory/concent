@@ -17,6 +17,9 @@ from golem_messages.message.tasks import TaskToCompute
 from golem_messages.message.tasks import WantToComputeTask
 from golem_messages.utils import encode_hex
 from golem_messages.utils import pubkey_to_address
+
+from django.conf import settings
+
 from common.constants import ErrorCode
 from common.exceptions import ConcentValidationError
 from common.exceptions import NonPositivePriceTaskToComputeError
@@ -437,7 +440,10 @@ class TestValidateTaskToCompute(object):
         (REQUESTOR_ETHEREUM_PRIVATE_KEY, REQUESTOR_ETHERUM_PUBLIC_KEY) = generate_ecc_key_pair()
         self.task_to_compute = TaskToComputeFactory(requestor_ethereum_public_key=encode_hex(REQUESTOR_ETHERUM_PUBLIC_KEY))
         self.task_to_compute.generate_ethsig(REQUESTOR_ETHEREUM_PRIVATE_KEY)
-        self.task_to_compute.sign_promissory_note(REQUESTOR_ETHEREUM_PRIVATE_KEY)
+        self.task_to_compute.sign_all_promissory_notes(
+            deposit_contract_address=settings.GNT_DEPOSIT_CONTRACT_ADDRESS,
+            private_key=REQUESTOR_ETHEREUM_PRIVATE_KEY,
+        )
 
     def test_that_valid_task_to_compute_doesnt_raise_any_exception(self):
         try:

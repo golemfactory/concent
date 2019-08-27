@@ -7,6 +7,8 @@ from golem_messages.message.concents import SubtaskResultsVerify
 from golem_messages.utils import uuid_to_bytes32
 from web3 import Web3
 
+from django.conf import settings
+
 from common.testing_helpers import generate_ecc_key_pair
 from common.helpers import get_current_utc_timestamp
 from core.constants import PAYMENTS_FROM_BLOCK_SAFETY_MARGIN
@@ -172,7 +174,10 @@ class SCIBackendTest(ConcentIntegrationTestCase):
         get_latest_existing_block_at.assert_called_with(self.current_time)
 
     def test_that_sci_backend_make_settlement_payment_to_provider_should_return_transaction_hash(self):
-        self.task_to_compute.sign_promissory_note(self.REQUESTOR_PRIVATE_KEY)
+        self.task_to_compute.sign_all_promissory_notes(
+            deposit_contract_address=settings.GNT_DEPOSIT_CONTRACT_ADDRESS,
+            private_key=self.REQUESTOR_PRIVATE_KEY,
+        )
         (v, r, s) = self.task_to_compute.promissory_note_sig
         with mock.patch(
             'core.payments.payment_interface.PaymentInterface.__new__',
@@ -216,7 +221,10 @@ class SCIBackendTest(ConcentIntegrationTestCase):
         )
 
     def test_that_sci_backend_make_settlement_payment_to_provider_should_pay_at_least_requestor_account_balance(self):
-        self.task_to_compute.sign_promissory_note(self.REQUESTOR_PRIVATE_KEY)
+        self.task_to_compute.sign_all_promissory_notes(
+            deposit_contract_address=settings.GNT_DEPOSIT_CONTRACT_ADDRESS,
+            private_key=self.REQUESTOR_PRIVATE_KEY,
+        )
         (v, r, s) = self.task_to_compute.promissory_note_sig
         with mock.patch(
             'core.payments.payment_interface.PaymentInterface.__new__',
@@ -294,7 +302,10 @@ class SCIBackendTest(ConcentIntegrationTestCase):
         )
 
     def test_that_sci_backend_force_subtask_payment_should_return_transaction_hash(self):
-        self.task_to_compute.sign_promissory_note(self.REQUESTOR_PRIVATE_KEY)
+        self.task_to_compute.sign_all_promissory_notes(
+            deposit_contract_address=settings.GNT_DEPOSIT_CONTRACT_ADDRESS,
+            private_key=self.REQUESTOR_PRIVATE_KEY,
+        )
         v, r, s = self.task_to_compute.promissory_note_sig
 
         with mock.patch(

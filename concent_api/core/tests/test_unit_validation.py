@@ -10,6 +10,7 @@ from golem_messages.factories.tasks import ReportComputedTaskFactory
 from golem_messages.factories.tasks import SubtaskResultsAcceptedFactory
 from golem_messages.factories.tasks import TaskToComputeFactory
 from golem_messages.factories.tasks import WantToComputeTaskFactory
+from golem_messages.message.concents import ForceGetTaskResultFailed
 from golem_messages.message.concents import SubtaskResultsVerify
 from golem_messages.message.tasks import ReportComputedTask
 from golem_messages.message.tasks import SubtaskResultsRejected
@@ -741,9 +742,19 @@ class TestSubtaskResultsRejectedValidator:
     def test_that_no_reason_raise_validation_error(self):  # pylint: disable=no-self-use
         subtask_result_rejected = SubtaskResultsRejected()
         with pytest.raises(GolemMessageValidationError):
-            validate_subtask_results_rejected_reason(subtask_result_rejected, False)
+            validate_subtask_results_rejected_reason(subtask_result_rejected)
 
-    def test_that_failed_resources_reason_without_force_get_task_results_failed_in_database_raise_validation_error(self):  # pylint: disable=no-self-use
+    def test_that_message_with_verification_negative_reason_will_not_raise_exception(self):  # pylint: disable=no-self-use
+        subtask_result_rejected = SubtaskResultsRejected(reason=SubtaskResultsRejected.REASON.VerificationNegative)
+        validate_subtask_results_rejected_reason(subtask_result_rejected)
+
+    def test_that_message_with_force_resources_failure_and_force_get_task_result_failed_will_not_raise_exception(self):  # pylint: disable=no-self-use
+        subtask_result_rejected = SubtaskResultsRejected(reason=SubtaskResultsRejected.REASON.ForcedResourcesFailure)
+        force_get_task_result_failed = ForceGetTaskResultFailed(task_to_compute=subtask_result_rejected.task_to_compute)
+        subtask_result_rejected.force_get_task_result_failed = force_get_task_result_failed
+        validate_subtask_results_rejected_reason(subtask_result_rejected)
+
+    def test_that_message_with_force_resources_failure_and_without_force_get_task_result_failed_will_raise_exception(self):  # pylint: disable=no-self-use
         subtask_result_rejected = SubtaskResultsRejected(reason=SubtaskResultsRejected.REASON.ForcedResourcesFailure)
         with pytest.raises(GolemMessageValidationError):
-            validate_subtask_results_rejected_reason(subtask_result_rejected, False)
+            validate_subtask_results_rejected_reason(subtask_result_rejected)

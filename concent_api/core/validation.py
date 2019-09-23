@@ -616,16 +616,21 @@ def validate_blender_output_format(output_format: str) -> None:
 
 def validate_subtask_results_rejected_reason(
         client_message: SubtaskResultsRejected,
-        force_get_task_results_failed_exists: bool,
 ) -> None:
     if client_message.reason == SubtaskResultsRejected.REASON.VerificationNegative:
         pass
     elif client_message.reason == SubtaskResultsRejected.REASON.ForcedResourcesFailure:
-        if not force_get_task_results_failed_exists:
+        force_get_task_result_failed = client_message.force_get_task_result_failed
+        if isinstance(force_get_task_result_failed, message.concents.ForceGetTaskResultFailed):
+            if force_get_task_result_failed.subtask_id != client_message.subtask_id:
+                raise GolemMessageValidationError(
+                    f"ForceGetTaskResultsFailed subtask_id does not match with SubtaskResultsRejected TaskToCompute subtask_id.",
+                    error_code=ErrorCode.MESSAGE_INVALID,
+                )
+        else:
             raise GolemMessageValidationError(
-                f'Error during handling SubtaskResultsRejected. No ForceGetTaskResultFailed message in Concent '
-                f'database for ForcedResourcesFailure REASON.',
-                error_code=ErrorCode.MESSAGE_VALUE_WRONG_TYPE
+                f"SubtaskResultsRejected hasn't got instance of ForceGetTaskResultsFailed message",
+                error_code=ErrorCode.MESSAGE_INVALID,
             )
     else:
         raise GolemMessageValidationError(

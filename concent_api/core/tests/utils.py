@@ -302,7 +302,10 @@ class ConcentIntegrationTestCase(TestCase):
             task_to_compute,
             requestor_ethereum_private_key if requestor_ethereum_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
         )
-        task_to_compute.sign_promissory_note(requestor_ethereum_private_key if requestor_ethereum_private_key is not None else self.REQUESTOR_PRIVATE_KEY)
+        task_to_compute.sign_all_promissory_notes(
+            deposit_contract_address=settings.GNT_DEPOSIT_CONTRACT_ADDRESS,
+            private_key=requestor_ethereum_private_key if requestor_ethereum_private_key is not None else self.REQUESTOR_PRIVATE_KEY,
+        )
         task_to_compute = self._sign_message(
             task_to_compute,
             signer_private_key,

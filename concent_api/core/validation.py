@@ -102,7 +102,7 @@ def validate_task_to_compute(task_to_compute: message.TaskToCompute) -> None:
             "Invalid TaskToCompute",
             error_code=ErrorCode.MESSAGE_WRONG_FIELDS,
         )
-    if not task_to_compute.verify_promissory_note():
+    if not task_to_compute.verify_all_promissory_notes(deposit_contract_address=settings.GNT_DEPOSIT_CONTRACT_ADDRESS):
         raise ConcentValidationError(
             "The signature of the PromissiryNote for the Provider, which should be signed by Requestor is incorrect",
             error_code=ErrorCode.MESSAGE_INVALID,

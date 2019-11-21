@@ -3,10 +3,15 @@
 - golem-messages: 3.14.0
 - golem-smart-contracts-interface: 1.10.3
 
+### 0.12.1
+#### Compatibility
+- golem-messages: 3.7.0
+- golem-smart-contracts-interface: 1.10.2
+
 ### 0.12.0
 #### Compatibility
 - golem-messages: 3.7.0
-- golem-smart-contracts-interface: 1.10.0
+- golem-smart-contracts-interface: 1.9.0
 
 #### Additional Verification
 - Bugfix: Bugfix verifier after gm update 3.3.0 (#1128)

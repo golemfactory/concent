@@ -210,15 +210,15 @@ class SCIBaseTest():
     def ensure_that_provider_has_specific_gntb_balance(self, value: int) -> None:
         self._wait_unitl_timeout(
             condition=lambda: (self.get_provider_gntb_balance() != value),
-            timeout_message=f'Provider gntb balance is different than assumpted',
-            sleep_message=f'Provider actual gntb balance: {self.get_provider_gntb_balance()}. Waiting for {value}',
+            timeout_message=f'Provider gntb balance is different than expected',
+            sleep_message=f'Provider current gntb balance: {self.get_provider_gntb_balance()}. Waiting for {value}',
         )
 
     def ensure_that_requestor_has_specific_deposit_balance(self, value: int) -> None:
         self._wait_unitl_timeout(
             condition=lambda: (self.get_requestor_deposit_value() != value),
-            timeout_message=f'Requestor gntb deposit balance is different than assumpted',
-            sleep_message=f'Requestor actual gntb deposit balance: {self.get_requestor_deposit_value()}. Waiting for {value}',
+            timeout_message=f'Requestor gntb deposit balance is different than expected',
+            sleep_message=f'Requestor current gntb deposit balance: {self.get_requestor_deposit_value()}. Waiting for {value}',
         )
 
     def get_gnt_deposit_address_from_cluster_address(self, address: str) -> str:

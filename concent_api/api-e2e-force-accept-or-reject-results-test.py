@@ -10,7 +10,7 @@ from freezegun import freeze_time
 from golem_messages import message
 from mock import Mock
 
-from api_testing_common import api_request
+from api_testing_common import api_request, _precalculate_subtask_verification_time
 from api_testing_common import calculate_deadline
 from api_testing_common import calculate_deadline_too_far_in_the_future
 from api_testing_common import calculate_timestamp
@@ -315,9 +315,15 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolC
         CONCENT_PUBLIC_KEY
     )
     current_time = get_current_utc_timestamp()
+    compute_task_def_deadline = (
+            current_time - _precalculate_subtask_verification_time(
+                cluster_consts.minimum_upload_rate,
+                cluster_consts.concent_messaging_time,
+            ) - 1
+    )
     signed_task_to_compute = create_signed_task_to_compute(
-        timestamp=calculate_timestamp(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
-        deadline=calculate_deadline(current_time, cluster_consts.concent_messaging_time, cluster_consts.minimum_upload_rate),
+        timestamp=timestamp_to_isoformat(compute_task_def_deadline - 1),
+        deadline=compute_task_def_deadline,
         price=1000,
         provider_public_key=sci_base.provider_public_key,
         provider_private_key=sci_base.provider_private_key,
@@ -339,6 +345,7 @@ def test_case_2a_send_duplicated_force_subtask_results(cluster_consts: ProtocolC
         task_to_compute=signed_task_to_compute,
         provider_private_key=sci_base.provider_private_key,
     )
+
     api_request(
         cluster_url,
         'send',

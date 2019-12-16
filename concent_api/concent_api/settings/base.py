@@ -1,4 +1,5 @@
 import os
+import sys
 
 from mypy.types import Dict  # noqa # pylint: disable=unused-import
 
@@ -177,6 +178,7 @@ LOGGING = {
             'level':     'INFO',
             'class':     'logging.StreamHandler',
             'formatter': 'console',
+            'stream': sys.stdout,
         },
     },
     'loggers': {
@@ -219,6 +221,7 @@ LOGGING = {
             'handlers':  [],
             'level':     'DEBUG',
             'propagate': True,
+            'stream': sys.stdout,
         },
         'django.db': {
             # Filter out DEBUG messages. There are too many of them. Django logs all DB queries at this level.

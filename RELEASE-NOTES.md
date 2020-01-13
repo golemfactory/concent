@@ -1,4 +1,4 @@
-### Next
+### 0.14.1
 #### Compatibility
 - golem-smart-contracts-interface: 1.10.5
 

@@ -1,6 +1,10 @@
 import os
-from celery import Celery
+from celery import Celery, signals
 from kombu import Queue
+
+@signals.setup_logging.connect
+def on_celery_setup_logging(**kwargs):
+    pass
 
 # set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'concent_api.settings')

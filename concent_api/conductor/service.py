@@ -120,15 +120,21 @@ def filter_frames_by_blender_subtask_definition(blender_subtask_definition: Blen
 
 
 def _store_blender_crop_script_parameters(blender_parameters: Any) -> BlenderCropScriptParameters:
+    """
+    Create and save BlenderCropScriptParameters model in database.
+    String conversion and splicing is done to avoid DecimalField exceptions on full_clean.
+    [:11] is needed for DecimalField(max_digits=10, decimal_places=9).
+    """
+
     blender_crop_script_parameters = BlenderCropScriptParameters(
         resolution_x=blender_parameters['resolution'][0],
         resolution_y=blender_parameters['resolution'][1],
         samples=blender_parameters['samples'],
         use_compositing=blender_parameters['use_compositing'],
-        borders_x_min=blender_parameters['borders_x'][0],
-        borders_x_max=blender_parameters['borders_x'][1],
-        borders_y_min=blender_parameters['borders_y'][0],
-        borders_y_max=blender_parameters['borders_y'][1],
+        borders_x_min=(str(blender_parameters['borders_x'][0]))[:11],
+        borders_x_max=(str(blender_parameters['borders_x'][1]))[:11],
+        borders_y_min=(str(blender_parameters['borders_y'][0]))[:11],
+        borders_y_max=(str(blender_parameters['borders_y'][1]))[:11],
     )
     blender_crop_script_parameters.full_clean()
     blender_crop_script_parameters.save()

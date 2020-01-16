@@ -1,3 +1,7 @@
+### 0.14.2
+#### Endpoints and uses cases in general
+- Bugfix: Convert float to string for Decimal input in blender_crop_script (#1158)
+
 ### 0.14.1
 #### Compatibility
 - golem-smart-contracts-interface: 1.10.5

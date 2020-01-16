@@ -1,12 +1,18 @@
 import mock
+import pytest
+from assertpy import assert_that
+
+from golem_messages.factories.tasks import ComputeTaskDefFactory
 
 from common.helpers import get_current_utc_timestamp
 from common.helpers import parse_timestamp_to_utc_datetime
 from conductor.exceptions import VerificationRequestAlreadyInitiatedError
+from conductor.models import BlenderCropScriptParameters
 from conductor.models import ResultTransferRequest
 from conductor.models import UploadReport
 from conductor.models import VerificationRequest
 from conductor.service import update_upload_report
+from conductor.service import _store_blender_crop_script_parameters
 from core.tests.utils import ConcentIntegrationTestCase
 
 
@@ -79,3 +85,37 @@ class ConductorReportFinishedUploadTestCase(ConcentIntegrationTestCase):
         self.assertFalse(self.result_transfer_request.upload_finished)
 
         result_upload_finished.assert_not_called()
+
+
+class TestBlenderCropScriptParameters(object):
+    compute_task_def = None
+
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.compute_task_def = ComputeTaskDefFactory()
+        self.compute_task_def["extra_data"] = {
+            "resolution": [400, 400],
+            "samples": 1,
+            "use_compositing": False,
+        }
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        ['borders_x', 'borders_y'], [
+            [[0.0, 1.0], [0.0, 1.0]],
+            [['0.0', '1.0'], ['0.0', '1.0']],
+            [[0, 1], [0, 1]],
+            [[0.1, 0.2], [0.3333333333333, 0.66666]],
+            [[0, 1], ['0.33333', '0.66666666666666666']],
+        ]
+    )
+    def test_store_blender_crop_script_parameters(self, borders_x, borders_y):
+        blender_crop_script_parameters = dict(
+            resolution=self.compute_task_def['extra_data']['resolution'],
+            samples=self.compute_task_def['extra_data']['samples'],
+            use_compositing=self.compute_task_def['extra_data']['use_compositing'],
+            borders_x=borders_x,
+            borders_y=borders_y,
+        )
+        blender_parameters = _store_blender_crop_script_parameters(blender_crop_script_parameters)
+        assert_that(blender_parameters).is_instance_of(BlenderCropScriptParameters)

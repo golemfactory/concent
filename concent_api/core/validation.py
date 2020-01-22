@@ -541,6 +541,12 @@ def validate_database_task_to_compute(
         message_to_compare: message.Message
 ) -> None:
     if message_to_compare.task_to_compute != task_to_compute:
+        log(
+            logger,
+            f'Nested TaskToCompute message : {message_to_compare.task_to_compute} must be the same as '
+            f'TaskToCompute stored separately: {task_to_compute} ',
+            logging_level=LoggingLevel.ERROR
+        )
         raise ValidationError({
             message_to_compare.__class__.__name__: (
                 'Nested TaskToCompute message must be the same as TaskToCompute stored separately'
@@ -553,6 +559,12 @@ def validate_database_report_computed_task(
         message_to_compare: message.Message
 ) -> None:
     if message_to_compare.report_computed_task != report_computed_task:
+        log(
+            logger,
+            f'Nested ReportComputedTask message : {message_to_compare.report_computed_task} must be the same as '
+            f'ReportComputedTask stored separately: {report_computed_task} ',
+            logging_level=LoggingLevel.ERROR
+        )
         raise ValidationError({
             message_to_compare.__class__.__name__: (
                 'Nested ReportComputedTask message must be the same as ReportComputedTask stored separately'

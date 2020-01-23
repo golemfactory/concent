@@ -89,6 +89,7 @@ def test_case_2d_requestor_rejects_subtask_results(cluster_consts: ProtocolConst
                 timestamp=timestamp_to_isoformat(current_time),
                 report_computed_task=create_signed_report_computed_task(
                     task_to_compute=signed_task_to_compute,
+                    timestamp=timestamp_to_isoformat(current_time),
                     provider_private_key=sci_base.provider_private_key,
                 ),
                 requestor_private_key=sci_base.requestor_private_key

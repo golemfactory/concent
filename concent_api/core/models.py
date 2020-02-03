@@ -510,14 +510,6 @@ class Subtask(Model):
 
         deserialized_report_computed_task = self._deserialize_database_message(self.report_computed_task)
 
-        # If available, the report_computed_task nested in force_get_task_result must match report_computed_task.
-        if self.force_get_task_result is not None:
-            deserialized_force_get_task_result = self._deserialize_database_message(self.force_get_task_result)
-            if deserialized_force_get_task_result.report_computed_task != deserialized_report_computed_task:
-                raise ValidationError({
-                    'force_get_task_result': "ReportComputedTask nested in ForceGetTaskResult must match Subtask's ReportComputedTask."
-                })
-
         if not self.result_package_size == deserialized_report_computed_task.size:
             raise ValidationError({
                 'result_package_size': "ReportComputedTask size mismatch"

@@ -548,18 +548,6 @@ def validate_database_task_to_compute(
         })
 
 
-def validate_database_report_computed_task(
-        report_computed_task: message.tasks.ReportComputedTask,
-        message_to_compare: message.Message
-) -> None:
-    if message_to_compare.report_computed_task != report_computed_task:
-        raise ValidationError({
-            message_to_compare.__class__.__name__: (
-                'Nested ReportComputedTask message must be the same as ReportComputedTask stored separately'
-            )
-        })
-
-
 def substitute_new_report_computed_task_if_needed(
         report_computed_task_from_acknowledgement: ReportComputedTask,
         stored_report_computed_task: ReportComputedTask

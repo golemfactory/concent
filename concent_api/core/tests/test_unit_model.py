@@ -42,6 +42,10 @@ def _get_data_list(correct):
         sign__privkey=PROVIDER_PRIVATE_KEY,
         task_to_compute=different_task_to_compute
     )
+    different_rct_the_same_ttc = factories.tasks.ReportComputedTaskFactory(
+        sign__privkey=PROVIDER_PRIVATE_KEY,
+        task_to_compute=task_to_compute,
+    )
     ack_report_computed_task = factories.tasks.AckReportComputedTaskFactory(
         sign__privkey=REQUESTOR_PRIVATE_KEY,
         report_computed_task=report_computed_task
@@ -49,6 +53,10 @@ def _get_data_list(correct):
     different_ack_report_computed_task = factories.tasks.AckReportComputedTaskFactory(
         sign__privkey=REQUESTOR_PRIVATE_KEY,
         report_computed_task=different_report_computed_task
+    )
+    different_arct_the_same_ttc = factories.tasks.AckReportComputedTaskFactory(
+        sign__privkey=REQUESTOR_PRIVATE_KEY,
+        report_computed_task=different_rct_the_same_ttc
     )
     reject_report_computed_task_with_task_to_compute = factories.tasks.RejectReportComputedTaskFactory(
         sign__privkey=REQUESTOR_PRIVATE_KEY,
@@ -103,6 +111,10 @@ def _get_data_list(correct):
         sign__privkey=PROVIDER_PRIVATE_KEY,
         report_computed_task=different_report_computed_task
     )
+    different_fgtr_the_same_ttc = factories.concents.ForceGetTaskResultFactory(
+        sign__privkey=PROVIDER_PRIVATE_KEY,
+        report_computed_task=different_rct_the_same_ttc
+    )
     subtask_results_rejected = factories.tasks.SubtaskResultsRejectedFactory(
         sign__privkey=REQUESTOR_PRIVATE_KEY,
         report_computed_task=report_computed_task
@@ -111,15 +123,22 @@ def _get_data_list(correct):
         sign__privkey=REQUESTOR_PRIVATE_KEY,
         report_computed_task=different_report_computed_task
     )
+    different_srr_the_same_ttc = factories.tasks.SubtaskResultsRejectedFactory(
+        sign__privkey=REQUESTOR_PRIVATE_KEY,
+        report_computed_task=different_rct_the_same_ttc
+    )
     if correct:
         return [
             (task_to_compute, report_computed_task, None, None, None, None),
             (task_to_compute, report_computed_task, ack_report_computed_task, None, None, None),
+            (task_to_compute, report_computed_task, different_arct_the_same_ttc, None, None, None),
             (task_to_compute, report_computed_task, None, reject_report_computed_task_with_task_to_compute, None, None),
             (task_to_compute, report_computed_task, None, reject_report_computed_task_with_task_failure, None, None),
             (task_to_compute, report_computed_task, None, reject_report_computed_task_with_cannot_compute_task, None, None),
             (task_to_compute, report_computed_task, None, None, force_get_task_result, None),
+            (task_to_compute, report_computed_task, None, None, different_fgtr_the_same_ttc, None),
             (task_to_compute, report_computed_task, None, None, None, subtask_results_rejected),
+            (task_to_compute, report_computed_task, None, None, None, different_srr_the_same_ttc),
         ]
     else:
         return [

@@ -42,7 +42,6 @@ from .constants import ETHEREUM_TRANSACTION_HASH_LENGTH
 from .constants import GOLEM_PUBLIC_KEY_LENGTH
 from .constants import MESSAGE_TASK_ID_MAX_LENGTH
 from .constants import TASK_OWNER_KEY_LENGTH
-from .validation import validate_database_report_computed_task
 from .validation import validate_database_task_to_compute
 
 
@@ -510,14 +509,6 @@ class Subtask(Model):
 
         deserialized_report_computed_task = self._deserialize_database_message(self.report_computed_task)
 
-        # If available, the report_computed_task nested in force_get_task_result must match report_computed_task.
-        if self.force_get_task_result is not None:
-            deserialized_force_get_task_result = self._deserialize_database_message(self.force_get_task_result)
-            if deserialized_force_get_task_result.report_computed_task != deserialized_report_computed_task:
-                raise ValidationError({
-                    'force_get_task_result': "ReportComputedTask nested in ForceGetTaskResult must match Subtask's ReportComputedTask."
-                })
-
         if not self.result_package_size == deserialized_report_computed_task.size:
             raise ValidationError({
                 'result_package_size': "ReportComputedTask size mismatch"
@@ -536,8 +527,6 @@ class Subtask(Model):
             self.report_computed_task,
             self.subtask_results_accepted,
             self.reject_report_computed_task,
-        ]
-        MESSAGES_TO_VALIDATE_REPORT_COMPUTED_TASK = [
             self.ack_report_computed_task,
             self.subtask_results_rejected,
             self.force_get_task_result,
@@ -549,13 +538,6 @@ class Subtask(Model):
                 validate_database_task_to_compute(
                     task_to_compute=deserialized_task_to_compute,
                     message_to_compare=deserialize_database_message(task_to_compute_to_validate),
-                )
-
-        for report_computed_task_to_validate in MESSAGES_TO_VALIDATE_REPORT_COMPUTED_TASK:
-            if report_computed_task_to_validate is not None:
-                validate_database_report_computed_task(
-                    report_computed_task=deserialized_report_computed_task,
-                    message_to_compare=deserialize_database_message(report_computed_task_to_validate),
                 )
 
         for related_message_name in Subtask.MESSAGE_FOR_FIELD:

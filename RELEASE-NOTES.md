@@ -3,6 +3,10 @@
 - golem-messages: 3.15.0
 - golem-smart-contracts-interface: 1.11.1
 
+#### Endpoints and uses cases in general
+- Bugfix: Remove nested rct messages validations (#1165)
+- Bugfix: Remove nested ttc messages validations (#1166)
+
 ### 0.14.2
 #### Endpoints and uses cases in general
 - Bugfix: Convert float to string for Decimal input in blender_crop_script (#1158)

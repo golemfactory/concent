@@ -31,7 +31,7 @@ from core.utils import hex_to_bytes_convert
 
 # This all data has to be prepared in separate function because pytest parametrize can't get variables from SetUp()
 # Function allows to prepare 2 packs of data: correct and incorrect.
-def _get_data_list(correct):
+def _get_data_list():
     task_to_compute = factories.tasks.TaskToComputeFactory(sign__privkey=REQUESTOR_PRIVATE_KEY)
     different_task_to_compute = factories.tasks.TaskToComputeFactory(sign__privkey=REQUESTOR_PRIVATE_KEY)
     report_computed_task = factories.tasks.ReportComputedTaskFactory(
@@ -127,30 +127,26 @@ def _get_data_list(correct):
         sign__privkey=REQUESTOR_PRIVATE_KEY,
         report_computed_task=different_rct_the_same_ttc
     )
-    if correct:
-        return [
-            (task_to_compute, report_computed_task, None, None, None, None),
-            (task_to_compute, report_computed_task, ack_report_computed_task, None, None, None),
-            (task_to_compute, report_computed_task, different_arct_the_same_ttc, None, None, None),
-            (task_to_compute, report_computed_task, None, reject_report_computed_task_with_task_to_compute, None, None),
-            (task_to_compute, report_computed_task, None, reject_report_computed_task_with_task_failure, None, None),
-            (task_to_compute, report_computed_task, None, reject_report_computed_task_with_cannot_compute_task, None, None),
-            (task_to_compute, report_computed_task, None, None, force_get_task_result, None),
-            (task_to_compute, report_computed_task, None, None, different_fgtr_the_same_ttc, None),
-            (task_to_compute, report_computed_task, None, None, None, subtask_results_rejected),
-            (task_to_compute, report_computed_task, None, None, None, different_srr_the_same_ttc),
-        ]
-    else:
-        return [
-            (task_to_compute, different_report_computed_task, None, None, None, None),
-            (task_to_compute, report_computed_task, different_ack_report_computed_task, None, None, None),
-            (task_to_compute, report_computed_task, None, different_reject_report_computed_task_with_task_to_compute, None, None),
-            (task_to_compute, report_computed_task, None, different_reject_report_computed_task_with_task_failure, None, None),
-            (task_to_compute, report_computed_task, None, different_reject_report_computed_task_with_cannot_compute_task, None, None),
-            (task_to_compute, report_computed_task, None, reject_report_computed_task_without_reason_and_task_to_compute, None, None),
-            (task_to_compute, report_computed_task, None, None, different_force_get_task_result, None),
-            (task_to_compute, report_computed_task, None, None, None, different_subtask_results_rejected),
-        ]
+    return [
+        (task_to_compute, report_computed_task, None, None, None, None),
+        (task_to_compute, report_computed_task, ack_report_computed_task, None, None, None),
+        (task_to_compute, report_computed_task, different_arct_the_same_ttc, None, None, None),
+        (task_to_compute, report_computed_task, None, reject_report_computed_task_with_task_to_compute, None, None),
+        (task_to_compute, report_computed_task, None, reject_report_computed_task_with_task_failure, None, None),
+        (task_to_compute, report_computed_task, None, reject_report_computed_task_with_cannot_compute_task, None, None),
+        (task_to_compute, report_computed_task, None, None, force_get_task_result, None),
+        (task_to_compute, report_computed_task, None, None, different_fgtr_the_same_ttc, None),
+        (task_to_compute, report_computed_task, None, None, None, subtask_results_rejected),
+        (task_to_compute, report_computed_task, None, None, None, different_srr_the_same_ttc),
+        (task_to_compute, different_report_computed_task, None, None, None, None),
+        (task_to_compute, report_computed_task, different_ack_report_computed_task, None, None, None),
+        (task_to_compute, report_computed_task, None, different_reject_report_computed_task_with_task_to_compute, None, None),
+        (task_to_compute, report_computed_task, None, different_reject_report_computed_task_with_task_failure, None, None),
+        (task_to_compute, report_computed_task, None, different_reject_report_computed_task_with_cannot_compute_task, None, None),
+        (task_to_compute, report_computed_task, None, reject_report_computed_task_without_reason_and_task_to_compute, None, None),
+        (task_to_compute, report_computed_task, None, None, different_force_get_task_result, None),
+        (task_to_compute, report_computed_task, None, None, None, different_subtask_results_rejected),
+    ]
 
 
 class TestSubtaskModelValidation():
@@ -164,9 +160,9 @@ class TestSubtaskModelValidation():
         'force_get_task_result',
         'subtask_results_rejected',
     ),
-        _get_data_list(correct=True)
+        _get_data_list()
     )  # pylint: disable=no-self-use
-    def test_that_storing_subtask_with_task_to_compute_nested_in_another_messages_will_not_raise_exception_when_messages_are_equal(
+    def test_that_storing_subtask_with_task_to_compute_nested_in_another_messages_will_not_raise_exception_when_messages_are_equal_or_not(
         self,
         task_to_compute,
         report_computed_task,
@@ -193,42 +189,6 @@ class TestSubtaskModelValidation():
             Subtask.objects.get(subtask_id=task_to_compute.subtask_id).delete()
         except Exception:  # pylint: disable=broad-except
             pytest.fail()
-
-    @pytest.mark.django_db
-    @pytest.mark.parametrize((
-        'task_to_compute',
-        'report_computed_task',
-        'ack_report_computed_task',
-        'reject_report_computed_task',
-        'force_get_task_result',
-        'subtask_results_rejected',
-    ),
-        _get_data_list(correct=False)
-    )  # pylint: disable=no-self-use
-    def test_that_storing_subtask_with_task_to_compute_nested_in_another_messages_will_raise_exception_when_it_is_different_from_original_task_to_compute(
-        self,
-        task_to_compute,
-        report_computed_task,
-        ack_report_computed_task,
-        reject_report_computed_task,
-        force_get_task_result,
-        subtask_results_rejected,
-    ):
-        with pytest.raises(ValidationError):
-            store_subtask(
-                task_id=task_to_compute.task_id,
-                subtask_id=task_to_compute.subtask_id,
-                provider_public_key=hex_to_bytes_convert(task_to_compute.provider_public_key),
-                requestor_public_key=hex_to_bytes_convert(task_to_compute.requestor_public_key),
-                state=Subtask.SubtaskState.ACCEPTED,
-                task_to_compute=task_to_compute,
-                report_computed_task=report_computed_task,
-                next_deadline=None,
-                ack_report_computed_task=ack_report_computed_task,
-                reject_report_computed_task=reject_report_computed_task,
-                force_get_task_result=force_get_task_result,
-                subtask_results_rejected=subtask_results_rejected,
-            )
 
 
 def store_report_computed_task_as_subtask():

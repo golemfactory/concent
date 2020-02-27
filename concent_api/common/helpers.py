@@ -210,12 +210,3 @@ def ethereum_public_key_to_address(ethereum_public_key: str) -> str:
     return to_checksum_address(
         sha3(decode_hex(ethereum_public_key))[12:].hex()
     )
-
-
-def deserialize_database_message(serialized_message: 'StoredMessage') -> message.Message:  # type: ignore # noqa
-    if isinstance(serialized_message.data, bytes):
-        return deserialize_message(serialized_message.data)
-    elif isinstance(serialized_message.data, memoryview):
-        return deserialize_message(serialized_message.data.tobytes())
-    else:
-        raise ValueError('Given serialized_messages data must be `bytes` or `memoryview` instance')

@@ -1,4 +1,6 @@
+import logging
 import os
+import sys
 
 from mypy.types import Dict  # noqa # pylint: disable=unused-import
 
@@ -149,6 +151,11 @@ STATIC_URL = '/static/'
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static-root')
 
+class _ExcludeErrorsFilter(logging.Filter):
+   def filter(self, record):
+       #Exclude log messages with log level ERROR or higher.
+       return record.levelno < 40
+
 LOGGING = {
     'version':                  1,
     'disable_existing_loggers': False,
@@ -161,6 +168,9 @@ LOGGING = {
     'filters': {
         'require_debug_false': {
             '()': 'django.utils.log.RequireDebugFalse',
+        },
+        'exclude_errors': {
+            '()': _ExcludeErrorsFilter
         }
     },
     'handlers': {
@@ -173,10 +183,18 @@ LOGGING = {
             'filters': ['require_debug_false'],
             'class':   'django.utils.log.AdminEmailHandler',
         },
-        'console': {
+        'console_stdout': {
             'level':     'INFO',
             'class':     'logging.StreamHandler',
             'formatter': 'console',
+            'filters':   ['exclude_errors'],
+            'stream':    sys.stdout,
+        },
+        'console_stderr': {
+            'level':     'ERROR',
+            'class':     'logging.StreamHandler',
+            'formatter': 'console',
+            'stream':    sys.stderr,
         },
     },
     'loggers': {
@@ -200,7 +218,7 @@ LOGGING = {
             # and we want Docker to capture all that output. You can add an extra file handler in your local_settings.py
             # if you think you really need it. Do keep in mind though that log files need to be rotated or they'll eat
             # a lot of disk space.
-            'handlers':  ['console'],
+            'handlers':  ['console_stdout', 'console_stderr'],
             # NOTE: Changing level of this logger will change levels of loggers from plugins
             # because they often don't have a level set explicitly and inherit this one instead.
             'level':     'DEBUG',
@@ -235,6 +253,21 @@ LOGGING = {
             # Level is DEBUG because we're leaving filtering up to the handler.
             'handlers':  ['sentry'],
             'level':     'DEBUG',
+            'propagate': True,
+        },
+        'gunicorn.access': {
+            'handlers':  ['console_stdout'],
+            'level':     'INFO',
+            'propagate': True,
+        },
+        'gunicorn.error': {
+            'handlers':  ['console_stderr'],
+            'level':     'ERROR',
+            'propagate': True,
+        },
+        'celery': {
+            'handlers':  ['console_stdout', 'console_stderr'],
+            'level':     'INFO',
             'propagate': True,
         },
     },
